@@ -3,6 +3,7 @@ import {
   MAX_DISCRIMINATION,
   getAdaptivePresetDefaults,
   mapLevelsToTheta,
+  normalizeEnabledRootWeights,
 } from '@klicker-uzh/adaptive-learning'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
@@ -12,6 +13,12 @@ import {
   hasControlledAdaptiveAnswer,
   isSupportedAdaptiveElementType,
 } from './adaptiveElementValidation.js'
+import type {
+  AdaptivePracticeQuizConfigInput,
+  AdaptivePracticeQuizConfigView,
+  AdaptivePracticeQuizElementOverrideInput,
+  AdaptivePracticeQuizNodeOverrideInput,
+} from './adaptivePracticeQuizConfigTypes.js'
 import { type AdaptiveSourceElementAvailability } from './adaptivePracticeQuizPublicationAuthorization.js'
 import {
   MAX_ADAPTIVE_QUESTION_CAP,
@@ -24,60 +31,24 @@ import {
   type AdaptiveQuizReadiness,
   type AdaptiveReadinessIssue,
 } from './adaptivePracticeQuizReadiness.js'
+import {
+  resolveAdaptiveMeasurementSelection,
+  type AdaptiveMeasurementSelection,
+} from './adaptivePracticeQuizV2Selection.js'
 
-export type AdaptivePracticeQuizNodeOverrideInput = {
-  nodeId: number
-  enabled: boolean
-  weight?: number | null
-  questionCap?: number | null
-}
-
-export type AdaptivePracticeQuizElementOverrideInput = {
-  assignmentId: number
-  enabled: boolean
-  discrimination?: number | null
-}
-
-export type AdaptivePracticeQuizResearchSettingsInput = {
-  levelMappingRule?: DB.AdaptiveLevelMappingRule | null
-  attemptSelectionPolicy?: DB.AdaptiveAttemptSelectionPolicy | null
-  topInformationRatio?: number | null
-  defaultDiscrimination?: number | null
-}
-
-export type AdaptivePracticeQuizConfigInput = {
-  competenceTreeId: string
-  preset: DB.AdaptivePracticeQuizPreset
-  totalQuestionCap?: number | null
-  perLeafQuestionCap?: number | null
-  minQuestionsPerLeaf?: number | null
-  classificationZ?: number | null
-  showTimer?: boolean | null
-  nodeOverrides?: AdaptivePracticeQuizNodeOverrideInput[] | null
-  elementOverrides?: AdaptivePracticeQuizElementOverrideInput[] | null
-  researchSettings?: AdaptivePracticeQuizResearchSettingsInput | null
-}
+export type {
+  AdaptivePracticeQuizConfigInput,
+  AdaptivePracticeQuizConfigView,
+  AdaptivePracticeQuizElementOverrideInput,
+  AdaptivePracticeQuizNodeOverrideInput,
+  AdaptivePracticeQuizResearchSettingsInput,
+} from './adaptivePracticeQuizConfigTypes.js'
 
 export type AdaptivePracticeQuizNodeView = AdaptiveConfiguredNode & {
   order: number
   overrideEnabled: boolean
   effectiveEnabled: boolean
 }
-
-export type AdaptivePracticeQuizConfigView = Pick<
-  DB.PracticeQuizAdaptiveConfig,
-  | 'competenceTreeId'
-  | 'preset'
-  | 'attemptSelectionPolicy'
-  | 'totalQuestionCap'
-  | 'perLeafQuestionCap'
-  | 'minQuestionsPerLeaf'
-  | 'classificationZ'
-  | 'topInformationRatio'
-  | 'defaultDiscrimination'
-  | 'levelMappingRule'
-  | 'showTimer'
->
 
 export type PreparedAdaptiveAssignment = Omit<
   AdaptiveConfiguredAssignment,
@@ -128,7 +99,20 @@ export const adaptiveConfigInclude = {
   competenceTree: { include: adaptiveTreeInclude },
   nodeOverrides: true,
   elementOverrides: true,
-  _count: { select: { attempts: true, publishedPool: true } },
+  _count: {
+    select: {
+      attempts: true,
+      publishedPool: {
+        where: {
+          publication: {
+            sealedAt: { not: null },
+            supersededAt: null,
+            unpublishedAt: null,
+          },
+        },
+      },
+    },
+  },
 } satisfies DB.Prisma.PracticeQuizAdaptiveConfigInclude
 
 export type AdaptiveConfigRecord =
@@ -156,6 +140,7 @@ export async function prepareConfigurationInput(
   prisma: DB.PrismaClient | DB.Prisma.TransactionClient
 ): Promise<{
   settings: ResolvedPresetSettings
+  measurement: AdaptiveMeasurementSelection
   prepared: Omit<PreparedAdaptiveConfiguration, 'config'>
 }> {
   const tree = await prisma.competenceTree.findFirst({
@@ -197,19 +182,31 @@ export async function prepareConfigurationInput(
     )
   }
 
+  const measurement = await resolveAdaptiveMeasurementSelection({
+    courseId,
+    input,
+    tree,
+    userId,
+    prisma,
+  })
   const settings = resolvePresetSettings(input, tree.defaultDiscrimination)
-  return {
-    settings,
-    prepared: prepareConfiguration({
-      tree,
-      settings,
-      nodeOverrides: input.nodeOverrides ?? [],
-      elementOverrides: input.elementOverrides ?? [],
-      researchSettingsProvided:
-        input.researchSettings !== null &&
-        typeof input.researchSettings !== 'undefined',
-    }),
+  if (
+    measurement.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    settings.attemptSelectionPolicy =
+      DB.AdaptiveAttemptSelectionPolicy.LATEST_COMPLETED
   }
+  const prepared = prepareConfiguration({
+    tree,
+    settings,
+    nodeOverrides: input.nodeOverrides ?? [],
+    elementOverrides: input.elementOverrides ?? [],
+    researchSettingsProvided:
+      input.researchSettings !== null &&
+      typeof input.researchSettings !== 'undefined',
+  })
+  return { settings, measurement, prepared }
 }
 
 export function prepareStoredConfiguration(
@@ -254,6 +251,9 @@ export function prepareStoredConfiguration(
     ...prepared,
     config: {
       competenceTreeId: config.competenceTreeId,
+      scaleVersionId: config.scaleVersionId,
+      measurementVersion: config.measurementVersion,
+      calibrationPolicyVersion: config.calibrationPolicyVersion,
       preset: config.preset,
       attemptSelectionPolicy: config.attemptSelectionPolicy,
       totalQuestionCap: config.totalQuestionCap,
@@ -612,8 +612,20 @@ function normalizeRootWeights(
       node,
       weight: overrides.get(node.id)?.weight ?? node.weight,
     }))
-  for (const { node, weight } of enabledRoots) {
-    if (!Number.isFinite(weight) || weight <= 0) {
+  const result = normalizeEnabledRootWeights(
+    enabledRoots.map(({ node, weight }) => ({ key: node, weight }))
+  )
+  if (!result.ok && result.reason === 'NO_ENABLED_ROOTS') {
+    errors.push({
+      code: 'ADAPTIVE_ROOT_WEIGHT_INVALID',
+      message: 'At least one competence with positive weight must be enabled.',
+      parameters: {},
+      path: 'nodeOverrides',
+    })
+    return new Map()
+  }
+  if (!result.ok) {
+    for (const node of result.invalidKeys) {
       errors.push({
         code: 'ADAPTIVE_ROOT_WEIGHT_INVALID',
         message: `Enabled competence ${node.name} must have a positive finite weight.`,
@@ -622,22 +634,11 @@ function normalizeRootWeights(
         nodeId: node.id,
       })
     }
+    return new Map()
   }
-  const valid = enabledRoots.filter(
-    ({ weight }) => Number.isFinite(weight) && weight > 0
+  return new Map(
+    result.normalized.map(({ key: node, weight }) => [node.id, weight])
   )
-  if (valid.length === 0) return new Map()
-
-  const scale = valid.reduce(
-    (maximum, { weight }) => Math.max(maximum, weight),
-    0
-  )
-  const scaled = valid.map(({ node, weight }) => ({
-    nodeId: node.id,
-    weight: weight / scale,
-  }))
-  const total = scaled.reduce((sum, entry) => sum + entry.weight, 0)
-  return new Map(scaled.map((entry) => [entry.nodeId, entry.weight / total]))
 }
 
 export function mapTreeLevels(

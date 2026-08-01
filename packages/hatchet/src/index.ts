@@ -1,6 +1,9 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  AdaptiveEmpiricalValidationTaskInput,
+  HatchetHandlers,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -54,6 +57,55 @@ export function prepareHatchetTasks({
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
       ctx.logger.info(`Audit log entry: ${info}`, args)
+    },
+  })
+  // #endregion
+
+  // ! ADAPTIVE CALIBRATION DATA GOVERNANCE
+  // #region
+  const adaptiveEmpiricalValidation = hatchet.task({
+    name: 'adaptive-empirical-validation',
+    retries: 2,
+    fn: async (
+      input: AdaptiveEmpiricalValidationTaskInput,
+      executionContext
+    ) => {
+      const validationId = await handlers.handleAdaptiveEmpiricalValidation(
+        input,
+        globalContext,
+        executionContext
+      )
+      return { validationId }
+    },
+  })
+
+  const adaptiveCalibrationExport = hatchet.task({
+    name: 'adaptive-calibration-export',
+    retries: 3,
+    fn: async (
+      { exportRequestId }: { exportRequestId: string },
+      executionContext
+    ) => {
+      const success = await handlers.handleAdaptiveCalibrationExport(
+        { exportRequestId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const adaptiveCalibrationExportCleanup = hatchet.task({
+    name: 'adaptive-calibration-export-cleanup',
+    retries: 3,
+    onCrons: ['15 0 * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleAdaptiveCalibrationExportCleanup(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
     },
   })
   // #endregion
@@ -289,6 +341,9 @@ export function prepareHatchetTasks({
   // #endregion
 
   return {
+    adaptiveEmpiricalValidation,
+    adaptiveCalibrationExport,
+    adaptiveCalibrationExportCleanup,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

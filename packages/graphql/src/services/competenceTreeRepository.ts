@@ -121,6 +121,7 @@ export async function getAccessibleCompetenceTreeElement(
       type: true,
       name: true,
       version: true,
+      content: true,
       options: true,
     },
   })

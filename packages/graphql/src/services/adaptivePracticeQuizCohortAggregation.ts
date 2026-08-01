@@ -38,6 +38,11 @@ export type AdaptiveCohortNodeDistribution = {
   order: number
   suppressed: boolean
   suppressions: AdaptivePrivacySuppression[]
+  classifiedCount: number | null
+  betweenLevelsCount: number | null
+  insufficientEvidenceCount: number | null
+  poolLimitedCount: number | null
+  researchOnlyCount: number | null
   insufficientDataCount: number | null
   buckets: AdaptiveCohortLevelBucket[]
 }
@@ -46,6 +51,10 @@ export type AdaptiveCohortAttemptSummary = {
   suppressed: boolean
   suppressions: AdaptivePrivacySuppression[]
   classified: number | null
+  betweenLevels: number | null
+  insufficientEvidence: number | null
+  poolLimited: number | null
+  researchOnly: number | null
   capped: number | null
   poolExhausted: number | null
   stoppedInsufficientData: number | null
@@ -69,6 +78,14 @@ export type AdaptiveCohortRuntime = {
     id: string
     attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy
   }
+  publication: {
+    id: string
+    scaleVersionId: string
+    measurementVersion: DB.AdaptiveMeasurementVersion
+    retakePolicy: DB.AdaptiveAttemptSelectionPolicy
+    cutScoreSnapshot: PrismaJson.PrismaAdaptiveCutScoreSnapshot
+    hierarchicalWeightSnapshot: PrismaJson.PrismaAdaptiveHierarchicalWeightSnapshot
+  }
   tree: {
     nodes: Array<{
       id: number
@@ -88,6 +105,8 @@ export type AdaptiveCohortRuntime = {
 
 export type AdaptiveCohortAttemptRecord = {
   stopReason: DB.AdaptivePracticeQuizStopReason | null
+  resultStatus: DB.AdaptiveResultStatus | null
+  measurementVersion: DB.AdaptiveMeasurementVersion
   elapsedSeconds: number | null
   estimates: Array<{
     nodeKind: DB.AdaptiveEstimateNodeKind
@@ -96,6 +115,7 @@ export type AdaptiveCohortAttemptRecord = {
     standardError: number | null
     responseCount: number
     levelId: number | null
+    resultStatus: DB.AdaptiveResultStatus | null
   }>
 }
 
@@ -120,10 +140,12 @@ export type AdaptiveCohortAccumulator = {
   poolExhausted: number
   stoppedInsufficientData: number
   insufficientData: number
+  classifications: Record<DB.AdaptiveResultStatus, number>
   definitions: DistributionDefinition[]
   distributions: Array<{
     insufficientDataCount: number
     levelCounts: Map<number, number>
+    classifications: Record<DB.AdaptiveResultStatus, number>
   }>
   diagnostics: AdaptivePracticeQuizDiagnosticsAccumulator
 }
@@ -132,6 +154,12 @@ export function createAdaptiveCohortAccumulator(
   runtime: AdaptiveCohortRuntime
 ): AdaptiveCohortAccumulator {
   const nodesById = new Map(runtime.tree.nodes.map((node) => [node.id, node]))
+  const publishedNodesById = new Map(
+    runtime.publication.hierarchicalWeightSnapshot.map((node) => [
+      node.nodeId,
+      node,
+    ])
+  )
   const definitions: DistributionDefinition[] = [
     {
       nodeId: null,
@@ -145,7 +173,8 @@ export function createAdaptiveCohortAccumulator(
       (node) => ({
         nodeId: node.id,
         parentNodeId: node.parentId,
-        nodeName: nodesById.get(node.id)!.name,
+        nodeName:
+          publishedNodesById.get(node.id)?.name ?? nodesById.get(node.id)!.name,
         nodeKind:
           node.kind === DB.AdaptiveNodeKind.COMPETENCE
             ? DB.AdaptiveEstimateNodeKind.COMPETENCE
@@ -162,10 +191,12 @@ export function createAdaptiveCohortAccumulator(
     poolExhausted: 0,
     stoppedInsufficientData: 0,
     insufficientData: 0,
+    classifications: emptyClassificationCounts(),
     definitions,
     distributions: definitions.map(() => ({
       insufficientDataCount: 0,
       levelCounts: new Map(),
+      classifications: emptyClassificationCounts(),
     })),
     diagnostics: createAdaptivePracticeQuizDiagnosticsAccumulator(runtime.pool),
   }
@@ -189,6 +220,10 @@ export function accumulateAdaptiveCohortAttempt(
   const overall = estimates.get(
     estimateKey(DB.AdaptiveEstimateNodeKind.OVERALL, null)
   )
+  incrementClassification(
+    accumulator.classifications,
+    resultClassification({ attempt, estimate: overall })
+  )
   const diagnostics = accumulateAdaptivePracticeQuizDiagnostics({
     runtime,
     accumulator: accumulator.diagnostics,
@@ -205,17 +240,29 @@ export function accumulateAdaptiveCohortAttempt(
       estimateKey(definition.nodeKind, definition.nodeId)
     )
     const metric = accumulator.distributions[index]!
+    const classification = resultClassification({ attempt, estimate })
     if (
+      !estimate ||
+      estimate.responseCount < MIN_REPORTING_RESPONSES ||
+      estimate.theta === null ||
+      estimate.standardError === null
+    ) {
+      metric.insufficientDataCount += 1
+    }
+    if (
+      classification !== DB.AdaptiveResultStatus.CLASSIFIED ||
       !estimate ||
       estimate.responseCount < MIN_REPORTING_RESPONSES ||
       estimate.levelId === null
     ) {
-      metric.insufficientDataCount += 1
+      incrementClassification(metric.classifications, classification)
       continue
     }
-    metric.levelCounts.set(
-      estimate.levelId,
-      (metric.levelCounts.get(estimate.levelId) ?? 0) + 1
+    const levelId = runtimeLevelIdForStoredLevel(runtime, estimate.levelId)
+    metric.levelCounts.set(levelId, (metric.levelCounts.get(levelId) ?? 0) + 1)
+    incrementClassification(
+      metric.classifications,
+      DB.AdaptiveResultStatus.CLASSIFIED
     )
   }
 }
@@ -254,6 +301,13 @@ export function finalizeAdaptiveCohort(
 function finalizeAttemptSummary(
   accumulator: AdaptiveCohortAccumulator
 ): AdaptiveCohortAttemptSummary {
+  const classificationRelease = releaseAdaptiveCategoricalMetric({
+    field: 'RESULT_CLASSIFICATION',
+    cells: Object.values(DB.AdaptiveResultStatus).map(
+      (status) => accumulator.classifications[status]
+    ),
+    value: accumulator.classifications,
+  })
   const fields = {
     classified: releaseAdaptiveBinaryMetric({
       field: 'CLASSIFIED',
@@ -292,13 +346,25 @@ function finalizeAttemptSummary(
       value: accumulator.diagnostics.nearBoundary,
     }),
   }
-  const suppressions = compactAdaptivePrivacySuppressions(
-    Object.values(fields).map(({ suppression }) => suppression)
-  )
+  const suppressions = compactAdaptivePrivacySuppressions([
+    classificationRelease.suppression,
+    ...Object.values(fields).map(({ suppression }) => suppression),
+  ])
+  const classifications = classificationRelease.value
   return {
     suppressed: hasAdaptivePrivacyWithholding(suppressions),
     suppressions,
-    classified: fields.classified.value,
+    classified:
+      classifications?.[DB.AdaptiveResultStatus.CLASSIFIED] ??
+      fields.classified.value,
+    betweenLevels:
+      classifications?.[DB.AdaptiveResultStatus.BETWEEN_LEVELS] ?? null,
+    insufficientEvidence:
+      classifications?.[DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE] ?? null,
+    poolLimited:
+      classifications?.[DB.AdaptiveResultStatus.POOL_LIMITED] ?? null,
+    researchOnly:
+      classifications?.[DB.AdaptiveResultStatus.RESEARCH_ONLY] ?? null,
     capped: fields.capped.value,
     poolExhausted: fields.poolExhausted.value,
     stoppedInsufficientData: fields.stoppedInsufficientData.value,
@@ -322,24 +388,124 @@ function finalizeDistributions(
       field: 'DISTRIBUTION',
       cells: [
         ...buckets.map(({ count }) => count),
-        metric.insufficientDataCount,
+        metric.classifications[DB.AdaptiveResultStatus.BETWEEN_LEVELS],
+        metric.classifications[DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE],
+        metric.classifications[DB.AdaptiveResultStatus.POOL_LIMITED],
+        metric.classifications[DB.AdaptiveResultStatus.RESEARCH_ONLY],
       ],
       value: {
+        classifiedCount:
+          metric.classifications[DB.AdaptiveResultStatus.CLASSIFIED],
+        betweenLevelsCount:
+          metric.classifications[DB.AdaptiveResultStatus.BETWEEN_LEVELS],
+        insufficientEvidenceCount:
+          metric.classifications[DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE],
+        poolLimitedCount:
+          metric.classifications[DB.AdaptiveResultStatus.POOL_LIMITED],
+        researchOnlyCount:
+          metric.classifications[DB.AdaptiveResultStatus.RESEARCH_ONLY],
         insufficientDataCount: metric.insufficientDataCount,
         buckets,
       },
     })
+    const insufficientDataRelease = releaseAdaptiveBinaryMetric({
+      field: 'INSUFFICIENT_DATA',
+      total: accumulator.total,
+      positive: metric.insufficientDataCount,
+      value: metric.insufficientDataCount,
+    })
     const suppressions = compactAdaptivePrivacySuppressions([
       release.suppression,
+      insufficientDataRelease.suppression,
     ])
+    const withheld = hasAdaptivePrivacyWithholding(suppressions)
     return {
       ...definition,
-      suppressed: hasAdaptivePrivacyWithholding(suppressions),
+      suppressed: withheld,
       suppressions,
-      insufficientDataCount: release.value?.insufficientDataCount ?? null,
-      buckets: release.value?.buckets ?? [],
+      classifiedCount: withheld
+        ? null
+        : (release.value?.classifiedCount ?? null),
+      betweenLevelsCount: withheld
+        ? null
+        : (release.value?.betweenLevelsCount ?? null),
+      insufficientEvidenceCount: withheld
+        ? null
+        : (release.value?.insufficientEvidenceCount ?? null),
+      poolLimitedCount: withheld
+        ? null
+        : (release.value?.poolLimitedCount ?? null),
+      researchOnlyCount: withheld
+        ? null
+        : (release.value?.researchOnlyCount ?? null),
+      insufficientDataCount: withheld ? null : insufficientDataRelease.value,
+      buckets: withheld ? [] : (release.value?.buckets ?? []),
     }
   })
+}
+
+function emptyClassificationCounts(): Record<DB.AdaptiveResultStatus, number> {
+  return {
+    [DB.AdaptiveResultStatus.CLASSIFIED]: 0,
+    [DB.AdaptiveResultStatus.BETWEEN_LEVELS]: 0,
+    [DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE]: 0,
+    [DB.AdaptiveResultStatus.POOL_LIMITED]: 0,
+    [DB.AdaptiveResultStatus.RESEARCH_ONLY]: 0,
+  }
+}
+
+function incrementClassification(
+  counts: Record<DB.AdaptiveResultStatus, number>,
+  classification: DB.AdaptiveResultStatus
+) {
+  counts[classification] += 1
+}
+
+function resultClassification({
+  attempt,
+  estimate,
+}: {
+  attempt: AdaptiveCohortAttemptRecord
+  estimate: AdaptiveCohortAttemptRecord['estimates'][number] | undefined
+}) {
+  if (estimate?.resultStatus) return estimate.resultStatus
+  if (attempt.resultStatus) return attempt.resultStatus
+  if (
+    attempt.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    return DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
+  }
+  if (
+    estimate &&
+    estimate.responseCount >= MIN_REPORTING_RESPONSES &&
+    estimate.levelId !== null &&
+    (attempt.stopReason === DB.AdaptivePracticeQuizStopReason.CLASSIFIED ||
+      attempt.stopReason ===
+        DB.AdaptivePracticeQuizStopReason.ALL_ROOTS_CLASSIFIED)
+  ) {
+    return DB.AdaptiveResultStatus.CLASSIFIED
+  }
+  return attempt.stopReason === DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
+    ? DB.AdaptiveResultStatus.POOL_LIMITED
+    : DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
+}
+
+function runtimeLevelIdForStoredLevel(
+  runtime: AdaptiveCohortRuntime,
+  storedLevelId: number
+) {
+  if (
+    runtime.publication.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V1
+  ) {
+    return storedLevelId
+  }
+  return (
+    runtime.publication.cutScoreSnapshot.find(
+      ({ sourceLevelId }) => sourceLevelId === storedLevelId
+    )?.scaleLevelId ?? storedLevelId
+  )
 }
 
 function incrementStopReason(

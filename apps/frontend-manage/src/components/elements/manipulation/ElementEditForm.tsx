@@ -33,21 +33,14 @@ import ElementTypeMonitor from './ElementTypeMonitor'
 import InstanceUpdateSwitch from './InstanceUpdateSwitch'
 import StudentElementPreview from './StudentElementPreview'
 import AdaptiveElementMapping from './adaptive/AdaptiveElementMapping'
-import type {
-  ElementAutosaveCompletion,
-  ElementAutosavePayload,
-} from './adaptive/elementMappingRecovery'
+import { getAdaptiveSubmissionErrorKey } from './adaptive/adaptiveSubmissionError'
+import type { ElementAutosavePayload } from './adaptive/elementAutosave'
 import {
   createElementAutosavePayload,
-  markElementSavedForMapping,
-  markMappingFailed,
-  markMappingRetry,
-  shouldPersistElement,
   updateElementAutosaveFormValues,
   updatePendingMapping,
-} from './adaptive/elementMappingRecovery'
+} from './adaptive/elementAutosave'
 import type { PendingAdaptiveMapping } from './adaptive/types'
-import useAdaptiveMappingMutation from './adaptive/useAdaptiveMappingMutation'
 import AnswerFeedbackSetting from './options/AnswerFeedbackSetting'
 import CaseStudyOptions from './options/CaseStudyOptions'
 import ChoicesOptions from './options/ChoicesOptions'
@@ -71,7 +64,6 @@ function ElementEditForm({
   initialValues,
   autoSavePayload,
   onAutoSavePayloadChange,
-  onRecoveryComplete,
   onSubmitElement,
   setAutoSavedElement,
   updateInstances,
@@ -96,12 +88,10 @@ function ElementEditForm({
   initialValues?: ElementFormTypes
   autoSavePayload?: ElementAutosavePayload
   onAutoSavePayloadChange?: (payload: ElementAutosavePayload | null) => void
-  onRecoveryComplete?: (
-    payload: ElementAutosavePayload,
-    completion: ElementAutosaveCompletion
-  ) => void
   onSubmitElement: (
-    values: ElementFormTypes & { status: ElementStatus }
+    values: ElementFormTypes & { status: ElementStatus },
+    pendingMapping: PendingAdaptiveMapping | null,
+    creationRequestId: string
   ) => Promise<number | true | null>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
   // instance update controls
@@ -114,14 +104,11 @@ function ElementEditForm({
   const [activeTab, setActiveTab] = useState('preview')
   const [pendingMapping, setPendingMapping] =
     useState<PendingAdaptiveMapping | null>(
-      autoSavePayload?.mappingRecovery.pendingMapping ?? null
+      autoSavePayload?.pendingMapping ?? null
     )
-  const {
-    saveMapping: savePendingMapping,
-    loading: pendingMappingLoading,
-    error: pendingMappingError,
-    clearError: clearPendingMappingError,
-  } = useAdaptiveMappingMutation()
+  const [adaptiveSubmissionError, setAdaptiveSubmissionError] = useState<
+    string | null
+  >(null)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -132,58 +119,7 @@ function ElementEditForm({
     open: boolean
     id?: number
   }>({ open: false, id: undefined })
-  const recoveryActive =
-    autoSavePayload?.mappingRecovery.phase !== undefined &&
-    autoSavePayload.mappingRecovery.phase !== 'editing'
-  const elementInputsDisabled = inputsDisabled || recoveryActive
-
-  const completeRecovery = (
-    payload: ElementAutosavePayload,
-    completion: ElementAutosaveCompletion
-  ) => {
-    if (onRecoveryComplete) {
-      onRecoveryComplete(payload, completion)
-    } else {
-      onSuccess()
-    }
-  }
-
-  const retryPendingMapping = async () => {
-    if (
-      !autoSavePayload ||
-      autoSavePayload.mappingRecovery.phase === 'editing'
-    ) {
-      return
-    }
-
-    const retryPayload = markMappingRetry(autoSavePayload)
-    onAutoSavePayloadChange?.(retryPayload)
-    const recovery = retryPayload.mappingRecovery
-    if (recovery.phase === 'editing') {
-      return
-    }
-
-    const mappingSaved = await savePendingMapping({
-      treeId: recovery.pendingMapping.treeId,
-      elementId: recovery.elementId,
-      assignment: recovery.pendingMapping.assignment,
-    })
-
-    if (mappingSaved) {
-      completeRecovery(retryPayload, 'mapping-confirmed')
-    } else {
-      onAutoSavePayloadChange?.(markMappingFailed(retryPayload))
-    }
-  }
-
-  const keepElementUnmapped = () => {
-    if (
-      autoSavePayload &&
-      autoSavePayload.mappingRecovery.phase !== 'editing'
-    ) {
-      completeRecovery(autoSavePayload, 'mapping-abandoned')
-    }
-  }
+  const elementInputsDisabled = inputsDisabled
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
@@ -206,11 +142,7 @@ function ElementEditForm({
       escapeDisabled
       loading={loading || (!isTemplate && !initialValues)}
       title={t(`manage.elements.${mode}Title`)}
-      onClose={() => {
-        if (!pendingMappingLoading) {
-          onClose()
-        }
-      }}
+      onClose={onClose}
       className={{
         title: 'text-xl',
         content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
@@ -226,6 +158,7 @@ function ElementEditForm({
           validationSchema={questionManipulationSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
+            setAdaptiveSubmissionError(null)
             const submissionPayload = updatePendingMapping(
               updateElementAutosaveFormValues(
                 autoSavePayload ?? createElementAutosavePayload(values),
@@ -233,13 +166,32 @@ function ElementEditForm({
               ),
               pendingMapping
             )
-
-            if (!shouldPersistElement(submissionPayload)) {
+            onAutoSavePayloadChange?.(submissionPayload)
+            let persistedElementId: number | true | null
+            try {
+              persistedElementId = await onSubmitElement(
+                values,
+                pendingMapping,
+                submissionPayload.creationRequestId
+              )
+            } catch (error) {
+              const errorKey = pendingMapping
+                ? getAdaptiveSubmissionErrorKey(error)
+                : null
+              const message = errorKey
+                ? t(
+                    `manage.elements.adaptiveMapping.assignmentErrors.${errorKey}`
+                  )
+                : t('manage.elements.questionSavedFailed')
+              if (errorKey) setAdaptiveSubmissionError(message)
               setSubmitting(false)
+              toast({
+                type: 'error',
+                message,
+                options: { duration: 6000 },
+              })
               return
             }
-
-            const persistedElementId = await onSubmitElement(values)
 
             if (persistedElementId === null) {
               setSubmitting(false)
@@ -251,32 +203,8 @@ function ElementEditForm({
               return
             }
 
-            if (pendingMapping && typeof persistedElementId === 'number') {
-              const recoveryPayload = markElementSavedForMapping(
-                submissionPayload,
-                persistedElementId
-              )
-              onAutoSavePayloadChange?.(recoveryPayload)
-              const mappingSaved = await savePendingMapping({
-                treeId: pendingMapping.treeId,
-                elementId: persistedElementId,
-                assignment: pendingMapping.assignment,
-              })
-
-              if (!mappingSaved) {
-                onAutoSavePayloadChange?.(markMappingFailed(recoveryPayload))
-                setSubmitting(false)
-                return
-              }
-
-              setSubmitting(false)
-              completeRecovery(recoveryPayload, 'mapping-confirmed')
-              return
-            }
-
-            // close modal, set success toast
             setSubmitting(false)
-            completeRecovery(submissionPayload, 'element-saved')
+            onSuccess()
           }}
         >
           {({
@@ -291,7 +219,7 @@ function ElementEditForm({
             submitForm,
           }) => (
             <>
-              {!inputsDisabled && !recoveryActive && (
+              {!inputsDisabled && (
                 <AutoSaveMonitor
                   values={values}
                   initialValuesString={JSON.stringify(initialValues)}
@@ -329,14 +257,9 @@ function ElementEditForm({
                         inputsDisabled={inputsDisabled}
                         formDirty={dirty}
                         pendingMapping={pendingMapping}
-                        recoveryPhase={
-                          autoSavePayload?.mappingRecovery.phase ?? 'editing'
-                        }
-                        mappingLoading={pendingMappingLoading}
-                        onRetryPendingMapping={retryPendingMapping}
-                        onKeepElementUnmapped={keepElementUnmapped}
+                        submissionError={adaptiveSubmissionError}
                         onPendingMappingChange={(mapping) => {
-                          clearPendingMappingError()
+                          setAdaptiveSubmissionError(null)
                           setPendingMapping(mapping)
                           const payload = updatePendingMapping(
                             updateElementAutosaveFormValues(
@@ -348,7 +271,6 @@ function ElementEditForm({
                           )
                           onAutoSavePayloadChange?.(payload)
                         }}
-                        mutationError={pendingMappingError}
                       />
                     ) : null}
                     <ElementContentInput
@@ -529,8 +451,7 @@ function ElementEditForm({
 
               {mode === ElementEditMode.EDIT &&
                 elementId &&
-                !inputsDisabled &&
-                !recoveryActive && (
+                !inputsDisabled && (
                   <InstanceUpdateSwitch
                     elementId={elementId}
                     hasSampleSolution={
@@ -555,7 +476,6 @@ function ElementEditForm({
                 {!isTemplate && !inputsDisabled && (
                   <Button
                     onClick={() => onClose()}
-                    disabled={pendingMappingLoading}
                     data={{ cy: 'close-element-modal-button' }}
                   >
                     {t('shared.generic.close')}
@@ -565,7 +485,7 @@ function ElementEditForm({
                   <Button
                     primary
                     onClick={() => submitForm()}
-                    disabled={!isValid || recoveryActive}
+                    disabled={!isValid}
                     loading={isSubmitting}
                     data={{ cy: 'save-new-question' }}
                   >

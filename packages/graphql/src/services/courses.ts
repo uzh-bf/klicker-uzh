@@ -26,6 +26,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
+import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
 import {
   lockAdaptiveAdministratorForShare,
   lockAdaptiveCourseForUpdate,
@@ -3351,6 +3352,9 @@ export async function deleteCourse(
           'This course contains retained adaptive-learning history and cannot be deleted. Archive the course instead.',
           { extensions: { code: 'ADAPTIVE_COURSE_HISTORY_RETAINED' } }
         )
+      }
+      for (const practiceQuizId of adaptiveQuizIds) {
+        await purgeAttemptFreeAdaptivePublications(practiceQuizId, prisma)
       }
 
       // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks

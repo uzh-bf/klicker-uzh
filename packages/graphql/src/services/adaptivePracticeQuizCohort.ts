@@ -23,7 +23,7 @@ export type {
 } from './adaptivePracticeQuizDiagnostics.js'
 
 const COHORT_BATCH_SIZE = 250
-const COHORT_SNAPSHOT_POLICY_VERSION = 1
+const COHORT_SNAPSHOT_POLICY_VERSION = 2 as const
 
 type CanonicalAttemptReference = {
   id: string
@@ -38,6 +38,8 @@ type ReleaseBoundary = {
 const cohortAttemptSelect = {
   id: true,
   stopReason: true,
+  resultStatus: true,
+  measurementVersion: true,
   elapsedSeconds: true,
   estimates: {
     select: {
@@ -47,6 +49,7 @@ const cohortAttemptSelect = {
       standardError: true,
       responseCount: true,
       levelId: true,
+      resultStatus: true,
     },
   },
 } satisfies DB.Prisma.AdaptivePracticeQuizAttemptSelect
@@ -66,7 +69,7 @@ export async function getOrCreateAdaptiveCohortSnapshot(
   prisma: DB.Prisma.TransactionClient,
   runtime: AdaptiveCohortRuntime
 ): Promise<AdaptiveCohortResults> {
-  const boundary = await loadReleaseBoundary(prisma, runtime.quiz.id)
+  const boundary = await loadReleaseBoundary(prisma, runtime.publication.id)
   if (boundary.releaseSize === 0 || boundary.releaseWatermark === null) {
     return finalizeAdaptiveCohort(
       runtime,
@@ -75,14 +78,14 @@ export async function getOrCreateAdaptiveCohortSnapshot(
   }
 
   const key = {
-    configId: runtime.config.id,
+    publicationId: runtime.publication.id,
     releaseSize: boundary.releaseSize,
     policyVersion: COHORT_SNAPSHOT_POLICY_VERSION,
-    attemptSelectionPolicy: runtime.config.attemptSelectionPolicy,
+    attemptSelectionPolicy: runtime.publication.retakePolicy,
   }
   const existing = await prisma.adaptivePracticeQuizCohortSnapshot.findUnique({
     where: {
-      configId_releaseSize_policyVersion_attemptSelectionPolicy: key,
+      publicationId_releaseSize_policyVersion_attemptSelectionPolicy: key,
     },
   })
   if (existing && existing.invalidatedAt === null) {
@@ -109,7 +112,46 @@ export async function getOrCreateAdaptiveCohortSnapshot(
     releaseSize: boundary.releaseSize,
     generationDurationMs: Date.now() - startedAt,
   })
+  emitCohortReleaseMetrics(runtime.quiz.id, result)
   return result
+}
+
+function emitCohortReleaseMetrics(
+  practiceQuizId: string,
+  result: AdaptiveCohortResults
+) {
+  const statusCounts = [
+    result.attemptSummary.betweenLevels,
+    result.attemptSummary.insufficientEvidence,
+    result.attemptSummary.poolLimited,
+    result.attemptSummary.researchOnly,
+  ]
+  const abstained = statusCounts.every(
+    (value): value is number => typeof value === 'number'
+  )
+    ? statusCounts.reduce((sum, value) => sum + value, 0)
+    : null
+  const releasedExposureRates = result.itemDiagnostics.flatMap((item) =>
+    typeof item.exposureRate === 'number' ? [item.exposureRate] : []
+  )
+
+  emitAdaptiveOperationalEvent({
+    name: 'adaptive_cohort_release_metrics',
+    practiceQuizId,
+    releaseSize: result.cohortSize ?? 0,
+    classified: result.attemptSummary.classified,
+    abstained,
+    betweenLevels: result.attemptSummary.betweenLevels,
+    insufficientEvidence: result.attemptSummary.insufficientEvidence,
+    poolLimited: result.attemptSummary.poolLimited,
+    researchOnly: result.attemptSummary.researchOnly,
+    medianQuestionCount: result.pilotMetrics.medianQuestionCount,
+    p95QuestionCount: result.pilotMetrics.p95QuestionCount,
+    maxExposureRate:
+      releasedExposureRates.length === 0
+        ? null
+        : Math.max(...releasedExposureRates),
+  })
 }
 
 async function materializeSnapshot(
@@ -117,7 +159,7 @@ async function materializeSnapshot(
   runtime: AdaptiveCohortRuntime,
   boundary: ReleaseBoundary & { releaseWatermark: Date },
   key: {
-    configId: string
+    publicationId: string
     releaseSize: number
     policyVersion: number
     attemptSelectionPolicy: DB.AdaptiveAttemptSelectionPolicy
@@ -130,7 +172,8 @@ async function materializeSnapshot(
       prisma,
       practiceQuizId: runtime.quiz.id,
       releaseSize: boundary.releaseSize,
-      policy: runtime.config.attemptSelectionPolicy,
+      publicationId: runtime.publication.id,
+      policy: runtime.publication.retakePolicy,
       cursor,
     })
     if (references.length === 0) {
@@ -147,16 +190,19 @@ async function materializeSnapshot(
   }
   const result = finalizeAdaptiveCohort(runtime, accumulator)
   const aggregate: PrismaJson.PrismaAdaptivePracticeQuizCohortSnapshot = {
-    schemaVersion: 1,
+    schemaVersion: COHORT_SNAPSHOT_POLICY_VERSION,
     result,
   }
   await prisma.adaptivePracticeQuizCohortSnapshot.upsert({
     where: {
-      configId_releaseSize_policyVersion_attemptSelectionPolicy: key,
+      publicationId_releaseSize_policyVersion_attemptSelectionPolicy: key,
     },
     create: {
       ...key,
+      configId: runtime.config.id,
       practiceQuizId: runtime.quiz.id,
+      scaleVersionId: runtime.publication.scaleVersionId,
+      measurementVersion: runtime.publication.measurementVersion,
       releaseWatermark: boundary.releaseWatermark,
       aggregate,
     },
@@ -171,7 +217,7 @@ async function materializeSnapshot(
 
 async function loadReleaseBoundary(
   prisma: DB.Prisma.TransactionClient,
-  practiceQuizId: string
+  publicationId: string
 ): Promise<ReleaseBoundary> {
   const rows = await prisma.$queryRaw<ReleaseBoundary[]>`
     WITH first_completions AS (
@@ -180,7 +226,7 @@ async function loadReleaseBoundary(
         "completedAt",
         "id"
       FROM "AdaptivePracticeQuizAttempt"
-      WHERE "practiceQuizId" = ${practiceQuizId}::uuid
+      WHERE "publicationId" = ${publicationId}::uuid
         AND "status" = 'COMPLETED'::"AdaptivePracticeQuizAttemptStatus"
         AND "completedAt" IS NOT NULL
       ORDER BY "participantId", "completedAt", "id"
@@ -205,12 +251,14 @@ async function loadReleaseBoundary(
 async function loadCanonicalAttemptBatch({
   prisma,
   practiceQuizId,
+  publicationId,
   releaseSize,
   policy,
   cursor,
 }: {
   prisma: DB.Prisma.TransactionClient
   practiceQuizId: string
+  publicationId: string
   releaseSize: number
   policy: DB.AdaptiveAttemptSelectionPolicy
   cursor: CanonicalAttemptReference | null
@@ -227,7 +275,7 @@ async function loadCanonicalAttemptBatch({
         "completedAt",
         "id"
       FROM "AdaptivePracticeQuizAttempt"
-      WHERE "practiceQuizId" = ${practiceQuizId}::uuid
+      WHERE "publicationId" = ${publicationId}::uuid
         AND "status" = 'COMPLETED'::"AdaptivePracticeQuizAttemptStatus"
         AND "completedAt" IS NOT NULL
       ORDER BY "participantId", "completedAt", "id"
@@ -258,6 +306,7 @@ async function loadCanonicalAttemptBatch({
         ON participant."participantId" = attempt."participantId"
       CROSS JOIN release_boundary boundary
       WHERE attempt."practiceQuizId" = ${practiceQuizId}::uuid
+        AND attempt."publicationId" = ${publicationId}::uuid
         AND attempt."status" = 'COMPLETED'::"AdaptivePracticeQuizAttemptStatus"
         AND attempt."completedAt" IS NOT NULL
         AND (attempt."completedAt", attempt."id") <= (boundary."completedAt", boundary."id")
@@ -316,10 +365,10 @@ function readSnapshotResult(
   aggregate: PrismaJson.PrismaAdaptivePracticeQuizCohortSnapshot,
   practiceQuizId: string
 ): AdaptiveCohortResults {
-  if (
-    aggregate.schemaVersion !== COHORT_SNAPSHOT_POLICY_VERSION ||
-    aggregate.result.practiceQuizId !== practiceQuizId
-  ) {
+  if (aggregate.schemaVersion !== COHORT_SNAPSHOT_POLICY_VERSION) {
+    throw new Error('Adaptive cohort snapshot metadata is inconsistent.')
+  }
+  if (aggregate.result.practiceQuizId !== practiceQuizId) {
     throw new Error('Adaptive cohort snapshot metadata is inconsistent.')
   }
   return aggregate.result

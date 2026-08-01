@@ -890,6 +890,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           submit: 'Your response could not be submitted. Please try again.',
           result: 'Your result could not be loaded. Please try again.',
         },
+        feedback: {
+          correct: 'Correct',
+          incorrect: 'Not correct yet',
+          score: 'Score: {score}%',
+        },
         unavailable: {
           title: 'Quiz unavailable',
           description: 'This adaptive practice quiz is currently unavailable.',
@@ -915,10 +920,53 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           title: 'Your result',
           headline: 'Your current level: {level}',
           incompleteHeadline: 'No complete result yet',
+          betweenHeadline: 'Between {levels}',
+          poolLimitedHeadline: 'More suitable questions are needed',
+          researchHeadline: 'Practice completed',
           incomplete:
             'There is not enough evidence to determine your overall level.',
+          probability: '({probability}% probability)',
           answeredQuestions:
             '{count, plural, one {# question answered} other {# questions answered}}',
+          classification: {
+            CLASSIFIED: {
+              label: 'Level determined',
+              description:
+                'The available evidence supports this level. The range below shows the remaining uncertainty.',
+            },
+            BETWEEN_LEVELS: {
+              label: 'Between levels',
+              description:
+                'Your responses support two neighbouring levels. The range below shows where the result overlaps them.',
+            },
+            INSUFFICIENT_EVIDENCE: {
+              label: 'Not enough evidence',
+              description:
+                'There is not yet enough evidence to report a dependable level.',
+            },
+            POOL_LIMITED: {
+              label: 'Question pool limited',
+              description:
+                'The available questions could not narrow the estimate enough for a dependable level.',
+            },
+            RESEARCH_ONLY: {
+              label: 'No proficiency result',
+              description:
+                'This session collected responses for calibration and does not report a proficiency level.',
+            },
+          },
+          nextStep: {
+            title: 'What to do next',
+            CLASSIFIED:
+              'Continue with material at this level and revisit any competence areas shown below it.',
+            BETWEEN_LEVELS:
+              'Practise the higher of the two levels, then repeat the quiz when you have more evidence.',
+            INSUFFICIENT_EVIDENCE:
+              'Practise across the competence areas and repeat the quiz to gather more evidence.',
+            POOL_LIMITED:
+              'Use the competence profile as orientation and ask your instructor for additional practice material.',
+            RESEARCH_ONLY: '',
+          },
           interpretation: {
             MASTERY: {
               headline: 'Highest demonstrated level: {level}',
@@ -976,6 +1024,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',
           insufficientData: 'Insufficient data',
+          betweenLevels: 'Between {levels}',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'No proficiency result',
           expand: 'Show details for {name}',
           collapse: 'Hide details for {name}',
         },
@@ -1278,6 +1329,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortAscending: 'Sort ascending',
+      sortDescending: 'Sort descending',
+      selectAllElements: 'Select all elements',
+      deselectAllElements: 'Deselect all elements',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -1904,6 +1959,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         leaf: 'Leaf subcompetence',
         selectLeaf: 'Select a leaf subcompetence...',
         level: 'Level',
+        expectedDifficulty: 'Expected item difficulty',
+        expectedDifficultyTooltip:
+          'Choose the level at which you expect this item to be most informative. This initial estimate is replaced by an approved calibration.',
         selectLevel: 'Select a level...',
         enabled: 'Use in adaptive quizzes',
         enablePercentInput: 'Allow percentage input',
@@ -1916,16 +1974,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         add: 'Add mapping',
         remove: 'Remove mapping',
         save: 'Save mapping',
-        recovery: {
-          elementSavedMappingFailed:
-            'Element saved; adaptive assignment not saved.',
-          description:
-            'Retry the adaptive assignment or keep the saved element unmapped.',
-          retry: 'Retry assignment',
-          keepUnmapped: 'Keep element unmapped',
-          keepUnmappedTitle: 'Keep element unmapped?',
-          keepUnmappedDescription:
-            'The element is already saved. This will discard its pending adaptive assignment.',
+        assignmentErrors: {
+          locked:
+            'This competence tree is already used by a practice quiz. Duplicate the tree before adding this element.',
+          coverage:
+            'The selected leaf and level are no longer enabled. Choose an available leaf-level combination.',
+          invalid:
+            'This adaptive mapping is not valid. Review the selected leaf, level, and answer configuration.',
+          unavailable:
+            'This competence tree is no longer available to edit. Refresh the catalog or choose another tree.',
         },
         states: {
           archived: 'Archived',
@@ -2283,7 +2340,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         preset: {
           DIAGNOSTIC: 'Diagnostic / self-assessment',
           PLACEMENT: 'Placement / mastery',
+          PLACEMENT_UNAVAILABLE: 'Placement (not yet available)',
           RESEARCH: 'Research / calibration',
+        },
+        research: {
+          nonClassifying:
+            'Research mode collects responses for item calibration. It does not classify learners or show them a competence level.',
         },
         attemptPolicy: {
           FIRST_COMPLETED: 'First completed attempt',
@@ -2365,6 +2427,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             'Select a course before configuring adaptive delivery.',
           linkRequired:
             'Link the selected competence tree to this course before continuing.',
+        },
+        scale: {
+          title: 'Scale and calibration',
+          version: 'Scale version {version}',
+          noActive:
+            'This competence tree has no active scale. Create, review, and activate a scale before publishing.',
+          legacyMeasurement:
+            'This quiz still uses the legacy measurement model. Use active scale version {version} to configure Bayesian IRT.',
+          newerActiveAvailable:
+            'A newer active scale version {version} is available. Existing published attempts keep their original scale.',
+          useActive: 'Use scale version {version}',
+          standardSetting: 'Standard setting approved',
+          empiricalValidation: 'Empirical holdout approved',
         },
         preview: {
           emptyResponse: 'The adaptive preview returned no data.',
@@ -2456,6 +2531,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
               'The enabled competence "{nodeName}" needs a positive finite weight.',
             ADAPTIVE_CONFIG_MISSING:
               'The adaptive practice quiz configuration was not found.',
+            ADAPTIVE_V2_SCALE_NOT_ACTIVE:
+              'The selected competence scale is not active or is no longer supported.',
+            ADAPTIVE_V2_PLACEMENT_UNAVAILABLE:
+              'Placement is not yet available for calibrated adaptive quizzes. Select Diagnostic or Research.',
+            ADAPTIVE_V2_CALIBRATION_MISSING:
+              'The element "{elementName}" needs an approved calibration for the selected scale.',
+            ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH:
+              'The element "{elementName}" changed after calibration. Import a calibration for its current version.',
+            ADAPTIVE_V2_CALIBRATION_FLAGGED:
+              'The element "{elementName}" was excluded by calibration review.',
+            ADAPTIVE_V2_INFORMATION_GAP:
+              'The calibrated item bank has too little information near a level boundary.',
+            ADAPTIVE_V2_CUT_SCORE_UNREACHABLE:
+              'The calibrated item bank does not contain suitable questions near a level boundary.',
+            ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED:
+              'Every enabled leaf and level band needs at least one calibrated anchor item for Research.',
+            ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED:
+              'Research needs calibration collection enabled for the course and at least one eligible field-test item.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED:
+              'Diagnostic publication requires independently approved holdout validation.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED:
+              'The empirical validation has not passed the release criteria for Diagnostic publication.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE:
+              'The approved empirical validation does not match the current calibrated item bank.',
             unknown: 'The adaptive configuration contains an unknown issue.',
           },
         },
@@ -2764,6 +2863,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       checkingReadiness: 'Checking publication readiness...',
       emptyResponse: 'Publishing the adaptive practice quiz returned no data.',
       publishFailed: 'The adaptive practice quiz could not be published.',
+      researchNonClassifying:
+        'Research mode collects response data for calibration. Students will not receive a competence classification or level result.',
+      researchConfirmation:
+        'I understand that this publication is for calibration data collection and does not classify students.',
     },
     microLearnings: {
       viewMicroLearning: 'View Microlearning',
@@ -3005,6 +3108,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showQRCodes: 'Show QR Codes',
       adaptive: {
         title: 'Adaptive cohort results',
+        calibration: {
+          title: 'Calibration health',
+          openTree: 'Open competence tree',
+          loadFailed: 'Calibration health could not be loaded.',
+        },
         attemptSummary: 'Attempt summary',
         attempts: {
           total: 'Total',
@@ -3012,11 +3120,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           inProgress: 'In progress',
           abandoned: 'Abandoned',
           classified: 'Classified',
+          betweenLevels: 'Between levels',
+          insufficientEvidence: 'Insufficient evidence',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'Research only',
           capped: 'Question cap reached',
           poolExhausted: 'Question pool exhausted',
           stoppedInsufficientData: 'Stopped with insufficient data',
           insufficientData: 'Insufficient data',
           nearBoundary: 'Near a level boundary',
+        },
+        distributionStatuses: {
+          betweenLevels: 'Between levels',
+          insufficientEvidence: 'Insufficient evidence',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'Research only',
         },
         stopSummary: 'Stopping outcomes',
         qualitySummary: 'Quality flags',
@@ -3769,11 +3887,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       defaultLeaf: 'Subcompetence 1',
       metadataTitle: 'Metadata and model',
       metadataDescription:
-        'Names identify the tree; model settings define its level scale and defaults.',
+        'Names identify the reusable tree. Scale and calibration settings are managed separately after the tree is saved.',
       internalName: 'Internal name',
       displayName: 'Display name',
       description: 'Description',
       modelSettings: 'Model settings',
+      structureSettings: 'Structure settings',
       maxDepth: 'Maximum hierarchy depth',
       thetaMin: 'Minimum theta',
       thetaMax: 'Maximum theta',
@@ -3783,7 +3902,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mappingMastery: 'Highest mastered level',
       levelsTitle: 'Levels',
       levelsDescription:
-        'Define ordered labels and their canonical difficulty bands.',
+        'Define ordered level labels. Cut scores and expected item positions are versioned in the competence scale below.',
       addLevel: 'Add level',
       newLevel: 'New level',
       levelLabel: 'Label',
@@ -3803,6 +3922,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       selectedNode: 'Selected node',
       addRootCompetence: 'Add root competence',
       addSubcompetence: 'Add subcompetence',
+      addSubcompetenceTo: 'Add a subcompetence to {name}',
       addChild: 'Add child',
       maxDepthReached: 'Maximum hierarchy depth reached',
       duplicateBranch: 'Duplicate branch',
@@ -3826,8 +3946,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       deleteBranchWarning:
         'Deleting this branch also removes {assignments, plural, one {# assignment} other {# assignments}}. Continue?',
       coverageTitle: 'Coverage targets',
+      contentBlueprintTitle: 'Content blueprint',
       coverageDescription:
-        'Set the required number of enabled items for every leaf and level. Select a cell to filter the assignments below.',
+        'Plan the required content for every leaf and level. This blueprint does not indicate calibration readiness; select a cell to filter assignments below.',
       searchLeaves: 'Search leaves...',
       allRoots: 'All root competences',
       leaf: 'Leaf subcompetence',
@@ -3848,6 +3969,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       element: 'Element',
       elementType: 'Type',
       level: 'Level',
+      expectedDifficulty: 'Expected item difficulty',
       discriminationParameter: 'Discrimination (a)',
       difficultyParameter: 'Difficulty (b)',
       guessingParameter: 'Guessing (c)',
@@ -3860,6 +3982,106 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noAssignments: 'This competence tree has no element assignments.',
       noFilteredAssignments:
         'No assignments match the selected leaf and level.',
+      scale: {
+        title: 'Competence scale',
+        description:
+          'Manage immutable level boundaries, standard-setting evidence, and the active scale used by calibrated adaptive quizzes.',
+        createDraft: 'Create scale draft',
+        draftTitle: 'New scale draft',
+        draftDescription:
+          'Set explicit level boundaries and expected item positions. After creation, submit an evidence artifact for independent review.',
+        priorMean: 'Population prior mean',
+        priorStandardDeviation: 'Population prior standard deviation',
+        rangeStart: 'Scale range start',
+        rangeEnd: 'Scale range end',
+        gridStep: 'Estimation step',
+        lowerBound: 'Lower boundary',
+        openLowerBound: 'Open',
+        version: 'Version',
+        versionLabel: 'Version {version} - {status}',
+        versionNumber: 'Version {version}',
+        active: 'Active scale',
+        noActive: 'No active scale',
+        emptyState:
+          'No scale exists yet. Create a draft from the current level labels.',
+        readOnly:
+          'This linked tree is read-only. Its active scale and readiness facts are shown below.',
+        readinessSummary: 'Calibration readiness',
+        activeScaleVersion: 'Active scale version',
+        enabledAssignments: 'Enabled assignments',
+        calibratedAssignments: 'Calibrated assignments',
+        blockingAssignments: 'Assignments needing calibration',
+        readinessStatus: {
+          NO_ACTIVE_SCALE: 'The tree has no active scale.',
+          CALIBRATION_INCOMPLETE:
+            'The active scale still has assignments that need an approved exact-version calibration.',
+          CALIBRATED_BANK:
+            'Every enabled assignment has an approved exact-version calibration on the active scale.',
+        },
+        empty: 'The scale operation returned no data.',
+        created: 'The scale draft was created.',
+        activated: 'The approved scale is now active.',
+        loadFailed: 'The scale and calibration data could not be loaded.',
+        standardSetting: 'Standard-setting evidence',
+        standardSettingDescription:
+          'Upload the strict JSON evidence artifact and submit this draft for independent review.',
+        submitForReview: 'Submit evidence for review',
+        reviewSubmitted: 'The scale was submitted for independent review.',
+        activate: 'Activate approved scale',
+        standardSettingStatus: 'Standard setting approved',
+        empiricalValidationStatus: 'Empirical holdout approved',
+        scaleLinkStatus: 'Scale link approved',
+        status: {
+          DRAFT: 'Draft',
+          IN_REVIEW: 'In review',
+          APPROVED: 'Approved',
+          ACTIVE: 'Active',
+          REJECTED: 'Rejected',
+          SUPERSEDED: 'Superseded',
+        },
+      },
+      calibration: {
+        title: 'Calibration',
+        status: {
+          PROVISIONAL: 'Provisional',
+          PILOT: 'Pilot',
+          CALIBRATED: 'Calibrated',
+          FLAGGED: 'Flagged',
+          RETIRED: 'Retired',
+          MISSING: 'Missing',
+        },
+        importTitle: 'Import calibrations',
+        importDescription:
+          'Upload a strict calibration artifact. Invalid, stale, or incompatible records are rejected by the server.',
+        import: 'Import artifact',
+        imported:
+          '{count, plural, one {# calibration was imported.} other {# calibrations were imported.}}',
+        invalidJson: 'Select a valid JSON artifact.',
+        exportTitle: 'Export calibration data',
+        exportDescription:
+          'Request a short-lived, privacy-controlled dataset for offline calibration.',
+        datasetVersion: 'Dataset version',
+        export: 'Request export',
+        exportQueued: 'The calibration export was queued.',
+        exportStatus: 'Export status: {status}',
+        download: 'Download export',
+      },
+      itemBank: {
+        title: 'Calibrated item-bank map',
+        description:
+          'Inspect item coverage across the active scale. The shaded area represents available test information; item symbols distinguish element types.',
+        axis: 'Item difficulty scale',
+        missingCut:
+          'No calibrated item is close to the boundary for "{level}".',
+        tableCaption:
+          'Accessible item-bank list with expected difficulty and calibration status.',
+        search: 'Search item bank',
+        empty: 'No elements are assigned to this competence tree.',
+        positionSource: {
+          CALIBRATED: '(calibrated)',
+          EXPECTED: '(expected)',
+        },
+      },
       validationTitle: 'Validation',
       validationDescription:
         'Check the complete tree for blocking issues and warnings before saving or publishing.',

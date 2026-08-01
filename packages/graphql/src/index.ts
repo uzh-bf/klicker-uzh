@@ -9,6 +9,7 @@ import './schema/activities.js'
 import './schema/adaptivePracticeQuiz.js'
 import './schema/assessment.js'
 import './schema/competenceTree.js'
+import './schema/competenceTreeCalibration.js'
 import './schema/course.js'
 import './schema/element.js'
 import './schema/elementData.js'
@@ -40,6 +41,11 @@ import './schema/subscription.js'
 // }
 
 import {
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
+} from './services/competenceTreeCalibrationExport.js'
+import { handleAdaptiveEmpiricalValidation } from './services/competenceTreeCalibrationValidationWorker.js'
+import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
   handlePublishScheduledGroupActivity,
@@ -69,6 +75,9 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleAdaptiveEmpiricalValidation,
+  handleAdaptiveCalibrationExport,
+  handleAdaptiveCalibrationExportCleanup,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

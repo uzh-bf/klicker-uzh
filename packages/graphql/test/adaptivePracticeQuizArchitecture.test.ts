@@ -7,14 +7,19 @@ const servicesDirectory = fileURLToPath(
 const schemaDirectory = fileURLToPath(
   new URL('../src/schema/', import.meta.url)
 )
+const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const facadeLimits = new Map([
   ['adaptivePracticeQuizConfig.ts', 250],
   ['adaptivePracticeQuizzes.ts', 250],
+  ['competenceTreeCalibration.ts', 250],
   ['competenceTreeManagement.ts', 250],
 ])
 const publicFacades = new Set([
   'adaptivePracticeQuizConfig',
   'adaptivePracticeQuizzes',
+  'competenceTreeCalibration',
+  'competenceTreeCalibrationExport',
+  'competenceTreeCalibrationReadModels',
   'competenceTreeManagement',
   // Pure validation contracts are intentionally schema-visible.
   'competenceTrees',
@@ -78,7 +83,102 @@ describe('adaptive learning service architecture', () => {
       ).toEqual([])
     }
   })
+
+  it('keeps the legacy standalone adaptive assessment quarantined', async () => {
+    const productSurfaceDirectories = [
+      'packages/graphql/src/schema',
+      'packages/graphql/src/graphql/ops',
+      'apps/frontend-manage/src',
+      'apps/frontend-pwa/src',
+      'apps/frontend-control/src',
+    ]
+    const productSources = await Promise.all(
+      productSurfaceDirectories.map((directory) =>
+        readSourceTree(`${repositoryRoot}/${directory}`)
+      )
+    )
+
+    expect(productSources.join('\n')).not.toMatch(/AdaptiveAssessment/)
+
+    const seed = await readAdaptiveSeedSources()
+    expect(seed).not.toMatch(/AdaptiveAssessment|adaptiveAssessment/)
+    expect(seed).toMatch(
+      /await\s+seedAdaptivePracticeQuizV2\(prisma,\s*PARTICIPANT_IDS\)/
+    )
+  })
+
+  it('keeps the adaptive development seed on the immutable publication path', async () => {
+    const seed = await readAdaptiveSeedSources()
+
+    expect(seed).toContain('competenceTreeScaleVersion.create')
+    expect(seed).toContain('adaptiveItemCalibration.create')
+    expect(seed).toContain('practiceQuizAdaptivePublication.create')
+    expect(seed).toContain('practiceQuizAdaptivePoolItem.createMany')
+    expect(seed).toContain('adaptivePracticeQuizItemExposure.createMany')
+    expect(seed).toContain('data: { sealedAt: publicationTimestamp }')
+  })
+
+  it('keeps estimator-specific response planning outside the submission transaction', async () => {
+    const commandSource = await readFile(
+      `${servicesDirectory}/adaptivePracticeQuizCommands.ts`,
+      'utf8'
+    )
+    const transitionSource = await readFile(
+      `${servicesDirectory}/adaptivePracticeQuizResponseTransition.ts`,
+      'utf8'
+    )
+    const submissionSource = commandSource.slice(
+      commandSource.indexOf(
+        'export async function submitAdaptivePracticeQuizResponse'
+      ),
+      commandSource.indexOf(
+        'export async function abandonAdaptivePracticeQuizAttempt'
+      )
+    )
+
+    expect(submissionSource).toContain(
+      'planAdaptivePracticeQuizResponseTransition'
+    )
+    expect(submissionSource).not.toContain('measurementVersion')
+    expect(transitionSource).toContain(
+      'advancedRuntime: AdvancedAdaptiveRuntime'
+    )
+    expect(
+      transitionSource.match(
+        /if \(advancedRuntime\.measurementVersion === 'IRT_V1'\)/g
+      )
+    ).toHaveLength(1)
+    expect(transitionSource).not.toContain(
+      'loadedDecision: LoadedAdaptiveDecision'
+    )
+  })
 })
+
+async function readAdaptiveSeedSources() {
+  return (
+    await Promise.all(
+      ['seedTEST.ts', 'seedAdaptiveLearning.ts'].map((name) =>
+        readFile(
+          `${repositoryRoot}/packages/prisma-data/src/data/${name}`,
+          'utf8'
+        )
+      )
+    )
+  ).join('\n')
+}
+
+async function readSourceTree(directory: string): Promise<string> {
+  const entries = await readdir(directory, { withFileTypes: true })
+  const sources = await Promise.all(
+    entries.map(async (entry) => {
+      const path = `${directory}/${entry.name}`
+      if (entry.isDirectory()) return readSourceTree(path)
+      if (!/\.(graphql|ts|tsx)$/.test(entry.name)) return ''
+      return readFile(path, 'utf8')
+    })
+  )
+  return sources.join('\n')
+}
 
 async function loadAdaptiveServiceModules() {
   const names = (await readdir(servicesDirectory)).filter(

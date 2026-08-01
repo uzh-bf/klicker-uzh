@@ -32,7 +32,7 @@
     "format:simulation-report": "prettier --write reports/simulation-summary.md",
     "generate:eap-reference": "node --experimental-strip-types scripts/generateEapReference.ts",
     "generate:simulation-report": "node .simulation-build/scripts/generateSimulationReport.js",
-    "test": "vitest run test/index.test.ts test/presentation.test.ts test/runtime.test.ts test/scale.test.ts test/calibration.test.ts test/policy.test.ts test/posterior.test.ts test/composite.test.ts test/classification.test.ts test/estimatorVersion.test.ts test/selectionV2.test.ts test/runtimeV2.test.ts",
+    "test": "vitest run test/index.test.ts test/presentation.test.ts test/runtime.test.ts test/scale.test.ts test/calibration.test.ts test/policy.test.ts test/posterior.test.ts test/composite.test.ts test/classification.test.ts test/estimatorVersion.test.ts test/selectionV2.test.ts test/runtimeV2.test.ts test/weights.test.ts",
     "test:irt-v2:release": "run-s test test:simulation test:simulation:v2 test:performance test:simulation:v2:release",
     "test:performance": "vitest run test/runtime.performance.test.ts test/runtimeV2.performance.test.ts",
     "test:run": "run-s test test:simulation test:simulation:v2",

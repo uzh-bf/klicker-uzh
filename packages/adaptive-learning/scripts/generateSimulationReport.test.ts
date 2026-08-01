@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { ADAPTIVE_V2_DIAGNOSTIC_RELEASE } from '../src/release.js'
 import {
   formatRegressionGateFailures,
   regressionGateFailures,
@@ -34,6 +35,19 @@ describe('adaptive-learning deterministic simulation report', () => {
     expect(report.irtV2.passed).toBe(
       report.irtV2.approvedProbabilityThreshold !== null
     )
+    expect(ADAPTIVE_V2_DIAGNOSTIC_RELEASE.classificationPolicyVersion).toBe(
+      report.irtV2.policyVersion
+    )
+    if (ADAPTIVE_V2_DIAGNOSTIC_RELEASE.enabled) {
+      expect(report.irtV2.passed).toBe(true)
+      expect(ADAPTIVE_V2_DIAGNOSTIC_RELEASE.approvedProbabilityThreshold).toBe(
+        report.irtV2.approvedProbabilityThreshold
+      )
+    } else {
+      expect(
+        ADAPTIVE_V2_DIAGNOSTIC_RELEASE.approvedProbabilityThreshold
+      ).toBeNull()
+    }
     expect(report.irtV2.retainedTraces).toHaveLength(24)
     expect(
       report.irtV2.thresholdResults.every(

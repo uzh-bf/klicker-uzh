@@ -141,6 +141,18 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    adaptiveEmpiricalValidation: hatchet.task({
+      name: 'adaptive-empirical-validation',
+      fn: async () => ({ validationId: 'test-validation-id' }),
+    }),
+    adaptiveCalibrationExport: hatchet.task({
+      name: 'adaptive-calibration-export',
+      fn: async () => ({ success: true }),
+    }),
+    adaptiveCalibrationExportCleanup: hatchet.task({
+      name: 'adaptive-calibration-export-cleanup',
+      fn: async () => ({ success: true }),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({
@@ -342,6 +354,13 @@ export async function testCleanup(prisma: PrismaClient) {
   await prisma.answerCollection.deleteMany()
   await prisma.adaptivePracticeQuizCohortSnapshot.deleteMany()
   await prisma.adaptivePracticeQuizAttempt.deleteMany()
+
+  // Append-only psychometric records intentionally reject DELETE in
+  // production. Reset their scale root in test databases without weakening
+  // those guards; PostgreSQL truncates every dependent adaptive record too.
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "CompetenceTreeScaleVersion" RESTART IDENTITY CASCADE'
+  )
   await prisma.practiceQuiz.deleteMany()
   await prisma.competenceTree.deleteMany()
   await prisma.element.deleteMany()

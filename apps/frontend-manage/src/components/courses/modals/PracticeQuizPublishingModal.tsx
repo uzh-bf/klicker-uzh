@@ -3,6 +3,8 @@ import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { faRotate, faUserGroup } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  AdaptivePracticeQuizPreset,
+  AdaptivePracticeQuizPreviewDocument,
   GetSingleCourseDocument,
   PracticeQuizMode,
   PracticeQuizPublicationPreviewDocument,
@@ -10,6 +12,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
+  Checkbox,
   FormikDatetimePicker,
   H3,
   Modal,
@@ -19,6 +22,7 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as yup from 'yup'
 import AdaptiveReadinessPanel from '../../activities/creation/practiceQuiz/AdaptiveReadinessPanel'
 
@@ -43,6 +47,7 @@ function PracticeQuizPublishingModal({
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
   const adaptive = mode === PracticeQuizMode.Adaptive
+  const [researchConfirmed, setResearchConfirmed] = useState(false)
   const {
     data: publicationPreviewData,
     loading: publicationPreviewLoading,
@@ -56,6 +61,18 @@ function PracticeQuizPublishingModal({
   })
   const publicationPreview =
     publicationPreviewData?.practiceQuizPublicationPreview
+  const {
+    data: adaptivePreviewData,
+    loading: adaptivePreviewLoading,
+    error: adaptivePreviewError,
+  } = useQuery(AdaptivePracticeQuizPreviewDocument, {
+    variables: { id: activityId },
+    skip: !adaptive,
+    fetchPolicy: 'network-only',
+  })
+  const research =
+    adaptivePreviewData?.adaptivePracticeQuizPreview?.config.preset ===
+    AdaptivePracticeQuizPreset.Research
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
     useMutation(PublishPracticeQuizDocument, {
       update(cache, { data }) {
@@ -165,6 +182,13 @@ function PracticeQuizPublishingModal({
               </Button>
             </div>
           ) : null}
+          {adaptivePreviewError ? (
+            <UserNotification
+              type="error"
+              message={adaptivePreviewError.message}
+              data={{ cy: 'adaptive-publication-mode-error' }}
+            />
+          ) : null}
           <AdaptiveReadinessPanel
             readiness={publicationPreview?.readiness}
             rootNames={
@@ -176,6 +200,31 @@ function PracticeQuizPublishingModal({
               )
             }
           />
+          {research ? (
+            <div
+              className="border-uzh-grey-80 border-y py-3"
+              data-cy="adaptive-research-non-classifying"
+            >
+              <UserNotification
+                type="warning"
+                message={t('manage.adaptivePublication.researchNonClassifying')}
+                className={{ root: 'mb-3 !text-slate-800' }}
+              />
+              <label
+                className="sr-only"
+                htmlFor="adaptive-research-publication-confirmation"
+              >
+                {t('manage.adaptivePublication.researchConfirmation')}
+              </label>
+              <Checkbox
+                id="adaptive-research-publication-confirmation"
+                checked={researchConfirmed}
+                onCheck={() => setResearchConfirmed((value) => !value)}
+                label={t('manage.adaptivePublication.researchConfirmation')}
+                data={{ cy: 'adaptive-research-publication-confirmation' }}
+              />
+            </div>
+          ) : null}
           <div className="flex justify-end">
             <Button
               primary
@@ -183,7 +232,9 @@ function PracticeQuizPublishingModal({
               loading={practiceQuizPublishing}
               disabled={
                 publicationPreviewLoading ||
-                !publicationPreview?.readiness?.ready
+                adaptivePreviewLoading ||
+                !publicationPreview?.readiness?.ready ||
+                (research && !researchConfirmed)
               }
               data={{ cy: 'publish-practice-quiz-immediately' }}
             >

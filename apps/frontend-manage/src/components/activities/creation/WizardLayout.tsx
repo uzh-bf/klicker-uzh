@@ -109,6 +109,7 @@ export interface AdaptivePracticeQuizElementOverrideFormValues {
 
 export interface AdaptivePracticeQuizConfigFormValues {
   competenceTreeId?: string
+  scaleVersionId?: string
   preset: AdaptivePracticeQuizPreset
   totalQuestionCap: string
   perLeafQuestionCap: string
@@ -193,8 +194,15 @@ function WizardLayout({
           }}
           activeIx={activeStep}
           disabledFrom={disabledFrom}
+          twStyles={{
+            bgHover: 'hover:bg-uzh-blue-20 hover:after:border-l-uzh-blue-20!',
+            bgActive: 'bg-uzh-blue-20 after:border-l-uzh-blue-20',
+            bgPast: 'bg-uzh-grey-40 after:border-l-uzh-grey-40',
+          }}
           className={{
             item: 'hidden first:rounded-l-md last:rounded-r-md md:flex',
+            active: '!text-slate-900 hover:!text-slate-900',
+            past: '!text-slate-800',
           }}
         />
       </div>

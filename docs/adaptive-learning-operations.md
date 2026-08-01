@@ -27,6 +27,19 @@ Each state change:
 
 Do not backfill the flag across existing courses. Enable one reviewed course id at a time.
 
+### V2 release controls
+
+Three controls are intentionally independent:
+
+- `Course.isAdaptiveLearningEnabled` is the course-level delivery kill switch for every adaptive Practice Quiz.
+- `ADAPTIVE_V2_DIAGNOSTIC_RELEASE.enabled` is the code-owned global start gate for calibrated v2 Diagnostic attempts. It remains `false` until the deterministic release simulation and real-course pilot gates pass. It is not author-configurable.
+- `ADAPTIVE_V2_DIAGNOSTIC_RELEASE.validationProtocolVersion` and `approvedProbabilityThreshold` identify the only empirical protocol and classification threshold that may create validation evidence. They can be approved while runtime `enabled` remains `false`; evidence must exist and pass independent review before runtime is enabled.
+- `Course.isAdaptiveLearningCalibrationEnabled` permits pseudonymous first-exposure evidence from that course to enter Research calibration exports. Enabling adaptive delivery does not enable data collection, and disabling collection does not rewrite existing attempts.
+
+`PLACEMENT` remains blocked. `RESEARCH` never returns a proficiency classification to participants. Deploying the schema and Research/shadow code does not authorize Diagnostic rollout while the v2 release gate is false.
+
+Research publication treats classification-band reachability as advisory because no participant classification is released. It still fails closed unless the calibration-collection gate is enabled and every enabled leaf has three calibrated anchors per active scale band, three field-test items, and one additional calibrated scoring item. The distinct-item minima are derived as `ceil(required responses / 0.40 exposure ceiling)`. Readiness and runtime consume the same code-owned collection-design constants; never bypass readiness by constructing a publication pool directly.
+
 ## Disabled-State Contract
 
 | Surface                                                      | Disabled behavior                                                                                         |
@@ -65,7 +78,7 @@ Complete this protocol before enabling a named pilot. The purpose is to establis
 2. Two subject-matter experts independently assign every pilot item to one leaf and one ordered level. They work from the same descriptor set without seeing each other's labels or the runtime's proposed route. Unsupported, ambiguous, or multi-construct items are flagged instead of forced into a cell.
 3. Before reconciliation, report the item count, exact level agreement, same-or-adjacent agreement, and linearly weighted Cohen's kappa with its confidence interval. Predeclare the weighting rule and missing/flagged-item treatment. The pilot gate is weighted kappa `>= 0.70`; do not compute kappa after adjudication and present it as independent agreement.
 4. Reconcile every disagreement in a recorded meeting. A third expert adjudicates unresolved cases. No item with an unresolved disagreement greater than one band enters the pilot, and no unresolved leaf disagreement is silently resolved by averaging.
-5. The two experts and teaching owner approve the final assignments, level descriptors, ordered boundaries, mapping rule, and capped/near-boundary result wording. Placement and Diagnostic retain `a = 1.2`; any empirical discrimination change is a separately reviewed Research/calibration decision.
+5. The two experts and teaching owner approve the final assignments, level descriptors, ordered boundaries, mapping rule, and uncertainty/result wording. A provisional discrimination is only a Research prior; Diagnostic uses independently reviewed exact-element-version calibrations. Numerical and controlled Free Text use 2PL (`c = 0`); SC, MC, and KPRIM use fixed-guessing 3PL parameters inferred from the published choice structure.
 6. Archive the pre-reconciliation labels, agreement output, adjudication decisions, final blueprint counts, signatories, and date in the restricted pilot record. Store no participant responses in this artifact.
 
 Repeat the affected parts whenever descriptors, boundaries, item wording, controlled answers, leaf assignments, or level assignments change. Expanding a bank with new items requires independent labels for those items before publication.
@@ -84,6 +97,35 @@ Disabling does not retroactively change results. If a result was used for a deci
 Unpublishing is the narrower quiz-level takedown. While unpublished, a participant cannot start, resume/read state, restart, or submit and receives `ADAPTIVE_QUIZ_UNAVAILABLE`; abandoning an owned active attempt remains available. Republishing an attempted quiz reuses the same immutable pool. A staging rehearsal must prove that an unsubmitted active attempt resumes with the same `nextPoolItemId` after republish and that no response or duplicate attempt was created during the pause.
 
 Course deletion is not a rollback mechanism once adaptive attempts or aggregate snapshots exist. The service returns `ADAPTIVE_COURSE_HISTORY_RETAINED` after locking the course, quizzes, and adaptive configs; Manage keeps the deletion modal open and directs the owner to archive the course. A competing attempt start and course deletion serialize in both lock orders, so the outcome is either an unused deleted course or durable retained history, never a partially deleted adaptive record. `ADAPTIVE_COURSE_DELETION_CONFLICT` is retryable operational contention, not permission to bypass retention.
+
+For a v2 incident, first disable `Course.isAdaptiveLearningEnabled`. If the fault is estimator-wide, keep `ADAPTIVE_V2_DIAGNOSTIC_RELEASE.enabled = false` in the replacement build. Do not change an estimator implementation under the existing `IRT_V2_EAP_GRID_1` identifier and do not backfill, recompute, or relabel historical attempts. Corrected estimation, selection, stopping, or classification behavior requires a new immutable implementation identifier and publication. Research/shadow comparison can continue only when it is itself unaffected and the calibration-collection flag remains explicitly approved.
+
+## Calibration Export Operations
+
+Calibration exports are owner/admin-only, pseudonymous, first-exposure datasets split deterministically into calibration and sealed holdout partitions. They exclude participant identity and raw Free Text content. The worker writes short-lived artifacts to dedicated storage and never recalibrates runtime items automatically.
+
+Calibration imports accept at most 100 item calibrations per transaction. The submitted dataset version and checksum must match a current, ready, unexpired export for the same tree and scale; client-declared dataset provenance alone is rejected. Serializable import/review/activation transactions retry bounded PostgreSQL conflicts and otherwise fail with `ADAPTIVE_CALIBRATION_CONFLICT`.
+
+The following secrets belong in the deployment's restricted Infisical project and must use storage credentials dedicated to adaptive exports:
+
+- `ADAPTIVE_CALIBRATION_EXPORT_STORAGE_ACCOUNT_NAME`
+- `ADAPTIVE_CALIBRATION_EXPORT_STORAGE_ACCESS_KEY`
+- `ADAPTIVE_CALIBRATION_EXPORT_STORAGE_CONTAINER`
+- `ADAPTIVE_CALIBRATION_PSEUDONYM_HMAC_KEY`
+- `ADAPTIVE_CALIBRATION_EXPORT_RETENTION_HOURS`
+- `ADAPTIVE_CALIBRATION_EXPORT_SAS_TTL_MINUTES`
+
+Rotate the storage access key and pseudonym HMAC key through the normal secret-change process. A key rotation starts a new dataset version; do not combine pseudonyms produced under different HMAC keys. Export requests are immutable audit records with requester, tree, scale, status, timestamps, checksums, row counts, and safe failure codes. Owner/admin review and activation actions remain in the application audit trail. A failed or expired export does not change an active scale, publication, attempt, or result.
+
+### Empirical validation worker
+
+The GraphQL mutation accepts only the candidate configuration/tree/scale ids, one ready export-request id, and an opaque checksum/key for the independently governed criterion artifact. It rejects client-supplied metrics, thresholds, fingerprints, dataset claims, or learner rows. The criterion blob must be stored under `criteria/<tree-id>/<export-request-id>/`, contain only holdout subject pseudonyms, predeclared level orders, and stratum labels, and bind the exact sealed-holdout checksum.
+
+The repository contains an internal holdout-accumulator scaffold, but that scaffold does not replay the configured hierarchy, weights, leaf allocation, selection sequence, and stopping state. It must not be treated as production Diagnostic evidence. Consequently, the release manifest currently has `validationProtocolVersion = null`, and both submission and worker execution reject before private artifacts are opened. A future protocol must version and prospectively fix the complete data projection and replay semantics before this field can become non-null.
+
+When a protocol is approved, `adaptive-empirical-validation` must reauthorize the requester, persisted role, tree ownership, request expiry, export identity, criterion identity, calibrated-bank fingerprint, and configuration fingerprint both before processing and transactionally immediately before persistence. Validation uniqueness and retained artifact keys include the export, protocol, threshold, bank, configuration, and exact criterion checksum identities. Criterion artifacts are deleted after successful persistence and otherwise by export-expiry cleanup. Expiry cleanup also reclaims abandoned `RUNNING` requests, so a lost worker task cannot bypass retention. Only aggregate results may persist; passing evidence remains `SUBMITTED` until a different persisted administrator approves it. Database guards allow only `SUBMITTED -> APPROVED|REJECTED` review transitions and `APPROVED -> SUPERSEDED` after every attached publication is already superseded or unpublished.
+
+The release order is: approve one simulation threshold and one validation protocol while runtime remains disabled; collect and independently approve matching empirical evidence; complete privacy and operational sign-off; then set runtime `enabled = true` in a separately reviewed change. The tree owner, course collaborator, participant API, and calibration download never receive sealed holdout or criterion rows. Internal simulations remain repository/CI engineering checks and are not exposed through GraphQL or either frontend.
 
 ## Phase 10 Migration Procedure
 
@@ -151,6 +193,7 @@ These are screening diagnostics, not calibrated item parameters. Expected correc
 
 - Completed attempts are released only when distinct completed-participant count reaches a multiple of five. Retakes and new participants between release boundaries remain hidden until the next boundary.
 - The first authorized lecturer read at a boundary lazily writes one `AdaptivePracticeQuizCohortSnapshot` for the config, release size/watermark, attempt-selection policy, and policy version. Concurrent first reads converge on the same unique row; participant submission never writes a snapshot.
+- Five-state cohort aggregates use snapshot policy/schema version `2`. Version `1` rows remain immutable historical caches but are never served by the version `2` lookup; the next authorized read regenerates the privacy-reviewed aggregate from retained attempts.
 - Snapshot JSON is server-generated aggregate data only. The model has no participant, participation, attempt, username, response, theta, or person-level timing field. Never add one without a new privacy review and migration.
 - Cohort size is `null` before the first release. In-progress and abandoned lifecycle counts are not part of the public cohort API.
 - Attempt selection (`FIRST_COMPLETED` or `LATEST_COMPLETED`) is applied only to the fixed released set, preventing a retake from changing analytics one at a time.
@@ -166,28 +209,36 @@ The field-level matrix is covered at cohort sizes 0-15, including release bounda
 
 ## Operational Signals And Alerts
 
-`packages/graphql/src/services/adaptivePracticeQuizEvents.ts` is the allow-list boundary for adaptive operational output. Events may contain course/quiz ids, lifecycle phase, stop reason, aggregate answered-question count, retry number, release size, aggregate object count, and snapshot-generation duration. They must never contain participant/attempt ids, usernames, raw or normalized responses, element content/solutions, theta, standard error, level result, or exact individual timing. Event-schema changes require a privacy review and an allow-list test before deployment.
+`packages/graphql/src/services/adaptivePracticeQuizEvents.ts` is the allow-list boundary for adaptive operational output. Events may contain course/quiz/tree/scale ids; lifecycle phase and stop reason; aggregate answered-question count; retry number; privacy-released cohort status counts; aggregate question-length and exposure metrics; estimator implementation and fixed failure category; export status, safe failure code, queue age and processing duration; and snapshot-generation duration. They must never contain participant/attempt ids, usernames, raw or normalized responses, item content/solutions, theta, standard error, posterior data, exact individual timing, or an individual level result. Cohort metrics are emitted only from fixed-release, complementary-cell-suppressed snapshots. Event-schema changes require a privacy review and an allow-list test before deployment.
+
+Calibration-export execution is lease-fenced. Each worker claim stores a new UUID and writes to a run-specific storage prefix. A worker may publish `READY`, record `FAILED`, or perform run-local expiry only while its UUID still owns the `RUNNING` row; terminal transitions clear the lease. A stale worker that resumes after reclamation deletes only its own prefix and leaves the replacement run and its artifacts untouched. Retention cleanup may explicitly cancel the current lease, deletes persisted artifacts plus the current run prefix, and clears the lease while marking the request expired. Investigations of exports running longer than 30 minutes must account for possible reclamation rather than manually changing status fields.
 
 Create these restricted dashboards from the structured JSON `event` field:
 
-| Dashboard      | Required panels                                                                                                                                                                     |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Runtime health | Starts/completions/abandonments, completions by stop reason, `TOTAL_QUESTION_CAP` and `POOL_EXHAUSTED` rates, transaction retry/exhaustion, and course-gate denials by course/quiz. |
-| Integrity      | Replayed, stale, foreign, and invalid-pool rejections by quiz; publication blocks; source-sharing revocations.                                                                      |
-| Cohort service | Snapshot generated/cache-hit/failed counts, generation p50/p95/p99 by release size, and invalidated-row backlog from an aggregate database health query.                            |
-| Pilot quality  | Released hard-cap, near-boundary, missing-duration, exposure, and item-residual metrics from the privacy-safe lecturer view. Do not reconstruct these from participant logs.        |
+| Dashboard      | Required panels                                                                                                                                                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Runtime health | Starts/completions/abandonments, completions by stop reason, aggregate classification/abstention outcomes, released median/P95 length, estimator failures by implementation/operation, transaction retry/exhaustion, and course-gate denials by course/quiz. |
+| Integrity      | Replayed, stale, foreign, and invalid-pool rejections by quiz; publication blocks; source-sharing revocations.                                                                                                                                               |
+| Cohort service | Snapshot generated/cache-hit/failed counts, generation p50/p95/p99 by release size, and invalidated-row backlog from an aggregate database health query.                                                                                                     |
+| Pilot quality  | Released hard-cap, between-level/insufficient/pool-limited rates, question length, maximum released exposure, and item residuals. Use the privacy-safe lecturer view for detailed cells; never reconstruct participant outcomes from logs.                   |
+| Calibration    | Stale-calibration publication blocks, shadow-difference buckets, export requested/running/ready/failed/expired counts, queue age, processing duration, and expired-artifact cleanup.                                                                         |
 
 Configure alerts with the named adaptive feature owner and operations on-call:
 
-| Signal                    | Initial threshold                                                           | Required response                                                                                                           |
-| ------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Pool exhaustion           | Any completed production-preset attempt with `POOL_EXHAUSTED` in 15 minutes | Disable the course if repeated; inspect publication readiness and immutable pool integrity.                                 |
-| Integrity rejection spike | At least 3 for one quiz or 10 globally in 5 minutes                         | Check client/version mismatch or abuse; disable the affected course when unexplained.                                       |
-| Retry exhaustion          | Any `EXHAUSTED` event in 5 minutes                                          | Page operations; inspect database locks/deadlocks and preserve the failed request context without participant data.         |
-| Cohort snapshot failure   | Any failure, or generation p95 above 2 seconds for 15 minutes               | Keep participant delivery running; disable lecturer cohort reads if repeated and inspect query plans/locks.                 |
-| Hard-cap rate             | Above 25% once at least 20 completions exist in the rolling pilot window    | Pause expansion and review classification reachability, item bank, and boundary learners with teaching/psychometric owners. |
-| Course-gate denials       | More than 5 for one course in 5 minutes after a planned disable             | Confirm the kill switch is intentional and communicate the pause; investigate stale clients only if traffic persists.       |
-| Sharing revocation        | Any affected adaptive quiz                                                  | Require a fresh readiness/publication authorization review before republishing or replacing its pool.                       |
+| Signal                    | Initial threshold                                                               | Required response                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Pool exhaustion           | Any completed production-preset attempt with `POOL_EXHAUSTED` in 15 minutes     | Disable the course if repeated; inspect publication readiness and immutable pool integrity.                                                                              |
+| Integrity rejection spike | At least 3 for one quiz or 10 globally in 5 minutes                             | Check client/version mismatch or abuse; disable the affected course when unexplained.                                                                                    |
+| Retry exhaustion          | Any `EXHAUSTED` event in 5 minutes                                              | Page operations; inspect database locks/deadlocks and preserve the failed request context without participant data.                                                      |
+| Cohort snapshot failure   | Any failure, or generation p95 above 2 seconds for 15 minutes                   | Keep participant delivery running; disable lecturer cohort reads if repeated and inspect query plans/locks.                                                              |
+| Hard-cap rate             | Above 25% once at least 20 completions exist in the rolling pilot window        | Pause expansion and review classification reachability, item bank, and boundary learners with teaching/psychometric owners.                                              |
+| Course-gate denials       | More than 5 for one course in 5 minutes after a planned disable                 | Confirm the kill switch is intentional and communicate the pause; investigate stale clients only if traffic persists.                                                    |
+| Sharing revocation        | Any affected adaptive quiz                                                      | Require a fresh readiness/publication authorization review before republishing or replacing its pool.                                                                    |
+| Estimator failure         | Any v2 failure, or any shadow-failure increase above the established baseline   | Keep/turn the v2 start gate off, retain attempts unchanged, inspect immutable publication identity, and deploy only under a new implementation id when behavior changes. |
+| Classification abstention | Above the predeclared pilot limit once at least 20 released completions exist   | Pause expansion; inspect boundary coverage, information, question caps, and item quality. Do not lower the probability threshold ad hoc.                                 |
+| Stale calibration         | Any production publication attempt                                              | Reject publication, recalibrate the exact element version or restore the reviewed bank, and obtain fresh empirical validation.                                           |
+| Export queue              | Oldest requested job above 10 minutes, running above 30 minutes, or any failure | Check Hatchet and dedicated storage without exposing dataset rows; retry through the immutable request workflow.                                                         |
+| Export expiry cleanup     | Any artifact remains accessible after its request expiry                        | Revoke storage access, run cleanup, and treat continued access as a privacy incident.                                                                                    |
 
 Before enabling a pilot, fire one synthetic event of each alertable class in a non-production environment or use the monitoring platform's test facility. Record dashboard links, alert delivery time, on-call acknowledgement, course-disable rehearsal, false-positive disposition, and the named feature/operations owners. Alert rules are not production evidence until this drill succeeds. Retain operational events according to the platform's restricted-log policy; do not export them to lecturer analytics.
 

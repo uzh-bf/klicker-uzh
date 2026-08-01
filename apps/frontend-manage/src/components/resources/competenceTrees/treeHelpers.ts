@@ -1,3 +1,4 @@
+import { normalizeEnabledRootWeights } from '@klicker-uzh/adaptive-learning'
 import { AdaptiveNodeKind } from '@klicker-uzh/graphql/dist/ops'
 import {
   CompetenceTreeCoverageForm,
@@ -667,16 +668,10 @@ export function applyCompetenceTreeStructuralCommand(
 
 export function getNormalizedRootWeights(nodes: CompetenceTreeNodeForm[]) {
   const roots = getChildren(nodes, null)
-  const total = roots.reduce(
-    (sum, root) =>
-      sum + (Number.isFinite(root.weight) && root.weight > 0 ? root.weight : 0),
-    0
+  const result = normalizeEnabledRootWeights(
+    roots.map((root) => ({ key: root.key, weight: root.weight }))
   )
-
-  return new Map(
-    roots.map((root) => [
-      root.key,
-      total > 0 && root.weight > 0 ? root.weight / total : 0,
-    ])
-  )
+  return result.ok
+    ? new Map(result.normalized.map(({ key, weight }) => [key, weight]))
+    : new Map(roots.map(({ key }) => [key, 0]))
 }

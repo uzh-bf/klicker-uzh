@@ -24,6 +24,7 @@ export function createAdaptivePracticeQuizDefaultConfig(): AdaptivePracticeQuizC
 
   return {
     competenceTreeId: undefined,
+    scaleVersionId: undefined,
     preset: AdaptivePracticeQuizPreset.Diagnostic,
     totalQuestionCap: String(defaults.totalQuestionCap),
     perLeafQuestionCap: nullableNumberToString(defaults.perLeafQuestionCap),
@@ -101,18 +102,21 @@ export function serializeAdaptivePracticeQuizConfig(
   const researchSettings =
     config.preset === AdaptivePracticeQuizPreset.Research
       ? {
-          attemptSelectionPolicy: config.attemptSelectionPolicy,
+          attemptSelectionPolicy: config.scaleVersionId
+            ? AdaptiveAttemptSelectionPolicy.LatestCompleted
+            : config.attemptSelectionPolicy,
           levelMappingRule: config.levelMappingRule,
           topInformationRatio: requiredNumber(
             config.topInformationRatio,
             defaults.topInformationRatio
           ),
-          defaultDiscrimination: optionalNumber(config.defaultDiscrimination),
+          defaultDiscrimination: undefined,
         }
       : undefined
 
   return {
     competenceTreeId: config.competenceTreeId,
+    scaleVersionId: config.scaleVersionId,
     preset: config.preset,
     totalQuestionCap: requiredNumber(
       config.totalQuestionCap,
@@ -123,10 +127,9 @@ export function serializeAdaptivePracticeQuizConfig(
       config.minQuestionsPerLeaf,
       defaults.minQuestionsPerLeaf
     ),
-    classificationZ: requiredNumber(
-      config.classificationZ,
-      defaults.classificationZ
-    ),
+    classificationZ: config.scaleVersionId
+      ? undefined
+      : requiredNumber(config.classificationZ, defaults.classificationZ),
     showTimer: config.showTimer,
     nodeOverrides: config.nodeOverrides.map((override) => ({
       nodeId: override.nodeId,
@@ -137,13 +140,16 @@ export function serializeAdaptivePracticeQuizConfig(
     elementOverrides: config.elementOverrides.map((override) => ({
       assignmentId: override.assignmentId,
       enabled: override.enabled,
-      discrimination:
-        config.preset === AdaptivePracticeQuizPreset.Research
-          ? optionalNumber(override.discrimination)
-          : undefined,
+      discrimination: undefined,
     })),
     researchSettings,
   }
+}
+
+export function isManageAdaptivePresetSelectable(
+  preset: AdaptivePracticeQuizPreset
+): boolean {
+  return preset !== AdaptivePracticeQuizPreset.Placement
 }
 
 export function getAdaptivePracticeQuizEffectiveSettings(
@@ -173,6 +179,7 @@ export function mapAdaptivePracticeQuizPreviewToForm(
 ): AdaptivePracticeQuizConfigFormValues {
   return {
     competenceTreeId: preview.config.competenceTreeId,
+    scaleVersionId: preview.config.scaleVersionId ?? undefined,
     preset: preview.config.preset,
     totalQuestionCap: String(preview.config.totalQuestionCap),
     perLeafQuestionCap: nullableNumberToString(

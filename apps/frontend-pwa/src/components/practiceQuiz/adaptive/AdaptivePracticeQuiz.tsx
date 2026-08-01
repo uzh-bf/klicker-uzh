@@ -278,20 +278,56 @@ function AdaptivePracticeQuiz({
         {attempt?.status === AdaptivePracticeQuizAttemptStatus.InProgress &&
           showQuestion &&
           attempt.servedItem && (
-            <AdaptivePracticeQuizQuestion
-              key={attempt.servedItem.poolItemId}
-              item={attempt.servedItem}
-              questionNumber={
-                attempt.questionNumber ?? attempt.answeredQuestions + 1
-              }
-              answeredQuestions={attempt.answeredQuestions}
-              maximumQuestions={attempt.maximumQuestions}
-              elapsedSeconds={attempt.elapsedSeconds ?? null}
-              showTimer={attempt.showTimer}
-              submitting={submitting}
-              submissionError={actionError === 'submit'}
-              onSubmit={handleSubmit}
-            />
+            <div className="space-y-4">
+              {attempt.submittedResponseFeedback && (
+                <UserNotification
+                  type={
+                    attempt.submittedResponseFeedback.correct
+                      ? 'success'
+                      : 'info'
+                  }
+                  data={{ cy: 'adaptive-submitted-response-feedback' }}
+                >
+                  <div className="space-y-1">
+                    <div className="font-semibold">
+                      {t(
+                        `pwa.practiceQuiz.adaptive.feedback.${
+                          attempt.submittedResponseFeedback.correct
+                            ? 'correct'
+                            : 'incorrect'
+                        }`
+                      )}
+                    </div>
+                    <div>
+                      {t('pwa.practiceQuiz.adaptive.feedback.score', {
+                        score: Math.round(
+                          attempt.submittedResponseFeedback.score * 100
+                        ),
+                      })}
+                    </div>
+                    {attempt.submittedResponseFeedback.feedback.map(
+                      (feedback, index) => (
+                        <div key={`${index}-${feedback}`}>{feedback}</div>
+                      )
+                    )}
+                  </div>
+                </UserNotification>
+              )}
+              <AdaptivePracticeQuizQuestion
+                key={attempt.servedItem.poolItemId}
+                item={attempt.servedItem}
+                questionNumber={
+                  attempt.questionNumber ?? attempt.answeredQuestions + 1
+                }
+                answeredQuestions={attempt.answeredQuestions}
+                maximumQuestions={attempt.maximumQuestions}
+                elapsedSeconds={attempt.elapsedSeconds ?? null}
+                showTimer={attempt.showTimer}
+                submitting={submitting}
+                submissionError={actionError === 'submit'}
+                onSubmit={handleSubmit}
+              />
+            </div>
           )}
 
         {attempt?.status === AdaptivePracticeQuizAttemptStatus.Completed && (

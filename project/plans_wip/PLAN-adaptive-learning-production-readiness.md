@@ -2,9 +2,9 @@
 
 Created: 2026-07-09
 
-Updated: 2026-07-30
+Updated: 2026-08-01
 
-Status: Local implementation hardening for Phases 8-13 and final independent-review remediation are complete. Keep adaptive learning disabled outside dedicated development/test courses: pilot readiness still requires production-sized SLO evidence, the snapshot-retention decision, and an operational rehearsal; broad rollout additionally requires every Phase 14 pilot gate and named signoff.
+Status: Final code-boundary hardening is implemented and locally verified after the 2026-08-01 maintainability review. Keep adaptive learning disabled outside dedicated development/test courses: `IRT_V2_DIAGNOSTIC` did not pass a promotion threshold, pilot readiness still requires production-sized SLO evidence, the snapshot-retention decision, and an operational rehearsal, and broad rollout additionally requires every Phase 14 pilot gate and named signoff.
 
 Review corpus:
 
@@ -1220,6 +1220,51 @@ Do not start a real-course pilot next. The next slice is **Phase 8 followed imme
 
 This is the smallest stable slice because it establishes a trustworthy baseline and closes a live information-disclosure risk without depending on later algorithm or UI work.
 
+## Phase 15: Final Code-Boundary Hardening
+
+The 2026-08-01 thermo-nuclear maintainability review found three P1 boundaries that must be closed before the branch is pushed for review. This phase changes ownership and failure semantics without changing the IRT model, quiz lifecycle, permissions, or participant-facing result interpretation.
+
+### 15.1 Atomic initial element assignment
+
+- [x] Extend the supported element manipulation mutations (`SC`, `MC`, `KPRIM`, `NUMERICAL`, controlled `FREE_TEXT`) with one optional initial competence-tree assignment input.
+- [x] Persist a newly created element and its initial tree assignment in one database transaction. Any tree permission, structural-lock, coverage, type, or controlled-answer failure must roll back the element, permissions, tags, and activity-log writes.
+- [x] Reuse one transaction-level assignment command from both initial creation and the existing post-save assignment mutation.
+- [x] Keep the existing assignment mutation for later edits and removals; reject initial assignment on existing-element edits so the API has one unambiguous first-save contract.
+- [x] Remove the browser mapping-recovery protocol. Autosave retains only form values and the pending pre-save mapping, and a failed atomic mutation leaves the form open for correction/retry.
+- [x] Cover successful atomic creation, rollback, permissions, structural lock, unsupported type, controlled free text, and generated GraphQL/client contracts.
+
+### 15.2 Typed estimator transition pipeline
+
+- [x] Move estimator-version-specific response calculations behind the estimator dispatcher.
+- [x] Return one typed transition that contains the canonical response audit projection, estimate writes, attempt transition, exposure contribution, and optional shadow/telemetry facts.
+- [x] Keep `submitAdaptivePracticeQuizResponse` as the common transaction orchestrator: lock and validate the attempt/served item, grade the immutable snapshot, request one transition, persist through one shared pipeline, and emit telemetry after commit.
+- [x] Preserve lock order, retry behavior, audit identities, V1/V2 estimator outputs, stop reasons, exposure accounting, and participant serialization exactly.
+- [x] Add architecture tests that prevent estimator-version branching from returning to the submission command, plus parity and transaction regression tests.
+
+### 15.3 Canonical root-weight policy
+
+- [x] Add one pure shared helper for validation and normalization of enabled root weights.
+- [x] Treat an enabled root weight as a finite strictly positive relative weight; disabled roots may be zero and do not participate. Normalize enabled roots to sum to one and reject an empty/all-zero enabled set.
+- [x] Use the same helper for competence-tree validation, quiz-configuration preparation, publication readiness, and previews.
+- [x] Remove duplicate caller-specific checks and add shared unit cases plus service-level parity tests.
+
+### 15.4 Independent-review follow-up
+
+- [x] Make first-save retries idempotent across lost GraphQL responses with one autosaved UUID, one unique assignment record, exact owner/tree/mapping/body checks, and a best-effort post-commit list refresh.
+- [x] Fence every calibration-export run with a persisted UUID, run-specific artifact keys, lease-matched terminal writes, and stale-worker cleanup that cannot affect the replacement run.
+- [x] Bound scale-link submissions to 1,000 exact anchors and replace sequential per-anchor reads with 500-row batched lookups plus in-memory identity checks.
+- [x] Cover first-save retry/body conflict, refresh rejection, two-worker reclaim, run-specific keys, artifact bounds, query count, and clean migration replay.
+
+### 15.5 Completion gates
+
+- [x] Regenerate GraphQL operations and persisted-query artifacts.
+- [x] Update the adaptive-learning wiki and progress log with the final ownership contracts.
+- [x] Run focused adaptive package, GraphQL, Manage, simulation, migration, and Playwright checks. The release simulator intentionally rejects every current v2 promotion threshold, so `IRT_V2_DIAGNOSTIC` remains disabled.
+- [x] Verify first-save assignment in the real Manage UI with browser evidence, including the switch's programmatic accessible name.
+- [x] Run `pnpm run check:all`, diff-scoped OpenGrep, and all 22 production build targets. The full build passes serially in the documented devcontainer with `NODE_ENV=production`; this avoids host-only Rollup nontermination and contention with active dev writers.
+- [ ] Complete the independent final maintainability review and resolve or explicitly defer every accepted finding.
+- [ ] Commit only the adaptive-learning change set, preserving unrelated PWA edits, and push `adaptive-learning` only when every code gate is green.
+
 ## Verification Matrix
 
 | Change type | Required verification |
@@ -1294,6 +1339,9 @@ These decisions do not block Phase 8, but they block the named phase and therefo
 Evolution defaults remain fixed and do not block v1: `k = 5`, independent tree duplication without revision lineage, `a = 1.2` outside reviewed calibration, immediate-only publication, and no automated recommendation.
 
 ## Progress Log
+
+- 2026-08-01: Closed the three final P1 code boundaries: initial element assignment is atomic, estimator selection returns one correlated typed transition consumed by one persistence pipeline, and all enabled-root weights use one strict normalization policy. Follow-up review findings also closed mismatched runtime/decision selection, incorrect root error paths, opaque assignment failures, floating-point underflow, oversized schema/test/seed files, mutable CI actions, and the unnamed first-save switch. Focused package, database, migration, simulation, Playwright, browser, repository, and static-analysis gates pass; IRT v2 Diagnostic remains fail-closed because no promotion threshold passed.
+- 2026-08-01: Closed the final independent-review follow-up: first-save creation is idempotent across lost responses and ignores post-commit refresh failures; calibration-export workers use fenced leases and run-specific artifacts; and scale-link validation is capped and batched. Focused regressions and a clean 194-migration replay pass; broad repository gates and the final independent rereview follow below.
 
 - 2026-07-30: Completed the independent final-review remediation. Student results now preserve and explain `MASTERY`/`NEAREST`; ambiguous restart commits recover from authoritative state; unknown elapsed time is never rendered as zero; used-course deletion returns a stable archive-oriented retention error in the service and Manage modal; and the competence-tree assignment matrix is a semantic responsive table. Thirteen Chromium journeys, the focused package/service suites, all workspace checks, repository lint, generated contracts, and the 22-target production build pass. External deployment, retention-owner, psychometric-pilot, and named-approval gates remain open.
 

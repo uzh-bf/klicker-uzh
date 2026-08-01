@@ -65,7 +65,7 @@ function AdaptiveResultTrajectoryChart({
         >
           <ComposedChart
             data={points}
-            accessibilityLayer
+            accessibilityLayer={false}
             margin={{ top: 12, right: 12, bottom: 12, left: 12 }}
           >
             <CartesianGrid vertical={false} stroke="#d1d5db" />

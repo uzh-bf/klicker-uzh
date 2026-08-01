@@ -76,6 +76,15 @@ export async function ensureDatabaseViews() {
 export async function cleanupDatabase() {
   const prisma = await getPrisma()
   try {
+    // Review evidence is immutable under normal DELETE operations. This runs
+    // only in the disposable Playwright database and clears the two adaptive
+    // aggregate roots before the generic activity cleanup below.
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "PracticeQuizAdaptiveConfig",
+        "CompetenceTreeScaleVersion"
+      RESTART IDENTITY CASCADE
+    `)
     await prisma.adaptivePracticeQuizCohortSnapshot.deleteMany()
     await prisma.adaptivePracticeQuizAttempt.deleteMany()
     await prisma.liveQuiz.deleteMany()

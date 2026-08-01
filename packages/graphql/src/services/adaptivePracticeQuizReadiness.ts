@@ -73,6 +73,9 @@ export type AdaptiveReadinessIssueParameters = {
   secondsPerItem?: number
   assignmentId?: number
   nodeId?: number
+  scaleVersionId?: string
+  calibrationStatus?: string
+  elementVersion?: number
 }
 
 export type AdaptiveCoverageReadiness = {

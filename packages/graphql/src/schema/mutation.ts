@@ -4,8 +4,10 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AdaptiveElementService from '../services/adaptiveElementCommands.js'
 import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CompetenceTreeCalibrationService from '../services/competenceTreeCalibration.js'
 import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -30,11 +32,19 @@ import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import {
   CompetenceTree,
+  CompetenceTreeElementAssignmentCreateInput,
   CompetenceTreeElementAssignmentUpdateInput,
   CompetenceTreeInput,
   CompetenceTreeMetadataInput,
   DuplicateCompetenceTreeInput,
 } from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  AdaptiveCalibrationImportReceiptRef,
+  AdaptiveReviewDecision,
+  AdaptiveWorkflowReceiptRef,
+  CompetenceTreeScaleLevelInput,
+} from './competenceTreeCalibration.js'
 import { Course } from './course.js'
 import {
   Element,
@@ -710,6 +720,204 @@ export const Mutation = builder.mutationType({
           await CompetenceTreeService.createCompetenceTree(args, ctx),
       }),
 
+      createCompetenceTreeScaleVersion: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: {
+          treeId: t.arg.string({ required: true }),
+          supersedesVersionId: t.arg.string({ required: false }),
+          priorMean: t.arg.float({ required: false }),
+          priorStandardDeviation: t.arg.float({ required: false }),
+          gridMin: t.arg.float({ required: false }),
+          gridMax: t.arg.float({ required: false }),
+          gridStep: t.arg.float({ required: false }),
+          classificationPolicyVersion: t.arg.int({ required: false }),
+          levels: t.arg({
+            type: [CompetenceTreeScaleLevelInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          const scale =
+            await CompetenceTreeCalibrationService.createCompetenceTreeScaleVersion(
+              {
+                treeId: args.treeId,
+                supersedesVersionId: args.supersedesVersionId,
+                priorMean: args.priorMean ?? undefined,
+                priorStandardDeviation:
+                  args.priorStandardDeviation ?? undefined,
+                gridMin: args.gridMin ?? undefined,
+                gridMax: args.gridMax ?? undefined,
+                gridStep: args.gridStep ?? undefined,
+                classificationPolicyVersion:
+                  args.classificationPolicyVersion ?? undefined,
+                levels: args.levels,
+              },
+              ctx
+            )
+          return { id: scale.id, status: scale.status }
+        },
+      }),
+
+      submitCompetenceTreeScaleForReview: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: { artifact: t.arg({ type: 'Json', required: true }) },
+        resolve: async (_, { artifact }, ctx) => {
+          const approval =
+            await CompetenceTreeCalibrationService.submitCompetenceTreeScaleForReview(
+              artifact,
+              ctx
+            )
+          return { id: approval.scaleVersionId, status: 'IN_REVIEW' }
+        },
+      }),
+
+      reviewCompetenceTreeScale: t.withAuth(asAdmin).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: {
+          scaleVersionId: t.arg.string({ required: true }),
+          decision: t.arg({ type: AdaptiveReviewDecision, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const scale =
+            await CompetenceTreeCalibrationService.reviewCompetenceTreeScale(
+              args,
+              ctx
+            )
+          return { id: scale.id, status: scale.status }
+        },
+      }),
+
+      activateCompetenceTreeScaleVersion: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: { scaleVersionId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          const scale =
+            await CompetenceTreeCalibrationService.activateCompetenceTreeScaleVersion(
+              args,
+              ctx
+            )
+          return { id: scale.id, status: scale.status }
+        },
+      }),
+
+      submitCompetenceTreeScaleLink: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: { artifact: t.arg({ type: 'Json', required: true }) },
+        resolve: async (_, { artifact }, ctx) => {
+          const link =
+            await CompetenceTreeCalibrationService.submitCompetenceTreeScaleLink(
+              artifact,
+              ctx
+            )
+          return { id: link.id, status: link.status }
+        },
+      }),
+
+      reviewCompetenceTreeScaleLink: t.withAuth(asAdmin).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: {
+          scaleLinkId: t.arg.string({ required: true }),
+          decision: t.arg({ type: AdaptiveReviewDecision, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const link =
+            await CompetenceTreeCalibrationService.reviewCompetenceTreeScaleLink(
+              args,
+              ctx
+            )
+          return { id: link.id, status: link.status }
+        },
+      }),
+
+      importAdaptiveItemCalibrations: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveCalibrationImportReceiptRef,
+        args: { artifact: t.arg({ type: 'Json', required: true }) },
+        resolve: async (_, { artifact }, ctx) => {
+          const calibrations =
+            await CompetenceTreeCalibrationService.submitAdaptiveItemCalibrationCandidates(
+              artifact,
+              ctx
+            )
+          return {
+            calibrationIds: calibrations.map(({ id }) => id),
+            importedCount: calibrations.length,
+          }
+        },
+      }),
+
+      approveAdaptiveItemCalibration: t.withAuth(asAdmin).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: { calibrationId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          const calibration =
+            await CompetenceTreeCalibrationService.approveAdaptiveItemCalibration(
+              args,
+              ctx
+            )
+          return { id: calibration.id, status: calibration.status }
+        },
+      }),
+
+      submitAdaptiveEmpiricalValidation: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: { artifact: t.arg({ type: 'Json', required: true }) },
+        resolve: async (_, { artifact }, ctx) => {
+          const validation =
+            await CompetenceTreeCalibrationService.submitAdaptiveEmpiricalValidation(
+              artifact,
+              ctx
+            )
+          return { id: validation.id, status: validation.status }
+        },
+      }),
+
+      reviewAdaptiveEmpiricalValidation: t.withAuth(asAdmin).field({
+        type: AdaptiveWorkflowReceiptRef,
+        args: {
+          validationId: t.arg.string({ required: true }),
+          decision: t.arg({ type: AdaptiveReviewDecision, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const validation =
+            await CompetenceTreeCalibrationService.reviewAdaptiveEmpiricalValidation(
+              args,
+              ctx
+            )
+          return { id: validation.id, status: validation.status }
+        },
+      }),
+
+      setCourseAdaptiveCalibrationCollectionEnabled: t
+        .withAuth(asAdmin)
+        .boolean({
+          args: {
+            courseId: t.arg.string({ required: true }),
+            enabled: t.arg.boolean({ required: true }),
+          },
+          resolve: async (_, args, ctx) => {
+            const course =
+              await CompetenceTreeCalibrationService.setCourseAdaptiveCalibrationCollectionEnabled(
+                args,
+                ctx
+              )
+            return course.isAdaptiveLearningCalibrationEnabled
+          },
+        }),
+
+      requestAdaptiveCalibrationExport: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveCalibrationExportRequestRef,
+        args: {
+          treeId: t.arg.string({ required: true }),
+          scaleVersionId: t.arg.string({ required: true }),
+          datasetVersion: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeCalibrationService.requestAdaptiveCalibrationExport(
+            args,
+            ctx
+          ),
+      }),
+
       replaceCompetenceTree: t.withAuth(asUserFullAccess).field({
         type: CompetenceTree,
         args: {
@@ -1251,6 +1459,11 @@ export const Mutation = builder.mutationType({
           options: t.arg({
             type: OptionsChoicesInput,
           }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           // if element is edited, >= WRITE permissions on element required
@@ -1269,7 +1482,19 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(args, ctx)
+          const {
+            initialCompetenceTreeAssignment,
+            creationRequestId,
+            ...elementInput
+          } = args
+          return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+            {
+              elementInput,
+              initialCompetenceTreeAssignment,
+              creationRequestId,
+            },
+            ctx
+          )
         },
       }),
 
@@ -1288,6 +1513,11 @@ export const Mutation = builder.mutationType({
           options: t.arg({
             type: OptionsNumericalInput,
           }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           // if element is edited, >= WRITE permissions on element required
@@ -1306,8 +1536,20 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
-            { ...args, type: DB.ElementType.NUMERICAL },
+          const {
+            initialCompetenceTreeAssignment,
+            creationRequestId,
+            ...elementInput
+          } = args
+          return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+            {
+              elementInput: {
+                ...elementInput,
+                type: DB.ElementType.NUMERICAL,
+              },
+              initialCompetenceTreeAssignment,
+              creationRequestId,
+            },
             ctx
           )
         },
@@ -1328,6 +1570,11 @@ export const Mutation = builder.mutationType({
           options: t.arg({
             type: OptionsFreeTextInput,
           }),
+          initialCompetenceTreeAssignment: t.arg({
+            type: CompetenceTreeElementAssignmentCreateInput,
+            required: false,
+          }),
+          creationRequestId: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           // if element is edited, >= WRITE permissions on element required
@@ -1346,8 +1593,20 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
-            { ...args, type: DB.ElementType.FREE_TEXT },
+          const {
+            initialCompetenceTreeAssignment,
+            creationRequestId,
+            ...elementInput
+          } = args
+          return await AdaptiveElementService.manipulateElementWithInitialCompetenceTreeAssignment(
+            {
+              elementInput: {
+                ...elementInput,
+                type: DB.ElementType.FREE_TEXT,
+              },
+              initialCompetenceTreeAssignment,
+              creationRequestId,
+            },
             ctx
           )
         },

@@ -51,9 +51,10 @@ export async function getAdaptivePracticeQuizState(
   if (!attempt) return null
 
   const runtime = await loadAdaptiveRuntime(ctx.prisma, practiceQuizId, {
-    includeAlgorithmData: false,
+    includeAlgorithmData: true,
+    publicationId: attempt.publicationId,
   })
-  assertAdaptiveQuizPublished(runtime)
+  assertAdaptiveQuizPublished(runtime, { allowSupersededPublication: true })
   return serializeAdaptiveAttemptState(runtime, attempt)
 }
 
@@ -80,7 +81,7 @@ export async function getAdaptivePracticeQuizResult(
   const runtime = await loadAdaptiveRuntime(
     ctx.prisma,
     attempt.practiceQuizId,
-    { includeAlgorithmData: false }
+    { includeAlgorithmData: true, publicationId: attempt.publicationId }
   )
   assertAdaptiveCourseEnabled(runtime)
   return serializeAdaptiveStudentResult(runtime, attempt)
@@ -89,7 +90,7 @@ export async function getAdaptivePracticeQuizResult(
 export async function getAdaptivePracticeQuizCohortResults(
   { practiceQuizId }: { practiceQuizId: string },
   ctx: ContextWithUser
-): Promise<AdaptiveCohortResults> {
+): Promise<AdaptiveCohortResultsView> {
   if (
     ctx.user.role !== DB.UserRole.USER &&
     ctx.user.role !== DB.UserRole.ADMIN
@@ -124,7 +125,8 @@ export async function getAdaptivePracticeQuizCohortResults(
           )
         }
         snapshotStartedAt ??= Date.now()
-        return getOrCreateAdaptiveCohortSnapshot(prisma, runtime)
+        const results = await getOrCreateAdaptiveCohortSnapshot(prisma, runtime)
+        return { ...results, competenceTreeId: runtime.tree.id }
       },
       {
         conflictCode: 'ADAPTIVE_COHORT_SNAPSHOT_CONFLICT',
@@ -144,6 +146,10 @@ export async function getAdaptivePracticeQuizCohortResults(
     }
     throw error
   }
+}
+
+export type AdaptiveCohortResultsView = AdaptiveCohortResults & {
+  competenceTreeId: string
 }
 
 function assertParticipant(ctx: ContextWithUser) {

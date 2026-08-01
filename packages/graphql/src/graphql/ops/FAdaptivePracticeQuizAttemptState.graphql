@@ -12,6 +12,11 @@ fragment FAdaptivePracticeQuizAttemptState on AdaptivePracticeQuizAttemptState {
   elapsedSeconds
   showTimer
   canStartNewAttempt
+  submittedResponseFeedback {
+    correct
+    score
+    feedback
+  }
   servedItem {
     poolItemId
     elementId

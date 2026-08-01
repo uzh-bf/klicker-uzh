@@ -32,10 +32,34 @@ describe('adaptive practice quiz participant schema', () => {
     ])
 
     const resultFields = fieldNames('AdaptivePracticeQuizResult')
-    expect(resultFields).not.toContain('theta')
-    expect(resultFields).not.toContain('standardError')
-    expect(resultFields).not.toContain('estimates')
-    expect(resultFields).not.toContain('responses')
+    const resultNodeFields = fieldNames('AdaptivePracticeQuizResultNode')
+    for (const forbidden of [
+      'theta',
+      'standardError',
+      'posterior',
+      'bandProbabilities',
+      'difficulty',
+      'discrimination',
+      'guessing',
+      'calibrationId',
+      'scaleVersionId',
+      'solution',
+      'estimates',
+      'responses',
+    ]) {
+      expect(resultFields).not.toContain(forbidden)
+      expect(resultNodeFields).not.toContain(forbidden)
+    }
+    expect(resultFields).toEqual(
+      expect.arrayContaining([
+        'classification',
+        'classificationProbability',
+        'leadingLevelLabels',
+        'position',
+        'lowerPosition',
+        'upperPosition',
+      ])
+    )
     expect(
       objectFields(
         'AdaptivePracticeQuizResult'
@@ -46,6 +70,24 @@ describe('adaptive practice quiz participant schema', () => {
         'AdaptivePracticeQuizAttemptState'
       ).elapsedSeconds?.type.toString()
     ).toBe('Int')
+    expect(fieldNames('AdaptivePracticeQuizSubmittedResponseFeedback')).toEqual(
+      ['correct', 'feedback', 'score']
+    )
+    for (const forbidden of [
+      'solution',
+      'solutions',
+      'correctChoiceIndices',
+      'difficulty',
+      'discrimination',
+      'guessing',
+      'calibrationId',
+      'theta',
+      'posterior',
+    ]) {
+      expect(
+        fieldNames('AdaptivePracticeQuizSubmittedResponseFeedback')
+      ).not.toContain(forbidden)
+    }
 
     const options = schema.getType('AdaptivePracticeQuizElementOptions')
     expect(typeof (options as { getTypes?: unknown })?.getTypes).toBe(
@@ -104,6 +146,10 @@ describe('adaptive practice quiz participant schema', () => {
     }
     for (const sensitiveField of [
       'classified',
+      'betweenLevels',
+      'insufficientEvidence',
+      'poolLimited',
+      'researchOnly',
       'capped',
       'poolExhausted',
       'stoppedInsufficientData',
@@ -111,6 +157,17 @@ describe('adaptive practice quiz participant schema', () => {
       'nearBoundary',
     ]) {
       expect(summary[sensitiveField]?.type.toString()).toBe('Int')
+    }
+
+    const distribution = objectFields('AdaptivePracticeQuizNodeDistribution')
+    for (const classificationField of [
+      'classifiedCount',
+      'betweenLevelsCount',
+      'insufficientEvidenceCount',
+      'poolLimitedCount',
+      'researchOnlyCount',
+    ]) {
+      expect(distribution[classificationField]?.type.toString()).toBe('Int')
     }
   })
 })

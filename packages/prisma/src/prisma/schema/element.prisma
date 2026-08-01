@@ -47,6 +47,7 @@ model Element {
   adaptiveAssessmentElements  AdaptiveAssessmentElement[]
   adaptiveAssessmentResponses AdaptiveAssessmentResponse[]
   competenceTreeAssignments   CompetenceTreeElementAssignment[]
+  adaptiveItemCalibrations    AdaptiveItemCalibration[]
 
   answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")
   answerCollection      AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)

@@ -86,7 +86,7 @@ function CoverageMatrix({
     >
       <div className="mb-4">
         <h2 className="text-lg font-semibold">
-          {t('manage.competenceTree.coverageTitle')}
+          {t('manage.competenceTree.contentBlueprintTitle')}
         </h2>
         <p className="text-sm text-slate-600">
           {t('manage.competenceTree.coverageDescription')}
@@ -94,29 +94,44 @@ function CoverageMatrix({
       </div>
 
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
-        <TextField
-          value={search}
-          onChange={setSearch}
-          icon={faMagnifyingGlass}
-          placeholder={t('manage.competenceTree.searchLeaves')}
-          data={{ cy: 'competence-tree-coverage-search' }}
-        />
-        <Select
-          value={rootFilter}
-          onChange={setRootFilter}
-          items={[
-            {
-              value: 'all',
-              label: t('manage.competenceTree.allRoots'),
-            },
-            ...roots.map((root) => ({
-              value: root.key,
-              label: root.name,
-            })),
-          ]}
-          data={{ cy: 'competence-tree-coverage-root-filter' }}
-          className={{ trigger: 'h-9 w-full' }}
-        />
+        <div>
+          <label className="sr-only" htmlFor="competence-tree-coverage-search">
+            {t('manage.competenceTree.searchLeaves')}
+          </label>
+          <TextField
+            id="competence-tree-coverage-search"
+            value={search}
+            onChange={setSearch}
+            icon={faMagnifyingGlass}
+            placeholder={t('manage.competenceTree.searchLeaves')}
+            data={{ cy: 'competence-tree-coverage-search' }}
+          />
+        </div>
+        <div>
+          <label
+            className="sr-only"
+            htmlFor="competence-tree-coverage-root-filter"
+          >
+            {t('manage.competenceTree.allRoots')}
+          </label>
+          <Select
+            id="competence-tree-coverage-root-filter"
+            value={rootFilter}
+            onChange={setRootFilter}
+            items={[
+              {
+                value: 'all',
+                label: t('manage.competenceTree.allRoots'),
+              },
+              ...roots.map((root) => ({
+                value: root.key,
+                label: root.name,
+              })),
+            ]}
+            data={{ cy: 'competence-tree-coverage-root-filter' }}
+            className={{ trigger: 'h-9 w-full' }}
+          />
+        </div>
       </div>
 
       <div className="max-h-160 overflow-auto border border-slate-300 [contain:paint]">

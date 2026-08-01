@@ -1,13 +1,15 @@
 import {
-  AdaptivePracticeQuizPreset,
   AdaptivePracticeQuizSetupPreviewQuery,
   CompetenceTreeQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Checkbox, NumberField, Select, TextField } from '@uzh-bf/design-system'
+import { Checkbox, Select, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
+import Pagination from '../../../common/Pagination'
 import { AdaptivePracticeQuizConfigFormValues } from '../WizardLayout'
 import { AdaptiveCoverageReadinessData } from './AdaptiveReadinessPanel'
+
+const DEFAULT_PAGE_SIZE = 20
 
 type CompetenceTreeData = NonNullable<CompetenceTreeQuery['competenceTree']>
 type AdaptiveAssignmentData = CompetenceTreeData['elementAssignments'][number]
@@ -46,6 +48,8 @@ function AdaptiveAssignmentPreview({
   const [leafFilter, setLeafFilter] = useState('ALL')
   const [levelFilter, setLevelFilter] = useState('ALL')
   const [stateFilter, setStateFilter] = useState<AssignmentStateFilter>('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const searchId = useId()
   const leafFilterId = useId()
   const levelFilterId = useId()
@@ -97,7 +101,7 @@ function AdaptiveAssignmentPreview({
     () => [...levels].sort((a, b) => a.order - b.order || a.id - b.id),
     [levels]
   )
-  const visibleAssignments = useMemo(() => {
+  const filteredAssignments = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase()
     return assignments.filter((assignment) => {
       const override = overrideByAssignment.get(assignment.id)
@@ -123,10 +127,26 @@ function AdaptiveAssignmentPreview({
     search,
     stateFilter,
   ])
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredAssignments.length / pageSize)
+  )
+  const visibleAssignments = filteredAssignments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, leafFilter, levelFilter, stateFilter])
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
 
   const updateAssignment = (
     assignment: AdaptiveAssignmentData,
-    patch: Partial<{ enabled: boolean; discrimination: string }>
+    patch: Partial<{ enabled: boolean }>
   ) => {
     const current = overrideByAssignment.get(assignment.id) ?? {
       assignmentId: assignment.id,
@@ -256,13 +276,6 @@ function AdaptiveAssignmentPreview({
               <th className="w-28 px-2 py-1">
                 {t('manage.activityWizard.adaptive.assignments.effective')}
               </th>
-              {config.preset === AdaptivePracticeQuizPreset.Research ? (
-                <th className="w-32 px-2 py-1">
-                  {t(
-                    'manage.activityWizard.adaptive.assignments.discrimination'
-                  )}
-                </th>
-              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -295,7 +308,15 @@ function AdaptiveAssignmentPreview({
                   data-cy={`adaptive-assignment-${assignment.id}`}
                 >
                   <td className="px-2 py-1.5">
+                    <label
+                      className="sr-only"
+                      htmlFor={`adaptive-assignment-enabled-${assignment.id}`}
+                    >
+                      {t('manage.activityWizard.adaptive.assignments.use')}:{' '}
+                      {assignment.elementName}
+                    </label>
                     <Checkbox
+                      id={`adaptive-assignment-enabled-${assignment.id}`}
                       checked={directEnabled}
                       onCheck={() =>
                         updateAssignment(assignment, {
@@ -305,11 +326,6 @@ function AdaptiveAssignmentPreview({
                       data={{
                         cy: `adaptive-assignment-enabled-${assignment.id}`,
                       }}
-                      label={
-                        <span className="sr-only">
-                          {assignment.elementName}
-                        </span>
-                      }
                     />
                   </td>
                   <td className="px-2 py-1.5">
@@ -319,7 +335,7 @@ function AdaptiveAssignmentPreview({
                     >
                       {assignment.elementName}
                     </div>
-                    <div className="text-uzh-grey-100">
+                    <div className="text-slate-600">
                       #{assignment.elementId} | {assignment.elementType}
                     </div>
                   </td>
@@ -348,36 +364,22 @@ function AdaptiveAssignmentPreview({
                       )}
                     </span>
                   </td>
-                  {config.preset === AdaptivePracticeQuizPreset.Research ? (
-                    <td className="px-2 py-1.5">
-                      <NumberField
-                        id={`adaptive-assignment-discrimination-${assignment.id}`}
-                        value={override?.discrimination ?? ''}
-                        onChange={(discrimination) =>
-                          updateAssignment(assignment, { discrimination })
-                        }
-                        min={0.01}
-                        max={10}
-                        precision={2}
-                        placeholder={String(
-                          effective?.a ?? assignment.discrimination ?? ''
-                        )}
-                        data={{
-                          cy: `adaptive-assignment-discrimination-${assignment.id}`,
-                        }}
-                        aria-label={`${t(
-                          'manage.activityWizard.adaptive.assignments.discrimination'
-                        )}: ${assignment.elementName}`}
-                        className={{ input: 'h-8' }}
-                      />
-                    </td>
-                  ) : null}
                 </tr>
               )
             })}
           </tbody>
         </table>
       </div>
+      {filteredAssignments.length > 0 ? (
+        <Pagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          numOfObjects={filteredAssignments.length}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+        />
+      ) : null}
 
       <CoverageMatrix
         coverages={coverages}

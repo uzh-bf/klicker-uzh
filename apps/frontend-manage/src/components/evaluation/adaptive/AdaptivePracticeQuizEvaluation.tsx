@@ -7,6 +7,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Layout from '../../Layout'
+import AdaptiveCalibrationHealth from './AdaptiveCalibrationHealth'
 import AdaptiveCompetenceDistributions from './AdaptiveCompetenceDistributions'
 import AdaptiveDistributionBars from './AdaptiveDistributionBars'
 import AdaptivePilotMetrics from './AdaptivePilotMetrics'
@@ -44,14 +45,10 @@ function AttemptSummary({
   const metrics = [
     { key: 'completed', value: cohortSize },
     { key: 'classified', value: summary.classified },
-    { key: 'capped', value: summary.capped },
-    { key: 'poolExhausted', value: summary.poolExhausted },
-    {
-      key: 'stoppedInsufficientData',
-      value: summary.stoppedInsufficientData,
-    },
-    { key: 'insufficientData', value: summary.insufficientData },
-    { key: 'nearBoundary', value: summary.nearBoundary },
+    { key: 'betweenLevels', value: summary.betweenLevels },
+    { key: 'insufficientEvidence', value: summary.insufficientEvidence },
+    { key: 'poolLimited', value: summary.poolLimited },
+    { key: 'researchOnly', value: summary.researchOnly },
   ] as const
 
   return (
@@ -65,7 +62,7 @@ function AttemptSummary({
           data={{ cy: 'adaptive-evaluation-summary-suppressed' }}
         />
       ) : null}
-      <dl className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
+      <dl className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
         {metrics.map((metric) => (
           <Metric
             key={metric.key}
@@ -249,6 +246,7 @@ function AdaptivePracticeQuizEvaluation({
           metrics={results.pilotMetrics}
           items={results.itemDiagnostics}
         />
+        <AdaptiveCalibrationHealth treeId={results.competenceTreeId} />
 
         <section
           className="border-t border-gray-200 py-6"

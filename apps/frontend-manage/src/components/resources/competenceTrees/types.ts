@@ -252,7 +252,7 @@ export function competenceTreeFormToInput(
       leafKey: assignment.leafKey,
       levelKey: assignment.levelKey,
       enabled: assignment.enabled,
-      discrimination: assignment.discrimination,
+      discrimination: null,
       enablePercentInput: assignment.enablePercentInput,
     })),
   }

@@ -9,6 +9,7 @@ import {
   CompetenceTreeStructuralState,
   getChildren,
   getNodeDepth,
+  getNormalizedRootWeights,
 } from '../src/components/resources/competenceTrees/treeHelpers'
 import {
   CompetenceTreeAssignmentForm,
@@ -87,6 +88,34 @@ function assignment(
     c: 0.25,
   }
 }
+
+test('competence tree serialization removes legacy discrimination overrides', () => {
+  const treeForm = form([node('root', null), node('leaf', 'root')], {
+    assignments: [{ ...assignment('leaf'), discrimination: 4.2 }],
+  })
+
+  expect(
+    competenceTreeFormToInput(treeForm).assignments[0].discrimination
+  ).toBeNull()
+})
+
+test('root-weight previews follow the strict shared normalization policy', () => {
+  const validNodes = [
+    { ...node('root-a', null, 0), weight: 3 },
+    { ...node('root-b', null, 1), weight: 2 },
+  ]
+  const normalized = getNormalizedRootWeights(validNodes)
+  expect(normalized.get('root-a')).toBeCloseTo(0.6, 12)
+  expect(normalized.get('root-b')).toBeCloseTo(0.4, 12)
+  expect(
+    getNormalizedRootWeights([validNodes[0]!, { ...validNodes[1]!, weight: 0 }])
+  ).toEqual(
+    new Map([
+      ['root-a', 0],
+      ['root-b', 0],
+    ])
+  )
+})
 
 function form(
   nodes: CompetenceTreeNodeForm[],

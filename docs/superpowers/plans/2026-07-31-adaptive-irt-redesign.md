@@ -1225,14 +1225,11 @@ git commit -m "test(adaptive): gate Bayesian IRT simulations"
 - Modify: `packages/prisma/src/prisma/schema/course.prisma`
 - Modify: `packages/prisma/src/prisma/schema/user.prisma`
 - Modify: `packages/prisma/src/prisma/schema/element.prisma`
+- Modify: `packages/graphql/src/types/app.ts`
 - Create: `packages/prisma/src/prisma/schema/migrations/20260731120000_adaptive_irt_v2_records/migration.sql`
 - Create: `packages/prisma/src/prisma/schema/migrations/20260731121000_adaptive_irt_v2_backfill/migration.sql`
 - Create: `packages/prisma/src/prisma/schema/migrations/20260731122000_adaptive_irt_v2_constraints/migration.sql`
-- Modify: `packages/prisma/src/prisma/schema/js.prisma`
-- Modify: `apps/analytics/prisma/schema/competence.prisma`
-- Modify: `apps/analytics/prisma/schema/course.prisma`
-- Modify: `apps/analytics/prisma/schema/element.prisma`
-- Modify: `apps/analytics/prisma/schema/user.prisma`
+- Generate: `apps/analytics/prisma/schema/*.prisma` through `pnpm run prisma:sync`
 - Modify: `docs/adaptive-learning.md`
 
 **Interfaces:**
@@ -1297,6 +1294,12 @@ enum AdaptiveResultStatus {
   POOL_LIMITED
   RESEARCH_ONLY
 }
+
+enum AdaptivePoolItemRole {
+  SCORING
+  ANCHOR
+  FIELD_TEST
+}
 ```
 
 Add models `CompetenceTreeScaleVersion`, `CompetenceTreeScaleLevel`,
@@ -1358,7 +1361,9 @@ anchor calibration identities, linking/equating method and implementation
 version, aggregate fit/uncertainty metrics, artifact checksum, lifecycle status,
 and independent reviewer. The newer scale also stores
 `supersedesVersionId`. Results across scale versions are comparable only through
-an `APPROVED` link.
+an `APPROVED` link. Persist exact old/new calibration pairs through a
+`CompetenceTreeScaleLinkAnchor` join model; an untyped UUID array is not an
+auditable relational identity.
 
 `AdaptiveItemCalibration` must include scale version, source assignment,
 element version, calibration version, model, status, `a/b/c`, parameter
@@ -1398,6 +1403,11 @@ separate from immutable pool rows. It is keyed by publication and pool item,
 stores served/answered counts, and is updated transactionally; it contains no
 participant identity.
 
+Pool rows also persist `AdaptivePoolItemRole` and `contributesToEstimate`.
+`SCORING`, `ANCHOR`, and `FIELD_TEST` are distinct: a Boolean anchor flag cannot
+represent a provisional field-test item that must not update the reported
+posterior.
+
 - [ ] **Step 2: Add version references**
 
 Add nullable `scaleVersionId`, `measurementVersion`, and selected calibration
@@ -1410,7 +1420,10 @@ Add the publication id plus calibration/model/version snapshots to
 `PracticeQuizAdaptivePoolItem`; copy publication, estimator, scale, and policy
 identity to attempts. Add creator, reviewer, and export-request relations to
 `User` for scale, linking, calibration, empirical validation, and exports; add
-exact element-version calibration/anchor relations to `Element`.
+calibration relations to `Element`. `elementVersion` and an immutable content
+checksum remain snapshotted calibration identities rather than a composite
+foreign key to mutable `Element.version`; such a key would block ordinary
+element edits or rewrite history.
 
 Add to attempt/estimate/response persistence:
 
@@ -1476,6 +1489,9 @@ anchor(order) = thetaMin + span * order / levelCount
 lower(order > 0) = anchor(order)
 ```
 
+For a one-level tree, both mapping rules use the range midpoint as the sole
+anchor, matching the production legacy helper.
+
 - [ ] **Step 5: Add validated constraints**
 
 `20260731122000_adaptive_irt_v2_constraints` adds preflight validation, `CHECK`
@@ -1490,6 +1506,11 @@ disjoint calibration/holdout dataset identities, and composite foreign keys
 from publication to its exact empirical validation. The internal simulation
 suite remains code/CI evidence and has no Prisma model or publication foreign
 key.
+
+All floating-point checks reject PostgreSQL `NaN` and positive/negative
+infinity explicitly. Creator/reviewer separation is enforced with database
+triggers plus transactional service authorization because an ordinary `CHECK`
+cannot inspect the referenced creator row.
 
 - [ ] **Step 6: Sync, replay, and verify**
 

@@ -15,6 +15,7 @@ import {
 } from './adaptivePracticeQuizConfigPreparation.js'
 import { resolveAdaptiveSourceElementAvailability } from './adaptivePracticeQuizPublicationAuthorization.js'
 import type { AdaptiveQuizReadiness } from './adaptivePracticeQuizReadiness.js'
+import { assessAdaptiveV2Readiness } from './adaptivePracticeQuizV2Readiness.js'
 
 export type AdaptivePracticeQuizAssignmentView = Omit<
   PreparedAdaptiveAssignment,
@@ -95,10 +96,26 @@ export async function getAdaptivePracticeQuizSetupPreview(
   ctx: ContextWithUser
 ): Promise<AdaptivePracticeQuizSetupPreview> {
   await assertAdaptiveLearningCourseEnabled(courseId, ctx.prisma)
-  const { settings, prepared } = await prepareConfigurationInput(
+  const { settings, measurement, prepared } = await prepareConfigurationInput(
     { courseId, input, userId: ctx.user.sub },
     ctx.prisma
   )
+  if (
+    measurement.measurementVersion ===
+      DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1 &&
+    measurement.scaleVersionId
+  ) {
+    prepared.readiness = (
+      await assessAdaptiveV2Readiness({
+        configId: null,
+        courseId,
+        scaleVersionId: measurement.scaleVersionId,
+        preset: settings.preset,
+        prepared,
+        prisma: ctx.prisma,
+      })
+    ).readiness
+  }
   return {
     ...serializePreparedConfiguration(prepared, settings.levelMappingRule),
   }
@@ -195,6 +212,22 @@ export async function loadAdaptiveConfigurationForQuiz(
     quiz.adaptiveConfig,
     sourceElementAvailability
   )
+  if (
+    quiz.adaptiveConfig.measurementVersion ===
+      DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1 &&
+    quiz.adaptiveConfig.scaleVersionId
+  ) {
+    prepared.readiness = (
+      await assessAdaptiveV2Readiness({
+        configId: quiz.adaptiveConfig.id,
+        courseId: quiz.courseId,
+        scaleVersionId: quiz.adaptiveConfig.scaleVersionId,
+        preset: quiz.adaptiveConfig.preset,
+        prepared,
+        prisma,
+      })
+    ).readiness
+  }
   if (
     tree.isDeleted ||
     tree.isArchived ||

@@ -127,7 +127,7 @@ export function toPendingAdaptiveMapping(
       levelId: draft.levelId,
       enabled: draft.enabled,
       enablePercentInput: draft.enablePercentInput,
-      discrimination: draft.discrimination,
+      discrimination: null,
     },
   }
 }

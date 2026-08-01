@@ -14,7 +14,6 @@ import {
   FormLabel,
   H3,
   H4,
-  Modal,
   Select,
   Switch,
   TextField,
@@ -23,7 +22,6 @@ import {
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import AdaptiveMappingFields from './AdaptiveMappingFields'
-import type { ElementMappingRecovery } from './elementMappingRecovery'
 import {
   AdaptiveMappingDraft,
   PendingAdaptiveMapping,
@@ -195,7 +193,7 @@ function PersistedTreeMapping({
           elementType === ElementType.Numerical
             ? draft.enablePercentInput
             : false,
-        discrimination: draft.discrimination,
+        discrimination: null,
       },
     })
 
@@ -477,26 +475,14 @@ function PendingAdaptiveMappingEditor({
   inputsDisabled,
   pendingMapping,
   onPendingMappingChange,
-  mutationError,
-  recoveryPhase,
-  mappingLoading,
-  onRetryPendingMapping,
-  onKeepElementUnmapped,
 }: {
   elementType: ElementType
   choiceCount?: number | null
   inputsDisabled: boolean
   pendingMapping: PendingAdaptiveMapping | null
   onPendingMappingChange: (mapping: PendingAdaptiveMapping | null) => void
-  mutationError: string | null
-  recoveryPhase: ElementMappingRecovery['phase']
-  mappingLoading: boolean
-  onRetryPendingMapping: () => Promise<void>
-  onKeepElementUnmapped: () => void
 }) {
   const t = useTranslations()
-  const [retryRequested, setRetryRequested] = useState(false)
-  const [confirmKeepUnmapped, setConfirmKeepUnmapped] = useState(false)
   const catalog = useOwnedTreeCatalog(true)
   const [selectedTreeId, setSelectedTreeId] = useState(
     pendingMapping?.treeId ?? ''
@@ -519,25 +505,7 @@ function PendingAdaptiveMappingEditor({
         ...catalog.trees.filter((tree) => tree.id !== selectedTree.id),
       ]
     : catalog.trees
-  const recoveryActive = recoveryPhase !== 'editing'
-  const editorDisabled = inputsDisabled || recoveryActive
-  const showRecovery =
-    recoveryPhase === 'mapping-failed' ||
-    (recoveryPhase === 'mapping-pending' && (!mappingLoading || retryRequested))
-  const retryLoading = mappingLoading || retryRequested
-
-  const retryMapping = async () => {
-    if (retryLoading) {
-      return
-    }
-
-    setRetryRequested(true)
-    try {
-      await onRetryPendingMapping()
-    } finally {
-      setRetryRequested(false)
-    }
-  }
+  const editorDisabled = inputsDisabled
 
   useEffect(() => {
     if (selectedTreeId) {
@@ -545,15 +513,15 @@ function PendingAdaptiveMappingEditor({
     }
   }, [loadTree, selectedTreeId])
 
-  if (catalog.loading && !catalog.data && !recoveryActive) {
+  if (catalog.loading && !catalog.data) {
     return <Loader data={{ cy: 'adaptive-mapping-loading' }} />
   }
 
-  if (catalog.error && !recoveryActive) {
+  if (catalog.error) {
     return <UserNotification type="error" message={catalog.error.message} />
   }
 
-  if (trees.length === 0 && !recoveryActive) {
+  if (trees.length === 0) {
     return (
       <p className="text-sm text-gray-600">
         {t('manage.elements.adaptiveMapping.noTrees')}
@@ -565,12 +533,6 @@ function PendingAdaptiveMappingEditor({
     <div className="space-y-4">
       {catalog.loading && !catalog.data ? (
         <Loader data={{ cy: 'adaptive-mapping-loading' }} />
-      ) : catalog.error ? (
-        <UserNotification type="error" message={catalog.error.message} />
-      ) : trees.length === 0 ? (
-        <p className="text-sm text-gray-600">
-          {t('manage.elements.adaptiveMapping.noTrees')}
-        </p>
       ) : (
         <div className="max-w-2xl space-y-3">
           <TextField
@@ -667,87 +629,6 @@ function PendingAdaptiveMappingEditor({
           ) : null}
         </div>
       ) : null}
-      {showRecovery ? (
-        <div
-          className="max-w-[calc(100vw-4.5rem)] space-y-3"
-          data-cy="adaptive-mapping-recovery"
-        >
-          <div data-cy="adaptive-mapping-recovery-message">
-            <UserNotification
-              type="error"
-              message={t(
-                'manage.elements.adaptiveMapping.recovery.elementSavedMappingFailed'
-              )}
-            />
-          </div>
-          <p className="text-sm text-gray-700">
-            {t('manage.elements.adaptiveMapping.recovery.description')}
-          </p>
-          {mutationError ? (
-            <p
-              className="text-sm text-red-700"
-              data-cy="adaptive-mapping-recovery-error-detail"
-            >
-              {mutationError}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              primary
-              onClick={retryMapping}
-              disabled={inputsDisabled || retryLoading}
-              loading={retryLoading}
-              data={{ cy: 'adaptive-mapping-retry' }}
-            >
-              {t('manage.elements.adaptiveMapping.recovery.retry')}
-            </Button>
-            <Button
-              destructive
-              onClick={() => setConfirmKeepUnmapped(true)}
-              disabled={retryLoading}
-              data={{ cy: 'adaptive-mapping-keep-unmapped' }}
-            >
-              {t('manage.elements.adaptiveMapping.recovery.keepUnmapped')}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {confirmKeepUnmapped ? (
-        <Modal
-          open
-          title={t(
-            'manage.elements.adaptiveMapping.recovery.keepUnmappedTitle'
-          )}
-          onClose={() => setConfirmKeepUnmapped(false)}
-          data={{ cy: 'adaptive-mapping-keep-unmapped-confirmation' }}
-          className={{ content: 'max-w-xl' }}
-        >
-          <p className="mb-5 text-sm text-gray-700">
-            {t(
-              'manage.elements.adaptiveMapping.recovery.keepUnmappedDescription'
-            )}
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={() => setConfirmKeepUnmapped(false)}
-              data={{ cy: 'adaptive-mapping-keep-unmapped-cancel' }}
-            >
-              {t('shared.generic.cancel')}
-            </Button>
-            <Button
-              destructive
-              onClick={() => {
-                setConfirmKeepUnmapped(false)
-                onKeepElementUnmapped()
-              }}
-              data={{ cy: 'adaptive-mapping-keep-unmapped-confirm' }}
-            >
-              {t('manage.elements.adaptiveMapping.recovery.keepUnmapped')}
-            </Button>
-          </div>
-        </Modal>
-      ) : null}
     </div>
   )
 }
@@ -760,12 +641,8 @@ function AdaptiveElementMapping({
   inputsDisabled,
   formDirty,
   pendingMapping,
-  recoveryPhase,
-  mappingLoading,
-  onRetryPendingMapping,
-  onKeepElementUnmapped,
+  submissionError,
   onPendingMappingChange,
-  mutationError,
 }: {
   elementId?: number
   elementType: ElementType
@@ -774,17 +651,13 @@ function AdaptiveElementMapping({
   inputsDisabled: boolean
   formDirty: boolean
   pendingMapping: PendingAdaptiveMapping | null
-  recoveryPhase: ElementMappingRecovery['phase']
-  mappingLoading: boolean
-  onRetryPendingMapping: () => Promise<void>
-  onKeepElementUnmapped: () => void
+  submissionError: string | null
   onPendingMappingChange: (mapping: PendingAdaptiveMapping | null) => void
-  mutationError: string | null
 }) {
   const t = useTranslations()
   const supported = supportsAdaptiveMapping(elementType)
   const [createAssignmentEnabled, setCreateAssignmentEnabled] = useState(
-    pendingMapping !== null || recoveryPhase !== 'editing'
+    pendingMapping !== null
   )
 
   useEffect(() => {
@@ -794,10 +667,10 @@ function AdaptiveElementMapping({
   }, [onPendingMappingChange, pendingMapping, supported])
 
   useEffect(() => {
-    if (!editMode && (pendingMapping || recoveryPhase !== 'editing')) {
+    if (!editMode && pendingMapping) {
       setCreateAssignmentEnabled(true)
     }
-  }, [editMode, pendingMapping, recoveryPhase])
+  }, [editMode, pendingMapping])
 
   return (
     <section
@@ -810,6 +683,13 @@ function AdaptiveElementMapping({
       <p className="mb-4 text-sm text-gray-600">
         {t('manage.elements.adaptiveMapping.description')}
       </p>
+      {submissionError ? (
+        <UserNotification
+          type="error"
+          message={submissionError}
+          className={{ root: 'mb-4' }}
+        />
+      ) : null}
 
       {!supported ? (
         <UserNotification
@@ -835,11 +715,15 @@ function AdaptiveElementMapping({
         </>
       ) : (
         <div className="space-y-4">
+          <label htmlFor="adaptive-mapping-create-toggle" className="sr-only">
+            {t('manage.elements.adaptiveMapping.assignDuringCreation')}
+          </label>
           <Switch
+            id="adaptive-mapping-create-toggle"
             size="sm"
             label={t('manage.elements.adaptiveMapping.assignDuringCreation')}
             checked={createAssignmentEnabled}
-            disabled={inputsDisabled || recoveryPhase !== 'editing'}
+            disabled={inputsDisabled}
             onCheckedChange={(checked) => {
               setCreateAssignmentEnabled(checked)
               if (!checked) {
@@ -855,11 +739,6 @@ function AdaptiveElementMapping({
               inputsDisabled={inputsDisabled}
               pendingMapping={pendingMapping}
               onPendingMappingChange={onPendingMappingChange}
-              mutationError={mutationError}
-              recoveryPhase={recoveryPhase}
-              mappingLoading={mappingLoading}
-              onRetryPendingMapping={onRetryPendingMapping}
-              onKeepElementUnmapped={onKeepElementUnmapped}
             />
           ) : null}
         </div>

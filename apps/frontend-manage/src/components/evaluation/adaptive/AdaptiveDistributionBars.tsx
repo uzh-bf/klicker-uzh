@@ -11,6 +11,13 @@ const BAR_COLORS = [
   'bg-violet-500',
 ]
 
+const STATUS_COLORS = {
+  betweenLevels: 'bg-sky-600',
+  insufficientEvidence: 'bg-gray-500',
+  poolLimited: 'bg-amber-600',
+  researchOnly: 'bg-gray-700',
+} as const
+
 function AdaptiveDistributionBars({
   distribution,
   dataCy,
@@ -38,7 +45,41 @@ function AdaptiveDistributionBars({
       color: BAR_COLORS[index % BAR_COLORS.length],
     }))
 
-  if (typeof distribution.insufficientDataCount === 'number') {
+  const resultStatusBuckets = [
+    {
+      key: 'betweenLevels',
+      count: distribution.betweenLevelsCount,
+    },
+    {
+      key: 'insufficientEvidence',
+      count: distribution.insufficientEvidenceCount,
+    },
+    {
+      key: 'poolLimited',
+      count: distribution.poolLimitedCount,
+    },
+    {
+      key: 'researchOnly',
+      count: distribution.researchOnlyCount,
+    },
+  ] as const
+  const hasVersionedResultStatuses = resultStatusBuckets.some(
+    (bucket) => typeof bucket.count === 'number'
+  )
+
+  if (hasVersionedResultStatuses) {
+    for (const bucket of resultStatusBuckets) {
+      if (typeof bucket.count === 'number' && bucket.count > 0) {
+        buckets.push({
+          label: t(
+            `manage.evaluation.adaptive.distributionStatuses.${bucket.key}`
+          ),
+          count: bucket.count,
+          color: STATUS_COLORS[bucket.key],
+        })
+      }
+    }
+  } else if (typeof distribution.insufficientDataCount === 'number') {
     buckets.push({
       label: t('manage.evaluation.adaptive.insufficientData'),
       count: distribution.insufficientDataCount,

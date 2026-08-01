@@ -1,3 +1,4 @@
+import { normalizeEnabledRootWeights } from '@klicker-uzh/adaptive-learning'
 import {
   AdaptiveNodeKind,
   AdaptivePracticeQuizSetupPreviewQuery,
@@ -57,11 +58,21 @@ function AdaptiveHierarchyOverrides({
     [effectiveNodes]
   )
   const roots = nodesByParent.get(null) ?? []
-  const enabledRootWeightTotal = roots.reduce((sum, root) => {
-    const override = overrideByNode.get(root.id)
-    if (override?.enabled === false) return sum
-    return sum + parseWeight(override?.weight, root.weight)
-  }, 0)
+  const normalizedRootWeights = useMemo(() => {
+    const normalized = normalizeEnabledRootWeights(
+      roots
+        .filter((root) => overrideByNode.get(root.id)?.enabled !== false)
+        .map((root) => ({
+          key: root.id,
+          weight: parseWeight(overrideByNode.get(root.id)?.weight, root.weight),
+        }))
+    )
+    return normalized.ok
+      ? new Map(
+          normalized.normalized.map(({ key, weight }) => [key, weight * 100])
+        )
+      : new Map<number, number>()
+  }, [overrideByNode, roots])
 
   const updateNode = (
     node: AdaptiveHierarchyNodeData,
@@ -114,10 +125,9 @@ function AdaptiveHierarchyOverrides({
       !effectiveStateStale && effective
         ? effective.effectiveEnabled
         : isNodeLocallyEnabled(node.id, nodeById, overrideByNode)
-    const rawWeight = parseWeight(override?.weight, node.weight)
     const normalizedWeight =
-      node.kind === AdaptiveNodeKind.Competence && enabledRootWeightTotal > 0
-        ? (rawWeight / enabledRootWeightTotal) * 100
+      node.kind === AdaptiveNodeKind.Competence
+        ? (normalizedRootWeights.get(node.id) ?? 0)
         : 0
     const descendants = nodesByParent.get(node.id) ?? []
 
@@ -129,7 +139,14 @@ function AdaptiveHierarchyOverrides({
           data-cy={`adaptive-node-${node.id}`}
         >
           <div className="min-w-0">
+            <label
+              className="sr-only"
+              htmlFor={`adaptive-node-enabled-${node.id}`}
+            >
+              {node.name}
+            </label>
             <Checkbox
+              id={`adaptive-node-enabled-${node.id}`}
               checked={directEnabled}
               onCheck={() => {
                 if (directEnabled) {
@@ -143,7 +160,7 @@ function AdaptiveHierarchyOverrides({
                   <span className="block truncate font-bold" title={node.name}>
                     {node.name}
                   </span>
-                  <span className="text-uzh-grey-100 text-xs">
+                  <span className="text-xs text-slate-600">
                     {t(
                       node.kind === AdaptiveNodeKind.Competence
                         ? 'manage.activityWizard.adaptive.hierarchy.competence'
@@ -162,7 +179,7 @@ function AdaptiveHierarchyOverrides({
                 id={`adaptive-node-weight-${node.id}`}
                 value={override?.weight || String(node.weight)}
                 onChange={(weight) => updateNode(node, { weight })}
-                min={0}
+                min={0.01}
                 precision={2}
                 label={t('manage.activityWizard.adaptive.hierarchy.weight')}
                 unit={`${normalizedWeight.toFixed(0)}%`}
@@ -214,7 +231,7 @@ function AdaptiveHierarchyOverrides({
           <div className="font-bold">
             {t('manage.activityWizard.adaptive.hierarchy.title')}
           </div>
-          <div className="text-uzh-grey-100 text-sm">
+          <div className="text-sm text-slate-600">
             {t('manage.activityWizard.adaptive.hierarchy.directIntent')}
           </div>
         </div>
@@ -279,7 +296,7 @@ function AdaptiveHierarchyOverrides({
 function parseWeight(value: string | undefined, fallback: number): number {
   if (!value) return fallback
   const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function isNodeLocallyEnabled(

@@ -637,6 +637,15 @@ async function seedActivities() {
 
 async function cleanupDatabase() {
   try {
+    // Review evidence is immutable under normal DELETE operations. This runs
+    // only in the disposable Cypress database and clears the two adaptive
+    // aggregate roots before the generic activity cleanup below.
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "PracticeQuizAdaptiveConfig",
+        "CompetenceTreeScaleVersion"
+      RESTART IDENTITY CASCADE
+    `)
     // delete all activities
     await prisma.liveQuiz.deleteMany()
     await prisma.microLearning.deleteMany()

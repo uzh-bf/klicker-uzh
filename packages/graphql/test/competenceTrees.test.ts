@@ -263,7 +263,7 @@ describe('competence tree validation', () => {
     )
   })
 
-  it('rejects all-zero enabled root weights', () => {
+  it('rejects zero weights on every enabled root', () => {
     const result = validateCompetenceTreeShape({
       ...validTree,
       nodes: validTree.nodes.map((node) =>
@@ -273,7 +273,44 @@ describe('competence tree validation', () => {
 
     expect(result.normalizedRootWeights).toEqual([])
     expect(result.errors.map(({ code }) => code)).toContain(
-      'ROOT_WEIGHT_TOTAL_INVALID'
+      'ROOT_WEIGHT_INVALID'
+    )
+  })
+
+  it('rejects a zero enabled root even when another root is positive', () => {
+    const result = validateCompetenceTreeShape({
+      ...validTree,
+      nodes: [
+        ...validTree.nodes,
+        {
+          id: 20,
+          kind: 'COMPETENCE',
+          name: 'Writing',
+          order: 1,
+          depth: 1,
+          weight: 0,
+        },
+        {
+          id: 21,
+          kind: 'SUBCOMPETENCE',
+          name: 'Composition',
+          parentId: 20,
+          order: 0,
+          depth: 2,
+        },
+      ],
+      coverages: [
+        ...(validTree.coverages ?? []),
+        { leafNodeId: 21, levelId: 1, targetItemCount: 3 },
+      ],
+    })
+
+    expect(result.normalizedRootWeights).toEqual([])
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({
+        code: 'ROOT_WEIGHT_INVALID',
+        path: 'nodes.2.weight',
+      })
     )
   })
 

@@ -2,7 +2,6 @@ export type {
   AdaptiveCohortAttemptSummary,
   AdaptiveCohortLevelBucket,
   AdaptiveCohortNodeDistribution,
-  AdaptiveCohortResults,
   AdaptiveItemDiagnostic,
   AdaptivePilotMetrics,
 } from './adaptivePracticeQuizCohort.js'
@@ -18,13 +17,16 @@ export {
   getAdaptivePracticeQuizResult,
   getAdaptivePracticeQuizState,
 } from './adaptivePracticeQuizParticipantQueries.js'
+export type { AdaptiveCohortResultsView as AdaptiveCohortResults } from './adaptivePracticeQuizParticipantQueries.js'
 export type {
   AdaptivePracticeQuizAttemptState,
+  AdaptiveResultClassification,
   AdaptiveResultConfidence,
   AdaptiveResultLevelBand,
   AdaptiveResultTrajectoryPoint,
   AdaptiveStudentResult,
   AdaptiveStudentResultNode,
+  AdaptiveSubmittedResponseFeedback,
 } from './adaptivePracticeQuizParticipantViews.js'
 export {
   ADAPTIVE_PRIVACY_FIELDS,

@@ -8,6 +8,7 @@ import type {
   CompetenceTreeCourseView,
   CompetenceTreeCoverageInput as CompetenceTreeCoverageInputType,
   CompetenceTreeDetail,
+  CompetenceTreeElementAssignmentCreateInput as CompetenceTreeElementAssignmentCreateInputType,
   CompetenceTreeElementAssignmentUpdateInput as CompetenceTreeElementAssignmentUpdateInputType,
   CompetenceTreeInput as CompetenceTreeInputType,
   CompetenceTreeLevelInput as CompetenceTreeLevelInputType,
@@ -105,6 +106,22 @@ export const CompetenceTreeElementAssignmentUpdateInputRef =
 export const CompetenceTreeElementAssignmentUpdateInput =
   CompetenceTreeElementAssignmentUpdateInputRef.implement({
     fields: (t) => ({
+      leafNodeId: t.int({ required: true }),
+      levelId: t.int({ required: true }),
+      enabled: t.boolean({ required: true }),
+      enablePercentInput: t.boolean({ required: true }),
+      discrimination: t.float({ required: false }),
+    }),
+  })
+
+export const CompetenceTreeElementAssignmentCreateInputRef =
+  builder.inputRef<CompetenceTreeElementAssignmentCreateInputType>(
+    'CompetenceTreeElementAssignmentCreateInput'
+  )
+export const CompetenceTreeElementAssignmentCreateInput =
+  CompetenceTreeElementAssignmentCreateInputRef.implement({
+    fields: (t) => ({
+      treeId: t.string({ required: true }),
       leafNodeId: t.int({ required: true }),
       levelId: t.int({ required: true }),
       enabled: t.boolean({ required: true }),

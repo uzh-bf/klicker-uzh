@@ -4,6 +4,9 @@ fragment AdaptivePracticeQuizPreviewData on AdaptivePracticeQuizPreview {
   publishedPoolSize
   config {
     competenceTreeId
+    scaleVersionId
+    measurementVersion
+    calibrationPolicyVersion
     preset
     attemptSelectionPolicy
     totalQuestionCap

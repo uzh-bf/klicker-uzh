@@ -59,6 +59,7 @@
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio",
+    "verify:adaptive-irt-v2-migration": "tsx src/scripts/verifyAdaptiveIrtV2Migration.ts",
     "verify:adaptive-migration": "tsx src/scripts/verifyAdaptivePhase10Migration.ts"
   },
   "engines": {

@@ -1,7 +1,3 @@
-import {
-  deriveGuessingParameter,
-  type AdaptiveItemType,
-} from '@klicker-uzh/adaptive-learning'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { FormLabel, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -13,10 +9,6 @@ import {
   getNodeBreadcrumb,
   getSubcompetenceLeaves,
 } from './types'
-
-function formatParameter(value: number | null | undefined): string {
-  return typeof value === 'number' ? value.toFixed(2) : '-'
-}
 
 function AdaptiveMappingFields({
   tree,
@@ -54,15 +46,6 @@ function AdaptiveMappingFields({
       ),
     [enabledCoverage, value.leafNodeId]
   )
-  const selectedLevel = tree.levels.find((level) => level.id === value.levelId)
-  const effectiveChoiceCount = assignment?.choiceCount ?? choiceCount
-  const inferredGuessing =
-    assignment?.c ??
-    deriveGuessingParameter({
-      type: elementType as AdaptiveItemType,
-      choiceCount: effectiveChoiceCount,
-    })
-
   if (leaves.length === 0 || eligibleLeafIds.size === 0) {
     return (
       <p className="text-sm text-gray-600">
@@ -119,8 +102,11 @@ function AdaptiveMappingFields({
           <FormLabel
             id={`adaptive-mapping-level-${tree.id}`}
             required
-            label={t('manage.elements.adaptiveMapping.level')}
+            label={t('manage.elements.adaptiveMapping.expectedDifficulty')}
             labelType="small"
+            tooltip={t(
+              'manage.elements.adaptiveMapping.expectedDifficultyTooltip'
+            )}
           />
           <Select
             id={`adaptive-mapping-level-${tree.id}`}
@@ -168,48 +154,6 @@ function AdaptiveMappingFields({
           />
         ) : null}
       </div>
-
-      <dl
-        className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-5"
-        data-cy={`adaptive-mapping-parameters-${tree.id}`}
-      >
-        <div>
-          <dt className="text-gray-600">
-            {t('manage.elements.adaptiveMapping.selectedB')}
-          </dt>
-          <dd className="font-medium">
-            {formatParameter(selectedLevel?.theta)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-gray-600">
-            {t('manage.elements.adaptiveMapping.defaultA')}
-          </dt>
-          <dd className="font-medium">
-            {formatParameter(tree.defaultDiscrimination)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-gray-600">
-            {t('manage.elements.adaptiveMapping.effectiveA')}
-          </dt>
-          <dd className="font-medium">
-            {formatParameter(assignment?.a ?? tree.defaultDiscrimination)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-gray-600">
-            {t('manage.elements.adaptiveMapping.inferredC')}
-          </dt>
-          <dd className="font-medium">{formatParameter(inferredGuessing)}</dd>
-        </div>
-        <div>
-          <dt className="text-gray-600">
-            {t('manage.elements.adaptiveMapping.choiceCount')}
-          </dt>
-          <dd className="font-medium">{effectiveChoiceCount ?? '-'}</dd>
-        </div>
-      </dl>
     </div>
   )
 }

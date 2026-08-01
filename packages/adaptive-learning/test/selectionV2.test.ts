@@ -34,6 +34,7 @@ describe('adaptive v2 posterior selection', () => {
       responseOrder: 3,
       mode: 'DIAGNOSTIC',
       minQuestionsPerLeaf: 1,
+      totalQuestionCap: 20,
       totalAdministeredResponses: 2,
       topInformationRatio: 1,
       researchPolicy: null,
@@ -64,6 +65,7 @@ describe('adaptive v2 posterior selection', () => {
       responseOrder: 1,
       mode: 'DIAGNOSTIC',
       minQuestionsPerLeaf: 1,
+      totalQuestionCap: 20,
       totalAdministeredResponses: 0,
       topInformationRatio: 1,
       researchPolicy: null,
@@ -101,6 +103,7 @@ describe('adaptive v2 posterior selection', () => {
       responseOrder: 1,
       mode: 'DIAGNOSTIC',
       minQuestionsPerLeaf: 1,
+      totalQuestionCap: 20,
       totalAdministeredResponses: 0,
       topInformationRatio: 1,
       researchPolicy: null,
@@ -131,13 +134,13 @@ describe('adaptive v2 posterior selection', () => {
     const fieldTests = [
       {
         ...item(3, 0),
-        calibrationId: null,
+        calibrationId: 'field-test-1',
         contributesToEstimate: false,
         role: 'FIELD_TEST' as const,
       },
       {
         ...item(4, 0),
-        calibrationId: null,
+        calibrationId: 'field-test-2',
         contributesToEstimate: false,
         role: 'FIELD_TEST' as const,
       },
@@ -149,6 +152,7 @@ describe('adaptive v2 posterior selection', () => {
         responseOrder: 2,
         mode: 'RESEARCH',
         minQuestionsPerLeaf: 1,
+        totalQuestionCap: 20,
         totalAdministeredResponses: 1,
         topInformationRatio: 1,
         researchPolicy: {
@@ -187,13 +191,66 @@ describe('adaptive v2 posterior selection', () => {
     expect(roles).toEqual(new Set(['SCORING', 'FIELD_TEST']))
   })
 
+  it('reserves the remaining question budget for required field tests', () => {
+    const fieldTests = [
+      {
+        ...item(3, 0),
+        calibrationId: 'field-test-1',
+        contributesToEstimate: false,
+        role: 'FIELD_TEST' as const,
+      },
+      {
+        ...item(4, 0),
+        calibrationId: 'field-test-2',
+        contributesToEstimate: false,
+        role: 'FIELD_TEST' as const,
+      },
+    ]
+
+    for (let index = 0; index < 32; index++) {
+      const selected = selectAdaptiveV2Item({
+        attemptId: `attempt-reserved-field-test-${index}`,
+        responseOrder: 4,
+        mode: 'RESEARCH',
+        minQuestionsPerLeaf: 1,
+        totalQuestionCap: 4,
+        totalAdministeredResponses: 3,
+        topInformationRatio: 1,
+        researchPolicy: {
+          anchorResponsesPerLeafLevel: 1,
+          fieldTestResponsesPerLeaf: 1,
+          fieldTestInclusionProbability: 0.01,
+          collectionDesignVersion: 'RESEARCH_DESIGN_V1',
+        },
+        leaves: [
+          {
+            rootId: 1,
+            leafId: 2,
+            stableOrder: [0, 0],
+            effectiveWeight: 1,
+            administeredResponseCount: 3,
+            evidenceResponseCount: 3,
+            rootEvidenceResponseCount: 3,
+            posterior: posteriorAt(0),
+            eligibleItems: [item(1, 0), item(2, 0), ...fieldTests],
+            anchorResponsesByLevel: new Map([[1, 1]]),
+            fieldTestResponseCount: 0,
+          },
+        ],
+      })
+
+      expect(selected?.role).toBe('FIELD_TEST')
+      expect(selected?.conditionalAdministrationProbability).toBe(0.5)
+    }
+  })
+
   it('accounts exactly for modulo remainders in joint propensities', () => {
     const uint32Space = 0x1_0000_0000
     const threshold = Math.floor(0.3 * uint32Space)
     const scoring = [item(1, 0), item(2, 0), item(3, 0)]
     const fieldTests = [4, 5, 6].map((id) => ({
       ...item(id, 0),
-      calibrationId: null,
+      calibrationId: 'field-test-3',
       contributesToEstimate: false,
       role: 'FIELD_TEST' as const,
     }))
@@ -205,6 +262,7 @@ describe('adaptive v2 posterior selection', () => {
         responseOrder: 2,
         mode: 'RESEARCH',
         minQuestionsPerLeaf: 1,
+        totalQuestionCap: 20,
         totalAdministeredResponses: 1,
         topInformationRatio: 1,
         researchPolicy: {

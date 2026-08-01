@@ -8,6 +8,7 @@ import type { AdaptiveRuntimePoolItem } from './runtime.js'
 
 const UINT32_SPACE = 0x1_0000_0000
 
+export const ADAPTIVE_V2_EXPOSURE_CEILING = 0.4 as const
 export const ADAPTIVE_V2_RANDOMIZATION_VERSION = 'HASH32_JOINT_V1' as const
 
 export type AdaptiveV2Mode = 'DIAGNOSTIC' | 'RESEARCH'
@@ -83,6 +84,7 @@ export function selectAdaptiveV2Item({
   mode,
   leaves,
   minQuestionsPerLeaf,
+  totalQuestionCap,
   totalAdministeredResponses,
   topInformationRatio,
   researchPolicy,
@@ -93,6 +95,7 @@ export function selectAdaptiveV2Item({
   mode: AdaptiveV2Mode
   leaves: AdaptiveV2LeafSelectionState[]
   minQuestionsPerLeaf: number
+  totalQuestionCap: number
   totalAdministeredResponses: number
   topInformationRatio: number
   researchPolicy: AdaptiveV2ResearchPolicy | null
@@ -107,9 +110,13 @@ export function selectAdaptiveV2Item({
   if (!Number.isInteger(minQuestionsPerLeaf) || minQuestionsPerLeaf < 0) {
     throw new TypeError('Minimum questions per leaf must be non-negative.')
   }
+  if (!Number.isInteger(totalQuestionCap) || totalQuestionCap < 1) {
+    throw new TypeError('Total question cap must be a positive integer.')
+  }
   if (
     !Number.isInteger(totalAdministeredResponses) ||
-    totalAdministeredResponses < 0
+    totalAdministeredResponses < 0 ||
+    totalAdministeredResponses >= totalQuestionCap
   ) {
     throw new TypeError('Administered response count must be non-negative.')
   }
@@ -153,9 +160,46 @@ export function selectAdaptiveV2Item({
     seenLeafIds.add(leaf.leafId)
   }
 
-  const selectableLeaves = leaves.filter(
-    (leaf) => leaf.eligibleItems.length > 0
-  )
+  let selectableLeaves = leaves.filter((leaf) => leaf.eligibleItems.length > 0)
+  if (selectableLeaves.length === 0) return null
+
+  let forceFieldTest = false
+  if (mode === 'RESEARCH') {
+    const anchorDeficitLeaves = selectableLeaves.filter((leaf) =>
+      [...leaf.anchorResponsesByLevel].some(
+        ([levelId, count]) =>
+          count < researchPolicy!.anchorResponsesPerLeafLevel &&
+          leaf.eligibleItems.some(
+            (item) => item.role === 'ANCHOR' && item.levelId === levelId
+          )
+      )
+    )
+    if (anchorDeficitLeaves.length > 0) {
+      selectableLeaves = anchorDeficitLeaves
+    } else {
+      const fieldTestDeficit = selectableLeaves.reduce(
+        (total, leaf) =>
+          total +
+          Math.max(
+            researchPolicy!.fieldTestResponsesPerLeaf -
+              leaf.fieldTestResponseCount,
+            0
+          ),
+        0
+      )
+      const remainingResponses = totalQuestionCap - totalAdministeredResponses
+      forceFieldTest =
+        fieldTestDeficit > 0 && remainingResponses <= fieldTestDeficit
+      if (forceFieldTest) {
+        selectableLeaves = selectableLeaves.filter(
+          (leaf) =>
+            leaf.fieldTestResponseCount <
+              researchPolicy!.fieldTestResponsesPerLeaf &&
+            leaf.eligibleItems.some((item) => item.role === 'FIELD_TEST')
+        )
+      }
+    }
+  }
   if (selectableLeaves.length === 0) return null
 
   const missingEvidence = selectableLeaves.filter(
@@ -213,6 +257,7 @@ export function selectAdaptiveV2Item({
     items: exposureEligible,
     researchPolicy,
     randomDraw,
+    forceFieldTest,
   })
   if (roleSelection.items.length === 0) return null
 
@@ -294,12 +339,14 @@ function selectRoleCandidates({
   items,
   researchPolicy,
   randomDraw,
+  forceFieldTest,
 }: {
   mode: AdaptiveV2Mode
   leaf: AdaptiveV2LeafSelectionState
   items: AdaptiveV2PoolItem[]
   researchPolicy: AdaptiveV2ResearchPolicy | null
   randomDraw: number
+  forceFieldTest: boolean
 }) {
   if (mode === 'DIAGNOSTIC') {
     return { items, itemDraw: randomDraw, drawSpan: UINT32_SPACE }
@@ -335,6 +382,13 @@ function selectRoleCandidates({
   if (!fieldDeficit || fieldTests.length === 0) {
     return {
       items: scoring,
+      itemDraw: randomDraw,
+      drawSpan: UINT32_SPACE,
+    }
+  }
+  if (forceFieldTest) {
+    return {
+      items: fieldTests,
       itemDraw: randomDraw,
       drawSpan: UINT32_SPACE,
     }

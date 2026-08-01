@@ -5,6 +5,7 @@ import {
   persistAdaptivePracticeQuizEstimates,
   type PersistAdaptivePracticeQuizEstimatesInput,
 } from '../src/services/adaptivePracticeQuizRepository.js'
+import { createLegacyAdaptivePublicationFixture } from './adaptivePracticeQuizTestHelpers.js'
 
 describe('adaptive practice quiz estimate repository', () => {
   beforeEach(cleanDatabase)
@@ -278,6 +279,40 @@ async function createFixture(nodeCount: number) {
     where: { treeId: tree.id },
     orderBy: { id: 'asc' },
   })
+  await prisma.competenceTreeCourse.create({
+    data: { treeId: tree.id, courseId: course.id, linkedById: owner.id },
+  })
+  const element = await prisma.element.create({
+    data: {
+      ownerId: owner.id,
+      type: DB.ElementType.SC,
+      name: 'Repository item',
+      content: 'Repository item',
+      options: {
+        displayMode: 'LIST',
+        choices: [
+          { ix: 0, value: 'Correct', correct: true },
+          { ix: 1, value: 'Incorrect', correct: false },
+        ],
+      },
+    },
+  })
+  const assignment = await prisma.competenceTreeElementAssignment.create({
+    data: {
+      treeId: tree.id,
+      elementId: element.id,
+      leafNodeId: nodes.at(-1)!.id,
+      levelId: level.id,
+    },
+  })
+  await prisma.competenceTreeLeafLevelCoverage.create({
+    data: {
+      treeId: tree.id,
+      leafNodeId: assignment.leafNodeId,
+      levelId: level.id,
+      targetItemCount: 1,
+    },
+  })
   const practiceQuiz = await prisma.practiceQuiz.create({
     data: {
       name: `adaptive-repository-quiz-${suffix}`,
@@ -298,6 +333,10 @@ async function createFixture(nodeCount: number) {
       poolPublishedAt: new Date(),
     },
   })
+  const { publication } = await createLegacyAdaptivePublicationFixture({
+    configId: config.id,
+    publishedById: owner.id,
+  })
   const participant = await prisma.participant.create({
     data: {
       username: `adaptive-repository-${suffix}`,
@@ -315,6 +354,13 @@ async function createFixture(nodeCount: number) {
       status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
       stopReason: DB.AdaptivePracticeQuizStopReason.TOTAL_QUESTION_CAP,
       completedAt: new Date(),
+      publicationId: publication.id,
+      scaleVersionId: publication.scaleVersionId,
+      measurementVersion: publication.measurementVersion,
+      estimatorImplementationVersion:
+        publication.estimatorImplementationVersion,
+      classificationPolicyVersion: publication.classificationPolicyVersion,
+      calibrationPolicyVersion: publication.calibrationPolicyVersion,
       configId: config.id,
       competenceTreeId: tree.id,
       practiceQuizId: practiceQuiz.id,

@@ -13,11 +13,13 @@ import {
   type AdaptivePracticeQuizAttemptState,
   type AdaptivePracticeQuizResponseInput as AdaptivePracticeQuizResponseInputType,
   type AdaptivePrivacySuppression,
+  type AdaptiveResultClassification,
   type AdaptiveResultConfidence,
   type AdaptiveResultLevelBand,
   type AdaptiveResultTrajectoryPoint,
   type AdaptiveStudentResult,
   type AdaptiveStudentResultNode,
+  type AdaptiveSubmittedResponseFeedback,
 } from '../services/adaptivePracticeQuizzes.js'
 import { AdaptiveLevelMappingRule, AdaptiveNodeKind } from './competenceTree.js'
 import {
@@ -51,6 +53,15 @@ export const AdaptiveResultConfidenceType = builder.enumType(
       'LOW',
       'INSUFFICIENT_DATA',
     ] as const satisfies readonly AdaptiveResultConfidence[],
+  }
+)
+
+export const AdaptiveResultClassificationType = builder.enumType(
+  'AdaptivePracticeQuizResultClassification',
+  {
+    values: Object.values(
+      DB.AdaptiveResultStatus
+    ) as AdaptiveResultClassification[],
   }
 )
 
@@ -198,6 +209,19 @@ export const AdaptiveParticipantElementType =
     }),
   })
 
+const AdaptiveSubmittedResponseFeedbackRef =
+  builder.objectRef<AdaptiveSubmittedResponseFeedback>(
+    'AdaptivePracticeQuizSubmittedResponseFeedback'
+  )
+export const AdaptiveSubmittedResponseFeedbackType =
+  AdaptiveSubmittedResponseFeedbackRef.implement({
+    fields: (t) => ({
+      correct: t.exposeBoolean('correct'),
+      score: t.exposeFloat('score'),
+      feedback: t.exposeStringList('feedback'),
+    }),
+  })
+
 export const AdaptivePracticeQuizAttemptStateRef =
   builder.objectRef<AdaptivePracticeQuizAttemptState>(
     'AdaptivePracticeQuizAttemptState'
@@ -224,6 +248,10 @@ export const AdaptivePracticeQuizAttemptStateType =
       elapsedSeconds: t.exposeInt('elapsedSeconds', { nullable: true }),
       showTimer: t.exposeBoolean('showTimer'),
       canStartNewAttempt: t.exposeBoolean('canStartNewAttempt'),
+      submittedResponseFeedback: t.expose('submittedResponseFeedback', {
+        type: AdaptiveSubmittedResponseFeedbackRef,
+        nullable: true,
+      }),
       servedItem: t.expose('servedItem', {
         type: AdaptiveParticipantElementRef,
         nullable: true,
@@ -270,7 +298,14 @@ export const AdaptiveStudentResultNodeType =
       kind: t.expose('kind', { type: AdaptiveNodeKind }),
       order: t.exposeInt('order'),
       responseCount: t.exposeInt('responseCount'),
+      classification: t.expose('classification', {
+        type: AdaptiveResultClassificationType,
+      }),
       levelLabel: t.exposeString('levelLabel', { nullable: true }),
+      leadingLevelLabels: t.exposeStringList('leadingLevelLabels'),
+      classificationProbability: t.exposeFloat('classificationProbability', {
+        nullable: true,
+      }),
       confidence: t.expose('confidence', {
         type: AdaptiveResultConfidenceType,
       }),
@@ -299,7 +334,14 @@ export const AdaptiveStudentResultType = AdaptiveStudentResultRef.implement({
     levelInterpretation: t.expose('levelInterpretation', {
       type: AdaptiveLevelMappingRule,
     }),
+    classification: t.expose('classification', {
+      type: AdaptiveResultClassificationType,
+    }),
     levelLabel: t.exposeString('levelLabel', { nullable: true }),
+    leadingLevelLabels: t.exposeStringList('leadingLevelLabels'),
+    classificationProbability: t.exposeFloat('classificationProbability', {
+      nullable: true,
+    }),
     confidence: t.expose('confidence', {
       type: AdaptiveResultConfidenceType,
     }),
@@ -350,6 +392,15 @@ export const AdaptiveCohortNodeDistributionType =
       insufficientDataCount: t.exposeInt('insufficientDataCount', {
         nullable: true,
       }),
+      classifiedCount: t.exposeInt('classifiedCount', { nullable: true }),
+      betweenLevelsCount: t.exposeInt('betweenLevelsCount', {
+        nullable: true,
+      }),
+      insufficientEvidenceCount: t.exposeInt('insufficientEvidenceCount', {
+        nullable: true,
+      }),
+      poolLimitedCount: t.exposeInt('poolLimitedCount', { nullable: true }),
+      researchOnlyCount: t.exposeInt('researchOnlyCount', { nullable: true }),
       buckets: t.expose('buckets', { type: [AdaptiveCohortLevelBucketRef] }),
     }),
   })
@@ -366,6 +417,12 @@ export const AdaptiveCohortAttemptSummaryType =
         type: [AdaptivePrivacySuppressionRef],
       }),
       classified: t.exposeInt('classified', { nullable: true }),
+      betweenLevels: t.exposeInt('betweenLevels', { nullable: true }),
+      insufficientEvidence: t.exposeInt('insufficientEvidence', {
+        nullable: true,
+      }),
+      poolLimited: t.exposeInt('poolLimited', { nullable: true }),
+      researchOnly: t.exposeInt('researchOnly', { nullable: true }),
       capped: t.exposeInt('capped', { nullable: true }),
       poolExhausted: t.exposeInt('poolExhausted', { nullable: true }),
       stoppedInsufficientData: t.exposeInt('stoppedInsufficientData', {
@@ -437,6 +494,7 @@ export const AdaptiveCohortResultsRef =
 export const AdaptiveCohortResultsType = AdaptiveCohortResultsRef.implement({
   fields: (t) => ({
     practiceQuizId: t.exposeString('practiceQuizId'),
+    competenceTreeId: t.exposeString('competenceTreeId'),
     cohortSize: t.exposeInt('cohortSize', { nullable: true }),
     suppressed: t.exposeBoolean('suppressed'),
     attemptSummary: t.expose('attemptSummary', {

@@ -138,101 +138,125 @@ export async function updateCompetenceTreeElementAssignment(
   ctx: ContextWithUser
 ): Promise<CompetenceTreeDetail> {
   await ctx.prisma.$transaction(async (tx) => {
-    await lockOwnedCompetenceTree(tx, treeId, ctx.user.sub)
-    const locked = await tx.practiceQuizAdaptiveConfig.count({
-      where: { competenceTreeId: treeId },
-    })
-    if (locked > 0) {
-      throw competenceTreeServiceError(
-        'This competence tree is already used by a practice quiz. Duplicate it before changing its assignments.',
-        'COMPETENCE_TREE_STRUCTURE_LOCKED'
-      )
-    }
-    if (!assignment) {
-      await tx.competenceTreeElementAssignment.deleteMany({
-        where: { treeId, elementId },
-      })
-      return
-    }
-    const [tree, element] = await Promise.all([
-      tx.competenceTree.findUniqueOrThrow({
-        where: { id: treeId },
-        include: competenceTreeDetailInclude,
-      }),
-      getAccessibleCompetenceTreeElement(elementId, ctx.user.sub, tx),
-    ])
-    const coverage = tree.levelCoverages.find(
-      (entry) =>
-        entry.leafNodeId === assignment.leafNodeId &&
-        entry.levelId === assignment.levelId &&
-        entry.enabled
-    )
-    if (!coverage) {
-      throw competenceTreeServiceError(
-        'Element assignments require enabled leaf-level coverage in the same competence tree.',
-        'COMPETENCE_TREE_ASSIGNMENT_COVERAGE_INVALID'
-      )
-    }
-    const validation = validateCompetenceTreeShape({
-      name: tree.name,
-      displayName: tree.displayName,
-      maxDepth: tree.maxDepth,
-      thetaMin: tree.thetaMin,
-      thetaMax: tree.thetaMax,
-      defaultDiscrimination: tree.defaultDiscrimination,
-      levels: tree.levels,
-      nodes: tree.nodes,
-      coverages: tree.levelCoverages,
-      assignments: [
-        ...tree.elementAssignments
-          .filter((entry) => entry.elementId !== elementId)
-          .map((entry) => ({
-            elementId: entry.elementId,
-            type: entry.element.type,
-            leafNodeId: entry.leafNodeId,
-            levelId: entry.levelId,
-            discrimination: entry.discrimination,
-            enablePercentInput: entry.enablePercentInput,
-            enabled: entry.enabled,
-            controlledAnswerReady: hasControlledAdaptiveAnswer(
-              entry.element.type,
-              entry.element.options
-            ),
-          })),
-        {
-          elementId,
-          type: element.type,
-          leafNodeId: assignment.leafNodeId,
-          levelId: assignment.levelId,
-          discrimination: assignment.discrimination,
-          enablePercentInput: assignment.enablePercentInput,
-          enabled: assignment.enabled,
-          controlledAnswerReady: hasControlledAdaptiveAnswer(
-            element.type,
-            element.options
-          ),
-        },
-      ],
-    })
-    if (!validation.valid) {
-      throw new GraphQLError('Competence tree assignment is invalid.', {
-        extensions: {
-          code: 'COMPETENCE_TREE_INVALID',
-          issues: validation.errors,
-        },
-      })
-    }
-    const assignmentData = {
-      ...assignment,
-      discrimination: assignment.discrimination ?? null,
-    }
-    await tx.competenceTreeElementAssignment.upsert({
-      where: { treeId_elementId: { treeId, elementId } },
-      create: { treeId, elementId, ...assignmentData },
-      update: assignmentData,
+    await persistCompetenceTreeElementAssignment({
+      treeId,
+      elementId,
+      assignment,
+      ownerId: ctx.user.sub,
+      tx,
     })
   })
   return await getRequiredCompetenceTree(treeId, ctx)
+}
+
+export async function persistCompetenceTreeElementAssignment({
+  treeId,
+  elementId,
+  assignment,
+  creationRequestId,
+  ownerId,
+  tx,
+}: {
+  treeId: string
+  elementId: number
+  assignment?: CompetenceTreeElementAssignmentUpdateInput | null
+  creationRequestId?: string
+  ownerId: string
+  tx: DB.Prisma.TransactionClient
+}): Promise<void> {
+  await lockOwnedCompetenceTree(tx, treeId, ownerId)
+  const locked = await tx.practiceQuizAdaptiveConfig.count({
+    where: { competenceTreeId: treeId },
+  })
+  if (locked > 0) {
+    throw competenceTreeServiceError(
+      'This competence tree is already used by a practice quiz. Duplicate it before changing its assignments.',
+      'COMPETENCE_TREE_STRUCTURE_LOCKED'
+    )
+  }
+  if (!assignment) {
+    await tx.competenceTreeElementAssignment.deleteMany({
+      where: { treeId, elementId },
+    })
+    return
+  }
+  const [tree, element] = await Promise.all([
+    tx.competenceTree.findUniqueOrThrow({
+      where: { id: treeId },
+      include: competenceTreeDetailInclude,
+    }),
+    getAccessibleCompetenceTreeElement(elementId, ownerId, tx),
+  ])
+  const coverage = tree.levelCoverages.find(
+    (entry) =>
+      entry.leafNodeId === assignment.leafNodeId &&
+      entry.levelId === assignment.levelId &&
+      entry.enabled
+  )
+  if (!coverage) {
+    throw competenceTreeServiceError(
+      'Element assignments require enabled leaf-level coverage in the same competence tree.',
+      'COMPETENCE_TREE_ASSIGNMENT_COVERAGE_INVALID'
+    )
+  }
+  const validation = validateCompetenceTreeShape({
+    name: tree.name,
+    displayName: tree.displayName,
+    maxDepth: tree.maxDepth,
+    thetaMin: tree.thetaMin,
+    thetaMax: tree.thetaMax,
+    defaultDiscrimination: tree.defaultDiscrimination,
+    levels: tree.levels,
+    nodes: tree.nodes,
+    coverages: tree.levelCoverages,
+    assignments: [
+      ...tree.elementAssignments
+        .filter((entry) => entry.elementId !== elementId)
+        .map((entry) => ({
+          elementId: entry.elementId,
+          type: entry.element.type,
+          leafNodeId: entry.leafNodeId,
+          levelId: entry.levelId,
+          discrimination: entry.discrimination,
+          enablePercentInput: entry.enablePercentInput,
+          enabled: entry.enabled,
+          controlledAnswerReady: hasControlledAdaptiveAnswer(
+            entry.element.type,
+            entry.element.options
+          ),
+        })),
+      {
+        elementId,
+        type: element.type,
+        leafNodeId: assignment.leafNodeId,
+        levelId: assignment.levelId,
+        discrimination: assignment.discrimination,
+        enablePercentInput: assignment.enablePercentInput,
+        enabled: assignment.enabled,
+        controlledAnswerReady: hasControlledAdaptiveAnswer(
+          element.type,
+          element.options
+        ),
+      },
+    ],
+  })
+  if (!validation.valid) {
+    throw new GraphQLError('Competence tree assignment is invalid.', {
+      extensions: {
+        code: 'COMPETENCE_TREE_INVALID',
+        issues: validation.errors,
+      },
+    })
+  }
+  const assignmentData = {
+    ...assignment,
+    discrimination: assignment.discrimination ?? null,
+  }
+  await tx.competenceTreeElementAssignment.upsert({
+    where: { treeId_elementId: { treeId, elementId } },
+    create: { treeId, elementId, creationRequestId, ...assignmentData },
+    update: assignmentData,
+  })
 }
 
 export async function duplicateCompetenceTree(

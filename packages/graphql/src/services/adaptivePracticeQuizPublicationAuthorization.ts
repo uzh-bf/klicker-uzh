@@ -99,7 +99,7 @@ async function lockAdaptiveCompetenceTreeForPublication(
     SELECT "id"
     FROM "CompetenceTree"
     WHERE "id" = ${treeId}::uuid
-    FOR SHARE
+    FOR UPDATE
   `
 }
 

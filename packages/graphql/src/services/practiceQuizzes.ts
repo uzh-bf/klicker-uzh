@@ -14,6 +14,7 @@ import {
   clearAdaptivePublishedPool,
   materializeAdaptivePracticeQuizPool,
 } from './adaptivePracticeQuizPublication.js'
+import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
 import {
   lockAdaptiveCourseForShare,
   lockAdaptivePracticeQuizConfigForUpdate,
@@ -436,7 +437,7 @@ export async function publishPracticeQuiz(
         if (config && config._count.attempts > 0) {
           await assertAdaptivePublishedPool(id, prisma)
         } else {
-          await materializeAdaptivePracticeQuizPool(id, prisma)
+          await materializeAdaptivePracticeQuizPool(id, ctx.user.sub, prisma)
         }
         return await prisma.practiceQuiz.update({
           where: { id, isDeleted: false },
@@ -691,6 +692,9 @@ export async function deletePracticeQuiz(
         practiceQuiz._count.adaptiveAttempts === 0
 
       if (shouldHardDelete) {
+        if (practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+          await purgeAttemptFreeAdaptivePublications(id, prisma)
+        }
         const deletedItem = await prisma.practiceQuiz.delete({ where: { id } })
         return {
           kind: 'hard-deleted',

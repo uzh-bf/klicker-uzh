@@ -303,7 +303,7 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     await page.getByTestId('close-element-modal-button').click()
   })
 
-  test('recovers a saved READY element after its adaptive mapping fails', async ({
+  test('creates a READY element and its adaptive mapping atomically', async ({
     page,
     loginLecturer,
   }) => {
@@ -335,6 +335,9 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     await page.getByTestId('set-correctness-0').click()
 
     await expect(page.getByTestId('adaptive-mapping-section')).toBeVisible()
+    await expect(
+      page.getByRole('switch', { name: 'Assign to a competence tree' })
+    ).toBeVisible()
     await page.getByTestId('adaptive-mapping-create-toggle').click()
     await page.getByTestId('adaptive-mapping-tree-select').click()
     await page.getByTestId(`adaptive-mapping-tree-option-${tree.id}`).click()
@@ -348,8 +351,8 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
       .click()
 
     await expect(
-      page.getByTestId(`adaptive-mapping-parameters-${tree.id}`)
-    ).toContainText('0.50')
+      page.getByTestId(`adaptive-mapping-level-select-${tree.id}`)
+    ).toContainText(level.label)
     await expect(page.getByTestId('save-new-question')).toContainText(
       'Create element and assign'
     )
@@ -363,17 +366,14 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
       data: { enabled: false },
     })
     try {
-      const mappingResponsePromise = page.waitForResponse(
+      const createResponsePromise = page.waitForResponse(
         (response) =>
-          hasGraphqlOperation(
-            response.request(),
-            'UpdateCompetenceTreeElementAssignment'
-          ),
+          hasGraphqlOperation(response.request(), 'ManipulateChoicesQuestion'),
         { timeout: 30_000 }
       )
       await page.getByTestId('save-new-question').click()
-      const mappingResponse = await mappingResponsePromise
-      await expect(mappingResponse.json()).resolves.toMatchObject({
+      const createResponse = await createResponsePromise
+      await expect(createResponse.json()).resolves.toMatchObject({
         errors: [
           expect.objectContaining({
             message:
@@ -381,13 +381,6 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
           }),
         ],
       })
-
-      await expect(page.getByTestId('adaptive-mapping-recovery')).toBeVisible()
-      await expect(
-        page.getByTestId('adaptive-mapping-recovery-error-detail')
-      ).toContainText(
-        'Element assignments require enabled leaf-level coverage in the same competence tree.'
-      )
     } finally {
       await prisma.competenceTreeLeafLevelCoverage.updateMany({
         where: coverageWhere,
@@ -397,22 +390,28 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
 
     await expect
       .poll(() => prisma.element.count({ where: { name: elementName } }))
-      .toBe(1)
+      .toBe(0)
     await expect(
       prisma.competenceTreeElementAssignment.count({
         where: { treeId: tree.id, leafNodeId: leaf.id, levelId: level.id },
       })
     ).resolves.toBe(0)
 
-    await page.getByTestId('close-element-modal-button').click()
-    await expect(page.getByTestId('adaptive-mapping-recovery')).toHaveCount(0)
-    await page.getByTestId('create-question').click()
-    await expect(page.getByTestId('adaptive-mapping-recovery')).toBeVisible()
     await expect(page.getByTestId('insert-question-title')).toHaveValue(
       elementName
     )
-    await page.getByTestId('adaptive-mapping-retry').click()
-    await expect(page.getByTestId('adaptive-mapping-recovery')).toHaveCount(0)
+    await expect(
+      page.getByTestId(`adaptive-mapping-level-select-${tree.id}`)
+    ).toContainText(level.label)
+
+    const retryResponsePromise = page.waitForResponse(
+      (response) =>
+        hasGraphqlOperation(response.request(), 'ManipulateChoicesQuestion'),
+      { timeout: 30_000 }
+    )
+    await page.getByTestId('save-new-question').click()
+    await expect(retryResponsePromise).resolves.toBeDefined()
+    await expect(page.getByTestId('insert-question-title')).toHaveCount(0)
 
     await expect
       .poll(() =>
@@ -464,12 +463,7 @@ test.describe('Adaptive PracticeQuiz production workflow', () => {
     await expect(assignmentTable).toBeVisible()
     await expect(
       assignmentTable.getByRole('columnheader', {
-        name: 'Discrimination (a)',
-      })
-    ).toBeVisible()
-    await expect(
-      assignmentTable.getByRole('columnheader', {
-        name: 'Difficulty (b)',
+        name: 'Expected item difficulty',
       })
     ).toBeVisible()
     await expect(

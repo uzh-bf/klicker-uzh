@@ -153,6 +153,7 @@ export function researchProbe(
           },
         ],
         minQuestionsPerLeaf: 1,
+        totalQuestionCap: 100,
         totalAdministeredResponses: 3,
         topInformationRatio: 0.8,
         researchPolicy: {

@@ -1,7 +1,9 @@
 import {
   information,
   informationAtDifficulty,
+  normalizeEnabledRootWeights,
 } from '@klicker-uzh/adaptive-learning'
+import { GraphQLError } from 'graphql'
 
 import type {
   AdaptiveConfiguredAssignment,
@@ -148,6 +150,18 @@ export function allocateRootQuestionBudget({
   minimumEvidenceByNode: Map<number, number>
   totalQuestionCap: number
 }): Map<number, number> {
+  const normalized = normalizeEnabledRootWeights(
+    roots.map((root) => ({ key: root.id, weight: root.weight ?? 0 }))
+  )
+  if (!normalized.ok) {
+    throw new GraphQLError(
+      'Enabled root competences require positive finite weights.',
+      { extensions: { code: 'ADAPTIVE_ROOT_WEIGHT_INVALID' } }
+    )
+  }
+  const normalizedWeights = new Map(
+    normalized.normalized.map(({ key, weight }) => [key, weight])
+  )
   const allocations = new Map(roots.map((root) => [root.id, 0]))
   let remaining = Math.min(
     totalQuestionCap,
@@ -168,11 +182,9 @@ export function allocateRootQuestionBudget({
         )
     )
     const candidates = belowMinimum.length > 0 ? belowMinimum : withCapacity
-    const hasPositiveWeight = candidates.some((root) => (root.weight ?? 0) > 0)
     candidates.sort((a, b) => {
       const score = (root: AdaptiveConfiguredNode) =>
-        (hasPositiveWeight ? (root.weight ?? 0) : 1) /
-        ((allocations.get(root.id) ?? 0) + 1)
+        normalizedWeights.get(root.id)! / ((allocations.get(root.id) ?? 0) + 1)
       return score(b) - score(a) || a.id - b.id
     })
     const selected = candidates[0]!

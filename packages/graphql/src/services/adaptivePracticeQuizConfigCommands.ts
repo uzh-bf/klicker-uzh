@@ -5,6 +5,7 @@ import {
   prepareConfigurationInput,
   type AdaptivePracticeQuizConfigInput,
 } from './adaptivePracticeQuizConfigPreparation.js'
+import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
 
 export async function replaceAdaptivePracticeQuizConfig(
   {
@@ -22,7 +23,7 @@ export async function replaceAdaptivePracticeQuizConfig(
 ): Promise<string> {
   await lockAdaptiveLearningCourseEnabled(courseId, prisma)
   await lockCompetenceTreeForAdaptiveConfig(prisma, input.competenceTreeId)
-  const { settings, prepared } = await prepareConfigurationInput(
+  const { settings, measurement, prepared } = await prepareConfigurationInput(
     { courseId, input, userId },
     prisma
   )
@@ -39,6 +40,7 @@ export async function replaceAdaptivePracticeQuizConfig(
     )
   }
   if (existing) {
+    await purgeAttemptFreeAdaptivePublications(practiceQuizId, prisma)
     await prisma.practiceQuizAdaptiveConfig.delete({
       where: { id: existing.id },
     })
@@ -48,6 +50,9 @@ export async function replaceAdaptivePracticeQuizConfig(
     data: {
       practiceQuizId,
       competenceTreeId: tree.id,
+      scaleVersionId: measurement.scaleVersionId,
+      measurementVersion: measurement.measurementVersion,
+      calibrationPolicyVersion: measurement.calibrationPolicyVersion,
       preset: settings.preset,
       attemptSelectionPolicy: settings.attemptSelectionPolicy,
       totalQuestionCap: settings.totalQuestionCap,
@@ -100,6 +105,7 @@ export async function removeAdaptivePracticeQuizConfig(
       'ADAPTIVE_CONFIG_LOCKED'
     )
   }
+  await purgeAttemptFreeAdaptivePublications(practiceQuizId, prisma)
   await prisma.practiceQuizAdaptiveConfig.delete({ where: { id: existing.id } })
 }
 

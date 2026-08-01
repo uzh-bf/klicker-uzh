@@ -897,6 +897,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           result:
             'Dein Ergebnis konnte nicht geladen werden. Bitte versuche es erneut.',
         },
+        feedback: {
+          correct: 'Richtig',
+          incorrect: 'Noch nicht richtig',
+          score: 'Punktzahl: {score} %',
+        },
         unavailable: {
           title: 'Quiz nicht verfügbar',
           description:
@@ -922,10 +927,53 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           title: 'Dein Ergebnis',
           headline: 'Dein aktuelles Niveau: {level}',
           incompleteHeadline: 'Noch kein vollständiges Ergebnis',
+          betweenHeadline: 'Zwischen {levels}',
+          poolLimitedHeadline: 'Weitere passende Fragen werden benötigt',
+          researchHeadline: 'Übung abgeschlossen',
           incomplete:
             'Es liegen noch nicht genügend Daten für ein Gesamtniveau vor.',
+          probability: '({probability} % Wahrscheinlichkeit)',
           answeredQuestions:
             '{count, plural, one {# Frage beantwortet} other {# Fragen beantwortet}}',
+          classification: {
+            CLASSIFIED: {
+              label: 'Niveau bestimmt',
+              description:
+                'Die verfügbaren Daten stützen dieses Niveau. Der Bereich unten zeigt die verbleibende Unsicherheit.',
+            },
+            BETWEEN_LEVELS: {
+              label: 'Zwischen zwei Niveaus',
+              description:
+                'Deine Antworten stützen zwei benachbarte Niveaus. Der Bereich unten zeigt, wo das Ergebnis beide überlappt.',
+            },
+            INSUFFICIENT_EVIDENCE: {
+              label: 'Nicht genügend Daten',
+              description:
+                'Es liegen noch nicht genügend Daten für eine verlässliche Niveaueinstufung vor.',
+            },
+            POOL_LIMITED: {
+              label: 'Fragenpool begrenzt',
+              description:
+                'Mit den verfügbaren Fragen konnte die Schätzung nicht ausreichend eingegrenzt werden.',
+            },
+            RESEARCH_ONLY: {
+              label: 'Kein Kompetenzresultat',
+              description:
+                'Diese Runde sammelt Antworten für die Kalibrierung und weist kein Kompetenzniveau aus.',
+            },
+          },
+          nextStep: {
+            title: 'Nächster Schritt',
+            CLASSIFIED:
+              'Übe mit Material auf diesem Niveau weiter und wiederhole Kompetenzbereiche, die darunter liegen.',
+            BETWEEN_LEVELS:
+              'Übe auf dem höheren der beiden Niveaus und wiederhole das Quiz mit mehr Erfahrung.',
+            INSUFFICIENT_EVIDENCE:
+              'Übe in allen Kompetenzbereichen und wiederhole das Quiz, um mehr Daten zu sammeln.',
+            POOL_LIMITED:
+              'Nutze das Kompetenzprofil zur Orientierung und frage nach zusätzlichen Übungsmaterialien.',
+            RESEARCH_ONLY: '',
+          },
           interpretation: {
             MASTERY: {
               headline: 'Höchste nachgewiesene Stufe: {level}',
@@ -984,6 +1032,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
           insufficientData: 'Unzureichende Daten',
+          betweenLevels: 'Zwischen {levels}',
+          poolLimited: 'Fragenpool begrenzt',
+          researchOnly: 'Kein Kompetenzresultat',
           expand: 'Details zu {name} anzeigen',
           collapse: 'Details zu {name} ausblenden',
         },
@@ -1285,6 +1336,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       status: 'Status',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
+      sortAscending: 'Aufsteigend sortieren',
+      sortDescending: 'Absteigend sortieren',
+      selectAllElements: 'Alle Elemente auswählen',
+      deselectAllElements: 'Alle Elemente abwählen',
       catalystRequired:
         'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
@@ -1919,6 +1974,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         leaf: 'Blatt-Teilkompetenz',
         selectLeaf: 'Blatt-Teilkompetenz auswählen...',
         level: 'Stufe',
+        expectedDifficulty: 'Erwartete Itemschwierigkeit',
+        expectedDifficultyTooltip:
+          'Wählen Sie die Stufe, auf der dieses Item voraussichtlich am informativsten ist. Diese anfängliche Schätzung wird durch eine genehmigte Kalibrierung ersetzt.',
         selectLevel: 'Stufe auswählen...',
         enabled: 'In adaptiven Quizzes verwenden',
         enablePercentInput: 'Prozenteingabe erlauben',
@@ -1931,16 +1989,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         add: 'Zuordnung hinzufügen',
         remove: 'Zuordnung entfernen',
         save: 'Zuordnung speichern',
-        recovery: {
-          elementSavedMappingFailed:
-            'Element gespeichert; adaptive Zuordnung nicht gespeichert.',
-          description:
-            'Versuchen Sie die adaptive Zuordnung erneut oder behalten Sie das gespeicherte Element ohne Zuordnung.',
-          retry: 'Zuordnung erneut versuchen',
-          keepUnmapped: 'Element ohne Zuordnung behalten',
-          keepUnmappedTitle: 'Element ohne Zuordnung behalten?',
-          keepUnmappedDescription:
-            'Das Element ist bereits gespeichert. Dadurch wird die ausstehende adaptive Zuordnung verworfen.',
+        assignmentErrors: {
+          locked:
+            'Dieser Kompetenzbaum wird bereits von einem Übungsquiz verwendet. Duplizieren Sie den Baum, bevor Sie dieses Element hinzufügen.',
+          coverage:
+            'Die gewählte Blatt- und Stufenkombination ist nicht mehr aktiviert. Wählen Sie eine verfügbare Kombination.',
+          invalid:
+            'Diese adaptive Zuordnung ist ungültig. Prüfen Sie das gewählte Blatt, die Stufe und die Antwortkonfiguration.',
+          unavailable:
+            'Dieser Kompetenzbaum kann nicht mehr bearbeitet werden. Aktualisieren Sie den Katalog oder wählen Sie einen anderen Baum.',
         },
         states: {
           archived: 'Archiviert',
@@ -2311,7 +2368,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         preset: {
           DIAGNOSTIC: 'Diagnose / Selbsteinschätzung',
           PLACEMENT: 'Einstufung / Kompetenznachweis',
+          PLACEMENT_UNAVAILABLE: 'Einstufung (noch nicht verfügbar)',
           RESEARCH: 'Forschung / Kalibrierung',
+        },
+        research: {
+          nonClassifying:
+            'Der Forschungsmodus sammelt Antworten für die Itemkalibrierung. Lernende werden nicht klassifiziert und erhalten kein Kompetenzniveau.',
         },
         attemptPolicy: {
           FIRST_COMPLETED: 'Erster abgeschlossener Versuch',
@@ -2394,6 +2456,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Wählen Sie einen Kurs, bevor Sie die adaptive Durchführung konfigurieren.',
           linkRequired:
             'Verknüpfen Sie den gewählten Kompetenzbaum mit diesem Kurs, bevor Sie fortfahren.',
+        },
+        scale: {
+          title: 'Skala und Kalibrierung',
+          version: 'Skalenversion {version}',
+          noActive:
+            'Dieser Kompetenzbaum hat keine aktive Skala. Erstellen, prüfen und aktivieren Sie eine Skala vor der Veröffentlichung.',
+          legacyMeasurement:
+            'Dieses Quiz verwendet noch das bisherige Messmodell. Verwenden Sie die aktive Skalenversion {version}, um Bayessche IRT zu konfigurieren.',
+          newerActiveAvailable:
+            'Eine neuere aktive Skalenversion {version} ist verfügbar. Bereits veröffentlichte Versuche behalten ihre ursprüngliche Skala.',
+          useActive: 'Skalenversion {version} verwenden',
+          standardSetting: 'Standardsetzung genehmigt',
+          empiricalValidation: 'Empirische Holdout-Prüfung genehmigt',
         },
         preview: {
           emptyResponse: 'Die adaptive Vorschau hat keine Daten zurückgegeben.',
@@ -2486,6 +2561,30 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
               'Die aktive Kompetenz "{nodeName}" benötigt ein positives endliches Gewicht.',
             ADAPTIVE_CONFIG_MISSING:
               'Die Konfiguration des adaptiven Übungs-Quizzes wurde nicht gefunden.',
+            ADAPTIVE_V2_SCALE_NOT_ACTIVE:
+              'Die gewählte Kompetenzskala ist nicht aktiv oder wird nicht mehr unterstützt.',
+            ADAPTIVE_V2_PLACEMENT_UNAVAILABLE:
+              'Die Einstufung ist für kalibrierte adaptive Quizzes noch nicht verfügbar. Wählen Sie Diagnose oder Forschung.',
+            ADAPTIVE_V2_CALIBRATION_MISSING:
+              'Das Element "{elementName}" benötigt eine genehmigte Kalibrierung für die gewählte Skala.',
+            ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH:
+              'Das Element "{elementName}" wurde nach der Kalibrierung geändert. Importieren Sie eine Kalibrierung für die aktuelle Version.',
+            ADAPTIVE_V2_CALIBRATION_FLAGGED:
+              'Das Element "{elementName}" wurde bei der Kalibrierungsprüfung ausgeschlossen.',
+            ADAPTIVE_V2_INFORMATION_GAP:
+              'Die kalibrierte Itembank enthält zu wenig Information nahe einer Stufengrenze.',
+            ADAPTIVE_V2_CUT_SCORE_UNREACHABLE:
+              'Die kalibrierte Itembank enthält keine geeigneten Fragen nahe einer Stufengrenze.',
+            ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED:
+              'Jedes aktive Blatt und Stufenband benötigt mindestens ein kalibriertes Ankeritem für den Forschungsmodus.',
+            ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED:
+              'Der Forschungsmodus benötigt eine aktivierte Kalibrierungsdatenerhebung im Kurs und mindestens ein geeignetes Feldtest-Item.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED:
+              'Die Diagnose-Veröffentlichung benötigt eine unabhängig genehmigte Holdout-Prüfung.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED:
+              'Die empirische Prüfung erfüllt die Freigabekriterien für eine Diagnose-Veröffentlichung nicht.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE:
+              'Die genehmigte empirische Prüfung stimmt nicht mit der aktuellen kalibrierten Itembank überein.',
             unknown:
               'Die adaptive Konfiguration enthält ein unbekanntes Problem.',
           },
@@ -2812,6 +2911,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Veröffentlichung des adaptiven Übungs-Quizzes hat keine Daten zurückgegeben.',
       publishFailed:
         'Das adaptive Übungs-Quiz konnte nicht veröffentlicht werden.',
+      researchNonClassifying:
+        'Der Forschungsmodus sammelt Antwortdaten für die Kalibrierung. Studierende erhalten weder eine Kompetenzklassifikation noch ein Stufenergebnis.',
+      researchConfirmation:
+        'Mir ist bewusst, dass diese Veröffentlichung Kalibrierungsdaten sammelt und Studierende nicht klassifiziert.',
     },
     microLearnings: {
       viewMicroLearning: 'Microlearning einsehen',
@@ -3056,6 +3159,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showQRCodes: 'QR-Codes anzeigen',
       adaptive: {
         title: 'Adaptive Kohortenauswertung',
+        calibration: {
+          title: 'Kalibrierungsstatus',
+          openTree: 'Kompetenzbaum öffnen',
+          loadFailed: 'Der Kalibrierungsstatus konnte nicht geladen werden.',
+        },
         attemptSummary: 'Versuchsübersicht',
         attempts: {
           total: 'Gesamt',
@@ -3063,11 +3171,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           inProgress: 'In Bearbeitung',
           abandoned: 'Abgebrochen',
           classified: 'Klassifiziert',
+          betweenLevels: 'Zwischen Stufen',
+          insufficientEvidence: 'Unzureichende Evidenz',
+          poolLimited: 'Fragenpool begrenzt',
+          researchOnly: 'Nur Forschung',
           capped: 'Fragenlimit erreicht',
           poolExhausted: 'Fragenpool ausgeschöpft',
           stoppedInsufficientData: 'Mit unzureichenden Daten beendet',
           insufficientData: 'Unzureichende Daten',
           nearBoundary: 'Nahe an einer Stufengrenze',
+        },
+        distributionStatuses: {
+          betweenLevels: 'Zwischen Stufen',
+          insufficientEvidence: 'Unzureichende Evidenz',
+          poolLimited: 'Fragenpool begrenzt',
+          researchOnly: 'Nur Forschung',
         },
         stopSummary: 'Beendigungsgründe',
         qualitySummary: 'Qualitätsmerkmale',
@@ -3836,11 +3954,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       defaultLeaf: 'Teilkompetenz 1',
       metadataTitle: 'Metadaten und Modell',
       metadataDescription:
-        'Namen identifizieren den Baum; die Modelleinstellungen definieren seine Stufenskala und Standardwerte.',
+        'Namen identifizieren den wiederverwendbaren Baum. Skala und Kalibrierung werden nach dem Speichern separat verwaltet.',
       internalName: 'Interner Name',
       displayName: 'Anzeigename',
       description: 'Beschreibung',
       modelSettings: 'Modelleinstellungen',
+      structureSettings: 'Struktureinstellungen',
       maxDepth: 'Maximale Hierarchietiefe',
       thetaMin: 'Minimaler Theta-Wert',
       thetaMax: 'Maximaler Theta-Wert',
@@ -3850,7 +3969,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mappingMastery: 'Höchste erreichte Stufe',
       levelsTitle: 'Stufen',
       levelsDescription:
-        'Definieren Sie geordnete Bezeichnungen und deren kanonische Schwierigkeitsbänder.',
+        'Definieren Sie geordnete Stufenbezeichnungen. Grenzwerte und erwartete Itempositionen werden in der Kompetenzskala unten versioniert.',
       addLevel: 'Stufe hinzufügen',
       newLevel: 'Neue Stufe',
       levelLabel: 'Bezeichnung',
@@ -3870,6 +3989,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       selectedNode: 'Ausgewählter Knoten',
       addRootCompetence: 'Kompetenz hinzufügen',
       addSubcompetence: 'Teilkompetenz hinzufügen',
+      addSubcompetenceTo: 'Teilkompetenz zu {name} hinzufügen',
       addChild: 'Untergeordneten Knoten hinzufügen',
       maxDepthReached: 'Maximale Hierarchietiefe erreicht',
       duplicateBranch: 'Zweig duplizieren',
@@ -3894,8 +4014,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteBranchWarning:
         'Beim Löschen dieses Zweigs werden auch {assignments, plural, one {# Zuordnung} other {# Zuordnungen}} entfernt. Fortfahren?',
       coverageTitle: 'Abdeckungsziele',
+      contentBlueprintTitle: 'Inhaltlicher Bauplan',
       coverageDescription:
-        'Legen Sie die erforderliche Anzahl aktiver Items für jedes Blatt und jede Stufe fest. Wählen Sie ein Feld, um die Zuordnungen darunter zu filtern.',
+        'Planen Sie die erforderlichen Inhalte für jedes Blatt und jede Stufe. Dieser Bauplan zeigt keine Kalibrierungsbereitschaft; wählen Sie ein Feld, um die Zuordnungen darunter zu filtern.',
       searchLeaves: 'Blätter durchsuchen...',
       allRoots: 'Alle Hauptkompetenzen',
       leaf: 'Blatt-Teilkompetenz',
@@ -3916,6 +4037,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       element: 'Element',
       elementType: 'Typ',
       level: 'Stufe',
+      expectedDifficulty: 'Erwartete Itemschwierigkeit',
       discriminationParameter: 'Trennschärfe (a)',
       difficultyParameter: 'Schwierigkeit (b)',
       guessingParameter: 'Ratewahrscheinlichkeit (c)',
@@ -3928,6 +4050,108 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noAssignments: 'Dieser Kompetenzbaum enthält keine Elementzuordnungen.',
       noFilteredAssignments:
         'Keine Zuordnungen entsprechen dem gewählten Blatt und der Stufe.',
+      scale: {
+        title: 'Kompetenzskala',
+        description:
+          'Verwalten Sie unveränderliche Stufengrenzen, Evidenz zur Standardsetzung und die aktive Skala für kalibrierte adaptive Quizzes.',
+        createDraft: 'Skalenentwurf erstellen',
+        draftTitle: 'Neuer Skalenentwurf',
+        draftDescription:
+          'Legen Sie explizite Stufengrenzen und erwartete Itempositionen fest. Reichen Sie danach ein Evidenzartefakt zur unabhängigen Prüfung ein.',
+        priorMean: 'Mittelwert der Populationsprior',
+        priorStandardDeviation: 'Standardabweichung der Populationsprior',
+        rangeStart: 'Skalenanfang',
+        rangeEnd: 'Skalenende',
+        gridStep: 'Schätzschritt',
+        lowerBound: 'Untere Grenze',
+        openLowerBound: 'Offen',
+        version: 'Version',
+        versionLabel: 'Version {version} - {status}',
+        versionNumber: 'Version {version}',
+        active: 'Aktive Skala',
+        noActive: 'Keine aktive Skala',
+        emptyState:
+          'Es ist noch keine Skala vorhanden. Erstellen Sie einen Entwurf aus den aktuellen Stufenbezeichnungen.',
+        readOnly:
+          'Dieser verknüpfte Baum ist schreibgeschützt. Seine aktive Skala und Bereitschaft werden unten angezeigt.',
+        readinessSummary: 'Kalibrierungsbereitschaft',
+        activeScaleVersion: 'Aktive Skalenversion',
+        enabledAssignments: 'Aktive Zuordnungen',
+        calibratedAssignments: 'Kalibrierte Zuordnungen',
+        blockingAssignments: 'Zuordnungen mit Kalibrierungsbedarf',
+        readinessStatus: {
+          NO_ACTIVE_SCALE: 'Der Baum hat keine aktive Skala.',
+          CALIBRATION_INCOMPLETE:
+            'Für Zuordnungen auf der aktiven Skala fehlen noch genehmigte Kalibrierungen der exakten Elementversion.',
+          CALIBRATED_BANK:
+            'Jede aktive Zuordnung hat auf der aktiven Skala eine genehmigte Kalibrierung der exakten Elementversion.',
+        },
+        empty: 'Die Skalenaktion hat keine Daten zurückgegeben.',
+        created: 'Der Skalenentwurf wurde erstellt.',
+        activated: 'Die genehmigte Skala ist jetzt aktiv.',
+        loadFailed:
+          'Skalen- und Kalibrierungsdaten konnten nicht geladen werden.',
+        standardSetting: 'Evidenz zur Standardsetzung',
+        standardSettingDescription:
+          'Laden Sie das strikte JSON-Evidenzartefakt hoch und reichen Sie diesen Entwurf zur unabhängigen Prüfung ein.',
+        submitForReview: 'Evidenz zur Prüfung einreichen',
+        reviewSubmitted:
+          'Die Skala wurde zur unabhängigen Prüfung eingereicht.',
+        activate: 'Genehmigte Skala aktivieren',
+        standardSettingStatus: 'Standardsetzung genehmigt',
+        empiricalValidationStatus: 'Empirische Holdout-Prüfung genehmigt',
+        scaleLinkStatus: 'Skalenverknüpfung genehmigt',
+        status: {
+          DRAFT: 'Entwurf',
+          IN_REVIEW: 'In Prüfung',
+          APPROVED: 'Genehmigt',
+          ACTIVE: 'Aktiv',
+          REJECTED: 'Abgelehnt',
+          SUPERSEDED: 'Ersetzt',
+        },
+      },
+      calibration: {
+        title: 'Kalibrierung',
+        status: {
+          PROVISIONAL: 'Vorläufig',
+          PILOT: 'Pilot',
+          CALIBRATED: 'Kalibriert',
+          FLAGGED: 'Markiert',
+          RETIRED: 'Ausgemustert',
+          MISSING: 'Fehlt',
+        },
+        importTitle: 'Kalibrierungen importieren',
+        importDescription:
+          'Laden Sie ein striktes Kalibrierungsartefakt hoch. Ungültige, veraltete oder inkompatible Einträge werden vom Server abgelehnt.',
+        import: 'Artefakt importieren',
+        imported:
+          '{count, plural, one {# Kalibrierung wurde importiert.} other {# Kalibrierungen wurden importiert.}}',
+        invalidJson: 'Wählen Sie ein gültiges JSON-Artefakt.',
+        exportTitle: 'Kalibrierungsdaten exportieren',
+        exportDescription:
+          'Fordern Sie einen kurzlebigen, datenschutzkontrollierten Datensatz für die externe Kalibrierung an.',
+        datasetVersion: 'Datensatzversion',
+        export: 'Export anfordern',
+        exportQueued: 'Der Kalibrierungsexport wurde eingeplant.',
+        exportStatus: 'Exportstatus: {status}',
+        download: 'Export herunterladen',
+      },
+      itemBank: {
+        title: 'Karte der kalibrierten Itembank',
+        description:
+          'Prüfen Sie die Itemabdeckung über die aktive Skala. Die hinterlegte Fläche zeigt die verfügbare Testinformation; Symbole unterscheiden die Elementtypen.',
+        axis: 'Itemschwierigkeitsskala',
+        missingCut:
+          'Nahe der Grenze für "{level}" befindet sich kein kalibriertes Item.',
+        tableCaption:
+          'Barrierefreie Itembankliste mit erwarteter Schwierigkeit und Kalibrierungsstatus.',
+        search: 'Itembank durchsuchen',
+        empty: 'Diesem Kompetenzbaum sind keine Elemente zugeordnet.',
+        positionSource: {
+          CALIBRATED: '(kalibriert)',
+          EXPECTED: '(erwartet)',
+        },
+      },
       validationTitle: 'Validierung',
       validationDescription:
         'Prüfen Sie den vollständigen Baum vor dem Speichern oder Veröffentlichen auf blockierende Probleme und Warnungen.',

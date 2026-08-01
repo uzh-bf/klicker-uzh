@@ -35,6 +35,7 @@ export type AdaptiveAttemptLifecycleIdentity = {
   courseId: string
   practiceQuizId: string
   configId: string
+  publicationId: string
 }
 
 export type LockedAdaptiveAdministrator = {
@@ -48,6 +49,11 @@ type AdaptiveEstimateValues = {
   responseCount: number
   levelId: number | null
   stopReason: DB.AdaptivePracticeQuizStopReason | null
+  resultStatus?: DB.AdaptiveResultStatus | null
+  classificationProbability?: number | null
+  credibleLower?: number | null
+  credibleUpper?: number | null
+  bandProbabilities?: Record<string, number> | null
 }
 
 type OverallAdaptiveEstimateWrite = AdaptiveEstimateValues & {
@@ -188,6 +194,7 @@ export async function lockAdaptiveAttemptForUpdate(
       AND "courseId" = ${identity.courseId}::uuid
       AND "practiceQuizId" = ${identity.practiceQuizId}::uuid
       AND "configId" = ${identity.configId}::uuid
+      AND "publicationId" = ${identity.publicationId}::uuid
     FOR UPDATE
   `
   return Boolean(rows[0])
@@ -254,7 +261,12 @@ export async function persistAdaptivePracticeQuizEstimates(
         "standardError",
         "responseCount",
         "levelId",
-        "stopReason"
+        "stopReason",
+        "resultStatus",
+        "classificationProbability",
+        "credibleLower",
+        "credibleUpper",
+        "bandProbabilities"
       )
       VALUES ${adaptiveEstimateRows(input, [input.overall])}
       ON CONFLICT ("attemptId", "nodeKind") WHERE "nodeId" IS NULL
@@ -265,7 +277,12 @@ export async function persistAdaptivePracticeQuizEstimates(
         "standardError" = EXCLUDED."standardError",
         "responseCount" = EXCLUDED."responseCount",
         "levelId" = EXCLUDED."levelId",
-        "stopReason" = EXCLUDED."stopReason"
+        "stopReason" = EXCLUDED."stopReason",
+        "resultStatus" = EXCLUDED."resultStatus",
+        "classificationProbability" = EXCLUDED."classificationProbability",
+        "credibleLower" = EXCLUDED."credibleLower",
+        "credibleUpper" = EXCLUDED."credibleUpper",
+        "bandProbabilities" = EXCLUDED."bandProbabilities"
     `
   )
 
@@ -290,7 +307,12 @@ export async function persistAdaptivePracticeQuizEstimates(
           "standardError",
           "responseCount",
           "levelId",
-          "stopReason"
+          "stopReason",
+          "resultStatus",
+          "classificationProbability",
+          "credibleLower",
+          "credibleUpper",
+          "bandProbabilities"
         )
         VALUES ${adaptiveEstimateRows(input, chunk)}
         ON CONFLICT ("attemptId", "nodeKind", "nodeId")
@@ -301,7 +323,12 @@ export async function persistAdaptivePracticeQuizEstimates(
           "standardError" = EXCLUDED."standardError",
           "responseCount" = EXCLUDED."responseCount",
           "levelId" = EXCLUDED."levelId",
-          "stopReason" = EXCLUDED."stopReason"
+          "stopReason" = EXCLUDED."stopReason",
+          "resultStatus" = EXCLUDED."resultStatus",
+          "classificationProbability" = EXCLUDED."classificationProbability",
+          "credibleLower" = EXCLUDED."credibleLower",
+          "credibleUpper" = EXCLUDED."credibleUpper",
+          "bandProbabilities" = EXCLUDED."bandProbabilities"
       `
     )
   }
@@ -385,7 +412,12 @@ function adaptiveEstimateRows(
           ${estimate.standardError}::double precision,
           ${estimate.responseCount}::integer,
           ${estimate.levelId}::integer,
-          ${estimate.stopReason}::"AdaptivePracticeQuizStopReason"
+          ${estimate.stopReason}::"AdaptivePracticeQuizStopReason",
+          ${estimate.resultStatus ?? null}::"AdaptiveResultStatus",
+          ${estimate.classificationProbability ?? null}::double precision,
+          ${estimate.credibleLower ?? null}::double precision,
+          ${estimate.credibleUpper ?? null}::double precision,
+          ${estimate.bandProbabilities === undefined || estimate.bandProbabilities === null ? null : JSON.stringify(estimate.bandProbabilities)}::jsonb
         )
       `
     )

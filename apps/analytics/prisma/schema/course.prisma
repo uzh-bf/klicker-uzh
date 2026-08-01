@@ -20,10 +20,11 @@ model Course {
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
 
-  isGamificationEnabled     Boolean @default(true)
-  isGroupCreationEnabled    Boolean @default(true)
-  isAssessmentEnabled       Boolean @default(false)
-  isAdaptiveLearningEnabled Boolean @default(false)
+  isGamificationEnabled                Boolean @default(true)
+  isGroupCreationEnabled               Boolean @default(true)
+  isAssessmentEnabled                  Boolean @default(false)
+  isAdaptiveLearningEnabled            Boolean @default(false)
+  isAdaptiveLearningCalibrationEnabled Boolean @default(false)
 
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)

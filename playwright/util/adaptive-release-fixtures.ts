@@ -1,8 +1,12 @@
 import {
   AdaptiveAttemptSelectionPolicy,
   AdaptiveEstimateNodeKind,
+  AdaptiveItemCalibrationStatus,
+  AdaptiveItemModel,
   AdaptiveLevelMappingRule,
+  AdaptiveMeasurementVersion,
   AdaptiveNodeKind,
+  AdaptivePoolItemRole,
   AdaptivePracticeQuizAttemptStatus,
   AdaptivePracticeQuizPreset,
   AdaptivePracticeQuizStopReason,
@@ -15,7 +19,13 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
-import { COURSE_ID_TEST, PARTICIPANT_IDS, USER_ID_TEST } from './constants.js'
+import { createReviewedActiveScale } from './adaptive-governance-fixtures.js'
+import {
+  COURSE_ID_TEST,
+  PARTICIPANT_IDS,
+  USER_ID_TEST,
+  USER_ID_TEST2,
+} from './constants.js'
 
 export const ADAPTIVE_RELEASE_ELEMENT_TYPES = [
   ElementType.SC,
@@ -185,6 +195,100 @@ export async function createAdaptiveReleaseFixture({
       },
     })
 
+    const scale = await createReviewedActiveScale({
+      tx,
+      treeId: tree.id,
+      levels,
+      creatorId: ownerId,
+      reviewerId: ownerId === USER_ID_TEST2 ? USER_ID_TEST : USER_ID_TEST2,
+      artifactKey: `adaptive-release-${key}`,
+      lowerBounds: [null, -1, 1],
+      itemDifficultyPriors: [-2, 0, 2],
+    })
+    const publication = await tx.practiceQuizAdaptivePublication.create({
+      data: {
+        version: 1,
+        configId: config.id,
+        competenceTreeId: tree.id,
+        scaleVersionId: scale.id,
+        measurementVersion: AdaptiveMeasurementVersion.IRT_V1,
+        preset,
+        estimatorImplementationVersion: 'irt-v1-legacy',
+        classificationPolicyVersion: 1,
+        calibrationPolicyVersion: 1,
+        cutScoreSnapshot: scale.levels.map((level) => ({
+          scaleLevelId: level.id,
+          sourceLevelId: level.sourceLevelId,
+          order: level.order,
+          label: level.label,
+          lowerBound: level.lowerBound,
+          itemDifficultyPrior: level.itemDifficultyPrior,
+        })),
+        priorMean: 0,
+        priorStandardDeviation: 1,
+        gridMin: -6,
+        gridMax: 6,
+        gridStep: 0.1,
+        classificationProbabilityThreshold: null,
+        hierarchicalWeightSnapshot: [
+          {
+            nodeId: root.id,
+            name: root.name,
+            parentId: null,
+            kind: root.kind,
+            depth: root.depth,
+            order: root.order,
+            nodePath: [root.id],
+            enabled: true,
+            normalizedWeight: 1,
+            effectiveLeafWeight: null,
+          },
+          {
+            nodeId: leaf.id,
+            name: leaf.name,
+            parentId: root.id,
+            kind: leaf.kind,
+            depth: leaf.depth,
+            order: leaf.order,
+            nodePath: [root.id, leaf.id],
+            enabled: true,
+            normalizedWeight: 1,
+            effectiveLeafWeight: 1,
+          },
+        ],
+        evidenceMinimumSnapshot: {
+          minimumResponsesPerLeaf: elementTypes.length,
+          minimumResponsesPerRoot: elementTypes.length,
+          requiredRootIds: [root.id],
+          classificationZ: 1.96,
+          topInformationRatio: 0.8,
+          levelMappingRule,
+          thetaMin: -3,
+          thetaMax: 3,
+        },
+        totalQuestionCap: elementTypes.length,
+        showTimer: true,
+        questionCapSnapshot: {
+          root: { [String(root.id)]: null },
+          node: {
+            [String(root.id)]: null,
+            [String(leaf.id)]: null,
+          },
+          leaf: { [String(leaf.id)]: elementTypes.length },
+        },
+        candidateSetPolicyVersion: 'irt-v1-max-information',
+        randomizationPolicyVersion: 'irt-v1-deterministic',
+        exposureCeiling: 1,
+        overlapPolicyVersion: 'irt-v1-no-exposure-control',
+        retakePolicy: attemptSelectionPolicy,
+        retakeCooldownDays: 0,
+        researchAllocationPolicy: Prisma.JsonNull,
+        stoppingPolicyVersion: 'irt-v1-z-interval',
+        rolloutPolicyVersion: 1,
+        publishedById: ownerId,
+      },
+    })
+
     const poolItems = []
     for (const [index, type] of elementTypes.entries()) {
       const options = adaptiveElementOptions(type)
@@ -217,10 +321,41 @@ export async function createAdaptiveReleaseFixture({
           enablePercentInput: type === ElementType.NUMERICAL,
         },
       })
+      const discrimination = 1.2
+      const difficulty = [-2, -1, 0, 1, 2][index] ?? 0
+      const guessing = adaptiveGuessing(type)
+      const calibration = await tx.adaptiveItemCalibration.create({
+        data: {
+          treeId: tree.id,
+          scaleVersionId: scale.id,
+          assignmentId: assignment.id,
+          elementId: element.id,
+          elementVersion: element.version,
+          version: 1,
+          model:
+            type === ElementType.NUMERICAL || type === ElementType.FREE_TEXT
+              ? AdaptiveItemModel.TWO_PL
+              : AdaptiveItemModel.THREE_PL_FIXED_C,
+          status: AdaptiveItemCalibrationStatus.PROVISIONAL,
+          discrimination,
+          difficulty,
+          guessing,
+          parameterUncertainty: {},
+          diagnostics: {},
+          datasetVersion: 'adaptive-playwright-legacy-v1',
+          datasetChecksum: String(assignment.id).padStart(64, '0'),
+          modelImplementationVersion: 'irt-v1-author-prior',
+          elementContentChecksum: String(element.id).padStart(64, '0'),
+          createdById: ownerId,
+        },
+      })
       const poolItem = await tx.practiceQuizAdaptivePoolItem.create({
         data: {
           configId: config.id,
           competenceTreeId: tree.id,
+          publicationId: publication.id,
+          scaleVersionId: scale.id,
+          calibrationId: calibration.id,
           sourceAssignmentId: assignment.id,
           elementId: element.id,
           elementVersion: element.version,
@@ -233,14 +368,32 @@ export async function createAdaptiveReleaseFixture({
           levelId: level.id,
           levelLabel: level.label,
           levelOrder: level.order,
-          discrimination: 1.2,
-          difficulty: [-2, -1, 0, 1, 2][index] ?? 0,
-          guessing: adaptiveGuessing(type),
+          discrimination,
+          difficulty,
+          guessing,
+          measurementVersion: AdaptiveMeasurementVersion.IRT_V1,
+          calibrationVersion: calibration.version,
+          calibrationStatus: calibration.status,
+          itemModel: calibration.model,
+          modelImplementationVersion: calibration.modelImplementationVersion,
+          role: AdaptivePoolItemRole.SCORING,
+          contributesToEstimate: true,
           enablePercentInput: type === ElementType.NUMERICAL,
         },
       })
       poolItems.push(poolItem)
     }
+
+    await tx.adaptivePracticeQuizItemExposure.createMany({
+      data: poolItems.map((poolItem) => ({
+        publicationId: publication.id,
+        poolItemId: poolItem.id,
+      })),
+    })
+    const sealedPublication = await tx.practiceQuizAdaptivePublication.update({
+      where: { id: publication.id },
+      data: { sealedAt: new Date() },
+    })
 
     return {
       tree,
@@ -249,6 +402,8 @@ export async function createAdaptiveReleaseFixture({
       leaf,
       quiz,
       config,
+      scale,
+      publication: sealedPublication,
       poolItems,
       courseId,
       ownerId,
@@ -291,6 +446,15 @@ export async function seedTenPersonSuppressedCohort(
         data: {
           configId: fixture.config.id,
           competenceTreeId: fixture.tree.id,
+          publicationId: fixture.publication.id,
+          scaleVersionId: fixture.scale.id,
+          measurementVersion: fixture.publication.measurementVersion,
+          estimatorImplementationVersion:
+            fixture.publication.estimatorImplementationVersion,
+          classificationPolicyVersion:
+            fixture.publication.classificationPolicyVersion,
+          calibrationPolicyVersion:
+            fixture.publication.calibrationPolicyVersion,
           practiceQuizId: fixture.quiz.id,
           courseId: fixture.courseId,
           participantId,
@@ -384,7 +548,7 @@ function adaptiveGuessing(type: ElementType) {
   return 0
 }
 
-function adaptiveElementData(
+export function adaptiveElementData(
   element: Prisma.ElementGetPayload<Record<string, never>>
 ): Prisma.InputJsonObject {
   return {

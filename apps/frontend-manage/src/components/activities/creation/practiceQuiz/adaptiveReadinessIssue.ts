@@ -225,6 +225,57 @@ export function formatAdaptiveReadinessIssue(
       return t(
         'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_CONFIG_MISSING'
       )
+    case 'ADAPTIVE_V2_SCALE_NOT_ACTIVE':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_SCALE_NOT_ACTIVE'
+      )
+    case 'ADAPTIVE_V2_PLACEMENT_UNAVAILABLE':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_PLACEMENT_UNAVAILABLE'
+      )
+    case 'ADAPTIVE_V2_CALIBRATION_MISSING':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_CALIBRATION_MISSING',
+        { elementName: p.elementName ?? '' }
+      )
+    case 'ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH',
+        { elementName: p.elementName ?? '' }
+      )
+    case 'ADAPTIVE_V2_CALIBRATION_FLAGGED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_CALIBRATION_FLAGGED',
+        { elementName: p.elementName ?? '' }
+      )
+    case 'ADAPTIVE_V2_INFORMATION_GAP':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_INFORMATION_GAP'
+      )
+    case 'ADAPTIVE_V2_CUT_SCORE_UNREACHABLE':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_CUT_SCORE_UNREACHABLE'
+      )
+    case 'ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED'
+      )
+    case 'ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED'
+      )
+    case 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED'
+      )
+    case 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED'
+      )
+    case 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE':
+      return t(
+        'manage.activityWizard.adaptive.readiness.issues.ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE'
+      )
     default:
       return (
         issue.message ??

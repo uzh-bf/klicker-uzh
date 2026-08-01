@@ -3,14 +3,17 @@ import {
   AdaptiveEstimateNodeKind,
   AdaptivePracticeQuizAttemptStatus,
   AdaptivePracticeQuizStopReason,
+  ElementStatus,
   ElementType,
   PermissionLevel,
   PracticeQuizMode,
   PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
+import { DisplayMode } from '@klicker-uzh/types'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { manipulateElementWithInitialCompetenceTreeAssignment } from '../src/services/adaptiveElementCommands.js'
 import {
   archiveCompetenceTree,
   createCompetenceTree,
@@ -30,6 +33,7 @@ import {
   updateCompetenceTreeMetadata,
   type CompetenceTreeInput,
 } from '../src/services/competenceTreeManagement.js'
+import { createLegacyAdaptivePublicationFixture } from './adaptivePracticeQuizTestHelpers.js'
 import {
   initializePrisma,
   seedCourse,
@@ -177,6 +181,148 @@ describe('competence tree management', () => {
       nodeCount: 2,
       assignmentCount: 1,
       canEdit: true,
+    })
+  })
+
+  it('creates an element and its initial assignment atomically', async () => {
+    const existingElement = await createSingleChoiceElement(ownerCtx)
+    const tree = await createCompetenceTree(
+      { input: treeInput(existingElement.id) },
+      ownerCtx
+    )
+    const assignment = tree.elementAssignments[0]!
+    const elementInput = {
+      status: ElementStatus.READY,
+      type: ElementType.SC,
+      name: 'Atomic adaptive element',
+      content: 'Which answer is correct?',
+      explanation: null,
+      basePoints: true,
+      pointsMultiplier: 1,
+      tags: [],
+      options: {
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: false,
+        choices: [
+          { ix: 0, value: 'Correct', correct: true },
+          { ix: 1, value: 'Incorrect', correct: false },
+        ],
+      },
+    }
+    const creationRequestId = crypto.randomUUID()
+
+    const created = await manipulateElementWithInitialCompetenceTreeAssignment(
+      {
+        elementInput,
+        creationRequestId,
+        initialCompetenceTreeAssignment: {
+          treeId: tree.id,
+          leafNodeId: assignment.leafNodeId,
+          levelId: assignment.levelId,
+          enabled: true,
+          enablePercentInput: false,
+        },
+      },
+      ownerCtx
+    )
+    expect(created).toMatchObject({
+      name: 'Atomic adaptive element',
+      type: ElementType.SC,
+    })
+    await expect(
+      prisma.competenceTreeElementAssignment.findUnique({
+        where: {
+          treeId_elementId: { treeId: tree.id, elementId: created!.id },
+        },
+      })
+    ).resolves.toMatchObject({
+      leafNodeId: assignment.leafNodeId,
+      levelId: assignment.levelId,
+      creationRequestId,
+    })
+
+    const retried = await manipulateElementWithInitialCompetenceTreeAssignment(
+      {
+        elementInput,
+        creationRequestId,
+        initialCompetenceTreeAssignment: {
+          treeId: tree.id,
+          leafNodeId: assignment.leafNodeId,
+          levelId: assignment.levelId,
+          enabled: true,
+          enablePercentInput: false,
+        },
+      },
+      ownerCtx
+    )
+    expect(retried?.id).toBe(created?.id)
+    await expect(
+      prisma.element.count({ where: { name: 'Atomic adaptive element' } })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.competenceTreeElementAssignment.count({
+        where: { creationRequestId },
+      })
+    ).resolves.toBe(1)
+    await expect(
+      manipulateElementWithInitialCompetenceTreeAssignment(
+        {
+          elementInput: { ...elementInput, name: 'Changed after uncertainty' },
+          creationRequestId,
+          initialCompetenceTreeAssignment: {
+            treeId: tree.id,
+            leafNodeId: assignment.leafNodeId,
+            levelId: assignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_CREATION_REQUEST_CONFLICT' },
+    })
+
+    await expect(
+      manipulateElementWithInitialCompetenceTreeAssignment(
+        {
+          elementInput: { ...elementInput, name: 'Rolled back element' },
+          creationRequestId: crypto.randomUUID(),
+          initialCompetenceTreeAssignment: {
+            treeId: tree.id,
+            leafNodeId: -1,
+            levelId: assignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'COMPETENCE_TREE_ASSIGNMENT_COVERAGE_INVALID' },
+    })
+    await expect(
+      prisma.element.count({ where: { name: 'Rolled back element' } })
+    ).resolves.toBe(0)
+
+    await expect(
+      manipulateElementWithInitialCompetenceTreeAssignment(
+        {
+          elementInput: { ...elementInput, id: created!.id },
+          creationRequestId: crypto.randomUUID(),
+          initialCompetenceTreeAssignment: {
+            treeId: tree.id,
+            leafNodeId: assignment.leafNodeId,
+            levelId: assignment.levelId,
+            enabled: true,
+            enablePercentInput: false,
+          },
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ADAPTIVE_INITIAL_ASSIGNMENT_CREATE_ONLY' },
     })
   })
 
@@ -721,8 +867,19 @@ describe('competence tree management', () => {
     const participation = await prisma.participation.create({
       data: { courseId: course.id, participantId: participant.id },
     })
+    const { publication } = await createLegacyAdaptivePublicationFixture({
+      configId: config.id,
+      publishedById: ownerCtx.user.sub,
+    })
     const attempt = await prisma.adaptivePracticeQuizAttempt.create({
       data: {
+        publicationId: publication.id,
+        scaleVersionId: publication.scaleVersionId,
+        measurementVersion: publication.measurementVersion,
+        estimatorImplementationVersion:
+          publication.estimatorImplementationVersion,
+        classificationPolicyVersion: publication.classificationPolicyVersion,
+        calibrationPolicyVersion: publication.calibrationPolicyVersion,
         configId: config.id,
         competenceTreeId: tree.id,
         practiceQuizId: quiz.id,

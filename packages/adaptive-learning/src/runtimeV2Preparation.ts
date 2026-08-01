@@ -8,7 +8,11 @@ import type {
   PreparedAdaptiveV2Runtime,
 } from './runtimeV2.js'
 import { validateAdaptiveScale, type AdaptiveScaleDefinition } from './scale.js'
-import type { AdaptiveV2PoolItem } from './selectionV2.js'
+import {
+  ADAPTIVE_V2_EXPOSURE_CEILING,
+  type AdaptiveV2PoolItem,
+} from './selectionV2.js'
+import { normalizeEnabledRootWeights } from './weights.js'
 
 const PREPARED_V2_RUNTIMES = new WeakSet<object>()
 
@@ -53,7 +57,7 @@ export function buildPreparedAdaptiveV2Runtime({
     }
     return Object.freeze({
       ...item,
-      nodePath: Object.freeze([...item.nodePath]) as unknown as number[],
+      nodePath: Object.freeze([...item.nodePath]),
     })
   })
   const settingsSnapshot: AdaptiveV2RuntimeSettings = {
@@ -74,6 +78,11 @@ export function buildPreparedAdaptiveV2Runtime({
   }
 
   const topology = prepareTopology(nodeSnapshot)
+  assertResearchCapFeasibility({
+    settings: settingsSnapshot,
+    scale: scaleSnapshot,
+    leafCount: topology.leafIds.length,
+  })
   const poolState = preparePool({
     pool: poolSnapshot,
     scale: scaleSnapshot,
@@ -95,7 +104,7 @@ export function buildPreparedAdaptiveV2Runtime({
     measurementVersion: 'IRT_V2_EAP_GRID_1',
     nodes: Object.freeze(
       nodeSnapshot.filter((node) => topology.enabledNodeIds.has(node.id))
-    ) as unknown as AdaptiveRuntimeNode[],
+    ),
     scale: scaleSnapshot,
     pool: poolSnapshot,
     settings: settingsSnapshot,
@@ -106,7 +115,7 @@ export function buildPreparedAdaptiveV2Runtime({
       new Map(
         [...poolState.poolByLeaf].map(([key, values]) => [
           key,
-          Object.freeze([...values]) as unknown as AdaptiveV2PoolItem[],
+          Object.freeze([...values]),
         ])
       )
     ),
@@ -114,7 +123,7 @@ export function buildPreparedAdaptiveV2Runtime({
       new Map(
         [...topology.nodePathById].map(([key, values]) => [
           key,
-          Object.freeze([...values]) as unknown as number[],
+          Object.freeze([...values]),
         ])
       )
     ),
@@ -122,7 +131,7 @@ export function buildPreparedAdaptiveV2Runtime({
       new Map(
         [...topology.descendantLeafIdsByNode].map(([key, values]) => [
           key,
-          Object.freeze([...values]) as unknown as number[],
+          Object.freeze([...values]),
         ])
       )
     ),
@@ -163,7 +172,7 @@ function prepareTopology(nodes: AdaptiveRuntimeNode[]) {
       typeof node.enabled !== 'boolean' ||
       (node.kind !== 'COMPETENCE' && node.kind !== 'SUBCOMPETENCE') ||
       (node.weight !== null &&
-        (!Number.isFinite(node.weight) || node.weight <= 0)) ||
+        (!Number.isFinite(node.weight) || node.weight < 0)) ||
       (node.questionCap !== null &&
         (!Number.isInteger(node.questionCap) || node.questionCap < 1))
     ) {
@@ -224,23 +233,21 @@ function prepareTopology(nodes: AdaptiveRuntimeNode[]) {
     }
   }
 
-  const roots = nodes
+  const enabledRoots = nodes
     .filter((node) => node.parentId === null && enabled.has(node.id))
     .sort(compareNodes)
-  if (
-    roots.length === 0 ||
-    roots.some(
-      (root) =>
-        root.weight === null ||
-        !Number.isFinite(root.weight) ||
-        root.weight <= 0
-    )
-  ) {
+  const normalizedRootWeights = normalizeEnabledRootWeights(
+    enabledRoots.map((root) => ({ key: root, weight: root.weight ?? 0 }))
+  )
+  if (!normalizedRootWeights.ok) {
     throw configurationError(
       'Enabled root competences require positive finite weights.',
       'ADAPTIVE_ROOT_WEIGHT_INVALID'
     )
   }
+  const roots = normalizedRootWeights.normalized.map(
+    ({ key: root, weight }) => ({ ...root, weight })
+  )
   if (
     roots.some((root) => (childrenByParent.get(root.id)?.length ?? 0) === 0)
   ) {
@@ -344,26 +351,23 @@ function preparePool({
       )
     }
     assertPoolItemModel(item)
+    if (item.calibrationId === null || calibrationIds.has(item.calibrationId)) {
+      throw configurationError(
+        'Adaptive pool items require unique calibration identities.',
+        'ADAPTIVE_POOL_CALIBRATION_INVALID'
+      )
+    }
+    calibrationIds.add(item.calibrationId)
     if (item.contributesToEstimate) {
-      if (
-        item.calibrationId === null ||
-        calibrationIds.has(item.calibrationId)
-      ) {
-        throw configurationError(
-          'Scoring pool items require unique calibration identities.',
-          'ADAPTIVE_POOL_CALIBRATION_INVALID'
-        )
-      }
-      calibrationIds.add(item.calibrationId)
       if (item.role === 'FIELD_TEST') {
         throw configurationError(
           'Field-test items cannot contribute to proficiency estimates.',
           'ADAPTIVE_POOL_CALIBRATION_INVALID'
         )
       }
-    } else if (item.role !== 'FIELD_TEST' || item.calibrationId !== null) {
+    } else if (item.role !== 'FIELD_TEST') {
       throw configurationError(
-        'Non-scoring pool items must be uncalibrated field tests.',
+        'Non-scoring pool items must be field tests.',
         'ADAPTIVE_POOL_CALIBRATION_INVALID'
       )
     }
@@ -387,6 +391,12 @@ function preparePool({
     )
   }
   if (settings.mode === 'RESEARCH') {
+    const minimumDistinctAnchorsPerLeafLevel = minimumDistinctItemsForExposure(
+      settings.researchPolicy!.anchorResponsesPerLeafLevel
+    )
+    const minimumDistinctFieldTestsPerLeaf = minimumDistinctItemsForExposure(
+      settings.researchPolicy!.fieldTestResponsesPerLeaf
+    )
     for (const leafId of topology.leafIds) {
       const leafPool = poolByLeaf.get(leafId) ?? []
       for (const level of scale.levels) {
@@ -396,21 +406,20 @@ function preparePool({
               item.role === 'ANCHOR' &&
               item.contributesToEstimate &&
               item.levelId === level.id
-          ).length < settings.researchPolicy!.anchorResponsesPerLeafLevel
+          ).length < minimumDistinctAnchorsPerLeafLevel
         ) {
           throw configurationError(
-            'Research pools require calibrated anchor connectivity for every leaf and level.',
+            'Research pools require exposure-safe calibrated anchor coverage for every leaf and level.',
             'ADAPTIVE_RESEARCH_ANCHOR_COVERAGE_INVALID'
           )
         }
       }
       if (
         leafPool.filter(({ role }) => role === 'FIELD_TEST').length <
-          settings.researchPolicy!.fieldTestResponsesPerLeaf ||
+          minimumDistinctFieldTestsPerLeaf ||
         (settings.researchPolicy!.fieldTestResponsesPerLeaf > 0 &&
           leafPool.filter(({ role }) => role !== 'FIELD_TEST').length <=
-            settings.researchPolicy!.anchorResponsesPerLeafLevel *
-              scale.levels.length)
+            minimumDistinctAnchorsPerLeafLevel * scale.levels.length)
       ) {
         throw configurationError(
           'Research pools require enough field-test and scoring items for the collection design.',
@@ -421,6 +430,10 @@ function preparePool({
   }
 
   return { poolById, poolByLeaf }
+}
+
+function minimumDistinctItemsForExposure(requiredResponsesPerAttempt: number) {
+  return Math.ceil(requiredResponsesPerAttempt / ADAPTIVE_V2_EXPOSURE_CEILING)
 }
 
 function computeEffectiveLeafWeights({
@@ -542,6 +555,33 @@ function assertV2Settings(
     throw configurationError(
       'Research runtime policy is invalid.',
       'ADAPTIVE_RESEARCH_POLICY_INVALID'
+    )
+  }
+}
+
+function assertResearchCapFeasibility({
+  settings,
+  scale,
+  leafCount,
+}: {
+  settings: AdaptiveV2RuntimeSettings
+  scale: AdaptiveScaleDefinition
+  leafCount: number
+}) {
+  if (settings.mode !== 'RESEARCH') return
+
+  const policy = settings.researchPolicy!
+  const requiredPerLeaf =
+    policy.anchorResponsesPerLeafLevel * scale.levels.length +
+    policy.fieldTestResponsesPerLeaf
+  if (
+    settings.totalQuestionCap < requiredPerLeaf * leafCount ||
+    (settings.perLeafQuestionCap !== null &&
+      settings.perLeafQuestionCap < requiredPerLeaf)
+  ) {
+    throw configurationError(
+      'Research question caps cannot satisfy the required anchor and field-test allocation.',
+      'ADAPTIVE_RESEARCH_CAPACITY_INVALID'
     )
   }
 }

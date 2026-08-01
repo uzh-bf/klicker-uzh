@@ -45,6 +45,11 @@ export type CompetenceTreeElementAssignmentUpdateInput = {
   discrimination?: number | null
 }
 
+export type CompetenceTreeElementAssignmentCreateInput =
+  CompetenceTreeElementAssignmentUpdateInput & {
+    treeId: string
+  }
+
 export type CompetenceTreeLevelView = DB.CompetenceTreeLevel & {
   theta: number
   lowerBound: number

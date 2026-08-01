@@ -1,19 +1,20 @@
-import { classificationIntervalWithinLevelBand } from '@klicker-uzh/adaptive-learning'
+import {
+  AdaptiveRuntimeConfigurationError,
+  type AdaptiveV2PoolItem,
+} from '@klicker-uzh/adaptive-learning'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ElementData } from '@klicker-uzh/types'
 import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
+import { prepareLoadedAdaptiveEstimator } from './adaptivePracticeQuizEstimatorVersions.js'
 import {
   lockAdaptiveAttemptForUpdate,
   lockAdaptiveCourseForShare,
   lockAdaptivePracticeQuizConfigForShare,
   lockPracticeQuizForShare,
-  persistAdaptivePracticeQuizEstimates,
   type AdaptiveAttemptLifecycleIdentity,
 } from './adaptivePracticeQuizRepository.js'
 import {
-  MIN_REPORTING_RESPONSES,
-  computeAdaptiveEstimates,
   type AdaptiveRuntimeLevel,
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimePoolItem,
@@ -21,6 +22,13 @@ import {
   type AdaptiveRuntimeRoutingPoolItem,
   type AdaptiveRuntimeSettings,
 } from './adaptivePracticeQuizRuntime.js'
+import {
+  preparePublishedRuntimeTopology,
+  preparePublishedV2Scale,
+  preparePublishedV2Settings,
+  toPublishedV2PoolItem,
+  type AdaptiveV2RoutingPoolItem,
+} from './adaptivePracticeQuizRuntimeV2.js'
 
 const adaptiveRuntimePoolItemSelect = {
   id: true,
@@ -39,11 +47,16 @@ const adaptiveRuntimePoolItemSelect = {
   difficulty: true,
   guessing: true,
   enablePercentInput: true,
+  elementData: true,
+  measurementVersion: true,
+  calibrationId: true,
+  itemModel: true,
+  role: true,
+  contributesToEstimate: true,
 } satisfies DB.Prisma.PracticeQuizAdaptivePoolItemSelect
 
 const adaptiveDeliveredPoolItemSelect = {
   ...adaptiveRuntimePoolItemSelect,
-  elementData: true,
 } satisfies DB.Prisma.PracticeQuizAdaptivePoolItemSelect
 
 const runtimeQuizInclude = {
@@ -87,6 +100,23 @@ type DeliveredPoolItemRecord =
     select: typeof adaptiveDeliveredPoolItemSelect
   }>
 
+export type AdaptivePublishedRuntimePoolItem = AdaptiveRuntimePoolItem &
+  Pick<
+    DeliveredPoolItemRecord,
+    | 'measurementVersion'
+    | 'calibrationId'
+    | 'itemModel'
+    | 'role'
+    | 'contributesToEstimate'
+  >
+
+type RuntimeAlgorithmView = {
+  nodes: AdaptiveRuntimeNode[]
+  levels: AdaptiveRuntimeLevel[]
+  pool: AdaptiveRuntimeRoutingPoolItem[]
+  settings: AdaptiveRuntimeSettings
+}
+
 export type AdaptiveAttemptRuntimeRecord =
   DB.Prisma.AdaptivePracticeQuizAttemptGetPayload<{
     include: typeof adaptiveAttemptRuntimeInclude
@@ -97,7 +127,10 @@ export type LoadedAdaptiveRuntime = ReturnType<typeof prepareAdaptiveRuntime>
 export async function loadAdaptiveRuntime(
   prisma: DB.PrismaClient | DB.Prisma.TransactionClient,
   practiceQuizId: string,
-  { includeAlgorithmData }: { includeAlgorithmData: boolean }
+  {
+    includeAlgorithmData,
+    publicationId,
+  }: { includeAlgorithmData: boolean; publicationId?: string }
 ) {
   const quiz = await prisma.practiceQuiz.findUnique({
     where: { id: practiceQuizId, isDeleted: false },
@@ -114,76 +147,133 @@ export async function loadAdaptiveRuntime(
     )
   }
 
+  const publication = await prisma.practiceQuizAdaptivePublication.findFirst({
+    where: {
+      configId: quiz.adaptiveConfig.id,
+      sealedAt: { not: null },
+      ...(publicationId
+        ? { id: publicationId }
+        : { supersededAt: null, unpublishedAt: null }),
+    },
+    orderBy: { version: 'desc' },
+  })
+  if (!publication) {
+    throw adaptivePracticeQuizError(
+      'This adaptive practice quiz has no sealed publication.',
+      'ADAPTIVE_QUIZ_UNAVAILABLE'
+    )
+  }
+
   const poolRecords = includeAlgorithmData
     ? await prisma.practiceQuizAdaptivePoolItem.findMany({
-        where: { configId: quiz.adaptiveConfig.id },
+        where: { publicationId: publication.id },
         select: adaptiveRuntimePoolItemSelect,
         orderBy: { id: 'asc' },
       })
     : []
-  return prepareAdaptiveRuntime(quiz, poolRecords)
+  return prepareAdaptiveRuntime(quiz, publication, poolRecords)
 }
 
 function prepareAdaptiveRuntime(
   quiz: RuntimeQuizRecord,
+  publication: DB.PracticeQuizAdaptivePublication,
   poolRecords: RuntimePoolItemRecord[]
 ) {
   const config = quiz.adaptiveConfig!
   const tree = config.competenceTree
-  const overrides = new Map(
-    config.nodeOverrides.map((override) => [override.nodeId, override])
-  )
-  const nodes: AdaptiveRuntimeNode[] = tree.nodes.map((node) => {
-    const override = overrides.get(node.id)
-    return {
-      id: node.id,
-      parentId: node.parentId,
-      kind: node.kind,
-      depth: node.depth,
-      order: node.order,
-      enabled: override?.enabled ?? true,
-      weight:
-        node.kind === DB.AdaptiveNodeKind.COMPETENCE
-          ? (override?.weight ?? node.weight)
-          : null,
-      questionCap: override?.questionCap ?? null,
-    }
-  })
-  const levels: AdaptiveRuntimeLevel[] = tree.levels.map((level) => ({
-    id: level.id,
-    label: level.label,
-    order: level.order,
-  }))
+  const { nodes, levels } = preparePublishedRuntimeTopology(publication)
   const pool = poolRecords.map(toRuntimePoolItem)
-  const settings: AdaptiveRuntimeSettings = {
-    totalQuestionCap: config.totalQuestionCap,
-    perLeafQuestionCap: config.perLeafQuestionCap,
-    minQuestionsPerLeaf: config.minQuestionsPerLeaf,
-    classificationZ: config.classificationZ,
-    topInformationRatio: config.topInformationRatio,
-    levelMappingRule: config.levelMappingRule,
-    thetaRange: { min: tree.thetaMin, max: tree.thetaMax },
+  const publishedPool = poolRecords.map(toDeliveredRuntimePoolItem)
+  const evidence = publication.evidenceMinimumSnapshot
+  const leafCaps = Object.values(publication.questionCapSnapshot.leaf)
+  const legacySettings: AdaptiveRuntimeSettings = {
+    totalQuestionCap: publication.totalQuestionCap,
+    perLeafQuestionCap: leafCaps[0] ?? null,
+    minQuestionsPerLeaf: evidence.minimumResponsesPerLeaf,
+    classificationZ: evidence.classificationZ,
+    topInformationRatio: evidence.topInformationRatio,
+    levelMappingRule: evidence.levelMappingRule,
+    thetaRange: { min: evidence.thetaMin, max: evidence.thetaMax },
   }
 
-  return {
-    quiz,
-    config,
-    tree,
-    pool,
-    poolById: new Map(pool.map((item) => [item.id, item])),
-    algorithm: { nodes, levels, pool, settings },
+  try {
+    const estimator =
+      publication.measurementVersion ===
+      DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+        ? prepareLoadedAdaptiveEstimator({
+            measurementVersion: publication.measurementVersion,
+            nodes,
+            scale: preparePublishedV2Scale(publication),
+            pool: pool as AdaptiveV2RoutingPoolItem[],
+            settings: preparePublishedV2Settings(publication),
+          })
+        : prepareLoadedAdaptiveEstimator({
+            measurementVersion: DB.AdaptiveMeasurementVersion.IRT_V1,
+            nodes,
+            levels,
+            pool,
+            settings: legacySettings,
+          })
+    const algorithm: RuntimeAlgorithmView =
+      estimator.measurementVersion ===
+      DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+        ? {
+            nodes: [...estimator.algorithm.nodes],
+            levels: estimator.algorithm.scale.levels.map(
+              ({ id, label, order }) => ({ id, label, order })
+            ),
+            pool: [
+              ...(estimator.algorithm.pool as AdaptiveV2RoutingPoolItem[]),
+            ],
+            settings: estimator.algorithm.settings,
+          }
+        : estimator.algorithm
+
+    return {
+      quiz,
+      config,
+      tree,
+      publication,
+      pool,
+      publishedPool,
+      poolById: new Map(pool.map((item) => [item.id, item])),
+      algorithm,
+      estimator,
+    }
+  } catch (error) {
+    if (error instanceof AdaptiveRuntimeConfigurationError) {
+      throw adaptivePracticeQuizError(error.message, error.code)
+    }
+    throw error
   }
 }
 
 export function toRuntimePoolItem(
   item: RuntimePoolItemRecord
 ): AdaptiveRuntimeRoutingPoolItem {
-  return item
+  if (
+    item.measurementVersion === DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    return toPublishedV2PoolItem({
+      ...item,
+      elementData: item.elementData as ElementData,
+    })
+  }
+  const {
+    elementData: _elementData,
+    measurementVersion: _measurementVersion,
+    calibrationId: _calibrationId,
+    itemModel: _itemModel,
+    role: _role,
+    contributesToEstimate: _contributesToEstimate,
+    ...routing
+  } = item
+  return routing
 }
 
 export function toDeliveredRuntimePoolItem(
   item: DeliveredPoolItemRecord
-): AdaptiveRuntimePoolItem {
+): AdaptivePublishedRuntimePoolItem {
   return { ...item, elementData: item.elementData as ElementData }
 }
 
@@ -204,6 +294,145 @@ export function toRuntimeResponses(
       poolItem: toRuntimePoolItem(response.poolItem),
     }
   })
+}
+
+export async function loadAdaptiveV2SelectionContext({
+  prisma,
+  runtime,
+  participantId,
+  attemptId,
+  startingAttempt,
+}: {
+  prisma: DB.Prisma.TransactionClient
+  runtime: LoadedAdaptiveRuntime
+  participantId: string
+  attemptId?: string
+  startingAttempt: boolean
+}) {
+  if (
+    runtime.estimator.measurementVersion !==
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    return undefined
+  }
+
+  const exposureRows = await prisma.$queryRaw<
+    Array<{ poolItemId: number; servedCount: bigint }>
+  >`
+    SELECT "poolItemId", "servedCount"
+    FROM "AdaptivePracticeQuizItemExposure"
+    WHERE "publicationId" = ${runtime.publication.id}::uuid
+    ORDER BY "poolItemId"
+    FOR UPDATE
+  `
+  if (exposureRows.length !== runtime.estimator.algorithm.pool.length) {
+    throw adaptivePracticeQuizError(
+      'Adaptive publication exposure state is incomplete.',
+      'ADAPTIVE_EXPOSURE_STATE_INVALID'
+    )
+  }
+  const servedCountByPoolItem = new Map(
+    exposureRows.map(({ poolItemId, servedCount }) => {
+      const count = Number(servedCount)
+      if (!Number.isSafeInteger(count) || count < 0) {
+        throw adaptivePracticeQuizError(
+          'Adaptive publication exposure state is invalid.',
+          'ADAPTIVE_EXPOSURE_STATE_INVALID'
+        )
+      }
+      return [poolItemId, count]
+    })
+  )
+  const priorResponses = await prisma.adaptivePracticeQuizResponse.findMany({
+    where: {
+      attempt: {
+        participantId,
+        practiceQuizId: runtime.quiz.id,
+        ...(attemptId ? { id: { not: attemptId } } : {}),
+      },
+      poolItemId: { not: null },
+    },
+    select: {
+      poolItem: {
+        select: {
+          sourceAssignmentId: true,
+          elementId: true,
+          elementVersion: true,
+        },
+      },
+    },
+  })
+  const priorKeys = new Set(
+    priorResponses.flatMap(({ poolItem }) =>
+      poolItem
+        ? [
+            adaptiveItemVersionKey(
+              poolItem.sourceAssignmentId,
+              poolItem.elementId,
+              poolItem.elementVersion
+            ),
+          ]
+        : []
+    )
+  )
+  const priorAttemptPoolItemIds = new Set(
+    (runtime.pool as AdaptiveV2RoutingPoolItem[]).flatMap((item) =>
+      priorKeys.has(
+        adaptiveItemVersionKey(
+          item.sourceAssignmentId,
+          item.elementId,
+          item.elementVersion
+        )
+      )
+        ? [item.id]
+        : []
+    )
+  )
+  const attemptCount = await prisma.adaptivePracticeQuizAttempt.count({
+    where: { publicationId: runtime.publication.id },
+  })
+  const projectedAttemptCount = Math.max(
+    1,
+    attemptCount + (startingAttempt ? 1 : 0)
+  )
+  const exposureCapacity = Math.max(
+    1,
+    Math.ceil(runtime.publication.exposureCeiling * projectedAttemptCount)
+  )
+
+  return {
+    servedCountByPoolItem,
+    priorAttemptPoolItemIds,
+    isExposureEligible: (item: AdaptiveV2PoolItem) =>
+      (servedCountByPoolItem.get(item.id) ?? 0) < exposureCapacity,
+  }
+}
+
+export async function incrementAdaptiveV2Exposure({
+  prisma,
+  publicationId,
+  poolItemId,
+  counter,
+}: {
+  prisma: DB.Prisma.TransactionClient
+  publicationId: string
+  poolItemId: number
+  counter: 'servedCount' | 'answeredCount'
+}) {
+  await prisma.adaptivePracticeQuizItemExposure.update({
+    where: {
+      publicationId_poolItemId: { publicationId, poolItemId },
+    },
+    data: { [counter]: { increment: 1 } },
+  })
+}
+
+function adaptiveItemVersionKey(
+  assignmentId: number,
+  elementId: number,
+  elementVersion: number
+) {
+  return `${assignmentId}:${elementId}:${elementVersion}`
 }
 
 export async function requireAdaptiveParticipation(
@@ -253,6 +482,7 @@ export async function requireAdaptiveAttemptLifecycleIdentity(
       courseId: true,
       practiceQuizId: true,
       configId: true,
+      publicationId: true,
     },
   })
   if (!identity) {
@@ -329,8 +559,11 @@ export async function lockAdaptiveAttemptLifecycle({
   }
 }
 
-export function assertAdaptiveRuntimeAvailable(runtime: LoadedAdaptiveRuntime) {
-  assertAdaptiveQuizPublished(runtime)
+export function assertAdaptiveRuntimeAvailable(
+  runtime: LoadedAdaptiveRuntime,
+  { allowSupersededPublication = false } = {}
+) {
+  assertAdaptiveQuizPublished(runtime, { allowSupersededPublication })
   if (runtime.pool.length === 0) {
     throw adaptivePracticeQuizError(
       'This adaptive practice quiz is not available.',
@@ -339,11 +572,17 @@ export function assertAdaptiveRuntimeAvailable(runtime: LoadedAdaptiveRuntime) {
   }
 }
 
-export function assertAdaptiveQuizPublished(runtime: LoadedAdaptiveRuntime) {
+export function assertAdaptiveQuizPublished(
+  runtime: LoadedAdaptiveRuntime,
+  { allowSupersededPublication = false } = {}
+) {
   assertAdaptiveCourseEnabled(runtime)
   if (
     runtime.quiz.status !== DB.PublicationStatus.PUBLISHED ||
-    !runtime.config.poolPublishedAt
+    !runtime.config.poolPublishedAt ||
+    !runtime.publication.sealedAt ||
+    runtime.publication.unpublishedAt !== null ||
+    (!allowSupersededPublication && runtime.publication.supersededAt !== null)
   ) {
     throw adaptivePracticeQuizError(
       'This adaptive practice quiz is not available.',
@@ -359,130 +598,4 @@ export function assertAdaptiveCourseEnabled(runtime: LoadedAdaptiveRuntime) {
       'ADAPTIVE_COURSE_DISABLED'
     )
   }
-}
-
-export function getEffectivelyEnabledRuntimeNodes(
-  nodes: AdaptiveRuntimeNode[]
-) {
-  const enabled = new Set<number>()
-  for (const node of nodes.slice().sort((a, b) => a.depth - b.depth)) {
-    if (
-      node.enabled &&
-      (node.parentId === null || enabled.has(node.parentId))
-    ) {
-      enabled.add(node.id)
-    }
-  }
-  return nodes.filter((node) => enabled.has(node.id))
-}
-
-export function markClassifiedAdaptiveRootEstimates(
-  runtime: LoadedAdaptiveRuntime,
-  responses: AdaptiveRuntimeResponse[],
-  estimates: ReturnType<typeof computeAdaptiveEstimates>
-) {
-  const leafCounts = new Map<number, number>()
-  for (const response of responses) {
-    leafCounts.set(
-      response.poolItem.leafNodeId,
-      (leafCounts.get(response.poolItem.leafNodeId) ?? 0) + 1
-    )
-  }
-  const roots = getEffectivelyEnabledRuntimeNodes(
-    runtime.algorithm.nodes
-  ).filter(
-    (node) =>
-      node.parentId === null && node.kind === DB.AdaptiveNodeKind.COMPETENCE
-  )
-  for (const root of roots) {
-    const estimate = estimates.nodes.get(root.id)
-    if (
-      !estimate ||
-      estimate.theta === null ||
-      estimate.standardError === null ||
-      estimate.responseCount < MIN_REPORTING_RESPONSES
-    ) {
-      continue
-    }
-    const leafIds = [
-      ...new Set(
-        runtime.pool
-          .filter((item) => item.nodePath[0] === root.id)
-          .map(({ leafNodeId }) => leafNodeId)
-      ),
-    ]
-    const breadthSatisfied = leafIds.every(
-      (leafId) =>
-        (leafCounts.get(leafId) ?? 0) >=
-        runtime.algorithm.settings.minQuestionsPerLeaf
-    )
-    if (
-      breadthSatisfied &&
-      classificationIntervalWithinLevelBand({
-        theta: estimate.theta,
-        standardError: estimate.standardError,
-        levels: runtime.algorithm.levels,
-        range: runtime.algorithm.settings.thetaRange,
-        mappingRule: runtime.algorithm.settings.levelMappingRule,
-        z: runtime.algorithm.settings.classificationZ,
-      })
-    ) {
-      estimates.nodes.set(root.id, {
-        ...estimate,
-        stopReason: DB.AdaptivePracticeQuizStopReason.CLASSIFIED,
-      })
-    }
-  }
-}
-
-export async function persistAdaptiveRuntimeEstimates({
-  prisma,
-  attempt,
-  estimates,
-  nodeIds,
-}: {
-  prisma: DB.Prisma.TransactionClient
-  attempt: AdaptiveAttemptRuntimeRecord
-  estimates: ReturnType<typeof computeAdaptiveEstimates>
-  nodeIds: number[]
-}) {
-  const overall = estimates.overall
-  await persistAdaptivePracticeQuizEstimates(
-    {
-      attemptId: attempt.id,
-      configId: attempt.configId,
-      competenceTreeId: attempt.competenceTreeId,
-      overall: {
-        nodeKind: DB.AdaptiveEstimateNodeKind.OVERALL,
-        nodeId: null,
-        theta: overall.theta,
-        standardError: overall.standardError,
-        responseCount: overall.responseCount,
-        levelId: overall.levelId,
-        stopReason: overall.stopReason,
-      },
-      nodes: [...new Set(nodeIds)].flatMap((nodeId) => {
-        const estimate = estimates.nodes.get(nodeId)
-        if (!estimate) return []
-        if (
-          estimate.nodeKind === DB.AdaptiveEstimateNodeKind.OVERALL ||
-          estimate.nodeId === null
-        ) {
-          throw new Error('Adaptive node estimate identity is invalid.')
-        }
-        return [
-          {
-            nodeKind: estimate.nodeKind,
-            nodeId: estimate.nodeId,
-            theta: estimate.theta,
-            standardError: estimate.standardError,
-            responseCount: estimate.responseCount,
-            levelId: estimate.levelId,
-            stopReason: estimate.stopReason,
-          },
-        ]
-      }),
-    },
-    prisma
-  )
 }

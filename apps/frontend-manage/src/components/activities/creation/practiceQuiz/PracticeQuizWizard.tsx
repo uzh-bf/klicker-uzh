@@ -262,9 +262,9 @@ function PracticeQuizWizard({
         .required(t('manage.activityWizard.adaptive.validation.treeRequired')),
       nodeOverrides: yup.array().of(
         yup.object().shape({
-          weight: optionalNumber().min(
+          weight: optionalNumber().moreThan(
             0,
-            t('manage.activityWizard.adaptive.validation.nonNegative')
+            t('manage.activityWizard.adaptive.validation.positive')
           ),
           questionCap: optionalNumber()
             .integer(t('manage.activityWizard.adaptive.validation.integer'))

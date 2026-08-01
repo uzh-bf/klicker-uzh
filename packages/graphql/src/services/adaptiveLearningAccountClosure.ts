@@ -168,6 +168,13 @@ export async function transferAdaptiveLearningCompetenceTrees(
   }
 
   const treeIds = trees.map(({ id }) => id)
+  await prisma.adaptiveCalibrationExportRequest.updateMany({
+    where: {
+      treeId: { in: treeIds },
+      status: { not: DB.AdaptiveCalibrationExportStatus.EXPIRED },
+    },
+    data: { expiresAt: new Date(Date.now() + 1_000) },
+  })
   const transfer = await prisma.competenceTree.updateMany({
     where: {
       id: { in: treeIds },

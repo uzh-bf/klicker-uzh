@@ -6,6 +6,8 @@ import {
 } from '@klicker-uzh/adaptive-learning'
 import * as DB from '@klicker-uzh/prisma/client'
 import { adaptivePracticeQuizError } from './adaptivePracticeQuizErrors.js'
+import { getEffectivelyEnabledRuntimeNodes } from './adaptivePracticeQuizEstimatePersistence.js'
+import { isAdaptiveRetakeCooldownElapsed } from './adaptivePracticeQuizRetakes.js'
 import {
   MIN_REPORTING_RESPONSES,
   normalizeRuntimeEstimateForChart,
@@ -16,7 +18,6 @@ import {
   type AdaptiveRuntimeSettings,
 } from './adaptivePracticeQuizRuntime.js'
 import {
-  getEffectivelyEnabledRuntimeNodes,
   toDeliveredRuntimePoolItem,
   type AdaptiveAttemptRuntimeRecord,
   type LoadedAdaptiveRuntime,
@@ -36,7 +37,14 @@ export type AdaptivePracticeQuizAttemptState = {
   elapsedSeconds: number | null
   showTimer: boolean
   canStartNewAttempt: boolean
+  submittedResponseFeedback: AdaptiveSubmittedResponseFeedback | null
   servedItem: AdaptiveParticipantElement | null
+}
+
+export type AdaptiveSubmittedResponseFeedback = {
+  correct: boolean
+  score: number
+  feedback: string[]
 }
 
 export type AdaptiveResultConfidence =
@@ -44,6 +52,8 @@ export type AdaptiveResultConfidence =
   | 'MODERATE'
   | 'LOW'
   | 'INSUFFICIENT_DATA'
+
+export type AdaptiveResultClassification = DB.AdaptiveResultStatus
 
 export type AdaptiveResultLevelBand = {
   label: string
@@ -66,7 +76,10 @@ export type AdaptiveStudentResultNode = {
   kind: DB.AdaptiveNodeKind
   order: number
   responseCount: number
+  classification: AdaptiveResultClassification
   levelLabel: string | null
+  leadingLevelLabels: string[]
+  classificationProbability: number | null
   confidence: AdaptiveResultConfidence
   nearBoundary: boolean
   position: number | null
@@ -83,7 +96,10 @@ export type AdaptiveStudentResult = {
   answeredQuestions: number
   completedAt: Date
   levelInterpretation: DB.AdaptiveLevelMappingRule
+  classification: AdaptiveResultClassification
   levelLabel: string | null
+  leadingLevelLabels: string[]
+  classificationProbability: number | null
   confidence: AdaptiveResultConfidence
   nearBoundary: boolean
   position: number | null
@@ -119,15 +135,21 @@ export function serializeAdaptiveAttemptState(
     stopReason: attempt.stopReason,
     answeredQuestions: attempt.responses.length,
     questionNumber: nextPoolItem ? attempt.responses.length + 1 : null,
-    maximumQuestions: runtime.config.totalQuestionCap,
+    maximumQuestions: runtime.publication.totalQuestionCap,
     startedAt: attempt.startedAt,
     completedAt: attempt.completedAt,
     elapsedSeconds: attempt.elapsedSeconds,
-    showTimer: runtime.config.showTimer,
+    showTimer: runtime.publication.showTimer,
     canStartNewAttempt:
       attempt.status === DB.AdaptivePracticeQuizAttemptStatus.COMPLETED &&
-      runtime.config.attemptSelectionPolicy !==
-        DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED,
+      attempt.completedAt !== null &&
+      runtime.publication.retakePolicy !==
+        DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED &&
+      isAdaptiveRetakeCooldownElapsed({
+        completedAt: attempt.completedAt,
+        cooldownDays: runtime.publication.retakeCooldownDays,
+      }),
+    submittedResponseFeedback: null,
     servedItem: nextPoolItem
       ? serializeAdaptiveParticipantElement(nextPoolItem)
       : null,
@@ -143,6 +165,12 @@ export function serializeAdaptiveStudentResult(
       'The completed adaptive attempt has no terminal metadata.',
       'ADAPTIVE_ATTEMPT_DATA_INVALID'
     )
+  }
+  if (
+    attempt.measurementVersion ===
+    DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+  ) {
+    return serializeAdaptiveV2StudentResult(runtime, attempt)
   }
   const settings = runtime.algorithm.settings
   const levelsById = new Map(
@@ -195,6 +223,12 @@ export function serializeAdaptiveStudentResult(
       kind: node.kind,
       order: node.order,
       responseCount: estimate?.responseCount ?? 0,
+      classification: legacyClassification(
+        view,
+        estimate?.stopReason ?? attempt.stopReason!
+      ),
+      leadingLevelLabels: [],
+      classificationProbability: null,
       ...view,
       children: (childrenByParent.get(node.id) ?? [])
         .slice()
@@ -256,6 +290,9 @@ export function serializeAdaptiveStudentResult(
     answeredQuestions: attempt.responses.length,
     completedAt: attempt.completedAt,
     levelInterpretation: settings.levelMappingRule,
+    classification: legacyClassification(overallView, attempt.stopReason),
+    leadingLevelLabels: [],
+    classificationProbability: null,
     ...overallView,
     levelBands: serializeLevelBands(runtime.algorithm.levels, settings),
     trajectory,
@@ -264,6 +301,273 @@ export function serializeAdaptiveStudentResult(
       .sort((a, b) => a.order - b.order || a.id - b.id)
       .map(buildNode),
   }
+}
+
+function serializeAdaptiveV2StudentResult(
+  runtime: LoadedAdaptiveRuntime,
+  attempt: AdaptiveAttemptRuntimeRecord
+): AdaptiveStudentResult {
+  const completedAt = attempt.completedAt!
+  const stopReason = attempt.stopReason!
+  const overall = attempt.estimates.find(
+    (estimate) => estimate.nodeKind === DB.AdaptiveEstimateNodeKind.OVERALL
+  )
+  if (!overall || !attempt.resultStatus || !overall.resultStatus) {
+    throw adaptivePracticeQuizError(
+      'The completed Bayesian attempt has no result classification.',
+      'ADAPTIVE_ATTEMPT_DATA_INVALID'
+    )
+  }
+  if (attempt.resultStatus !== overall.resultStatus) {
+    throw adaptivePracticeQuizError(
+      'The Bayesian attempt and overall estimate classifications disagree.',
+      'ADAPTIVE_ATTEMPT_DATA_INVALID'
+    )
+  }
+
+  const levels = runtime.publication.cutScoreSnapshot
+    .slice()
+    .sort((left, right) => left.order - right.order)
+  const overallView = serializeV2EstimateView({
+    estimate: overall,
+    levels,
+    runtime,
+  })
+  const estimatesByNode = new Map(
+    attempt.estimates
+      .filter((estimate) => estimate.nodeId !== null)
+      .map((estimate) => [estimate.nodeId!, estimate])
+  )
+  const childrenByParent = new Map<number | null, AdaptiveRuntimeNode[]>()
+  const effectiveNodes = getEffectivelyEnabledRuntimeNodes(
+    runtime.algorithm.nodes
+  )
+  for (const node of effectiveNodes) {
+    const siblings = childrenByParent.get(node.parentId) ?? []
+    siblings.push(node)
+    childrenByParent.set(node.parentId, siblings)
+  }
+  const namesByNodeId = new Map(
+    runtime.publication.hierarchicalWeightSnapshot.map(({ nodeId, name }) => [
+      nodeId,
+      name,
+    ])
+  )
+  const buildNode = (node: AdaptiveRuntimeNode): AdaptiveStudentResultNode => {
+    const estimate = estimatesByNode.get(node.id)
+    if (!estimate) {
+      throw adaptivePracticeQuizError(
+        'The Bayesian result is missing a node estimate.',
+        'ADAPTIVE_ATTEMPT_DATA_INVALID'
+      )
+    }
+    const name = namesByNodeId.get(node.id)
+    if (!name) {
+      throw adaptivePracticeQuizError(
+        'The adaptive publication is missing a node name.',
+        'ADAPTIVE_PUBLICATION_SNAPSHOT_INVALID'
+      )
+    }
+    return {
+      id: node.id,
+      name,
+      kind: node.kind,
+      order: node.order,
+      responseCount: estimate.responseCount,
+      ...serializeV2EstimateView({ estimate, levels, runtime }),
+      children: (childrenByParent.get(node.id) ?? [])
+        .slice()
+        .sort((left, right) => left.order - right.order || left.id - right.id)
+        .map(buildNode),
+    }
+  }
+  const researchOnly =
+    overall.resultStatus === DB.AdaptiveResultStatus.RESEARCH_ONLY
+  const trajectory: AdaptiveResultTrajectoryPoint[] = researchOnly
+    ? []
+    : attempt.responses.flatMap((response) => {
+        if (
+          response.overallThetaAfter === null ||
+          response.overallCredibleLowerAfter === null ||
+          response.overallCredibleUpperAfter === null
+        ) {
+          return []
+        }
+        return [
+          {
+            order: response.order,
+            position: normalizeV2Position(response.overallThetaAfter, runtime),
+            lowerPosition: normalizeV2Position(
+              response.overallCredibleLowerAfter,
+              runtime
+            ),
+            upperPosition: normalizeV2Position(
+              response.overallCredibleUpperAfter,
+              runtime
+            ),
+            levelLabel: null,
+          },
+        ]
+      })
+  const lastPoint = trajectory.at(-1)
+  if (lastPoint) {
+    lastPoint.levelLabel = overallView.levelLabel
+    if (
+      overallView.position === null ||
+      Math.abs(lastPoint.position - overallView.position) > 1e-12 ||
+      Math.abs(lastPoint.lowerPosition - overallView.lowerPosition!) > 1e-12 ||
+      Math.abs(lastPoint.upperPosition - overallView.upperPosition!) > 1e-12
+    ) {
+      throw adaptivePracticeQuizError(
+        'The Bayesian trajectory endpoint disagrees with the final estimate.',
+        'ADAPTIVE_ATTEMPT_DATA_INVALID'
+      )
+    }
+  }
+
+  return {
+    attemptId: attempt.id,
+    practiceQuizId: attempt.practiceQuizId,
+    practiceQuizName: runtime.quiz.displayName,
+    stopReason,
+    answeredQuestions: attempt.responses.length,
+    completedAt,
+    levelInterpretation:
+      runtime.publication.evidenceMinimumSnapshot.levelMappingRule,
+    ...overallView,
+    levelBands: researchOnly ? [] : serializeV2LevelBands(runtime),
+    trajectory,
+    competenceProfile: (childrenByParent.get(null) ?? [])
+      .slice()
+      .sort((left, right) => left.order - right.order || left.id - right.id)
+      .map(buildNode),
+  }
+}
+
+function serializeV2EstimateView({
+  estimate,
+  levels,
+  runtime,
+}: {
+  estimate: DB.AdaptivePracticeQuizEstimate
+  levels: LoadedAdaptiveRuntime['publication']['cutScoreSnapshot']
+  runtime: LoadedAdaptiveRuntime
+}) {
+  const classification = estimate.resultStatus
+  if (!classification) {
+    throw adaptivePracticeQuizError(
+      'The Bayesian estimate has no result classification.',
+      'ADAPTIVE_ATTEMPT_DATA_INVALID'
+    )
+  }
+  const researchOnly = classification === DB.AdaptiveResultStatus.RESEARCH_ONLY
+  const hasPosition =
+    !researchOnly &&
+    estimate.theta !== null &&
+    estimate.credibleLower !== null &&
+    estimate.credibleUpper !== null
+  const level =
+    classification === DB.AdaptiveResultStatus.CLASSIFIED
+      ? levels.find(({ sourceLevelId }) => sourceLevelId === estimate.levelId)
+      : null
+  const leadingLevelLabels =
+    classification === DB.AdaptiveResultStatus.BETWEEN_LEVELS
+      ? leadingAdjacentLevelLabels(estimate.bandProbabilities, levels)
+      : []
+  return {
+    classification,
+    levelLabel: level?.label ?? null,
+    leadingLevelLabels,
+    classificationProbability:
+      classification === DB.AdaptiveResultStatus.CLASSIFIED ||
+      classification === DB.AdaptiveResultStatus.BETWEEN_LEVELS
+        ? estimate.classificationProbability
+        : null,
+    confidence:
+      classification === DB.AdaptiveResultStatus.CLASSIFIED
+        ? ('HIGH' as const)
+        : classification === DB.AdaptiveResultStatus.BETWEEN_LEVELS
+          ? ('LOW' as const)
+          : ('INSUFFICIENT_DATA' as const),
+    nearBoundary: classification === DB.AdaptiveResultStatus.BETWEEN_LEVELS,
+    position: hasPosition
+      ? normalizeV2Position(estimate.theta!, runtime)
+      : null,
+    lowerPosition: hasPosition
+      ? normalizeV2Position(estimate.credibleLower!, runtime)
+      : null,
+    upperPosition: hasPosition
+      ? normalizeV2Position(estimate.credibleUpper!, runtime)
+      : null,
+  }
+}
+
+function leadingAdjacentLevelLabels(
+  probabilities: DB.Prisma.JsonValue | null,
+  levels: LoadedAdaptiveRuntime['publication']['cutScoreSnapshot']
+) {
+  if (!probabilities || typeof probabilities !== 'object') return []
+  const values = probabilities as Record<string, number>
+  const ordered = levels.slice().sort((left, right) => left.order - right.order)
+  const topIndex = ordered.reduce(
+    (best, level, index) =>
+      (values[String(level.scaleLevelId)] ?? 0) >
+      (values[String(ordered[best]!.scaleLevelId)] ?? 0)
+        ? index
+        : best,
+    0
+  )
+  const neighborIndices = [topIndex - 1, topIndex + 1].filter(
+    (index) => index >= 0 && index < ordered.length
+  )
+  const neighborIndex = neighborIndices.sort(
+    (left, right) =>
+      (values[String(ordered[right]!.scaleLevelId)] ?? 0) -
+      (values[String(ordered[left]!.scaleLevelId)] ?? 0)
+  )[0]
+  return [topIndex, neighborIndex]
+    .filter((index): index is number => typeof index === 'number')
+    .sort((left, right) => left - right)
+    .map((index) => ordered[index]!.label)
+}
+
+function serializeV2LevelBands(runtime: LoadedAdaptiveRuntime) {
+  const levels = runtime.publication.cutScoreSnapshot
+    .slice()
+    .sort((left, right) => left.order - right.order)
+  return levels.map((level, index) => ({
+    label: level.label,
+    order: level.order,
+    startPosition: normalizeV2Position(
+      index === 0
+        ? runtime.publication.gridMin
+        : (level.lowerBound ?? runtime.publication.gridMin),
+      runtime
+    ),
+    endPosition: normalizeV2Position(
+      index === levels.length - 1
+        ? runtime.publication.gridMax
+        : (levels[index + 1]!.lowerBound ?? runtime.publication.gridMax),
+      runtime
+    ),
+  }))
+}
+
+function normalizeV2Position(theta: number, runtime: LoadedAdaptiveRuntime) {
+  return normalizeThetaForChart(theta, {
+    min: runtime.publication.gridMin,
+    max: runtime.publication.gridMax,
+  })
+}
+
+function legacyClassification(
+  view: ReturnType<typeof serializeEstimateView>,
+  stopReason: DB.AdaptivePracticeQuizStopReason
+): AdaptiveResultClassification {
+  if (view.levelLabel) return DB.AdaptiveResultStatus.CLASSIFIED
+  return stopReason === DB.AdaptivePracticeQuizStopReason.POOL_EXHAUSTED
+    ? DB.AdaptiveResultStatus.POOL_LIMITED
+    : DB.AdaptiveResultStatus.INSUFFICIENT_EVIDENCE
 }
 
 function serializeEstimateView({

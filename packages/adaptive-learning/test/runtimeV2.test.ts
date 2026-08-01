@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ADAPTIVE_V2_EXPOSURE_CEILING,
   AdaptiveRuntimeConfigurationError,
   advanceAdaptiveV2Runtime,
   deriveGuessingParameter,
+  expectedPosteriorInformation,
   prepareAdaptiveV2Runtime,
   type AdaptiveRuntimeNode,
   type AdaptiveRuntimeResponse,
@@ -125,6 +127,40 @@ describe('hierarchical Bayesian adaptive runtime', () => {
     expect(second.leafNodeId).toBe(4)
   })
 
+  it('rejects a zero weight on any enabled root', () => {
+    const nodes = [
+      root(1, 0, 0),
+      leaf(2, 1, 0, 2),
+      root(3, 1, 1),
+      leaf(4, 3, 0, 2),
+    ]
+    const pool = [
+      scoringItem({
+        id: 1,
+        leafId: 2,
+        path: [1, 2],
+        levelId: 2,
+        difficulty: 0,
+      }),
+      scoringItem({
+        id: 2,
+        leafId: 4,
+        path: [3, 4],
+        levelId: 2,
+        difficulty: 0,
+      }),
+    ]
+
+    expect(() =>
+      prepareAdaptiveV2Runtime({
+        nodes,
+        scale: standardScale(),
+        pool,
+        settings: diagnosticSettings(),
+      })
+    ).toThrowError(AdaptiveRuntimeConfigurationError)
+  })
+
   it('respects ancestor caps and reports the cap stop explicitly', () => {
     const nodes = weightedLeaves()
     nodes[0]!.questionCap = 1
@@ -155,7 +191,7 @@ describe('hierarchical Bayesian adaptive runtime', () => {
     const pool = weightedLeafPool()
     pool[0] = {
       ...pool[0]!,
-      calibrationId: null,
+      calibrationId: 'calibration-field-test',
       contributesToEstimate: false,
       role: 'FIELD_TEST',
     }
@@ -176,9 +212,9 @@ describe('hierarchical Bayesian adaptive runtime', () => {
     const runtime = researchRuntime({ totalQuestionCap: 4 })
     const fieldTest = runtime.pool.find(({ role }) => role === 'FIELD_TEST')!
     const anchorResponses = [
-      response(runtime.pool[0]!, 1, true),
-      response(runtime.pool[2]!, 2, false),
-      response(runtime.pool[4]!, 3, true),
+      response(researchAnchor(runtime.pool, 1), 1, true),
+      response(researchAnchor(runtime.pool, 2), 2, false),
+      response(researchAnchor(runtime.pool, 3), 3, true),
     ]
     const beforeFieldTest = advanceAdaptiveV2Runtime({
       attemptId: 'attempt-research-field',
@@ -228,9 +264,9 @@ describe('hierarchical Bayesian adaptive runtime', () => {
     expect(first.nextPoolItem?.levelId).toBe(1)
 
     const anchorResponses = [
-      response(runtime.pool[0]!, 1, true),
-      response(runtime.pool[2]!, 2, false),
-      response(runtime.pool[4]!, 3, true),
+      response(researchAnchor(runtime.pool, 1), 1, true),
+      response(researchAnchor(runtime.pool, 2), 2, false),
+      response(researchAnchor(runtime.pool, 3), 3, true),
     ]
     const roles = new Set<string>()
     for (let index = 0; index < 64; index++) {
@@ -243,11 +279,131 @@ describe('hierarchical Bayesian adaptive runtime', () => {
       expect(decision.selection?.collectionDesignVersion).toBe(
         'RESEARCH_DESIGN_V1'
       )
-      expect(
-        decision.selection?.conditionalAdministrationProbability
-      ).toBeCloseTo(0.5, 12)
+      const selectedRoleIsFieldTest =
+        decision.nextPoolItem!.role === 'FIELD_TEST'
+      const roleCandidates = runtime.pool.filter(
+        (item) =>
+          !anchorResponses.some(({ poolItemId }) => poolItemId === item.id) &&
+          (selectedRoleIsFieldTest
+            ? item.role === 'FIELD_TEST'
+            : item.role !== 'FIELD_TEST')
+      )
+      const posterior = decision.estimates.nodes.get(2)!.posterior
+      const information = roleCandidates.map((item) =>
+        expectedPosteriorInformation({ posterior, item })
+      )
+      const maximumInformation = Math.max(...information)
+      const approvedCandidates = roleCandidates
+        .filter(
+          (_, candidateIndex) =>
+            information[candidateIndex]! >= maximumInformation * 0.8
+        )
+        .sort((left, right) => left.id - right.id)
+      const selectedIndex = approvedCandidates.findIndex(
+        ({ id }) => id === decision.nextPoolItem!.id
+      )
+      const drawSpan = 0x8000_0000
+      const preimageCount =
+        Math.floor((drawSpan - 1 - selectedIndex) / approvedCandidates.length) +
+        1
+      expect(decision.selection?.conditionalAdministrationProbability).toBe(
+        preimageCount / 0x1_0000_0000
+      )
     }
     expect(roles).toEqual(new Set(['ANCHOR', 'FIELD_TEST']))
+  })
+
+  it('rejects Research banks below the exposure-safe distinct-item minima', () => {
+    const pool = researchPool()
+    const input = {
+      nodes: [root(1, 0, 1), leaf(2, 1, 0, 2)],
+      scale: standardScale(),
+      settings: researchSettings(),
+    }
+
+    expect(() =>
+      prepareAdaptiveV2Runtime({
+        ...input,
+        pool: pool.filter((item) => item.id !== 3),
+      })
+    ).toThrowError(
+      'Research pools require exposure-safe calibrated anchor coverage for every leaf and level.'
+    )
+    expect(() =>
+      prepareAdaptiveV2Runtime({
+        ...input,
+        pool: pool.filter((item) => item.id !== 13),
+      })
+    ).toThrowError(
+      'Research pools require enough field-test and scoring items for the collection design.'
+    )
+    expect(() =>
+      prepareAdaptiveV2Runtime({
+        ...input,
+        pool: pool.filter((item) => item.id !== 10),
+      })
+    ).toThrowError(
+      'Research pools require enough field-test and scoring items for the collection design.'
+    )
+  })
+
+  it('keeps the minimum Research bank selectable across sequential attempts', () => {
+    const runtime = researchRuntime({ totalQuestionCap: 4 })
+    const servedCountByPoolItem = new Map<number, number>()
+    const priorAttemptPoolItemIds = new Set<number>()
+
+    for (let attemptNumber = 1; attemptNumber <= 12; attemptNumber++) {
+      const exposureCapacity = Math.max(
+        1,
+        Math.ceil(ADAPTIVE_V2_EXPOSURE_CEILING * attemptNumber)
+      )
+      const responses: AdaptiveRuntimeResponse<AdaptiveV2PoolItem>[] = []
+      const priorIds = new Set(priorAttemptPoolItemIds)
+      const selectionContext = {
+        servedCountByPoolItem,
+        priorAttemptPoolItemIds: priorIds,
+        isExposureEligible: (item: AdaptiveV2PoolItem) =>
+          (servedCountByPoolItem.get(item.id) ?? 0) < exposureCapacity,
+      }
+
+      while (responses.length < runtime.settings.totalQuestionCap) {
+        const decision = advanceAdaptiveV2Runtime({
+          attemptId: `attempt-exposure-${attemptNumber}`,
+          runtime,
+          responses,
+          selectionContext,
+        })
+        expect(decision.nextPoolItem).not.toBeNull()
+        expect(decision.stopReason).toBeNull()
+
+        const item = decision.nextPoolItem!
+        servedCountByPoolItem.set(
+          item.id,
+          (servedCountByPoolItem.get(item.id) ?? 0) + 1
+        )
+        responses.push(response(item, responses.length + 1, true))
+      }
+
+      const terminal = advanceAdaptiveV2Runtime({
+        attemptId: `attempt-exposure-${attemptNumber}`,
+        runtime,
+        responses,
+        selectionContext,
+      })
+      expect(terminal.stopReason).toBe('TOTAL_QUESTION_CAP')
+      expect(
+        responses.filter(({ poolItem }) => poolItem.role === 'ANCHOR')
+      ).toHaveLength(3)
+      expect(
+        responses.filter(({ poolItem }) => poolItem.role === 'FIELD_TEST')
+      ).toHaveLength(1)
+      expect(Math.max(...servedCountByPoolItem.values())).toBeLessThanOrEqual(
+        exposureCapacity
+      )
+      responses.forEach(({ poolItem }) =>
+        priorAttemptPoolItemIds.add(poolItem.id)
+      )
+    }
   })
 
   it('keeps an uncertain boundary result between levels at the total cap', () => {
@@ -638,10 +794,20 @@ function weightedLeafPool() {
 
 function researchRuntime(overrides: Partial<AdaptiveV2RuntimeSettings> = {}) {
   const scale = standardScale()
-  const pool: AdaptiveV2PoolItem[] = scale.levels.flatMap((level, levelIndex) =>
-    [0, 1].map((copy) =>
+  return prepareAdaptiveV2Runtime({
+    nodes: [root(1, 0, 1), leaf(2, 1, 0, 2)],
+    scale,
+    pool: researchPool(),
+    settings: researchSettings(overrides),
+  })
+}
+
+function researchPool(): AdaptiveV2PoolItem[] {
+  const scale = standardScale()
+  const anchors = scale.levels.flatMap((level, levelIndex) =>
+    [0, 1, 2].map((copy) =>
       scoringItem({
-        id: levelIndex * 2 + copy + 1,
+        id: levelIndex * 3 + copy + 1,
         leafId: 2,
         path: [1, 2],
         levelId: level.id,
@@ -650,24 +816,33 @@ function researchRuntime(overrides: Partial<AdaptiveV2RuntimeSettings> = {}) {
       })
     )
   )
-  pool.push({
+  const scoringRedundancy = scoringItem({
+    id: 10,
+    leafId: 2,
+    path: [1, 2],
+    levelId: 2,
+    difficulty: 0,
+    role: 'ANCHOR',
+  })
+  const fieldTests = [11, 12, 13].map((id) => ({
     ...scoringItem({
-      id: 7,
+      id,
       leafId: 2,
       path: [1, 2],
       levelId: 2,
       difficulty: 0,
     }),
-    calibrationId: null,
+    calibrationId: `calibration-field-test-${id}`,
     contributesToEstimate: false,
-    role: 'FIELD_TEST',
-  })
-  return prepareAdaptiveV2Runtime({
-    nodes: [root(1, 0, 1), leaf(2, 1, 0, 2)],
-    scale,
-    pool,
-    settings: researchSettings(overrides),
-  })
+    role: 'FIELD_TEST' as const,
+  }))
+  return [...anchors, scoringRedundancy, ...fieldTests]
+}
+
+function researchAnchor(pool: readonly AdaptiveV2PoolItem[], levelId: number) {
+  return pool.find(
+    (item) => item.role === 'ANCHOR' && item.levelId === levelId
+  )!
 }
 
 function scoringItem({

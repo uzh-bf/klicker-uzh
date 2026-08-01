@@ -1,3 +1,4 @@
+import { ADAPTIVE_PRESET_DEFAULTS } from '../src/presets.js'
 import {
   ADAPTIVE_V2_RELEASE_POLICY,
   ADAPTIVE_V2_SCALE,
@@ -41,6 +42,7 @@ export function buildAdaptiveV2ReleaseInput({
     ...ADAPTIVE_V2_SCENARIO_POLICY,
     modelThetaValues: [...ADAPTIVE_V2_SCENARIO_POLICY.modelThetaValues],
   }
+  const diagnosticDefaults = ADAPTIVE_PRESET_DEFAULTS.DIAGNOSTIC
   return {
     label: 'IRT v2 canonical depth-five model recovery',
     evidenceProfile: 'RELEASE',
@@ -60,7 +62,7 @@ export function buildAdaptiveV2ReleaseInput({
       ],
     },
     learnersPerBand: 2_334,
-    itemsPerAttempt: 60,
+    itemsPerAttempt: diagnosticDefaults.totalQuestionCap,
     courseCohorts: ['COHORT_A', 'COHORT_B', 'COHORT_C'],
     retainedTraceLimit: 24,
     scenarioSet: ADAPTIVE_V2_SCENARIO_SET.map((definition) => ({
@@ -69,14 +71,14 @@ export function buildAdaptiveV2ReleaseInput({
     })),
     scenarioPolicy,
     runtimeSettings: {
-      perLeafQuestionCap: null,
-      minQuestionsPerLeaf: 1,
-      classificationZ: 1.28,
-      topInformationRatio: 0.8,
-      levelMappingRule: 'NEAREST',
+      perLeafQuestionCap: diagnosticDefaults.perLeafQuestionCap,
+      minQuestionsPerLeaf: diagnosticDefaults.minQuestionsPerLeaf,
+      classificationZ: diagnosticDefaults.classificationZ,
+      topInformationRatio: diagnosticDefaults.topInformationRatio,
+      levelMappingRule: diagnosticDefaults.levelMappingRule,
       thetaRange: { min: -3, max: 3 },
       mode: 'DIAGNOSTIC',
-      minimumRootResponses: 1,
+      minimumRootResponses: diagnosticDefaults.minQuestionsPerLeaf,
     },
     simulationSettings: {
       bootstrapReplicates: 1_000,

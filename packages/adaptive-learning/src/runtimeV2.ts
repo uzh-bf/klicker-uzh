@@ -275,6 +275,7 @@ function selectNextItem({
       !hasSelectableResearchRole({
         items: leafItems,
         anchorResponsesByLevel,
+        fieldTestResponseCount,
         policy: runtime.settings.researchPolicy!,
       })
     ) {
@@ -303,6 +304,7 @@ function selectNextItem({
     mode: runtime.settings.mode,
     leaves,
     minQuestionsPerLeaf: runtime.settings.minQuestionsPerLeaf,
+    totalQuestionCap: runtime.settings.totalQuestionCap,
     totalAdministeredResponses: responses.length,
     topInformationRatio: runtime.settings.topInformationRatio,
     researchPolicy: runtime.settings.researchPolicy,
@@ -506,10 +508,12 @@ function determineExhaustionReason({
 function hasSelectableResearchRole({
   items,
   anchorResponsesByLevel,
+  fieldTestResponseCount,
   policy,
 }: {
   items: AdaptiveV2PoolItem[]
   anchorResponsesByLevel: ReadonlyMap<number, number>
+  fieldTestResponseCount: number
   policy: AdaptiveV2ResearchPolicy
 }) {
   let hasAnchorDeficit = false
@@ -524,6 +528,12 @@ function hasSelectableResearchRole({
     }
   }
   if (hasAnchorDeficit) return false
+  if (
+    fieldTestResponseCount < policy.fieldTestResponsesPerLeaf &&
+    items.some((item) => item.role === 'FIELD_TEST')
+  ) {
+    return true
+  }
   if (items.some((item) => item.role !== 'FIELD_TEST')) return true
   return false
 }

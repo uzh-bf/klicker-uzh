@@ -347,7 +347,11 @@ function FilterList({
       </Accordion>
 
       <div className="mt-2">
+        <label className="sr-only" htmlFor="show-archive-switch">
+          {t('manage.questionPool.showArchived')}
+        </label>
         <Switch
+          id="show-archive-switch"
           size="sm"
           label={t('manage.questionPool.showArchived')}
           checked={isArchiveActive}

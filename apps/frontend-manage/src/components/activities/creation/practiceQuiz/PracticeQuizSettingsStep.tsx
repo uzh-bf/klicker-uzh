@@ -1,26 +1,15 @@
-import {
-  faChevronDown,
-  faChevronUp,
-  faCrown,
-  faGears,
-} from '@fortawesome/free-solid-svg-icons'
+import { faCrown, faGears } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  AdaptiveAttemptSelectionPolicy,
-  AdaptiveLevelMappingRule,
   AdaptivePracticeQuizPreset,
   ElementOrderType,
   PracticeQuizMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import useGamifiedCourseGrouping from '@lib/hooks/useGamifiedCourseGrouping'
 import {
-  Button,
   FormikNumberField,
   FormikSelectField,
   FormikSwitchField,
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -32,7 +21,6 @@ import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
 import WizardNavigation from '../WizardNavigation'
 import { PracticeQuizWizardStepProps } from './PracticeQuizWizard'
-import { getAdaptivePracticeQuizEffectiveSettings } from './adaptivePracticeQuizForm'
 
 function PracticeQuizSettingsStep({
   editMode,
@@ -53,7 +41,6 @@ function PracticeQuizSettingsStep({
 }: PracticeQuizWizardStepProps) {
   const t = useTranslations()
   const [courseGamified, setCourseGamified] = useState(false)
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const groupedCourses = useGamifiedCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
@@ -82,9 +69,6 @@ function PracticeQuizSettingsStep({
       validationSchema={validationSchema}
     >
       {({ values, isValid, isSubmitting, setTouched, setValues }) => {
-        const effectiveAdaptiveSettings =
-          getAdaptivePracticeQuizEffectiveSettings(values.adaptiveConfig)
-
         return (
           <Form className="h-full min-h-0 w-full">
             <CreationFormValidator
@@ -261,17 +245,26 @@ function PracticeQuizSettingsStep({
                         label={t(
                           'manage.activityWizard.adaptive.settings.preset'
                         )}
-                        items={Object.values(AdaptivePracticeQuizPreset).map(
-                          (preset) => ({
-                            value: preset,
-                            label: t(
-                              `manage.activityWizard.adaptive.preset.${preset}`
-                            ),
-                            data: {
-                              cy: `adaptive-preset-${preset.toLowerCase()}`,
-                            },
-                          })
-                        )}
+                        items={[
+                          AdaptivePracticeQuizPreset.Diagnostic,
+                          AdaptivePracticeQuizPreset.Research,
+                          ...(values.adaptiveConfig.preset ===
+                          AdaptivePracticeQuizPreset.Placement
+                            ? [AdaptivePracticeQuizPreset.Placement]
+                            : []),
+                        ].map((preset) => ({
+                          value: preset,
+                          label: t(
+                            preset === AdaptivePracticeQuizPreset.Placement
+                              ? 'manage.activityWizard.adaptive.preset.PLACEMENT_UNAVAILABLE'
+                              : `manage.activityWizard.adaptive.preset.${preset}`
+                          ),
+                          disabled:
+                            preset === AdaptivePracticeQuizPreset.Placement,
+                          data: {
+                            cy: `adaptive-preset-${preset.toLowerCase()}`,
+                          },
+                        }))}
                         data={{ cy: 'adaptive-preset' }}
                         className={{ root: 'w-full' }}
                       />
@@ -297,138 +290,42 @@ function PracticeQuizSettingsStep({
                       </div>
                     </div>
 
-                    <div className="border-uzh-grey-80 mt-4 border-y py-3 text-sm">
-                      <SettingsSummary
-                        label={t(
-                          'manage.activityWizard.adaptive.settings.attemptPolicy'
-                        )}
-                        value={t(
-                          `manage.activityWizard.adaptive.attemptPolicy.${effectiveAdaptiveSettings.attemptSelectionPolicy}`
-                        )}
-                      />
+                    <div className="border-uzh-grey-80 mt-4 border-t pt-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <FormikNumberField
+                          name="adaptiveConfig.perLeafQuestionCap"
+                          label={t(
+                            'manage.activityWizard.adaptive.settings.perLeafQuestionCap'
+                          )}
+                          min={1}
+                          max={1000}
+                          precision={0}
+                          data={{ cy: 'adaptive-per-leaf-question-cap' }}
+                        />
+                        <FormikNumberField
+                          required
+                          name="adaptiveConfig.minQuestionsPerLeaf"
+                          label={t(
+                            'manage.activityWizard.adaptive.settings.minQuestionsPerLeaf'
+                          )}
+                          min={1}
+                          max={1000}
+                          precision={0}
+                          data={{ cy: 'adaptive-min-questions-per-leaf' }}
+                        />
+                      </div>
                     </div>
-
-                    <ShadcnCollapsible
-                      open={advancedOpen}
-                      onOpenChange={setAdvancedOpen}
-                      className="mt-3"
-                    >
-                      <ShadcnCollapsibleTrigger asChild>
-                        <Button
-                          type="button"
-                          basic
-                          data={{ cy: 'adaptive-advanced-settings-toggle' }}
-                          className={{ root: 'h-8 px-1' }}
-                        >
-                          <Button.Icon
-                            icon={advancedOpen ? faChevronUp : faChevronDown}
-                          />
-                          <Button.Label>
-                            {t(
-                              'manage.activityWizard.adaptive.settings.advanced'
-                            )}
-                          </Button.Label>
-                        </Button>
-                      </ShadcnCollapsibleTrigger>
-                      <ShadcnCollapsibleContent className="border-uzh-grey-80 mt-2 border-t pt-3">
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          <FormikNumberField
-                            name="adaptiveConfig.perLeafQuestionCap"
-                            label={t(
-                              'manage.activityWizard.adaptive.settings.perLeafQuestionCap'
-                            )}
-                            min={1}
-                            max={1000}
-                            precision={0}
-                            data={{ cy: 'adaptive-per-leaf-question-cap' }}
-                          />
-                          <FormikNumberField
-                            required
-                            name="adaptiveConfig.minQuestionsPerLeaf"
-                            label={t(
-                              'manage.activityWizard.adaptive.settings.minQuestionsPerLeaf'
-                            )}
-                            min={1}
-                            max={1000}
-                            precision={0}
-                            data={{ cy: 'adaptive-min-questions-per-leaf' }}
-                          />
-                          <FormikNumberField
-                            required
-                            name="adaptiveConfig.classificationZ"
-                            label={t(
-                              'manage.activityWizard.adaptive.settings.classificationZ'
-                            )}
-                            min={0.01}
-                            max={5}
-                            precision={2}
-                            data={{ cy: 'adaptive-classification-z' }}
-                          />
-                        </div>
-
-                        {values.adaptiveConfig.preset ===
-                        AdaptivePracticeQuizPreset.Research ? (
-                          <div
-                            className="border-uzh-grey-80 mt-4 grid gap-3 border-t pt-3 sm:grid-cols-2 lg:grid-cols-3"
-                            data-cy="adaptive-research-settings"
-                          >
-                            <FormikSelectField
-                              name="adaptiveConfig.levelMappingRule"
-                              label={t(
-                                'manage.activityWizard.adaptive.settings.levelMappingRule'
-                              )}
-                              items={Object.values(
-                                AdaptiveLevelMappingRule
-                              ).map((rule) => ({
-                                value: rule,
-                                label: t(
-                                  `manage.activityWizard.adaptive.levelMapping.${rule}`
-                                ),
-                              }))}
-                              data={{ cy: 'adaptive-level-mapping-rule' }}
-                              className={{ root: 'w-full' }}
-                            />
-                            <FormikSelectField
-                              name="adaptiveConfig.attemptSelectionPolicy"
-                              label={t(
-                                'manage.activityWizard.adaptive.settings.attemptPolicy'
-                              )}
-                              items={Object.values(
-                                AdaptiveAttemptSelectionPolicy
-                              ).map((policy) => ({
-                                value: policy,
-                                label: t(
-                                  `manage.activityWizard.adaptive.attemptPolicy.${policy}`
-                                ),
-                              }))}
-                              data={{ cy: 'adaptive-attempt-policy' }}
-                              className={{ root: 'w-full' }}
-                            />
-                            <FormikNumberField
-                              required
-                              name="adaptiveConfig.topInformationRatio"
-                              label={t(
-                                'manage.activityWizard.adaptive.settings.topInformationRatio'
-                              )}
-                              min={0.01}
-                              max={1}
-                              precision={2}
-                              data={{ cy: 'adaptive-top-information-ratio' }}
-                            />
-                            <FormikNumberField
-                              name="adaptiveConfig.defaultDiscrimination"
-                              label={t(
-                                'manage.activityWizard.adaptive.settings.defaultDiscrimination'
-                              )}
-                              min={0.01}
-                              max={10}
-                              precision={2}
-                              data={{ cy: 'adaptive-default-discrimination' }}
-                            />
-                          </div>
-                        ) : null}
-                      </ShadcnCollapsibleContent>
-                    </ShadcnCollapsible>
+                    {values.adaptiveConfig.preset ===
+                    AdaptivePracticeQuizPreset.Research ? (
+                      <UserNotification
+                        type="warning"
+                        message={t(
+                          'manage.activityWizard.adaptive.research.nonClassifying'
+                        )}
+                        className={{ root: 'mt-4' }}
+                        data={{ cy: 'adaptive-research-non-classifying' }}
+                      />
+                    ) : null}
                   </section>
                 </div>
               )}
@@ -447,17 +344,6 @@ function PracticeQuizSettingsStep({
         )
       }}
     </Formik>
-  )
-}
-
-function SettingsSummary({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-uzh-grey-100">{label}</div>
-      <div className="truncate font-bold" title={value}>
-        {value}
-      </div>
-    </div>
   )
 }
 

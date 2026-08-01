@@ -22,6 +22,7 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
+import { isDeepStrictEqual } from 'node:util'
 import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type {
   ContextWithUser,
@@ -690,6 +691,16 @@ export async function manipulateElement(
     })
   }
 
+  return formatManipulatedElement(element)
+}
+
+export function formatManipulatedElement<
+  T extends {
+    options: object
+    answerCollectionId: number | null
+    answerCollectionItems: Array<{ id: number }>
+  },
+>(element: T) {
   return {
     ...element,
     options: {
@@ -706,6 +717,44 @@ export async function manipulateElement(
       collectionItemIds: element.answerCollectionItems.map((item) => item.id),
     },
   }
+}
+
+export function matchesManipulatedElementCreationInput(
+  input: ElementManipulationInput,
+  element: {
+    status: DB.ElementStatus
+    type: DB.ElementType
+    name: string
+    content: string
+    explanation: string | null
+    basePoints: boolean
+    pointsMultiplier: number
+    options: object
+    tags: Array<{ name: string }>
+  }
+) {
+  const processedOptions = validateAndProcessElementOptions(
+    input.type,
+    input.options
+  )
+  if (processedOptions === null) return false
+  const persistedProcessedOptions = JSON.parse(
+    JSON.stringify(processedOptions)
+  ) as object
+
+  const requestedTags = [...(input.tags ?? [])].sort()
+  const persistedTags = element.tags.map(({ name }) => name).sort()
+  return (
+    input.status === element.status &&
+    input.type === element.type &&
+    input.name === element.name &&
+    input.content === element.content &&
+    (input.explanation ?? null) === element.explanation &&
+    input.basePoints === element.basePoints &&
+    input.pointsMultiplier === element.pointsMultiplier &&
+    isDeepStrictEqual(persistedProcessedOptions, element.options) &&
+    isDeepStrictEqual(requestedTags, persistedTags)
+  )
 }
 
 export async function applyElementBatchOperations(

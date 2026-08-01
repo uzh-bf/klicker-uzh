@@ -248,15 +248,113 @@ enum AdaptiveAttemptSelectionPolicy {
   LATEST_COMPLETED
 }
 
+type AdaptiveCalibrationCounts {
+  calibrated: Int!
+  flagged: Int!
+  pilot: Int!
+  provisional: Int!
+  retired: Int!
+}
+
+type AdaptiveCalibrationExportRequest {
+  artifactChecksum: String
+  completedAt: Date
+  createdAt: Date!
+  datasetVersion: String!
+  downloadUrl: String
+  expiresAt: Date!
+  failureCode: String
+  id: String!
+  rowCount: Int
+  scaleVersionId: String!
+  splitPolicyVersion: String!
+  startedAt: Date
+  status: AdaptiveCalibrationExportStatus!
+  treeId: String!
+}
+
+enum AdaptiveCalibrationExportStatus {
+  EXPIRED
+  FAILED
+  READY
+  REQUESTED
+  RUNNING
+}
+
+type AdaptiveCalibrationImportReceipt {
+  calibrationIds: [String!]!
+  importedCount: Int!
+}
+
+type AdaptiveEmpiricalValidation {
+  aggregateMetrics: Json!
+  approvedProbabilityThreshold: Float!
+  calibrationPolicyVersion: Int!
+  classificationPolicyVersion: Int!
+  configId: String!
+  estimatorImplementationVersion: String!
+  id: String!
+  measurementVersion: AdaptiveMeasurementVersion!
+  reviewedAt: Date
+  status: AdaptiveEmpiricalValidationStatus!
+  stratumMetrics: Json!
+  submittedAt: Date!
+}
+
+enum AdaptiveEmpiricalValidationStatus {
+  APPROVED
+  REJECTED
+  SUBMITTED
+  SUPERSEDED
+}
+
 enum AdaptiveEstimateNodeKind {
   COMPETENCE
   OVERALL
   SUBCOMPETENCE
 }
 
+type AdaptiveItemCalibration {
+  approvedAt: Date
+  assignmentId: Int!
+  createdAt: Date!
+  diagnostics: Json!
+  difficulty: Float!
+  discrimination: Float!
+  elementId: Int!
+  elementVersion: Int!
+  guessing: Float!
+  id: String!
+  model: AdaptiveItemModel!
+  modelImplementationVersion: String!
+  parameterUncertainty: Json!
+  participantCount: Int!
+  responseCount: Int!
+  status: AdaptiveItemCalibrationStatus!
+  version: Int!
+}
+
+enum AdaptiveItemCalibrationStatus {
+  CALIBRATED
+  FLAGGED
+  PILOT
+  PROVISIONAL
+  RETIRED
+}
+
+enum AdaptiveItemModel {
+  THREE_PL_FIXED_C
+  TWO_PL
+}
+
 enum AdaptiveLevelMappingRule {
   MASTERY
   NEAREST
+}
+
+enum AdaptiveMeasurementVersion {
+  IRT_V1
+  IRT_V2_EAP_GRID_1
 }
 
 enum AdaptiveNodeKind {
@@ -301,6 +399,7 @@ type AdaptivePracticeQuizAttemptState {
   startedAt: Date!
   status: AdaptivePracticeQuizAttemptStatus!
   stopReason: AdaptivePracticeQuizStopReason
+  submittedResponseFeedback: AdaptivePracticeQuizSubmittedResponseFeedback
 }
 
 enum AdaptivePracticeQuizAttemptStatus {
@@ -320,11 +419,15 @@ type AdaptivePracticeQuizChoicesOptions {
 }
 
 type AdaptivePracticeQuizCohortAttemptSummary {
+  betweenLevels: Int
   capped: Int
   classified: Int
   insufficientData: Int
+  insufficientEvidence: Int
   nearBoundary: Int
   poolExhausted: Int
+  poolLimited: Int
+  researchOnly: Int
   stoppedInsufficientData: Int
   suppressed: Boolean!
   suppressions: [AdaptivePracticeQuizPrivacySuppression!]!
@@ -333,6 +436,7 @@ type AdaptivePracticeQuizCohortAttemptSummary {
 type AdaptivePracticeQuizCohortResults {
   attemptSummary: AdaptivePracticeQuizCohortAttemptSummary!
   cohortSize: Int
+  competenceTreeId: String!
   distributions: [AdaptivePracticeQuizNodeDistribution!]!
   itemDiagnostics: [AdaptivePracticeQuizItemDiagnostic!]!
   pilotMetrics: AdaptivePracticeQuizPilotMetrics!
@@ -342,13 +446,16 @@ type AdaptivePracticeQuizCohortResults {
 
 type AdaptivePracticeQuizConfig {
   attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy!
+  calibrationPolicyVersion: Int
   classificationZ: Float!
   competenceTreeId: String!
   defaultDiscrimination: Float!
   levelMappingRule: AdaptiveLevelMappingRule!
+  measurementVersion: String!
   minQuestionsPerLeaf: Int!
   perLeafQuestionCap: Int
   preset: AdaptivePracticeQuizPreset!
+  scaleVersionId: String
   showTimer: Boolean!
   topInformationRatio: Float!
   totalQuestionCap: Int!
@@ -363,6 +470,7 @@ input AdaptivePracticeQuizConfigInput {
   perLeafQuestionCap: Int
   preset: AdaptivePracticeQuizPreset!
   researchSettings: AdaptivePracticeQuizResearchSettingsInput
+  scaleVersionId: String
   showTimer: Boolean
   totalQuestionCap: Int
 }
@@ -442,14 +550,19 @@ type AdaptivePracticeQuizNode {
 }
 
 type AdaptivePracticeQuizNodeDistribution {
+  betweenLevelsCount: Int
   buckets: [AdaptivePracticeQuizLevelBucket!]!
+  classifiedCount: Int
   depth: Int!
   insufficientDataCount: Int
+  insufficientEvidenceCount: Int
   nodeId: Int
   nodeKind: AdaptiveEstimateNodeKind!
   nodeName: String!
   order: Int!
   parentNodeId: Int
+  poolLimitedCount: Int
+  researchOnlyCount: Int
   suppressed: Boolean!
   suppressions: [AdaptivePracticeQuizPrivacySuppression!]!
 }
@@ -512,6 +625,7 @@ enum AdaptivePracticeQuizPrivacyField {
   POOL_EXHAUSTED
   QUESTION_COUNT_PERCENTILES
   RESPONSE_COUNT_MISMATCH
+  RESULT_CLASSIFICATION
   STOPPED_INSUFFICIENT_DATA
 }
 
@@ -554,9 +668,11 @@ type AdaptivePracticeQuizReadinessIssue {
 type AdaptivePracticeQuizReadinessIssueParameters {
   assignmentId: Int
   availableItemCount: Int
+  calibrationStatus: String
   classifiableLevelCount: Int
   effectiveQuestionCap: Int
   elementName: String
+  elementVersion: Int
   enabledAssignmentCount: Int
   estimatedDurationMinutes: Float
   field: String
@@ -566,6 +682,7 @@ type AdaptivePracticeQuizReadinessIssueParameters {
   nodeId: Int
   nodeName: String
   requiredQuestionCount: Int
+  scaleVersionId: String
   secondsPerItem: Int
   targetItemCount: Int
   totalQuestionCap: Int
@@ -587,9 +704,12 @@ input AdaptivePracticeQuizResponseInput {
 type AdaptivePracticeQuizResult {
   answeredQuestions: Int!
   attemptId: String!
+  classification: AdaptivePracticeQuizResultClassification!
+  classificationProbability: Float
   competenceProfile: [AdaptivePracticeQuizResultNode!]!
   completedAt: Date!
   confidence: AdaptiveResultConfidence!
+  leadingLevelLabels: [String!]!
   levelBands: [AdaptivePracticeQuizLevelBand!]!
   levelInterpretation: AdaptiveLevelMappingRule!
   levelLabel: String
@@ -603,11 +723,22 @@ type AdaptivePracticeQuizResult {
   upperPosition: Float
 }
 
+enum AdaptivePracticeQuizResultClassification {
+  BETWEEN_LEVELS
+  CLASSIFIED
+  INSUFFICIENT_EVIDENCE
+  POOL_LIMITED
+  RESEARCH_ONLY
+}
+
 type AdaptivePracticeQuizResultNode {
   children: [AdaptivePracticeQuizResultNode!]!
+  classification: AdaptivePracticeQuizResultClassification!
+  classificationProbability: Float
   confidence: AdaptiveResultConfidence!
   id: Int!
   kind: AdaptiveNodeKind!
+  leadingLevelLabels: [String!]!
   levelLabel: String
   lowerPosition: Float
   name: String!
@@ -654,6 +785,12 @@ enum AdaptivePracticeQuizStopReason {
   TOTAL_QUESTION_CAP
 }
 
+type AdaptivePracticeQuizSubmittedResponseFeedback {
+  correct: Boolean!
+  feedback: [String!]!
+  score: Float!
+}
+
 type AdaptivePracticeQuizTrajectoryPoint {
   levelLabel: String
   lowerPosition: Float!
@@ -678,6 +815,33 @@ enum AdaptiveResultConfidence {
   INSUFFICIENT_DATA
   LOW
   MODERATE
+}
+
+enum AdaptiveReviewDecision {
+  APPROVED
+  REJECTED
+}
+
+enum AdaptiveScaleLinkStatus {
+  APPROVED
+  DRAFT
+  IN_REVIEW
+  REJECTED
+  SUPERSEDED
+}
+
+enum AdaptiveScaleVersionStatus {
+  ACTIVE
+  APPROVED
+  DRAFT
+  IN_REVIEW
+  REJECTED
+  SUPERSEDED
+}
+
+type AdaptiveWorkflowReceipt {
+  id: String!
+  status: String!
 }
 
 type AnswerCollection {
@@ -1287,6 +1451,29 @@ input CompetenceTreeAssignmentInput {
   levelKey: String!
 }
 
+type CompetenceTreeCalibration {
+  canManage: Boolean!
+  readiness: CompetenceTreeCalibrationReadiness!
+  scales: [CompetenceTreeScale!]!
+  treeId: String!
+  treeName: String!
+}
+
+type CompetenceTreeCalibrationReadiness {
+  activeScaleVersion: Int
+  blockingAssignmentCount: Int!
+  calibratedAssignmentCount: Int!
+  detailsRedacted: Boolean!
+  enabledAssignmentCount: Int!
+  status: CompetenceTreeCalibrationReadinessStatus!
+}
+
+enum CompetenceTreeCalibrationReadinessStatus {
+  CALIBRATED_BANK
+  CALIBRATION_INCOMPLETE
+  NO_ACTIVE_SCALE
+}
+
 enum CompetenceTreeCatalogOwnership {
   ALL
   LINKED
@@ -1320,6 +1507,15 @@ input CompetenceTreeCoverageInput {
   leafKey: String!
   levelKey: String!
   targetItemCount: Int!
+}
+
+input CompetenceTreeElementAssignmentCreateInput {
+  discrimination: Float
+  enablePercentInput: Boolean!
+  enabled: Boolean!
+  leafNodeId: Int!
+  levelId: Int!
+  treeId: String!
 }
 
 input CompetenceTreeElementAssignmentUpdateInput {
@@ -1385,6 +1581,65 @@ input CompetenceTreeNodeInput {
   order: Int!
   parentKey: String
   weight: Float
+}
+
+type CompetenceTreeScale {
+  approvals: [CompetenceTreeScaleApproval!]!
+  calibrationCounts: AdaptiveCalibrationCounts!
+  calibrations: [AdaptiveItemCalibration!]!
+  classificationPolicyVersion: Int!
+  createdAt: Date!
+  empiricalValidations: [AdaptiveEmpiricalValidation!]!
+  gridMax: Float!
+  gridMin: Float!
+  gridStep: Float!
+  id: String!
+  levels: [CompetenceTreeScaleLevel!]!
+  priorMean: Float!
+  priorStandardDeviation: Float!
+  scaleLinks: [CompetenceTreeScaleLink!]!
+  status: AdaptiveScaleVersionStatus!
+  submittedForReviewAt: Date
+  supersedesVersionId: String
+  version: Int!
+}
+
+type CompetenceTreeScaleApproval {
+  createdAt: Date!
+  cutRationale: Json!
+  decision: AdaptiveScaleVersionStatus
+  id: String!
+  method: String!
+  methodVersion: String!
+  panelSize: Int!
+  reviewedAt: Date
+  standardSettingDate: Date!
+}
+
+type CompetenceTreeScaleLevel {
+  id: Int!
+  itemDifficultyPrior: Float!
+  label: String!
+  lowerBound: Float
+  order: Int!
+  sourceLevelId: Int
+}
+
+input CompetenceTreeScaleLevelInput {
+  itemDifficultyPrior: Float!
+  lowerBound: Float
+  sourceLevelId: Int!
+}
+
+type CompetenceTreeScaleLink {
+  createdAt: Date!
+  fromScaleVersionId: String!
+  id: String!
+  implementationVersion: String!
+  method: String!
+  reviewedAt: Date
+  status: AdaptiveScaleLinkStatus!
+  toScaleVersionId: String!
 }
 
 type CompetenceTreeSummary {
@@ -2393,6 +2648,7 @@ type MicroLearning {
 
 type Mutation {
   abandonAdaptivePracticeQuizAttempt(attemptId: String!): AdaptivePracticeQuizAttemptState!
+  activateCompetenceTreeScaleVersion(scaleVersionId: String!): AdaptiveWorkflowReceipt!
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
@@ -2403,6 +2659,7 @@ type Mutation {
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
+  approveAdaptiveItemCalibration(calibrationId: String!): AdaptiveWorkflowReceipt!
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   archiveCompetenceTree(id: String!): Boolean!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
@@ -2428,6 +2685,7 @@ type Mutation {
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
   createCompetenceTree(input: CompetenceTreeInput!): CompetenceTree!
+  createCompetenceTreeScaleVersion(classificationPolicyVersion: Int, gridMax: Float, gridMin: Float, gridStep: Float, levels: [CompetenceTreeScaleLevelInput!], priorMean: Float, priorStandardDeviation: Float, supersedesVersionId: String, treeId: String!): AdaptiveWorkflowReceipt!
   createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
@@ -2482,6 +2740,7 @@ type Mutation {
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
+  importAdaptiveItemCalibrations(artifact: Json!): AdaptiveCalibrationImportReceipt!
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
@@ -2500,11 +2759,11 @@ type Mutation {
   logoutTemporaryParticipant(liveQuizId: String!): Boolean
   logoutUser: ID
   manipulateCaseStudyQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsCaseStudyInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateChoicesQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
+  manipulateChoicesQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsChoicesInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!], type: ElementType!): Element
   manipulateContentElement(basePoints: Boolean, content: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateFlashcardElement(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateFreeTextQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
+  manipulateNumericalQuestion(basePoints: Boolean, content: String, creationRequestId: String, explanation: String, id: Int, initialCompetenceTreeAssignment: CompetenceTreeElementAssignmentCreateInput, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
@@ -2522,6 +2781,7 @@ type Mutation {
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   replaceCompetenceTree(id: String!, input: CompetenceTreeInput!): CompetenceTree!
+  requestAdaptiveCalibrationExport(datasetVersion: String!, scaleVersionId: String!, treeId: String!): AdaptiveCalibrationExportRequest!
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
@@ -2532,17 +2792,24 @@ type Mutation {
   restartAdaptivePracticeQuizAttempt(attemptId: String!): AdaptivePracticeQuizAttemptState!
   restoreCompetenceTree(id: String!): Boolean!
   resumeAdaptivePracticeQuizAttempt(attemptId: String!): AdaptivePracticeQuizAttemptState!
+  reviewAdaptiveEmpiricalValidation(decision: AdaptiveReviewDecision!, validationId: String!): AdaptiveWorkflowReceipt!
+  reviewCompetenceTreeScale(decision: AdaptiveReviewDecision!, scaleVersionId: String!): AdaptiveWorkflowReceipt!
+  reviewCompetenceTreeScaleLink(decision: AdaptiveReviewDecision!, scaleLinkId: String!): AdaptiveWorkflowReceipt!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setCourseAdaptiveCalibrationCollectionEnabled(courseId: String!, enabled: Boolean!): Boolean!
   setCourseAdaptiveLearningEnabled(courseId: String!, enabled: Boolean!): Course!
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startAdaptivePracticeQuizAttempt(practiceQuizId: String!): AdaptivePracticeQuizAttemptState!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  submitAdaptiveEmpiricalValidation(artifact: Json!): AdaptiveWorkflowReceipt!
   submitAdaptivePracticeQuizResponse(attemptId: String!, elapsedSeconds: Int, response: AdaptivePracticeQuizResponseInput!, servedItemId: Int!): AdaptivePracticeQuizAttemptState!
+  submitCompetenceTreeScaleForReview(artifact: Json!): AdaptiveWorkflowReceipt!
+  submitCompetenceTreeScaleLink(artifact: Json!): AdaptiveWorkflowReceipt!
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2993,6 +3260,7 @@ type PushSubscription {
 
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
+  adaptiveCalibrationExportRequest(requestId: String!): AdaptiveCalibrationExportRequest!
   adaptivePracticeQuizAttemptState(practiceQuizId: String!): AdaptivePracticeQuizAttemptState
   adaptivePracticeQuizCohortResults(practiceQuizId: String!): AdaptivePracticeQuizCohortResults
   adaptivePracticeQuizPreview(id: String!): AdaptivePracticeQuizPreview
@@ -3010,6 +3278,7 @@ type Query {
   checkValidCoursePin(pin: Int!): String
   cockpitQuiz(id: String!): LiveQuiz
   competenceTree(id: String!): CompetenceTree
+  competenceTreeCalibration(treeId: String!): CompetenceTreeCalibration!
   competenceTreeCatalog(courseId: String, cursor: String, excludeCourseId: String, includeArchived: Boolean = false, limit: Int = 25, ownership: CompetenceTreeCatalogOwnership = ALL, search: String): CompetenceTreeCatalogPage!
   competenceTrees(includeArchived: Boolean = false): [CompetenceTreeSummary!]!
   controlCourse(id: String!): Course

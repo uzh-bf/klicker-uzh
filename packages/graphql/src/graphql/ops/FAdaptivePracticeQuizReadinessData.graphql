@@ -21,6 +21,9 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       secondsPerItem
       assignmentId
       nodeId
+      scaleVersionId
+      calibrationStatus
+      elementVersion
     }
     path
     nodeId
@@ -49,6 +52,9 @@ fragment AdaptivePracticeQuizReadinessData on AdaptivePracticeQuizReadiness {
       secondsPerItem
       assignmentId
       nodeId
+      scaleVersionId
+      calibrationStatus
+      elementVersion
     }
     path
     nodeId

@@ -8,6 +8,7 @@ import * as AdaptivePracticeQuizService from '../services/adaptivePracticeQuizCo
 import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CompetenceTreeCalibrationService from '../services/competenceTreeCalibration.js'
 import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -61,6 +62,10 @@ import {
   CompetenceTreeSummaryType,
   CompetenceTreeValidationResultType,
 } from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  CompetenceTreeCalibrationRef,
+} from './competenceTreeCalibration.js'
 import {
   AssessmentParticipant,
   Course,
@@ -149,6 +154,7 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
@@ -223,6 +229,26 @@ export const Query = builder.queryType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) =>
           await CompetenceTreeService.getCompetenceTree(args, ctx),
+      }),
+
+      competenceTreeCalibration: t.withAuth(asUser).field({
+        type: CompetenceTreeCalibrationRef,
+        args: { treeId: t.arg.string({ required: true }) },
+        resolve: async (_, { treeId }, ctx) =>
+          await CompetenceTreeCalibrationService.getCompetenceTreeCalibrationOverview(
+            treeId,
+            ctx
+          ),
+      }),
+
+      adaptiveCalibrationExportRequest: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveCalibrationExportRequestRef,
+        args: { requestId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeCalibrationService.getAdaptiveCalibrationExportRequest(
+            args,
+            ctx
+          ),
       }),
 
       courseCompetenceTrees: t.withAuth(asUser).field({

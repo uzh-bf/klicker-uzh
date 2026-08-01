@@ -120,6 +120,46 @@ describe('adaptive learning account closure', () => {
       prisma.user.delete({ where: { id: sourceUserId } })
     ).resolves.toMatchObject({ id: sourceUserId })
   })
+
+  it('expires outstanding calibration exports before transferring a tree', async () => {
+    const { sourceUserId, targetUserId, treeIds } =
+      await createOwnershipFixture()
+    const scale = await prisma.competenceTreeScaleVersion.create({
+      data: {
+        treeId: treeIds[0]!,
+        version: 1,
+        createdById: sourceUserId,
+      },
+    })
+    const request = await prisma.adaptiveCalibrationExportRequest.create({
+      data: {
+        treeId: treeIds[0]!,
+        scaleVersionId: scale.id,
+        datasetVersion: 'account-closure-v1',
+        requestedById: sourceUserId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1_000),
+      },
+    })
+
+    const transferStartedAt = Date.now()
+    await prisma.$transaction((tx) =>
+      transferAdaptiveLearningCompetenceTrees(
+        { sourceUserId, targetUserId, actorUserId: sourceUserId },
+        tx
+      )
+    )
+
+    const invalidated =
+      await prisma.adaptiveCalibrationExportRequest.findUniqueOrThrow({
+        where: { id: request.id },
+      })
+    expect(invalidated.expiresAt.getTime()).toBeGreaterThanOrEqual(
+      transferStartedAt
+    )
+    expect(invalidated.expiresAt.getTime()).toBeLessThanOrEqual(
+      transferStartedAt + 5_000
+    )
+  })
 })
 
 async function createOwnershipFixture() {

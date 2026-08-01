@@ -164,7 +164,7 @@ function AdaptiveReadinessPanel({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <div className="text-uzh-grey-100 truncate" title={label}>
+      <div className="truncate text-slate-600" title={label}>
         {label}
       </div>
       <div className="font-bold">{value}</div>

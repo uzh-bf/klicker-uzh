@@ -224,17 +224,21 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
     {
       type: 'button',
       key: 'support-menubar-item',
+      label: t('manage.support.modalTitle'),
       icon: faQuestionCircle,
+      active: false,
       onClick: () => setShowSupportModal(true),
-      className: { icon: '-mx-1', root: 'px-3' },
+      className: { icon: '-mx-1', root: 'px-3', label: 'sr-only' },
     },
     {
       type: 'dropdown',
       key: 'quizzes-menubar-dropdown',
+      label: t('manage.liveQuizzes.runningLiveQuizzes'),
       icon: faPlayCircle,
       disabled: !quizzes || quizzes.length === 0,
       className: {
         trigger: 'px-3',
+        label: 'sr-only',
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
           '-mx-1',

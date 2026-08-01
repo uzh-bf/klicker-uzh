@@ -1,13 +1,15 @@
 import { faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
-import { mapLevelsToTheta } from '@klicker-uzh/adaptive-learning'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import CompetenceTreePagination from './CompetenceTreePagination'
 import { CoverageCellSelection } from './CoverageMatrix'
 import IconAction from './IconAction'
 import { getBreadcrumb } from './treeHelpers'
 import { CompetenceTreeForm } from './types'
+
+const DEFAULT_PAGE_SIZE = 20
 
 function AssignmentTable({
   form,
@@ -24,21 +26,12 @@ function AssignmentTable({
 }) {
   const router = useRouter()
   const t = useTranslations()
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const levelsByKey = useMemo(
     () => new Map(form.levels.map((level) => [level.key, level])),
     [form.levels]
   )
-  const difficultyByLevelKey = useMemo(() => {
-    const levels = form.levels.slice().sort((a, b) => a.order - b.order)
-    const mapped = mapLevelsToTheta(
-      levels.map((level) => ({ label: level.label, order: level.order })),
-      { min: form.thetaMin, max: form.thetaMax },
-      form.levelMappingRule
-    )
-    return new Map(
-      levels.map((level, index) => [level.key, mapped[index]?.theta ?? 0])
-    )
-  }, [form.levelMappingRule, form.levels, form.thetaMax, form.thetaMin])
   const assignments = selectedCell
     ? form.assignments.filter(
         (assignment) =>
@@ -46,6 +39,19 @@ function AssignmentTable({
           assignment.levelKey === selectedCell.levelKey
       )
     : form.assignments
+  const totalPages = Math.max(1, Math.ceil(assignments.length / pageSize))
+  const visibleAssignments = assignments.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCell?.leafKey, selectedCell?.levelKey])
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
 
   return (
     <section
@@ -86,7 +92,7 @@ function AssignmentTable({
       )}
 
       <div className="overflow-x-auto border-y border-slate-200">
-        <table className="w-full min-w-[78rem] table-fixed text-left">
+        <table className="w-full min-w-[56rem] table-fixed text-left">
           <caption className="sr-only">
             {t('manage.competenceTree.assignmentsDescription')}
           </caption>
@@ -95,9 +101,6 @@ function AssignmentTable({
             <col className="w-32" />
             <col className="w-64" />
             <col className="w-40" />
-            <col className="w-36" />
-            <col className="w-32" />
-            <col className="w-28" />
             <col className="w-28" />
             <col className="w-28" />
             <col className="w-14" />
@@ -114,16 +117,7 @@ function AssignmentTable({
                 {t('manage.competenceTree.leaf')}
               </th>
               <th scope="col" className="px-3 py-2">
-                {t('manage.competenceTree.level')}
-              </th>
-              <th scope="col" className="px-3 py-2">
-                {t('manage.competenceTree.discriminationParameter')}
-              </th>
-              <th scope="col" className="px-3 py-2">
-                {t('manage.competenceTree.difficultyParameter')}
-              </th>
-              <th scope="col" className="px-3 py-2">
-                {t('manage.competenceTree.guessingParameter')}
+                {t('manage.competenceTree.expectedDifficulty')}
               </th>
               <th scope="col" className="px-3 py-2">
                 {t('manage.competenceTree.enabled')}
@@ -139,7 +133,7 @@ function AssignmentTable({
             </tr>
           </thead>
           <tbody>
-            {assignments.map((assignment) => (
+            {visibleAssignments.map((assignment) => (
               <tr
                 key={assignment.key}
                 className="border-t border-slate-200"
@@ -161,20 +155,6 @@ function AssignmentTable({
                 </td>
                 <td className="truncate px-3 py-2 text-sm">
                   {levelsByKey.get(assignment.levelKey)?.label ?? ''}
-                </td>
-                <td className="px-3 py-2 font-mono text-sm">
-                  {(
-                    assignment.discrimination ?? form.defaultDiscrimination
-                  ).toFixed(2)}
-                </td>
-                <td className="px-3 py-2 font-mono text-sm">
-                  {(
-                    difficultyByLevelKey.get(assignment.levelKey) ??
-                    assignment.b
-                  ).toFixed(2)}
-                </td>
-                <td className="px-3 py-2 font-mono text-sm">
-                  {assignment.c.toFixed(2)}
                 </td>
                 <td className="px-3 py-2">
                   <label
@@ -234,7 +214,7 @@ function AssignmentTable({
             {assignments.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={7}
                   className="p-6 text-center text-sm text-slate-600"
                 >
                   <div>
@@ -270,6 +250,16 @@ function AssignmentTable({
           </tbody>
         </table>
       </div>
+      {assignments.length > 0 ? (
+        <CompetenceTreePagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          numOfObjects={assignments.length}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+        />
+      ) : null}
     </section>
   )
 }

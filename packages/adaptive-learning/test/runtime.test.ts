@@ -25,8 +25,8 @@ const settings = {
 }
 
 describe('adaptive runtime core', () => {
-  it('rejects an all-zero enabled root-weight configuration', () => {
-    const nodes = runtimeNodes([0, 0])
+  it('rejects any zero enabled root weight', () => {
+    const nodes = runtimeNodes([0, 1])
 
     expect(() =>
       prepareAdaptiveRuntime({

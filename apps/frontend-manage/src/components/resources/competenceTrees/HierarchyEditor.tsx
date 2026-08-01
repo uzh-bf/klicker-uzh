@@ -39,6 +39,8 @@ function OutlineNode({
   collapsedKeys,
   onSelect,
   onToggle,
+  onAddChild,
+  childDisabled,
 }: {
   node: CompetenceTreeNodeForm
   form: CompetenceTreeForm
@@ -47,6 +49,8 @@ function OutlineNode({
   collapsedKeys: Set<string>
   onSelect: (key: string) => void
   onToggle: (key: string) => void
+  onAddChild: (key: string) => void
+  childDisabled: (key: string) => boolean
 }) {
   const t = useTranslations()
   const children = getChildren(form.nodes, node.key)
@@ -95,13 +99,28 @@ function OutlineNode({
           data-cy={`competence-tree-select-node-${node.key}`}
         >
           <span className="font-medium">{node.name}</span>
-          <span className="ml-2 text-xs text-slate-500">
+          <span className="ml-2 text-xs text-slate-600">
             {t(
               node.parentKey
                 ? 'manage.competenceTree.subcompetence'
                 : 'manage.competenceTree.competence'
             )}
           </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddChild(node.key)}
+          disabled={childDisabled(node.key)}
+          aria-label={t('manage.competenceTree.addSubcompetenceTo', {
+            name: node.name,
+          })}
+          title={t('manage.competenceTree.addSubcompetenceTo', {
+            name: node.name,
+          })}
+          className="hover:text-primary-100 flex h-8 w-8 shrink-0 items-center justify-center text-slate-600 disabled:cursor-not-allowed disabled:text-slate-300"
+          data-cy={`competence-tree-outline-add-child-${node.key}`}
+        >
+          <FontAwesomeIcon icon={faPlus} className="h-3 w-3" />
         </button>
       </div>
       {!collapsed && children.length > 0 ? (
@@ -116,6 +135,8 @@ function OutlineNode({
               collapsedKeys={collapsedKeys}
               onSelect={onSelect}
               onToggle={onToggle}
+              onAddChild={onAddChild}
+              childDisabled={childDisabled}
             />
           ))}
         </ul>
@@ -203,17 +224,17 @@ function HierarchyEditor({
     })
   }
 
-  const addChild = () => {
-    if (!selectedNode) return
+  const addChild = (parentKey = selectedNode?.key) => {
+    if (!parentKey) return
     focusNewNode.current = true
     onStructuralCommand({
       type: 'addChild',
-      parentKey: selectedNode.key,
+      parentKey,
       name: t('manage.competenceTree.newSubcompetence'),
     })
     setCollapsedKeys((current) => {
       const next = new Set(current)
-      next.delete(selectedNode.key)
+      next.delete(parentKey)
       return next
     })
   }
@@ -270,6 +291,8 @@ function HierarchyEditor({
                       return next
                     })
                   }
+                  onAddChild={addChild}
+                  childDisabled={(key) => disabled || !canAddChild(form, key)}
                 />
               ))}
             </ul>
@@ -290,7 +313,7 @@ function HierarchyEditor({
                 </div>
                 <div className="flex gap-0.5">
                   <Button
-                    onClick={addChild}
+                    onClick={() => addChild()}
                     disabled={disabled || !canAddChild(form, selectedNode.key)}
                     title={t(
                       getNodeDepth(form.nodes, selectedNode.key) >=
@@ -364,6 +387,7 @@ function HierarchyEditor({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField
+                  id="competence-tree-node-name"
                   value={selectedNode.name}
                   onChange={(name) =>
                     updateSelectedNode((node) => ({ ...node, name }))
@@ -374,10 +398,14 @@ function HierarchyEditor({
                   data={{ cy: 'competence-tree-node-name' }}
                 />
                 <div>
-                  <label className="mb-1 block text-sm font-medium">
+                  <label
+                    className="mb-1 block text-sm font-medium"
+                    htmlFor="competence-tree-node-parent"
+                  >
                     {t('manage.competenceTree.parent')}
                   </label>
                   <Select
+                    id="competence-tree-node-parent"
                     value={selectedNode.parentKey ?? undefined}
                     onChange={(parentKey) =>
                       onStructuralCommand({
@@ -403,6 +431,7 @@ function HierarchyEditor({
 
               <div className="mt-4">
                 <TextareaField
+                  id="competence-tree-node-description"
                   value={selectedNode.description}
                   onChange={(description) =>
                     updateSelectedNode((node) => ({ ...node, description }))
@@ -439,6 +468,7 @@ function HierarchyEditor({
                 {selectedNode.parentKey === null && (
                   <div>
                     <NumberField
+                      id="competence-tree-node-weight"
                       value={selectedNode.weight}
                       onChange={(value) =>
                         updateSelectedNode((node) => ({
@@ -446,7 +476,7 @@ function HierarchyEditor({
                           weight: Number(value || 0),
                         }))
                       }
-                      min={0}
+                      min={0.001}
                       precision={3}
                       label={t('manage.competenceTree.rootWeight')}
                       disabled={disabled}

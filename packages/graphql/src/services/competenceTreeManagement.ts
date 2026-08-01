@@ -29,6 +29,7 @@ export type {
   CompetenceTreeCatalogPage,
   CompetenceTreeCourseView,
   CompetenceTreeDetail,
+  CompetenceTreeElementAssignmentCreateInput,
   CompetenceTreeElementAssignmentUpdateInput,
   CompetenceTreeLevelView,
   CompetenceTreeSummary,

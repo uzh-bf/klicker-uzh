@@ -1,10 +1,4 @@
-import { AdaptiveLevelMappingRule } from '@klicker-uzh/graphql/dist/ops'
-import {
-  NumberField,
-  Select,
-  TextareaField,
-  TextField,
-} from '@uzh-bf/design-system'
+import { NumberField, TextareaField, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { CompetenceTreeForm } from './types'
 
@@ -37,6 +31,7 @@ function MetadataEditor({
 
       <div className="grid gap-4 md:grid-cols-2">
         <TextField
+          id="competence-tree-name"
           value={form.name}
           onChange={(name) => onChange({ ...form, name })}
           label={t('manage.competenceTree.internalName')}
@@ -45,6 +40,7 @@ function MetadataEditor({
           data={{ cy: 'competence-tree-name' }}
         />
         <TextField
+          id="competence-tree-display-name"
           value={form.displayName}
           onChange={(displayName) => onChange({ ...form, displayName })}
           label={t('manage.competenceTree.displayName')}
@@ -55,6 +51,7 @@ function MetadataEditor({
       </div>
       <div className="mt-4">
         <TextareaField
+          id="competence-tree-description"
           value={form.description}
           onChange={(description) => onChange({ ...form, description })}
           label={t('manage.competenceTree.description')}
@@ -65,10 +62,11 @@ function MetadataEditor({
       </div>
 
       <h3 className="mb-3 mt-6 text-base font-semibold">
-        {t('manage.competenceTree.modelSettings')}
+        {t('manage.competenceTree.structureSettings')}
       </h3>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="max-w-sm">
         <NumberField
+          id="competence-tree-max-depth"
           value={form.maxDepth}
           onChange={(value) =>
             onChange({ ...form, maxDepth: Number(value || 1) })
@@ -80,69 +78,6 @@ function MetadataEditor({
           disabled={structureDisabled}
           data={{ cy: 'competence-tree-max-depth' }}
         />
-        <NumberField
-          value={form.thetaMin}
-          onChange={(value) =>
-            onChange({ ...form, thetaMin: Number(value || 0) })
-          }
-          min={-10}
-          max={10}
-          precision={2}
-          label={t('manage.competenceTree.thetaMin')}
-          disabled={structureDisabled}
-          data={{ cy: 'competence-tree-theta-min' }}
-        />
-        <NumberField
-          value={form.thetaMax}
-          onChange={(value) =>
-            onChange({ ...form, thetaMax: Number(value || 0) })
-          }
-          min={-10}
-          max={10}
-          precision={2}
-          label={t('manage.competenceTree.thetaMax')}
-          disabled={structureDisabled}
-          data={{ cy: 'competence-tree-theta-max' }}
-        />
-        <NumberField
-          value={form.defaultDiscrimination}
-          onChange={(value) =>
-            onChange({ ...form, defaultDiscrimination: Number(value || 0) })
-          }
-          min={0}
-          max={10}
-          precision={2}
-          label={t('manage.competenceTree.defaultDiscrimination')}
-          disabled={structureDisabled}
-          data={{ cy: 'competence-tree-default-discrimination' }}
-        />
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            {t('manage.competenceTree.mappingRule')}
-          </label>
-          <Select
-            value={form.levelMappingRule}
-            onChange={(levelMappingRule) =>
-              onChange({
-                ...form,
-                levelMappingRule: levelMappingRule as AdaptiveLevelMappingRule,
-              })
-            }
-            disabled={structureDisabled}
-            items={[
-              {
-                value: AdaptiveLevelMappingRule.Nearest,
-                label: t('manage.competenceTree.mappingNearest'),
-              },
-              {
-                value: AdaptiveLevelMappingRule.Mastery,
-                label: t('manage.competenceTree.mappingMastery'),
-              },
-            ]}
-            data={{ cy: 'competence-tree-mapping-rule' }}
-            className={{ trigger: 'h-9 w-full' }}
-          />
-        </div>
       </div>
     </section>
   )

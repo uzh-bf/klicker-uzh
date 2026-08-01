@@ -15,6 +15,7 @@ import {
   resolveAdaptiveEstimator,
   type AdaptiveMeasurementVersion,
 } from './estimator.js'
+import { normalizeEnabledRootWeights } from './weights.js'
 
 export { AdaptiveRuntimeConfigurationError } from './estimator.js'
 
@@ -57,7 +58,7 @@ export type AdaptiveRuntimeNode = {
 export type AdaptiveRuntimePoolItem = {
   id: number
   leafNodeId: number
-  nodePath: number[]
+  nodePath: readonly number[]
   levelId: number
   discrimination: number
   difficulty: number
@@ -135,8 +136,9 @@ export function prepareAdaptiveRuntime<
     )
   }
   const enabledNodeIds = getEffectivelyEnabledNodes(nodes)
-  const roots = getEnabledRoots(nodes, enabledNodeIds)
-  assertValidRootWeights(roots)
+  const roots = normalizeRuntimeRootWeights(
+    getEnabledRoots(nodes, enabledNodeIds)
+  )
 
   const poolByRoot = new Map<number, TPoolItem[]>()
   const poolByRootLeaf = new Map<string, TPoolItem[]>()
@@ -187,8 +189,9 @@ export function computeAdaptiveRuntimeEstimates<
   terminalStopReason?: AdaptiveRuntimeStopReason | null
 }): AdaptiveRuntimeEstimates {
   const enabledNodeIds = getEffectivelyEnabledNodes(nodes)
-  const roots = getEnabledRoots(nodes, enabledNodeIds)
-  assertValidRootWeights(roots)
+  const roots = normalizeRuntimeRootWeights(
+    getEnabledRoots(nodes, enabledNodeIds)
+  )
 
   return computeEstimates({
     nodes,
@@ -723,18 +726,20 @@ function getEnabledRoots(
     .sort((a, b) => a.order - b.order || a.id - b.id)
 }
 
-function assertValidRootWeights(roots: AdaptiveRuntimeNode[]) {
-  const weights = roots.map(({ weight }) => weight ?? 0)
-  if (
-    roots.length === 0 ||
-    weights.some((weight) => !Number.isFinite(weight) || weight < 0) ||
-    weights.reduce((sum, weight) => sum + weight, 0) <= 0
-  ) {
+function normalizeRuntimeRootWeights(roots: AdaptiveRuntimeNode[]) {
+  const result = normalizeEnabledRootWeights(
+    roots.map((root) => ({ key: root, weight: root.weight ?? 0 }))
+  )
+  if (!result.ok) {
     throw new AdaptiveRuntimeConfigurationError(
-      'At least one enabled root competence with positive weight is required.',
+      'Every enabled root competence requires a positive finite weight.',
       'ADAPTIVE_ROOT_WEIGHT_INVALID'
     )
   }
+  return result.normalized.map(({ key: root, weight }) => ({
+    ...root,
+    weight,
+  }))
 }
 
 function countResponsesByNode<TPoolItem extends AdaptiveRuntimePoolItem>(

@@ -1,7 +1,13 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
+import {
+  advanceAdaptiveRuntimeWithTelemetry,
+  assertParticipant,
+  clearAdaptiveDeliveryData,
+  createAdaptiveAttempt,
+  submittedChoiceFeedback,
+} from './adaptivePracticeQuizCommandSupport.js'
 import { adaptivePracticeQuizError as runtimeError } from './adaptivePracticeQuizErrors.js'
 import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
 import {
@@ -11,13 +17,14 @@ import {
 import {
   lockAdaptivePracticeQuizConfigForShare,
   lockPracticeQuizForShare,
+  persistAdaptivePracticeQuizEstimates,
   withSerializableRetry,
 } from './adaptivePracticeQuizRepository.js'
+import { planAdaptivePracticeQuizResponseTransition } from './adaptivePracticeQuizResponseTransition.js'
+import { isAdaptiveRetakeCooldownElapsed } from './adaptivePracticeQuizRetakes.js'
 import {
   AdaptiveRuntimeValidationError,
-  computeAdaptiveEstimates,
   gradeAdaptiveResponse,
-  selectAdaptiveNextPoolItem,
   type AdaptivePracticeQuizResponseInput,
   type AdaptiveRuntimeResponse,
 } from './adaptivePracticeQuizRuntime.js'
@@ -25,16 +32,15 @@ import {
   assertAdaptiveQuizPublished,
   assertAdaptiveRuntimeAvailable as assertRuntimeAvailable,
   adaptiveAttemptRuntimeInclude as attemptRuntimeInclude,
+  incrementAdaptiveV2Exposure,
   loadAdaptiveRuntime,
+  loadAdaptiveV2SelectionContext,
   lockAdaptiveAttemptLifecycle,
-  markClassifiedAdaptiveRootEstimates as markClassifiedRootEstimates,
-  persistAdaptiveRuntimeEstimates as persistAdaptiveEstimates,
   requireAdaptiveAttemptLifecycleIdentity,
   requireParticipantAdaptiveAttempt as requireParticipantAttempt,
   requireAdaptiveParticipation as requireParticipation,
   toDeliveredRuntimePoolItem,
   toRuntimeResponses,
-  type LoadedAdaptiveRuntime,
 } from './adaptivePracticeQuizRuntimeData.js'
 
 const MAX_REPORTED_QUESTION_ELAPSED_SECONDS = 24 * 60 * 60
@@ -88,28 +94,49 @@ export async function startAdaptivePracticeQuizAttempt(
         include: attemptRuntimeInclude,
       })
       if (existing) {
+        const existingRuntime = await loadAdaptiveRuntime(
+          prisma,
+          existing.practiceQuizId,
+          {
+            includeAlgorithmData: true,
+            publicationId: existing.publicationId,
+          }
+        )
         return {
-          state: serializeAttemptState(runtime, existing),
+          state: serializeAttemptState(existingRuntime, existing),
           created: false,
           courseId: runtime.quiz.courseId,
         }
       }
-      if (
-        runtime.config.attemptSelectionPolicy ===
-        DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED
-      ) {
-        const completed = await prisma.adaptivePracticeQuizAttempt.findFirst({
-          where: {
-            practiceQuizId,
-            participantId: ctx.user.sub,
-            status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
-          },
-          select: { id: true },
-        })
-        if (completed) {
+      const completed = await prisma.adaptivePracticeQuizAttempt.findFirst({
+        where: {
+          practiceQuizId,
+          participantId: ctx.user.sub,
+          status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
+        },
+        orderBy: { completedAt: 'desc' },
+        select: { id: true, completedAt: true },
+      })
+      if (completed) {
+        if (
+          runtime.publication.retakePolicy ===
+          DB.AdaptiveAttemptSelectionPolicy.FIRST_COMPLETED
+        ) {
           throw runtimeError(
             'This adaptive practice quiz uses the first completed attempt and does not allow a retake.',
             'ADAPTIVE_RETAKE_FORBIDDEN'
+          )
+        }
+        if (
+          completed.completedAt &&
+          !isAdaptiveRetakeCooldownElapsed({
+            completedAt: completed.completedAt,
+            cooldownDays: runtime.publication.retakeCooldownDays,
+          })
+        ) {
+          throw runtimeError(
+            'This adaptive practice quiz is still in its retake cooldown period.',
+            'ADAPTIVE_RETAKE_COOLDOWN'
           )
         }
       }
@@ -167,9 +194,10 @@ export async function resumeAdaptivePracticeQuizAttempt(
       )
     }
     const runtime = await loadAdaptiveRuntime(prisma, attempt.practiceQuizId, {
-      includeAlgorithmData: false,
+      includeAlgorithmData: true,
+      publicationId: attempt.publicationId,
     })
-    assertAdaptiveQuizPublished(runtime)
+    assertAdaptiveQuizPublished(runtime, { allowSupersededPublication: true })
     return serializeAttemptState(runtime, attempt)
   })
 }
@@ -206,8 +234,9 @@ export async function restartAdaptivePracticeQuizAttempt(
 
     const runtime = await loadAdaptiveRuntime(prisma, attempt.practiceQuizId, {
       includeAlgorithmData: true,
+      publicationId: attempt.publicationId,
     })
-    assertRuntimeAvailable(runtime)
+    assertRuntimeAvailable(runtime, { allowSupersededPublication: true })
     const participation = await requireParticipation(
       prisma,
       runtime.quiz.courseId,
@@ -219,6 +248,7 @@ export async function restartAdaptivePracticeQuizAttempt(
         status: DB.AdaptivePracticeQuizAttemptStatus.ABANDONED,
         stopReason: DB.AdaptivePracticeQuizStopReason.ABANDONED,
         nextPoolItemId: null,
+        ...clearAdaptiveDeliveryData(),
         completedAt: new Date(),
       },
     })
@@ -280,7 +310,7 @@ export async function submitAdaptivePracticeQuizResponse(
     ctx.user.sub
   )
 
-  const state = await withSerializableRetry(ctx, async (prisma) => {
+  const outcome = await withSerializableRetry(ctx, async (prisma) => {
     await lockAdaptiveAttemptLifecycle({
       prisma,
       identity: candidate,
@@ -327,8 +357,9 @@ export async function submitAdaptivePracticeQuizResponse(
 
     const runtime = await loadAdaptiveRuntime(prisma, attempt.practiceQuizId, {
       includeAlgorithmData: true,
+      publicationId: attempt.publicationId,
     })
-    assertRuntimeAvailable(runtime)
+    assertRuntimeAvailable(runtime, { allowSupersededPublication: true })
     const routingPoolItem = runtime.poolById.get(servedItemId)
     const poolItem = attempt.nextPoolItem
       ? toDeliveredRuntimePoolItem(attempt.nextPoolItem)
@@ -368,38 +399,25 @@ export async function submitAdaptivePracticeQuizResponse(
         order: responseOrder,
         poolItemId: poolItem.id,
         correct: graded.correct,
-        poolItem,
+        poolItem: routingPoolItem,
       },
     ]
-    const decision = selectAdaptiveNextPoolItem({
+    const selectionContext = await loadAdaptiveV2SelectionContext({
+      prisma,
+      runtime,
+      participantId: ctx.user.sub,
       attemptId,
-      ...runtime.algorithm,
-      responses: evidence,
+      startingAttempt: false,
     })
-    const terminalStopReason = decision.nextPoolItem
-      ? null
-      : (decision.stopReason ??
-        DB.AdaptivePracticeQuizStopReason.INSUFFICIENT_DATA)
-    const estimates = terminalStopReason
-      ? computeAdaptiveEstimates({
-          nodes: runtime.algorithm.nodes,
-          levels: runtime.algorithm.levels,
-          responses: evidence,
-          settings: runtime.algorithm.settings,
-          terminalStopReason,
-        })
-      : decision.estimates
-    if (terminalStopReason) {
-      markClassifiedRootEstimates(runtime, evidence, estimates)
-    }
-    const overallBefore =
-      attempt.currentStandardError === null
-        ? null
-        : {
-            theta: attempt.currentTheta,
-            standardError: attempt.currentStandardError,
-          }
-    const overallAfter = estimates.overall
+    const loadedDecision = advanceAdaptiveRuntimeWithTelemetry({
+      loadedRuntime: runtime,
+      operation: 'ADVANCE',
+      input: {
+        attemptId,
+        responses: evidence,
+        selectionContext,
+      },
+    })
     const totalElapsedSeconds =
       elapsedSeconds === null ||
       typeof elapsedSeconds === 'undefined' ||
@@ -409,11 +427,20 @@ export async function submitAdaptivePracticeQuizResponse(
             (total, entry) => total + entry.elapsedSeconds!,
             elapsedSeconds
           )
+    const transition = planAdaptivePracticeQuizResponseTransition({
+      attempt,
+      servedPoolItem: routingPoolItem,
+      responses: evidence,
+      advancedRuntime: loadedDecision,
+      totalElapsedSeconds,
+      completedAt: new Date(),
+    })
 
     await prisma.adaptivePracticeQuizResponse.create({
       data: {
         attemptId: attempt.id,
         configId: attempt.configId,
+        publicationId: attempt.publicationId,
         assignmentId: poolItem.sourceAssignmentId,
         poolItemId: poolItem.id,
         elementId: poolItem.elementId,
@@ -423,55 +450,55 @@ export async function submitAdaptivePracticeQuizResponse(
           graded.normalizedResponse as DB.Prisma.InputJsonObject,
         score: graded.score,
         correct: graded.correct,
-        overallThetaBefore: overallBefore?.theta ?? null,
-        overallThetaAfter: overallAfter.theta,
-        overallStandardErrorAfter: overallAfter.standardError,
+        ...transition.responseEstimateData,
         elapsedSeconds: elapsedSeconds ?? null,
-        elementSnapshot:
-          poolItem.elementData as unknown as DB.Prisma.InputJsonValue,
+        elementSnapshot: poolItem.elementData,
       },
     })
 
-    const estimateNodeIds = terminalStopReason
-      ? [...estimates.nodes.keys()]
-      : poolItem.nodePath
-    await persistAdaptiveEstimates({
-      prisma,
-      attempt,
-      estimates,
-      nodeIds: estimateNodeIds,
-    })
+    if (transition.answeredExposurePoolItemId !== null) {
+      await incrementAdaptiveV2Exposure({
+        prisma,
+        publicationId: attempt.publicationId,
+        poolItemId: transition.answeredExposurePoolItemId,
+        counter: 'answeredCount',
+      })
+    }
+
+    await persistAdaptivePracticeQuizEstimates(transition.estimateWrite, prisma)
 
     await prisma.adaptivePracticeQuizAttempt.update({
       where: { id: attempt.id },
-      data: terminalStopReason
-        ? {
-            status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
-            stopReason: terminalStopReason,
-            nextPoolItemId: null,
-            currentTheta: overallAfter.theta ?? attempt.currentTheta,
-            currentStandardError: overallAfter.standardError,
-            finalTheta: overallAfter.theta,
-            finalStandardError: overallAfter.standardError,
-            finalLevelId: overallAfter.levelId,
-            elapsedSeconds: totalElapsedSeconds,
-            completedAt: new Date(),
-          }
-        : {
-            nextPoolItemId: decision.nextPoolItem!.id,
-            currentTheta: overallAfter.theta ?? attempt.currentTheta,
-            currentStandardError: overallAfter.standardError,
-            elapsedSeconds: totalElapsedSeconds,
-          },
+      data: transition.attemptUpdate,
     })
+    if (transition.nextExposurePoolItemId !== null) {
+      await incrementAdaptiveV2Exposure({
+        prisma,
+        publicationId: attempt.publicationId,
+        poolItemId: transition.nextExposurePoolItemId,
+        counter: 'servedCount',
+      })
+    }
 
     const updated = await requireParticipantAttempt(
       prisma,
       attempt.id,
       ctx.user.sub
     )
-    return serializeAttemptState(runtime, updated)
+    return {
+      state: {
+        ...serializeAttemptState(runtime, updated),
+        submittedResponseFeedback: {
+          correct: graded.correct,
+          score: graded.score,
+          feedback: submittedChoiceFeedback(poolItem, response),
+        },
+      },
+      shadowEvent: transition.shadowEvent,
+    }
   })
+  const state = outcome.state
+  if (outcome.shadowEvent) emitAdaptiveOperationalEvent(outcome.shadowEvent)
   if (state.status === DB.AdaptivePracticeQuizAttemptStatus.COMPLETED) {
     emitAdaptiveOperationalEvent({
       name: 'adaptive_attempt_lifecycle',
@@ -522,12 +549,14 @@ export async function abandonAdaptivePracticeQuizAttempt(
           status: DB.AdaptivePracticeQuizAttemptStatus.ABANDONED,
           stopReason: DB.AdaptivePracticeQuizStopReason.ABANDONED,
           nextPoolItemId: null,
+          ...clearAdaptiveDeliveryData(),
           completedAt: new Date(),
         },
       })
     }
     const runtime = await loadAdaptiveRuntime(prisma, attempt.practiceQuizId, {
-      includeAlgorithmData: false,
+      includeAlgorithmData: true,
+      publicationId: attempt.publicationId,
     })
     const updated = await requireParticipantAttempt(
       prisma,
@@ -546,52 +575,4 @@ export async function abandonAdaptivePracticeQuizAttempt(
     })
   }
   return outcome.state
-}
-
-async function createAdaptiveAttempt({
-  prisma,
-  runtime,
-  participantId,
-  participationId,
-}: {
-  prisma: DB.Prisma.TransactionClient
-  runtime: LoadedAdaptiveRuntime
-  participantId: string
-  participationId: number
-}): Promise<AdaptivePracticeQuizAttemptState> {
-  const attemptId = randomUUID()
-  const decision = selectAdaptiveNextPoolItem({
-    attemptId,
-    ...runtime.algorithm,
-    responses: [],
-  })
-  if (!decision.nextPoolItem) {
-    throw runtimeError(
-      'The adaptive practice quiz has no deliverable item.',
-      'ADAPTIVE_POOL_EXHAUSTED'
-    )
-  }
-  const attempt = await prisma.adaptivePracticeQuizAttempt.create({
-    data: {
-      id: attemptId,
-      configId: runtime.config.id,
-      competenceTreeId: runtime.tree.id,
-      practiceQuizId: runtime.quiz.id,
-      courseId: runtime.quiz.courseId,
-      participantId,
-      participationId,
-      nextPoolItemId: decision.nextPoolItem.id,
-    },
-    include: attemptRuntimeInclude,
-  })
-  return serializeAttemptState(runtime, attempt)
-}
-
-function assertParticipant(ctx: ContextWithUser) {
-  if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
-    throw runtimeError(
-      'Adaptive attempts require participant authentication.',
-      'ADAPTIVE_PARTICIPANT_REQUIRED'
-    )
-  }
 }

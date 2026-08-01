@@ -4,6 +4,7 @@ import {
   MAX_ABSOLUTE_THETA,
   MAX_COMPETENCE_TREE_DEPTH,
   MAX_DISCRIMINATION,
+  normalizeEnabledRootWeights,
 } from '@klicker-uzh/adaptive-learning'
 import { GraphQLError } from 'graphql'
 import { isSupportedAdaptiveElementType } from './adaptiveElementValidation.js'
@@ -609,7 +610,7 @@ export function validateCompetenceTreeShape(
     }
   }
 
-  const normalizedRootWeights = normalizeRootWeights(roots, errors)
+  const normalizedRootWeights = normalizeRootWeights(roots, tree.nodes, errors)
 
   return {
     valid: errors.length === 0,
@@ -622,11 +623,14 @@ export function validateCompetenceTreeShape(
 
 function normalizeRootWeights(
   roots: CompetenceTreeValidationNode[],
+  nodes: CompetenceTreeValidationNode[],
   errors: CompetenceTreeValidationIssue[]
 ): NormalizedCompetenceWeight[] {
   const enabledRoots = roots.filter(isCompetenceTreeNodeEnabled)
-
-  if (enabledRoots.length === 0) {
+  const result = normalizeEnabledRootWeights(
+    enabledRoots.map((node) => ({ key: node, weight: node.weight ?? 1 }))
+  )
+  if (!result.ok && result.reason === 'NO_ENABLED_ROOTS') {
     errors.push({
       code: 'ENABLED_ROOT_COUNT_TOO_LOW',
       message: 'Competence trees require at least one enabled root competence.',
@@ -634,51 +638,18 @@ function normalizeRootWeights(
     })
     return []
   }
-
-  const weights = enabledRoots.map((node) => ({
-    node,
-    weight: node.weight ?? 1,
-  }))
-
-  for (const { node, weight } of weights) {
-    if (!Number.isFinite(weight) || weight < 0) {
+  if (!result.ok) {
+    for (const node of result.invalidKeys) {
       errors.push({
         code: 'ROOT_WEIGHT_INVALID',
-        message: `Root competence ${node.id} weight must be non-negative.`,
-        path: `nodes.${roots.indexOf(node)}.weight`,
+        message: `Enabled root competence ${node.id} weight must be positive and finite.`,
+        path: `nodes.${nodes.indexOf(node)}.weight`,
       })
     }
-  }
-
-  const validWeights = weights.filter(
-    ({ weight }) => Number.isFinite(weight) && weight >= 0
-  )
-  const maximumWeight = validWeights.reduce(
-    (maximum, { weight }) => Math.max(maximum, weight),
-    Number.NEGATIVE_INFINITY
-  )
-
-  if (validWeights.length > 0 && maximumWeight <= 0) {
-    errors.push({
-      code: 'ROOT_WEIGHT_TOTAL_INVALID',
-      message:
-        'At least one enabled root competence must have positive weight.',
-      path: 'nodes',
-    })
     return []
   }
-
-  const scaledWeights = validWeights.map(({ node, weight }) => ({
-    node,
-    weight: weight / maximumWeight,
-  }))
-  const scaledTotal = scaledWeights.reduce(
-    (sum, entry) => sum + entry.weight,
-    0
-  )
-
-  return scaledWeights.map(({ node, weight }) => ({
+  return result.normalized.map(({ key: node, weight }) => ({
     nodeId: node.id,
-    weight: weight / scaledTotal,
+    weight,
   }))
 }

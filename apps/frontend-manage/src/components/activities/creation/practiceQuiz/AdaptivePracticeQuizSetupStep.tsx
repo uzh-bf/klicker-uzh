@@ -31,6 +31,7 @@ import WizardNavigation from '../WizardNavigation'
 import AdaptiveAssignmentPreview from './AdaptiveAssignmentPreview'
 import AdaptiveHierarchyOverrides from './AdaptiveHierarchyOverrides'
 import AdaptiveReadinessPanel from './AdaptiveReadinessPanel'
+import AdaptiveScaleReadinessSummary from './AdaptiveScaleReadinessSummary'
 import { PracticeQuizWizardStepProps } from './PracticeQuizWizard'
 import {
   mapAdaptivePracticeQuizPreviewToForm,
@@ -63,6 +64,7 @@ function AdaptivePracticeQuizSetupStep({
   adaptiveInitialPreview,
 }: PracticeQuizWizardStepProps) {
   const t = useTranslations()
+  const treeSearchId = useId()
   const treeSelectId = useId()
   const courseId = formData.courseId
   const [treeSearch, setTreeSearch] = useState('')
@@ -241,6 +243,7 @@ function AdaptivePracticeQuizSetupStep({
                 data-cy="adaptive-tree-selection"
               >
                 <TextField
+                  id={treeSearchId}
                   label={t('manage.activityWizard.adaptive.setup.searchTrees')}
                   value={treeSearch}
                   onChange={setTreeSearch}
@@ -264,6 +267,7 @@ function AdaptivePracticeQuizSetupStep({
                         updateConfig({
                           ...values.adaptiveConfig,
                           competenceTreeId: treeId,
+                          scaleVersionId: undefined,
                           nodeOverrides: [],
                           elementOverrides: [],
                         })
@@ -458,6 +462,19 @@ function AdaptivePracticeQuizSetupStep({
               {selectedTreeLoading ? <Loader /> : null}
               {selectedTree && selectedTreeLinked ? (
                 <>
+                  <AdaptiveScaleReadinessSummary
+                    treeId={selectedTree.id}
+                    selectedScaleVersionId={
+                      values.adaptiveConfig.scaleVersionId
+                    }
+                    autoSelectActiveScale={!editMode}
+                    onScaleVersionChange={(scaleVersionId) =>
+                      updateConfig({
+                        ...values.adaptiveConfig,
+                        scaleVersionId,
+                      })
+                    }
+                  />
                   <AdaptiveHierarchyOverrides
                     nodes={selectedTree.nodes}
                     assignments={selectedTree.elementAssignments}

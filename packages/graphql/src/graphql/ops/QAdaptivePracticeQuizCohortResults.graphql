@@ -1,6 +1,7 @@
 query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
   adaptivePracticeQuizCohortResults(practiceQuizId: $practiceQuizId) {
     practiceQuizId
+    competenceTreeId
     cohortSize
     suppressed
     attemptSummary {
@@ -10,6 +11,10 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
         reason
       }
       classified
+      betweenLevels
+      insufficientEvidence
+      poolLimited
+      researchOnly
       capped
       poolExhausted
       stoppedInsufficientData
@@ -62,6 +67,11 @@ query QAdaptivePracticeQuizCohortResults($practiceQuizId: String!) {
         reason
       }
       insufficientDataCount
+      classifiedCount
+      betweenLevelsCount
+      insufficientEvidenceCount
+      poolLimitedCount
+      researchOnlyCount
       buckets {
         levelLabel
         levelOrder

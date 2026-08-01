@@ -145,7 +145,7 @@ function ValidationPanel({
           type="success"
           message={t('manage.competenceTree.validationValid')}
           data={{ cy: 'competence-tree-validation-valid' }}
-          className={{ root: 'mb-4' }}
+          className={{ root: 'mb-4 !text-slate-800' }}
         />
       )}
 

@@ -110,25 +110,36 @@ model User {
   publicPreview  Boolean @default(false)
   privatePreview Boolean @default(false)
 
-  logins                      UserLogin[]
-  session                     Session[]
-  accounts                    Account[]
-  courses                     Course[]
-  questions                   Element[]
-  mediaFiles                  MediaFile[]
-  tags                        Tag[]
-  groupActivities             GroupActivity[]
-  elementInstances            ElementInstance[]
-  practiceQuizzes             PracticeQuiz[]
-  microLearnings              MicroLearning[]
-  liveQuizzes                 LiveQuiz[]
-  competencyTrees             CompetencyTree[]
-  answerCollections           AnswerCollection[]
-  chatbots                    Chatbot[]
-  chatbotDisclaimers          ChatbotDisclaimer[]
-  adaptiveAssessments         AdaptiveAssessment[]
-  competenceTrees             CompetenceTree[]
-  linkedCompetenceTreeCourses CompetenceTreeCourse[] @relation("CompetenceTreeCourseLinkedBy")
+  logins                          UserLogin[]
+  session                         Session[]
+  accounts                        Account[]
+  courses                         Course[]
+  questions                       Element[]
+  mediaFiles                      MediaFile[]
+  tags                            Tag[]
+  groupActivities                 GroupActivity[]
+  elementInstances                ElementInstance[]
+  practiceQuizzes                 PracticeQuiz[]
+  microLearnings                  MicroLearning[]
+  liveQuizzes                     LiveQuiz[]
+  competencyTrees                 CompetencyTree[]
+  answerCollections               AnswerCollection[]
+  chatbots                        Chatbot[]
+  chatbotDisclaimers              ChatbotDisclaimer[]
+  adaptiveAssessments             AdaptiveAssessment[]
+  competenceTrees                 CompetenceTree[]
+  linkedCompetenceTreeCourses     CompetenceTreeCourse[]                    @relation("CompetenceTreeCourseLinkedBy")
+  adaptiveScaleVersionsCreated    CompetenceTreeScaleVersion[]              @relation("CompetenceTreeScaleVersionCreatedBy")
+  adaptiveScaleApprovalsSubmitted CompetenceTreeScaleApproval[]             @relation("CompetenceTreeScaleApprovalSubmittedBy")
+  adaptiveScaleApprovals          CompetenceTreeScaleApproval[]             @relation("CompetenceTreeScaleApprovalReviewer")
+  adaptiveScaleLinksCreated       CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkCreatedBy")
+  adaptiveScaleLinksReviewed      CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkReviewedBy")
+  adaptiveCalibrationsCreated     AdaptiveItemCalibration[]                 @relation("AdaptiveItemCalibrationCreatedBy")
+  adaptiveCalibrationsApproved    AdaptiveItemCalibration[]                 @relation("AdaptiveItemCalibrationApprovedBy")
+  adaptivePublications            PracticeQuizAdaptivePublication[]         @relation("PracticeQuizAdaptivePublicationPublishedBy")
+  adaptiveExportRequests          AdaptiveCalibrationExportRequest[]        @relation("AdaptiveCalibrationExportRequestedBy")
+  adaptiveValidationsSubmitted    AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationSubmittedBy")
+  adaptiveValidationsApproved     AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationApprovedBy")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

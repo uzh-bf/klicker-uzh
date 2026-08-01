@@ -7,17 +7,19 @@ import {
   assertAdaptivePublicationSourceElementsAuthorized,
   lockAdaptivePracticeQuizPublicationSources,
 } from './adaptivePracticeQuizPublicationAuthorization.js'
+import { prepareAdaptivePublicationSnapshot } from './adaptivePracticeQuizPublicationSnapshot.js'
 import type { AdaptiveQuizReadiness } from './adaptivePracticeQuizReadiness.js'
 
 const ADAPTIVE_POOL_INSERT_BATCH_SIZE = 500
 
 export async function materializeAdaptivePracticeQuizPool(
   practiceQuizId: string,
+  publishedById: string,
   prisma: DB.Prisma.TransactionClient
 ): Promise<{ poolSize: number; readiness: AdaptiveQuizReadiness }> {
   const quiz = await prisma.practiceQuiz.findUnique({
     where: { id: practiceQuizId, isDeleted: false },
-    select: { courseId: true },
+    select: { courseId: true, resetTimeDays: true },
   })
   if (!quiz) {
     throw adaptiveServiceError(
@@ -60,6 +62,21 @@ export async function materializeAdaptivePracticeQuizPool(
     sourceAuthorization
   )
   if (!loaded.prepared.readiness.ready) {
+    const staleIssueCount = [
+      ...loaded.prepared.readiness.errors,
+      ...loaded.prepared.readiness.warnings,
+    ].filter(
+      ({ code }) =>
+        code === 'ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH' ||
+        code === 'ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE'
+    ).length
+    if (staleIssueCount > 0) {
+      emitAdaptiveOperationalEvent({
+        name: 'adaptive_calibration_stale',
+        practiceQuizId,
+        staleIssueCount,
+      })
+    }
     emitAdaptiveOperationalEvent({
       name: 'adaptive_publication_blocked',
       practiceQuizId,
@@ -76,9 +93,27 @@ export async function materializeAdaptivePracticeQuizPool(
     ({ available }) => available
   )
 
-  await prisma.practiceQuizAdaptivePoolItem.deleteMany({
-    where: { configId: loaded.configRecord.id },
+  const latestPublication =
+    await prisma.practiceQuizAdaptivePublication.findFirst({
+      where: { configId: loaded.configRecord.id },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    })
+  const snapshot = await prepareAdaptivePublicationSnapshot({
+    config: loaded.configRecord,
+    prepared: loaded.prepared,
+    publishedById,
+    publicationVersion: (latestPublication?.version ?? 0) + 1,
+    retakeCooldownDays: quiz.resetTimeDays,
+    prisma,
   })
+  const publication = await prisma.practiceQuizAdaptivePublication.create({
+    data: snapshot.publicationData,
+    select: { id: true },
+  })
+  const calibrationByAssignment = new Map(
+    snapshot.calibrations.map((entry) => [entry.assignmentId, entry])
+  )
   for (
     let offset = 0;
     offset < poolAssignments.length;
@@ -90,17 +125,41 @@ export async function materializeAdaptivePracticeQuizPool(
     )
     await prisma.practiceQuizAdaptivePoolItem.createMany({
       data: batch.map((assignment) => {
-        const level = levelsById.get(assignment.levelId)
-        if (!level) {
+        const sourceLevel = levelsById.get(assignment.levelId)
+        if (!sourceLevel) {
           throw adaptiveServiceError(
             `Adaptive assignment ${assignment.id} references a missing level.`,
             'ADAPTIVE_CONFIG_INVALID'
           )
         }
+        const level =
+          snapshot.publicationData.measurementVersion ===
+          DB.AdaptiveMeasurementVersion.IRT_V2_EAP_GRID_1
+            ? snapshot.scale.levels.find(
+                ({ sourceLevelId }) => sourceLevelId === sourceLevel.id
+              )
+            : sourceLevel
+        if (!level) {
+          throw adaptiveServiceError(
+            `Adaptive assignment ${assignment.id} is not mapped to the published scale.`,
+            'ADAPTIVE_SCALE_LEVEL_MAPPING_INVALID'
+          )
+        }
         const path = getNodePath(assignment.leafNodeId, nodesById)
+        const calibrationEntry = calibrationByAssignment.get(assignment.id)
+        if (!calibrationEntry) {
+          throw adaptiveServiceError(
+            `Adaptive assignment ${assignment.id} has no publication calibration.`,
+            'ADAPTIVE_CALIBRATION_MISSING'
+          )
+        }
+        const { calibration } = calibrationEntry
         return {
           configId: loaded.configRecord.id,
           competenceTreeId: loaded.configRecord.competenceTreeId,
+          publicationId: publication.id,
+          scaleVersionId: snapshot.scale.id,
+          calibrationId: calibration.id,
           sourceAssignmentId: assignment.id,
           elementId: assignment.elementId,
           elementVersion: assignment.elementVersion,
@@ -113,14 +172,50 @@ export async function materializeAdaptivePracticeQuizPool(
           levelId: level.id,
           levelLabel: level.label,
           levelOrder: level.order,
-          discrimination: assignment.discrimination,
-          difficulty: assignment.difficulty,
-          guessing: assignment.guessing,
+          discrimination: calibration.discrimination,
+          difficulty: calibration.difficulty,
+          guessing: calibration.guessing,
+          measurementVersion: snapshot.publicationData.measurementVersion,
+          calibrationVersion: calibration.version,
+          calibrationStatus: calibration.status,
+          itemModel: calibration.model,
+          modelImplementationVersion: calibration.modelImplementationVersion,
+          role: calibrationEntry.role,
+          contributesToEstimate: calibrationEntry.contributesToEstimate,
           enablePercentInput: assignment.enablePercentInput,
         }
       }),
     })
   }
+
+  const poolItems = await prisma.practiceQuizAdaptivePoolItem.findMany({
+    where: { publicationId: publication.id },
+    select: { id: true },
+  })
+  await prisma.adaptivePracticeQuizItemExposure.createMany({
+    data: poolItems.map(({ id }) => ({
+      publicationId: publication.id,
+      poolItemId: id,
+    })),
+  })
+  const sealedAt = new Date()
+  // Retire the previous active snapshot before sealing the replacement. Both
+  // writes share this transaction, so a failed seal restores the old active
+  // publication while preserving the one-active-publication constraint.
+  await prisma.practiceQuizAdaptivePublication.updateMany({
+    where: {
+      configId: loaded.configRecord.id,
+      id: { not: publication.id },
+      sealedAt: { not: null },
+      supersededAt: null,
+      unpublishedAt: null,
+    },
+    data: { supersededAt: sealedAt },
+  })
+  await prisma.practiceQuizAdaptivePublication.update({
+    where: { id: publication.id },
+    data: { sealedAt },
+  })
 
   await prisma.practiceQuizAdaptiveConfig.update({
     where: { id: loaded.configRecord.id },
@@ -141,10 +236,23 @@ export async function assertAdaptivePublishedPool(
     where: { practiceQuizId },
     select: {
       poolPublishedAt: true,
-      _count: { select: { publishedPool: true } },
+      publications: {
+        where: {
+          sealedAt: { not: null },
+          supersededAt: null,
+          unpublishedAt: null,
+        },
+        select: { _count: { select: { poolItems: true } } },
+        take: 1,
+      },
     },
   })
-  if (!config || !config.poolPublishedAt || config._count.publishedPool === 0) {
+  if (
+    !config ||
+    !config.poolPublishedAt ||
+    config.publications.length !== 1 ||
+    config.publications[0]!._count.poolItems === 0
+  ) {
     throw adaptiveServiceError(
       'The scheduled adaptive practice quiz has no materialized publication pool.',
       'ADAPTIVE_POOL_MISSING'
@@ -164,13 +272,25 @@ export async function clearAdaptivePublishedPool(
     select: {
       id: true,
       poolPublishedAt: true,
-      _count: { select: { attempts: true, publishedPool: true } },
+      _count: { select: { attempts: true } },
+      publications: {
+        where: {
+          sealedAt: { not: null },
+          supersededAt: null,
+          unpublishedAt: null,
+        },
+        select: { id: true, _count: { select: { poolItems: true } } },
+      },
     },
   })
   if (!config) return
   if (config._count.attempts > 0) {
     if (retainWhenAttemptsExist) {
-      if (!config.poolPublishedAt || config._count.publishedPool === 0) {
+      if (
+        !config.poolPublishedAt ||
+        config.publications.length !== 1 ||
+        config.publications[0]!._count.poolItems === 0
+      ) {
         throw adaptiveServiceError(
           'The adaptive practice quiz has attempts but no reusable published pool.',
           'ADAPTIVE_POOL_MISSING'
@@ -183,8 +303,14 @@ export async function clearAdaptivePublishedPool(
       'ADAPTIVE_POOL_LOCKED'
     )
   }
-  await prisma.practiceQuizAdaptivePoolItem.deleteMany({
-    where: { configId: config.id },
+  await prisma.practiceQuizAdaptivePublication.updateMany({
+    where: {
+      configId: config.id,
+      sealedAt: { not: null },
+      supersededAt: null,
+      unpublishedAt: null,
+    },
+    data: { unpublishedAt: new Date() },
   })
   await prisma.practiceQuizAdaptiveConfig.update({
     where: { id: config.id },

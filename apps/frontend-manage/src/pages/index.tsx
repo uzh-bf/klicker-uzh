@@ -19,7 +19,7 @@ import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
 import ElementListSorting from '../components/elements/ElementListSorting'
-import { restoreElementAutosaveStorageValue } from '../components/elements/manipulation/adaptive/elementMappingRecovery'
+import { restoreElementAutosaveStorageValue } from '../components/elements/manipulation/adaptive/elementAutosave'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
   ElementEditMode,
@@ -74,9 +74,7 @@ function Index() {
     const value = localStorage.getItem('autosave-element-creation')
     const recovery = restoreElementAutosaveStorageValue(value)
 
-    if (recovery && recovery.mappingRecovery.phase !== 'editing') {
-      setIsElementCreationModalOpen(true)
-    } else if (value) {
+    if (value && recovery) {
       setShowRecoveryPrompt(true)
     } else {
       setIsElementCreationModalOpen(true)

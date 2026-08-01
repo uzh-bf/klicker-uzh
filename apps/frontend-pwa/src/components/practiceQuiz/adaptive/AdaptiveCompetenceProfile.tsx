@@ -1,6 +1,9 @@
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { AdaptiveResultConfidence } from '@klicker-uzh/graphql/dist/ops'
+import {
+  AdaptivePracticeQuizResultClassification,
+  AdaptiveResultConfidence,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { ADAPTIVE_BAND_COLORS } from './AdaptiveResultTrajectoryChart'
@@ -10,7 +13,10 @@ export type AdaptiveCompetenceProfileNode = {
   name: string
   order: number
   responseCount: number
+  classification: AdaptivePracticeQuizResultClassification
   levelLabel?: string | null
+  leadingLevelLabels: string[]
+  classificationProbability?: number | null
   confidence: AdaptiveResultConfidence
   nearBoundary: boolean
   position?: number | null
@@ -22,7 +28,10 @@ export type AdaptiveCompetenceProfileNode = {
 type ProfileEstimate = {
   name: string
   responseCount: number
+  classification: AdaptivePracticeQuizResultClassification
   levelLabel?: string | null
+  leadingLevelLabels: string[]
+  classificationProbability?: number | null
   confidence: AdaptiveResultConfidence
   nearBoundary: boolean
   position?: number | null
@@ -133,9 +142,25 @@ function ProfileRow({
   emphasized?: boolean
 }) {
   const t = useTranslations()
-  const insufficient =
-    estimate.confidence === AdaptiveResultConfidence.InsufficientData ||
-    !estimate.levelLabel
+  const displayLabel = (() => {
+    switch (estimate.classification) {
+      case AdaptivePracticeQuizResultClassification.Classified:
+        return (
+          estimate.levelLabel ??
+          t('pwa.practiceQuiz.adaptive.profile.insufficientData')
+        )
+      case AdaptivePracticeQuizResultClassification.BetweenLevels:
+        return t('pwa.practiceQuiz.adaptive.profile.betweenLevels', {
+          levels: estimate.leadingLevelLabels.join(' / '),
+        })
+      case AdaptivePracticeQuizResultClassification.PoolLimited:
+        return t('pwa.practiceQuiz.adaptive.profile.poolLimited')
+      case AdaptivePracticeQuizResultClassification.ResearchOnly:
+        return t('pwa.practiceQuiz.adaptive.profile.researchOnly')
+      case AdaptivePracticeQuizResultClassification.InsufficientEvidence:
+        return t('pwa.practiceQuiz.adaptive.profile.insufficientData')
+    }
+  })()
 
   return (
     <div
@@ -156,24 +181,44 @@ function ProfileRow({
             })}
           </span>
           <span>
-            {t(`pwa.practiceQuiz.adaptive.confidence.${estimate.confidence}`)}
+            {t(CLASSIFICATION_LABEL_KEYS[estimate.classification])}
+            {typeof estimate.classificationProbability === 'number' && (
+              <>
+                {' '}
+                {t('pwa.practiceQuiz.adaptive.result.probability', {
+                  probability: Math.round(
+                    estimate.classificationProbability * 100
+                  ),
+                })}
+              </>
+            )}
           </span>
-          {estimate.nearBoundary && (
+          {estimate.classification ===
+            AdaptivePracticeQuizResultClassification.BetweenLevels && (
             <span>{t('pwa.practiceQuiz.adaptive.nearBoundary.label')}</span>
           )}
         </div>
       </div>
       <div className="min-w-0">
-        <div className="mb-1 text-sm font-semibold">
-          {insufficient
-            ? t('pwa.practiceQuiz.adaptive.profile.insufficientData')
-            : estimate.levelLabel}
-        </div>
+        <div className="mb-1 text-sm font-semibold">{displayLabel}</div>
         <BandTrack estimate={estimate} levelBands={levelBands} />
       </div>
     </div>
   )
 }
+
+const CLASSIFICATION_LABEL_KEYS = {
+  [AdaptivePracticeQuizResultClassification.Classified]:
+    'pwa.practiceQuiz.adaptive.result.classification.CLASSIFIED.label',
+  [AdaptivePracticeQuizResultClassification.BetweenLevels]:
+    'pwa.practiceQuiz.adaptive.result.classification.BETWEEN_LEVELS.label',
+  [AdaptivePracticeQuizResultClassification.InsufficientEvidence]:
+    'pwa.practiceQuiz.adaptive.result.classification.INSUFFICIENT_EVIDENCE.label',
+  [AdaptivePracticeQuizResultClassification.PoolLimited]:
+    'pwa.practiceQuiz.adaptive.result.classification.POOL_LIMITED.label',
+  [AdaptivePracticeQuizResultClassification.ResearchOnly]:
+    'pwa.practiceQuiz.adaptive.result.classification.RESEARCH_ONLY.label',
+} as const
 
 function BandTrack({
   estimate,

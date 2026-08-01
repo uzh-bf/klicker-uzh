@@ -23,6 +23,7 @@ import CoverageMatrix from './CoverageMatrix'
 import HierarchyEditor from './HierarchyEditor'
 import LevelEditor from './LevelEditor'
 import MetadataEditor from './MetadataEditor'
+import ScaleVersionPanel from './ScaleVersionPanel'
 import {
   applyCompetenceTreeStructuralCommand,
   CompetenceTreeStructuralCommand,
@@ -354,7 +355,7 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           type="warning"
           message={t('manage.competenceTree.lockedNotice')}
           data={{ cy: 'competence-tree-locked-notice' }}
-          className={{ root: 'mb-4' }}
+          className={{ root: 'mb-4 !text-slate-800' }}
         />
       )}
       {requestError && (
@@ -407,6 +408,13 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           setEditorState((current) => ({ ...current, selectedCell: null }))
         }
       />
+      {treeId && tree ? (
+        <ScaleVersionPanel
+          treeId={treeId}
+          treeLevels={tree.levels}
+          assignments={tree.elementAssignments}
+        />
+      ) : null}
       <ValidationPanel
         validation={validation}
         requestError={null}

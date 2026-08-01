@@ -84,6 +84,7 @@ export const AdaptivePracticeQuizConfigInput =
   AdaptivePracticeQuizConfigInputRef.implement({
     fields: (t) => ({
       competenceTreeId: t.string({ required: true }),
+      scaleVersionId: t.string({ required: false }),
       preset: t.field({ type: AdaptivePracticeQuizPreset, required: true }),
       totalQuestionCap: t.int({ required: false }),
       perLeafQuestionCap: t.int({ required: false }),
@@ -113,6 +114,13 @@ export const AdaptivePracticeQuizConfig =
   AdaptivePracticeQuizConfigRef.implement({
     fields: (t) => ({
       competenceTreeId: t.exposeString('competenceTreeId'),
+      scaleVersionId: t.exposeString('scaleVersionId', { nullable: true }),
+      measurementVersion: t.string({
+        resolve: ({ measurementVersion }) => measurementVersion,
+      }),
+      calibrationPolicyVersion: t.exposeInt('calibrationPolicyVersion', {
+        nullable: true,
+      }),
       preset: t.expose('preset', { type: AdaptivePracticeQuizPreset }),
       attemptSelectionPolicy: t.expose('attemptSelectionPolicy', {
         type: AdaptiveAttemptSelectionPolicy,
@@ -269,6 +277,11 @@ export const AdaptiveReadinessIssueParametersType =
       secondsPerItem: t.exposeInt('secondsPerItem', { nullable: true }),
       assignmentId: t.exposeInt('assignmentId', { nullable: true }),
       nodeId: t.exposeInt('nodeId', { nullable: true }),
+      scaleVersionId: t.exposeString('scaleVersionId', { nullable: true }),
+      calibrationStatus: t.exposeString('calibrationStatus', {
+        nullable: true,
+      }),
+      elementVersion: t.exposeInt('elementVersion', { nullable: true }),
     }),
   })
 export const AdaptiveReadinessIssueType = AdaptiveReadinessIssueRef.implement({
