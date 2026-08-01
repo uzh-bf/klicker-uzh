@@ -191,9 +191,24 @@ For the graph-builder boundary, start the canonical
 write its local token into the ignored DevPod env file:
 
 ```bash
-KG_CONTENT_GENERATION_REPO=/path/to/kg-content-generation \
+KG_CONTENT_GENERATION_REPO=/path/to/kg-content-generation
+(
+  cd "$KG_CONTENT_GENERATION_REPO"
+  FALKORDB_HOST_PORT=16379 \
+  ./lightrag_research/scripts/hatchet/start_local_stack.sh
+)
+
+KB_GRAPH_FALKORDB_HOST_PORT=16379 \
+KG_CONTENT_GENERATION_REPO="$KG_CONTENT_GENERATION_REPO" \
   ./util/configure-local-kb-graph-builder.sh
 ```
+
+`FALKORDB_HOST_PORT=16379` maps the graph container's internal `6379` to an
+alternate host port, leaving DevRouter's existing host `6379` untouched. The
+host-side graph worker and the DevPod use the same alternate port. If the
+doc-processing checkout is not available, add `DOC_PROCESSING_START_LOCAL=0`
+to the stack command; that skips only the optional local document-processing
+processes.
 
 Restart or re-run `devrouter ensure <checkout>` after generating that file so
 the app worker loads the local Hatchet and FalkorDB connection. No graph token
