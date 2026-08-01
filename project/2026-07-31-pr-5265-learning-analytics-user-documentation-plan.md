@@ -41,6 +41,10 @@ Ruled by the user before planning:
   dashboards can be verified and captured for real.
 - `Decision:` Ship as a separate PR stacked on `codex/learning-analytics-opt-out-plan`,
   keeping the reviewed milestone-5 diff untouched.
+- `Decision:` PR #5265 is a documentation-only follow-up outside the five ordered
+  implementation PRs. It is stacked on #5198 solely for review; after #5198 lands,
+  retarget or rebase it to the resulting target before its own merge. It is not a
+  sixth implementation milestone and does not alter the reviewed milestone-5 diff.
 - `Decision:` Both pages carry a beta notice reading, in substance, that
   Learning Analytics is available on request for users at UZH.
 
