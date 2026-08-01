@@ -87,6 +87,7 @@ model DiscussionThread {
   updatedAt DateTime @updatedAt
 
   @@index([scopeId, lastActivityAt])
+  @@index([scopeId, upvotes, lastActivityAt, id])
   @@index([authorParticipantId])
 }
 

@@ -176,6 +176,31 @@ export async function enforceAnonymousRateLimits(
 ) {
   const ip = getRequestIP(ctx)
 
+  const ipWindowCount = await incrementCounter(
+    ctx,
+    `discussion:anon:ip:${courseId}:${ip}`,
+    ANON_IP_COURSE_WINDOW_SEC
+  )
+
+  if (ipWindowCount > ANON_IP_COURSE_LIMIT) {
+    if (ipWindowCount > ANON_IP_COURSE_LIMIT + 1) return false
+
+    await createDiscussionEvent(
+      {
+        scopeId,
+        eventType: DB.DiscussionEventType.ANON_RATE_LIMITED,
+        metadata: {
+          reason: 'ip_window',
+          limit: ANON_IP_COURSE_LIMIT,
+          ttlSec: ANON_IP_COURSE_WINDOW_SEC,
+        },
+      },
+      ctx
+    )
+
+    return false
+  }
+
   const scopeWindowCount = await incrementCounter(
     ctx,
     `discussion:anon:scope:${courseId}:${scopeKey}:${fingerprintHash}`,
@@ -218,31 +243,6 @@ export async function enforceAnonymousRateLimits(
           reason: 'course_window',
           limit: ANON_COURSE_LIMIT,
           ttlSec: ANON_COURSE_WINDOW_SEC,
-        },
-      },
-      ctx
-    )
-
-    return false
-  }
-
-  const ipWindowCount = await incrementCounter(
-    ctx,
-    `discussion:anon:ip:${courseId}:${ip}`,
-    ANON_IP_COURSE_WINDOW_SEC
-  )
-
-  if (ipWindowCount > ANON_IP_COURSE_LIMIT) {
-    if (ipWindowCount > ANON_IP_COURSE_LIMIT + 1) return false
-
-    await createDiscussionEvent(
-      {
-        scopeId,
-        eventType: DB.DiscussionEventType.ANON_RATE_LIMITED,
-        metadata: {
-          reason: 'ip_window',
-          limit: ANON_IP_COURSE_LIMIT,
-          ttlSec: ANON_IP_COURSE_WINDOW_SEC,
         },
       },
       ctx
