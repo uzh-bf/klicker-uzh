@@ -359,6 +359,29 @@ export function registerAnonymousRateLimitsSuite(
       )
     }
 
+    const postLimitContext = createAnonymousContext(userOneCtx, {
+      ip: '192.0.2.1',
+      userAgent: 'vitest-ip-window-after-limit',
+    })
+    const postLimitThreadArgs = {
+      courseId: ipWindowCourse.id,
+      content: 'IP-window question after the limit',
+      scope: {
+        scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+        externalSource: 'lms',
+        externalRef: 'ip-window',
+      },
+      isAnonymous: true,
+      embedToken: ipWindowEmbed!.embedToken,
+    }
+
+    expect(
+      await createCourseDiscussionThread(postLimitThreadArgs, postLimitContext)
+    ).toBeNull()
+    expect(
+      await createCourseDiscussionThread(postLimitThreadArgs, postLimitContext)
+    ).toBeNull()
+
     expect(ipWindowResults.filter(Boolean)).toHaveLength(20)
     expect(
       await prisma.discussionEvent.findMany({
