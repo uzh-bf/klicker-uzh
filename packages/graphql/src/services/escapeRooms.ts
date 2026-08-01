@@ -24,12 +24,7 @@ export async function releaseEscapeRoomLifecycleClaim(
   claimKey: string,
   claimToken: string
 ) {
-  await ctx.redisExec.eval(
-    RELEASE_ESCAPE_ROOM_CLAIM,
-    1,
-    claimKey,
-    claimToken
-  )
+  await ctx.redisExec.eval(RELEASE_ESCAPE_ROOM_CLAIM, 1, claimKey, claimToken)
 }
 
 export function validateEscapeRoomConfig({
