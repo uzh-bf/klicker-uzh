@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Date | 2026-07-28 |
-| Status | BLOCKED — S0-S4 complete locally; S5 automation prepared; live release and publication gates require authority |
+| Status | BLOCKED — S0-S5 automation complete; VoiceOver, final CI/publication, and merge/production gates remain |
 | PR | [#5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) |
 | Remote branch | `codex/manage-assistant-mcp-v3-ai` → `v3-ai` |
 | Local worktree | `.claude/worktrees/finalize-v3-ai-branch-0fa103` |
@@ -781,8 +781,8 @@ PR #5109 is production-ready only when all are true:
 - [x] Wiki, skills, eval README, and plan Progress match the implementation.
 - [x] Independent standards, spec, security, simplification, and
       maintainability reviews are clean.
-- [ ] PR body and live head/check state agree.
-- [ ] No unresolved actionable review thread remains.
+- [x] PR body and live head/check state agree.
+- [x] No unresolved actionable review thread remains.
 - [ ] Merge and production enablement have separate explicit authority.
 
 External OAuth and the S7 tool roadmap are not required to release the embedded
@@ -1053,6 +1053,14 @@ approved.
   then completed 148/148 in 15m26s: E1, E3, E4 schema/judge, E5, E6, and both
   E7 channels all scored 1.000, producing `OVERALL: PASS`. No threshold,
   rubric, or dataset weakening was used.
+- 2026-08-01: Pushed the completed branch at `6d130a0d3` and read back PR #5109
+  with the same head, 161 commits, and 318 files (+28,438 / -799). The PR
+  body now records the confirmatory 148/148 PASS and closes the judged-eval
+  disposition. GraphQL review-thread inspection found 33 total threads and
+  zero unresolved threads. A fresh GitHub check run is still in progress;
+  every completed check is green except the documented inherited GitGuardian
+  failure. No ready-state change, merge, deploy, or production enablement was
+  performed.
 - 2026-07-29: S5.2 production Firefox/WebKit rig built with explicit container
   authority. Probes proved that Firefox, WebKit, and curl force `*.localhost`
   hostnames to loopback (RFC 6761), ignoring `/etc/hosts` and `--add-host`,
