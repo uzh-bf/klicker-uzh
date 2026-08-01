@@ -97,7 +97,8 @@ rather than a rollout detail.
 - `$rs-sliced-development-workflow` owns slices, review, and the PR finish.
 - `$agent-browser` for in-app link verification and any screenshot capture,
   per the repository's mandatory frontend verification rule.
-- `$security-review` and `$thermo-nuclear-code-quality-review` at the finish gate.
+- `$security-review` at the stack-level finish gate and
+  `$thermo-nuclear-code-quality-review` for this branch's finish gate.
 - `$rs-mr-description-writer` for the PR body.
 
 ## Slices
@@ -162,9 +163,11 @@ rather than a rollout detail.
 
 - `Do:` Verify the in-app disclosure links in a browser at desktop and mobile
   widths, in both locales. Run the finish gate.
-- `Check:` Docs build, focused test suites, `$security-review`,
-  `$thermo-nuclear-code-quality-review`, independent review of the full range.
-- `Commit:` PR creation with whole-branch summary and screenshots.
+- `Check:` Docs build, focused test suites,
+  `$thermo-nuclear-code-quality-review`, and independent review of the full
+  range. The separate security review is deferred to the stack-level gate by
+  user decision.
+- `Commit:` PR update with whole-branch summary and verified screenshots.
 
 ## Risks
 
@@ -255,11 +258,11 @@ rather than a rollout detail.
   `codex/learning-analytics-opt-out-plan` ref sits on the abandoned parallel
   session's line at `1c38238539`; every file that line touches is already present
   at this branch's HEAD, so nothing needs integrating.
-- S5 done except the review gates. The pre-correction branch was pushed;
-  corrective commits are currently ahead of `origin/claude/la-user-documentation`
-  pending review. Pre-push `pnpm run build` passed (22/22 tasks). Draft
+- S5 implementation is complete for the corrective range ending at
+  `b3525c527`. Pre-push `pnpm run build` passed (22/22 tasks). Draft
   [PR #5265](https://github.com/uzh-bf/klicker-uzh/pull/5265) is open against
-  `codex/learning-analytics-opt-out-plan`.
+  `codex/learning-analytics-opt-out-plan`; the local corrective commits are
+  ahead of the live PR head pending publication.
 - `Evidence:` the authorized maintainability and independent whole-branch
   reviews found documentation claims that overstated anonymity and coverage,
   omitted approved privacy exclusions, overpromised chatbot access, and a seed
@@ -267,6 +270,11 @@ rather than a rollout detail.
   both pages with ADR 0002 and the chatbot boundary in ADR 0001, scope the seed
   rebuild to `PARTICIPANT_IDS`, make it atomic, and document the deterministic
   fixture in the engineering wiki.
+- `Evidence:` the final authorized maintainability, specification/privacy, and
+  standards reviews of `d5a21f3b90...b3525c527` passed with no
+  branch-introduced findings at the reporting threshold. The parent effective-N
+  defect remains a separate release blocker, and the security review remains
+  deferred to the stack-level gate by user decision.
 - `Evidence:` `pnpm --filter @klicker-uzh/prisma-data check` passes; the
   Docusaurus build passes with only the pre-existing broken links and anchors
   elsewhere in the site; Prettier passes on all changed files; and browser
@@ -276,17 +284,18 @@ rather than a rollout detail.
   hygiene warnings.
 - `Risk:` the separate security review is intentionally deferred to the
   stack-level review by user decision. The PR remains draft until the corrected
-  branch passes the maintainability and independent review rerun, and legal,
-  release, and rollout gates remain separate.
+  branch is published and the parent privacy boundary is corrected or
+  explicitly approved; legal, release, and rollout gates remain separate.
 - `Risk:` The parent-stack activity-level effective-N path currently uses the
   course-wide included-participant count for some activity performance and quiz
   results. This documentation branch does not change the milestone-5
   implementation. The docs must remain draft until the parent stack corrects or
   explicitly approves that privacy boundary; the pages do not claim a
   contributor-level five-student guarantee.
-- Next action: resolve or obtain explicit approval for the parent-stack
-  effective-N blocker, rerun the authorized review gates on the corrected range,
-  then update the draft PR evidence without marking it ready or merging it.
+- Next action: update the draft PR with the exact corrective-range evidence and
+  publish the local branch without marking it ready or merging it. Resolve or
+  obtain explicit approval for the parent-stack effective-N blocker before
+  release readiness.
 
 ## Next steps
 
