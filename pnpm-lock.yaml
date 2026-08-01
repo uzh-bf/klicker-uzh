@@ -931,9 +931,6 @@ importers:
       graphql-ws:
         specifier: 5.16.0
         version: 5.16.0(graphql@16.11.0)
-      is-hotkey:
-        specifier: 0.2.0
-        version: 0.2.0
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
@@ -13762,9 +13759,6 @@ packages:
 
   is-hexadecimal@2.0.1:
     resolution: {integrity: sha512-DgZQp241c8oO6cA1SbTEWiXeoxV42vlcJxgH+B3hi1AiqqKruZR3ZGF8In3fj4+/y/7rHvlOZLZtgJ/4ttYGZg==}
-
-  is-hotkey@0.2.0:
-    resolution: {integrity: sha512-UknnZK4RakDmTgz4PI1wIph5yxSs/mvChWs9ifnlXsKuXgWmOkY/hAE0H/k2MIqH0RlRye0i1oC07MCRSD28Mw==}
 
   is-inside-container@1.0.0:
     resolution: {integrity: sha512-KIYLCCJghfHZxqjYBE7rEy0OBuTd5xCHS7tHVgvCLkx7StIoaxwNW3hCALgEUjFfeRk+MG/Qxmp/vtETEF3tRA==}
@@ -34129,8 +34123,6 @@ snapshots:
       is-extglob: 2.1.1
 
   is-hexadecimal@2.0.1: {}
-
-  is-hotkey@0.2.0: {}
 
   is-inside-container@1.0.0:
     dependencies:
