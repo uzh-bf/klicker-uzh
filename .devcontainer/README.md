@@ -165,6 +165,41 @@ container-recreate budget.
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.
 
+## Local KB ingestion and graph builder
+
+The Klicker worker uses the producer-neutral `data-ingestion` resource API for
+KB resource acceptance. It is not part of this DevPod compose project. Start
+the sibling service on the host before clicking **Ingest**:
+
+```bash
+DATA_INGESTION_REPO=/path/to/data-ingestion \
+KLICKER_KB_APP_ORIGIN=https://api.klicker.<workspace>.localhost \
+  ./util/start-local-kb-ingestion.sh
+```
+
+This starts the real `modules/ingestion-api` service on
+`http://127.0.0.1:18080` with an ignored SQLite state file and a local-only
+Klicker producer registry. The DevPod reaches it through
+`http://host.docker.internal:18080`; the app's source-gateway URL is rewritten
+to the namespaced API route so blob sources remain addressable by a host-side
+worker. The API service accepts operations durably; running the separate
+data-ingestion dispatcher/worker fleet is still required for downstream
+fetching, embeddings, and vector-store activation.
+
+For the graph-builder boundary, start the canonical
+`kg-content-generation/lightrag_research` local Hatchet/FalkorDB stack, then
+write its local token into the ignored DevPod env file:
+
+```bash
+KG_CONTENT_GENERATION_REPO=/path/to/kg-content-generation \
+  ./util/configure-local-kb-graph-builder.sh
+```
+
+Restart or re-run `devrouter ensure <checkout>` after generating that file so
+the app worker loads the local Hatchet and FalkorDB connection. No graph token
+is committed. Without this optional file, the graph integration remains
+disabled and the rest of the DevPod still starts normally.
+
 ## Notes
 
 - `node_modules` is a named volume (pnpm hoists natives into the root

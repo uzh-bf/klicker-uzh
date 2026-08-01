@@ -64,6 +64,7 @@ output/
 
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
+.devcontainer/.local-kb-services.env
 playwright/playwright-report/
 playwright/test-results/
 
