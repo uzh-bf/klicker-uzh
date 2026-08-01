@@ -1408,10 +1408,16 @@ async function discoverPermissionPropagationWork(
   )
 }
 
-export async function reconcilePendingPermissionPropagationWork(
+type PermissionPropagationDispatchAttempt = Pick<
+  PermissionPropagationWork,
+  'key' | 'generation'
+>
+
+async function reconcilePendingPermissionPropagationWorkInternal(
   globalCtx: HatchetHandlerGlobalContext,
   executionCtx: Context<unknown>,
-  now: Date = new Date()
+  now: Date,
+  excludedAttempts: readonly PermissionPropagationDispatchAttempt[] = []
 ) {
   const overdue = await globalCtx.prisma.$queryRaw<PermissionPropagationWork[]>`
     SELECT work.*
@@ -1440,24 +1446,35 @@ export async function reconcilePendingPermissionPropagationWork(
   const redispatchBefore = new Date(
     now.getTime() - PERMISSION_PROPAGATION_REDISPATCH_MS
   )
+  const excludedAttemptsClause =
+    excludedAttempts.length === 0
+      ? Prisma.empty
+      : Prisma.sql`AND (work."key", work."generation") NOT IN (${Prisma.join(
+          excludedAttempts.map(
+            ({ key, generation }) => Prisma.sql`(${key}, ${generation})`
+          )
+        )})`
   const candidates = await globalCtx.prisma.$queryRaw<
     PermissionPropagationWork[]
   >`
-      SELECT *
-      FROM "PermissionPropagationWork"
-      WHERE "processedGeneration" < "generation"
+      SELECT work.*
+      FROM "PermissionPropagationWork" work
+      WHERE work."processedGeneration" < work."generation"
         AND (
-          "dispatchedGeneration" < "generation"
-          OR "lastDispatchedAt" IS NULL
-          OR "lastDispatchedAt" <= ${redispatchBefore}
+          work."dispatchedGeneration" < work."generation"
+          OR work."lastDispatchedAt" IS NULL
+          OR work."lastDispatchedAt" <= ${redispatchBefore}
         )
-      ORDER BY "recoverBy" ASC, "key" ASC
+      ${excludedAttemptsClause}
+      ORDER BY work."recoverBy" ASC, work."key" ASC
       LIMIT ${PERMISSION_PROPAGATION_DISPATCH_BATCH_SIZE}
     `
   let dispatchedWorkCount = 0
   let failedDispatchCount = 0
+  const attemptedWork = [] as PermissionPropagationDispatchAttempt[]
 
   for (const work of candidates) {
+    attemptedWork.push({ key: work.key, generation: work.generation })
     try {
       await globalCtx.hatchet.runNoWait<PermissionPropagationTaskInput>(
         'permission-propagation',
@@ -1486,6 +1503,21 @@ export async function reconcilePendingPermissionPropagationWork(
     }
   }
 
+  return { dispatchedWorkCount, failedDispatchCount, attemptedWork }
+}
+
+export async function reconcilePendingPermissionPropagationWork(
+  globalCtx: HatchetHandlerGlobalContext,
+  executionCtx: Context<unknown>,
+  now: Date = new Date()
+) {
+  const { dispatchedWorkCount, failedDispatchCount } =
+    await reconcilePendingPermissionPropagationWorkInternal(
+      globalCtx,
+      executionCtx,
+      now
+    )
+
   return { dispatchedWorkCount, failedDispatchCount }
 }
 
@@ -1499,21 +1531,32 @@ export async function handlePermissionPropagationReconciliation(
   }
 
   const now = new Date()
+  const recoveryResult =
+    await reconcilePendingPermissionPropagationWorkInternal(
+      globalCtx,
+      executionCtx,
+      now
+    )
   const discoveredWorkCount = await discoverPermissionPropagationWork(
     globalCtx,
     input.mode === 'full-sweep',
     now
   )
-  const { dispatchedWorkCount, failedDispatchCount } =
-    await reconcilePendingPermissionPropagationWork(
+  const dispatchResult =
+    await reconcilePendingPermissionPropagationWorkInternal(
       globalCtx,
       executionCtx,
-      now
+      now,
+      recoveryResult.attemptedWork
     )
 
   return {
     discoveredWorkCount: String(discoveredWorkCount),
-    dispatchedWorkCount: String(dispatchedWorkCount),
-    failedDispatchCount: String(failedDispatchCount),
+    dispatchedWorkCount: String(
+      recoveryResult.dispatchedWorkCount + dispatchResult.dispatchedWorkCount
+    ),
+    failedDispatchCount: String(
+      recoveryResult.failedDispatchCount + dispatchResult.failedDispatchCount
+    ),
   }
 }
