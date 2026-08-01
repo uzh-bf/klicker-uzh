@@ -171,7 +171,7 @@ When blocked by environment or authentication, complete every independent local 
 The independent Sol high review of `7812fa71..4f2a6186` confirmed three release-relevant gaps. All corrective work stays on the existing bottom branch `codex/escape-room-qr` and therefore remains part of PR #5224; no new stack branch is needed.
 
 1. **Catalog duplication lifecycle:** `copyElementToAccount` must generate a new opaque code whenever the copied element is `QR_SCAN`. Extend the existing element-sharing integration coverage to assert source/copy ownership, code format, code inequality, and owner-authorized print data.
-2. **Ordinary activity selection boundary:** move the four wizard `acceptedTypes` lists into one shared manage-side source. Filter the question-pool view and select-all state when a wizard is open, and apply the same predicate defensively in `PasteSelectionButton` and `AddStackButton`. This must cover Practice Quiz, Microlearning, Group Activity, and Live Quiz without changing the server-side fail-closed guards.
+2. **Ordinary activity selection boundary:** move the four wizard `acceptedTypes` lists into one shared manage-side source. Filter the question-pool query before count/offset pagination through an optional GraphQL `elementTypes` predicate, keep the question-pool view and select-all state defensively filtered, and apply the same predicate in `PasteSelectionButton` and `AddStackButton`. This must cover Practice Quiz, Microlearning, Group Activity, and Live Quiz without changing the server-side fail-closed guards.
 3. **Current-tip browser evidence:** rerun the QR print flow at the corrective tip, including fractional and boundary decoy inputs and a foreign-owner print URL. Record the exact commit SHA, environment, and screenshots in `project/2026-07-29-escape-room-qr-verification/README.md`.
 4. **Optional standards cleanup:** add the documented `0..20` Pothos validation to `qrScanPrintData.decoyCount` while retaining the service guard. The resolver-shape, duplicated-guard, and repeated-dispatch observations remain deferred because they are not functional blockers for this layer.
 
@@ -190,6 +190,21 @@ The independent Sol high review of `7812fa71..4f2a6186` confirmed three release-
 - **Database-backed checks remain blocked:** the focused QR contract suite cannot reach the local Prisma database, and the catalog-sharing test cannot load Hatchet without `HATCHET_CLIENT_TOKEN`; no test result is being treated as a pass.
 - **Browser gate remains blocked:** the current-tip `agent-browser` run could not start because `devrouter ensure` could not determine the workspace process identity and the Docker socket is unavailable (`EPERM`). The verification README now labels the existing screenshots as historical evidence and records the exact blocker.
 - **Stack topology is unchanged and dependents are not rebased yet:** after the database and browser gates are available, run `gh stack rebase --upstack`, re-run the dependent checks, and only then consider publication. No PR was marked ready or merged by this corrective execution.
+
+## Second-pass corrective plan — 2026-08-01
+
+The review found that client-only filtering after the existing `numEntries`/`offset` query is not a complete boundary: unsupported rows can consume page slots and remain part of the displayed total. The follow-up is intentionally limited to the existing bottom PR.
+
+1. **Make pagination authoritative:** add an optional `elementTypes: [ElementType!]` argument to `userElements`, add the matching generated operation variable, and apply the predicate inside the Prisma relation filter. Keep the existing singular `type` filter as an intersection so ordinary library filters continue to work. Pass the accepted wizard contract only while an activity wizard is open.
+2. **Exercise both state and insertion paths:** seed one accepted SC and one QR Scan with QR first on a one-row page. For each of the four ordinary wizard entry points, select-all before opening the wizard to exercise stale-selection cleanup, then select-all inside the filtered pool and exercise paste or bulk-add insertion. Assert the accepted element is available and QR is absent from both the pool and wizard rows.
+3. **Regenerate and validate dependents:** regenerate the GraphQL artifacts, run package checks and the root gates, then rebase the unchanged individual/group/live branches with `gh stack rebase --upstack --no-trunk`. Do not publish or merge until the browser gate is available.
+
+### Second-pass execution status — 2026-08-01
+
+- **Implemented in `1d3461812`:** server-side `elementTypes` filtering now runs before Prisma count/offset pagination; the manage query supplies the activity contract; and the Playwright regression covers a QR-first one-row page, stale selection cleanup, select-all, paste, and bulk-add across all four ordinary wizard entry points.
+- **Static checks passed:** GraphQL codegen and check, frontend-manage check after rebuilding the generated GraphQL package, Playwright check, root `check:all` (25 checks and 7 lint tasks), `git diff --check`, and the commit hooks. Generated GraphQL schema/client/server artifacts are tracked and formatted.
+- **Runtime gates remain unchanged:** the database-backed GraphQL tests still cannot connect to the local Prisma/Hatchet runtime, and the current-tip browser gate is still blocked by the host's devrouter process-identity failure and unavailable Docker socket. No runtime result is being upgraded to a pass.
+- **Stack rebase is next:** after this bottom commit, rebase the dependent stack branches and re-run their package checks. Keep PRs draft and do not push/merge from this corrective execution.
 
 ## Layer 1 evidence
 
