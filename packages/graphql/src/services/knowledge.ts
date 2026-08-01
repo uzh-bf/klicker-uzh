@@ -724,14 +724,10 @@ export async function getKbResourcesConnection(
     ? await ctx.prisma.$queryRaw<Array<{ id: string }>>`
         SELECT resource."id"
         FROM "public"."KBResource" AS resource
+        INNER JOIN "public"."KBIngestionRun" AS run
+          ON run."id" = resource."ingestionAttemptId"
         WHERE resource."kbId" = CAST(${kbId} AS UUID)
-          AND (
-            SELECT run."status"
-            FROM "public"."KBIngestionRun" AS run
-            WHERE run."resourceId" = resource."id"
-            ORDER BY run."createdAt" DESC, run."id" DESC
-            LIMIT 1
-          ) = CAST(${status} AS "KBIngestionStatus")
+          AND run."status" = CAST(${status} AS "KBIngestionStatus")
       `
     : null
   const searchWhere: DB.Prisma.KBResourceWhereInput = normalizedSearch
@@ -789,19 +785,35 @@ export async function getKbResourcesConnection(
     ctx.prisma.kBResource.findMany({
       where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: {
-        ingestionRuns: {
-          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-          take: 1,
-        },
-      },
       take: pageSize + 1,
     }),
     ctx.prisma.kBResource.count({ where: baseWhere }),
   ])
+  const currentAttemptIds = items.flatMap(({ ingestionAttemptId }) =>
+    ingestionAttemptId ? [ingestionAttemptId] : []
+  )
+  const currentRuns =
+    currentAttemptIds.length === 0
+      ? []
+      : await ctx.prisma.kBIngestionRun.findMany({
+          where: { id: { in: currentAttemptIds } },
+        })
+  const currentRunsById = new Map(currentRuns.map((run) => [run.id, run]))
+  const itemsWithCurrentRuns = items.map((resource) => {
+    const currentRun = resource.ingestionAttemptId
+      ? currentRunsById.get(resource.ingestionAttemptId)
+      : undefined
+
+    // A platform refresh appends a historic ledger row but must not replace
+    // the lecturer operation currently recorded on the resource.
+    return {
+      ...resource,
+      ingestionRuns: currentRun ? [currentRun] : [],
+    }
+  })
 
   return createPaginationResult(
-    items,
+    itemsWithCurrentRuns,
     pageSize,
     (resource) => ({
       version: KB_CURSOR_VERSION,

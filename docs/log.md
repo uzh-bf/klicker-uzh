@@ -2,7 +2,7 @@
 
 ## 2026-08-01
 
-- **Update**: [domain-model](./domain-model.md) and [async-and-workers](./async-and-workers.md) document the signed, platform-initiated `resource.content_refreshed` event: a terminal ledger entry correlated to the platform operation, serving-identity-only advancement, repeat-delivery deduplication, and stale-refresh preservation. The `klicker-data-model` and `klicker-testing-verification` skills now require the same two-axis and idempotency checks.
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), and [graphql-api-layer](./graphql-api-layer.md) document the signed, platform-initiated `resource.content_refreshed` event: a terminal ledger entry correlated to the platform operation, serving-identity-only advancement, repeat-delivery deduplication, stale-refresh preservation, and current-attempt resource-list projection. The `klicker-data-model` and `klicker-testing-verification` skills now require the same two-axis, idempotency, and projection checks.
 
 ## 2026-07-30
 

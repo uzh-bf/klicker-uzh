@@ -1596,6 +1596,67 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
   })
 
+  it('keeps the current lecturer attempt visible after a platform refresh', async () => {
+    const kb = await createKb({ name: 'Refresh projection test' }, userOneCtx)
+    const lecturerAttemptId = randomUUID()
+    const platformRefreshId = randomUUID()
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Refreshable resource',
+        sourceUrl: 'https://example.com/refreshable-resource',
+        status: KBResourceStatus.PROCESSING,
+        ingestionAttemptId: lecturerAttemptId,
+        resourceVersion: 2,
+      },
+    })
+    await prisma.kBIngestionRun.createMany({
+      data: [
+        {
+          id: lecturerAttemptId,
+          resourceId: resource.id,
+          resourceVersion: 2,
+          status: KBIngestionStatus.PROCESSING,
+          createdAt: new Date('2026-08-01T08:00:00.000Z'),
+        },
+        {
+          id: platformRefreshId,
+          resourceId: resource.id,
+          resourceVersion: 1,
+          status: KBIngestionStatus.SUCCEEDED,
+          externalOperationId: 'platform-refresh-operation',
+          createdAt: new Date('2026-08-01T08:01:00.000Z'),
+        },
+      ],
+    })
+
+    await expect(
+      getKbResourcesConnection({ kbId: kb.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      items: [
+        {
+          id: resource.id,
+          ingestionRuns: [
+            { id: lecturerAttemptId, status: KBIngestionStatus.PROCESSING },
+          ],
+        },
+      ],
+    })
+    await expect(
+      getKbResourcesConnection(
+        { kbId: kb.id, status: KBIngestionStatus.PROCESSING },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ items: [{ id: resource.id }] })
+    await expect(
+      getKbResourcesConnection(
+        { kbId: kb.id, status: KBIngestionStatus.SUCCEEDED },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ items: [] })
+  })
+
   it('defers blob storage deletion to asynchronous cleanup', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
     const resource = await prisma.kBResource.create({
@@ -1857,9 +1918,13 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(firstPage.items.map(({ id }) => id)).toEqual(ids.slice(0, 2))
     expect(firstPage.totalCount).toBe(4)
 
+    const currentAttemptId = randomUUID()
     await prisma.kBResource.update({
       where: { id: ids[0] },
-      data: { status: KBResourceStatus.PROCESSING },
+      data: {
+        status: KBResourceStatus.PROCESSING,
+        ingestionAttemptId: currentAttemptId,
+      },
     })
     await prisma.kBIngestionRun.createMany({
       data: [
@@ -1871,7 +1936,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           createdAt: new Date('2026-07-28T13:01:00.000Z'),
         },
         {
-          id: randomUUID(),
+          id: currentAttemptId,
           resourceId: ids[0]!,
           resourceVersion: 2,
           status: KBIngestionStatus.PROCESSING,
