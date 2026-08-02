@@ -562,6 +562,152 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     expect(derivedPermissionUserFour2!.derived).toBeFalsy()
   })
 
+  it('expands every group role, prefers propagating ties, and preserves user-scoped recomputation', async () => {
+    const catalogCollection = await prisma.catalogCollection.create({
+      data: {
+        name: 'Set-based catalog permission coverage',
+        ownerId: userOne.id,
+      },
+    })
+    const userGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Set-based catalog permission group',
+        ownerId: userTwo.id,
+        members: { connect: { id: userThree.id } },
+        admins: { connect: { id: userFour.id } },
+      },
+    })
+    const groupPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: catalogCollection.id,
+        userGroupId: userGroup.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+    })
+    const propagatingUserPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId: catalogCollection.id,
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.WRITE,
+        propagation: true,
+      },
+    })
+    const readDerivedPermissions = () =>
+      prisma.derivedPermission.findMany({
+        where: { catalogCollectionId: catalogCollection.id },
+        select: {
+          userId: true,
+          permissionLevel: true,
+          directPermissionId: true,
+          derived: true,
+        },
+        orderBy: { userId: 'asc' },
+      })
+
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: catalogCollection.id },
+      prisma
+    )
+
+    expect(await readDerivedPermissions()).toEqual([
+      {
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userOne.id,
+        permissionLevel: PermissionLevel.OWNER,
+        directPermissionId: null,
+        derived: false,
+      },
+      {
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: propagatingUserPermission.id,
+        derived: false,
+      },
+    ])
+
+    await prisma.permission.update({
+      where: { id: groupPermission.id },
+      data: { permissionLevel: PermissionLevel.ADMIN },
+    })
+    await recomputeDerivedPermissions(
+      {
+        catalogCollectionId: catalogCollection.id,
+        userId: userTwo.id,
+      },
+      prisma
+    )
+
+    expect(await readDerivedPermissions()).toEqual([
+      {
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userOne.id,
+        permissionLevel: PermissionLevel.OWNER,
+        directPermissionId: null,
+        derived: false,
+      },
+      {
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.WRITE,
+        directPermissionId: propagatingUserPermission.id,
+        derived: false,
+      },
+    ])
+
+    await recomputeDerivedPermissions(
+      { catalogCollectionId: catalogCollection.id },
+      prisma
+    )
+
+    expect(await readDerivedPermissions()).toEqual([
+      {
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userOne.id,
+        permissionLevel: PermissionLevel.OWNER,
+        directPermissionId: null,
+        derived: false,
+      },
+      {
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+      {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.ADMIN,
+        directPermissionId: groupPermission.id,
+        derived: false,
+      },
+    ])
+  })
+
   async function permissionPrecendenceIndividualGroup(
     prisma,
     individualRecompute

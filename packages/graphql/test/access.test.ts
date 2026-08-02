@@ -14,6 +14,7 @@ import {
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   changeObjectPermissionLevel,
@@ -90,6 +91,33 @@ describe('Integration tests for object access validation', () => {
 
   // ! Access Validation
   // #region
+  it('Rejects empty access check lists', async () => {
+    await expect(checkAccess([], userOneCtx)).rejects.toThrow(
+      'At least one permission check is required.'
+    )
+  })
+
+  it('Rejects unsupported object types in sharing mutations', async () => {
+    const resolver = schema.getMutationType()?.getFields().shareObject?.resolve
+    expect(resolver).toBeDefined()
+
+    const result = await resolver!(
+      {},
+      {
+        objectId: '1',
+        objectType: ObjectType.USER_GROUP,
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+        userGroupId: null,
+        propagation: false,
+      },
+      userOneCtx,
+      {} as never
+    )
+
+    expect(result).toBeNull()
+  })
+
   it('Verify that the access for catalog collections is checked correctly', async () => {
     // create a catalog collection
     const catalogCollection = await prisma.catalogCollection.create({

@@ -99,6 +99,38 @@ import {
 const checkAccess = SharingService.checkAccess
 const withPermission = SharingService.withPermission
 
+function assertNeverObjectType(objectType: never): never {
+  throw new Error(`Unsupported object type: ${objectType}`)
+}
+
+function getShareableObjectSelector(
+  objectType: DB.ObjectType,
+  objectId: string
+): SharingService.ObjectSelector | null {
+  switch (objectType) {
+    case DB.ObjectType.USER_GROUP:
+      return null
+    case DB.ObjectType.CATALOG_COLLECTION:
+      return { catalogCollectionId: objectId }
+    case DB.ObjectType.ANSWER_COLLECTION:
+      return { answerCollectionId: parseInt(objectId) }
+    case DB.ObjectType.ELEMENT:
+      return { elementId: parseInt(objectId) }
+    case DB.ObjectType.COURSE:
+      return { courseId: objectId }
+    case DB.ObjectType.LIVE_QUIZ:
+      return { liveQuizId: objectId }
+    case DB.ObjectType.PRACTICE_QUIZ:
+      return { practiceQuizId: objectId }
+    case DB.ObjectType.MICRO_LEARNING:
+      return { microLearningId: objectId }
+    case DB.ObjectType.GROUP_ACTIVITY:
+      return { groupActivityId: objectId }
+    default:
+      return assertNeverObjectType(objectType)
+  }
+}
+
 export const Mutation = builder.mutationType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
@@ -2397,73 +2429,21 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          const objectSelector = getShareableObjectSelector(
+            args.objectType,
+            args.objectId
+          )
+          if (!objectSelector) {
+            return null
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                ? [
-                    {
-                      catalogCollectionId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                ? [
-                    {
-                      answerCollectionId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ELEMENT
-                ? [
-                    {
-                      elementId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.COURSE
-                ? [
-                    {
-                      courseId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
-                ? [
-                    {
-                      liveQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                ? [
-                    {
-                      practiceQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
-                ? [
-                    {
-                      microLearningId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                ? [
-                    {
-                      groupActivityId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
+              {
+                ...objectSelector,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
             ],
             ctx
           )
@@ -2477,38 +2457,7 @@ export const Mutation = builder.mutationType({
               shortnameOrEmail: args.shortnameOrEmail,
               userGroupId: args.userGroupId,
               propagation: args.propagation,
-              catalogCollectionId:
-                args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                  ? args.objectId
-                  : undefined,
-              answerCollectionId:
-                args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                  ? parseInt(args.objectId)
-                  : undefined,
-              elementId:
-                args.objectType === DB.ObjectType.ELEMENT
-                  ? parseInt(args.objectId)
-                  : undefined,
-              courseId:
-                args.objectType === DB.ObjectType.COURSE
-                  ? args.objectId
-                  : undefined,
-              liveQuizId:
-                args.objectType === DB.ObjectType.LIVE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              practiceQuizId:
-                args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              microLearningId:
-                args.objectType === DB.ObjectType.MICRO_LEARNING
-                  ? args.objectId
-                  : undefined,
-              groupActivityId:
-                args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                  ? args.objectId
-                  : undefined,
+              ...objectSelector,
             },
             ctx
           )
@@ -2523,72 +2472,20 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
+          const objectSelector = getShareableObjectSelector(
+            args.objectType,
+            args.objectId
+          )
+          if (!objectSelector) {
+            return null
+          }
+
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                ? [
-                    {
-                      catalogCollectionId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                ? [
-                    {
-                      answerCollectionId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ELEMENT
-                ? [
-                    {
-                      elementId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.COURSE
-                ? [
-                    {
-                      courseId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
-                ? [
-                    {
-                      liveQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                ? [
-                    {
-                      practiceQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
-                ? [
-                    {
-                      microLearningId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                ? [
-                    {
-                      groupActivityId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
+              {
+                ...objectSelector,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
             ],
             ctx
           )
@@ -2599,38 +2496,7 @@ export const Mutation = builder.mutationType({
           return await SharingService.revokeObjectAccess(
             {
               permissionId: args.permissionId,
-              catalogCollectionId:
-                args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                  ? args.objectId
-                  : undefined,
-              answerCollectionId:
-                args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                  ? parseInt(args.objectId)
-                  : undefined,
-              elementId:
-                args.objectType === DB.ObjectType.ELEMENT
-                  ? parseInt(args.objectId)
-                  : undefined,
-              courseId:
-                args.objectType === DB.ObjectType.COURSE
-                  ? args.objectId
-                  : undefined,
-              liveQuizId:
-                args.objectType === DB.ObjectType.LIVE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              practiceQuizId:
-                args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              microLearningId:
-                args.objectType === DB.ObjectType.MICRO_LEARNING
-                  ? args.objectId
-                  : undefined,
-              groupActivityId:
-                args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                  ? args.objectId
-                  : undefined,
+              ...objectSelector,
             },
             ctx
           )
@@ -2647,73 +2513,21 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          const objectSelector = getShareableObjectSelector(
+            args.objectType,
+            args.objectId
+          )
+          if (!objectSelector) {
+            return false
+          }
+
           // >= ADMIN permissions on the object required
           const validAccess = await checkAccess(
             [
-              ...(args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                ? [
-                    {
-                      catalogCollectionId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                ? [
-                    {
-                      answerCollectionId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.ELEMENT
-                ? [
-                    {
-                      elementId: parseInt(args.objectId),
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.COURSE
-                ? [
-                    {
-                      courseId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.LIVE_QUIZ
-                ? [
-                    {
-                      liveQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                ? [
-                    {
-                      practiceQuizId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.MICRO_LEARNING
-                ? [
-                    {
-                      microLearningId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
-              ...(args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                ? [
-                    {
-                      groupActivityId: args.objectId,
-                      minimumPermissionLevel: DB.PermissionLevel.ADMIN,
-                    },
-                  ]
-                : []),
+              {
+                ...objectSelector,
+                minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+              },
             ],
             ctx
           )
@@ -2726,38 +2540,7 @@ export const Mutation = builder.mutationType({
               permissionId: args.permissionId,
               permissionLevel: args.permissionLevel,
               propagation: args.propagation,
-              catalogCollectionId:
-                args.objectType === DB.ObjectType.CATALOG_COLLECTION
-                  ? args.objectId
-                  : undefined,
-              answerCollectionId:
-                args.objectType === DB.ObjectType.ANSWER_COLLECTION
-                  ? parseInt(args.objectId)
-                  : undefined,
-              elementId:
-                args.objectType === DB.ObjectType.ELEMENT
-                  ? parseInt(args.objectId)
-                  : undefined,
-              courseId:
-                args.objectType === DB.ObjectType.COURSE
-                  ? args.objectId
-                  : undefined,
-              liveQuizId:
-                args.objectType === DB.ObjectType.LIVE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              practiceQuizId:
-                args.objectType === DB.ObjectType.PRACTICE_QUIZ
-                  ? args.objectId
-                  : undefined,
-              microLearningId:
-                args.objectType === DB.ObjectType.MICRO_LEARNING
-                  ? args.objectId
-                  : undefined,
-              groupActivityId:
-                args.objectType === DB.ObjectType.GROUP_ACTIVITY
-                  ? args.objectId
-                  : undefined,
+              ...objectSelector,
             },
             ctx
           )
@@ -2773,185 +2556,98 @@ export const Mutation = builder.mutationType({
           shortnameOrEmail: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          if (args.objectType === DB.ObjectType.CATALOG_COLLECTION) {
-            // == OWNER permissions on catalog collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  catalogCollectionId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferCatalogCollectionOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
-            // == OWNER permissions on answer collection required
-            const validAccess = await checkAccess(
-              [
-                {
-                  answerCollectionId: parseInt(args.objectId),
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferAnswerCollectionOwnership(
-              {
-                id: parseInt(args.objectId),
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.ELEMENT) {
-            // == OWNER permissions on element required
-            const validAccess = await checkAccess(
-              [
-                {
-                  elementId: parseInt(args.objectId),
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferElementOwnership(
-              {
-                id: parseInt(args.objectId),
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.COURSE) {
-            // == OWNER permissions on course required
-            const validAccess = await checkAccess(
-              [
-                {
-                  courseId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferCourseOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.LIVE_QUIZ) {
-            // == OWNER permissions on live quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  liveQuizId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferLiveQuizOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.PRACTICE_QUIZ) {
-            // == OWNER permissions on practice quiz required
-            const validAccess = await checkAccess(
-              [
-                {
-                  practiceQuizId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferPracticeQuizOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.MICRO_LEARNING) {
-            // == OWNER permissions on microlearning required
-            const validAccess = await checkAccess(
-              [
-                {
-                  microLearningId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferMicroLearningOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
-          } else if (args.objectType === DB.ObjectType.GROUP_ACTIVITY) {
-            // == OWNER permissions on group activity required
-            const validAccess = await checkAccess(
-              [
-                {
-                  groupActivityId: args.objectId,
-                  minimumPermissionLevel: DB.PermissionLevel.OWNER,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await SharingService.transferGroupActivityOwnership(
-              {
-                id: args.objectId,
-                shortnameOrEmail: args.shortnameOrEmail,
-              },
-              ctx
-            )
+          const objectSelector = getShareableObjectSelector(
+            args.objectType,
+            args.objectId
+          )
+          if (!objectSelector) {
+            return null
           }
 
-          return null
+          // == OWNER permissions on the object required
+          const validAccess = await checkAccess(
+            [
+              {
+                ...objectSelector,
+                minimumPermissionLevel: DB.PermissionLevel.OWNER,
+              },
+            ],
+            ctx
+          )
+          if (!validAccess) {
+            return null
+          }
+
+          switch (args.objectType) {
+            case DB.ObjectType.USER_GROUP:
+              return null
+            case DB.ObjectType.CATALOG_COLLECTION:
+              return await SharingService.transferCatalogCollectionOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.ANSWER_COLLECTION:
+              return await SharingService.transferAnswerCollectionOwnership(
+                {
+                  id: parseInt(args.objectId),
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.ELEMENT:
+              return await SharingService.transferElementOwnership(
+                {
+                  id: parseInt(args.objectId),
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.COURSE:
+              return await SharingService.transferCourseOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.LIVE_QUIZ:
+              return await SharingService.transferLiveQuizOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.PRACTICE_QUIZ:
+              return await SharingService.transferPracticeQuizOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.MICRO_LEARNING:
+              return await SharingService.transferMicroLearningOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            case DB.ObjectType.GROUP_ACTIVITY:
+              return await SharingService.transferGroupActivityOwnership(
+                {
+                  id: args.objectId,
+                  shortnameOrEmail: args.shortnameOrEmail,
+                },
+                ctx
+              )
+            default:
+              return assertNeverObjectType(args.objectType)
+          }
         },
       }),
 

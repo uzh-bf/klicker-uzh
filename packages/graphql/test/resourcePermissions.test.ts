@@ -2628,6 +2628,80 @@ describe('Unit tests covering the creation of derived permissions for resources 
       templatePermission.id
     )
     expect(derivedPermission2UserFive!.derived).toBeTruthy()
+
+    await prisma.derivedPermission.deleteMany({
+      where: {
+        answerCollectionId: answerCollection.id,
+        userId: {
+          in: [userTwo.id, userThree.id, userFour.id, userFive.id],
+        },
+      },
+    })
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userTwo.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userThree.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userFour.id },
+      prisma
+    )
+    await recomputeDerivedPermissions(
+      { answerCollectionId: answerCollection.id, userId: userFive.id },
+      prisma
+    )
+
+    const userScopedTemplatePermissions =
+      await prisma.derivedPermission.findMany({
+        where: {
+          answerCollectionId: answerCollection.id,
+          userId: {
+            in: [userTwo.id, userThree.id, userFour.id, userFive.id],
+          },
+        },
+        select: {
+          userId: true,
+          permissionLevel: true,
+          directPermissionId: true,
+          derived: true,
+        },
+      })
+    expect(
+      Object.fromEntries(
+        userScopedTemplatePermissions.map((permission) => [
+          permission.userId,
+          permission,
+        ])
+      )
+    ).toEqual({
+      [userTwo.id]: {
+        userId: userTwo.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: null,
+        derived: true,
+      },
+      [userThree.id]: {
+        userId: userThree.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: null,
+        derived: true,
+      },
+      [userFour.id]: {
+        userId: userFour.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: null,
+        derived: true,
+      },
+      [userFive.id]: {
+        userId: userFive.id,
+        permissionLevel: PermissionLevel.READ,
+        directPermissionId: templatePermission.id,
+        derived: true,
+      },
+    })
   })
 
   it('Verify that access of a user group to an activity template also results in corresponding derived access for individual users', async () => {

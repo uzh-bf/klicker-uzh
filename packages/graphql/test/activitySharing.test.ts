@@ -401,16 +401,16 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
     expect(catalogAssignment3!.access).toEqual(ObjectAccess.RESTRICTED)
 
     // verify that an audit log entry was created
-    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirstOrThrow({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_CREATED,
         objectType: ObjectType.LIVE_QUIZ,
         objectId: activityId2,
         sourceUserId: userFour.id,
       },
+      orderBy: { id: 'desc' },
     })
-    expect(auditLogEntry3).toBeTruthy()
-    expect(auditLogEntry3!.message).toBe(
+    expect(auditLogEntry3.message).toBe(
       `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) added to catalog collection (ID ${restrictedCatalog.id}) by user ${userFour.id}.`
     )
   })
@@ -590,16 +590,16 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
     expect(assignment4Removed).toBeNull()
 
     // verify that an audit log entry was created for the removal of the object from the catalog collection
-    const auditLogEntry3 = await prisma.auditLogEntry.findFirst({
+    const auditLogEntry3 = await prisma.auditLogEntry.findFirstOrThrow({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
         objectType: ObjectType.LIVE_QUIZ,
         objectId: activityId1,
         sourceUserId: userOne.id,
       },
+      orderBy: { id: 'desc' },
     })
-    expect(auditLogEntry3).toBeTruthy()
-    expect(auditLogEntry3!.message).toBe(
+    expect(auditLogEntry3.message).toBe(
       `${ObjectType.LIVE_QUIZ} (ID ${activityId1}) removed from catalog collection (ID ${restrictedCatalog.id}) by user ${userOne.id}.`
     )
 
@@ -634,16 +634,16 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
     expect(assignment5Removed).toBeNull()
 
     // verify that an audit log entry was created for the removal of the object from the catalog collection
-    const auditLogEntry4 = await prisma.auditLogEntry.findFirst({
+    const auditLogEntry4 = await prisma.auditLogEntry.findFirstOrThrow({
       where: {
         type: AuditLogType.CATALOG_ASSIGNMENT_DELETED,
         objectType: ObjectType.LIVE_QUIZ,
         objectId: activityId2,
         sourceUserId: userFive.id,
       },
+      orderBy: { id: 'desc' },
     })
-    expect(auditLogEntry4).toBeTruthy()
-    expect(auditLogEntry4!.message).toBe(
+    expect(auditLogEntry4.message).toBe(
       `${ObjectType.LIVE_QUIZ} (ID ${activityId2}) removed from catalog collection (ID ${restrictedCatalog.id}) by user ${userFive.id}.`
     )
   })
