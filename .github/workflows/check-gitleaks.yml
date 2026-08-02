@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       # Install the gitleaks binary directly (MIT-licensed release asset) instead
       # of gitleaks-action@v2, which requires a GITLEAKS_LICENSE for org-owned
@@ -29,11 +32,35 @@ jobs:
         shell: bash
         run: |
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          printf '%s  %s\n' \
+            '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb' \
+            /tmp/gitleaks.tar.gz | sha256sum --check --status
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
           sudo install /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
-      - name: Scan working tree for secrets
+      - name: Scan introduced commits for secrets
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         shell: bash
         run: |
-          gitleaks dir . --no-banner --redact --config .gitleaks.toml
+          if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
+            echo 'Unable to determine the commit range for the secret scan.'
+            exit 1
+          fi
+
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ || ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'The secret scan received an invalid commit SHA.'
+            exit 1
+          fi
+
+          if [[ "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            LOG_OPTS="--max-count=1 $HEAD_SHA"
+          else
+            LOG_OPTS="$BASE_SHA..$HEAD_SHA"
+          fi
+
+          # Scan only commits introduced by this push or pull request so
+          # historical findings are not re-reported as newly introduced leaks.
+          gitleaks git --log-opts="$LOG_OPTS" --no-banner --redact --config .gitleaks.toml

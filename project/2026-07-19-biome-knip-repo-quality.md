@@ -1,6 +1,6 @@
 # Repo Quality Migration — Biome + Knip + Gitleaks
 
-Status: PLAN (awaiting approval to start Phase 0)
+Status: COMPLETE (Phases 0–6 merged in PR #5186; Biome format enforced, Biome lint + Knip advisory, Gitleaks blocking)
 Date: 2026-07-19
 Branch: `claude/klicker-uzh-repo-quality-17a1bb` → target `v3`
 Owner: Roland Schlaefli
