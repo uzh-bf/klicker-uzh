@@ -337,6 +337,9 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  await prisma.permissionPropagationFailure.deleteMany()
+  await prisma.permissionPropagationWork.deleteMany()
+
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
