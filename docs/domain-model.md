@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -48,6 +48,12 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Permission read model and durable work
+
+`Permission` plus ownership, group membership, and object hierarchy are the source of truth. `DerivedPermission` is the fail-closed authorization read model; authorization does not fall back to direct grants while recomputation is pending.
+
+`PermissionPropagationWork` records the latest dirty generation for one object-wide or user-scoped recomputation, `PermissionPropagationFailure` stores sanitized failure codes for exact observed generations, `PermissionPropagationReconciliationState` stores graph-scan rotation state, `PermissionPropagationCursor` stores independent per-object-type sample/full-sweep progress, and `PermissionPropagationSignalCursor` keyset-pages each recent-signal source independently. The schema, helpers, recompute worker, gated one-minute reconciler, and gated off-peak sweep are present, but sharing mutations do not create or enqueue durable work yet. Sharing mutations therefore remain synchronous and reconciliation schedules remain disabled until the separate fencing/call-site gate is completed. The approved consistency decision is [ADR-0001](./adr/0001-fail-closed-permission-propagation.md).
 
 ## Gamification details
 

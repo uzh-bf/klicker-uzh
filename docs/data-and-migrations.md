@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-19'
+timestamp: '2026-07-30'
 tags:
   - backend
   - prisma
@@ -37,6 +37,12 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`. Where `migrate deploy` runs in deployment is **not documented in-repo** (open question — verify before making deploy claims).
+
+### Durable permission propagation state
+
+`sharing.prisma` contains `PermissionPropagationWork`, `PermissionPropagationFailure`, the singleton `PermissionPropagationReconciliationState`, per-object-type `PermissionPropagationCursor` rows, and one `PermissionPropagationSignalCursor` per recent-signal source. A work row is the durable, generation-keyed dirty marker for one object-wide or user-scoped recomputation. Repeated unresolved writes increment `generation`, retain the first `dirtyAt`/`recoverBy`, and OR `updateAccessRequests`; the first write after `processedGeneration` catches up starts a new recovery window and resets that flag to the caller's value. `dispatchedGeneration` and `lastDispatchedAt` advance only after Hatchet accepts the matching generation. The reconciliation row stores the next object type for each graph scan. Per-type sample/full-sweep cursors prevent a busy early type from starving later types. Each recent-signal source advances independently by an indexed `(timestamp, source row, optional relation row)` keyset, so equal-timestamp backlogs remain bounded before object expansion. User-group and user-group-audit pages freeze the maximum permission ID when they start; later group updates or appended permissions cannot restart or indefinitely extend that event.
+
+The migrations, not Prisma schema syntax, enforce the safety boundary: `USER_GROUP` cannot be a work or graph-cursor object; mode and nullable user scope must agree; generation counters are ordered; `recoverBy` cannot precede `dirtyAt`; signal cursor positions must be wholly null or valid positive source/non-negative relation IDs; relation high-waters are allowed only for group fanout and cannot trail the current relation ID; graph cursor IDs cannot be empty; and the work primary key must equal the collision-safe UTF-8 length-prefixed encoding of object type, object ID, mode, and optional user ID. Partial indexes cover unresolved recovery-deadline and last-dispatch scans; composite source indexes support the seven recent-signal keysets. Direct audit discovery fans out eight individually limited object-type index scans and merges at most their bounded pages. Preserve these SQL constraints when changing the models; `prisma db push` and the Analytics schema mirror do not reproduce migration-only checks.
 
 ## Seeding
 

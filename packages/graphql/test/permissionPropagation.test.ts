@@ -1,9 +1,12 @@
 import type { Context } from '@hatchet-dev/typescript-sdk'
 import { prisma as sharedPrisma } from '@klicker-uzh/prisma'
 import {
+  AuditLogType,
   ObjectType,
   PermissionLevel,
+  PermissionPropagationCursorKind,
   PermissionPropagationMode,
+  PermissionPropagationSignalSource,
   type PermissionPropagationWork,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
@@ -15,9 +18,11 @@ import { randomUUID } from 'node:crypto'
 import {
   PERMISSION_PROPAGATION_RECOVERY_SLO_MS,
   acquirePermissionPropagationFence,
+  handlePermissionPropagationReconciliation,
   handlePermissionPropagationWork,
   markPermissionPropagationDispatched,
   permissionPropagationKey,
+  reconcilePendingPermissionPropagationWork,
   upsertPermissionPropagationWork,
   type PermissionPropagationScope,
 } from '../src/services/permissionPropagation.js'
@@ -37,7 +42,21 @@ describe('durable permission propagation state', () => {
     await prisma.permissionPropagationWork.deleteMany({
       where: { key: { in: [...workKeys] } },
     })
+    await prisma.permissionPropagationReconciliationState.deleteMany({
+      where: { id: 'permission-propagation' },
+    })
+    await prisma.permissionPropagationCursor.deleteMany()
+    await prisma.permissionPropagationSignalCursor.deleteMany()
     await prisma.catalogCollection.deleteMany({
+      where: { ownerId: { in: [...userIds] } },
+    })
+    await prisma.liveQuiz.deleteMany({
+      where: { ownerId: { in: [...userIds] } },
+    })
+    await prisma.practiceQuiz.deleteMany({
+      where: { ownerId: { in: [...userIds] } },
+    })
+    await prisma.course.deleteMany({
       where: { ownerId: { in: [...userIds] } },
     })
     await prisma.user.deleteMany({ where: { id: { in: [...userIds] } } })
@@ -377,7 +396,64 @@ describe('durable permission propagation state', () => {
         },
       })
     ).rejects.toThrow()
+
+    await expect(
+      prisma.permissionPropagationReconciliationState.create({
+        data: {
+          id: 'permission-propagation',
+          sampleObjectType: ObjectType.USER_GROUP,
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.permissionPropagationSignalCursor.create({
+        data: {
+          source: PermissionPropagationSignalSource.PERMISSION,
+          through: now,
+          sourceId: 1,
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.permissionPropagationSignalCursor.create({
+        data: {
+          source: PermissionPropagationSignalSource.DIRECT_AUDIT,
+          through: now,
+          sourceId: 1,
+          relationId: 0,
+          relationMaxId: 1,
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.permissionPropagationSignalCursor.create({
+        data: {
+          source: PermissionPropagationSignalSource.USER_GROUP,
+          through: now,
+          sourceId: 0,
+          relationId: 0,
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.permissionPropagationCursor.create({
+        data: {
+          kind: PermissionPropagationCursorKind.FULL_SWEEP,
+          objectType: ObjectType.CATALOG_COLLECTION,
+          objectId: '',
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.permissionPropagationCursor.create({
+        data: {
+          kind: PermissionPropagationCursorKind.SAMPLE,
+          objectType: ObjectType.USER_GROUP,
+        },
+      })
+    ).rejects.toThrow()
   })
+
   it('coalesces a stale task onto the latest generation and makes duplicate delivery a no-op', async () => {
     const { catalogCollectionId, scope, sharedUserId } =
       await createCatalogPermissionFixture('Permission propagation worker test')
@@ -542,5 +618,714 @@ describe('durable permission propagation state', () => {
         executionCtx
       )
     ).rejects.toThrow('work counters are invalid')
+  })
+
+  it('rediscovers committed work after enqueue loss and heals synthetic drift', async () => {
+    const { catalogCollectionId, scope, sharedUserId } =
+      await createCatalogPermissionFixture(
+        'Permission propagation reconciliation test'
+      )
+    const work = await prisma.$transaction(async (tx) => {
+      await acquirePermissionPropagationFence(tx)
+      await tx.permission.create({
+        data: {
+          catalogCollectionId,
+          userId: sharedUserId,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+      })
+      return upsertPermissionPropagationWork(tx, {
+        scope,
+        updateAccessRequests: false,
+      })
+    })
+    const executionCtx = {
+      logger: { error: vi.fn() },
+    } as unknown as Context<unknown>
+    const runNoWait = vi.fn(
+      async (
+        _: string,
+        input: PermissionPropagationTaskInput
+      ): Promise<unknown> => {
+        await handlePermissionPropagationWork(
+          input,
+          { prisma } as HatchetHandlerGlobalContext,
+          executionCtx
+        )
+        return {}
+      }
+    )
+    const globalCtx = {
+      prisma,
+      hatchet: { runNoWait },
+    } as unknown as HatchetHandlerGlobalContext
+    const now = new Date()
+
+    await expect(
+      reconcilePendingPermissionPropagationWork(globalCtx, executionCtx, now)
+    ).resolves.toEqual({
+      dispatchedWorkCount: 1,
+      failedDispatchCount: 0,
+    })
+    expect(runNoWait).toHaveBeenCalledWith(
+      'permission-propagation',
+      {
+        workKey: work.key,
+        taskGeneration: work.generation.toString(),
+      },
+      {}
+    )
+    await expect(
+      prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId: sharedUserId,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ permissionLevel: PermissionLevel.WRITE })
+    await expect(
+      prisma.permissionPropagationWork.findUniqueOrThrow({
+        where: { key: work.key },
+      })
+    ).resolves.toMatchObject({
+      processedGeneration: work.generation,
+      dispatchedGeneration: work.generation,
+      lastDispatchedAt: now,
+    })
+  })
+
+  it('persists dispatch and recovery failures without advancing dispatch state', async () => {
+    const scope = objectScope()
+    const now = new Date()
+    const dirtyAt = new Date(
+      now.getTime() - PERMISSION_PROPAGATION_RECOVERY_SLO_MS - 1
+    )
+    const work = await upsertWorkUnderFence(scope, {
+      dirtyAt,
+      updateAccessRequests: false,
+    })
+    const loggerError = vi.fn()
+    const globalCtx = {
+      prisma,
+      hatchet: {
+        runNoWait: vi.fn().mockRejectedValue(new Error('synthetic dispatch')),
+      },
+    } as unknown as HatchetHandlerGlobalContext
+    const executionCtx = {
+      logger: { error: loggerError },
+    } as unknown as Context<unknown>
+
+    await expect(
+      reconcilePendingPermissionPropagationWork(globalCtx, executionCtx, now)
+    ).resolves.toEqual({
+      dispatchedWorkCount: 0,
+      failedDispatchCount: 1,
+    })
+    await expect(
+      prisma.permissionPropagationFailure.findMany({
+        where: { workKey: work.key },
+        orderBy: { code: 'asc' },
+      })
+    ).resolves.toEqual([
+      expect.objectContaining({
+        generation: work.generation,
+        code: 'DISPATCH_FAILED',
+      }),
+      expect.objectContaining({
+        generation: work.generation,
+        code: 'RECOVERY_SLO_BREACHED',
+      }),
+    ])
+    await expect(
+      prisma.permissionPropagationWork.findUniqueOrThrow({
+        where: { key: work.key },
+      })
+    ).resolves.toMatchObject({
+      dispatchedGeneration: 0n,
+      lastDispatchedAt: null,
+    })
+    expect(loggerError).toHaveBeenCalledWith(
+      'Permission propagation dispatch failed; inspect durable failure state.'
+    )
+  })
+
+  it('records an overdue generation before it becomes redispatchable', async () => {
+    const scope = objectScope()
+    const now = new Date()
+    const work = await upsertWorkUnderFence(scope, {
+      dirtyAt: new Date(
+        now.getTime() - PERMISSION_PROPAGATION_RECOVERY_SLO_MS - 1
+      ),
+      updateAccessRequests: false,
+    })
+    await markPermissionPropagationDispatched(prisma, {
+      key: work.key,
+      generation: work.generation,
+      acceptedAt: new Date(now.getTime() - 30_000),
+    })
+    const runNoWait = vi.fn().mockResolvedValue({})
+    const globalCtx = {
+      prisma,
+      hatchet: { runNoWait },
+    } as unknown as HatchetHandlerGlobalContext
+    const executionCtx = {
+      logger: { error: vi.fn() },
+    } as unknown as Context<unknown>
+
+    await expect(
+      reconcilePendingPermissionPropagationWork(globalCtx, executionCtx, now)
+    ).resolves.toEqual({
+      dispatchedWorkCount: 0,
+      failedDispatchCount: 0,
+    })
+    expect(runNoWait).not.toHaveBeenCalled()
+    await expect(
+      prisma.permissionPropagationFailure.findUnique({
+        where: {
+          workKey_generation_code: {
+            workKey: work.key,
+            generation: work.generation,
+            code: 'RECOVERY_SLO_BREACHED',
+          },
+        },
+      })
+    ).resolves.not.toBeNull()
+  })
+
+  it('discovers recent signals and advances durable reconciliation cursors', async () => {
+    const signalStart = new Date(Date.now() - 120_000)
+    const signalAt = new Date(Date.now() - 90_000)
+    const { catalogCollectionId, ownerId, sharedUserId } =
+      await createCatalogPermissionFixture(
+        'Permission propagation signal discovery test'
+      )
+    const preexistingWork = await upsertWorkUnderFence(objectScope(), {
+      dirtyAt: new Date(),
+      updateAccessRequests: false,
+    })
+    const signalCollectionIds = Array.from({ length: 105 }, () => randomUUID())
+    await prisma.catalogCollection.createMany({
+      data: [
+        {
+          id: randomUUID(),
+          name: 'Permission propagation cursor fairness 1',
+          ownerId,
+        },
+        {
+          id: randomUUID(),
+          name: 'Permission propagation cursor fairness 2',
+          ownerId,
+        },
+        ...signalCollectionIds.map((id, index) => ({
+          id,
+          name: `Permission propagation equal-timestamp signal ${index}`,
+          ownerId,
+        })),
+      ],
+    })
+    const signalGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Permission propagation high-fanout signal group',
+        ownerId,
+        createdAt: signalAt,
+        updatedAt: signalAt,
+      },
+    })
+    await prisma.permission.createMany({
+      data: signalCollectionIds.slice(0, 20).map((objectId) => ({
+        catalogCollectionId: objectId,
+        userGroupId: signalGroup.id,
+        permissionLevel: PermissionLevel.READ,
+        createdAt: signalAt,
+        updatedAt: signalAt,
+      })),
+    })
+    const answerCollection = await prisma.answerCollection.create({
+      data: {
+        name: 'Permission propagation cursor fairness',
+        description: 'Synthetic test fixture',
+        ownerId,
+      },
+    })
+    await prisma.permissionPropagationReconciliationState.create({
+      data: {
+        id: 'permission-propagation',
+        sampleObjectType: ObjectType.CATALOG_COLLECTION,
+        fullSweepObjectType: ObjectType.CATALOG_COLLECTION,
+      },
+    })
+    await prisma.permissionPropagationSignalCursor.createMany({
+      data: Object.values(PermissionPropagationSignalSource).map((source) => ({
+        source,
+        through: signalStart,
+      })),
+    })
+    const initialFullSweepCursor = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+    await prisma.permissionPropagationCursor.create({
+      data: {
+        kind: PermissionPropagationCursorKind.FULL_SWEEP,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        objectId: initialFullSweepCursor,
+      },
+    })
+    // the sample walks each object type from its lowest unswept id, so seeded
+    // answer collections would otherwise be picked ahead of this fixture and the
+    // rotation could not be observed against a populated database
+    await prisma.permissionPropagationCursor.create({
+      data: {
+        kind: PermissionPropagationCursorKind.SAMPLE,
+        objectType: ObjectType.ANSWER_COLLECTION,
+        objectId:
+          answerCollection.id > 1 ? String(answerCollection.id - 1) : null,
+      },
+    })
+    const appendedPermission = await prisma.permission.create({
+      data: {
+        catalogCollectionId,
+        userId: sharedUserId,
+        permissionLevel: PermissionLevel.READ,
+        createdAt: signalAt,
+        updatedAt: signalAt,
+      },
+    })
+    await prisma.auditLogEntry.createMany({
+      data: signalCollectionIds.map((objectId) => ({
+        type: AuditLogType.PERMISSION_MODIFIED,
+        objectType: ObjectType.CATALOG_COLLECTION,
+        objectId,
+        sourceUserId: ownerId,
+        message: 'Synthetic permission propagation signal',
+        createdAt: signalAt,
+      })),
+    })
+    await prisma.auditLogEntry.create({
+      data: {
+        type: AuditLogType.USER_GROUP_MODIFIED,
+        objectType: ObjectType.USER_GROUP,
+        objectId: String(signalGroup.id),
+        sourceUserId: ownerId,
+        message: 'Synthetic high-fanout user-group signal',
+        createdAt: signalAt,
+      },
+    })
+    const dispatchedInputs: PermissionPropagationTaskInput[] = []
+    const runNoWait = vi.fn(
+      async (_workflow: string, input: PermissionPropagationTaskInput) => {
+        dispatchedInputs.push(input)
+        return {}
+      }
+    )
+    const globalCtx = {
+      prisma,
+      hatchet: { runNoWait },
+    } as unknown as HatchetHandlerGlobalContext
+    const executionCtx = {
+      logger: { error: vi.fn() },
+    } as unknown as Context<unknown>
+
+    const result = await handlePermissionPropagationReconciliation(
+      { mode: 'regular' },
+      globalCtx,
+      executionCtx
+    )
+    const createdWork = await prisma.permissionPropagationWork.findMany()
+    createdWork.forEach(({ key }) => workKeys.add(key))
+
+    expect(Number(result.discoveredWorkCount)).toBeGreaterThan(0)
+    expect(Number(result.dispatchedWorkCount)).toBeGreaterThan(0)
+    expect(dispatchedInputs[0]).toMatchObject({
+      workKey: preexistingWork.key,
+      taskGeneration: preexistingWork.generation.toString(),
+    })
+    expect(dispatchedInputs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ workKey: preexistingWork.key }),
+      ])
+    )
+    expect(dispatchedInputs.length).toBeGreaterThan(1)
+    await expect(
+      prisma.permissionPropagationWork.findUnique({
+        where: {
+          key: permissionPropagationKey({
+            objectType: ObjectType.ANSWER_COLLECTION,
+            objectId: String(answerCollection.id),
+            mode: PermissionPropagationMode.OBJECT,
+          }),
+        },
+      })
+    ).resolves.not.toBeNull()
+    const directAuditCursor =
+      await prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.DIRECT_AUDIT },
+      })
+    expect(directAuditCursor.through).toEqual(signalAt)
+    expect(directAuditCursor.sourceId).not.toBeNull()
+    expect(directAuditCursor.relationId).toBe(0)
+    const userGroupCursor =
+      await prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP },
+      })
+    expect(userGroupCursor).toMatchObject({
+      through: signalAt,
+      sourceId: signalGroup.id,
+    })
+    const userGroupAuditCursor =
+      await prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP_AUDIT },
+      })
+    expect(userGroupCursor.relationMaxId).not.toBeNull()
+    expect(userGroupCursor.relationId).toBeLessThan(
+      userGroupCursor.relationMaxId!
+    )
+    expect(userGroupAuditCursor.relationMaxId).toBe(
+      userGroupCursor.relationMaxId
+    )
+    await prisma.userGroup.update({
+      where: { id: signalGroup.id },
+      data: { updatedAt: new Date(signalAt.getTime() + 1_000) },
+    })
+    await prisma.permission.create({
+      data: {
+        catalogCollectionId: signalCollectionIds[20]!,
+        userGroupId: signalGroup.id,
+        permissionLevel: PermissionLevel.READ,
+        createdAt: new Date(signalAt.getTime() + 1_000),
+        updatedAt: new Date(signalAt.getTime() + 1_000),
+      },
+    })
+    expect(appendedPermission.id).toBeGreaterThan(
+      userGroupCursor.relationMaxId!
+    )
+    await expect(
+      prisma.permissionPropagationCursor.findUniqueOrThrow({
+        where: {
+          kind_objectType: {
+            kind: PermissionPropagationCursorKind.FULL_SWEEP,
+            objectType: ObjectType.CATALOG_COLLECTION,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ objectId: initialFullSweepCursor })
+
+    let fullSweepResult = await handlePermissionPropagationReconciliation(
+      { mode: 'full-sweep' },
+      globalCtx,
+      executionCtx
+    )
+    await expect(
+      prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP },
+      })
+    ).resolves.toMatchObject({
+      through: signalAt,
+      sourceId: signalGroup.id,
+      relationId: 0,
+      relationMaxId: null,
+    })
+    await expect(
+      prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: {
+          source: PermissionPropagationSignalSource.USER_GROUP_AUDIT,
+        },
+      })
+    ).resolves.toMatchObject({
+      through: signalAt,
+      relationId: 0,
+      relationMaxId: null,
+    })
+    for (let page = 0; page < 6; page += 1) {
+      fullSweepResult = await handlePermissionPropagationReconciliation(
+        { mode: 'regular' },
+        globalCtx,
+        executionCtx
+      )
+    }
+    const stateAfterFullSweep =
+      await prisma.permissionPropagationReconciliationState.findUniqueOrThrow({
+        where: { id: 'permission-propagation' },
+      })
+    const fullSweepCursorAfter =
+      await prisma.permissionPropagationCursor.findUniqueOrThrow({
+        where: {
+          kind_objectType: {
+            kind: PermissionPropagationCursorKind.FULL_SWEEP,
+            objectType: ObjectType.CATALOG_COLLECTION,
+          },
+        },
+      })
+    const allCreatedWork = await prisma.permissionPropagationWork.findMany()
+    allCreatedWork.forEach(({ key }) => workKeys.add(key))
+
+    expect(Number(fullSweepResult.discoveredWorkCount)).toBeGreaterThan(0)
+    expect(fullSweepCursorAfter.objectId).not.toBe(initialFullSweepCursor)
+    await expect(
+      prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.DIRECT_AUDIT },
+      })
+    ).resolves.toMatchObject({
+      sourceId: null,
+      relationId: null,
+    })
+    await expect(
+      prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP },
+      })
+    ).resolves.toMatchObject({
+      sourceId: null,
+      relationId: null,
+    })
+    await expect(
+      prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: {
+          source: PermissionPropagationSignalSource.USER_GROUP_AUDIT,
+        },
+      })
+    ).resolves.toMatchObject({
+      sourceId: null,
+      relationId: null,
+      relationMaxId: null,
+    })
+    await expect(
+      prisma.permissionPropagationWork.findUnique({
+        where: {
+          key: permissionPropagationKey({
+            objectType: ObjectType.CATALOG_COLLECTION,
+            objectId: signalCollectionIds.at(-1)!,
+            mode: PermissionPropagationMode.OBJECT,
+          }),
+        },
+      })
+    ).resolves.not.toBeNull()
+    await expect(
+      prisma.permissionPropagationWork.findUnique({
+        where: {
+          key: permissionPropagationKey({
+            objectType: ObjectType.CATALOG_COLLECTION,
+            objectId: catalogCollectionId,
+            mode: PermissionPropagationMode.OBJECT,
+          }),
+        },
+      })
+    ).resolves.not.toBeNull()
+    expect(stateAfterFullSweep.updatedAt.getTime()).toBeGreaterThanOrEqual(
+      stateAfterFullSweep.createdAt.getTime()
+    )
+  })
+
+  it.skipIf(!process.env.HATCHET_CLIENT_TOKEN)(
+    'converges concurrent parent and child recomputes through Hatchet-lite',
+    async () => {
+      const { hatchetClient } = await import('@klicker-uzh/hatchet')
+      const { ownerId, sharedUserId } = await createCatalogPermissionFixture(
+        'Permission propagation Hatchet parent-child test'
+      )
+      const courseId = randomUUID()
+      const liveQuizId = randomUUID()
+      const now = new Date()
+
+      await prisma.course.create({
+        data: {
+          id: courseId,
+          name: 'Permission propagation Hatchet course',
+          displayName: 'Permission propagation Hatchet course',
+          startDate: new Date(now.getTime() - 60_000),
+          endDate: new Date(now.getTime() + 60_000),
+          groupDeadlineDate: new Date(now.getTime() + 60_000),
+          ownerId,
+        },
+      })
+      await prisma.liveQuiz.create({
+        data: {
+          id: liveQuizId,
+          name: 'Permission propagation Hatchet live quiz',
+          displayName: 'Permission propagation Hatchet live quiz',
+          ownerId,
+          courseId,
+        },
+      })
+      await prisma.permission.create({
+        data: {
+          courseId,
+          userId: sharedUserId,
+          permissionLevel: PermissionLevel.READ,
+        },
+      })
+
+      const parentWork = await upsertWorkUnderFence(
+        trackScope({
+          objectType: ObjectType.COURSE,
+          objectId: courseId,
+          mode: PermissionPropagationMode.OBJECT,
+        }),
+        { updateAccessRequests: false }
+      )
+      const childWork = await upsertWorkUnderFence(
+        trackScope({
+          objectType: ObjectType.LIVE_QUIZ,
+          objectId: liveQuizId,
+          mode: PermissionPropagationMode.OBJECT,
+        }),
+        { updateAccessRequests: false }
+      )
+
+      await Promise.all([
+        hatchetClient.runNoWait(
+          'permission-propagation',
+          {
+            workKey: parentWork.key,
+            taskGeneration: parentWork.generation.toString(),
+          },
+          {}
+        ),
+        hatchetClient.runNoWait(
+          'permission-propagation',
+          {
+            workKey: childWork.key,
+            taskGeneration: childWork.generation.toString(),
+          },
+          {}
+        ),
+      ])
+
+      async function waitForProcessedGeneration(
+        workKey: string,
+        generation: bigint
+      ) {
+        const deadline = Date.now() + 25_000
+        while (Date.now() < deadline) {
+          const work = await prisma.permissionPropagationWork.findUnique({
+            where: { key: workKey },
+          })
+          if (work && work.processedGeneration >= generation) {
+            return work
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100))
+        }
+        throw new Error(
+          `Hatchet did not process permission propagation work ${workKey}.`
+        )
+      }
+
+      await Promise.all([
+        waitForProcessedGeneration(parentWork.key, parentWork.generation),
+        waitForProcessedGeneration(childWork.key, childWork.generation),
+      ])
+
+      await expect(
+        prisma.derivedPermission.findUnique({
+          where: {
+            courseId_userId: { courseId, userId: sharedUserId },
+          },
+        })
+      ).resolves.toMatchObject({
+        permissionLevel: PermissionLevel.READ,
+        derived: false,
+      })
+      await expect(
+        prisma.derivedPermission.findUnique({
+          where: {
+            liveQuizId_userId: { liveQuizId, userId: sharedUserId },
+          },
+        })
+      ).resolves.toMatchObject({
+        permissionLevel: PermissionLevel.READ,
+        derived: true,
+      })
+    }
+  )
+
+  it('releases a group fanout whose frozen ceiling permission is revoked mid-drain', async () => {
+    const signalStart = new Date(Date.now() - 120_000)
+    const signalAt = new Date(Date.now() - 90_000)
+    const { ownerId } = await createCatalogPermissionFixture(
+      'Permission propagation revoked ceiling test'
+    )
+    // more than one signal page, so the fanout spans several reconciliation ticks
+    const fanoutCollectionIds = Array.from({ length: 20 }, () => randomUUID())
+    await prisma.catalogCollection.createMany({
+      data: fanoutCollectionIds.map((id, index) => ({
+        id,
+        name: `Permission propagation revoked ceiling signal ${index}`,
+        ownerId,
+      })),
+    })
+    const signalGroup = await prisma.userGroup.create({
+      data: {
+        name: 'Permission propagation revoked ceiling group',
+        ownerId,
+        createdAt: signalAt,
+        updatedAt: signalAt,
+      },
+    })
+    await prisma.permission.createMany({
+      data: fanoutCollectionIds.map((objectId) => ({
+        catalogCollectionId: objectId,
+        userGroupId: signalGroup.id,
+        permissionLevel: PermissionLevel.READ,
+        createdAt: signalAt,
+        updatedAt: signalAt,
+      })),
+    })
+    await prisma.permissionPropagationReconciliationState.create({
+      data: {
+        id: 'permission-propagation',
+        sampleObjectType: ObjectType.CATALOG_COLLECTION,
+        fullSweepObjectType: ObjectType.CATALOG_COLLECTION,
+      },
+    })
+    await prisma.permissionPropagationSignalCursor.createMany({
+      data: Object.values(PermissionPropagationSignalSource).map((source) => ({
+        source,
+        through: signalStart,
+      })),
+    })
+    const runNoWait = vi.fn().mockResolvedValue({})
+    const globalCtx = {
+      prisma,
+      hatchet: { runNoWait },
+    } as unknown as HatchetHandlerGlobalContext
+    const executionCtx = {
+      logger: { error: vi.fn() },
+    } as unknown as Context<unknown>
+    const tick = () =>
+      handlePermissionPropagationReconciliation(
+        { mode: 'regular' },
+        globalCtx,
+        executionCtx
+      )
+
+    // first page freezes relationMaxId at the group's highest permission id
+    await tick()
+    const frozenCursor =
+      await prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP },
+      })
+    expect(frozenCursor.relationMaxId).not.toBeNull()
+    expect(frozenCursor.relationId).toBeGreaterThan(0)
+    expect(frozenCursor.relationId).toBeLessThan(frozenCursor.relationMaxId!)
+
+    // revoke exactly the frozen ceiling row before the fanout reaches it
+    await prisma.permission.delete({
+      where: { id: frozenCursor.relationMaxId! },
+    })
+
+    // draining the rest must release the fanout instead of resetting it to zero
+    for (let page = 0; page < 4; page += 1) {
+      await tick()
+    }
+    const releasedCursor =
+      await prisma.permissionPropagationSignalCursor.findUniqueOrThrow({
+        where: { source: PermissionPropagationSignalSource.USER_GROUP },
+      })
+    const createdWork = await prisma.permissionPropagationWork.findMany()
+    createdWork.forEach(({ key }) => workKeys.add(key))
+
+    expect(releasedCursor.relationMaxId).toBeNull()
+    await prisma.permission.deleteMany({
+      where: { userGroupId: signalGroup.id },
+    })
+    await prisma.userGroup.delete({ where: { id: signalGroup.id } })
   })
 })

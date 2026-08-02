@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-30
+
+- **Update**: [data-and-migrations](./data-and-migrations.md), [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), and [ADR-0001](./adr/0001-fail-closed-permission-propagation.md) document the approved durable permission-propagation state, migration-only safety constraints, registered recompute worker, exact-generation failure sink, gated one-minute reconciliation, bounded sampling, cursor-backed off-peak sweep, and still-unwired sharing boundary. Reconciliation schedules remain disabled until all permission writers share the database fence. The matching data-model procedure preserves those constraints.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.

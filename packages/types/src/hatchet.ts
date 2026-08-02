@@ -28,6 +28,18 @@ export type PermissionPropagationTaskResult =
       processedGeneration: null
     }
 
+export type PermissionPropagationReconciliationTaskInput = {
+  [key: string]: string
+  mode: 'regular' | 'full-sweep'
+}
+
+export type PermissionPropagationReconciliationTaskResult = {
+  [key: string]: string
+  discoveredWorkCount: string
+  dispatchedWorkCount: string
+  failedDispatchCount: string
+}
+
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -115,6 +127,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<PermissionPropagationTaskResult>
+  handlePermissionPropagationReconciliation: (
+    input: PermissionPropagationReconciliationTaskInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<PermissionPropagationReconciliationTaskResult>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.

@@ -59,7 +59,10 @@ import {
   handleSendTeamsNotification,
 } from './services/notifications.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
-import { handlePermissionPropagationWork } from './services/permissionPropagation.js'
+import {
+  handlePermissionPropagationReconciliation,
+  handlePermissionPropagationWork,
+} from './services/permissionPropagation.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
 export const schema = builder.toSchema({
@@ -84,4 +87,5 @@ export const handlers: HatchetHandlers = {
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePermissionPropagationWork,
+  handlePermissionPropagationReconciliation,
 }

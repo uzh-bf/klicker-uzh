@@ -38,6 +38,8 @@ export function prepareHatchetTasks({
     redisCache,
     prisma,
   }
+  const permissionPropagationReconciliationEnabled =
+    process.env.PERMISSION_PROPAGATION_RECONCILIATION_ENABLED === 'true'
 
   // ! AUDIT LOGGING
   // #region
@@ -213,8 +215,6 @@ export function prepareHatchetTasks({
 
   // ! PERMISSION PROPAGATION
   // #region
-  // registered but never scheduled: nothing in this layer enqueues work, so the
-  // workflow stays idle until reconciliation arrives and is explicitly enabled
   const permissionPropagationWorkflow =
     hatchet.workflow<PermissionPropagationTaskInput>({
       name: 'permission-propagation',
@@ -236,6 +236,32 @@ export function prepareHatchetTasks({
         'Permission propagation workflow failed; inspect durable failure state.'
       )
     },
+  })
+  const reconcilePermissionPropagation = hatchet.task({
+    name: 'reconcile-permission-propagation',
+    retries: 3,
+    onCrons: permissionPropagationReconciliationEnabled
+      ? ['* * * * *']
+      : undefined,
+    fn: (_, executionContext) =>
+      handlers.handlePermissionPropagationReconciliation(
+        { mode: 'regular' },
+        globalContext,
+        executionContext
+      ),
+  })
+  const sweepPermissionPropagation = hatchet.task({
+    name: 'sweep-permission-propagation',
+    retries: 3,
+    onCrons: permissionPropagationReconciliationEnabled
+      ? ['*/5 0-5 * * *']
+      : undefined,
+    fn: (_, executionContext) =>
+      handlers.handlePermissionPropagationReconciliation(
+        { mode: 'full-sweep' },
+        globalContext,
+        executionContext
+      ),
   })
   // #endregion
 
@@ -334,6 +360,8 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     permissionPropagationWorkflow,
+    reconcilePermissionPropagation,
+    sweepPermissionPropagation,
     createAuditLogEntry,
   }
 }
