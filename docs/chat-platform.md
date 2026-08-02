@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-29'
+timestamp: '2026-08-02'
 tags:
   - frontend
   - chat
@@ -32,6 +32,24 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 ## Model registry and credits
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). Registry gotchas that have caused production incidents:
+
+The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. Its
+current PRD tier map is SIMPLE → GPT-5.6 Luna medium, MEDIUM/COMPLEX → Luna
+xhigh, and REASONING → GPT-5.6 Sol low (`deploy/env-uzh-prd/values.yaml` and
+the Klicker section of the AI deployment's `litellm/config.yaml`). The local
+devcontainer mirrors that contract in `util/litellm/config.yaml` using the
+generic `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary; it does
+not copy production Azure URLs or secret names. The local chat registry maps
+the user-facing `auto` model id to the `complexity-router` LiteLLM deployment
+and exposes `gpt-5.6-luna` for a direct comparison. The seeded Benibot fixture
+allows those two options while retaining `gpt-4.1-mini` as the fallback.
+
+The local LiteLLM service uses the deployed semantic-router-compatible image
+`ghcr.io/berriai/litellm-database:v1.88.1`, has a healthcheck, and is included
+in `.devcontainer/devcontainer.json:runServices`. A model call still requires
+the operator's local `UPSTREAM_OPENAI_API_KEY`; without it, verify service
+health, model exposure, picker state, and request error handling, but do not
+claim an end-to-end answer stream.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.

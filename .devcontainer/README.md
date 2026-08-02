@@ -117,14 +117,14 @@ the hardcoded defaults only know `klicker.com`.
 
 ## What's inside
 
-| Service                             | Image                                      | Purpose                                                |
-| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers     |
-| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub          |
-| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                          |
-| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)               |
-| `litellm`                           | `ghcr.io/berriai/litellm`                  | LLM proxy for chat (port 4000 intra-net)               |
+| Service                             | Image                                      | Purpose                                                      |
+| ----------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers           |
+| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)       |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                |
+| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                     |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.88.1` | LLM proxy + complexity router for chat (port 4000 intra-net) |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then

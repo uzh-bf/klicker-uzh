@@ -34,6 +34,13 @@ CI runs Cypress (8-way split) and Playwright (8-way shard) on almost every code 
 - Tear down afterwards (`./_down.sh`); leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 
+For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
+separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
+chat credits payload before browser interaction. The local Auto Mode maps to
+LiteLLM's `complexity-router` and routes through the GPT-5.6 Luna/Sol aliases;
+without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
+report the live-answer gap explicitly.
+
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:
