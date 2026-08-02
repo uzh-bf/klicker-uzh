@@ -2,7 +2,6 @@ import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -45,7 +44,7 @@ function FreeTextQuestion({
       <div className="flex-1">
         <QuestionContent content={content} noPoints={noPoints} />
 
-        {evaluation && evaluation.explanation && (
+        {evaluation?.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
         )}
 
@@ -64,7 +63,7 @@ function FreeTextQuestion({
         />
       </div>
 
-      {evaluation && evaluation.solutions && !preview ? (
+      {evaluation?.solutions && !preview ? (
         <div
           className={twMerge(
             'col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4',

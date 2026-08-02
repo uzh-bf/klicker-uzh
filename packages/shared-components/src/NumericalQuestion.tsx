@@ -2,7 +2,6 @@ import type {
   NumericalElementOptions,
   NumericalInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import NREvaluation from './evaluation/NREvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -45,7 +44,7 @@ function NumericalQuestion({
       <div className="flex-1">
         <QuestionContent content={content} noPoints={noPoints} />
 
-        {evaluation && evaluation.explanation && (
+        {evaluation?.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
         )}
 

@@ -1,3 +1,4 @@
+import { correctAssessmentPointsLiveQuiz } from '@/services/courses.js'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   Participant,
@@ -5,7 +6,6 @@ import {
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
-import { correctAssessmentPointsLiveQuiz } from 'src/services/courses.js'
 import { ContextWithUser } from '../src/lib/context.js'
 import {
   initializePrisma,

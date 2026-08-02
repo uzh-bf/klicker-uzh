@@ -3,7 +3,6 @@ import type {
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -54,7 +53,7 @@ function ChoicesQuestion({
       <div className="flex-1">
         <QuestionContent content={content} noPoints={noPoints} />
 
-        {evaluation && evaluation.explanation && (
+        {evaluation?.explanation && (
           <QuestionExplanation explanation={evaluation.explanation} />
         )}
 

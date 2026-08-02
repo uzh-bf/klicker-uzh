@@ -5,11 +5,6 @@ import { PrismaClient } from './client.js'
 // import { Pool } from 'pg'
 // const pool = new Pool(poolConfig)
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-  // TODO other optimization params? move prisma optimize etc. here?
-})
-
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 // Parse log levels from environment variable, fallback to default levels
@@ -32,12 +27,19 @@ const getLogLevels = (): Array<PrismaLogLevel> => {
   return levels.length > 0 ? levels : ['warn', 'error']
 }
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+function createPrismaClient(): PrismaClient {
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    // TODO other optimization params? move prisma optimize etc. here?
+  })
+
+  return new PrismaClient({
     adapter,
     log: getLogLevels(),
   })
+}
+
+export const prisma = globalForPrisma.prisma || createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma

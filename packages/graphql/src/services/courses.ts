@@ -1,3 +1,4 @@
+import { ICourse, type ILeaderboardEntry } from '@/schema/course.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityStudentPerformance,
@@ -20,7 +21,6 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
-import { ICourse, type ILeaderboardEntry } from 'src/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'

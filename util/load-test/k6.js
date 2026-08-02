@@ -14,6 +14,19 @@ export const options = {
   noConnectionReuse: true,
 }
 const id = __ENV.LIVE_QUIZ_ID || 'af59e777-f7e6-41c3-877e-8d4251a55cd9'
+const sessionToken = __ENV.KLICKER_SESSION_TOKEN
+const participantToken = __ENV.KLICKER_PARTICIPANT_TOKEN
+
+if (
+  !sessionToken ||
+  sessionToken.trim().length === 0 ||
+  !participantToken ||
+  participantToken.trim().length === 0
+) {
+  throw new Error(
+    'KLICKER_SESSION_TOKEN and KLICKER_PARTICIPANT_TOKEN must be set for authenticated load testing'
+  )
+}
 
 export function setup() {
   // check connectivity to student preview
@@ -22,13 +35,14 @@ export function setup() {
   check(res, { 'status 200': (r) => r.status === 200 })
   sleep(1)
 
-  // authenticated
+  // authenticated — tokens are injected at runtime, never committed:
+  //   k6 run -e KLICKER_SESSION_TOKEN=... -e KLICKER_PARTICIPANT_TOKEN=... k6.js
+  // This repo is public and staging JWTs grant real access; capture fresh
+  // tokens from an authenticated staging session each run.
   const cookies = {
     cookies: {
-      'next-auth.session-token':
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxlY3R1cmVyQGRmLnV6aC5jaCIsInN1YiI6Ijc2MDQ3MzQ1LTM4MDEtNDYyOC1hZTdiLWFkYmViY2ZlODgyMSIsInNob3J0bmFtZSI6ImxlY3R1cmVyIiwic2NvcGUiOiJGVUxMX0FDQ0VTUyIsImNhdGFseXN0SW5zdGl0dXRpb25hbCI6dHJ1ZSwiY2F0YWx5c3RJbmRpdmlkdWFsIjp0cnVlLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NjMwNDg2OTEsImlzcyI6Imh0dHBzOi8vYXV0aC5rbGlja2VyLnN0Zy5kZi1hcHAuY2gifQ.wVgW8eDFQ9Ygvc2Qd3eNmQkdeGg5ukwwiPAXhtO9Qfo',
-      participant_token:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2ZjQ1MDY1Yy02NjdmLTQyNTktODE4Yy1jNmY2YjQ3N2ViNDgiLCJyb2xlIjoiUEFSVElDSVBBTlQiLCJpYXQiOjE3NjMxMDgyMjksImV4cCI6MTc2NDMxNzgyOSwiaXNzIjoiaHR0cHM6Ly9hcGkua2xpY2tlci5zdGcuZGYtYXBwLmNoIn0.gV7lD0PJGbiD45EX8yEF0V9CT3kFSgZIWoyljgBKQmA',
+      'next-auth.session-token': sessionToken,
+      participant_token: participantToken,
     },
   }
   res = http.get(`https://pwa.klicker.stg.df-app.ch/session/${id}`, cookies)

@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-18'
+timestamp: '2026-07-20'
 tags:
   - environment
   - onboarding
@@ -15,6 +15,22 @@ tags:
 ## Toolchain (verified 2026-07-07)
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
+
+The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. Cypress uses that baseline with its documented legacy non-strict compiler contract; it is not a TypeScript-version exception. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
+
+Code-quality tooling (config-derived) runs on the host and in CI, never baked into the devcontainer image. **Biome** (`biome.json`) is the formatter and general linter for code (TS/JS/JSON/CSS) with the house style (no semicolons, single quotes, `es5` trailing commas, 2-space indent, line width 80) and import organization via its assist; it **excludes** `playwright/` and `cypress/` (Biome mangles Playwright `test.describe.serial()` chains), which **Prettier** formats along with all Markdown/YAML. **ESLint** stays only as the Next.js safety net (`pnpm run lint` via Turbo, per-app `eslint .`). **Knip** (`knip.json`) reports unused files/deps/exports; **Gitleaks** (`.gitleaks.toml`) scans for secrets. In CI, formatting, types, syncpack, and Gitleaks are **blocking**; Biome lint and Knip are **advisory** during the migration.
+
+Compiler settings follow the code's runtime and build owner:
+
+| Role                                       | Compiler contract                                                                                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                   |
+| Emitted Node application or library        | `module: NodeNext`; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
+| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                        |
+| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
+| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
+
+The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
 
 ## Onboarding Paths
 
