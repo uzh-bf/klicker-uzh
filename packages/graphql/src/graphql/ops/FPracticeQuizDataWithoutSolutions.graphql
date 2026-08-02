@@ -20,6 +20,8 @@ fragment PracticeQuizDataWithoutSolutions on PracticeQuiz {
     id
     displayName
     color
+    isCourseQARolloutEnabled
+    isCourseQAEnabled
   }
 
   stacks {

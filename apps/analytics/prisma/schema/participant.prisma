@@ -93,6 +93,11 @@ model Participant {
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
+  discussionThreads               DiscussionThread[]               @relation("DiscussionThreadAuthor")
+  discussionReplies               DiscussionReply[]                @relation("DiscussionReplyAuthor")
+  discussionThreadVotes           DiscussionThreadVote[]           @relation("DiscussionThreadVoteParticipant")
+  discussionReplyVotes            DiscussionReplyVote[]            @relation("DiscussionReplyVoteParticipant")
+  discussionEvents                DiscussionEvent[]                @relation("DiscussionEventParticipant")
   verificationRecords             VerifiableCredential[]
 
   createdAt DateTime @default(now())

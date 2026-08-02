@@ -1,5 +1,9 @@
 # Log
 
+## 2026-07-29
+
+- **Creation**: [course-discussions](./course-discussions.md) documents the gated Q&A data model, centralized access and scope rules, integrated desktop/mobile surfaces, lecturer overview, embed capability security, verification suites, and current moderation boundary.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.

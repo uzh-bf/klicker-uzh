@@ -1,0 +1,14 @@
+fragment DiscussionReplyData on DiscussionReply {
+  id
+  threadId
+  spaceId
+  scopeId
+  content
+  isAnonymous
+  isDeleted
+  upvotes
+  hasUpvoted
+  canDelete
+  createdAt
+  updatedAt
+}

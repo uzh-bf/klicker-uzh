@@ -1,0 +1,35 @@
+fragment DiscussionThreadData on DiscussionThread {
+  id
+  spaceId
+  scopeId
+  content
+  isAnonymous
+  isDeleted
+  upvotes
+  hasUpvoted
+  canDelete
+  replyCount
+  lastActivityAt
+  sourceKey
+  sourceLabel
+  createdAt
+  updatedAt
+  scope {
+    id
+    spaceId
+    scopeType
+    scopeKey
+    scopeLabel
+    stackId
+    stackType
+    stackOrder
+    stackDisplayName
+    externalSource
+    externalRef
+    createdAt
+    updatedAt
+  }
+  replies {
+    ...DiscussionReplyData
+  }
+}
