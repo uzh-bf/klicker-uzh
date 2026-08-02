@@ -247,6 +247,34 @@ describe('KB graph external dispatch', () => {
     )
   })
 
+  it('uses the host-mapped local Blob endpoint for graph sources', () => {
+    const sourceUrl = getKBGraphSourceUrl(
+      {
+        type: KBResourceType.BLOB,
+        sourceUrl: null,
+        blobName: 'slides/private.pdf',
+      },
+      {
+        ownerId: OWNER_ID,
+        env: {
+          BLOB_STORAGE_ACCOUNT_NAME: 'klickertest',
+          BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
+          BLOB_STORAGE_ACCOUNT_URL: 'https://blob.klicker.localhost/klickerdev',
+          KB_GRAPH_BLOB_ACCOUNT_URL: 'http://127.0.0.1:10003/klickerdev',
+          KB_GRAPH_TIMEOUT_SECONDS: '3600',
+        },
+        now: () => NOW,
+      }
+    )
+
+    const parsed = new URL(sourceUrl)
+    expect(`${parsed.origin}${parsed.pathname}`).toBe(
+      `http://127.0.0.1:10003/klickerdev/kb-${OWNER_ID}/slides/private.pdf`
+    )
+    expect(parsed.searchParams.get('sp')).toBe('r')
+    expect(parsed.searchParams.get('spr')).toBeNull()
+  })
+
   it('persists a single external correlation for the active KB build', async () => {
     const prisma = createDispatchPrisma()
     const client = createClient()

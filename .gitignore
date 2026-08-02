@@ -19,6 +19,7 @@ secrets*.yaml
 
 **/.DS_Store
 *.pem
+.devcontainer/certs/
 
 /apps/functions/local.settings.json
 

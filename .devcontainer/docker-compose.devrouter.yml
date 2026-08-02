@@ -8,6 +8,10 @@ services:
           - '${WORKSPACE:-klicker-uzh}-db'
 
   azurite:
+    # Keep the browser-facing Blob route on devrouter while exposing the same
+    # container to the host-side local graph worker on a non-conflicting port.
+    ports:
+      - '10003:10000'
     networks:
       devnet:
         aliases:

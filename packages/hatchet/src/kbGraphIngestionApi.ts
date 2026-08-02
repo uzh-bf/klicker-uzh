@@ -293,12 +293,14 @@ export function getKBGraphSourceUrl(
   )
   const accessKey = requireEnvironmentVariable(env, 'BLOB_STORAGE_ACCESS_KEY')
   const credential = new StorageSharedKeyCredential(accountName, accessKey)
-  // The external LightRAG worker needs the public account URL; never hand it a
-  // cluster-internal Blob endpoint.
-  const serviceClient = new BlobServiceClient(
-    getBlobStorageAccountUrl(accountName, env.BLOB_STORAGE_ACCOUNT_URL),
-    credential
+  // The external LightRAG worker needs a host-reachable account URL. Production
+  // uses the public HTTPS endpoint; local DevRouter can override this with a
+  // host-mapped Azurite endpoint without changing browser upload URLs.
+  const graphAccountUrl = getBlobStorageAccountUrl(
+    accountName,
+    env.KB_GRAPH_BLOB_ACCOUNT_URL ?? env.BLOB_STORAGE_ACCOUNT_URL
   )
+  const serviceClient = new BlobServiceClient(graphAccountUrl, credential)
   const containerName = getKBGraphOwnerContainerName(ownerId)
   const blobClient = serviceClient
     .getContainerClient(containerName)
@@ -313,7 +315,9 @@ export function getKBGraphSourceUrl(
       containerName,
       blobName: source.blobName,
       permissions: BlobSASPermissions.parse('r'),
-      protocol: SASProtocol.Https,
+      ...(graphAccountUrl.startsWith('http://')
+        ? {}
+        : { protocol: SASProtocol.Https }),
       startsOn: new Date(
         currentTime.getTime() - KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS
       ),
