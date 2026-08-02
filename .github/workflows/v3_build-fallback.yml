@@ -2,9 +2,6 @@ name: Build Fallback
 
 on:
   pull_request:
-    branches:
-      - 'v3'
-      - 'v3*'
     paths-ignore:
       - 'apps/analytics/**'
       - 'apps/auth/**'

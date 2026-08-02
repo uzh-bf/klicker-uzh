@@ -15,8 +15,7 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: ['v3', 'v3*']
+    # Unfiltered by base branch so stacked pull requests are analyzed too
     types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '21 7 * * 3'
