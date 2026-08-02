@@ -8,6 +8,26 @@ import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
+export type PermissionPropagationTaskInput = {
+  [key: string]: string
+  workKey: string
+  taskGeneration: string
+}
+
+export type PermissionPropagationTaskResult =
+  | {
+      status: 'processed'
+      processedGeneration: string
+    }
+  | {
+      status: 'already-processed'
+      processedGeneration: string
+    }
+  | {
+      status: 'missing'
+      processedGeneration: null
+    }
+
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -90,6 +110,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handlePermissionPropagationWork: (
+    input: PermissionPropagationTaskInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<PermissionPropagationTaskResult>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
