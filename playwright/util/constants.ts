@@ -101,13 +101,16 @@ export const PARTICIPANT_GROUP_IDS_SINGLE = [
   'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
 ]
 
-// URLs (mirrors cypress.config.ts env block)
-export const URL_STUDENT = 'http://127.0.0.1:3001'
-export const URL_STUDENT_LOGIN = 'http://127.0.0.1:3001/login'
-export const URL_MANAGE = 'http://127.0.0.1:3002'
-export const URL_CONTROL = 'http://127.0.0.1:3003'
-export const URL_CHAT = 'http://127.0.0.1:3004'
-export const URL_AUTH = 'http://127.0.0.1:3010'
+// URLs (mirrors cypress.config.ts env block). The defaults match the fixed host
+// ports of the primary checkout; linked worktrees route through per-workspace
+// hostnames instead, so each origin stays overridable (playwright.config.ts
+// already reads URL_STUDENT for the base URL).
+export const URL_STUDENT = process.env.URL_STUDENT ?? 'http://127.0.0.1:3001'
+export const URL_STUDENT_LOGIN = `${URL_STUDENT}/login`
+export const URL_MANAGE = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+export const URL_CONTROL = process.env.URL_CONTROL ?? 'http://127.0.0.1:3003'
+export const URL_CHAT = process.env.URL_CHAT ?? 'http://127.0.0.1:3004'
+export const URL_AUTH = process.env.URL_AUTH ?? 'http://127.0.0.1:3010'
 
 // Lecturer accounts
 export const LECTURER_ID = USER_ID_TEST

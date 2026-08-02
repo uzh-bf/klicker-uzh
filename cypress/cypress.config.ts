@@ -25,6 +25,7 @@ import bcrypt from 'bcryptjs'
 import { createHash } from 'crypto'
 import { defineConfig } from 'cypress'
 import cypressSplit from 'cypress-split'
+import { courseQATasks } from './cypress/tasks/courseQa'
 // import cypressCodeCoverage from '@cypress/code-coverage/task'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -227,6 +228,9 @@ async function seedDatabase() {
         displayName: 'Testkurs',
         description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
         isGamificationEnabled: true,
+        isCourseQARolloutEnabled: true,
+        isCourseQAEnabled: true,
+        isCourseQAAnonymousEnabled: true,
         color: '#016272',
         pinCode: 123456789,
         startDate: new Date(`${currentYear - 1}-01-01T00:00`),
@@ -239,7 +243,11 @@ async function seedDatabase() {
           connect: { id: USER_ID_TEST },
         },
       },
-      update: {},
+      update: {
+        isCourseQARolloutEnabled: true,
+        isCourseQAEnabled: true,
+        isCourseQAAnonymousEnabled: true,
+      },
     })
     await prisma.derivedPermission.upsert({
       where: {
@@ -2096,6 +2104,8 @@ export default defineConfig({
         seedDatabase,
         seedActivities,
         // #endregion
+
+        ...courseQATasks,
       })
 
       return config

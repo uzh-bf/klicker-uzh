@@ -167,6 +167,26 @@ Each PR must pass its own gate before the next is opened for review. The stack's
 
 This also discharges the four gates that were waived on `5f6aff97f5`, including the three unverified greptile security findings, which fall inside PR A's scope.
 
+## Review Remediation (2026-08-01)
+
+The split is now being treated as a reviewable implementation stack. The following findings were addressed after the targeted review pass:
+
+| Scope | Finding | Resolution | Commit |
+| --- | --- | --- | --- |
+| PR A | Anonymous rate limiting checked attacker-controlled fingerprint buckets before the coarse IP bucket, allowing repeated `DiscussionEvent` writes and Redis churn after the IP limit was reached | Check the IP bucket first; add a regression assertion using the same IP with repeated User-Agent values | `6455b2b6b6` |
+| PR A | Deterministic upvote-ordered pages had no matching composite index | Add the `(scopeId, upvotes, lastActivityAt, id)` index and synchronized Prisma migration/schema entry | `6455b2b6b6` |
+| PR B | A successful thread/reply/delete could be reported as a failed mutation when the follow-up refresh failed, encouraging duplicate retries | Separate mutation success handling from refresh-error handling and add a Playwright regression | `b04361449c` |
+| PR B | Course and practice-stack discussion scope keys were assembled in multiple UI locations | Use the canonical scope-key builders/parser from `@klicker-uzh/types` | `b04361449c` |
+
+The durable rate-limit lesson is recorded in `docs/solutions/security/anonymous-discussion-rate-limit-ip-first.md` (`aad6e44b5b`). The API and UI branches were pushed without force-updating the existing draft PR topology:
+
+- PR A remote head: `aad6e44b5b9faea83e9e5ee771c9e716805b6711`
+- PR B remote head: branch parity was verified at close-out; see the live PR metadata for the exact bookkeeping head.
+
+The following review suggestions remain explicitly deferred because they would widen the approved remediation scope: replacing optional-field scope bags with a discriminated union, consolidating lossy posting wrappers and deletion orchestration, and changing the intentional polling stop after load-more. Denormalized `replyCount` and `upvotes` remain as designed counters; the new index supports the existing upvote ordering rather than changing counter semantics.
+
+Verification completed on the remediation commits: the full pre-commit gate passed with 25/25 package tasks, and the pre-push build passed with 22/22 tasks on both updated branches. The focused GraphQL regression could not start because the environment lacks `HATCHET_CLIENT_TOKEN` (and the earlier broad attempt also hit unavailable database permissions). Browser proof is still blocked because no live local app was available (`127.0.0.1:3001` refused the connection and the configured Traefik URL returned 404); the repository rule not to start dev servers without explicit instruction was respected. A later live GitHub read confirmed PRs #5262, #5263, and #5264 remain open drafts with the intended stacked bases and current pushed heads. Checks are still pending on PRs #5263 and #5264, with no failure in the latest snapshot. Two attempts to update the PR descriptions failed with a transient GitHub API connection error, so the bodies still contain pre-remediation head-specific text and need a later refresh.
+
 ## Open Decision
 
 | Question | Recommendation |
@@ -189,13 +209,14 @@ This also discharges the four gates that were waived on `5f6aff97f5`, including 
 - 2026-07-31 — `Lesson:` amending the plan commit and rebasing the stack **breaks it** — the downstream branches still carry the old plan commit and conflict against the amended one, leaving an interactive rebase stranded mid-flight and reporting misleading per-PR sizes. Rebuild `course-qa-api` and `course-qa-ui` by re-extracting paths from `course-qa-synced` instead of replaying history. The extraction is deterministic, so the rebuilt branches are identical apart from the intended plan change.
 - 2026-07-31 — The husky pre-commit gate ran in full during that amend and passed: 25/25 typecheck, 7/7 lint, Prettier, Syncpack all valid, Prisma schemas in sync, AGENTS.md zero warnings.
 - 2026-07-31 — Nothing pushed. Worktree `trees/course-qa-split`; branches `course-qa-proxy-trust`, `course-qa-api`, `course-qa-ui`, plus reference branch `course-qa-synced`. None exist on `origin`, so there are no name collisions. PR #5072 verified still `OPEN`, draft, `course-qa` → `v3`, untouched; `stash@{2}` untouched.
+- 2026-08-01 — Targeted review findings were reconciled after the split: API rate limiting now checks the IP bucket before attacker-controlled fingerprint buckets; deterministic upvote ordering has a composite index and migration; UI mutation success is separated from refresh failures; and scope-key construction uses canonical helpers. The API fix and solution note were pushed to PR #5263; the UI fix and synchronized stack commits were pushed to PR #5264. No force-push or merge was performed.
+- 2026-08-01 — Remediation validation passed locally at the commit gates: pre-commit 25/25 and pre-push build 22/22 on both updated branches. Focused integration and live browser proof remain environment-blocked as documented above. GitHub metadata is now confirmed live; current-head CI is pending and the PR-body refresh remains blocked by transient API failures.
 
 ## Next Steps
 
-1. Run the review gates per the routing table above — this is the whole point of the split and the remaining blocker inherited from #5072.
-2. Attach current desktop and mobile screenshots to [#5264](https://github.com/uzh-bf/klicker-uzh/pull/5264) through the web UI; `gh` cannot attach images.
-3. Resolve or explicitly accept the `upvotes` / `replyCount` counter question on [#5263](https://github.com/uzh-bf/klicker-uzh/pull/5263).
-4. Keep the stack rebased on `v3` while review runs; re-verify C1 after every rebase, rebuilding by path extraction rather than replaying history.
-5. Merge bottom-up in one window once all three are approved: [#5262](https://github.com/uzh-bf/klicker-uzh/pull/5262), then [#5263](https://github.com/uzh-bf/klicker-uzh/pull/5263), then [#5264](https://github.com/uzh-bf/klicker-uzh/pull/5264). Confirm GitHub retargeted each remaining PR after its base merged.
-6. Close [#5072](https://github.com/uzh-bf/klicker-uzh/pull/5072) rather than merging it, with a comment pointing at the stack. Leave it untouched and draft until then.
-7. Clean up the `trees/course-qa-split` worktree and the `course-qa-synced` reference branch once the stack has merged — not before, since re-verification needs them.
+1. Refresh current-head GitHub checks and rerun the targeted review gates once `api.github.com` is reachable.
+2. Attach current desktop and mobile screenshots to [#5264](https://github.com/uzh-bf/klicker-uzh/pull/5264) through the web UI after a live local/CI environment is available; `gh` cannot attach images.
+3. Keep the stack rebased on `v3` while review runs; re-verify C1 after every rebase, rebuilding by path extraction rather than replaying history.
+4. Merge bottom-up in one window once all three are approved: [#5262](https://github.com/uzh-bf/klicker-uzh/pull/5262), then [#5263](https://github.com/uzh-bf/klicker-uzh/pull/5263), then [#5264](https://github.com/uzh-bf/klicker-uzh/pull/5264). Confirm GitHub retargeted each remaining PR after its base merged.
+5. Close [#5072](https://github.com/uzh-bf/klicker-uzh/pull/5072) rather than merging it, with a comment pointing at the stack. Leave it untouched and draft until then.
+6. Clean up the `trees/course-qa-split` worktree and the `course-qa-synced` reference branch once the stack has merged — not before, since re-verification needs them.
