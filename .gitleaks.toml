@@ -7,7 +7,7 @@ title = "KlickerUZH gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Verified false positives (generated manifests, public client configs, templates, doc/test fixtures)"
+description = "Verified false positives (generated manifests, public client configs, templates)"
 paths = [
   # GraphQL persisted-operation manifest — values are SHA-256 hashes of queries.
   '''packages/graphql/src/public/client\.json''',
@@ -18,11 +18,9 @@ paths = [
   '''apps/docs/docusaurus\.config\.ts''',
   # Self-host docker-compose example env — placeholder/template values only.
   '''deploy/compose-traefik-proxy/.*\.env$''',
-  # Illustrative/mock tokens in docs and skill examples (e.g. truncated JWTs,
-  # "test-verification-abc123"). Real load-test tokens are injected via __ENV,
-  # never committed (see util/load-test/k6.js).
-  '''\.agents/skills/.*\.md$''',
-  '''project/.*\.md$''',
+  # Documentation-only fixture snippets with deliberately illustrative values.
+  '''^\.agents/skills/playwright-best-practices/advanced/authentication-flows\.md$''',
+  '''^project/plans_future/PLAN-k6-load-testing\.md$''',
   # Generated build output (gitignored, never committed) — only present after a
   # local build. CI scans a clean checkout where these do not exist; excluding
   # them keeps a local `gitleaks dir` on a built tree quiet.

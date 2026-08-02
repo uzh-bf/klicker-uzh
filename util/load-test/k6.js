@@ -14,6 +14,19 @@ export const options = {
   noConnectionReuse: true,
 }
 const id = __ENV.LIVE_QUIZ_ID || 'af59e777-f7e6-41c3-877e-8d4251a55cd9'
+const sessionToken = __ENV.KLICKER_SESSION_TOKEN
+const participantToken = __ENV.KLICKER_PARTICIPANT_TOKEN
+
+if (
+  !sessionToken ||
+  sessionToken.trim().length === 0 ||
+  !participantToken ||
+  participantToken.trim().length === 0
+) {
+  throw new Error(
+    'KLICKER_SESSION_TOKEN and KLICKER_PARTICIPANT_TOKEN must be set for authenticated load testing'
+  )
+}
 
 export function setup() {
   // check connectivity to student preview
@@ -28,8 +41,8 @@ export function setup() {
   // tokens from an authenticated staging session each run.
   const cookies = {
     cookies: {
-      'next-auth.session-token': __ENV.KLICKER_SESSION_TOKEN || '',
-      participant_token: __ENV.KLICKER_PARTICIPANT_TOKEN || '',
+      'next-auth.session-token': sessionToken,
+      participant_token: participantToken,
     },
   }
   res = http.get(`https://pwa.klicker.stg.df-app.ch/session/${id}`, cookies)
