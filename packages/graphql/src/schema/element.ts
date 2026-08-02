@@ -594,9 +594,9 @@ export const SingleQuestionResponseCaseStudyItem = builder
   })
 
 export const SingleQuestionResponseCaseStudyCase = builder
-  .objectRef<
-    SingleQuestionResponseCaseStudyType['assessment'][0]
-  >('SingleQuestionResponseCaseStudyCase')
+  .objectRef<SingleQuestionResponseCaseStudyType['assessment'][0]>(
+    'SingleQuestionResponseCaseStudyCase'
+  )
   .implement({
     fields: (t) => ({
       caseId: t.exposeString('caseId'),

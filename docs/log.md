@@ -3,6 +3,7 @@
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
+- **Update**: [getting-started](./getting-started.md) and [ci-and-deployment](./ci-and-deployment.md) document the repo-quality tooling migration — Biome as code formatter+linter (Prettier retained for Markdown/YAML and the `playwright/`+`cypress/` e2e trees), Knip for unused code/deps, and Gitleaks secret scanning (local husky hook + blocking CI). Biome lint and Knip are advisory in CI during the migration; formatting/types/syncpack/Gitleaks are blocking. Plan: `project/2026-07-19-biome-knip-repo-quality.md`.
 
 ## 2026-07-19
 
