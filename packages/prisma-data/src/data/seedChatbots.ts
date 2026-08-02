@@ -50,7 +50,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     where: { id: CHATBOT_ID_TEST },
     update: {
       modelSelection: true,
-      allowedModelIds: ['auto', 'gpt-5.6-luna'],
+      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
     },
     create: {
       id: CHATBOT_ID_TEST,
@@ -75,7 +75,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       creditResetAmount: 50, // Add 50 credits on reset
       creditMaxCredits: 100, // Max 100 credits
       modelSelection: true, // Allow model selection for testing
-      allowedModelIds: ['auto', 'gpt-5.6-luna'],
+      allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
       disclaimerId: testDisclaimer.id,
     },
   })

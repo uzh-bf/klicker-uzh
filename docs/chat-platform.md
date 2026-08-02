@@ -42,7 +42,9 @@ generic `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary; it does
 not copy production Azure URLs or secret names. The local chat registry maps
 the user-facing `auto` model id to the `complexity-router` LiteLLM deployment
 and exposes `gpt-5.6-luna` for a direct comparison. The seeded Benibot fixture
-allows those two options while retaining `gpt-4.1-mini` as the fallback.
+allow-lists all three of `auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly,
+so it satisfies the fallback invariant below without relying on the
+`|| m.fallback` exemption that the runtime filters apply anyway.
 
 The local LiteLLM service uses the deployed semantic-router-compatible image
 `ghcr.io/berriai/litellm-database:v1.88.1`, has a healthcheck, and is included

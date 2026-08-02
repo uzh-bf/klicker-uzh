@@ -186,8 +186,11 @@ export function getSourceSecondaryLine(
     parts.push(t('chat.sources.page', { page: source.page }))
   }
   // A labeled page ("IV", "A-3") is the publisher's own numbering and only
-  // adds something next to the numeric page; a labeled timestamp already went
-  // to the video branch above.
+  // adds something next to the numeric page. A clock- or duration-shaped
+  // label ("12:34", "1h2m") is not publisher numbering at all: it is the
+  // timestamp channel `getSourceTimestamp` reads, so it is dropped here
+  // rather than printed as a page label. Documents and links never reach the
+  // video branch above, so this filter is what keeps the two apart.
   if (
     source.labeledPage &&
     parseLabeledTimestampSeconds(source.labeledPage) === undefined
