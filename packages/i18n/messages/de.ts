@@ -418,6 +418,7 @@ export default {
       CATALOG_COLLECTION: 'Katalog-Sammlung',
       ELEMENT: 'Element',
       COURSE: 'Kurs',
+      COMPETENCE_TREE: 'Kompetenzbaum',
       SC: 'Single Choice Frage',
       MC: 'Multiple Choice Frage',
       KPRIM: 'Kprim Frage',

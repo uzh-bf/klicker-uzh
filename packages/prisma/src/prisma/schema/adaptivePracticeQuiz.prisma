@@ -1,0 +1,559 @@
+model PracticeQuizAdaptiveConfig {
+  id String @id @default(uuid()) @db.Uuid
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String       @unique(map: "pqac_practice_quiz_key") @db.Uuid
+
+  competenceTree   CompetenceTree @relation(fields: [competenceTreeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  competenceTreeId String         @db.Uuid
+
+  measurementVersion       AdaptiveMeasurementVersion @default(IRT_V1)
+  calibrationPolicyVersion Int?
+
+  scaleVersion   CompetenceTreeScaleVersion? @relation(fields: [competenceTreeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  scaleVersionId String?                     @db.Uuid
+
+  preset                 AdaptivePracticeQuizPreset     @default(DIAGNOSTIC)
+  attemptSelectionPolicy AdaptiveAttemptSelectionPolicy @default(LATEST_COMPLETED)
+
+  totalQuestionCap      Int                      @default(50)
+  perLeafQuestionCap    Int?
+  minQuestionsPerLeaf   Int                      @default(2)
+  classificationZ       Float                    @default(1.28)
+  topInformationRatio   Float                    @default(0.8)
+  defaultDiscrimination Float                    @default(1.2)
+  levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
+
+  showTimer Boolean @default(true)
+
+  nodeOverrides        PracticeQuizAdaptiveNodeOverride[]
+  elementOverrides     PracticeQuizAdaptiveElementOverride[]
+  publishedPool        PracticeQuizAdaptivePoolItem[]
+  attempts             AdaptivePracticeQuizAttempt[]
+  cohortSnapshots      AdaptivePracticeQuizCohortSnapshot[]
+  publications         PracticeQuizAdaptivePublication[]
+  empiricalValidations AdaptivePracticeQuizEmpiricalValidation[]
+
+  poolPublishedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([id, competenceTreeId], map: "pqac_id_tree_key")
+  @@unique([id, practiceQuizId], map: "pqac_id_quiz_key")
+  @@unique([id, practiceQuizId, competenceTreeId], map: "pqac_id_quiz_tree_key")
+  @@index([competenceTreeId], map: "pqac_tree_idx")
+}
+
+model PracticeQuizAdaptivePublication {
+  id String @id @default(uuid()) @db.Uuid
+
+  version Int
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId, competenceTreeId], references: [id, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  tree             CompetenceTree @relation(fields: [competenceTreeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  competenceTreeId String         @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [competenceTreeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade, map: "pqap_scale_version_fkey")
+  scaleVersionId String                     @db.Uuid
+
+  measurementVersion             AdaptiveMeasurementVersion
+  preset                         AdaptivePracticeQuizPreset
+  estimatorImplementationVersion String
+  classificationPolicyVersion    Int
+  calibrationPolicyVersion       Int
+
+  /// [PrismaAdaptiveCutScoreSnapshot]
+  cutScoreSnapshot Json
+
+  priorMean              Float
+  priorStandardDeviation Float
+  gridMin                Float
+  gridMax                Float
+  gridStep               Float
+
+  classificationProbabilityThreshold Float?
+
+  /// [PrismaAdaptiveHierarchicalWeightSnapshot]
+  hierarchicalWeightSnapshot Json
+
+  /// [PrismaAdaptiveEvidenceMinimumSnapshot]
+  evidenceMinimumSnapshot Json
+
+  totalQuestionCap Int
+  showTimer        Boolean
+
+  /// [PrismaAdaptiveQuestionCapSnapshot]
+  questionCapSnapshot Json
+
+  candidateSetPolicyVersion  String
+  randomizationPolicyVersion String
+  exposureCeiling            Float
+  overlapPolicyVersion       String
+  retakePolicy               AdaptiveAttemptSelectionPolicy
+  retakeCooldownDays         Int
+
+  /// [PrismaAdaptiveResearchAllocationPolicy]
+  researchAllocationPolicy Json?
+
+  stoppingPolicyVersion String
+  rolloutPolicyVersion  Int
+
+  empiricalValidation   AdaptivePracticeQuizEmpiricalValidation? @relation(fields: [empiricalValidationId, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], references: [id, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], onDelete: Restrict, onUpdate: Cascade)
+  empiricalValidationId String?                                  @db.Uuid
+
+  publishedBy   User?   @relation("PracticeQuizAdaptivePublicationPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  publishedById String? @db.Uuid
+
+  poolItems       PracticeQuizAdaptivePoolItem[]
+  attempts        AdaptivePracticeQuizAttempt[]
+  exposures       AdaptivePracticeQuizItemExposure[]
+  cohortSnapshots AdaptivePracticeQuizCohortSnapshot[]
+
+  publishedAt   DateTime  @default(now())
+  sealedAt      DateTime?
+  supersededAt  DateTime?
+  unpublishedAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([configId, version], map: "pqap_config_version_key")
+  @@unique([configId, id], map: "pqap_config_id_key")
+  @@unique([competenceTreeId, id], map: "pqap_tree_id_key")
+  @@unique([id, scaleVersionId, measurementVersion], map: "pqap_id_scale_measurement_key")
+  @@unique([id, configId, competenceTreeId], map: "pqap_id_config_tree_key")
+  @@unique([id, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], map: "pqap_dispatch_identity_key")
+  @@index([scaleVersionId], map: "pqap_scale_idx")
+  @@index([empiricalValidationId], map: "pqap_validation_idx")
+  @@index([publishedById], map: "pqap_published_by_idx")
+}
+
+model AdaptiveCalibrationExportRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  status   AdaptiveCalibrationExportStatus @default(REQUESTED)
+  runToken String?                         @db.Uuid
+
+  datasetVersion     String
+  splitPolicyVersion String @default("HMAC_80_20_V1")
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [treeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade)
+  scaleVersionId String                     @db.Uuid
+
+  requestedBy   User?   @relation("AdaptiveCalibrationExportRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requestedById String? @db.Uuid
+
+  artifactKey      String?
+  artifactChecksum String?
+  rowCount         Int?
+
+  manifestArtifactKey String?
+  manifestChecksum    String?
+
+  holdoutArtifactKey      String?
+  holdoutArtifactChecksum String?
+  holdoutRowCount         Int?
+
+  criterionArtifactKey      String?
+  criterionArtifactChecksum String?
+
+  empiricalValidations AdaptivePracticeQuizEmpiricalValidation[]
+
+  failureCode String?
+
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime
+  updatedAt   DateTime  @updatedAt
+
+  @@index([treeId, scaleVersionId, status], map: "acer_tree_scale_status_idx")
+  @@index([requestedById, createdAt], map: "acer_requester_created_idx")
+  @@index([status, expiresAt], map: "acer_status_expiry_idx")
+}
+
+model AdaptivePracticeQuizEmpiricalValidation {
+  id String @id @default(uuid()) @db.Uuid
+
+  status AdaptiveEmpiricalValidationStatus @default(SUBMITTED)
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId, competenceTreeId], references: [id, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  tree             CompetenceTree @relation(fields: [competenceTreeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  competenceTreeId String         @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [competenceTreeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade, map: "apqev_scale_version_fkey")
+  scaleVersionId String                     @db.Uuid
+
+  exportRequest   AdaptiveCalibrationExportRequest @relation(fields: [exportRequestId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  exportRequestId String                           @db.Uuid
+
+  bankFingerprint   String
+  configFingerprint String
+
+  measurementVersion             AdaptiveMeasurementVersion
+  estimatorImplementationVersion String
+  classificationPolicyVersion    Int
+  calibrationPolicyVersion       Int
+  validationProtocolVersion      String
+  approvedProbabilityThreshold   Float
+
+  calibrationDatasetVersion  String
+  calibrationDatasetChecksum String
+  holdoutDatasetVersion      String
+  holdoutDatasetChecksum     String
+  disjointSplitProofChecksum String
+  criterionArtifactChecksum  String
+
+  /// [PrismaAdaptiveValidationMetrics]
+  aggregateMetrics Json
+
+  /// [PrismaAdaptiveValidationStratumMetrics]
+  stratumMetrics Json
+
+  artifactChecksum String
+  artifactKey      String
+
+  submittedBy   User?   @relation("AdaptiveEmpiricalValidationSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  submittedById String? @db.Uuid
+
+  approvedBy   User?   @relation("AdaptiveEmpiricalValidationApprovedBy", fields: [approvedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  approvedById String? @db.Uuid
+
+  publications PracticeQuizAdaptivePublication[]
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([id, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], map: "apqev_publication_identity_key")
+  @@unique([configId, bankFingerprint, configFingerprint, scaleVersionId, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion, validationProtocolVersion, approvedProbabilityThreshold, exportRequestId, criterionArtifactChecksum], map: "apqev_evidence_identity_key")
+  @@index([configId, status], map: "apqev_config_status_idx")
+  @@index([scaleVersionId], map: "apqev_scale_idx")
+  @@index([exportRequestId], map: "apqev_export_request_idx")
+  @@index([submittedById], map: "apqev_submitted_by_idx")
+  @@index([approvedById], map: "apqev_approved_by_idx")
+}
+
+model AdaptivePracticeQuizItemExposure {
+  id Int @id @default(autoincrement())
+
+  publication   PracticeQuizAdaptivePublication @relation(fields: [publicationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  publicationId String                          @db.Uuid
+
+  poolItem   PracticeQuizAdaptivePoolItem @relation(fields: [publicationId, poolItemId], references: [publicationId, id], onDelete: Cascade, onUpdate: Cascade)
+  poolItemId Int
+
+  servedCount   BigInt   @default(0)
+  answeredCount BigInt   @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([publicationId, poolItemId], map: "apqie_publication_pool_key")
+  @@index([publicationId, servedCount], map: "apqie_publication_served_idx")
+}
+
+model PracticeQuizAdaptiveNodeOverride {
+  id Int @id @default(autoincrement())
+
+  enabled     Boolean @default(true)
+  weight      Float?
+  questionCap Int?
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId, competenceTreeId], references: [id, competenceTreeId], onDelete: Cascade, onUpdate: Cascade, map: "pqan_config_tree_same_tree_fkey")
+  configId String                     @db.Uuid
+
+  competenceTreeId String @db.Uuid
+
+  node   CompetenceTreeNode @relation(fields: [competenceTreeId, nodeId], references: [treeId, id], onDelete: Cascade, onUpdate: Cascade, map: "pqan_node_same_tree_fkey")
+  nodeId Int
+
+  @@unique([configId, nodeId], map: "pqan_config_node_key")
+  @@index([competenceTreeId, nodeId], map: "pqan_tree_node_idx")
+}
+
+model PracticeQuizAdaptiveElementOverride {
+  id Int @id @default(autoincrement())
+
+  enabled        Boolean @default(true)
+  discrimination Float?
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId, competenceTreeId], references: [id, competenceTreeId], onDelete: Cascade, onUpdate: Cascade, map: "pqae_config_tree_same_tree_fkey")
+  configId String                     @db.Uuid
+
+  competenceTreeId String @db.Uuid
+
+  assignment   CompetenceTreeElementAssignment @relation(fields: [competenceTreeId, assignmentId], references: [treeId, id], onDelete: Cascade, onUpdate: Cascade, map: "pqae_assignment_same_tree_fkey")
+  assignmentId Int
+
+  @@unique([configId, assignmentId], map: "pqae_config_assignment_key")
+  @@index([competenceTreeId, assignmentId], map: "pqae_tree_assignment_idx")
+}
+
+model PracticeQuizAdaptivePoolItem {
+  id Int @id @default(autoincrement())
+
+  config   PracticeQuizAdaptiveConfig @relation(fields: [configId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  configId String                     @db.Uuid
+
+  competenceTreeId String @db.Uuid
+
+  publication   PracticeQuizAdaptivePublication @relation(fields: [publicationId, configId, competenceTreeId], references: [id, configId, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
+  publicationId String                          @db.Uuid
+
+  scaleVersionId String @db.Uuid
+
+  calibration   AdaptiveItemCalibration @relation(fields: [competenceTreeId, scaleVersionId, calibrationId, sourceAssignmentId, elementId, elementVersion], references: [treeId, scaleVersionId, id, assignmentId, elementId, elementVersion], onDelete: Restrict, onUpdate: Cascade)
+  calibrationId String                  @db.Uuid
+
+  sourceAssignment   CompetenceTreeElementAssignment @relation(fields: [sourceAssignmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sourceAssignmentId Int
+
+  elementId      Int
+  elementVersion Int
+  elementType    ElementType
+  elementName    String
+
+  /// [PrismaElementData]
+  elementData Json
+
+  leafNodeId   Int
+  nodePath     Int[]
+  nodeNamePath String[]
+
+  levelId    Int
+  levelLabel String
+  levelOrder Int
+
+  discrimination             Float
+  difficulty                 Float
+  guessing                   Float
+  measurementVersion         AdaptiveMeasurementVersion
+  calibrationVersion         Int
+  calibrationStatus          AdaptiveItemCalibrationStatus
+  itemModel                  AdaptiveItemModel
+  modelImplementationVersion String
+  role                       AdaptivePoolItemRole          @default(SCORING)
+  contributesToEstimate      Boolean                       @default(true)
+  enablePercentInput         Boolean                       @default(false)
+
+  nextAttempts AdaptivePracticeQuizAttempt[]     @relation("AdaptivePracticeQuizAttemptNextPoolItem")
+  responses    AdaptivePracticeQuizResponse[]
+  exposure     AdaptivePracticeQuizItemExposure?
+
+  createdAt DateTime @default(now())
+
+  @@unique([publicationId, sourceAssignmentId], map: "pqapi_publication_assignment_key")
+  @@unique([publicationId, id], map: "pqapi_publication_id_key")
+  @@unique([publicationId, id, sourceAssignmentId, elementId], map: "pqapi_publication_response_key")
+  @@unique([configId, id], map: "pqapi_config_id_key")
+  @@unique([configId, id, sourceAssignmentId, elementId], map: "pqapi_response_identity_key")
+  @@index([publicationId, leafNodeId, levelId], map: "pqapi_publication_leaf_level_idx")
+  @@index([elementId, elementVersion], map: "pqapi_element_version_idx")
+  @@index([calibrationId], map: "pqapi_calibration_idx")
+}
+
+model AdaptivePracticeQuizAttempt {
+  id String @id @default(uuid()) @db.Uuid
+
+  status                        AdaptivePracticeQuizAttemptStatus @default(IN_PROGRESS)
+  stopReason                    AdaptivePracticeQuizStopReason?
+  currentTheta                  Float                             @default(0)
+  currentStandardError          Float?
+  finalTheta                    Float?
+  finalStandardError            Float?
+  finalLevelId                  Int?
+  finalScaleLevelId             Int?
+  elapsedSeconds                Int?
+  nextPoolItemId                Int?
+  nextAdministrationProbability Float?
+  nextCollectionDesignVersion   String?
+  nextRandomizationVersion      String?
+  nextRandomDraw                BigInt?
+  nextCandidateSetHash          String?
+  nextItemRole                  AdaptivePoolItemRole?
+  resultStatus                  AdaptiveResultStatus?
+  finalBandProbability          Float?
+  credibleLower                 Float?
+  credibleUpper                 Float?
+
+  /// [PrismaAdaptiveBandProbabilities]
+  bandProbabilities Json?
+
+  config           PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId, competenceTreeId], references: [id, practiceQuizId, competenceTreeId], onDelete: Restrict, onUpdate: Cascade)
+  configId         String                     @db.Uuid
+  competenceTreeId String                     @db.Uuid
+
+  publication   PracticeQuizAdaptivePublication @relation(fields: [publicationId, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], references: [id, configId, competenceTreeId, scaleVersionId, measurementVersion, estimatorImplementationVersion, classificationPolicyVersion, calibrationPolicyVersion], onDelete: Restrict, onUpdate: Cascade, map: "apqa_publication_dispatch_fkey")
+  publicationId String                          @db.Uuid
+
+  scaleVersion   CompetenceTreeScaleVersion @relation(fields: [competenceTreeId, scaleVersionId], references: [treeId, id], onDelete: Restrict, onUpdate: Cascade, map: "apqa_scale_version_fkey")
+  scaleVersionId String                     @db.Uuid
+
+  measurementVersion             AdaptiveMeasurementVersion
+  estimatorImplementationVersion String
+  classificationPolicyVersion    Int
+  calibrationPolicyVersion       Int
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId, courseId], references: [id, courseId], onDelete: Restrict, onUpdate: Cascade)
+  practiceQuizId String       @db.Uuid
+
+  course   Course @relation("AdaptivePracticeQuizAttemptCourse", fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId, participantId, courseId], references: [id, participantId, courseId], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  finalLevel CompetenceTreeLevel? @relation("AdaptivePracticeQuizAttemptFinalLevel", fields: [competenceTreeId, finalLevelId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
+
+  finalScaleLevel CompetenceTreeScaleLevel? @relation("AdaptivePracticeQuizAttemptFinalScaleLevel", fields: [competenceTreeId, scaleVersionId, finalScaleLevelId], references: [treeId, scaleVersionId, id], onDelete: NoAction, onUpdate: Cascade, map: "apqa_final_scale_level_fkey")
+
+  nextPoolItem PracticeQuizAdaptivePoolItem? @relation("AdaptivePracticeQuizAttemptNextPoolItem", fields: [publicationId, nextPoolItemId], references: [publicationId, id], onDelete: NoAction, onUpdate: Cascade)
+
+  responses AdaptivePracticeQuizResponse[]
+  estimates AdaptivePracticeQuizEstimate[]
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([id, configId], map: "apqa_id_config_key")
+  @@unique([id, configId, competenceTreeId], map: "apqa_id_config_tree_key")
+  @@unique([id, configId, publicationId], map: "apqa_id_config_publication_key")
+  @@index([practiceQuizId, participantId, status], map: "apqa_quiz_participant_status_idx")
+  @@index([participationId, practiceQuizId], map: "apqa_participation_quiz_idx")
+  @@index([finalLevelId], map: "apqa_final_level_idx")
+  @@index([nextPoolItemId], map: "apqa_next_pool_item_idx")
+  @@index([configId, practiceQuizId], map: "apqa_config_quiz_idx")
+  @@index([practiceQuizId, status, completedAt, id], map: "apqa_quiz_status_completed_idx")
+  @@index([practiceQuizId, participantId, status, completedAt, id], map: "apqa_quiz_participant_completed_idx")
+  @@index([courseId], map: "apqa_course_retention_idx")
+  @@index([participationId, participantId, courseId], map: "apqa_participation_identity_idx")
+  @@index([configId, nextPoolItemId], map: "apqa_config_next_pool_idx")
+  @@index([publicationId, nextPoolItemId], map: "apqa_publication_next_pool_idx")
+  @@index([scaleVersionId], map: "apqa_scale_version_idx")
+}
+
+model AdaptivePracticeQuizResponse {
+  id Int @id @default(autoincrement())
+
+  order                     Int
+  response                  Json
+  normalizedResponse        Json
+  score                     Float
+  correct                   Boolean
+  overallThetaBefore        Float?
+  overallThetaAfter         Float?
+  overallStandardErrorAfter Float?
+  overallCredibleLowerAfter Float?
+  overallCredibleUpperAfter Float?
+
+  /// [PrismaAdaptiveBandProbabilities]
+  overallBandProbabilitiesAfter Json?
+
+  administrationProbability Float?
+  collectionDesignVersion   String?
+  randomizationVersion      String?
+  randomDraw                BigInt?
+  candidateSetHash          String?
+  itemRole                  AdaptivePoolItemRole @default(SCORING)
+  isCalibrationAnchor       Boolean              @default(false)
+  elapsedSeconds            Int?
+
+  attempt       AdaptivePracticeQuizAttempt @relation(fields: [attemptId, configId, publicationId], references: [id, configId, publicationId], onDelete: Cascade, onUpdate: Cascade)
+  attemptId     String                      @db.Uuid
+  configId      String                      @db.Uuid
+  publicationId String                      @db.Uuid
+
+  assignment   CompetenceTreeElementAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  assignmentId Int
+
+  poolItem   PracticeQuizAdaptivePoolItem? @relation(fields: [publicationId, poolItemId, assignmentId, elementId], references: [publicationId, id, sourceAssignmentId, elementId], onDelete: NoAction, onUpdate: Cascade)
+  poolItemId Int?
+
+  elementId       Int
+  elementSnapshot Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, order], map: "apqr_attempt_order_key")
+  @@unique([attemptId, assignmentId], map: "apqr_attempt_assignment_key")
+  @@index([assignmentId], map: "apqr_assignment_idx")
+  @@index([poolItemId], map: "apqr_pool_item_idx")
+  @@index([configId, poolItemId], map: "apqr_config_pool_idx")
+  @@index([configId, poolItemId, attemptId], map: "apqr_config_pool_attempt_idx")
+  @@index([publicationId, poolItemId, attemptId], map: "apqr_publication_pool_attempt_idx")
+}
+
+model AdaptivePracticeQuizEstimate {
+  id Int @id @default(autoincrement())
+
+  nodeKind                  AdaptiveEstimateNodeKind
+  theta                     Float?
+  standardError             Float?
+  responseCount             Int
+  stopReason                AdaptivePracticeQuizStopReason?
+  resultStatus              AdaptiveResultStatus?
+  classificationProbability Float?
+  credibleLower             Float?
+  credibleUpper             Float?
+
+  /// [PrismaAdaptiveBandProbabilities]
+  bandProbabilities Json?
+
+  attempt          AdaptivePracticeQuizAttempt @relation(fields: [attemptId, configId, competenceTreeId], references: [id, configId, competenceTreeId], onDelete: Cascade, onUpdate: Cascade)
+  attemptId        String                      @db.Uuid
+  configId         String                      @db.Uuid
+  competenceTreeId String                      @db.Uuid
+
+  node   CompetenceTreeNode? @relation(fields: [competenceTreeId, nodeId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
+  nodeId Int?
+
+  level   CompetenceTreeLevel? @relation(fields: [competenceTreeId, levelId], references: [treeId, id], onDelete: NoAction, onUpdate: Cascade)
+  levelId Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([attemptId, nodeKind, nodeId], map: "apqe_attempt_kind_node_key")
+  @@index([attemptId, nodeKind, nodeId, levelId], map: "apqe_attempt_node_level_idx")
+  @@index([nodeKind, levelId], map: "apqe_kind_level_idx")
+  @@index([configId, competenceTreeId], map: "apqe_config_tree_idx")
+}
+
+model AdaptivePracticeQuizCohortSnapshot {
+  id String @id @default(uuid()) @db.Uuid
+
+  config         PracticeQuizAdaptiveConfig @relation(fields: [configId, practiceQuizId], references: [id, practiceQuizId], onDelete: Restrict, onUpdate: Cascade)
+  configId       String                     @db.Uuid
+  practiceQuizId String                     @db.Uuid
+
+  publication        PracticeQuizAdaptivePublication @relation(fields: [publicationId, scaleVersionId, measurementVersion], references: [id, scaleVersionId, measurementVersion], onDelete: Restrict, onUpdate: Cascade)
+  publicationId      String                          @db.Uuid
+  scaleVersionId     String                          @db.Uuid
+  measurementVersion AdaptiveMeasurementVersion
+
+  releaseSize            Int
+  releaseWatermark       DateTime
+  policyVersion          Int                            @default(1)
+  attemptSelectionPolicy AdaptiveAttemptSelectionPolicy
+
+  /// [PrismaAdaptivePracticeQuizCohortSnapshot]
+  aggregate Json
+
+  invalidatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([publicationId, releaseSize, policyVersion, attemptSelectionPolicy], map: "apqcs_publication_release_policy_key")
+  @@index([configId, invalidatedAt, releaseSize], map: "apqcs_config_valid_release_idx")
+  @@index([practiceQuizId], map: "apqcs_quiz_retention_idx")
+}

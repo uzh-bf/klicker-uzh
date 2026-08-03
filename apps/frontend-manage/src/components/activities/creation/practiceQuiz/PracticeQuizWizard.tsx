@@ -58,9 +58,14 @@ interface PracticeQuizWizardProps {
   title: string
   courses: ElementSelectCourse[]
   closeWizard: () => void
-  initialValues?: Omit<
+  initialValues?: Pick<
     PracticeQuiz,
-    'id' | 'orderType' | 'resetTimeDays' | 'status'
+    | 'name'
+    | 'displayName'
+    | 'description'
+    | 'stacks'
+    | 'pointsMultiplier'
+    | 'course'
   > & {
     id?: string
     orderType?: string

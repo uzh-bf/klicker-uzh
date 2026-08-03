@@ -1,0 +1,271 @@
+enum PracticeQuizMode {
+  STANDARD
+  ADAPTIVE
+}
+
+enum AdaptivePracticeQuizPreset {
+  PLACEMENT
+  DIAGNOSTIC
+  RESEARCH
+}
+
+enum AdaptiveAttemptSelectionPolicy {
+  FIRST_COMPLETED
+  LATEST_COMPLETED
+}
+
+enum AdaptiveLevelMappingRule {
+  NEAREST
+  MASTERY
+}
+
+enum AdaptiveNodeKind {
+  COMPETENCE
+  SUBCOMPETENCE
+}
+
+enum AdaptiveEstimateNodeKind {
+  OVERALL
+  COMPETENCE
+  SUBCOMPETENCE
+}
+
+enum AdaptivePracticeQuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum AdaptivePracticeQuizStopReason {
+  CLASSIFIED
+  ALL_ROOTS_CLASSIFIED
+  TOTAL_QUESTION_CAP
+  NODE_QUESTION_CAP
+  POOL_EXHAUSTED
+  INSUFFICIENT_DATA
+  ABANDONED
+}
+
+enum AdaptiveMeasurementVersion {
+  IRT_V1
+  IRT_V2_EAP_GRID_1
+}
+
+enum AdaptiveScaleVersionStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  ACTIVE
+  REJECTED
+  SUPERSEDED
+}
+
+enum AdaptiveScaleLinkStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum AdaptiveItemCalibrationStatus {
+  PROVISIONAL
+  PILOT
+  CALIBRATED
+  FLAGGED
+  RETIRED
+}
+
+enum AdaptiveItemModel {
+  TWO_PL
+  THREE_PL_FIXED_C
+}
+
+enum AdaptiveCalibrationExportStatus {
+  REQUESTED
+  RUNNING
+  READY
+  FAILED
+  EXPIRED
+}
+
+enum AdaptiveEmpiricalValidationStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SUPERSEDED
+}
+
+enum AdaptiveResultStatus {
+  CLASSIFIED
+  BETWEEN_LEVELS
+  INSUFFICIENT_EVIDENCE
+  POOL_LIMITED
+  RESEARCH_ONLY
+}
+
+enum AdaptivePoolItemRole {
+  SCORING
+  ANCHOR
+  FIELD_TEST
+}
+
+model CompetenceTree {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  displayName String
+  description String?
+  isDeleted   Boolean @default(false)
+  isArchived  Boolean @default(false)
+
+  maxDepth Int   @default(5)
+  thetaMin Float @default(-3)
+  thetaMax Float @default(3)
+
+  defaultDiscrimination Float                    @default(1.2)
+  levelMappingRule      AdaptiveLevelMappingRule @default(NEAREST)
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  courseLinks                 CompetenceTreeCourse[]
+  levels                      CompetenceTreeLevel[]
+  nodes                       CompetenceTreeNode[]
+  levelCoverages              CompetenceTreeLeafLevelCoverage[]
+  elementAssignments          CompetenceTreeElementAssignment[]
+  adaptivePracticeQuizConfigs PracticeQuizAdaptiveConfig[]
+  scaleVersions               CompetenceTreeScaleVersion[]
+  scaleLinks                  CompetenceTreeScaleLink[]
+  itemCalibrations            AdaptiveItemCalibration[]
+  adaptivePublications        PracticeQuizAdaptivePublication[]
+  calibrationExportRequests   AdaptiveCalibrationExportRequest[]
+  empiricalValidations        AdaptivePracticeQuizEmpiricalValidation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId], map: "ct_owner_idx")
+}
+
+model CompetenceTreeCourse {
+  id Int @id @default(autoincrement())
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  linkedBy   User?   @relation("CompetenceTreeCourseLinkedBy", fields: [linkedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  linkedById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([treeId, courseId], map: "ctc_tree_course_key")
+  @@index([courseId], map: "ctc_course_idx")
+  @@index([linkedById], map: "ctc_linked_by_idx")
+}
+
+model CompetenceTreeLevel {
+  id Int @id @default(autoincrement())
+
+  label String
+  order Int
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  elementAssignments CompetenceTreeElementAssignment[]
+  levelCoverages     CompetenceTreeLeafLevelCoverage[]
+  estimates          AdaptivePracticeQuizEstimate[]
+
+  finalAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptFinalLevel")
+  scaleLevels   CompetenceTreeScaleLevel[]
+
+  @@unique([treeId, label], map: "ctl_tree_label_key")
+  @@unique([treeId, order], map: "ctl_tree_order_key")
+  @@unique([treeId, id], map: "ctl_tree_id_key")
+}
+
+model CompetenceTreeNode {
+  id Int @id @default(autoincrement())
+
+  kind        AdaptiveNodeKind
+  name        String
+  description String?
+  order       Int
+  depth       Int
+  weight      Float            @default(1)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  parent   CompetenceTreeNode?  @relation("CompetenceTreeNodeChildren", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parentId Int?
+  children CompetenceTreeNode[] @relation("CompetenceTreeNodeChildren")
+
+  elementAssignments CompetenceTreeElementAssignment[]
+  levelCoverages     CompetenceTreeLeafLevelCoverage[]
+  quizNodeOverrides  PracticeQuizAdaptiveNodeOverride[]
+  estimates          AdaptivePracticeQuizEstimate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, parentId, order], map: "ctn_tree_parent_order_key")
+  @@unique([treeId, id], map: "ctn_tree_id_key")
+  @@index([treeId, order], map: "ctn_tree_order_idx")
+  @@index([treeId, parentId], map: "ctn_tree_parent_idx")
+}
+
+model CompetenceTreeLeafLevelCoverage {
+  id Int @id @default(autoincrement())
+
+  targetItemCount Int     @default(5)
+  enabled         Boolean @default(true)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  leafNode   CompetenceTreeNode @relation(fields: [leafNodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  leafNodeId Int
+
+  level   CompetenceTreeLevel @relation(fields: [levelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  levelId Int
+
+  @@unique([treeId, leafNodeId, levelId], map: "ctlc_tree_leaf_level_key")
+}
+
+model CompetenceTreeElementAssignment {
+  id Int @id @default(autoincrement())
+
+  enabled            Boolean @default(true)
+  discrimination     Float?
+  enablePercentInput Boolean @default(false)
+
+  tree   CompetenceTree @relation(fields: [treeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  treeId String         @db.Uuid
+
+  element   Element @relation(fields: [elementId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  elementId Int
+
+  leafNode   CompetenceTreeNode @relation(fields: [leafNodeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  leafNodeId Int
+
+  level   CompetenceTreeLevel @relation(fields: [levelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  levelId Int
+
+  quizElementOverrides PracticeQuizAdaptiveElementOverride[]
+  publishedPoolItems   PracticeQuizAdaptivePoolItem[]
+  responses            AdaptivePracticeQuizResponse[]
+  calibrations         AdaptiveItemCalibration[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, elementId], map: "ctea_tree_element_key")
+  @@unique([treeId, id], map: "ctea_tree_id_key")
+  @@index([elementId], map: "ctea_element_idx")
+  @@index([treeId, leafNodeId, enabled], map: "ctea_tree_leaf_enabled_idx")
+}

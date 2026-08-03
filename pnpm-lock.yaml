@@ -2172,6 +2172,9 @@ importers:
 
   packages/prisma-data:
     devDependencies:
+      '@klicker-uzh/adaptive-learning':
+        specifier: workspace:*
+        version: link:../adaptive-learning
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma

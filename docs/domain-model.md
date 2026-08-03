@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-13'
 tags:
   - backend
   - prisma
@@ -30,6 +30,7 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 - **`Element`** (`element.prisma`) — a question-bank item owned by a `User`; versioned via `version`/`originalId`; `type: ElementType`; options live in a typed `Json` field.
 - **`ElementInstance`** — a _placement_ of an Element inside an activity. `type: ElementInstanceType` = `LIVE_QUIZ | PRACTICE_QUIZ | MICROLEARNING | GROUP_ACTIVITY`. It **snapshots** `elementData`/`options` at publication time and accumulates `results` — editing the source Element does not change published instances.
 - Grouping differs by activity: **`ElementStack`** (ordered instance group) for PracticeQuiz/MicroLearning/GroupActivity; **`ElementBlock`** (with scheduling status) for LiveQuiz only.
+- **`CompetenceTree`** (`competence.prisma`) — reusable, user-owned adaptive structure linked to zero or more courses. It contains ordered level bands, root competences, nested subcompetences to depth 5, leaf/level coverage targets, and assignments for scorable `SC`, `MC`, `KPRIM`, `NUMERICAL`, and controlled-answer `FREE_TEXT` Elements. A tree is structurally locked once an adaptive PracticeQuiz references it; duplicate it for structural changes.
 
 `ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
 
@@ -37,11 +38,14 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.
 
+`PracticeQuiz.mode` is `STANDARD` or `ADAPTIVE`; adaptive learning is a mode of the existing activity, never a fifth activity model. STANDARD quizzes use stacks and normal scoring. ADAPTIVE quizzes use one `PracticeQuizAdaptiveConfig`, an immutable publication pool, participant attempts/responses/estimates, no points, and the same PracticeQuiz URL and lifecycle. `Course.isAdaptiveLearningEnabled` is default false and gates adaptive setup, publication, discovery, and participant runtime without gating competence-tree authoring or standard quizzes.
+
 Lifecycle enums:
 
 | Enum                 | Values                                               | Applies to           |
 | -------------------- | ---------------------------------------------------- | -------------------- |
 | `PublicationStatus`  | DRAFT, SCHEDULED, PUBLISHED, ENDED, GRADED, TEMPLATE | all four activities  |
+| `PracticeQuizMode`   | STANDARD, ADAPTIVE                                   | PracticeQuiz         |
 | `ElementStatus`      | DRAFT, REVIEW, READY                                 | Element              |
 | `ReviewStatus`       | INCOMPLETE, REVIEWED, MODIFIED_AFTER_REVIEW          | activity review flow |
 | `ElementBlockStatus` | SCHEDULED, ACTIVE, EXECUTED                          | LiveQuiz blocks      |
