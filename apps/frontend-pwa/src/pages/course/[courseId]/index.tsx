@@ -75,7 +75,7 @@ function CourseOverview({
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
-
+  const participation = data?.getCourseOverviewData?.participation
   const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
     GetStudentCourseLeaderboardDocument,
     {
@@ -105,8 +105,6 @@ function CourseOverview({
   })
 
   useEffect(() => {
-    const participation = data?.getCourseOverviewData?.participation
-
     // if assessment is enabled, switch to the assessment results tab automatically
     if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
       setSelectedTab('assessment-results')
@@ -142,7 +140,6 @@ function CourseOverview({
   const {
     course,
     participant,
-    participation,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,

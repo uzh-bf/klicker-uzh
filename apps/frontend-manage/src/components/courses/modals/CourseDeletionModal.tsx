@@ -1,10 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import {
   DeleteCourseDocument,
   GetCourseSummaryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
@@ -40,6 +40,9 @@ function CourseDeletionModal({
     useState<CourseDeletionConfirmationType>({
       ...initialConfirmations,
     })
+  const [deletionError, setDeletionError] = useState<
+    'retainedAdaptiveHistory' | 'generic' | null
+  >(null)
   const t = useTranslations()
 
   // fetch course information
@@ -82,6 +85,7 @@ function CourseDeletionModal({
       onClose={() => {
         onClose()
         setConfirmations({ ...initialConfirmations })
+        setDeletionError(null)
       }}
       className={{ content: 'w-full! max-w-240' }}
       title={t('manage.courseList.deleteCourse')}
@@ -93,27 +97,30 @@ function CourseDeletionModal({
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await deleteCourse({
-          variables: { id: courseId },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            deleteCourse: {
-              __typename: 'Course',
-              id: courseId,
-            },
-          },
-          update: (cache, { data }) => {
-            // check if the deletion was successful
-            if (!data?.deleteCourse) return
+        setDeletionError(null)
+        try {
+          await deleteCourse({
+            variables: { id: courseId },
+            update: (cache, { data }) => {
+              // check if the deletion was successful
+              if (!data?.deleteCourse) return
 
-            // remove the course from the queries list
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
-              userCourses: qData?.userCourses?.filter(
-                (course) => course.id !== data.deleteCourse!.id
-              ),
-            }))
-          },
-        })
+              // remove the course from the queries list
+              cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
+                userCourses: qData?.userCourses?.filter(
+                  (course) => course.id !== data.deleteCourse!.id
+                ),
+              }))
+            },
+          })
+        } catch (error) {
+          setDeletionError(
+            hasGraphqlCode(error, 'ADAPTIVE_COURSE_HISTORY_RETAINED')
+              ? 'retainedAdaptiveHistory'
+              : 'generic'
+          )
+          return
+        }
         onClose()
         setConfirmations({ ...initialConfirmations })
       }}
@@ -122,9 +129,18 @@ function CourseDeletionModal({
       onSecondaryAction={() => {
         onClose()
         setConfirmations({ ...initialConfirmations })
+        setDeletionError(null)
       }}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
+      {deletionError && (
+        <UserNotification
+          type="error"
+          message={t(`manage.courseList.deletionErrors.${deletionError}`)}
+          className={{ root: 'mb-4' }}
+          data={{ cy: 'course-deletion-error' }}
+        />
+      )}
       {summary && (
         <CourseDeletionConfirmations
           summary={summary}
@@ -133,6 +149,15 @@ function CourseDeletionModal({
         />
       )}
     </Modal>
+  )
+}
+
+function hasGraphqlCode(error: unknown, code: string) {
+  return (
+    error instanceof ApolloError &&
+    error.graphQLErrors.some(
+      (graphqlError) => graphqlError.extensions?.code === code
+    )
   )
 }
 

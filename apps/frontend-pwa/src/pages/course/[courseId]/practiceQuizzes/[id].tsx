@@ -4,6 +4,9 @@
  * When loaded with ?embed=true, the parent app must first register itself:
  *   iframe.contentWindow?.postMessage({ type: 'klicker:embed-init' }, iframeOrigin)
  *
+ * The iframe announces when its message listener is ready:
+ *   { type: 'klicker:quiz-ready', version: 1 }
+ *
  * After receiving that init message, this page posts state updates to the
  * registered parent origin:
  *   {
@@ -26,8 +29,20 @@
  *       totalSteps: 0,
  *     })
  *     useEffect(() => {
+ *       const frame = iframe
+ *       const registerParent = () => {
+ *         frame.contentWindow?.postMessage(
+ *           { type: 'klicker:embed-init' },
+ *           iframeOrigin
+ *         )
+ *       }
  *       const handler = (e: MessageEvent) => {
- *         if (e.origin !== iframeOrigin) return
+ *         if (e.origin !== iframeOrigin || e.source !== frame.contentWindow) {
+ *           return
+ *         }
+ *         if (e.data?.type === 'klicker:quiz-ready') {
+ *           registerParent()
+ *         }
  *         if (e.data?.type === 'klicker:quiz-state') {
  *           setQuizState(e.data.payload)
  *         }
@@ -35,15 +50,7 @@
  *
  *       window.addEventListener('message', handler)
  *
- *       const frame = iframe
  *       if (frame) {
- *         const registerParent = () => {
- *           frame.contentWindow?.postMessage(
- *             { type: 'klicker:embed-init' },
- *             iframeOrigin
- *           )
- *         }
- *
  *         frame.addEventListener('load', registerParent)
  *         registerParent()
  *
@@ -65,6 +72,7 @@
 import { useQuery } from '@apollo/client'
 import {
   GetPracticeQuizDocument,
+  PracticeQuizMode,
   PublicationStatus,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -84,8 +92,12 @@ import Layout, {
 } from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+import AdaptivePracticeQuiz, {
+  AdaptivePracticeQuizProgress,
+} from '../../../../components/practiceQuiz/adaptive/AdaptivePracticeQuiz'
 
 const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
+const EMBED_READY_MESSAGE_TYPE = 'klicker:quiz-ready'
 const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
 const QUIZ_STATE_VERSION = 1
 
@@ -123,17 +135,25 @@ function PracticeQuizPage({
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [adaptiveProgress, setAdaptiveProgress] =
+    useState<AdaptivePracticeQuizProgress | null>(null)
 
-  useParticipantToken({
+  const isParticipantTokenReady = useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
+    skip: !isParticipantTokenReady,
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
   })
 
-  const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const isAdaptive = data?.practiceQuiz?.mode === PracticeQuizMode.Adaptive
+  const totalSteps = isAdaptive
+    ? (data?.practiceQuiz?.adaptiveMaximumQuestions ?? 0)
+    : (data?.practiceQuiz?.stacks?.length ?? 0)
 
   useEffect(() => {
     if (!embedded) return
@@ -149,32 +169,49 @@ function PracticeQuizPage({
 
     window.addEventListener('message', handleMessage)
 
+    const embeddingOrigin = getEmbeddingOrigin()
+    if (window.parent !== window && embeddingOrigin) {
+      window.parent.postMessage(
+        {
+          type: EMBED_READY_MESSAGE_TYPE,
+          version: QUIZ_STATE_VERSION,
+        },
+        embeddingOrigin
+      )
+    }
+
     return () => {
       window.removeEventListener('message', handleMessage)
     }
   }, [embedded])
 
   useEffect(() => {
-    if (!embedded || !data?.practiceQuiz) return
+    if (!embedded || !data?.practiceQuiz || isAdaptive) return
 
     const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
     setIsCompleted(readStoredCompletion(id, stackIds))
-  }, [embedded, id, data?.practiceQuiz])
+  }, [embedded, id, data?.practiceQuiz, isAdaptive])
 
   useEffect(() => {
-    if (currentIx >= 0) {
+    if (!isAdaptive && currentIx >= 0) {
       setIsCompleted(false)
     }
-  }, [currentIx])
+  }, [currentIx, isAdaptive])
 
   useEffect(() => {
     if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
 
-    const payload = buildQuizStatePayload({
-      currentIx,
-      isCompleted,
-      totalSteps,
-    })
+    const payload =
+      isAdaptive && adaptiveProgress
+        ? {
+            version: QUIZ_STATE_VERSION,
+            ...adaptiveProgress,
+          }
+        : buildQuizStatePayload({
+            currentIx,
+            isCompleted,
+            totalSteps,
+          })
 
     window.parent.postMessage(
       {
@@ -191,9 +228,11 @@ function PracticeQuizPage({
     currentIx,
     isCompleted,
     totalSteps,
+    isAdaptive,
+    adaptiveProgress,
   ])
 
-  if (loading)
+  if (!isParticipantTokenReady || loading)
     return (
       <Layout embedded={embedded}>
         <Loader />
@@ -220,7 +259,7 @@ function PracticeQuizPage({
   // show notification with activity start date
   if (
     data.practiceQuiz.status === PublicationStatus.Scheduled &&
-    !data.practiceQuiz.isOwner
+    !data.practiceQuiz.isPreview
   ) {
     return (
       <Layout
@@ -252,26 +291,42 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      <PracticeQuiz
-        showResetLocalStorage
-        embedded={embedded}
-        quiz={{
-          ...data.practiceQuiz,
-          course: data.practiceQuiz.course!,
-        }}
-        currentIx={currentIx}
-        setCurrentIx={setCurrentIx}
-        handleNextElement={handleNextQuestion}
-        onAllStacksCompletion={
-          embedded
-            ? () => {
-                setIsCompleted(true)
-                setCurrentIx(-1)
-              }
-            : undefined
-        }
-        previewOnly={data.practiceQuiz.isOwner ?? undefined}
-      />
+      {isAdaptive ? (
+        <AdaptivePracticeQuiz
+          key={data.practiceQuiz.id}
+          practiceQuizId={data.practiceQuiz.id}
+          name={data.practiceQuiz.name}
+          displayName={data.practiceQuiz.displayName}
+          description={data.practiceQuiz.description}
+          maximumQuestions={
+            data.practiceQuiz.adaptiveMaximumQuestions ?? totalSteps
+          }
+          previewOnly={data.practiceQuiz.isPreview ?? undefined}
+          embedded={embedded}
+          onProgressChange={setAdaptiveProgress}
+        />
+      ) : (
+        <PracticeQuiz
+          showResetLocalStorage
+          embedded={embedded}
+          quiz={{
+            ...data.practiceQuiz,
+            course: data.practiceQuiz.course!,
+          }}
+          currentIx={currentIx}
+          setCurrentIx={setCurrentIx}
+          handleNextElement={handleNextQuestion}
+          onAllStacksCompletion={
+            embedded
+              ? () => {
+                  setIsCompleted(true)
+                  setCurrentIx(-1)
+                }
+              : undefined
+          }
+          previewOnly={data.practiceQuiz.isPreview ?? undefined}
+        />
+      )}
       {!embedded && (
         <Footer
           browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
@@ -390,6 +445,15 @@ function buildQuizStatePayload({
 
 function isEmbedInitMessage(data: unknown): boolean {
   return isRecord(data) && data.type === EMBED_INIT_MESSAGE_TYPE
+}
+
+function getEmbeddingOrigin() {
+  try {
+    const origin = new URL(document.referrer).origin
+    return origin === 'null' ? null : origin
+  } catch {
+    return null
+  }
 }
 
 function readStoredCompletion(

@@ -15,6 +15,8 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Domain Model](./domain-model.md) - Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
 - [GraphQL API Layer](./graphql-api-layer.md) - Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
 - [Data & Migrations](./data-and-migrations.md) - Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
+- [Adaptive Learning](./adaptive-learning.md) - Competence-tree based adaptive practice quiz mode, item parameters, validation gates, result semantics, and rollout boundaries.
+- [Adaptive Learning Operations](./adaptive-learning-operations.md) - Course-scoped rollout, rollback, pilot monitoring, calibration interpretation, support triage, and legacy-data audit.
 - [Async & Workers](./async-and-workers.md) - The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
 - [Auth Model](./auth-model.md) - Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
 - [Frontend Conventions](./frontend-conventions.md) - Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.

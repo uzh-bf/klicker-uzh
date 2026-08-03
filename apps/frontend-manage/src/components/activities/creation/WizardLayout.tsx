@@ -1,7 +1,11 @@
 import {
+  AdaptiveAttemptSelectionPolicy,
+  AdaptiveLevelMappingRule,
+  AdaptivePracticeQuizPreset,
   ElementOrderType,
   ElementType,
   ParameterType,
+  PracticeQuizMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -90,7 +94,39 @@ export interface MicroLearningFormValues extends CommonFormValues {
   endDate: Date
 }
 
+export interface AdaptivePracticeQuizNodeOverrideFormValues {
+  nodeId: number
+  enabled: boolean
+  weight: string
+  questionCap: string
+}
+
+export interface AdaptivePracticeQuizElementOverrideFormValues {
+  assignmentId: number
+  enabled: boolean
+  discrimination: string
+}
+
+export interface AdaptivePracticeQuizConfigFormValues {
+  competenceTreeId?: string
+  scaleVersionId?: string
+  preset: AdaptivePracticeQuizPreset
+  totalQuestionCap: string
+  perLeafQuestionCap: string
+  minQuestionsPerLeaf: string
+  classificationZ: string
+  showTimer: boolean
+  attemptSelectionPolicy: AdaptiveAttemptSelectionPolicy
+  levelMappingRule: AdaptiveLevelMappingRule
+  topInformationRatio: string
+  defaultDiscrimination: string
+  nodeOverrides: AdaptivePracticeQuizNodeOverrideFormValues[]
+  elementOverrides: AdaptivePracticeQuizElementOverrideFormValues[]
+}
+
 export interface PracticeQuizFormValues extends CommonFormValues {
+  mode: PracticeQuizMode
+  adaptiveConfig: AdaptivePracticeQuizConfigFormValues
   stacks: ElementStackFormValues[]
   order: ElementOrderType
   resetTimeDays: string
@@ -141,7 +177,7 @@ function WizardLayout({
   const t = useTranslations()
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-full min-h-0 w-full flex-col">
       <div className="flex h-6 flex-row items-end gap-8">
         <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
           {editMode
@@ -158,13 +194,20 @@ function WizardLayout({
           }}
           activeIx={activeStep}
           disabledFrom={disabledFrom}
+          twStyles={{
+            bgHover: 'hover:bg-uzh-blue-20 hover:after:border-l-uzh-blue-20!',
+            bgActive: 'bg-uzh-blue-20 after:border-l-uzh-blue-20',
+            bgPast: 'bg-uzh-grey-40 after:border-l-uzh-grey-40',
+          }}
           className={{
             item: 'hidden first:rounded-l-md last:rounded-r-md md:flex',
+            active: '!text-slate-900 hover:!text-slate-900',
+            past: '!text-slate-800',
           }}
         />
       </div>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-1 pt-4">
+      <div className="flex min-h-0 w-full flex-1 flex-col justify-between gap-1 pt-4">
         {!isCompleted && steps[activeStep]}
         {isCompleted && completionStep}
       </div>
