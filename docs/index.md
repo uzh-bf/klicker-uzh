@@ -22,6 +22,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Testing](./testing.md) - Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
 - [Developing a Feature](./developing-a-feature.md) - The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
+- [Architecture Decisions](./adr/) - Numbered ADRs recording why a structural choice was made and what it rules out. Pages above cite them instead of restating the rationale; superseded records are marked, never rewritten.
 
 ## Decision records
 
