@@ -45,7 +45,7 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
-const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
   {
     id: 'auto',
     deploymentId: 'complexity-router',

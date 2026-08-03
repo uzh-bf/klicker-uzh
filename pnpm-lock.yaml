@@ -501,6 +501,9 @@ importers:
       '@eslint/eslintrc':
         specifier: ~3.3.5
         version: 3.3.5
+      '@klicker-uzh/graphql':
+        specifier: workspace:*
+        version: link:../../packages/graphql
       '@tailwindcss/postcss':
         specifier: ~4.1.11
         version: 4.1.12
