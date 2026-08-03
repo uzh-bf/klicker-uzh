@@ -4,8 +4,12 @@ import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
+import * as AdaptivePracticeQuizService from '../services/adaptivePracticeQuizConfig.js'
+import * as AdaptivePracticeQuizRuntimeService from '../services/adaptivePracticeQuizzes.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CompetenceTreeCalibrationService from '../services/competenceTreeCalibration.js'
+import * as CompetenceTreeService from '../services/competenceTreeManagement.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -24,6 +28,17 @@ import {
   UserActivityList,
 } from './activities.js'
 import {
+  AdaptivePracticeQuizConfigInput,
+  AdaptivePracticeQuizPreviewType,
+  AdaptivePracticeQuizSetupPreviewType,
+  PracticeQuizPublicationPreviewType,
+} from './adaptivePracticeQuiz.js'
+import {
+  AdaptiveCohortResultsRef,
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptiveStudentResultRef,
+} from './adaptivePracticeQuizRuntime.js'
+import {
   ActivityType,
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
@@ -39,6 +54,18 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import {
+  CompetenceTree,
+  CompetenceTreeCatalogOwnership,
+  CompetenceTreeCatalogPageType,
+  CompetenceTreeInput,
+  CompetenceTreeSummaryType,
+  CompetenceTreeValidationResultType,
+} from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  CompetenceTreeCalibrationRef,
+} from './competenceTreeCalibration.js'
 import {
   AssessmentParticipant,
   Course,
@@ -127,6 +154,11 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserSessionExec = {
+      ...asUser,
+      scope: DB.UserLoginScope.SESSION_EXEC,
+    }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -155,6 +187,103 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getPublicParticipantProfile(args, ctx)
         },
+      }),
+
+      competenceTrees: t.withAuth(asUser).field({
+        type: [CompetenceTreeSummaryType],
+        args: {
+          includeArchived: t.arg.boolean({
+            required: false,
+            defaultValue: false,
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCompetenceTrees(args, ctx),
+      }),
+
+      competenceTreeCatalog: t.withAuth(asUser).field({
+        type: CompetenceTreeCatalogPageType,
+        args: {
+          search: t.arg.string({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          limit: t.arg.int({ required: false, defaultValue: 25 }),
+          includeArchived: t.arg.boolean({
+            required: false,
+            defaultValue: false,
+          }),
+          ownership: t.arg({
+            type: CompetenceTreeCatalogOwnership,
+            required: false,
+            defaultValue: 'ALL',
+          }),
+          courseId: t.arg.string({ required: false }),
+          excludeCourseId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCompetenceTreeCatalog(args, ctx),
+      }),
+
+      competenceTree: t.withAuth(asUser).field({
+        nullable: true,
+        type: CompetenceTree,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCompetenceTree(args, ctx),
+      }),
+
+      competenceTreeCalibration: t.withAuth(asUser).field({
+        type: CompetenceTreeCalibrationRef,
+        args: { treeId: t.arg.string({ required: true }) },
+        resolve: async (_, { treeId }, ctx) =>
+          await CompetenceTreeCalibrationService.getCompetenceTreeCalibrationOverview(
+            treeId,
+            ctx
+          ),
+      }),
+
+      adaptiveCalibrationExportRequest: t.withAuth(asUserFullAccess).field({
+        type: AdaptiveCalibrationExportRequestRef,
+        args: { requestId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeCalibrationService.getAdaptiveCalibrationExportRequest(
+            args,
+            ctx
+          ),
+      }),
+
+      courseCompetenceTrees: t.withAuth(asUser).field({
+        type: [CompetenceTreeSummaryType],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCourseCompetenceTrees(args, ctx),
+      }),
+
+      courseCompetenceTreeCatalog: t.withAuth(asUser).field({
+        type: CompetenceTreeCatalogPageType,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          search: t.arg.string({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          limit: t.arg.int({ required: false, defaultValue: 25 }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getCourseCompetenceTreeCatalog(args, ctx),
+      }),
+
+      elementCompetenceTrees: t.withAuth(asUser).field({
+        type: [CompetenceTree],
+        args: { elementId: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.getElementCompetenceTrees(args, ctx),
+      }),
+
+      validateCompetenceTree: t.withAuth(asUser).field({
+        type: CompetenceTreeValidationResultType,
+        args: {
+          input: t.arg({ type: CompetenceTreeInput, required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await CompetenceTreeService.validateCompetenceTreeInput(args, ctx),
       }),
 
       controlCourse: t.withAuth(asUser).field({
@@ -652,6 +781,58 @@ export const Query = builder.queryType({
         ),
       }),
 
+      adaptivePracticeQuizPreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptivePracticeQuizPreviewType,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ practiceQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await AdaptivePracticeQuizService.getAdaptivePracticeQuizPreview(
+              args,
+              ctx
+            )
+          }
+        ),
+      }),
+
+      adaptivePracticeQuizSetupPreview: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptivePracticeQuizSetupPreviewType,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          input: t.arg({
+            type: AdaptivePracticeQuizConfigInput,
+            required: true,
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) =>
+            await AdaptivePracticeQuizService.getAdaptivePracticeQuizSetupPreview(
+              args,
+              ctx
+            )
+        ),
+      }),
+
+      practiceQuizPublicationPreview: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: PracticeQuizPublicationPreviewType,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ practiceQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) =>
+            await AdaptivePracticeQuizService.getPracticeQuizPublicationPreview(
+              args,
+              ctx
+            )
+        ),
+      }),
+
       getSingleMicroLearning: t.withAuth(asUser).field({
         nullable: true,
         type: MicroLearning,
@@ -1091,6 +1272,49 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           return await ParticipantService.getPracticeQuizList(ctx)
         },
+      }),
+
+      adaptivePracticeQuizAttemptState: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: AdaptivePracticeQuizAttemptStateRef,
+        args: {
+          practiceQuizId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizState(
+            args,
+            ctx
+          ),
+      }),
+
+      adaptivePracticeQuizResult: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: AdaptiveStudentResultRef,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) =>
+          await AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizResult(
+            args,
+            ctx
+          ),
+      }),
+
+      adaptivePracticeQuizCohortResults: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptiveCohortResultsRef,
+        args: {
+          practiceQuizId: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ practiceQuizId: args.practiceQuizId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) =>
+            await AdaptivePracticeQuizRuntimeService.getAdaptivePracticeQuizCohortResults(
+              args,
+              ctx
+            )
+        ),
       }),
 
       getCourseStudentTimelines: t.withAuth(asParticipant).field({

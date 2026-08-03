@@ -1,0 +1,52 @@
+fragment FAdaptivePracticeQuizAttemptState on AdaptivePracticeQuizAttemptState {
+  attemptId
+  practiceQuizId
+  practiceQuizName
+  status
+  stopReason
+  answeredQuestions
+  questionNumber
+  maximumQuestions
+  startedAt
+  completedAt
+  elapsedSeconds
+  showTimer
+  canStartNewAttempt
+  submittedResponseFeedback {
+    correct
+    score
+    feedback
+  }
+  servedItem {
+    poolItemId
+    elementId
+    name
+    type
+    content
+    options {
+      __typename
+      ... on AdaptivePracticeQuizChoicesOptions {
+        displayMode
+        choices {
+          ix
+          value
+        }
+      }
+      ... on AdaptivePracticeQuizNumericalOptions {
+        unit
+        accuracy
+        placeholder
+        enablePercentInput
+        restrictions {
+          min
+          max
+        }
+      }
+      ... on AdaptivePracticeQuizFreeTextOptions {
+        restrictions {
+          maxLength
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+mutation SubmitCompetenceTreeScaleLink($artifact: Json!) {
+  submitCompetenceTreeScaleLink(artifact: $artifact) {
+    id
+    status
+  }
+}

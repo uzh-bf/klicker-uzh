@@ -1,0 +1,5 @@
+query CompetenceTree($id: String!) {
+  competenceTree(id: $id) {
+    ...CompetenceTreeData
+  }
+}

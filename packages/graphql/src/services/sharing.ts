@@ -15,6 +15,8 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
+import { lockAdaptiveElementPermissionRevocation } from './adaptivePracticeQuizPublicationAuthorization.js'
 
 // ! Helper functions
 // #region
@@ -2172,10 +2174,17 @@ export async function revokeObjectAccess(
   if (!permission || permission.id !== permissionId) {
     return null
   }
+  const permissionElementId = permission.elementId ?? elementId
 
   // delete the direct permission and recompute derived permissions
-  const deletedPermission = await ctx.prisma.$transaction(
+  const revocation = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (typeof permissionElementId === 'number') {
+        await lockAdaptiveElementPermissionRevocation(
+          permissionElementId,
+          prisma
+        )
+      }
       const deleted = await prisma.permission.delete({
         where: { id: permissionId },
       })
@@ -2341,18 +2350,49 @@ export async function revokeObjectAccess(
         }
       }
 
-      return deleted
+      const adaptiveAffectedObjectCount =
+        typeof permissionElementId === 'number' && affectedUserIds.length > 0
+          ? await prisma.practiceQuizAdaptiveConfig.count({
+              where: {
+                competenceTree: {
+                  ownerId: { in: affectedUserIds },
+                  elementAssignments: {
+                    some: { elementId: permissionElementId },
+                  },
+                },
+              },
+            })
+          : typeof practiceQuizId === 'string'
+            ? await prisma.practiceQuizAdaptiveConfig.count({
+                where: { practiceQuizId },
+              })
+            : typeof courseId === 'string'
+              ? await prisma.practiceQuizAdaptiveConfig.count({
+                  where: { practiceQuiz: { courseId } },
+                })
+              : 0
+
+      return { deleted, adaptiveAffectedObjectCount }
     },
     { timeout: 60000 }
   )
 
+  if (revocation.adaptiveAffectedObjectCount > 0) {
+    emitAdaptiveOperationalEvent({
+      name: 'adaptive_sharing_revoked',
+      practiceQuizId,
+      courseId,
+      affectedObjectCount: revocation.adaptiveAffectedObjectCount,
+    })
+  }
+
   // invalidate permission
   ctx.emitter.emit('invalidate', {
     typename: 'Permission',
-    id: deletedPermission.id,
+    id: revocation.deleted.id,
   })
 
-  return deletedPermission.id
+  return revocation.deleted.id
 }
 // #endregion
 

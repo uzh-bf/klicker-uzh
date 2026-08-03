@@ -1,0 +1,18 @@
+query CourseCompetenceTreeCatalog(
+  $courseId: String!
+  $search: String
+  $cursor: String
+  $limit: Int = 25
+) {
+  courseCompetenceTreeCatalog(
+    courseId: $courseId
+    search: $search
+    cursor: $cursor
+    limit: $limit
+  ) {
+    items {
+      ...CompetenceTreeSummaryData
+    }
+    nextCursor
+  }
+}
