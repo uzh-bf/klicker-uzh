@@ -4,9 +4,40 @@ set -euo pipefail
 IMAGE="${HATCHET_IMAGE:-ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0}"
 TENANT_ID="${HATCHET_TENANT_ID:-707d0855-80ab-4e1f-a156-f1c4546cbf52}"
 
+find_hatchet_container() {
+  local container=""
+
+  # 1. GitHub Actions service container label
+  container=$(docker ps -a --filter "label=com.github.actions.service-name=hatchet" --format "{{.Names}}" | head -n1)
+  if [[ -n "$container" ]]; then echo "$container"; return 0; fi
+
+  # 2. Exact image ancestor match
+  container=$(docker ps -a --filter "ancestor=${IMAGE}" --format "{{.Names}}" | head -n1)
+  if [[ -n "$container" ]]; then echo "$container"; return 0; fi
+
+  # 3. Docker Compose / service name filter
+  container=$(docker ps -a --filter "name=hatchet" --format "{{.Names}}" | head -n1)
+  if [[ -n "$container" ]]; then echo "$container"; return 0; fi
+
+  # 4. Search all containers for 'hatchet' image or name
+  container=$(docker ps -a --format "{{.Names}}\t{{.Image}}" | grep -i "hatchet" | awk '{print $1}' | head -n1)
+  if [[ -n "$container" ]]; then echo "$container"; return 0; fi
+
+  return 1
+}
+
+echo "[hatchet-token] Locating Hatchet container..."
+CONTAINER_NAME=$(find_hatchet_container || true)
+if [[ -z "${CONTAINER_NAME}" ]]; then
+  echo "[hatchet-token] Could not find running Hatchet container." >&2
+  docker ps -a || true
+  exit 1
+fi
+echo "[hatchet-token] Using container: ${CONTAINER_NAME}"
+
 echo "[hatchet-token] Waiting for Hatchet health endpoint..."
 for i in {1..30}; do
-  if curl -sf http://localhost:8888/healthz >/dev/null 2>&1; then
+  if docker exec "${CONTAINER_NAME}" curl -sf http://localhost:8888/healthz >/dev/null 2>&1 || curl -sf http://localhost:8888/healthz >/dev/null 2>&1; then
     echo "[hatchet-token] Hatchet is healthy."
     break
   fi
@@ -18,20 +49,13 @@ for i in {1..30}; do
   sleep 2
 done
 
-echo "[hatchet-token] Locating Hatchet container by image ancestor..."
-CONTAINER_NAME=$(docker ps -a --filter "ancestor=${IMAGE}" --format "{{.Names}}" | head -n1)
-if [[ -z "${CONTAINER_NAME}" ]]; then
-  echo "[hatchet-token] Could not find running Hatchet container for image ${IMAGE}." >&2
-  docker ps -a || true
-  exit 1
-fi
-echo "[hatchet-token] Using container: ${CONTAINER_NAME}"
-
 echo "[hatchet-token] Reading authdisabled tenant token..."
 TOKEN=$(docker exec "${CONTAINER_NAME}" cat /config/authdisabled-token 2>/dev/null | tr -d '[:space:]')
-if [[ -z "${TOKEN}" ]]; then
-  # Fallback to hatchet-admin if authdisabled-token is not present yet
+if [[ -z "${TOKEN}" || "${TOKEN}" == "error" ]]; then
   TOKEN=$(docker exec "${CONTAINER_NAME}" /hatchet-admin token create --config /config --tenant-id "${TENANT_ID}" 2>/dev/null | xargs)
+fi
+if [[ -z "${TOKEN}" || "${TOKEN}" == "error" ]]; then
+  TOKEN=$(docker logs "${CONTAINER_NAME}" 2>&1 | grep -A 2 "authdisabled build: worker API token" | tail -n 1 | tr -d '[:space:]')
 fi
 
 if [[ -z "${TOKEN}" ]]; then
@@ -54,3 +78,4 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
   echo "HATCHET_CLIENT_TOKEN=${TOKEN}" >> "$GITHUB_ENV"
   echo "[hatchet-token] Exported HATCHET_CLIENT_TOKEN to GITHUB_ENV"
 fi
+
