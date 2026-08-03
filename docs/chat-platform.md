@@ -45,7 +45,7 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 ## Model registry and credits
 
-`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). Registry gotchas that have caused production incidents:
+`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
 
 The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -81,9 +81,10 @@ claim an end-to-end answer stream.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
-`src/stores/settingsStore.ts:loadCredits` clears `creditsLoaded` for every refresh and accepts
-only the latest request generation, so a failed refresh or a late response from another
-chatbot cannot expose stale credit/model state as current.
+`src/stores/settingsStore.ts:loadCredits` accepts only the latest request generation, so a late
+response from another chatbot cannot expose stale credit/model state as current. `creditsLoaded`
+is sticky once a load has succeeded: a refresh (including a failing one) keeps the last known
+balance on screen instead of hiding the footer for the rest of the session.
 
 Two further credit conventions are easy to break:
 
@@ -94,7 +95,9 @@ Two further credit conventions are easy to break:
   do not refill automatically") for that case.
 - The credits footer is **absent, not zeroed, until the first successful credits
   fetch**: `credits-footer.tsx` returns `null` while `creditsLoaded` is false, so
-  an in-flight or failed refresh shows nothing instead of a misleading `0`.
+  the initial load shows nothing instead of a misleading `0`. After that first
+  success the footer stays visible with the last known balance, even if a later
+  refresh fails.
 
 ## Theming and design tokens
 
@@ -299,6 +302,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 ## Client-state gotchas
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.
+- **Cancel persistence lives in `onAbort`, not `onEnd`.** The chat route's `onEnd` returns early after an abort (ai@7 still flushes it when ≥1 step completed, and letting it run overwrote the partial answer and rewrote its credits). `onAbort` persists the streamed partial text/reasoning and charges the summed per-step cost; when nothing streamed (a pure tool-call first step), it persists the completed steps' tool calls instead — `partialContent` already contains completed steps' text, so the two content sources are mutually exclusive by design.
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
@@ -321,11 +325,11 @@ plain `test` script), and the package production build in the worktree's devcont
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
 
-**That suite runs in no GitHub workflow.** No file under `.github/workflows/` invokes it —
-`check-types` compiles the test files but never executes them — so a green CI run is not
-evidence that the chat tests pass, and a regression in them merges unnoticed. Run the suite
-locally before claiming it as verification; adding a `test-chat.yml` workflow is a named
-follow-up ([Testing](./testing.md), and P1-2 in
-`project/2026-08-03-student-chat-v3-production-readiness-report.md`).
+The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
+filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).
+The workflow builds `packages/prisma` before vitest because
+`test/modelRegistryParity.test.ts` imports the backend registry from
+`packages/graphql/src/services/chatbots.ts`, whose first line is a runtime prisma-client
+import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
