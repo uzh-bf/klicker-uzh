@@ -63,7 +63,7 @@ jobs:
           - 5433:5432
 
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: localhost

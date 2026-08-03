@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="${HATCHET_IMAGE:-ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1}"
+IMAGE="${HATCHET_IMAGE:-ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0}"
 TENANT_ID="${HATCHET_TENANT_ID:-707d0855-80ab-4e1f-a156-f1c4546cbf52}"
 HATCHET_API_URL="${HATCHET_API_URL:-http://localhost:8888}"
 HATCHET_ADMIN_EMAIL="${HATCHET_ADMIN_EMAIL:-admin@example.com}"
@@ -59,11 +59,14 @@ create_token_with_docker() {
     sleep 2
   done
 
-  echo "[hatchet-token] Generating token through hatchet-admin..."
+  echo "[hatchet-token] Checking for authdisabled token in container..."
   for i in {1..10}; do
-    TOKEN=$(docker exec "$container_name" /hatchet-admin token create --config /config --tenant-id "$TENANT_ID" 2>/dev/null | xargs)
+    TOKEN=$(docker exec "$container_name" cat /config/authdisabled-token 2>/dev/null | tr -d '[:space:]')
+    if [[ -z "$TOKEN" ]]; then
+      TOKEN=$(docker exec "$container_name" /hatchet-admin token create --config /config --tenant-id "$TENANT_ID" 2>/dev/null | xargs)
+    fi
     if [[ -n "$TOKEN" && "$TOKEN" != "error" ]]; then
-      echo "[hatchet-token] Token generated successfully through Docker."
+      echo "[hatchet-token] Token retrieved successfully through Docker."
       return 0
     fi
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1"
-TENANT_ID="707d0855-80ab-4e1f-a156-f1c4546cbf52"
+IMAGE="${HATCHET_IMAGE:-ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0}"
+TENANT_ID="${HATCHET_TENANT_ID:-707d0855-80ab-4e1f-a156-f1c4546cbf52}"
 
 echo "[hatchet-token] Waiting for Hatchet health endpoint..."
 for i in {1..30}; do
@@ -27,8 +27,12 @@ if [[ -z "${CONTAINER_NAME}" ]]; then
 fi
 echo "[hatchet-token] Using container: ${CONTAINER_NAME}"
 
-echo "[hatchet-token] Creating tenant token..."
-TOKEN=$(docker exec "${CONTAINER_NAME}" /hatchet-admin token create --config /config --tenant-id "${TENANT_ID}" | xargs)
+echo "[hatchet-token] Reading authdisabled tenant token..."
+TOKEN=$(docker exec "${CONTAINER_NAME}" cat /config/authdisabled-token 2>/dev/null | tr -d '[:space:]')
+if [[ -z "${TOKEN}" ]]; then
+  # Fallback to hatchet-admin if authdisabled-token is not present yet
+  TOKEN=$(docker exec "${CONTAINER_NAME}" /hatchet-admin token create --config /config --tenant-id "${TENANT_ID}" 2>/dev/null | xargs)
+fi
 
 if [[ -z "${TOKEN}" ]]; then
   echo "[hatchet-token] Failed to generate Hatchet token (empty response)." >&2
