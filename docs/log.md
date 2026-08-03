@@ -9,8 +9,9 @@
   automatically, and only the check config was masking it via `vitest.config.ts`.
   `apps/mcp-student` also needed a `with { type: 'json' }` import attribute for
   `@klicker-uzh/graphql/dist/client.json` under `module: NodeNext`.
-  `@assistant-ui/react-ai-sdk` stays pinned at `1.3.7`: `1.3.26` resolves its own
-  `@assistant-ui/react` copy, so `useChatRuntime`'s `AssistantRuntime` stops
+  `@assistant-ui/react-ai-sdk` stays pinned at `1.3.7`: `1.3.26` moved its runtime
+  types to `@assistant-ui/core`/`@assistant-ui/store` and no longer depends on
+  `@assistant-ui/react` at all, so `useChatRuntime`'s `AssistantRuntime` stops
   matching the provider from `@assistant-ui/react@0.12.10`. That version also has
   an undeclared `assistant-stream` dependency, which only resolves through pnpm's
   hoisted store — an incremental `pnpm add` can leave it unhoisted and break the

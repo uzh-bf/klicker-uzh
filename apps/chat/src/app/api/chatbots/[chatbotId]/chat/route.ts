@@ -670,7 +670,9 @@ const mapAssistantStepContent = (
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
 export async function POST(
-  // NOSONAR - legacy endpoint complexity predates this PR; this branch only adds scoped context handling.
+  // Legacy endpoint complexity predates this PR; this branch only adds scoped
+  // context handling. S3776 is suppressed in sonar-project.properties because
+  // Biome moves an inline NOSONAR marker off the declaration line.
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
