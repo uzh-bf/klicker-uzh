@@ -41,6 +41,32 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
 
+### Adaptive PracticeQuiz workflow
+
+`playwright/tests/Z-adaptive-learning.spec.ts` is the focused cross-layer rollout suite. It verifies the default-off course gate, UI authoring and two-course reuse of a depth-5 competence tree, READY element mapping, adaptive-mode PracticeQuiz creation and immediate publication of four distinct items, five four-response participant completions, the visible question timer, exact agreement between the persisted final level and the student headline, and the anonymous lecturer cohort view at the five-participant release boundary.
+
+Run it only against the dedicated Playwright stack because global setup wipes and reseeds the configured database:
+
+```bash
+pnpm --filter @klicker-uzh/playwright test -- \
+  tests/Z-adaptive-learning.spec.ts --project=chromium
+```
+
+Use `test:run:raw` instead when the complete Playwright environment is already exported without Infisical. The browser journey intentionally creates its tree through Manage and completes the published quiz through PWA; Prisma is used only for deterministic fixture setup and persistence assertions. The spec is retry-safe: setup deletes its fixed-name fixtures, persistence checks reject stale success, and teardown restores the original rollout state of every affected course.
+
+When Playwright runs inside the all-in-one devcontainer, point the public
+`.klicker.localhost` names at the shared devrouter container (replace the IP if
+`docker inspect devrouter-traefik` reports another `devnet` address):
+
+```bash
+URL_MANAGE=https://manage.klicker.localhost \
+URL_STUDENT=https://pwa.klicker.localhost \
+URL_STUDENT_LOGIN=https://pwa.klicker.localhost/login \
+PLAYWRIGHT_HOST_RESOLVER_RULES='MAP *.klicker.localhost 192.168.156.2' \
+pnpm --filter @klicker-uzh/playwright exec playwright test \
+  tests/Z-adaptive-learning.spec.ts --project=chromium
+```
+
 For authoring specifics, helper patterns, and failure triage, use the skills — `klicker-cypress-e2e` and `klicker-playwright-e2e` ([.agents/skills/](../.agents/skills/)) — rather than duplicating their content here.
 
 ## E2E environment dependencies
@@ -52,7 +78,7 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 
 ## CI matrix
 
-Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. All path-skipped workflows report through `-status` gates to satisfy branch protection. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
+Path-filtered unit workflows: `test-adaptive-learning`, `test-grading`, `test-util`, `test-markdown` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. All path-skipped workflows report through `-status` gates to satisfy branch protection. Cypress CI signal quirk: the merge-group check can show a rising failed count while `cypress-run-cloud` is still in progress — wait for cloud completion before reading logs.
 
 **Git hooks run no application test suites** (pre-commit = `check:all`, pre-push = `build`). The Prisma package check regenerates the raw Prisma 7 client before typechecking; no generated-source patch remains. Clean CI jobs therefore do not depend on generated files left by an earlier build or cache restore. The Auth adapter round-trip is intentionally separate because it writes and removes disposable local rows. The expectation before a PR: `check:all` + build + targeted tests for touched logic + browser evidence for UI changes; CI is the real e2e gate.
 
