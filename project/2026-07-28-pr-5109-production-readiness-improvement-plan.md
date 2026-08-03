@@ -1094,3 +1094,24 @@ approved.
   All matrix containers were torn down afterwards; images were kept for
   reuse. The Definition of Done item for production Firefox/WebKit is now
   checked; VoiceOver remains the sole outstanding S5 human gate.
+- 2026-08-03: Integrated the moved `v3-ai` base (TypeScript 6, Prisma 7,
+  Biome/Knip/Gitleaks) into the branch as merge `e26e4bf2b` plus review-fix
+  `35aa6fc12`, after PR #5109 had gone `CONFLICTING`. All 18 conflicts were
+  resolved with per-file rationale; the merge itself received a dedicated
+  read-only review (two findings, both fixed: the S3776 suppression moved to
+  `sonar-project.properties` because Biome relocates inline NOSONAR markers,
+  and a corrected dependency-mechanism note in `docs/log.md`). Post-merge
+  verification at head: repo check 27/27, format:check clean,
+  syncpack/agents-md/prisma-sync clean, production build 24/24, CI 52 green
+  checks + the inherited GitGuardian disposition. A same-day three-pass final
+  readiness evaluation (regression suites, gate audit, live browser
+  verification) refreshed the S1 chat suite (236/236), the S3 offline eval
+  (95 passed / 53 deselected), and both assistant surfaces in the browser at
+  head, and is recorded in
+  `project/2026-08-03-pr-5109-final-production-readiness-evaluation.md`.
+  DoD items resting on pre-merge evidence after this entry: the 2026-08-01
+  148/148 judged run, the 2026-07-29 Firefox/WebKit production-image matrix,
+  and the 2026-07-29 memory probe. Newly enumerated human-only enablement
+  steps: cluster apply for the `mcp-lecturer` workload + chat memory resize,
+  prd `mcp-lecturer` image-tag bump, and `prisma migrate deploy` for the
+  one-way `AuditLogType` enum addition.
