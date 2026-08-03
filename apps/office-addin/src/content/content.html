@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en" data-framework="typescript">
+
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       http-equiv="Cache-Control"
@@ -10,38 +10,104 @@
     />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-
     <title>KlickerUZH</title>
+    <link rel="stylesheet" href="styles.css" />
 
     <script>
-      window.global = window
-    </script>
-
-    <script type="text/javascript">
-      // Cache the history method values.
       window._historyCache = {
         replaceState: window.history.replaceState,
         pushState: window.history.pushState,
       }
     </script>
-
-    <script
-      type="text/javascript"
-      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
-    ></script>
-
-    <script type="text/javascript">
-      // Restore the history method values after loading Office.js
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script>
       window.history.replaceState = window._historyCache.replaceState
       window.history.pushState = window._historyCache.pushState
     </script>
-
-    <link rel="stylesheet" href="styles.css" />
+    <script src="content.js" defer></script>
   </head>
 
-  <body class="ms-font-m ms-Fabric">
-    <div id="container"></div>
+  <body>
+    <div id="app-container" class="app-container">
+      <header class="header">
+        <img src="assets/logo-filled.png" alt="KlickerUZH" class="logo" />
+        <h1>KlickerUZH: Embed Evaluation</h1>
+      </header>
 
-    <script type="module" src="content.js"></script>
+      <main id="main-content-area" class="instructions-panel">
+        <section class="instructions">
+          <h2>Instructions</h2>
+          <ol>
+            <li>
+              Go to
+              <a
+                href="https://manage.klicker.uzh.ch/activities"
+                target="_blank"
+                rel="noopener noreferrer"
+                >KlickerUZH activities</a
+              >.
+            </li>
+            <li>Open the <q>Embed Evaluation</q> dialog for the live quiz.</li>
+            <li>
+              Copy the link for the full evaluation, a question, or the
+              leaderboard.
+            </li>
+            <li>Paste the link below and select <q>Embed</q>.</li>
+            <li>Resize the add-in to fit the slide.</li>
+          </ol>
+        </section>
+
+        <div class="image-panel">
+          <img
+            src="assets/embed-modal.png"
+            alt="Embed Evaluation dialog in KlickerUZH"
+          />
+        </div>
+      </main>
+
+      <div id="input-bar-area" class="input-bar">
+        <label for="url-input">URL <span aria-hidden="true">*</span></label>
+        <div class="input-wrapper">
+          <input
+            type="url"
+            id="url-input"
+            placeholder="Paste the evaluation link from KlickerUZH"
+            required
+            aria-describedby="url-validation-message"
+          />
+          <div
+            id="url-validation-message"
+            class="validation-message"
+            role="status"
+            aria-live="polite"
+          ></div>
+        </div>
+        <button type="button" id="embed-button" disabled>Embed</button>
+      </div>
+
+      <div id="iframe-container" class="iframe-container" hidden>
+        <div id="iframe-wrapper" class="iframe-wrapper">
+          <iframe
+            id="content-iframe"
+            title="Embedded KlickerUZH evaluation"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </div>
+      </div>
+
+      <div id="message-box" class="message-box" role="status" hidden>
+        <span id="message-text"></span>
+      </div>
+
+      <button
+        type="button"
+        id="change-embedded-url-button"
+        class="change-url"
+        hidden
+      >
+        Change URL
+      </button>
+    </div>
   </body>
 </html>

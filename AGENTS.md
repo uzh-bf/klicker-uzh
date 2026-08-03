@@ -6,6 +6,11 @@
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
+## Stacked PRs
+
+- GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
+- This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
+
 ## Commands
 
 ### Root-level (from repo root)
@@ -14,9 +19,9 @@
 pnpm install                  # install all deps
 pnpm run build                # build everything (turbo)
 pnpm run check                # typecheck all packages (tsc --noEmit)
-pnpm run lint                 # eslint across all packages
-pnpm run format               # prettier --write
-pnpm run format:check         # prettier --check
+pnpm run lint                 # eslint (Next.js safety net) across all packages
+pnpm run format               # biome format (code) + prettier (md/yaml, e2e specs)
+pnpm run format:check         # check formatting (biome + prettier)
 pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
@@ -37,9 +42,12 @@ pnpm --filter @klicker-uzh/graphql test
 pnpm run prisma:migrate       # create + apply migration (dev)
 pnpm run prisma:setup         # reset DB + push schema + seed
 pnpm run prisma:reset         # reset DB (skip seed)
+pnpm --filter @klicker-uzh/prisma prisma:seed  # seed explicitly
 pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
+
+The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
 
 ### GraphQL codegen
 
@@ -91,19 +99,19 @@ cypress/                   # E2E tests
 
 ## Tech Stack
 
-| Layer                  | Technology                                            |
-| ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                         |
-| Styling                | TailwindCSS, @uzh-bf/design-system                    |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
-| GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 6 (PostgreSQL)                                 |
-| Caching                | Redis (ioredis)                                       |
-| Workflow orchestration | Hatchet (workers for async processing)                |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
-| Build                  | Turborepo + Rollup                                    |
-| Test                   | Vitest (unit), Cypress (E2E)                          |
-| Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
+| Layer                  | Technology                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                      |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                 |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                               |
+| GraphQL client         | Apollo Client                                                                      |
+| ORM                    | Prisma 7 (PostgreSQL)                                                              |
+| Caching                | Redis (ioredis)                                                                    |
+| Workflow orchestration | Hatchet (workers for async processing)                                             |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                   |
+| Build                  | Turborepo + Rollup                                                                 |
+| Test                   | Vitest (unit), Cypress (E2E)                                                       |
+| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + e2e specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
 
@@ -111,7 +119,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
 
 ## Auth Model
 
@@ -178,8 +186,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **TypeScript strict mode** everywhere
 - **Functional components** with hooks only (no class components)
 - **Component naming**: PascalCase files, `function` keyword for component declarations
-- **Prettier**: no semicolons, single quotes, trailing comma es5, 2-space indent
-- Plugins: `prettier-plugin-organize-imports` + `prettier-plugin-tailwindcss`
+- **Biome** (code): no semicolons, single quotes, trailing comma es5, 2-space indent, line width 80; imports organized via Biome assist (`organizeImports`)
+- **Prettier**: Markdown/YAML plus the `playwright/` + `cypress/` e2e specs (Biome excludes those dirs)
+- Tailwind class sorting is not auto-enforced (deferred; previously `prettier-plugin-tailwindcss`)
 - **Imports**: use `@` and `~` path aliases
 - **GraphQL ops**: import from `@klicker-uzh/graphql`
 - **State**: Apollo Client for server state, React hooks for local state
@@ -187,9 +196,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Pre-commit / Pre-push
 
-- **pre-commit** (husky): runs `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
+- **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged checks: `prettier --check` on all staged files
+- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/`+`cypress/` specs
 
 ## Important Notes
 

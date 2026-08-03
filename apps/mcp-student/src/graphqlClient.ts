@@ -8,7 +8,7 @@ import {
   type TypedDocumentNode,
 } from '@apollo/client/core'
 import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
-import hashes from '@klicker-uzh/graphql/dist/client.json'
+import hashes from '@klicker-uzh/graphql/dist/client.json' with { type: 'json' }
 import {
   GetCoursePracticeQuizWithoutSolutionsDocument,
   RespondToElementStackDocument,

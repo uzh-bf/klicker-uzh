@@ -1,12 +1,7 @@
 {
   "include": ["src/index.ts", "src/client.ts", "src/prisma/client/**/*.ts"],
   "compilerOptions": {
-    "baseUrl": ".",
     "rootDir": "src",
-    "paths": {
-      "@klicker-uzh/prisma": ["src/index.ts"],
-      "@klicker-uzh/prisma/client": ["src/client.ts"]
-    },
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -27,9 +22,6 @@
     "sourceMap": true,
     /* AND if you're building for a library: */
     "declaration": true,
-    /* AND if you're building for a library in a monorepo: */
-    "composite": false,
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */
     "lib": ["es2022"]

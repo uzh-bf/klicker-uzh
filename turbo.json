@@ -131,9 +131,6 @@
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
     },
-    "@klicker-uzh/prisma#check": {
-      "dependsOn": ["build"]
-    },
     "@klicker-uzh/prisma#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "src/prisma/client/**"]

@@ -52,9 +52,6 @@ function getNextBaseConfig({
       '@klicker-uzh/prisma',
       '@uzh-bf/design-system',
     ],
-    typescript: {
-      ignoreBuildErrors: true,
-    },
     ...(includeI18n
       ? {
           i18n: {

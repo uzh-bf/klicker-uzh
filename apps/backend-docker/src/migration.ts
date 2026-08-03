@@ -1,7 +1,7 @@
 // ref: https://github.com/prisma/prisma/discussions/10854
 
 import type { PrismaMigrationClient } from '@klicker-uzh/graphql/src/types/app.js'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
 interface Migration {
   id: string
@@ -11,7 +11,7 @@ interface Migration {
 
 const migrations: Migration[] = []
 
-export async function migrate(prisma: InstanceType<typeof PrismaClient>) {
+export async function migrate(prisma: PrismaClient) {
   for (const { id, isIdempotent, migrate } of migrations) {
     const migration = await prisma.migration.findFirst({ where: { id } })
     if (migration === null) {
@@ -38,8 +38,3 @@ export async function migrate(prisma: InstanceType<typeof PrismaClient>) {
     }
   }
 }
-
-// const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-// const prisma = new PrismaClient()
-
-// await migrate(prisma)

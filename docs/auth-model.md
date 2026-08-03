@@ -36,7 +36,11 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 - **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
-- **LTI** — `apps/lti` (ltijs). Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
+- **LTI 1.3 only** — `apps/lti` (ltijs). Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
+
+**LTI 1.1 is retired and must not be reintroduced without signature verification.** The removed path derived a login identity from an unauthenticated form POST; no OAuth 1.0a signature was ever checked. `resolveOrCreateParticipantForLti` (`packages/graphql/src/services/accounts.ts`) now rejects any launch whose `scope` is not `LTI1.3`, so the trust boundary is enforced server-side rather than by the absence of a caller.
+
+Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
 

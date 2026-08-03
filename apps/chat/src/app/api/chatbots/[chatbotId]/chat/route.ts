@@ -1,9 +1,40 @@
+import { createHash, randomUUID } from 'node:crypto'
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import {
+  generateText,
+  type ModelMessage,
+  type StepResult,
+  stepCountIs,
+  streamText,
+  tool,
+} from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  formatKlickerChatContextForPrompt,
+  sanitizeKlickerChatContext,
+} from '@/src/services/chatContext'
+import { CreditsService } from '@/src/services/credits'
+import { DisclaimersService } from '@/src/services/disclaimers'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from '@/src/services/studentPracticeMcp'
+import { ThreadService } from '@/src/services/threads'
+import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
@@ -11,37 +42,6 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  generateText,
-  stepCountIs,
-  streamText,
-  tool,
-  type ModelMessage,
-  type StepResult,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
-import { type ReasoningEffort } from 'src/lib/config/reasoning'
-import {
-  formatKlickerChatContextForPrompt,
-  sanitizeKlickerChatContext,
-} from 'src/services/chatContext'
-import { CreditsService } from 'src/services/credits'
-import { DisclaimersService } from 'src/services/disclaimers'
-import {
-  formatPracticeCandidatesForPrompt,
-  getPracticeStackForQuiz,
-  lookupRelevantPracticeStacks,
-  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
-  toPracticeCandidateId,
-} from 'src/services/studentPracticeMcp'
-import { ThreadService } from 'src/services/threads'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -669,7 +669,8 @@ const mapAssistantStepContent = (
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST( // NOSONAR - legacy endpoint complexity predates this PR; this branch only adds scoped context handling.
+export async function POST(
+  // NOSONAR - legacy endpoint complexity predates this PR; this branch only adds scoped context handling.
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -746,7 +747,7 @@ export async function POST( // NOSONAR - legacy endpoint complexity predates thi
       .optional()
       .default([]),
   })
-  let parsed
+  let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
@@ -841,7 +842,7 @@ export async function POST( // NOSONAR - legacy endpoint complexity predates thi
         string,
         Record<string, string>
       >
-      if (systemPrompts && systemPrompts[selectedMode]) {
+      if (systemPrompts?.[selectedMode]) {
         systemPrompt =
           systemPrompts[selectedMode].prompt ||
           DEFAULT_PROMPT[selectedMode]?.prompt ||

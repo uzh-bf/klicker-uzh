@@ -168,7 +168,7 @@ analytics image and lint CI so the root quality gate runs inside the container.
 
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo).
-- Reset the DB: `pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force`.
+- Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
 - `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).

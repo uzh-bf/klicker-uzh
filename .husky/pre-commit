@@ -1,1 +1,10 @@
+# Local secret scan (host gitleaks binary; the check-gitleaks CI job enforces
+# it regardless). Graceful skip when the binary is absent so commits are never
+# hard-blocked on a missing local tool. Install locally: brew install gitleaks
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner --config .gitleaks.toml
+else
+  echo "⚠ gitleaks not installed — skipping local secret scan (CI enforces it). Install: brew install gitleaks"
+fi
+
 pnpm run check:all
