@@ -55,7 +55,7 @@ describe('settingsStore credits loading', () => {
     expect(useSettingsStore.getState().creditsLoaded).toBe(true)
   })
 
-  test('clears loaded state while refreshing and after a failed refresh', async () => {
+  test('keeps the last known balance visible across a failed refresh', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(creditsResponse(30)))
     await useSettingsStore.getState().loadCredits('chatbot-1')
     expect(useSettingsStore.getState().creditsLoaded).toBe(true)
@@ -67,9 +67,28 @@ describe('settingsStore credits loading', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValueOnce(failed.promise))
     const refresh = useSettingsStore.getState().loadCredits('chatbot-1')
 
-    expect(useSettingsStore.getState().creditsLoaded).toBe(false)
+    expect(useSettingsStore.getState().creditsLoaded).toBe(true)
     failed.resolve({ ok: false, statusText: 'Unavailable' })
     await refresh
+    expect(useSettingsStore.getState().creditsLoaded).toBe(true)
+    expect(useSettingsStore.getState().credits.current).toBe(30)
+  })
+
+  test('hides the footer instead of pinning the previous chatbot balance when a cross-chatbot load fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(creditsResponse(40)))
+    await useSettingsStore.getState().loadCredits('chatbot-a')
+    expect(useSettingsStore.getState().creditsLoaded).toBe(true)
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('offline')))
+    await useSettingsStore.getState().loadCredits('chatbot-b')
+
+    expect(useSettingsStore.getState().creditsLoaded).toBe(false)
+  })
+
+  test('stays unloaded when the very first load fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('offline')))
+    await useSettingsStore.getState().loadCredits('chatbot-1')
+
     expect(useSettingsStore.getState().creditsLoaded).toBe(false)
   })
 })

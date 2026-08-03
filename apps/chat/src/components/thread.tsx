@@ -69,6 +69,7 @@ import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { MessageSourcesProvider } from './message-sources-context'
 import { SourcesSection } from './sources-section'
+import { formatCredits } from './thread-credits-format'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -81,17 +82,6 @@ import { twMerge } from 'tailwind-merge'
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
-
-const formatCredits = (value: number) => {
-  if (!Number.isFinite(value)) return '0'
-  const absValue = Math.abs(value)
-  if (absValue === 0) return '0'
-
-  const decimals =
-    absValue < 1 ? Math.max(1, -Math.floor(Math.log10(absValue))) : 0
-  const rounded = value.toFixed(decimals)
-  return rounded.replace(/0+$/, '').replace(/\.$/, '')
-}
 
 const formatTitleCase = (value: string) =>
   value
@@ -803,7 +793,7 @@ const ComposerAttachButton: FC<{
     <>
       <input
         ref={inputRef}
-        data-cy={dataCy + '-attach-input' || 'chat-attach-input'}
+        data-cy={dataCy ? `${dataCy}-attach-input` : 'chat-attach-input'}
         type="file"
         accept={imageAttachmentAdapter.accept}
         multiple
@@ -817,7 +807,7 @@ const ComposerAttachButton: FC<{
       />
       <button
         type="button"
-        data-cy={dataCy + '-attach-button' || 'chat-attach-button'}
+        data-cy={dataCy ? `${dataCy}-attach-button` : 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
@@ -1262,7 +1252,7 @@ const AssistantMessage: FC<{
             alt=""
             width={chatbotAvatar ? '35' : '32'}
             height="35"
-            unoptimized={Boolean(chatbotAvatar)}
+            unoptimized
             className={twMerge(
               'hidden rounded-full bg-white sm:block',
               chatbotAvatar ? '' : 'p-1'
@@ -1277,7 +1267,7 @@ const AssistantMessage: FC<{
             alt=""
             width="24"
             height="24"
-            unoptimized={Boolean(chatbotAvatar)}
+            unoptimized
             className={twMerge(
               'rounded-full bg-white sm:hidden',
               chatbotAvatar ? '' : 'p-1'
