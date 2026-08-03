@@ -32,7 +32,8 @@ COPY packages/prisma/src/prisma/schema ./src/prisma/schema
 RUN addgroup -S nodejs -g 1001 && adduser -S -G nodejs -u 1001 prisma
 USER prisma
 
-# The CLI auto-discovers ./prisma.config.ts, which resolves the schema and reads
-# migrations from <schema-dir>/migrations.
+# Invoke the local binary directly (npx would re-parse dashed args and add npm
+# startup). The CLI auto-discovers ./prisma.config.ts, which resolves the schema
+# and reads migrations from <schema-dir>/migrations.
 # Requires only DATABASE_URL at runtime (no shadow DB, no generators).
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]

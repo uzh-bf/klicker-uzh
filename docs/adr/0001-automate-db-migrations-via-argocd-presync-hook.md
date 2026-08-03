@@ -16,7 +16,7 @@ Run `prisma migrate deploy` as an **ArgoCD-native `PreSync` hook Job** (`deploy/
 
 **Hook flavor — ArgoCD-native vs Helm-native.** Chose ArgoCD-native (`argocd.argoproj.io/hook: PreSync`). A single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native (`helm.sh/hook`) hooks on the chart; ArgoCD-native also gives explicit `sync-wave` ordering and avoids Helm's pre-install+pre-upgrade double-run semantics. Mirrors the reference projects on the same ArgoCD.
 
-**Migrator image — dedicated vs reuse backend.** Chose a dedicated minimal image. The backend runtime image installs `pnpm i --prod --ignore-scripts` and copies only `packages/prisma/dist`, so it carries neither the Prisma CLI nor the migration engine and cannot run `migrate deploy`. A `--target migrator` stage off the backend build would inherit `--ignore-scripts` and still lack the engine binary. A standalone `node:alpine` + global `prisma@<pinned>` install (lifecycle scripts enabled) guarantees the engine is present.
+**Migrator image — dedicated vs reuse backend.** Chose a dedicated minimal image. The backend runtime image installs `pnpm i --prod --ignore-scripts` and copies only `packages/prisma/dist`, so it carries neither the Prisma CLI nor the migration engine and cannot run `migrate deploy`. A `--target migrator` stage off the backend build would inherit `--ignore-scripts` and still lack the engine binary. A standalone `node:alpine` + local `prisma@<pinned>` install (lifecycle scripts enabled) guarantees the engine is present; the install must be local, not global, because `prisma.config.ts` imports `prisma/config`, which only resolves from the image's own `node_modules`.
 
 ## Consequences
 

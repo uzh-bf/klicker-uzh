@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-03
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) and [ci-and-deployment](./ci-and-deployment.md) document automatic deployment migrations: `prisma migrate deploy` runs as an ArgoCD PreSync hook Job from a dedicated Prisma 7 migrator image (local `prisma` install + `prisma.config.ts`), with manual deploy demoted to break-glass. Decision record: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md), including the materialised version-drift lesson now guarded by `util/check-prisma-sync.sh`.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
