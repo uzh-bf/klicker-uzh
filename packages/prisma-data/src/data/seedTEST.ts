@@ -32,6 +32,7 @@ import {
 } from './helpers.js'
 import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
+import { seedAdaptivePracticeQuizV2 } from './seedAdaptiveLearning.js'
 import { seedChatbots } from './seedChatbots.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
@@ -255,6 +256,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isAdaptiveLearningEnabled: true,
       ownerId: USER_ID_TEST,
       color: '#016272',
       pinCode: 123456789,
@@ -856,6 +858,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  await seedAdaptivePracticeQuizV2(prisma, PARTICIPANT_IDS)
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

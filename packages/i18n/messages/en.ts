@@ -416,6 +416,7 @@ export default {
       CATALOG_COLLECTION: 'Catalog Collection',
       ELEMENT: 'Element',
       COURSE: 'Course',
+      COMPETENCE_TREE: 'Competence Tree',
       SC: 'Single Choice Question',
       MC: 'Multiple Choice Question',
       KPRIM: 'Kprim Question',
