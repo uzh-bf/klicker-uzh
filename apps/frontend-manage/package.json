@@ -16,6 +16,7 @@
     "@fullcalendar/interaction": "6.1.20",
     "@fullcalendar/react": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
+    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
@@ -86,7 +87,8 @@
     "tailwindcss": "~4.1.11",
     "tailwindcss-animate": "~1.0.7",
     "tw-animate-css": "~1.3.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "next build --webpack",
@@ -99,7 +101,8 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3002",
     "lint": "eslint .",
     "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:run": "vitest run test"
   },
   "engines": {
     "node": "=24"

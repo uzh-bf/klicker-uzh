@@ -1,0 +1,89 @@
+fragment CompetenceTreeData on CompetenceTree {
+  id
+  name
+  displayName
+  description
+  maxDepth
+  thetaMin
+  thetaMax
+  defaultDiscrimination
+  levelMappingRule
+  levelCount
+  nodeCount
+  assignmentCount
+  adaptiveQuizCount
+  draftAdaptiveQuizCount
+  publishedAdaptiveQuizCount
+  isArchived
+  isOwner
+  canEdit
+  isStructurallyLocked
+  courseLinks {
+    id
+    courseId
+    courseName
+    courseDisplayName
+    createdAt
+  }
+  levels {
+    id
+    label
+    order
+    theta
+    lowerBound
+    upperBound
+  }
+  nodes {
+    id
+    kind
+    name
+    description
+    order
+    depth
+    weight
+    parentId
+  }
+  levelCoverages {
+    id
+    leafNodeId
+    levelId
+    targetItemCount
+    enabled
+  }
+  elementAssignments {
+    id
+    elementId
+    elementType
+    elementName
+    elementVersion
+    leafNodeId
+    levelId
+    enabled
+    discrimination
+    enablePercentInput
+    choiceCount
+    a
+    b
+    c
+  }
+  validation {
+    valid
+    effectiveMaxDepth
+    errors {
+      code
+      message
+      path
+    }
+    warnings {
+      code
+      message
+      path
+    }
+    normalizedRootWeights {
+      nodeId
+      weight
+    }
+  }
+  createdAt
+  updatedAt
+}

@@ -21,6 +21,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { requestNavigationConfirmation } from '../../lib/navigationGuard'
 import SupportModal from './SupportModal'
 
 function Header({ user }: { user?: User | null }): React.ReactElement {
@@ -40,13 +41,23 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
   const courses = courseData?.userCourses
+  const navigate = (url: string) => {
+    if (requestNavigationConfirmation()) void router.push(url)
+  }
 
   const resourceElements: NavigationMenuItemProps[] = [
+    {
+      key: 'competence-trees-item',
+      type: 'link' as const,
+      label: t('manage.resources.competenceTrees'),
+      onClick: () => navigate('/resources/competenceTrees'),
+      data: { cy: 'competence-trees' },
+    },
     {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
-      onClick: () => router.push('/resources/answerCollections'),
+      onClick: () => navigate('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
     ...(user?.privatePreview
@@ -55,7 +66,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
             key: 'chatbots-item',
             type: 'link' as const,
             label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
+            onClick: () => navigate('/resources/chatbots'),
             data: { cy: 'chatbots' },
           },
         ]
@@ -65,7 +76,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.catalog'),
-      onClick: () => router.push('/resources/catalog'),
+      onClick: () => navigate('/resources/catalog'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
       notification:
         pendingRequestData &&
@@ -82,7 +93,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: !user?.privatePreview,
       label: t('manage.general.userGroups'),
-      onClick: () => router.push('/resources/userGroups'),
+      onClick: () => navigate('/resources/userGroups'),
       badge: !user?.privatePreview ? t('shared.generic.comingSoon') : undefined,
       data: { cy: 'user-groups' },
       className: {
@@ -96,7 +107,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'link' as const,
       disabled: true,
       label: t('manage.general.mediaLibrary'),
-      onClick: () => router.push('/resources/mediaLibrary'),
+      onClick: () => navigate('/resources/mediaLibrary'),
       badge: t('shared.generic.comingSoon'),
       data: { cy: 'media-library' },
       className: {
@@ -112,7 +123,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'button',
       key: 'library-menubar-item',
       label: t('manage.general.library'),
-      onClick: () => router.push('/'),
+      onClick: () => navigate('/'),
       active: router.pathname == '/',
       data: { cy: 'library' },
     },
@@ -120,7 +131,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'button',
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
-      onClick: () => router.push('/activities'),
+      onClick: () => navigate('/activities'),
       active: router.pathname == '/activities',
       data: { cy: 'activities' },
     },
@@ -128,7 +139,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'button',
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
-      onClick: () => router.push('/courses'),
+      onClick: () => navigate('/courses'),
       active: router.pathname == '/courses',
       data: { cy: 'courses' },
     },
@@ -139,6 +150,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
+        router.pathname.startsWith('/resources/competenceTrees') ||
         router.pathname == '/resources/answerCollections' ||
         router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||
@@ -173,22 +185,20 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
                     key: `activity-dashboard-${course.name}`,
                     type: 'link',
                     label: t('manage.analytics.activity'),
-                    onClick: () =>
-                      router.push(`/analytics/${course.id}/activity`),
+                    onClick: () => navigate(`/analytics/${course.id}/activity`),
                   },
                   {
                     key: `progress-dashboard-${course.name}`,
                     type: 'link',
                     label: t('manage.analytics.performance'),
                     onClick: () =>
-                      router.push(`/analytics/${course.id}/performance`),
+                      navigate(`/analytics/${course.id}/performance`),
                   },
                   {
                     key: `quiz-dashboard-${course.name}`,
                     type: 'link',
                     label: t('manage.analytics.quizzes'),
-                    onClick: () =>
-                      router.push(`/analytics/${course.id}/quizzes`),
+                    onClick: () => navigate(`/analytics/${course.id}/quizzes`),
                   },
                 ],
               })) ?? []),
@@ -200,7 +210,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
                 key: 'analytics-all-courses',
                 type: 'link',
                 label: t('manage.analytics.olderCourses'),
-                onClick: () => router.push('/analytics'),
+                onClick: () => navigate('/analytics'),
               },
             ],
             data: { cy: 'analytics' },
@@ -214,17 +224,21 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
     {
       type: 'button',
       key: 'support-menubar-item',
+      label: t('manage.support.modalTitle'),
       icon: faQuestionCircle,
+      active: false,
       onClick: () => setShowSupportModal(true),
-      className: { icon: '-mx-1', root: 'px-3' },
+      className: { icon: '-mx-1', root: 'px-3', label: 'sr-only' },
     },
     {
       type: 'dropdown',
       key: 'quizzes-menubar-dropdown',
+      label: t('manage.liveQuizzes.runningLiveQuizzes'),
       icon: faPlayCircle,
       disabled: !quizzes || quizzes.length === 0,
       className: {
         trigger: 'px-3',
+        label: 'sr-only',
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
           '-mx-1',
@@ -237,7 +251,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           key: quiz.id,
           type: 'link',
           label: quiz.name,
-          onClick: () => router.push(`/quizzes/${quiz.id}/cockpit`),
+          onClick: () => navigate(`/quizzes/${quiz.id}/cockpit`),
           data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
@@ -252,7 +266,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           key: 'settings',
           type: 'link',
           label: t('shared.generic.settings'),
-          onClick: () => router.push('/user/settings'),
+          onClick: () => navigate('/user/settings'),
           data: { cy: 'menu-user-settings' },
         },
         ...(user?.role === UserRole.Admin
@@ -261,7 +275,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
                 key: 'admin',
                 type: 'link' as 'link',
                 label: t('manage.general.adminPanel'),
-                onClick: () => router.push('/admin'),
+                onClick: () => navigate('/admin'),
                 data: { cy: 'admin-panel-page' },
               },
             ]
@@ -274,8 +288,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           key: 'logout',
           type: 'link',
           label: t('shared.generic.logout'),
-          onClick: () =>
-            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+          onClick: () => navigate(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
           data: { cy: 'logout' },
         },
       ],
@@ -288,27 +301,27 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        className="print:hidden! flex h-full w-full min-w-0 max-w-full flex-row items-center justify-between overflow-x-auto overscroll-x-contain border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
-        <div className="ml-4 flex flex-row items-center gap-1.5">
+        <div className="ml-4 flex shrink-0 flex-row items-center gap-1.5">
           <Image
             priority
             src="/img/klicker_icon_transparent.png"
             alt="KlickerUZH Logo"
             width={35}
             height={35}
-            onClick={() => router.push('/')}
+            onClick={() => navigate('/')}
             className="hover:cursor-pointer"
           />
           <Navigation
             items={leftNavigation}
-            className={{ root: 'shadow-none' }}
+            className={{ root: 'shrink-0 shadow-none' }}
           />
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          className={{ root: '-gap-1 flex h-10 shrink-0 flex-row shadow-none' }}
         />
       </div>
       {showSupportModal && (

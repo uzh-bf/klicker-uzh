@@ -65,6 +65,10 @@ output/
 playwright/playwright-report/
 playwright/test-results/
 
+# Generated adaptive-learning simulation evidence (the concise summary is tracked).
+packages/adaptive-learning/reports/simulation-report.json
+packages/adaptive-learning/.simulation-build/
+
 # One-off course data pulls (contain real participant data — never commit).
 # Course-award seed payloads, comparison sheets, and state dumps all live in
 # _local/, so a new round cannot leak data by picking an unignored filename.

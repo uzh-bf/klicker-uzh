@@ -14,8 +14,10 @@ export const ObjectAccess = builder.enumType('ObjectAccess', {
 
 export const ObjectType = builder.enumType('ObjectType', {
   values: Object.values(DB.ObjectType).filter(
-    // exclude user group from the graphql object type
-    (type) => type !== DB.ObjectType.USER_GROUP
+    // Competence trees use feature-specific authorization rather than generic sharing.
+    (type) =>
+      type !== DB.ObjectType.USER_GROUP &&
+      type !== DB.ObjectType.COMPETENCE_TREE
   ) as DB.ObjectType[],
 })
 

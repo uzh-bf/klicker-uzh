@@ -1,0 +1,5 @@
+mutation CreateCompetenceTree($input: CompetenceTreeInput!) {
+  createCompetenceTree(input: $input) {
+    ...CompetenceTreeData
+  }
+}

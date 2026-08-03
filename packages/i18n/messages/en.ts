@@ -252,6 +252,7 @@ export default {
       multiplier: 'Multiplier',
       options: 'Options',
       correct: 'Correct',
+      incorrect: 'Incorrect',
       delete: 'Delete',
       edit: 'Edit',
       duplicate: 'Duplicate',
@@ -849,6 +850,187 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have successfully completed the practice quiz <it>{name}</it>. Since you are not a member of this course, your points and experience points will not be saved. To collect points and XP in the future, join the course now.',
       correctAnswerOptions: 'Correct answer options',
       topNAnswers: 'Top {number} answers',
+      adaptive: {
+        intro: {
+          title: 'Adaptive practice quiz',
+          purpose:
+            'Questions adapt to your responses to estimate your current competence level.',
+          expectedLength:
+            '{maximum, plural, one {The quiz has at most # question.} other {The quiz has at most # questions.}}',
+          noBacktracking:
+            'After submitting an answer, you cannot return to earlier questions.',
+          resumable: 'You can leave the quiz and resume it later.',
+          privacy:
+            'Your result helps you choose what to practise next. Course instructors see only anonymous group results.',
+        },
+        question: {
+          progress: 'Question {current}, at most {maximum}',
+          timer: 'Elapsed {time}',
+          status: {
+            building: 'Building your competence profile',
+            refining: 'Refining your competence profile',
+          },
+        },
+        actions: {
+          start: 'Start quiz',
+          resume: 'Resume quiz',
+          submit: 'Submit answer',
+          startOver: 'Start over',
+          startOverTitle: 'Start over?',
+          startOverDescription:
+            'Your current attempt and its responses will be discarded.',
+          startOverConfirm: 'Start over',
+          practiceAgain: 'Practice again',
+        },
+        errors: {
+          load: 'The adaptive practice quiz could not be loaded.',
+          start: 'The quiz could not be started. Please try again.',
+          resume: 'The quiz could not be resumed. Please try again.',
+          startOver: 'A new attempt could not be started. Please try again.',
+          submit: 'Your response could not be submitted. Please try again.',
+          result: 'Your result could not be loaded. Please try again.',
+        },
+        feedback: {
+          correct: 'Correct',
+          incorrect: 'Not correct yet',
+          score: 'Score: {score}%',
+        },
+        unavailable: {
+          title: 'Quiz unavailable',
+          description: 'This adaptive practice quiz is currently unavailable.',
+        },
+        preview: {
+          label: 'Preview',
+          description:
+            'You are viewing a preview of this adaptive practice quiz.',
+        },
+        validation: {
+          numericRequired: 'Enter a number.',
+          numericInvalid: 'Enter a valid number.',
+          numericRange: 'Enter a value between {min} and {max}.',
+          numericMin: 'Enter a value of at least {min}.',
+          numericMax: 'Enter a value of at most {max}.',
+          numericPercentRange: 'Enter a percentage between 0 and 100.',
+          numericPercentAllowed: 'Percent input is accepted.',
+          freeTextRequired: 'Enter an answer.',
+          freeTextTooLong:
+            '{maxLength, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}',
+        },
+        result: {
+          title: 'Your result',
+          headline: 'Your current level: {level}',
+          incompleteHeadline: 'No complete result yet',
+          betweenHeadline: 'Between {levels}',
+          poolLimitedHeadline: 'More suitable questions are needed',
+          researchHeadline: 'Practice completed',
+          incomplete:
+            'There is not enough evidence to determine your overall level.',
+          probability: '({probability}% probability)',
+          answeredQuestions:
+            '{count, plural, one {# question answered} other {# questions answered}}',
+          classification: {
+            CLASSIFIED: {
+              label: 'Level determined',
+              description:
+                'The available evidence supports this level. The range below shows the remaining uncertainty.',
+            },
+            BETWEEN_LEVELS: {
+              label: 'Between levels',
+              description:
+                'Your responses support two neighbouring levels. The range below shows where the result overlaps them.',
+            },
+            INSUFFICIENT_EVIDENCE: {
+              label: 'Not enough evidence',
+              description:
+                'There is not yet enough evidence to report a dependable level.',
+            },
+            POOL_LIMITED: {
+              label: 'Question pool limited',
+              description:
+                'The available questions could not narrow the estimate enough for a dependable level.',
+            },
+            RESEARCH_ONLY: {
+              label: 'No proficiency result',
+              description:
+                'This session collected responses for calibration and does not report a proficiency level.',
+            },
+          },
+          nextStep: {
+            title: 'What to do next',
+            CLASSIFIED:
+              'Continue with material at this level and revisit any competence areas shown below it.',
+            BETWEEN_LEVELS:
+              'Practise the higher of the two levels, then repeat the quiz when you have more evidence.',
+            INSUFFICIENT_EVIDENCE:
+              'Practise across the competence areas and repeat the quiz to gather more evidence.',
+            POOL_LIMITED:
+              'Use the competence profile as orientation and ask your instructor for additional practice material.',
+            RESEARCH_ONLY: '',
+          },
+          interpretation: {
+            MASTERY: {
+              headline: 'Highest demonstrated level: {level}',
+              description:
+                'The placement rule reports the highest level threshold reached by your estimate. Use the confidence and competence profile when interpreting it.',
+            },
+            NEAREST: {
+              headline: 'Estimated level: {level}',
+              description:
+                'The diagnostic rule reports the level anchor nearest your current estimate. Use the confidence and competence profile when interpreting it.',
+            },
+          },
+        },
+        confidence: {
+          label: 'Confidence',
+          HIGH: 'High',
+          MODERATE: 'Moderate',
+          LOW: 'Low',
+          INSUFFICIENT_DATA: 'Insufficient data',
+        },
+        nearBoundary: {
+          label: 'Near a level boundary',
+          description:
+            'Your result is close to the boundary between two levels.',
+        },
+        stopReasons: {
+          ABANDONED: 'This attempt was ended before it was completed.',
+          CLASSIFIED: 'Your level could be estimated reliably.',
+          ALL_ROOTS_CLASSIFIED:
+            'All competence areas could be estimated reliably.',
+          TOTAL_QUESTION_CAP:
+            'The quiz ended after the maximum number of questions.',
+          NODE_QUESTION_CAP:
+            'The question limit for a competence area was reached.',
+          POOL_EXHAUSTED: 'No more suitable questions were available.',
+          INSUFFICIENT_DATA:
+            'There was not enough evidence for a complete result.',
+        },
+        trajectory: {
+          title: 'Estimate over time',
+          questionAxis: 'Answered questions',
+          levelAxis: 'Estimated level',
+          question: 'Question {number}',
+          estimate: 'Estimate',
+          confidenceRange: 'Confidence range',
+          finalResult: 'Final result',
+          noData: 'No trajectory data is available.',
+          summary:
+            '{count, plural, one {After # answered question, your final estimate is {level}.} other {After # answered questions, your final estimate is {level}.}}',
+          incompleteSummary:
+            '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
+        },
+        profile: {
+          title: 'Competence profile',
+          overall: 'Overall',
+          responses: '{count, plural, one {# response} other {# responses}}',
+          insufficientData: 'Insufficient data',
+          betweenLevels: 'Between {levels}',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'No proficiency result',
+          expand: 'Show details for {name}',
+          collapse: 'Hide details for {name}',
+        },
+      },
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',
@@ -1231,6 +1413,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortAscending: 'Sort ascending',
+      sortDescending: 'Sort descending',
+      selectAllElements: 'Select all elements',
+      deselectAllElements: 'Deselect all elements',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -1871,6 +2057,58 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       questionSavedSuccessfully: 'The question has been saved successfully.',
       questionSavedFailed:
         'An error occurred while saving the question. Please check the error messages in the form and review the entries.',
+      adaptiveMapping: {
+        title: 'Adaptive mapping',
+        description:
+          'Assign this element to a leaf subcompetence and level in one or more competence trees. Adaptive estimates count only fully correct answers as correct; partial scores count as incorrect.',
+        unsupportedType:
+          'Adaptive mapping is available only for numerical, single-choice, multiple-choice, KPRIM, and controlled-answer free-text questions.',
+        saveElementFirst:
+          'Save the element before changing its adaptive mappings.',
+        assignDuringCreation: 'Assign to a competence tree',
+        createAndAssign: 'Create element and assign',
+        noTrees: 'No competence trees are available.',
+        noAdditionalTrees: 'No additional competence trees match the search.',
+        tree: 'Competence tree',
+        searchTrees: 'Search competence trees',
+        selectTree: 'Select a competence tree...',
+        noAssignableLeaves:
+          'This competence tree has no enabled leaf-level coverage to assign.',
+        leaf: 'Leaf subcompetence',
+        selectLeaf: 'Select a leaf subcompetence...',
+        level: 'Level',
+        expectedDifficulty: 'Expected item difficulty',
+        expectedDifficultyTooltip:
+          'Choose the level at which you expect this item to be most informative. This initial estimate is replaced by an approved calibration.',
+        selectLevel: 'Select a level...',
+        enabled: 'Use in adaptive quizzes',
+        enablePercentInput: 'Allow percentage input',
+        selectedB: 'Selected difficulty (b)',
+        defaultA: 'Default discrimination (a)',
+        effectiveA: 'Effective discrimination (a)',
+        inferredC: 'Inferred guessing (c)',
+        choiceCount: 'Answer choices',
+        notAssigned: 'Not assigned',
+        add: 'Add mapping',
+        remove: 'Remove mapping',
+        save: 'Save mapping',
+        assignmentErrors: {
+          locked:
+            'This competence tree is already used by a practice quiz. Duplicate the tree before adding this element.',
+          coverage:
+            'The selected leaf and level are no longer enabled. Choose an available leaf-level combination.',
+          invalid:
+            'This adaptive mapping is not valid. Review the selected leaf, level, and answer configuration.',
+          unavailable:
+            'This competence tree is no longer available to edit. Refresh the catalog or choose another tree.',
+        },
+        states: {
+          archived: 'Archived',
+          locked: 'Structurally locked',
+          owner: 'Owned',
+          readOnly: 'Read-only',
+        },
+      },
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
@@ -2200,6 +2438,259 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please enter a valid display name for your clue.',
       clueContentMissing: 'Please enter a content for your clue.',
       clueValueMissing: 'Please enter a value for your numerical clue.',
+      adaptive: {
+        loadFailed: 'The adaptive practice quiz could not be loaded.',
+        mode: {
+          label: 'Quiz mode',
+          standard: 'Standard',
+          adaptive: 'Adaptive',
+          standardDescription:
+            'Uses the question stacks and order configured in this quiz.',
+          adaptiveDescription:
+            'Selects questions dynamically from a linked competence tree and reports level-based results.',
+          confirmTitle: 'Switch quiz mode?',
+          confirmDescription:
+            'Switching to {mode} mode removes the current mode-specific questions and settings. This cannot be undone.',
+          confirmAction: 'Switch mode',
+          rolloutUnavailable:
+            'Adaptive learning is currently available only in selected pilot courses.',
+        },
+        preset: {
+          DIAGNOSTIC: 'Diagnostic / self-assessment',
+          PLACEMENT: 'Placement / mastery',
+          PLACEMENT_UNAVAILABLE: 'Placement (not yet available)',
+          RESEARCH: 'Research / calibration',
+        },
+        research: {
+          nonClassifying:
+            'Research mode collects responses for item calibration. It does not classify learners or show them a competence level.',
+        },
+        attemptPolicy: {
+          FIRST_COMPLETED: 'First completed attempt',
+          LATEST_COMPLETED: 'Latest completed attempt',
+        },
+        levelMapping: {
+          MASTERY: 'Mastery threshold',
+          NEAREST: 'Nearest level',
+        },
+        settings: {
+          noPoints:
+            'Adaptive practice quizzes do not award points or experience points.',
+          preset: 'Preset',
+          totalQuestionCap: 'Maximum questions',
+          showTimer: 'Show timer',
+          attemptPolicy: 'Attempt used for results',
+          advanced: 'Advanced adaptive settings',
+          perLeafQuestionCap: 'Maximum questions per leaf',
+          minQuestionsPerLeaf: 'Minimum questions per leaf',
+          classificationZ: 'Classification z-value',
+          levelMappingRule: 'Level mapping',
+          topInformationRatio: 'Top-information pool ratio',
+          defaultDiscrimination: 'Default discrimination (a)',
+        },
+        assignments: {
+          title: 'Question pool',
+          searchPlaceholder: 'Search by element name or ID...',
+          allLeaves: 'All leaves',
+          allLevels: 'All levels',
+          state: {
+            ALL: 'All states',
+            ENABLED: 'Enabled',
+            DISABLED: 'Disabled',
+          },
+          use: 'Use',
+          element: 'Element',
+          leaf: 'Leaf',
+          level: 'Level',
+          effective: 'Effective pool',
+          discrimination: 'Discrimination (a)',
+          included: 'Included',
+          excluded: 'Excluded',
+        },
+        coverage: {
+          title: 'Coverage readiness',
+          leaf: 'Leaf',
+        },
+        hierarchy: {
+          title: 'Quiz hierarchy',
+          directIntent:
+            'Changes here apply only to this quiz; the shared competence tree remains unchanged.',
+          effectiveState: 'Effective state',
+          competence: 'Competence',
+          subcompetence: 'Subcompetence',
+          weight: 'Weight',
+          cap: 'Question cap',
+          effectiveEnabled: 'Included',
+          effectiveDisabled: 'Excluded',
+          disableConfirmTitle: 'Exclude hierarchy branch?',
+          disableConfirmDescription:
+            'Exclude "{name}"? This also excludes {descendants, plural, one {# descendant node} other {# descendant nodes}} and {assignments, plural, one {# mapped element} other {# mapped elements}} from this quiz.',
+          disableAction: 'Exclude branch',
+        },
+        setup: {
+          title: 'Adaptive setup',
+          tooltip:
+            'Select a competence tree, configure the effective pool, and verify readiness.',
+          tree: 'Competence tree',
+          searchTrees: 'Search competence trees',
+          selectTree: 'Select a competence tree...',
+          linkedTrees: 'Linked to this course',
+          ownedUnlinkedTrees: 'Your unlinked trees',
+          loadMoreLinked: 'Load more linked trees',
+          loadMoreOwned: 'Load more owned trees',
+          linkSuccess: 'The competence tree was linked to the course.',
+          linkFailed: 'The competence tree could not be linked to the course.',
+          linkTree: 'Link to course',
+          courseRequired:
+            'Select a course before configuring adaptive delivery.',
+          linkRequired:
+            'Link the selected competence tree to this course before continuing.',
+        },
+        scale: {
+          title: 'Scale and calibration',
+          version: 'Scale version {version}',
+          noActive:
+            'This competence tree has no active scale. Create, review, and activate a scale before publishing.',
+          legacyMeasurement:
+            'This quiz still uses the legacy measurement model. Use active scale version {version} to configure Bayesian IRT.',
+          newerActiveAvailable:
+            'A newer active scale version {version} is available. Existing published attempts keep their original scale.',
+          useActive: 'Use scale version {version}',
+          standardSetting: 'Standard setting approved',
+          empiricalValidation: 'Empirical holdout approved',
+        },
+        preview: {
+          emptyResponse: 'The adaptive preview returned no data.',
+          refresh: 'Refresh preview',
+        },
+        readiness: {
+          notChecked: 'Readiness has not been checked yet.',
+          ready: 'Ready to publish',
+          notReady: 'Not ready to publish',
+          stale: 'Preview out of date',
+          expectedLength: 'Expected questions',
+          duration: 'Estimated duration',
+          minutes: '{value} min',
+          roots: 'Enabled competences',
+          leaves: 'Enabled leaves',
+          assignments: 'Enabled assignments',
+          errors: 'Blocking issues',
+          warnings: 'Warnings',
+          reachability: 'Root competence reachability',
+          root: 'Root competence',
+          available: 'Available items',
+          allocated: 'Allocated questions',
+          levels: 'Classifiable levels',
+          minimumSe: 'Minimum reachable SE',
+          issues: {
+            ADAPTIVE_COURSE_DISABLED:
+              'Adaptive learning is not enabled for this course.',
+            ADAPTIVE_COMPETENCE_TREE_UNAVAILABLE:
+              'The competence tree was archived, deleted, or unlinked from this course.',
+            ADAPTIVE_NO_ENABLED_COMPETENCE:
+              'Enable at least one root competence.',
+            ADAPTIVE_COMPETENCE_WITHOUT_ENABLED_LEAF:
+              'The enabled competence "{nodeName}" has no enabled leaf.',
+            ADAPTIVE_ITEM_UNAVAILABLE:
+              'The element "{elementName}" was deleted and cannot be added to a new adaptive pool.',
+            ADAPTIVE_ITEM_ACCESS_REVOKED:
+              'The competence tree owner can no longer access the element "{elementName}". Restore access or duplicate the tree with an available element.',
+            ADAPTIVE_ITEM_NOT_SCORABLE:
+              'The element "{elementName}" has no controlled answer that can be graded adaptively.',
+            ADAPTIVE_ITEM_PARAMETERS_INVALID:
+              'The element "{elementName}" has invalid effective item parameters.',
+            ADAPTIVE_COVERAGE_CELL_EMPTY:
+              'Every enabled leaf and level combination needs at least one enabled element.',
+            ADAPTIVE_COVERAGE_BELOW_PRODUCT_MINIMUM:
+              'Production presets require {minimumValue} independent, enabled, scorable elements in this leaf and level combination; {enabledAssignmentCount} are available.',
+            ADAPTIVE_COVERAGE_BELOW_TARGET:
+              'The target is {targetItemCount} elements, but only {enabledAssignmentCount} {enabledAssignmentCount, plural, one {element is} other {elements are}} available.',
+            ADAPTIVE_MINIMUM_EVIDENCE_UNREACHABLE:
+              'The leaf "{nodeName}" requires {requiredQuestionCount} questions, but only {availableItemCount} enabled elements are available.',
+            ADAPTIVE_MINIMUM_EVIDENCE_CAPPED:
+              'The node "{nodeName}" requires {requiredQuestionCount} questions, but its effective cap is {effectiveQuestionCap}.',
+            ADAPTIVE_GLOBAL_MINIMUM_EVIDENCE_CAPPED:
+              'The enabled leaves require {requiredQuestionCount} questions, but the total cap is {totalQuestionCap}.',
+            ADAPTIVE_CLASSIFICATION_BANDS_UNREACHABLE:
+              '{classifiableLevelCount} of {levelCount} level bands can be classified for "{nodeName}" under the current cap and uncertainty interval.',
+            ADAPTIVE_TIME_BUDGET_EXCEEDED:
+              'The coverage is expected to take about {estimatedDurationMinutes} minutes using {secondsPerItem} seconds per item.',
+            ADAPTIVE_CONFIG_INTEGER_RANGE:
+              'The setting {field} must be a whole number between {minimumValue} and {maximumValue}.',
+            ADAPTIVE_PER_LEAF_CAP_INVALID:
+              'The per-leaf cap must be positive and no larger than the total cap of {totalQuestionCap}.',
+            ADAPTIVE_MIN_QUESTIONS_EXCEEDS_TOTAL:
+              'The minimum questions per leaf cannot exceed the total cap of {totalQuestionCap}.',
+            ADAPTIVE_CLASSIFICATION_Z_INVALID:
+              'The classification z-value must be greater than 0 and at most {maximumValue}.',
+            ADAPTIVE_TOP_INFORMATION_RATIO_INVALID:
+              'The top-information ratio must be greater than 0 and at most {maximumValue}.',
+            ADAPTIVE_DEFAULT_DISCRIMINATION_INVALID:
+              'Default discrimination must be greater than 0 and at most {maximumValue}.',
+            ADAPTIVE_STACKS_FORBIDDEN:
+              'Adaptive practice quizzes cannot contain standard question stacks.',
+            ADAPTIVE_RESEARCH_SETTINGS_FORBIDDEN:
+              'Advanced research settings are available only with the research preset.',
+            ADAPTIVE_ASSIGNMENT_INVALID:
+              'Assignment {assignmentId} does not have a supported element type and valid level.',
+            ADAPTIVE_NODE_OVERRIDE_INVALID:
+              'Node override {nodeId} is duplicated or does not belong to the selected tree.',
+            ADAPTIVE_NON_ROOT_WEIGHT_FORBIDDEN:
+              'Quiz weights can be set only for root competences.',
+            ADAPTIVE_NODE_CAP_INVALID:
+              'Node question caps must be whole numbers between 1 and {maximumValue}.',
+            ADAPTIVE_ELEMENT_OVERRIDE_INVALID:
+              'Element override {assignmentId} is duplicated or does not belong to the selected tree.',
+            ADAPTIVE_DISCRIMINATION_OVERRIDE_FORBIDDEN:
+              'Quiz-specific discrimination overrides require the research preset.',
+            ADAPTIVE_DISCRIMINATION_OVERRIDE_INVALID:
+              'Discrimination must be greater than 0 and at most {maximumValue}.',
+            ADAPTIVE_ROOT_WEIGHT_INVALID:
+              'The enabled competence "{nodeName}" needs a positive finite weight.',
+            ADAPTIVE_CONFIG_MISSING:
+              'The adaptive practice quiz configuration was not found.',
+            ADAPTIVE_V2_SCALE_NOT_ACTIVE:
+              'The selected competence scale is not active or is no longer supported.',
+            ADAPTIVE_V2_PLACEMENT_UNAVAILABLE:
+              'Placement is not yet available for calibrated adaptive quizzes. Select Diagnostic or Research.',
+            ADAPTIVE_V2_CALIBRATION_MISSING:
+              'The element "{elementName}" needs an approved calibration for the selected scale.',
+            ADAPTIVE_V2_CALIBRATION_VERSION_MISMATCH:
+              'The element "{elementName}" changed after calibration. Import a calibration for its current version.',
+            ADAPTIVE_V2_CALIBRATION_FLAGGED:
+              'The element "{elementName}" was excluded by calibration review.',
+            ADAPTIVE_V2_INFORMATION_GAP:
+              'The calibrated item bank has too little information near a level boundary.',
+            ADAPTIVE_V2_CUT_SCORE_UNREACHABLE:
+              'The calibrated item bank does not contain suitable questions near a level boundary.',
+            ADAPTIVE_V2_RESEARCH_ANCHORS_REQUIRED:
+              'Every enabled leaf and level band needs at least one calibrated anchor item for Research.',
+            ADAPTIVE_V2_RESEARCH_DESIGN_DISCONNECTED:
+              'Research needs calibration collection enabled for the course and at least one eligible field-test item.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_REQUIRED:
+              'Diagnostic publication requires independently approved holdout validation.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_FAILED:
+              'The empirical validation has not passed the release criteria for Diagnostic publication.',
+            ADAPTIVE_V2_EMPIRICAL_VALIDATION_STALE:
+              'The approved empirical validation does not match the current calibrated item bank.',
+            unknown: 'The adaptive configuration contains an unknown issue.',
+          },
+        },
+        validation: {
+          number: 'Enter a valid number.',
+          required: 'This field is required.',
+          integer: 'Enter a whole number.',
+          positive: 'Enter a value greater than 0.',
+          questionCapMax: 'Enter no more than 1000 questions.',
+          classificationZMax: 'Enter a value no greater than 5.',
+          ratioMax: 'Enter a value no greater than 1.',
+          discriminationMax: 'Enter a value no greater than 10.',
+          treeRequired: 'Select a competence tree.',
+          courseNotEnabled:
+            'Select a course that is enabled for the adaptive-learning pilot.',
+          nonNegative: 'Enter 0 or a positive value.',
+        },
+      },
     },
     template: {
       convertToTemplate: 'Convert {activityType} to Template',
@@ -2484,6 +2975,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyCourseAssignment: 'Modify Course Assignment',
       duplicatePracticeQuiz: 'Duplicate Practice Quiz',
     },
+    adaptivePublication: {
+      immediateOnly:
+        '"{title}" can currently be published only immediately. Scheduling is unavailable for adaptive practice quizzes.',
+      checkingReadiness: 'Checking publication readiness...',
+      emptyResponse: 'Publishing the adaptive practice quiz returned no data.',
+      publishFailed: 'The adaptive practice quiz could not be published.',
+      researchNonClassifying:
+        'Research mode collects response data for calibration. Students will not receive a competence classification or level result.',
+      researchConfirmation:
+        'I understand that this publication is for calibration data collection and does not classify students.',
+    },
     microLearnings: {
       viewMicroLearning: 'View Microlearning',
       publishUnpublishMicroLearning: 'Publish / Unpublish Microlearning',
@@ -2722,6 +3224,90 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
       showResults: 'Show Results',
       showQRCodes: 'Show QR Codes',
+      adaptive: {
+        title: 'Adaptive cohort results',
+        calibration: {
+          title: 'Calibration health',
+          openTree: 'Open competence tree',
+          loadFailed: 'Calibration health could not be loaded.',
+        },
+        attemptSummary: 'Attempt summary',
+        attempts: {
+          total: 'Total',
+          completed: 'Released completed results',
+          inProgress: 'In progress',
+          abandoned: 'Abandoned',
+          classified: 'Classified',
+          betweenLevels: 'Between levels',
+          insufficientEvidence: 'Insufficient evidence',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'Research only',
+          capped: 'Question cap reached',
+          poolExhausted: 'Question pool exhausted',
+          stoppedInsufficientData: 'Stopped with insufficient data',
+          insufficientData: 'Insufficient data',
+          nearBoundary: 'Near a level boundary',
+        },
+        distributionStatuses: {
+          betweenLevels: 'Between levels',
+          insufficientEvidence: 'Insufficient evidence',
+          poolLimited: 'Question pool limited',
+          researchOnly: 'Research only',
+        },
+        stopSummary: 'Stopping outcomes',
+        qualitySummary: 'Quality flags',
+        suppressedValue: 'Withheld',
+        notEnoughData: 'Not enough data',
+        suppression: {
+          cohort:
+            'Some values are withheld unless every non-empty result group and its complement contain at least five released participants.',
+          summary:
+            'Outcome counts are withheld when either the result group or its complement is too small.',
+          distribution:
+            'This distribution is hidden because one or more groups are too small.',
+          pilot:
+            'Pilot values are withheld when a known, missing, anomaly, or complementary group contains fewer than five released participants.',
+        },
+        pilot: {
+          title: 'Pilot quality monitoring',
+          description:
+            'Anonymous operational indicators for form length, exposure, and descriptive item fit. They do not recalibrate items or replace teaching review.',
+          medianQuestions: 'Median questions',
+          p95Questions: '95th percentile questions',
+          medianDuration: 'Median completion time',
+          p95Duration: '95th percentile completion time',
+          nearBoundaryRate: 'Near-boundary rate',
+          responseIntegrity: 'Response-count integrity',
+          durationCompleteness: 'Duration completeness',
+          issueDetected: 'Issue detected',
+          noIssue: 'No issue',
+          responseCountMismatch:
+            'Stored estimates and canonical response rows do not agree. Investigate this data-integrity warning before interpreting the pilot.',
+          durationMissing:
+            'At least one selected attempt has no complete client-reported duration.',
+          item: 'Item',
+          competence: 'Competence path',
+          level: 'Level',
+          responses: 'Responses',
+          exposure: 'Exposure',
+          observed: 'Observed correct',
+          expected: 'Expected correct',
+          residual: 'Residual',
+          flags: 'Review flags',
+          highExposure: 'High exposure',
+          reviewFit: 'Review fit',
+          notEnoughResponses: 'Not enough responses',
+          noFlags: 'None',
+        },
+        overallDistribution: 'Overall level distribution',
+        rootDistributions: 'Competence distributions',
+        insufficientData: 'Insufficient data',
+        noDistributionData: 'No distribution data is available yet.',
+        expandNode: 'Expand {node}',
+        collapseNode: 'Collapse {node}',
+        distributionBarLabel:
+          '{level}: {count} {count, plural, one {attempt} other {attempts}}',
+      },
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -2825,6 +3411,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showArchive: 'Show archive',
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
+      deletionErrors: {
+        retainedAdaptiveHistory:
+          'This course contains retained adaptive-learning history and cannot be deleted. Archive the course instead.',
+        generic:
+          'The course could not be deleted. Please try again or contact support.',
+      },
       courseDeletionMessage:
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
@@ -3191,6 +3783,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No point corrections have been applied to this response.',
     },
     resources: {
+      competenceTrees: 'Competence trees',
       mediaLibrary: 'Media Library',
       mediaLibraryAvailableSoon:
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
@@ -3349,6 +3942,291 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '... the new collection should be renamed to avoid confusion with the original when integrating into questions.',
       duplicationFailure: 'Collection duplication failed. Please try again.',
       duplicationSuccess: 'Collection has been duplicated successfully.',
+    },
+    competenceTree: {
+      libraryDescription:
+        'Create and manage reusable competence trees for adaptive practice quizzes.',
+      create: 'Create competence tree',
+      searchLabel: 'Search competence trees',
+      searchPlaceholder: 'Search competence trees...',
+      loadMore: 'Load more',
+      moreCourseLinks: '+{count} more',
+      ownershipFilter: 'Filter by ownership',
+      filterOwned: 'Owned',
+      filterLinked: 'Linked',
+      filterAll: 'All',
+      allCourses: 'All courses',
+      showArchived: 'Show archived',
+      tree: 'Competence tree',
+      linkedCourses: 'Linked courses',
+      structure: 'Structure',
+      usage: 'Usage',
+      actions: 'Actions',
+      owned: 'Owned',
+      linkedReadOnly: 'Linked, read-only',
+      archived: 'Archived',
+      noLinkedCourses: 'No linked courses',
+      levelCount: '{count} {count, plural, one {level} other {levels}}',
+      nodeCount: '{count} {count, plural, one {node} other {nodes}}',
+      assignmentCount:
+        '{count} {count, plural, one {assignment} other {assignments}}',
+      draftUsage: 'Draft quizzes: {count}',
+      publishedUsage: 'Published quizzes: {count}',
+      structurallyLocked: 'Structure locked',
+      open: 'Open',
+      duplicate: 'Duplicate',
+      saveBeforeDuplicate: 'Save or discard your changes before duplicating.',
+      leaveUnsavedTitle: 'Discard unsaved changes?',
+      leaveUnsavedDescription:
+        'Your changes to this competence tree have not been saved.',
+      leaveUnsavedAction: 'Discard changes',
+      manageLinks: 'Manage course links',
+      archive: 'Archive',
+      restore: 'Restore',
+      emptyLibrary: 'No competence trees match the current filters.',
+      archiveTitle: 'Archive competence tree?',
+      archiveWarning:
+        'Archive "{tree}"? It remains available in existing quizzes but cannot be selected for new mappings or quizzes.',
+      actionError: 'The competence tree action could not be completed.',
+      newTitle: 'Create competence tree',
+      editTitle: 'Edit competence tree',
+      backToLibrary: 'Back to competence trees',
+      save: 'Save competence tree',
+      saveError: 'The competence tree could not be saved.',
+      treeNotFound: 'The competence tree could not be found.',
+      readOnlyNotice:
+        'This tree belongs to another owner. You can inspect and duplicate it, but only the owner can edit it.',
+      lockedNotice:
+        'This tree is used by an adaptive quiz. Its metadata can still be edited; duplicate the tree to change levels, hierarchy, coverage, or assignments.',
+      defaultLevelLow: 'Low',
+      defaultLevelMedium: 'Medium',
+      defaultLevelHigh: 'High',
+      defaultRoot: 'Competence 1',
+      defaultLeaf: 'Subcompetence 1',
+      metadataTitle: 'Metadata and model',
+      metadataDescription:
+        'Names identify the reusable tree. Scale and calibration settings are managed separately after the tree is saved.',
+      internalName: 'Internal name',
+      displayName: 'Display name',
+      description: 'Description',
+      modelSettings: 'Model settings',
+      structureSettings: 'Structure settings',
+      maxDepth: 'Maximum hierarchy depth',
+      thetaMin: 'Minimum theta',
+      thetaMax: 'Maximum theta',
+      defaultDiscrimination: 'Default discrimination (a)',
+      mappingRule: 'Level mapping',
+      mappingNearest: 'Nearest level anchor',
+      mappingMastery: 'Highest mastered level',
+      levelsTitle: 'Levels',
+      levelsDescription:
+        'Define ordered level labels. Cut scores and expected item positions are versioned in the competence scale below.',
+      addLevel: 'Add level',
+      newLevel: 'New level',
+      levelLabel: 'Label',
+      theta: 'Anchor (b)',
+      band: 'Level band',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      deleteLevel: 'Delete level',
+      assignmentsAffectedTitle: 'Assignments will change',
+      levelReorderWarning:
+        'Reordering levels changes their difficulty anchors and can affect existing assignments. Continue?',
+      levelDeleteWarning:
+        'Deleting this level also removes its coverage cells and assignments. Continue?',
+      hierarchyTitle: 'Competence hierarchy',
+      hierarchyDescription:
+        'Create root competences and nested subcompetences. Only leaf subcompetences can receive element assignments.',
+      selectedNode: 'Selected node',
+      addRootCompetence: 'Add root competence',
+      addSubcompetence: 'Add subcompetence',
+      addSubcompetenceTo: 'Add a subcompetence to {name}',
+      addChild: 'Add child',
+      maxDepthReached: 'Maximum hierarchy depth reached',
+      duplicateBranch: 'Duplicate branch',
+      deleteBranch: 'Delete branch',
+      nodeName: 'Node name',
+      parent: 'Parent node',
+      rootNode: 'Root competence',
+      nodeDescription: 'Node description',
+      nodeType: 'Node type',
+      competence: 'Competence',
+      subcompetence: 'Subcompetence',
+      depth: 'Depth',
+      rootWeight: 'Root weight',
+      normalizedWeight: 'Normalized: {percentage}%',
+      noNodeSelected: 'Select a node to edit its details.',
+      expandNode: 'Expand node',
+      collapseNode: 'Collapse node',
+      newCompetence: 'New competence',
+      newSubcompetence: 'New subcompetence',
+      deleteBranchTitle: 'Delete hierarchy branch?',
+      deleteBranchWarning:
+        'Deleting this branch also removes {assignments, plural, one {# assignment} other {# assignments}}. Continue?',
+      coverageTitle: 'Coverage targets',
+      contentBlueprintTitle: 'Content blueprint',
+      coverageDescription:
+        'Plan the required content for every leaf and level. This blueprint does not indicate calibration readiness; select a cell to filter assignments below.',
+      searchLeaves: 'Search leaves...',
+      allRoots: 'All root competences',
+      leaf: 'Leaf subcompetence',
+      coverageDisabled: 'Disabled',
+      coverageReady: 'Ready',
+      coverageMissing: 'Incomplete',
+      coverageTargetLabel: 'Target items for {leaf} at {level}',
+      coverageEnabledLabel: 'Enable {leaf} at {level}',
+      coverageFilterLabel: 'Show assignments for {leaf} at {level}',
+      coverageAssignmentCount: '{count} of {target} enabled',
+      noMatchingLeaves: 'No leaves match the current filters.',
+      assignmentsTitle: 'Element assignments',
+      assignmentsDescription:
+        'Review mappings for this tree. Add mappings while creating or editing an element.',
+      createElement: 'Create element',
+      clearCoverageFilter: 'Clear cell filter',
+      assignmentFilter: 'Showing assignments for {leaf} at {level}.',
+      element: 'Element',
+      elementType: 'Type',
+      level: 'Level',
+      expectedDifficulty: 'Expected item difficulty',
+      discriminationParameter: 'Discrimination (a)',
+      difficultyParameter: 'Difficulty (b)',
+      guessingParameter: 'Guessing (c)',
+      enabled: 'Enabled',
+      assignmentEnabledLabel: 'Use {element} in this competence tree',
+      percentInput: 'Percent input',
+      yes: 'Yes',
+      no: 'No',
+      removeAssignment: 'Remove assignment',
+      noAssignments: 'This competence tree has no element assignments.',
+      noFilteredAssignments:
+        'No assignments match the selected leaf and level.',
+      scale: {
+        title: 'Competence scale',
+        description:
+          'Manage immutable level boundaries, standard-setting evidence, and the active scale used by calibrated adaptive quizzes.',
+        createDraft: 'Create scale draft',
+        draftTitle: 'New scale draft',
+        draftDescription:
+          'Set explicit level boundaries and expected item positions. After creation, submit an evidence artifact for independent review.',
+        priorMean: 'Population prior mean',
+        priorStandardDeviation: 'Population prior standard deviation',
+        rangeStart: 'Scale range start',
+        rangeEnd: 'Scale range end',
+        gridStep: 'Estimation step',
+        lowerBound: 'Lower boundary',
+        openLowerBound: 'Open',
+        version: 'Version',
+        versionLabel: 'Version {version} - {status}',
+        versionNumber: 'Version {version}',
+        active: 'Active scale',
+        noActive: 'No active scale',
+        emptyState:
+          'No scale exists yet. Create a draft from the current level labels.',
+        readOnly:
+          'This linked tree is read-only. Its active scale and readiness facts are shown below.',
+        readinessSummary: 'Calibration readiness',
+        activeScaleVersion: 'Active scale version',
+        enabledAssignments: 'Enabled assignments',
+        calibratedAssignments: 'Calibrated assignments',
+        blockingAssignments: 'Assignments needing calibration',
+        readinessStatus: {
+          NO_ACTIVE_SCALE: 'The tree has no active scale.',
+          CALIBRATION_INCOMPLETE:
+            'The active scale still has assignments that need an approved exact-version calibration.',
+          CALIBRATED_BANK:
+            'Every enabled assignment has an approved exact-version calibration on the active scale.',
+        },
+        empty: 'The scale operation returned no data.',
+        created: 'The scale draft was created.',
+        activated: 'The approved scale is now active.',
+        loadFailed: 'The scale and calibration data could not be loaded.',
+        standardSetting: 'Standard-setting evidence',
+        standardSettingDescription:
+          'Upload the strict JSON evidence artifact and submit this draft for independent review.',
+        submitForReview: 'Submit evidence for review',
+        reviewSubmitted: 'The scale was submitted for independent review.',
+        activate: 'Activate approved scale',
+        standardSettingStatus: 'Standard setting approved',
+        empiricalValidationStatus: 'Empirical holdout approved',
+        scaleLinkStatus: 'Scale link approved',
+        status: {
+          DRAFT: 'Draft',
+          IN_REVIEW: 'In review',
+          APPROVED: 'Approved',
+          ACTIVE: 'Active',
+          REJECTED: 'Rejected',
+          SUPERSEDED: 'Superseded',
+        },
+      },
+      calibration: {
+        title: 'Calibration',
+        status: {
+          PROVISIONAL: 'Provisional',
+          PILOT: 'Pilot',
+          CALIBRATED: 'Calibrated',
+          FLAGGED: 'Flagged',
+          RETIRED: 'Retired',
+          MISSING: 'Missing',
+        },
+        importTitle: 'Import calibrations',
+        importDescription:
+          'Upload a strict calibration artifact. Invalid, stale, or incompatible records are rejected by the server.',
+        import: 'Import artifact',
+        imported:
+          '{count, plural, one {# calibration was imported.} other {# calibrations were imported.}}',
+        invalidJson: 'Select a valid JSON artifact.',
+        exportTitle: 'Export calibration data',
+        exportDescription:
+          'Request a short-lived, privacy-controlled dataset for offline calibration.',
+        datasetVersion: 'Dataset version',
+        export: 'Request export',
+        exportQueued: 'The calibration export was queued.',
+        exportStatus: 'Export status: {status}',
+        download: 'Download export',
+      },
+      itemBank: {
+        title: 'Calibrated item-bank map',
+        description:
+          'Inspect item coverage across the active scale. The shaded area represents available test information; item symbols distinguish element types.',
+        axis: 'Item difficulty scale',
+        missingCut:
+          'No calibrated item is close to the boundary for "{level}".',
+        tableCaption:
+          'Accessible item-bank list with expected difficulty and calibration status.',
+        search: 'Search item bank',
+        empty: 'No elements are assigned to this competence tree.',
+        positionSource: {
+          CALIBRATED: '(calibrated)',
+          EXPECTED: '(expected)',
+        },
+      },
+      validationTitle: 'Validation',
+      validationDescription:
+        'Check the complete tree for blocking issues and warnings before saving or publishing.',
+      validate: 'Validate tree',
+      validationNotRun: 'Validation has not been run yet.',
+      validationValid: 'The competence tree is valid.',
+      validationErrors:
+        '{count} blocking {count, plural, one {error} other {errors}}',
+      validationWarnings:
+        '{count} {count, plural, one {warning} other {warnings}}',
+      validationRequestError: 'The competence tree could not be validated.',
+      jumpToSection: 'Go to section',
+      courseLinksTitle: 'Course links for {tree}',
+      courseLinksDescription:
+        'Linked courses can use this tree in adaptive practice quizzes. Linking does not transfer ownership.',
+      courseLinkError: 'The course link could not be updated.',
+      inactiveCourse: 'Inactive course',
+      courseWriteRequired:
+        'Editing permission is required to change this link.',
+      courseLinkSwitchLabel: 'Link {course} to this competence tree',
+      linked: 'Linked',
+      notLinked: 'Not linked',
+      updating: 'Updating...',
+      noActiveCourses: 'No courses are available to link.',
+      close: 'Close',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
     },
     userGroups: {
       description:

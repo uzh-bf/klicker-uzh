@@ -1,0 +1,5 @@
+query ElementCompetenceTrees($elementId: Int!) {
+  elementCompetenceTrees(elementId: $elementId) {
+    ...CompetenceTreeData
+  }
+}

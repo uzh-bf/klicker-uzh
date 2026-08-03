@@ -1,23 +1,34 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { HatchetHandlers } from '@klicker-uzh/types'
 import {
-  ActivityType,
-  HatchetHandlers,
-  type ElementStackInput,
-} from '@klicker-uzh/types'
-import {
-  getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
-import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
-import { splitActivityInstances } from './liveQuizzes.js'
+import { lockAdaptiveLearningCourseEnabled } from './adaptiveLearningRollout.js'
+import {
+  assertAdaptivePublishedPool,
+  clearAdaptivePublishedPool,
+  materializeAdaptivePracticeQuizPool,
+} from './adaptivePracticeQuizPublication.js'
+import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
+import {
+  lockAdaptiveCourseForShare,
+  lockAdaptivePracticeQuizConfigForUpdate,
+  lockPracticeQuizAdminPermissionForShare,
+  lockPracticeQuizForUpdate,
+  lockPracticeQuizForUpdateInCourse,
+  lockPracticeQuizPermissionsForShare,
+  type LockedPracticeQuiz,
+} from './adaptivePracticeQuizRepository.js'
+import { withAdaptiveOperationalTransaction } from './adaptiveTransactions.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
+
+export { manipulatePracticeQuiz } from './practiceQuizManipulation.js'
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -37,6 +48,9 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
+      adaptiveConfig: {
+        select: { totalQuestionCap: true },
+      },
       stacks: {
         include: {
           elements: {
@@ -53,15 +67,71 @@ export async function getPracticeQuizData(
   })
 
   if (!quiz) return null
+  if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE && !ctx.user) {
+    return null
+  }
+  if (
+    quiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
+    ctx.user?.role === DB.UserRole.PARTICIPANT
+  ) {
+    if (!quiz.course.isAdaptiveLearningEnabled) return null
+
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: quiz.courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      select: { id: true },
+    })
+    if (!participation) return null
+  }
   const isOwner =
     ctx.user?.sub &&
     (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
       ? ctx.user.sub === quiz.ownerId
       : false
+  const isLecturer =
+    ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+  const sharedPreview =
+    isLecturer && !isOwner
+      ? await ctx.prisma.practiceQuiz.findFirst({
+          where: {
+            id,
+            permissions: { some: { userId: ctx.user!.sub } },
+          },
+          select: { id: true },
+        })
+      : null
+  const isPreview = Boolean(isOwner || sharedPreview)
+  if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE && isLecturer && !isPreview) {
+    return null
+  }
+  if (
+    quiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
+    !quiz.course.isAdaptiveLearningEnabled &&
+    !isPreview
+  ) {
+    return null
+  }
 
   // if the quiz is scheduled, return the quiz without the stacks
   if (quiz.status === DB.PublicationStatus.SCHEDULED) {
-    return isOwner ? { ...quiz, isOwner } : { ...quiz, isOwner, stacks: [] }
+    return isPreview && quiz.mode === DB.PracticeQuizMode.STANDARD
+      ? { ...quiz, isOwner, isPreview }
+      : { ...quiz, isOwner, isPreview, stacks: [], numOfStacks: 0 }
+  }
+
+  if (quiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+    return {
+      ...quiz,
+      isOwner,
+      isPreview,
+      stacks: [],
+      numOfStacks: 0,
+      adaptiveMaximumQuestions: quiz.adaptiveConfig?.totalQuestionCap ?? null,
+    }
   }
 
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
@@ -73,12 +143,13 @@ export async function getPracticeQuizData(
     return {
       ...quiz,
       isOwner,
+      isPreview,
       stacks: orderedStacks,
       numOfStacks: orderedStacks.length,
     }
   }
 
-  return { ...quiz, isOwner }
+  return { ...quiz, isOwner, isPreview }
 }
 
 export async function getPracticeQuizEvaluation(
@@ -86,7 +157,12 @@ export async function getPracticeQuizEvaluation(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+    where: {
+      id,
+      mode: DB.PracticeQuizMode.STANDARD,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+    },
     include: {
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -134,11 +210,43 @@ export async function getCoursePublishedPracticeQuizzes(
   { courseId }: { courseId: string },
   ctx: Context
 ) {
+  const adaptiveAccess =
+    ctx.user?.role === DB.UserRole.PARTICIPANT
+      ? {
+          course: {
+            isAdaptiveLearningEnabled: true,
+            participations: {
+              some: { participantId: ctx.user.sub },
+            },
+          },
+        }
+      : ctx.user?.role === DB.UserRole.USER ||
+          ctx.user?.role === DB.UserRole.ADMIN
+        ? {
+            course: { isAdaptiveLearningEnabled: true },
+            permissions: { some: { userId: ctx.user.sub } },
+          }
+        : null
+
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
       practiceQuizzes: {
-        where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+        where: {
+          status: DB.PublicationStatus.PUBLISHED,
+          isDeleted: false,
+          OR: [
+            { mode: DB.PracticeQuizMode.STANDARD },
+            ...(adaptiveAccess
+              ? [
+                  {
+                    mode: DB.PracticeQuizMode.ADAPTIVE,
+                    ...adaptiveAccess,
+                  },
+                ]
+              : []),
+          ],
+        },
         orderBy: { createdAt: 'asc' },
       },
     },
@@ -153,280 +261,6 @@ export async function getCoursePublishedPracticeQuizzes(
         },
       })) ?? [])
     : []
-}
-
-interface ManipulatePracticeQuizArgs {
-  id?: string
-  name: string
-  displayName: string
-  description?: string | null
-  stacks: ElementStackInput[]
-  courseId: string
-  multiplier: number
-  order: DB.ElementOrderType
-  resetTimeDays: number
-}
-
-export async function manipulatePracticeQuiz(
-  {
-    id,
-    name,
-    displayName,
-    description,
-    stacks,
-    courseId,
-    multiplier,
-    order,
-    resetTimeDays,
-  }: ManipulatePracticeQuizArgs,
-  ctx: ContextWithUser
-) {
-  // in EDIT mode - validate that the practice quiz exists and is not published
-  let existingActivity: DB.PracticeQuiz | null = null
-  if (id) {
-    existingActivity = await ctx.prisma.practiceQuiz.findUnique({
-      where: { id, isDeleted: false },
-    })
-
-    if (!existingActivity) {
-      throw new GraphQLError('Practice quiz not found')
-    }
-    if (existingActivity.status === DB.PublicationStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published practice quiz')
-    }
-  }
-
-  // get the course to which the practice quiz should be assigned
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
-  })
-
-  if (!course) {
-    throw new GraphQLError('Course not found')
-  }
-
-  // get required splits of instances based on provided stacks values
-  const {
-    persistentInstanceIds,
-    persistentInstances,
-    persistentInstanceOrderMap,
-    duplicationInstances,
-    elementMap,
-    anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
-
-  // in EDIT mode - check which instances and stacks should be removed
-  let instancesToDelete: number[] = []
-  let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
-  let stacksToDelete: number[] = []
-  if (id) {
-    const instances = await ctx.prisma.elementInstance.findMany({
-      where: {
-        id: { notIn: persistentInstanceIds },
-        elementStack: { practiceQuizId: id },
-      },
-    })
-
-    const stacks = await ctx.prisma.elementStack.findMany({
-      where: { practiceQuizId: id },
-    })
-
-    instancesToDelete = instances.map((instance) => instance.id)
-    unlinkedElementIds = instances.map((instance) => instance.elementId)
-    stacksToDelete = stacks.map((stack) => stack.id)
-  }
-
-  const createOrUpdateJSON = {
-    name: name.trim(),
-    displayName: displayName.trim(),
-    description,
-    pointsMultiplier: multiplier,
-    orderType: order,
-    resetTimeDays: resetTimeDays,
-    areInstancesOutdated: anyInstanceOutdated,
-    isGamificationEnabled: course.isGamificationEnabled,
-    isAssessmentEnabled: course.isAssessmentEnabled,
-    reviewStatus:
-      existingActivity?.courseId !== courseId
-        ? DB.ReviewStatus.INCOMPLETE
-        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
-          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
-          : undefined,
-    stacks: {
-      create: stacks.map((stack) => ({
-        type: DB.ElementStackType.PRACTICE_QUIZ,
-        order: stack.order,
-        displayName: stack.displayName?.trim() ?? '',
-        description: stack.description ?? '',
-        elements: {
-          connectOrCreate: stack.elements.map((instance) =>
-            getActivityInstanceConnectOrCreate({
-              instance,
-              instanceType: DB.ElementInstanceType.PRACTICE_QUIZ,
-              activityMultiplier: multiplier,
-              persistentInstances,
-              duplicationInstances,
-              elementMap,
-              userId: ctx.user.sub,
-              additionalInstanceOptions: { resetTimeDays },
-            })
-          ),
-        },
-      })),
-    },
-    course: { connect: { id: courseId } },
-  }
-
-  const activity = await ctx.prisma.$transaction(
-    async (prisma) => {
-      // delete all instances that are not used anymore
-      await prisma.elementInstance.deleteMany({
-        where: { id: { in: instancesToDelete } },
-      })
-
-      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-      for (const instance of persistentInstances) {
-        const elementMultiplier =
-          'pointsMultiplier' in instance.elementData
-            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-            : 1
-
-        await prisma.elementInstance.update({
-          where: { id: instance.id },
-          data: {
-            elementStackId: null,
-            order: persistentInstanceOrderMap[instance.id],
-            options: {
-              ...instance.options,
-              resetTimeDays,
-              pointsMultiplier: multiplier * elementMultiplier,
-            },
-          },
-        })
-      }
-
-      // delete all stacks
-      await prisma.elementStack.deleteMany({
-        where: { id: { in: stacksToDelete } },
-      })
-
-      const upsertedQuiz = await prisma.practiceQuiz.upsert({
-        where: { id: id ?? uuidv4() },
-        create: {
-          ...createOrUpdateJSON,
-          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-        },
-        update: createOrUpdateJSON,
-        include: {
-          templateInfo: true,
-          permissions: {
-            where: { userId: ctx.user.sub },
-            include: { directPermission: true },
-            take: 1,
-          },
-          course: {
-            include: {
-              _count: {
-                select: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-          stacks: {
-            include: { _count: { select: { elements: true } } },
-            orderBy: { order: 'asc' },
-          },
-          _count: { select: { permissions: true } },
-        },
-      })
-
-      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-      if (unlinkedElementIds.length > 0) {
-        for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
-        }
-      }
-
-      await recomputeDerivedPermissions(
-        { practiceQuizId: upsertedQuiz.id },
-        prisma
-      )
-
-      return upsertedQuiz
-    },
-    { timeout: 60000 }
-  )
-
-  ctx.emitter.emit('invalidate', {
-    typename: 'PracticeQuiz',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
-  const {
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
-    sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
-  })
-
-  return {
-    id: activity.id,
-    templateId: activity.templateInfo?.id ?? null,
-    name: activity.name,
-    displayName: activity.displayName,
-    reviewStatus: activity.reviewStatus,
-    type: ActivityType.PRACTICE_QUIZ,
-    status: activity.status,
-    courseId: activity.course?.id,
-    courseName: activity.course?.name,
-    courseLanguage: activity.course?.language,
-    courseStartDate: activity.course?.startDate,
-    numOfStacks: activity.stacks.length,
-    numOfElements: activity.stacks.reduce(
-      (acc, block) => acc + block._count.elements,
-      0
-    ),
-    automaticPublicationAt: activity.availableFrom,
-    permissionLevel,
-    derivedAccess: derived,
-    areInstancesOutdated: activity.areInstancesOutdated,
-    isGamificationEnabled: activity.isGamificationEnabled,
-    isAssessmentEnabled: activity.isAssessmentEnabled,
-    numSharedUsers: id ? activity._count.permissions - 1 : 0,
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
-    isActivityReviewer: activity.course._count.permissions > 0,
-    sharingType,
-    updatedAt: activity.updatedAt,
-  }
 }
 
 interface GetBookmarksPracticeQuizArgs {
@@ -538,21 +372,112 @@ export async function publishPracticeQuiz(
   { id, availableFrom }: { id: string; availableFrom?: Date | null },
   ctx: ContextWithUser
 ) {
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
+    where: { id, isDeleted: false },
+    select: {
+      id: true,
+      mode: true,
+      status: true,
+      courseId: true,
+      course: { select: { isAdaptiveLearningEnabled: true } },
+    },
+  })
+  if (!practiceQuiz) return null
+
+  const scheduledPublication = Boolean(
+    availableFrom && dayjs(availableFrom).isAfter(dayjs())
+  )
+  if (practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+    if (!practiceQuiz.course.isAdaptiveLearningEnabled) {
+      throw new GraphQLError(
+        'Adaptive learning is not enabled for this course.',
+        { extensions: { code: 'ADAPTIVE_COURSE_DISABLED' } }
+      )
+    }
+    if (scheduledPublication) {
+      throw new GraphQLError(
+        'Scheduled publication is not available for adaptive practice quizzes until durable task dispatch is enabled.',
+        { extensions: { code: 'ADAPTIVE_SCHEDULING_UNAVAILABLE' } }
+      )
+    }
+
+    const updatedQuiz = await withAdaptiveOperationalTransaction(
+      ctx.prisma,
+      async (prisma) => {
+        await lockAdaptiveLearningCourseEnabled(practiceQuiz.courseId, prisma)
+        const lockedQuiz = requireLockedPracticeQuiz(
+          await lockPracticeQuizForUpdateInCourse(
+            id,
+            practiceQuiz.courseId,
+            prisma
+          )
+        )
+        if (lockedQuiz.mode !== DB.PracticeQuizMode.ADAPTIVE) {
+          throw new GraphQLError(
+            'Practice quiz mode changed while publishing.',
+            {
+              extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' },
+            }
+          )
+        }
+        if (
+          lockedQuiz.status !== DB.PublicationStatus.DRAFT &&
+          lockedQuiz.status !== DB.PublicationStatus.PUBLISHED
+        ) {
+          throw new GraphQLError(
+            'Adaptive practice quiz cannot be published from its current state.',
+            { extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' } }
+          )
+        }
+        await lockAdaptivePracticeQuizConfigForUpdate(id, prisma)
+        const config = await prisma.practiceQuizAdaptiveConfig.findUnique({
+          where: { practiceQuizId: id },
+          select: { _count: { select: { attempts: true } } },
+        })
+        if (config && config._count.attempts > 0) {
+          await assertAdaptivePublishedPool(id, prisma)
+        } else {
+          await materializeAdaptivePracticeQuizPool(id, ctx.user.sub, prisma)
+        }
+        return await prisma.practiceQuiz.update({
+          where: { id, isDeleted: false },
+          data: {
+            availableFrom: null,
+            status: DB.PublicationStatus.PUBLISHED,
+            scheduledPublicationTaskId: null,
+          },
+        })
+      },
+      {
+        errorCode: 'ADAPTIVE_PUBLICATION_CONFLICT',
+        errorMessage:
+          'The adaptive practice quiz could not be published due to concurrent activity.',
+      }
+    )
+
+    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+    return updatedQuiz
+  }
+
   // if the practice quiz starts in the future, change its status to scheduled, otherwise publish it
-  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+  if (scheduledPublication) {
     try {
       // schedule the task to publish the practice quiz
       const scheduledTask =
-        await ctx.tasks.publishScheduledPracticeQuiz.schedule(availableFrom, {
+        await ctx.tasks.publishScheduledPracticeQuiz.schedule(availableFrom!, {
           practiceQuizId: id,
         })
       const taskId = scheduledTask.metadata.id
 
       // change the status of the practice quiz to scheduled
       const updatedQuiz = await ctx.prisma.practiceQuiz.update({
-        where: { id, isDeleted: false },
+        where: {
+          id,
+          isDeleted: false,
+          mode: DB.PracticeQuizMode.STANDARD,
+        },
         data: {
-          availableFrom,
+          availableFrom: availableFrom!,
           status: DB.PublicationStatus.SCHEDULED,
           scheduledPublicationTaskId: taskId,
         },
@@ -567,7 +492,11 @@ export async function publishPracticeQuiz(
   } else {
     // publish practice quiz completely and link all stacks to the course
     const updatedQuiz = await ctx.prisma.practiceQuiz.update({
-      where: { id, isDeleted: false },
+      where: {
+        id,
+        isDeleted: false,
+        mode: DB.PracticeQuizMode.STANDARD,
+      },
       data: { status: DB.PublicationStatus.PUBLISHED },
       include: { stacks: true },
     })
@@ -592,38 +521,123 @@ export async function unpublishPracticeQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findFirst({
+    where: {
+      id,
+      OR: [
+        {
+          mode: DB.PracticeQuizMode.STANDARD,
+          status: DB.PublicationStatus.SCHEDULED,
+        },
+        {
+          mode: DB.PracticeQuizMode.ADAPTIVE,
+          status: {
+            in: [
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.PUBLISHED,
+            ],
+          },
+        },
+      ],
+    },
   })
 
   if (!practiceQuiz) {
     return null
   }
 
-  // remove the scheduled hatchet publication task, if it exists
-  if (practiceQuiz.scheduledPublicationTaskId) {
-    try {
-      await ctx.hatchet.scheduled.delete(
-        practiceQuiz.scheduledPublicationTaskId
-      )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for practice quiz ${id}:`,
-        error
-      )
-    }
-  }
-
   // reset the status of the practice quiz to draft and remove the availableFrom date
-  const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: {
-      availableFrom: null,
-      status: DB.PublicationStatus.DRAFT,
-      scheduledPublicationTaskId: null,
-    },
-    include: { stacks: { include: { elements: true } } },
-  })
+  const updatedPracticeQuiz =
+    practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE
+      ? await withAdaptiveOperationalTransaction(
+          ctx.prisma,
+          async (prisma) => {
+            const lockedCourse = await lockAdaptiveCourseForShare(
+              practiceQuiz.courseId,
+              prisma
+            )
+            if (!lockedCourse) {
+              throw new GraphQLError('Course not found.', {
+                extensions: { code: 'NOT_FOUND' },
+              })
+            }
+            const lockedQuiz = requireLockedPracticeQuiz(
+              await lockPracticeQuizForUpdateInCourse(
+                id,
+                practiceQuiz.courseId,
+                prisma
+              )
+            )
+            if (
+              lockedQuiz.status !== DB.PublicationStatus.SCHEDULED &&
+              lockedQuiz.status !== DB.PublicationStatus.PUBLISHED
+            ) {
+              throw new GraphQLError(
+                'Adaptive practice quiz is no longer published or scheduled.',
+                { extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' } }
+              )
+            }
+            await lockAdaptivePracticeQuizConfigForUpdate(id, prisma)
+            await clearAdaptivePublishedPool(id, prisma, {
+              retainWhenAttemptsExist: true,
+            })
+            return await prisma.practiceQuiz.update({
+              where: {
+                id,
+                mode: DB.PracticeQuizMode.ADAPTIVE,
+                status: {
+                  in: [
+                    DB.PublicationStatus.SCHEDULED,
+                    DB.PublicationStatus.PUBLISHED,
+                  ],
+                },
+              },
+              data: {
+                availableFrom: null,
+                status: DB.PublicationStatus.DRAFT,
+                scheduledPublicationTaskId: null,
+              },
+              include: { stacks: { include: { elements: true } } },
+            })
+          },
+          {
+            errorCode: 'ADAPTIVE_UNPUBLICATION_CONFLICT',
+            errorMessage:
+              'The adaptive practice quiz could not be unpublished due to concurrent activity.',
+          }
+        )
+      : await (async () => {
+          // Keep the existing standard-quiz task ordering unchanged.
+          if (practiceQuiz.scheduledPublicationTaskId) {
+            await deleteScheduledPracticeQuizTask(
+              practiceQuiz.scheduledPublicationTaskId,
+              id,
+              ctx
+            )
+          }
+          return await ctx.prisma.practiceQuiz.update({
+            where: { id, status: DB.PublicationStatus.SCHEDULED },
+            data: {
+              availableFrom: null,
+              status: DB.PublicationStatus.DRAFT,
+              scheduledPublicationTaskId: null,
+            },
+            include: { stacks: { include: { elements: true } } },
+          })
+        })()
+
+  // For adaptive quizzes, commit the status and pool rollback before deleting
+  // the external task. A stale running task then observes DRAFT and exits.
+  if (
+    practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
+    practiceQuiz.scheduledPublicationTaskId
+  ) {
+    await deleteScheduledPracticeQuizTask(
+      practiceQuiz.scheduledPublicationTaskId,
+      id,
+      ctx
+    )
+  }
 
   ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
   return updatedPracticeQuiz
@@ -633,86 +647,111 @@ export async function deletePracticeQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
-    include: { responses: true, stacks: { include: { elements: true } } },
-  })
+  const deletion = await withAdaptiveOperationalTransaction(
+    ctx.prisma,
+    async (prisma) => {
+      const identity = await prisma.practiceQuiz.findUnique({
+        where: { id },
+        select: { courseId: true },
+      })
+      if (!identity) return { kind: 'missing' } as const
 
-  if (!practiceQuiz) {
-    return null
-  }
+      const course = await lockAdaptiveCourseForShare(identity.courseId, prisma)
+      if (!course) return { kind: 'missing' } as const
 
-  // if the practice quiz is not published yet or has no responses -> hard deletion
-  // anonymous results are ignored, since deleting them does not have an impage on data consistency
-  if (
-    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
-    practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
-    practiceQuiz.responses.length === 0
-  ) {
-    const deletedItem = await ctx.prisma.practiceQuiz.delete({
-      where: { id },
-    })
+      const lockedQuiz = await lockPracticeQuizForUpdateInCourse(
+        id,
+        identity.courseId,
+        prisma
+      )
+      if (!lockedQuiz) return { kind: 'missing' } as const
 
-    // remove the scheduled publication task, if it exists (should only exist for scheduled practice quizzes)
-    if (
-      deletedItem.scheduledPublicationTaskId &&
-      deletedItem.status === DB.PublicationStatus.SCHEDULED
-    ) {
-      try {
-        await ctx.hatchet.scheduled.delete(
-          deletedItem.scheduledPublicationTaskId
-        )
-      } catch (error) {
-        console.error(
-          `Failed to delete scheduled task for practice quiz ${id}:`,
-          error
-        )
+      await lockPracticeQuizPermissionsForShare(id, prisma)
+      const hasAdminPermission = await lockPracticeQuizAdminPermissionForShare(
+        id,
+        ctx.user.sub,
+        prisma
+      )
+      if (!hasAdminPermission) return { kind: 'forbidden' } as const
+
+      if (lockedQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+        await lockAdaptivePracticeQuizConfigForUpdate(id, prisma)
       }
+
+      const practiceQuiz = await prisma.practiceQuiz.findUniqueOrThrow({
+        where: { id },
+        include: {
+          stacks: { include: { elements: true } },
+          _count: { select: { responses: true, adaptiveAttempts: true } },
+        },
+      })
+      const shouldHardDelete =
+        (practiceQuiz.status === DB.PublicationStatus.DRAFT ||
+          practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
+          practiceQuiz._count.responses === 0) &&
+        practiceQuiz._count.adaptiveAttempts === 0
+
+      if (shouldHardDelete) {
+        if (practiceQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+          await purgeAttemptFreeAdaptivePublications(id, prisma)
+        }
+        const deletedItem = await prisma.practiceQuiz.delete({ where: { id } })
+        return {
+          kind: 'hard-deleted',
+          item: deletedItem,
+          stacks: practiceQuiz.stacks,
+        } as const
+      }
+
+      const updatedPracticeQuiz = await prisma.practiceQuiz.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          directPermissions: { deleteMany: {} },
+        },
+        include: { stacks: true },
+      })
+      await prisma.elementStack.updateMany({
+        where: { id: { in: updatedPracticeQuiz.stacks.map(({ id }) => id) } },
+        data: { courseId: null },
+      })
+      await recomputeDerivedPermissions(
+        { practiceQuizId: updatedPracticeQuiz.id },
+        prisma
+      )
+      return { kind: 'soft-deleted', item: updatedPracticeQuiz } as const
+    },
+    {
+      errorCode: 'PRACTICE_QUIZ_DELETE_CONFLICT',
+      errorMessage:
+        'The practice quiz could not be deleted due to concurrent activity.',
+    }
+  )
+
+  if (deletion.kind === 'missing' || deletion.kind === 'forbidden') return null
+
+  if (deletion.kind === 'hard-deleted') {
+    if (
+      deletion.item.scheduledPublicationTaskId &&
+      deletion.item.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      await deleteScheduledPracticeQuizTask(
+        deletion.item.scheduledPublicationTaskId,
+        id,
+        ctx
+      )
     }
 
-    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
-    // this case cannot be handled by the permissions module, since the practice quiz is already hard deleted
-    // access requests need to be updated as well, since the derived permissions on elements might have changed
+    // The quiz no longer exists, so linked element permissions are repaired
+    // from the stack snapshot captured by the deletion transaction.
     await propagateActivityToElements(
-      { stacks: practiceQuiz.stacks, updateAccessRequests: true },
+      { stacks: deletion.stacks, updateAccessRequests: true },
       ctx.prisma
     )
-
-    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-
-    return deletedItem
-  } else {
-    // if the practice quiz is published and has responses -> soft deletion
-    const updatedPracticeQuiz = await ctx.prisma.$transaction(
-      async (prisma) => {
-        const quiz = await prisma.practiceQuiz.update({
-          where: { id },
-          data: {
-            isDeleted: true,
-            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
-          },
-          include: { stacks: true },
-        })
-
-        // disconnect the stacks from the course they are linked to
-        const stackIds = quiz.stacks.map((stack) => stack.id)
-        await prisma.elementStack.updateMany({
-          where: { id: { in: stackIds } },
-          data: { courseId: null },
-        })
-
-        // update derived permissions for this practice quiz (after soft deletion)
-        // this function call automatically includes permission updates for all linked elements
-        await recomputeDerivedPermissions({ practiceQuizId: quiz.id }, prisma)
-
-        return quiz
-      },
-      { timeout: 60000 }
-    )
-
-    ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-    return updatedPracticeQuiz
   }
+
+  ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
+  return deletion.item
 }
 
 export async function removePracticeQuiz(
@@ -768,55 +807,109 @@ export async function removePracticeQuiz(
 export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishScheduledPracticeQuiz'] =
   async ({ practiceQuizId }, globalCtx) => {
     try {
-      // check if the practice quiz exists and if its availableFrom date is in the past
-      const practiceQuiz = await globalCtx.prisma.practiceQuiz.findUnique({
-        where: {
-          id: practiceQuizId,
-          isDeleted: false,
-          status: DB.PublicationStatus.SCHEDULED,
-          availableFrom: { lte: new Date() },
-        },
-      })
-
-      if (!practiceQuiz) {
-        await sendTeamsNotification({
-          scope: 'hatchet/practice-quiz-start',
-          text: `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`,
-        })
-        throw new Error(
-          `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
-        )
-      }
-
-      // publish the practice quiz
-      const updatedPracticeQuiz = await globalCtx.prisma.practiceQuiz.update({
+      const targetQuiz = await globalCtx.prisma.practiceQuiz.findUnique({
         where: { id: practiceQuizId, isDeleted: false },
-        data: { status: DB.PublicationStatus.PUBLISHED },
-        include: { stacks: true },
+        select: { mode: true, courseId: true },
       })
+      const { didPublish, practiceQuiz } = await globalCtx.prisma.$transaction(
+        async (prisma) => {
+          if (targetQuiz?.mode === DB.PracticeQuizMode.ADAPTIVE) {
+            await lockAdaptiveLearningCourseEnabled(targetQuiz.courseId, prisma)
+          }
+          const lockedQuiz = requireLockedPracticeQuiz(
+            targetQuiz?.mode === DB.PracticeQuizMode.ADAPTIVE
+              ? await lockPracticeQuizForUpdateInCourse(
+                  practiceQuizId,
+                  targetQuiz.courseId,
+                  prisma
+                )
+              : await lockPracticeQuizForUpdate(practiceQuizId, prisma)
+          )
+          if (
+            lockedQuiz.mode === DB.PracticeQuizMode.ADAPTIVE &&
+            targetQuiz?.mode !== DB.PracticeQuizMode.ADAPTIVE
+          ) {
+            throw new GraphQLError(
+              'Adaptive practice quiz mode changed before scheduled publication.',
+              { extensions: { code: 'ADAPTIVE_PUBLICATION_STATE_INVALID' } }
+            )
+          }
 
-      // send a teams notification
-      await sendTeamsNotification({
-        scope: 'graphql/publishScheduledPracticeQuizs',
-        text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
-      })
+          // Hatchet may retry a task after the transaction committed. Treat that
+          // as success without repeating publication side effects.
+          if (lockedQuiz.status === DB.PublicationStatus.PUBLISHED) {
+            const publishedQuiz = await prisma.practiceQuiz.findUniqueOrThrow({
+              where: { id: practiceQuizId, isDeleted: false },
+              include: { stacks: true },
+            })
+            return { didPublish: false, practiceQuiz: publishedQuiz }
+          }
 
-      // link stacks of practice quiz to course
-      await globalCtx.prisma.course.update({
-        where: { id: updatedPracticeQuiz.courseId },
-        data: {
-          elementStacks: {
-            connect: updatedPracticeQuiz.stacks.map((stack) => ({
-              id: stack.id,
-            })),
-          },
-        },
-      })
+          if (
+            lockedQuiz.status === DB.PublicationStatus.DRAFT &&
+            lockedQuiz.scheduledPublicationTaskId === null
+          ) {
+            const unpublishedQuiz = await prisma.practiceQuiz.findUniqueOrThrow(
+              {
+                where: { id: practiceQuizId, isDeleted: false },
+                include: { stacks: true },
+              }
+            )
+            return { didPublish: false, practiceQuiz: unpublishedQuiz }
+          }
+
+          if (
+            lockedQuiz.status !== DB.PublicationStatus.SCHEDULED ||
+            !lockedQuiz.availableFrom ||
+            lockedQuiz.availableFrom > new Date()
+          ) {
+            throw new GraphQLError(
+              `Practice quiz with ID ${practiceQuizId} is not ready for scheduled publication.`,
+              { extensions: { code: 'PRACTICE_QUIZ_NOT_READY' } }
+            )
+          }
+
+          if (lockedQuiz.mode === DB.PracticeQuizMode.ADAPTIVE) {
+            await assertAdaptivePublishedPool(practiceQuizId, prisma)
+          }
+
+          const updatedQuiz = await prisma.practiceQuiz.update({
+            where: { id: practiceQuizId, isDeleted: false },
+            data: {
+              status: DB.PublicationStatus.PUBLISHED,
+              scheduledPublicationTaskId: null,
+            },
+            include: { stacks: true },
+          })
+
+          if (lockedQuiz.mode === DB.PracticeQuizMode.STANDARD) {
+            await prisma.course.update({
+              where: { id: updatedQuiz.courseId },
+              data: {
+                elementStacks: {
+                  connect: updatedQuiz.stacks.map((stack) => ({
+                    id: stack.id,
+                  })),
+                },
+              },
+            })
+          }
+
+          return { didPublish: true, practiceQuiz: updatedQuiz }
+        }
+      )
+
+      if (didPublish) {
+        await sendTeamsNotification({
+          scope: 'graphql/publishScheduledPracticeQuizs',
+          text: `Successfully published scheduled practice quiz ${practiceQuiz.id}`,
+        })
+      }
 
       // invalidate the cache for the microlearning
       globalCtx.emitter.emit('invalidate', {
         typename: 'PracticeQuiz',
-        id: updatedPracticeQuiz.id,
+        id: practiceQuiz.id,
       })
 
       return true
@@ -829,3 +922,31 @@ export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishS
       throw error // rethrow to allow Hatchet to handle retries
     }
   }
+
+function requireLockedPracticeQuiz(
+  practiceQuiz: LockedPracticeQuiz | null
+): LockedPracticeQuiz {
+  if (!practiceQuiz || practiceQuiz.isDeleted) {
+    throw new GraphQLError('Practice quiz not found.', {
+      extensions: { code: 'NOT_FOUND' },
+    })
+  }
+
+  return practiceQuiz
+}
+
+async function deleteScheduledPracticeQuizTask(
+  taskId: string,
+  practiceQuizId: string,
+  ctx: ContextWithUser
+): Promise<void> {
+  try {
+    await ctx.hatchet.scheduled.delete(taskId)
+  } catch (error) {
+    console.error(
+      'Failed to delete scheduled practice quiz task:',
+      { practiceQuizId },
+      error
+    )
+  }
+}

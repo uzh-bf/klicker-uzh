@@ -3,6 +3,7 @@
   "version": "3.4.0-alpha.4",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/transactional": "workspace:*",
     "@klicker-uzh/types": "workspace:*",

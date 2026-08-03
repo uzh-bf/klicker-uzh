@@ -18,8 +18,41 @@ export interface HatchetHandlerGlobalContext {
   prisma: PrismaClient
 }
 
+export type AdaptiveEmpiricalValidationTaskInput = {
+  exportRequestId: string
+  configId: string
+  treeId: string
+  scaleVersionId: string
+  criterionArtifactKey: string
+  criterionArtifactChecksum: string
+  submittedById: string
+  bankFingerprint: string
+  configFingerprint: string
+  measurementVersion: 'IRT_V2_EAP_GRID_1'
+  estimatorImplementationVersion: 'IRT_V2_EAP_GRID_1'
+  classificationPolicyVersion: number
+  calibrationPolicyVersion: number
+  validationProtocolVersion: string
+  approvedProbabilityThreshold: number
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handleAdaptiveEmpiricalValidation: (
+    input: AdaptiveEmpiricalValidationTaskInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<string>
+  handleAdaptiveCalibrationExport: (
+    { exportRequestId }: { exportRequestId: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleAdaptiveCalibrationExportCleanup: (
+    {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -94,6 +127,18 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  adaptiveEmpiricalValidation: TaskWorkflowDeclaration<
+    AdaptiveEmpiricalValidationTaskInput,
+    { validationId: string }
+  >
+  adaptiveCalibrationExport: TaskWorkflowDeclaration<
+    { exportRequestId: string },
+    { success: boolean }
+  >
+  adaptiveCalibrationExportCleanup: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

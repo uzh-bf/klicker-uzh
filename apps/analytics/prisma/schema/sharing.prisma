@@ -1,170 +1,170 @@
 // ----- SHARING & PERMISSIONS -----
 // #region
 enum PermissionLevel {
-    READ // read access (no modifications, no deletion, no sharing)
-    WRITE // edit access (no deletion, no sharing)
-    EXECUTE // e.g. for live quizzes: only inspect evaluation
-    ADMIN // e.g. admins can not only edit (= WRITE) but also change access rights
-    OWNER // (derived permissions only)
+  READ // read access (no modifications, no deletion, no sharing)
+  WRITE // edit access (no deletion, no sharing)
+  EXECUTE // e.g. for live quizzes: only inspect evaluation
+  ADMIN // e.g. admins can not only edit (= WRITE) but also change access rights
+  OWNER // (derived permissions only)
 }
 
 model UserGroup {
-    id   Int    @id @default(autoincrement())
-    name String
+  id   Int    @id @default(autoincrement())
+  name String
 
-    members User[] @relation("UserGroupMembers") // can view / edit / admin shared objects according to permissions
-    admins  User[] @relation("UserGroupAdmins") // member + can add & remove members and provide & remove admin access
+  members User[] @relation("UserGroupMembers") // can view / edit / admin shared objects according to permissions
+  admins  User[] @relation("UserGroupAdmins") // member + can add & remove members and provide & remove admin access
 
-    permissions Permission[]
+  permissions Permission[]
 
-    owner   User   @relation(name: "UserGroupOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    ownerId String @db.Uuid
+  owner   User   @relation(name: "UserGroupOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@unique([ownerId, name])
+  @@unique([ownerId, name])
 }
 
 // explicitly granted permissions for a user or user group to access an object
 model Permission {
-    id              Int             @id @default(autoincrement())
-    permissionLevel PermissionLevel
+  id              Int             @id @default(autoincrement())
+  permissionLevel PermissionLevel
 
-    // user or user group requesting access
-    user   User?   @relation("DirectlySharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userId String? @db.Uuid
+  // user or user group requesting access
+  user   User?   @relation("DirectlySharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String? @db.Uuid
 
-    userGroup   UserGroup? @relation(fields: [userGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userGroupId Int?
+  userGroup   UserGroup? @relation(fields: [userGroupId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userGroupId Int?
 
-    // define if only minimal permissions should be propagated or if the explicitly granted
-    // permission level should be propagated according to the permission scheme
-    // & link all permissions that are derived from this permission to it
-    propagation        Boolean             @default(false)
-    derivedPermissions DerivedPermission[]
+  // define if only minimal permissions should be propagated or if the explicitly granted
+  // permission level should be propagated according to the permission scheme
+  // & link all permissions that are derived from this permission to it
+  propagation        Boolean             @default(false)
+  derivedPermissions DerivedPermission[]
 
-    // shared objects
-    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    catalogCollectionId String?            @db.Uuid
+  // shared objects
+  catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  catalogCollectionId String?            @db.Uuid
 
-    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    answerCollectionId Int?
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answerCollectionId Int?
 
-    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    elementId Int?
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int?
 
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String? @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
 
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @db.Uuid
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // only one permission per object and user / user group
-    @@unique([catalogCollectionId, userId])
-    @@unique([answerCollectionId, userId])
-    @@unique([elementId, userId])
-    @@unique([courseId, userId])
-    @@unique([liveQuizId, userId])
-    @@unique([practiceQuizId, userId])
-    @@unique([microLearningId, userId])
-    @@unique([groupActivityId, userId])
-    @@unique([catalogCollectionId, userGroupId])
-    @@unique([answerCollectionId, userGroupId])
-    @@unique([elementId, userGroupId])
-    @@unique([courseId, userGroupId])
-    @@unique([liveQuizId, userGroupId])
-    @@unique([practiceQuizId, userGroupId])
-    @@unique([microLearningId, userGroupId])
-    @@unique([groupActivityId, userGroupId])
+  // only one permission per object and user / user group
+  @@unique([catalogCollectionId, userId])
+  @@unique([answerCollectionId, userId])
+  @@unique([elementId, userId])
+  @@unique([courseId, userId])
+  @@unique([liveQuizId, userId])
+  @@unique([practiceQuizId, userId])
+  @@unique([microLearningId, userId])
+  @@unique([groupActivityId, userId])
+  @@unique([catalogCollectionId, userGroupId])
+  @@unique([answerCollectionId, userGroupId])
+  @@unique([elementId, userGroupId])
+  @@unique([courseId, userGroupId])
+  @@unique([liveQuizId, userGroupId])
+  @@unique([practiceQuizId, userGroupId])
+  @@unique([microLearningId, userGroupId])
+  @@unique([groupActivityId, userGroupId])
 }
 
 // permissions requested by a user (default: READ, after granting higher access level can be requested)
 // to avoid the need for a separate table of derived access requests, duplicates are stored for every object owner / admin
 model AccessRequest {
-    id              Int             @id @default(autoincrement())
-    permissionLevel PermissionLevel
+  id              Int             @id @default(autoincrement())
+  permissionLevel PermissionLevel
 
-    // user requesting access
-    user   User   @relation("RequestedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userId String @db.Uuid
+  // user requesting access
+  user   User   @relation("RequestedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.Uuid
 
-    // user id of owner / admin to which the request is sent
-    objectAdminOrOwner   User   @relation("PendingRequests", fields: [objectAdminOrOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    objectAdminOrOwnerId String @db.Uuid
+  // user id of owner / admin to which the request is sent
+  objectAdminOrOwner   User   @relation("PendingRequests", fields: [objectAdminOrOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  objectAdminOrOwnerId String @db.Uuid
 
-    // shared objects
-    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    catalogCollectionId String?            @db.Uuid
+  // shared objects
+  catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  catalogCollectionId String?            @db.Uuid
 
-    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    answerCollectionId Int?
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answerCollectionId Int?
 
-    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    elementId Int?
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int?
 
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String? @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
 
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @db.Uuid
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // only one access request per object and user (duplicates for every owner / admin; upsert when creating a new request)
-    @@unique([catalogCollectionId, userId, objectAdminOrOwnerId])
-    @@unique([answerCollectionId, userId, objectAdminOrOwnerId])
-    @@unique([elementId, userId, objectAdminOrOwnerId])
-    @@unique([courseId, userId, objectAdminOrOwnerId])
-    @@unique([liveQuizId, userId, objectAdminOrOwnerId])
-    @@unique([practiceQuizId, userId, objectAdminOrOwnerId])
-    @@unique([microLearningId, userId, objectAdminOrOwnerId])
-    @@unique([groupActivityId, userId, objectAdminOrOwnerId])
-    // indices to efficiently query all access requests for a user or object admin / owner
-    @@index([userId])
-    @@index([objectAdminOrOwnerId])
-    // indices to efficiently query all instances of an object request for a specific user
-    // -> efficiently delete entries when access is granted / rejected or the user withdrew the request
-    @@index([catalogCollectionId, userId])
-    @@index([answerCollectionId, userId])
-    @@index([elementId, userId])
-    @@index([courseId, userId])
-    @@index([liveQuizId, userId])
-    @@index([practiceQuizId, userId])
-    @@index([microLearningId, userId])
-    @@index([groupActivityId, userId])
-    // indices to efficiently query all object requests for a specific object and object admin / owner
-    // -> efficiently delete entries when admin access is revoked / ownership is transferred
-    @@index([catalogCollectionId, objectAdminOrOwnerId])
-    @@index([answerCollectionId, objectAdminOrOwnerId])
-    @@index([elementId, objectAdminOrOwnerId])
-    @@index([courseId, objectAdminOrOwnerId])
-    @@index([liveQuizId, objectAdminOrOwnerId])
-    @@index([practiceQuizId, objectAdminOrOwnerId])
-    @@index([microLearningId, objectAdminOrOwnerId])
-    @@index([groupActivityId, objectAdminOrOwnerId])
+  // only one access request per object and user (duplicates for every owner / admin; upsert when creating a new request)
+  @@unique([catalogCollectionId, userId, objectAdminOrOwnerId])
+  @@unique([answerCollectionId, userId, objectAdminOrOwnerId])
+  @@unique([elementId, userId, objectAdminOrOwnerId])
+  @@unique([courseId, userId, objectAdminOrOwnerId])
+  @@unique([liveQuizId, userId, objectAdminOrOwnerId])
+  @@unique([practiceQuizId, userId, objectAdminOrOwnerId])
+  @@unique([microLearningId, userId, objectAdminOrOwnerId])
+  @@unique([groupActivityId, userId, objectAdminOrOwnerId])
+  // indices to efficiently query all access requests for a user or object admin / owner
+  @@index([userId])
+  @@index([objectAdminOrOwnerId])
+  // indices to efficiently query all instances of an object request for a specific user
+  // -> efficiently delete entries when access is granted / rejected or the user withdrew the request
+  @@index([catalogCollectionId, userId])
+  @@index([answerCollectionId, userId])
+  @@index([elementId, userId])
+  @@index([courseId, userId])
+  @@index([liveQuizId, userId])
+  @@index([practiceQuizId, userId])
+  @@index([microLearningId, userId])
+  @@index([groupActivityId, userId])
+  // indices to efficiently query all object requests for a specific object and object admin / owner
+  // -> efficiently delete entries when admin access is revoked / ownership is transferred
+  @@index([catalogCollectionId, objectAdminOrOwnerId])
+  @@index([answerCollectionId, objectAdminOrOwnerId])
+  @@index([elementId, objectAdminOrOwnerId])
+  @@index([courseId, objectAdminOrOwnerId])
+  @@index([liveQuizId, objectAdminOrOwnerId])
+  @@index([practiceQuizId, objectAdminOrOwnerId])
+  @@index([microLearningId, objectAdminOrOwnerId])
+  @@index([groupActivityId, objectAdminOrOwnerId])
 }
 
 // derived permissions that have been computed based on the user's direct permissions on parent objects or user group permissions
@@ -172,66 +172,66 @@ model AccessRequest {
 // for every user only the highest available access level is stored here for efficient querying
 // direct permissions are also copied to the derived permissions table for more efficient access (and deduplication)
 model DerivedPermission {
-    id              Int             @id @default(autoincrement())
-    permissionLevel PermissionLevel
+  id              Int             @id @default(autoincrement())
+  permissionLevel PermissionLevel
 
-    // permission from which this derived permission was created (not required to allow storing owner permission also as derived permission)
-    directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    directPermissionId Int?
+  // permission from which this derived permission was created (not required to allow storing owner permission also as derived permission)
+  directPermission   Permission? @relation(fields: [directPermissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  directPermissionId Int?
 
-    // true if the permission is not based on a direct permission (user or user group), but derived from another object (e.g. element -> answer collection)
-    derived Boolean @default(false)
+  // true if the permission is not based on a direct permission (user or user group), but derived from another object (e.g. element -> answer collection)
+  derived Boolean @default(false)
 
-    // user or user group requesting access
-    user   User   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userId String @db.Uuid
+  // user or user group requesting access
+  user   User   @relation("SharedObjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.Uuid
 
-    // shared objects
-    catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    catalogCollectionId String?            @db.Uuid
+  // shared objects
+  catalogCollection   CatalogCollection? @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  catalogCollectionId String?            @db.Uuid
 
-    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    answerCollectionId Int?
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answerCollectionId Int?
 
-    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    elementId Int?
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int?
 
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String? @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
 
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @db.Uuid
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // only one access request per object and user (upsert when creating a new request)
-    @@unique([catalogCollectionId, userId])
-    @@unique([answerCollectionId, userId])
-    @@unique([elementId, userId])
-    @@unique([courseId, userId])
-    @@unique([liveQuizId, userId])
-    @@unique([practiceQuizId, userId])
-    @@unique([microLearningId, userId])
-    @@unique([groupActivityId, userId])
-    // index on permission level and object id to efficiently retrieve all users with a specific access level to the object
-    @@index([catalogCollectionId, permissionLevel])
-    @@index([answerCollectionId, permissionLevel])
-    @@index([elementId, permissionLevel])
-    @@index([courseId, permissionLevel])
-    @@index([liveQuizId, permissionLevel])
-    @@index([practiceQuizId, permissionLevel])
-    @@index([microLearningId, permissionLevel])
-    @@index([groupActivityId, permissionLevel])
+  // only one access request per object and user (upsert when creating a new request)
+  @@unique([catalogCollectionId, userId])
+  @@unique([answerCollectionId, userId])
+  @@unique([elementId, userId])
+  @@unique([courseId, userId])
+  @@unique([liveQuizId, userId])
+  @@unique([practiceQuizId, userId])
+  @@unique([microLearningId, userId])
+  @@unique([groupActivityId, userId])
+  // index on permission level and object id to efficiently retrieve all users with a specific access level to the object
+  @@index([catalogCollectionId, permissionLevel])
+  @@index([answerCollectionId, permissionLevel])
+  @@index([elementId, permissionLevel])
+  @@index([courseId, permissionLevel])
+  @@index([liveQuizId, permissionLevel])
+  @@index([practiceQuizId, permissionLevel])
+  @@index([microLearningId, permissionLevel])
+  @@index([groupActivityId, permissionLevel])
 }
 
 // #endregion
@@ -239,28 +239,28 @@ model DerivedPermission {
 // ----- ACTIVITY TEMPLATES -----
 // #region
 model ActivityTemplate {
-    id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-    description  String // description of the activity template (to be shown in the catalog)
-    instructions String // instructions for the user (to be shown in the template editor)
+  description  String // description of the activity template (to be shown in the catalog)
+  instructions String // instructions for the user (to be shown in the template editor)
 
-    // link to at least one activity for which this template is used
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @unique @db.Uuid
+  // link to at least one activity for which this template is used
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @unique @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @unique @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @unique @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @unique @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @unique @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @unique @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @unique @db.Uuid
 
-    // optional link to answer collections, if any question in the activity is based on these collections
-    answerCollections     AnswerCollection[]      @relation("TemplateAnswerCollectionUsages")
-    // optional link to answer collection items, if any question in the activity is based on these items
-    answerCollectionItems AnswerCollectionEntry[] @relation("TemplateAnswerCollectionUsedItems")
+  // optional link to answer collections, if any question in the activity is based on these collections
+  answerCollections     AnswerCollection[]      @relation("TemplateAnswerCollectionUsages")
+  // optional link to answer collection items, if any question in the activity is based on these items
+  answerCollectionItems AnswerCollectionEntry[] @relation("TemplateAnswerCollectionUsedItems")
 }
 
 // #endregion
@@ -268,80 +268,80 @@ model ActivityTemplate {
 // ----- CATALOG -----
 // #region
 enum ObjectAccess {
-    RESTRICTED
-    PUBLIC
+  RESTRICTED
+  PUBLIC
 }
 
 // many-to-many join table between catalog collection and shared object with access information
 model CatalogCollectionAssignment {
-    id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-    // access level for this specific assignment
-    access ObjectAccess @default(RESTRICTED)
+  // access level for this specific assignment
+  access ObjectAccess @default(RESTRICTED)
 
-    // catalog collection assignment
-    catalogCollection   CatalogCollection @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    catalogCollectionId String            @db.Uuid
+  // catalog collection assignment
+  catalogCollection   CatalogCollection @relation(fields: [catalogCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  catalogCollectionId String            @db.Uuid
 
-    // object in the catalog collection
-    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    answerCollectionId Int?
+  // object in the catalog collection
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answerCollectionId Int?
 
-    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    elementId Int?
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int?
 
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String? @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
 
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @db.Uuid
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // for each assignment of an object to a catalog collection there is only allowed to be one entry
-    @@unique([answerCollectionId, catalogCollectionId])
-    @@unique([elementId, catalogCollectionId])
-    @@unique([courseId, catalogCollectionId])
-    @@unique([liveQuizId, catalogCollectionId])
-    @@unique([practiceQuizId, catalogCollectionId])
-    @@unique([microLearningId, catalogCollectionId])
-    @@unique([groupActivityId, catalogCollectionId])
+  // for each assignment of an object to a catalog collection there is only allowed to be one entry
+  @@unique([answerCollectionId, catalogCollectionId])
+  @@unique([elementId, catalogCollectionId])
+  @@unique([courseId, catalogCollectionId])
+  @@unique([liveQuizId, catalogCollectionId])
+  @@unique([practiceQuizId, catalogCollectionId])
+  @@unique([microLearningId, catalogCollectionId])
+  @@unique([groupActivityId, catalogCollectionId])
 }
 
 model CatalogCollection {
-    id          String  @id @default(uuid()) @db.Uuid
-    name        String
-    description String?
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
 
-    // access level determines who can browse a collection's content (public = everyone, restricted = only users with access)
-    access ObjectAccess @default(RESTRICTED)
+  // access level determines who can browse a collection's content (public = everyone, restricted = only users with access)
+  access ObjectAccess @default(RESTRICTED)
 
-    // users / user groups that are allowed to import / request elements from this collection (read access)
-    // users / user groups that are allowed to add elements to this collection (write access)
-    // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)
-    directPermissions Permission[]
-    permissions       DerivedPermission[]
-    accessRequests    AccessRequest[]
+  // users / user groups that are allowed to import / request elements from this collection (read access)
+  // users / user groups that are allowed to add elements to this collection (write access)
+  // users / user groups that are allowed to edit the access rights of other users / user groups (admin access)
+  directPermissions Permission[]
+  permissions       DerivedPermission[]
+  accessRequests    AccessRequest[]
 
-    // link to the join-table containing all associated objects
-    objectAssignments CatalogCollectionAssignment[]
+  // link to the join-table containing all associated objects
+  objectAssignments CatalogCollectionAssignment[]
 
-    // owner connection needs to remain optional for the top-level catalog collection to work as expected
-    owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    ownerId String? @db.Uuid
+  // owner connection needs to remain optional for the top-level catalog collection to work as expected
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String? @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // #endregion
@@ -349,110 +349,111 @@ model CatalogCollection {
 // ----- AUDIT LOG -----
 // #region
 enum AuditLogType {
-    PERMISSION_GRANTED // granted direct permission
-    PERMISSION_REVOKED // revoked direct permission (by owner / admin)
-    PERMISSION_REMOVED // removed direct permission (by user himself)
-    PERMISSION_MODIFIED // modified direct permission
-    OWNER_TRANSFERRED // ownership of an object was transferred
-    REQUEST_CREATED // created object access request
-    REQUEST_CANCELLED // cancelled object access request
-    REQUEST_RESOLVED // resolved object access request
-    CATALOG_ASSIGNMENT_CREATED // created catalog assignment
-    CATALOG_ASSIGNMENT_DELETED // deleted catalog assignment
-    CATALOG_ASSIGNMENT_MODIFIED // created catalog collection
-    USER_GROUP_CREATED // created user group
-    USER_GROUP_MODIFIED // modified user group
-    USER_GROUP_DELETED // deleted user group
-    USER_GROUP_USER_ADDED // added user to user group
-    USER_GROUP_USER_REMOVED // removed user from user group
-    USER_GROUP_USER_MODIFIED // modified user in user group (promotion / demotion)
+  PERMISSION_GRANTED // granted direct permission
+  PERMISSION_REVOKED // revoked direct permission (by owner / admin)
+  PERMISSION_REMOVED // removed direct permission (by user himself)
+  PERMISSION_MODIFIED // modified direct permission
+  OWNER_TRANSFERRED // ownership of an object was transferred
+  REQUEST_CREATED // created object access request
+  REQUEST_CANCELLED // cancelled object access request
+  REQUEST_RESOLVED // resolved object access request
+  CATALOG_ASSIGNMENT_CREATED // created catalog assignment
+  CATALOG_ASSIGNMENT_DELETED // deleted catalog assignment
+  CATALOG_ASSIGNMENT_MODIFIED // created catalog collection
+  USER_GROUP_CREATED // created user group
+  USER_GROUP_MODIFIED // modified user group
+  USER_GROUP_DELETED // deleted user group
+  USER_GROUP_USER_ADDED // added user to user group
+  USER_GROUP_USER_REMOVED // removed user from user group
+  USER_GROUP_USER_MODIFIED // modified user in user group (promotion / demotion)
 }
 
 enum ObjectType {
-    USER_GROUP
-    CATALOG_COLLECTION
-    ANSWER_COLLECTION
-    ELEMENT
-    COURSE
-    LIVE_QUIZ
-    PRACTICE_QUIZ
-    MICRO_LEARNING
-    GROUP_ACTIVITY
+  USER_GROUP
+  CATALOG_COLLECTION
+  ANSWER_COLLECTION
+  ELEMENT
+  COURSE
+  LIVE_QUIZ
+  PRACTICE_QUIZ
+  MICRO_LEARNING
+  GROUP_ACTIVITY
+  COMPETENCE_TREE
 }
 
 model AuditLogEntry {
-    id   Int          @id @default(autoincrement())
-    type AuditLogType // type of the audit log entry
+  id   Int          @id @default(autoincrement())
+  type AuditLogType // type of the audit log entry
 
-    // object information
-    objectType ObjectType
-    objectId   String
+  // object information
+  objectType ObjectType
+  objectId   String
 
-    // users / user groups involved in the action
-    sourceUserId      String  @db.Uuid // id of the user who performed the action
-    targetUserId      String? @db.Uuid // id of the user who was affected by the action (can be the same as sourceUserId)
-    targetUserGroupId Int? // id of the user group who was affected by the action (can include the source user)
+  // users / user groups involved in the action
+  sourceUserId      String  @db.Uuid // id of the user who performed the action
+  targetUserId      String? @db.Uuid // id of the user who was affected by the action (can be the same as sourceUserId)
+  targetUserGroupId Int? // id of the user group who was affected by the action (can include the source user)
 
-    // generic message containing more information on the action
-    message String
+  // generic message containing more information on the action
+  message String
 
-    // timestamp of the action
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  // timestamp of the action
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum ActivityLogType {
-    MESSAGE // message sent by one of the users with access to the object
-    MODIFICATION // modification of the object (field modified, etc.)
-    CREATION // creation of the object
-    SHARING // sharing of the object
+  MESSAGE // message sent by one of the users with access to the object
+  MODIFICATION // modification of the object (field modified, etc.)
+  CREATION // creation of the object
+  SHARING // sharing of the object
 }
 
 model ActivityLogEntry {
-    id         Int             @id @default(autoincrement())
-    type       ActivityLogType // type of the change log entry
-    objectType ObjectType // type of the object
+  id         Int             @id @default(autoincrement())
+  type       ActivityLogType // type of the change log entry
+  objectType ObjectType // type of the object
 
-    // generic message containing more information on the action
-    message String?
+  // generic message containing more information on the action
+  message String?
 
-    // structured data about modifications (for type MODIFICATION)
-    /// [PrismaActivityLogModificationDetails]
-    modificationDetails Json?
+  // structured data about modifications (for type MODIFICATION)
+  /// [PrismaActivityLogModificationDetails]
+  modificationDetails Json?
 
-    // whether the entry has been resolved (for type MESSAGE)
-    resolved   Boolean   @default(false)
-    resolvedAt DateTime?
+  // whether the entry has been resolved (for type MESSAGE)
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
 
-    // user who performed the action
-    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-    userId String? @db.Uuid
+  // user who performed the action
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  userId String? @db.Uuid
 
-    // object in affected by the change
-    answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    answerCollectionId Int?
+  // object in affected by the change
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  answerCollectionId Int?
 
-    element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    elementId Int?
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId Int?
 
-    course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    courseId String? @db.Uuid
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String? @db.Uuid
 
-    liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    liveQuizId String?   @db.Uuid
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
 
-    practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    practiceQuizId String?       @db.Uuid
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
 
-    microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    microLearningId String?        @db.Uuid
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
 
-    groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    groupActivityId String?        @db.Uuid
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
 
-    // timestamps for the creation and modification of the entry
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  // timestamps for the creation and modification of the entry
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // #endregion

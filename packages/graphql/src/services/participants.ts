@@ -836,6 +836,13 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
             where: {
               status: DB.PublicationStatus.PUBLISHED,
               isDeleted: false,
+              OR: [
+                { mode: DB.PracticeQuizMode.STANDARD },
+                {
+                  mode: DB.PracticeQuizMode.ADAPTIVE,
+                  course: { isAdaptiveLearningEnabled: true },
+                },
+              ],
             },
           },
         },

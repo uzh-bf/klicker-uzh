@@ -20,47 +20,52 @@ model Course {
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
 
-  isGamificationEnabled  Boolean @default(true)
-  isGroupCreationEnabled Boolean @default(true)
-  isAssessmentEnabled    Boolean @default(false)
+  isGamificationEnabled                Boolean @default(true)
+  isGroupCreationEnabled               Boolean @default(true)
+  isAssessmentEnabled                  Boolean @default(false)
+  isAdaptiveLearningEnabled            Boolean @default(false)
+  isAdaptiveLearningCalibrationEnabled Boolean @default(false)
 
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)
   maxGroupSize              Int      @default(5)
   randomAssignmentFinalized Boolean  @default(false)
 
-  elementStacks              ElementStack[]
-  practiceQuizzes            PracticeQuiz[]
-  groupActivities            GroupActivity[]
-  leaderboard                LeaderboardEntry[]
-  awards                     AwardEntry[]
-  classAchievements          ClassAchievementInstance[]
-  achievements               Achievement[]
-  titles                     Title[]
-  participations             Participation[]
-  subscriptions              PushSubscription[]
-  participantGroups          ParticipantGroup[]
-  microLearnings             MicroLearning[]
-  liveQuizzes                LiveQuiz[]
-  participantAnalytics       ParticipantAnalytics[]
-  aggregatedAnalytics        AggregatedAnalytics[]
-  aggregatedCourseAnalytics  AggregatedCourseAnalytics?
-  participantCourseAnalytics ParticipantCourseAnalytics[]
-  participantPerformances    ParticipantPerformance[]
-  instancePerformances       InstancePerformance[]
-  activityPerformances       ActivityPerformance[]
-  activityProgresses         ActivityProgress[]
-  responses                  QuestionResponse[]
-  groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
-  timelineEntries            TimelineEntry[]
-  chatbots                   Chatbot[]
-  participantInvitations     ParticipantInvitation[]
+  elementStacks                ElementStack[]
+  practiceQuizzes              PracticeQuiz[]
+  groupActivities              GroupActivity[]
+  leaderboard                  LeaderboardEntry[]
+  awards                       AwardEntry[]
+  classAchievements            ClassAchievementInstance[]
+  achievements                 Achievement[]
+  titles                       Title[]
+  participations               Participation[]
+  subscriptions                PushSubscription[]
+  participantGroups            ParticipantGroup[]
+  microLearnings               MicroLearning[]
+  liveQuizzes                  LiveQuiz[]
+  participantAnalytics         ParticipantAnalytics[]
+  aggregatedAnalytics          AggregatedAnalytics[]
+  aggregatedCourseAnalytics    AggregatedCourseAnalytics?
+  participantCourseAnalytics   ParticipantCourseAnalytics[]
+  participantPerformances      ParticipantPerformance[]
+  instancePerformances         InstancePerformance[]
+  activityPerformances         ActivityPerformance[]
+  activityProgresses           ActivityProgress[]
+  responses                    QuestionResponse[]
+  groupAssignmentPoolEntries   GroupAssignmentPoolEntry[]
+  timelineEntries              TimelineEntry[]
+  chatbots                     Chatbot[]
+  participantInvitations       ParticipantInvitation[]
+  adaptiveAssessments          AdaptiveAssessment[]
+  adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptCourse")
+  competenceTreeLinks          CompetenceTreeCourse[]
 
-  directPermissions  Permission[]
-  permissions        DerivedPermission[]
-  accessRequests     AccessRequest[]
-  catalogAssignments CatalogCollectionAssignment[]
-  activityLog        ActivityLogEntry[]
+  directPermissions   Permission[]
+  permissions         DerivedPermission[]
+  accessRequests      AccessRequest[]
+  catalogAssignments  CatalogCollectionAssignment[]
+  activityLog         ActivityLogEntry[]
   verificationRecords VerifiableCredential[]
 
   competencyTree   CompetencyTree? @relation(fields: [competencyTreeId], references: [id], onDelete: SetNull, onUpdate: Cascade)

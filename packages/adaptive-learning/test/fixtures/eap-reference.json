@@ -1,0 +1,938 @@
+{
+  "schemaVersion": 1,
+  "scale": {
+    "priorMean": 0,
+    "priorStandardDeviation": 1,
+    "gridMin": -6,
+    "gridMax": 6,
+    "gridStep": 0.1,
+    "cuts": [-1.5, 1.5]
+  },
+  "credibleMass": 0.9,
+  "cases": [
+    {
+      "id": "prior-only",
+      "input": {
+        "responses": []
+      },
+      "output": {
+        "discrete": {
+          "mean": 1.0760476895221556e-16,
+          "standardDeviation": 0.9999999731797642,
+          "credibleLower": -1.5999999999999996,
+          "credibleUpper": 1.6000000000000005,
+          "bandProbabilities": [
+            0.06696911786733853, 0.8660617642653231, 0.06696911786733845
+          ]
+        },
+        "continuous": {
+          "mean": 0,
+          "standardDeviation": 0.9999999635447008
+        }
+      }
+    },
+    {
+      "id": "mixed-2pl-3pl",
+      "input": {
+        "responses": [
+          {
+            "item": {
+              "id": "numerical",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-numerical",
+              "discrimination": 1.1,
+              "difficulty": -0.5,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "sc",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-sc",
+              "discrimination": 1.4,
+              "difficulty": 0,
+              "guessing": 0.25
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "mc",
+              "itemType": "MC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-mc",
+              "discrimination": 0.9,
+              "difficulty": 0.6,
+              "guessing": 0.06666666666666667
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "kprim",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-kprim",
+              "discrimination": 1.3,
+              "difficulty": -1,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "free-text",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-free-text",
+              "discrimination": 0.8,
+              "difficulty": 1.2,
+              "guessing": 0
+            },
+            "correct": true
+          }
+        ]
+      },
+      "output": {
+        "discrete": {
+          "mean": -0.1103138989113433,
+          "standardDeviation": 0.6799690148961333,
+          "credibleLower": -1.1999999999999993,
+          "credibleUpper": 1,
+          "bandProbabilities": [
+            0.021043966735719875, 0.969035693001094, 0.009920340263186498
+          ]
+        },
+        "continuous": {
+          "mean": -0.11031389891109993,
+          "standardDeviation": 0.6799690148954256
+        }
+      }
+    },
+    {
+      "id": "asymmetric-parameters",
+      "input": {
+        "responses": [
+          {
+            "item": {
+              "id": "asym-1",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-asym-1",
+              "discrimination": 0.55,
+              "difficulty": -2.4,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "asym-2",
+              "itemType": "SC",
+              "choiceCount": 5,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-asym-2",
+              "discrimination": 2.1,
+              "difficulty": -0.2,
+              "guessing": 0.2
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "asym-3",
+              "itemType": "MC",
+              "choiceCount": 3,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-asym-3",
+              "discrimination": 1.7,
+              "difficulty": 1.8,
+              "guessing": 0.14285714285714285
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "asym-4",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-asym-4",
+              "discrimination": 1.05,
+              "difficulty": 2.7,
+              "guessing": 0
+            },
+            "correct": false
+          }
+        ]
+      },
+      "output": {
+        "discrete": {
+          "mean": 0.2407632945522959,
+          "standardDeviation": 0.7900466203065838,
+          "credibleLower": -1.0999999999999996,
+          "credibleUpper": 1.5,
+          "bandProbabilities": [
+            0.021069539600634294, 0.9306557124329581, 0.04827474796640806
+          ]
+        },
+        "continuous": {
+          "mean": 0.2407632946548257,
+          "standardDeviation": 0.790046619906075
+        }
+      }
+    },
+    {
+      "id": "extreme-correct",
+      "input": {
+        "responses": [
+          {
+            "item": {
+              "id": "correct-0",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-0",
+              "discrimination": 1.2,
+              "difficulty": -3,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-1",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-1",
+              "discrimination": 1.3,
+              "difficulty": -2,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-2",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-2",
+              "discrimination": 1.4,
+              "difficulty": -1,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-3",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-3",
+              "discrimination": 1.2,
+              "difficulty": 0,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-4",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-4",
+              "discrimination": 1.3,
+              "difficulty": 1,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-5",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-5",
+              "discrimination": 1.4,
+              "difficulty": 2,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-6",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-6",
+              "discrimination": 1.2,
+              "difficulty": 3,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-7",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-7",
+              "discrimination": 1.3,
+              "difficulty": -3,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-8",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-8",
+              "discrimination": 1.4,
+              "difficulty": -2,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-9",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-9",
+              "discrimination": 1.2,
+              "difficulty": -1,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-10",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-10",
+              "discrimination": 1.3,
+              "difficulty": 0,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-11",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-11",
+              "discrimination": 1.4,
+              "difficulty": 1,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-12",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-12",
+              "discrimination": 1.2,
+              "difficulty": 2,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-13",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-13",
+              "discrimination": 1.3,
+              "difficulty": 3,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-14",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-14",
+              "discrimination": 1.4,
+              "difficulty": -3,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-15",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-15",
+              "discrimination": 1.2,
+              "difficulty": -2,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-16",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-16",
+              "discrimination": 1.3,
+              "difficulty": -1,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-17",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-17",
+              "discrimination": 1.4,
+              "difficulty": 0,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-18",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-18",
+              "discrimination": 1.2,
+              "difficulty": 1,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-19",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-19",
+              "discrimination": 1.3,
+              "difficulty": 2,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-20",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-20",
+              "discrimination": 1.4,
+              "difficulty": 3,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-21",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-21",
+              "discrimination": 1.2,
+              "difficulty": -3,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-22",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-correct-22",
+              "discrimination": 1.3,
+              "difficulty": -2,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "correct-23",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-correct-23",
+              "discrimination": 1.4,
+              "difficulty": -1,
+              "guessing": 0.25
+            },
+            "correct": true
+          }
+        ]
+      },
+      "output": {
+        "discrete": {
+          "mean": 2.936367219641632,
+          "standardDeviation": 0.5813834847773643,
+          "credibleLower": 2,
+          "credibleUpper": 3.9000000000000004,
+          "bandProbabilities": [
+            1.5449146153708562e-15, 0.005624317762997305, 0.9943756822370011
+          ]
+        },
+        "continuous": {
+          "mean": 2.9363653672686394,
+          "standardDeviation": 0.5813786764247729
+        }
+      }
+    },
+    {
+      "id": "extreme-wrong",
+      "input": {
+        "responses": [
+          {
+            "item": {
+              "id": "wrong-0",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-0",
+              "discrimination": 1.15,
+              "difficulty": -3,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-1",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-1",
+              "discrimination": 1.25,
+              "difficulty": -2,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-2",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-2",
+              "discrimination": 1.3499999999999999,
+              "difficulty": -1,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-3",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-3",
+              "discrimination": 1.45,
+              "difficulty": 0,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-4",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-4",
+              "discrimination": 1.15,
+              "difficulty": 1,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-5",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-5",
+              "discrimination": 1.25,
+              "difficulty": 2,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-6",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-6",
+              "discrimination": 1.3499999999999999,
+              "difficulty": 3,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-7",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-7",
+              "discrimination": 1.45,
+              "difficulty": -3,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-8",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-8",
+              "discrimination": 1.15,
+              "difficulty": -2,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-9",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-9",
+              "discrimination": 1.25,
+              "difficulty": -1,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-10",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-10",
+              "discrimination": 1.3499999999999999,
+              "difficulty": 0,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-11",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-11",
+              "discrimination": 1.45,
+              "difficulty": 1,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-12",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-12",
+              "discrimination": 1.15,
+              "difficulty": 2,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-13",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-13",
+              "discrimination": 1.25,
+              "difficulty": 3,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-14",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-14",
+              "discrimination": 1.3499999999999999,
+              "difficulty": -3,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-15",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-15",
+              "discrimination": 1.45,
+              "difficulty": -2,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-16",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-16",
+              "discrimination": 1.15,
+              "difficulty": -1,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-17",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-17",
+              "discrimination": 1.25,
+              "difficulty": 0,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-18",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-18",
+              "discrimination": 1.3499999999999999,
+              "difficulty": 1,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-19",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-19",
+              "discrimination": 1.45,
+              "difficulty": 2,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-20",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-20",
+              "discrimination": 1.15,
+              "difficulty": 3,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-21",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-21",
+              "discrimination": 1.25,
+              "difficulty": -3,
+              "guessing": 0.0625
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-22",
+              "itemType": "FREE_TEXT",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-wrong-22",
+              "discrimination": 1.3499999999999999,
+              "difficulty": -2,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "wrong-23",
+              "itemType": "KPRIM",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-wrong-23",
+              "discrimination": 1.45,
+              "difficulty": -1,
+              "guessing": 0.0625
+            },
+            "correct": false
+          }
+        ]
+      },
+      "output": {
+        "discrete": {
+          "mean": -3.335512892024728,
+          "standardDeviation": 0.5174625376657623,
+          "credibleLower": -4.2,
+          "credibleUpper": -2.5,
+          "bandProbabilities": [
+            0.9999517633721517, 0.00004823662784838999, 1.2517932582880613e-27
+          ]
+        },
+        "continuous": {
+          "mean": -3.3355068796838516,
+          "standardDeviation": 0.5174475331047493
+        }
+      }
+    },
+    {
+      "id": "cut-boundary",
+      "input": {
+        "responses": [
+          {
+            "item": {
+              "id": "cut-1",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-cut-1",
+              "discrimination": 1.5,
+              "difficulty": 1.5,
+              "guessing": 0
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "cut-2",
+              "itemType": "NUMERICAL",
+              "choiceCount": null,
+              "model": "TWO_PL",
+              "calibrationId": "calibration-cut-2",
+              "discrimination": 1.5,
+              "difficulty": 1.5,
+              "guessing": 0
+            },
+            "correct": false
+          },
+          {
+            "item": {
+              "id": "cut-3",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-cut-3",
+              "discrimination": 1.2,
+              "difficulty": 1.5,
+              "guessing": 0.25
+            },
+            "correct": true
+          },
+          {
+            "item": {
+              "id": "cut-4",
+              "itemType": "SC",
+              "choiceCount": 4,
+              "model": "THREE_PL_FIXED_C",
+              "calibrationId": "calibration-cut-4",
+              "discrimination": 1.2,
+              "difficulty": 1.5,
+              "guessing": 0.25
+            },
+            "correct": false
+          }
+        ]
+      },
+      "output": {
+        "discrete": {
+          "mean": 0.6778066571805065,
+          "standardDeviation": 0.7233618930555809,
+          "credibleLower": -0.5999999999999996,
+          "credibleUpper": 1.8000000000000007,
+          "bandProbabilities": [
+            0.003454830897140938, 0.8749396624977445, 0.12160550660511496
+          ]
+        },
+        "continuous": {
+          "mean": 0.6778066571803883,
+          "standardDeviation": 0.7233618930539779
+        }
+      }
+    }
+  ]
+}

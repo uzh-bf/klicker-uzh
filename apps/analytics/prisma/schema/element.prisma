@@ -24,6 +24,9 @@ model Element {
   version    Int     @default(1) // used to track question versions, incremented on each update
   originalId String?
 
+  creationRequestId          String? @unique(map: "element_creation_request_key") @db.Uuid
+  creationRequestFingerprint String? @db.VarChar(64)
+
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
 
@@ -42,8 +45,12 @@ model Element {
 
   tags Tag[]
 
-  elementInstances ElementInstance[]
-  feedbacks        ElementFeedback[]
+  elementInstances            ElementInstance[]
+  feedbacks                   ElementFeedback[]
+  adaptiveAssessmentElements  AdaptiveAssessmentElement[]
+  adaptiveAssessmentResponses AdaptiveAssessmentResponse[]
+  competenceTreeAssignments   CompetenceTreeElementAssignment[]
+  adaptiveItemCalibrations    AdaptiveItemCalibration[]
 
   answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")
   answerCollection      AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)

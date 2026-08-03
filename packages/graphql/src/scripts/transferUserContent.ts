@@ -1,14 +1,22 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { pathToFileURL } from 'node:url'
+import {
+  assertAdaptiveLearningAccountClosureReady,
+  getAdaptiveLearningAccountClosurePreflight,
+  transferAdaptiveLearningCompetenceTrees,
+} from '../services/adaptiveLearningAccountClosure.js'
 
 // ! Script to transfer the ownership of all objects of a user to another user
-async function run() {
+export async function run({
+  oldUserId,
+  newUserId,
+}: {
+  oldUserId: string
+  newUserId: string
+}) {
   const emitter = new EventEmitter()
-
-  // ! Set old and new user IDs and the course IDs, which should be transferred including all activities and elements
-  const oldUserId = ''
-  const newUserId = ''
 
   // verify that the new user exists
   const newUser = await prisma.user.findUnique({
@@ -44,8 +52,26 @@ async function run() {
     throw new Error(`Origin user with ID ${oldUserId} not found`)
   }
 
-  await prisma.$transaction(
+  const transferredCompetenceTrees = await prisma.$transaction(
     async (prisma) => {
+      const competenceTrees = await transferAdaptiveLearningCompetenceTrees(
+        {
+          sourceUserId: oldUserId,
+          targetUserId: newUserId,
+          actorUserId: oldUserId,
+        },
+        prisma
+      )
+      for (const [index, tree] of competenceTrees.entries()) {
+        console.log(
+          `Transferring adaptive-learning competence tree: ${tree.name} (ID: ${tree.id}; ${index + 1}/${competenceTrees.length})`
+        )
+        emitter.emit('invalidate', {
+          typename: 'CompetenceTree',
+          id: tree.id,
+        })
+      }
+
       // migrate courses to new owner
       let courseCounter = 0
       for (const { id: courseId, name: courseName } of user.courses) {
@@ -407,9 +433,42 @@ async function run() {
           id: disclaimerId,
         })
       }
+
+      return competenceTrees
     },
     { timeout: 60 * 60 * 1000 } // timeout: 1h
   )
+
+  const adaptiveLearningPreflight =
+    await getAdaptiveLearningAccountClosurePreflight(oldUserId, prisma)
+  assertAdaptiveLearningAccountClosureReady(adaptiveLearningPreflight)
+
+  return {
+    transferredCompetenceTreeIds: transferredCompetenceTrees.map(
+      ({ id }) => id
+    ),
+    adaptiveLearningPreflight,
+  }
 }
 
-await run()
+function readRequiredEnvironmentVariable(name: string): string {
+  const value = process.env[name]?.trim()
+  if (!value) {
+    throw new Error(`Required environment variable ${name} is not set`)
+  }
+  return value
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  await run({
+    oldUserId: readRequiredEnvironmentVariable(
+      'TRANSFER_USER_CONTENT_SOURCE_USER_ID'
+    ),
+    newUserId: readRequiredEnvironmentVariable(
+      'TRANSFER_USER_CONTENT_TARGET_USER_ID'
+    ),
+  })
+}

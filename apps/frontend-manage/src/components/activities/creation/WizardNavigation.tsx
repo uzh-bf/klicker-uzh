@@ -31,7 +31,7 @@ function WizardNavigation({
   const t = useTranslations()
 
   return (
-    <div className="flex flex-row justify-between pt-2">
+    <div className="flex flex-none flex-row justify-between pt-2">
       <div className="flex flex-row items-center gap-2">
         {typeof onPrevStep !== 'undefined' && (
           <Button

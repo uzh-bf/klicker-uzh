@@ -21,6 +21,10 @@ export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
 })
 
+export const PracticeQuizMode = builder.enumType('PracticeQuizMode', {
+  values: Object.values(DB.PracticeQuizMode),
+})
+
 export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
 })
@@ -184,6 +188,7 @@ export interface IPracticeQuiz
     | 'pointsMultiplier'
     | 'resetTimeDays'
     | 'orderType'
+    | 'mode'
     | 'status'
     | 'availableFrom'
     | 'areInstancesOutdated'
@@ -198,6 +203,8 @@ export interface IPracticeQuiz
   completedCount?: number
   repeatedCount?: number
   isOwner?: boolean
+  isPreview?: boolean
+  adaptiveMaximumQuestions?: number | null
 }
 export const PracticeQuizRef = builder.objectRef<IPracticeQuiz>('PracticeQuiz')
 export const PracticeQuiz = PracticeQuizRef.implement({
@@ -211,6 +218,7 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     resetTimeDays: t.exposeInt('resetTimeDays'),
     orderType: t.expose('orderType', { type: ElementOrderType }),
+    mode: t.expose('mode', { type: PracticeQuizMode }),
     status: t.expose('status', { type: PublicationStatus }),
     stacks: t.expose('stacks', { type: [ElementStackRef], nullable: true }),
     course: t.expose('course', { type: CourseRef, nullable: true }),
@@ -222,6 +230,10 @@ export const PracticeQuiz = PracticeQuizRef.implement({
     // completedCount: t.exposeInt('completedCount', { nullable: true }),
     // repeatedCount: t.exposeInt('repeatedCount', { nullable: true }),
     isOwner: t.exposeBoolean('isOwner', { nullable: true }),
+    isPreview: t.exposeBoolean('isPreview', { nullable: true }),
+    adaptiveMaximumQuestions: t.exposeInt('adaptiveMaximumQuestions', {
+      nullable: true,
+    }),
 
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
