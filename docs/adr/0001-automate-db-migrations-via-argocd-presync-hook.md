@@ -22,6 +22,6 @@ Run `prisma migrate deploy` as an **ArgoCD-native `PreSync` hook Job** (`deploy/
 
 - Migrations run while the **previous** app version is still live → every migration must be **backward-compatible (expand-contract)**; destructive/renaming changes are split across releases.
 - The migrator image **tag** auto-tracks the backend tag: `job-migrate.yaml` defaults `migrator.image.tag` to `.Values.backendGraphql.image.tag`, so each env pins only the migrator **repository** (`…-migrator-arm`) and never a separate tag. Nothing in the release procedure auto-bumps image tags in `deploy/env-uzh-*/values.yaml` (they are hand-edited), so coupling removes a manual step and the drift it invites.
-- The migrator's pinned `prisma` version must still track the `packages/prisma` devDependency. Drift → engine/schema mismatch.
+- The migrator's pinned `prisma` version must still track the `packages/prisma` devDependency. Drift → engine/schema mismatch. This materialised once before merge: the Prisma 7 upgrade (#5185) landed on `v3` while this branch still pinned `prisma@6.16.1` and shipped no `prisma.config.ts` — the image would have had no datasource URL at all, and every CI/image/review gate passed it anyway because only a real `migrate deploy` run exercises the connection. Consequence: any Prisma major on `v3` must re-verify the migrator by actually running it, not by building it.
 - A failed migration blocks the rollout by design; operators must watch the first releases.
 - Adds one image (arm + amd) to build and push per release.
