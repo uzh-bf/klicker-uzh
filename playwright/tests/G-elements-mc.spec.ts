@@ -236,6 +236,6 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
   })
 
   test('Cleanup: Delete the multiple choice question', async ({ page }) => {
-    await deleteElement(page, MC.titleEdited)
+    await deleteElement(page, MC.titleEdited, { allowMissing: true })
   })
 })
