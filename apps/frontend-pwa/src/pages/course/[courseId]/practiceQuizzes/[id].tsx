@@ -138,13 +138,16 @@ function PracticeQuizPage({
   const [adaptiveProgress, setAdaptiveProgress] =
     useState<AdaptivePracticeQuizProgress | null>(null)
 
-  useParticipantToken({
+  const isParticipantTokenReady = useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
+    skip: !isParticipantTokenReady,
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
   })
 
   const isAdaptive = data?.practiceQuiz?.mode === PracticeQuizMode.Adaptive
@@ -229,7 +232,7 @@ function PracticeQuizPage({
     adaptiveProgress,
   ])
 
-  if (loading)
+  if (!isParticipantTokenReady || loading)
     return (
       <Layout embedded={embedded}>
         <Loader />

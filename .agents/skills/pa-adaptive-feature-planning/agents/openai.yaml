@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Adaptive Feature Planning'
-  short_description: 'Plan adaptive learning features for production'
-  default_prompt: 'Use $pa-adaptive-feature-planning to turn adaptive-learning reviews and prototypes into an implementation-ready production plan.'

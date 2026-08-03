@@ -31,7 +31,6 @@ Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki h
 
 - Environment broken / fresh clone / ports / stale codegen → `klicker-environment-doctor`
 - Designing a feature before coding → `klicker-feature-design`
-- Reconciling adaptive-learning reviews, prototypes, and partial implementations into a production plan → `pa-adaptive-feature-planning`
 - GraphQL endpoint work (schema, service, ops, auth) → `klicker-graphql-api`
 - Prisma schema, migrations, seeds → `klicker-data-model`
 - Safe production database scripting and migrations → `df-safe-database-scripting`

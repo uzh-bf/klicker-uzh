@@ -53,8 +53,6 @@
 
 - **Update**: [adaptive-learning](./adaptive-learning.md), [graphql-api-layer](./graphql-api-layer.md), and [data-and-migrations](./data-and-migrations.md) now document the transactional competence-tree contract, cross-course access policy, structural lock, adaptive integrity migration, reviewed numerical normalization, and verified service tests.
 
-- **Creation**: `pa-adaptive-feature-planning` packages the review/prototype-to-production-plan workflow for competence-tree adaptive learning, with a reusable audit checklist, plan template, and generic hierarchy/result-trajectory example. Skill routing is documented in [index](./index.md) and [developing-a-feature](./developing-a-feature.md).
-
 ## 2026-07-09
 
 - **Creation**: [adaptive-learning](./adaptive-learning.md) added as the stable engineering page for competence-tree based adaptive practice quizzes, including item parameters, readiness gates, permissions/privacy boundaries, and legacy cleanup policy.
