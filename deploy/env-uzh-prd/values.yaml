@@ -195,6 +195,9 @@ chat:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  telemetry:
+    enabled: false
+
   replicaCount: 1
 
   autoscaling:
