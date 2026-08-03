@@ -28,6 +28,9 @@ spec:
         app.kubernetes.io/component: migrate
     spec:
       restartPolicy: Never
+      # The migrator needs zero Kubernetes API access — never mount the default
+      # service-account token (SonarCloud kubernetes:S6865).
+      automountServiceAccountToken: false
       {{- with .Values.migrator.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
