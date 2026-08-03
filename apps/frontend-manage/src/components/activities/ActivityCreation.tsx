@@ -11,6 +11,7 @@ import {
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
+  PracticeQuizMode,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -26,6 +27,7 @@ export type ElementSelectCourse = {
   value: string
   isGamified: boolean
   isAssessmentEnabled: boolean
+  isAdaptiveLearningEnabled?: boolean
   isGroupCreationEnabled: boolean
   startDate: Date
   endDate: Date
@@ -127,6 +129,7 @@ function ActivityCreation({
             | 'name'
             | 'isGamificationEnabled'
             | 'isAssessmentEnabled'
+            | 'isAdaptiveLearningEnabled'
             | 'isGroupCreationEnabled'
             | 'startDate'
             | 'endDate'
@@ -138,6 +141,7 @@ function ActivityCreation({
           value: course.id,
           isGamified: course.isGamificationEnabled,
           isAssessmentEnabled: course.isAssessmentEnabled,
+          isAdaptiveLearningEnabled: course.isAdaptiveLearningEnabled,
           isGroupCreationEnabled: course.isGroupCreationEnabled,
           startDate: course.startDate,
           endDate: course.endDate,
@@ -191,6 +195,7 @@ function ActivityCreation({
         | 'stacks'
         | 'pointsMultiplier'
         | 'course'
+        | 'mode'
       > & {
         id?: string
         orderType?: string
@@ -212,11 +217,18 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      mode: PracticeQuizMode.Standard,
     }
   }
 
   return (
-    <div className="print-hidden md:h-73 md:min-h-73 mb-3 flex flex-col justify-center">
+    <div
+      className={`print-hidden mb-3 flex flex-col justify-center ${
+        creationMode === ActivityType.PracticeQuiz
+          ? 'md:h-96 md:min-h-96'
+          : 'md:h-80 md:min-h-80'
+      }`}
+    >
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard

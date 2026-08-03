@@ -19,6 +19,7 @@ import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
 import ElementListSorting from '../components/elements/ElementListSorting'
+import { restoreElementAutosaveStorageValue } from '../components/elements/manipulation/adaptive/elementAutosave'
 import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
   ElementEditMode,
@@ -68,6 +69,29 @@ function Index() {
   )
   const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
+
+  const openElementCreation = useCallback(() => {
+    const value = localStorage.getItem('autosave-element-creation')
+    const recovery = restoreElementAutosaveStorageValue(value)
+
+    if (value && recovery) {
+      setShowRecoveryPrompt(true)
+    } else {
+      setIsElementCreationModalOpen(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!router.isReady || router.query.createElement !== 'true') {
+      return
+    }
+
+    openElementCreation()
+
+    const query = { ...router.query }
+    delete query.createElement
+    router.replace({ pathname: '/', query }, undefined, { shallow: true })
+  }, [openElementCreation, router])
 
   const [selectedElements, setSelectedElements] = useState<{
     [elementId: number]: Element
@@ -367,17 +391,7 @@ function Index() {
                 ) : null}
                 <Button
                   primary
-                  onClick={() => {
-                    const value = localStorage.getItem(
-                      'autosave-element-creation'
-                    )
-
-                    if (value) {
-                      setShowRecoveryPrompt(true)
-                    } else {
-                      setIsElementCreationModalOpen(true)
-                    }
-                  }}
+                  onClick={openElementCreation}
                   data={{ cy: 'create-question' }}
                   className={{ root: 'h-9 font-bold' }}
                 >

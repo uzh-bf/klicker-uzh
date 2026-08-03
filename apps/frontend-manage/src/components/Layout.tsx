@@ -72,13 +72,13 @@ function Layout({
         <meta name="description" content={displayName} charSet="utf-8"></meta>
       </Head>
 
-      <div className="flex-none">
+      <div className="min-w-0 max-w-full flex-none">
         <Header user={dataUser.userProfile} />
       </div>
 
       <div
         className={twMerge(
-          'flex flex-1 flex-col p-4 md:overflow-y-auto',
+          'flex min-w-0 max-w-full flex-1 flex-col p-4 md:overflow-y-auto',
           className?.children
         )}
         data-cy={data?.cy}

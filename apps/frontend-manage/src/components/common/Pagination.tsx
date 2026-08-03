@@ -9,7 +9,7 @@ import {
   Select,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useId } from 'react'
 import { twMerge } from 'tailwind-merge'
 import usePaginationPageNumbers from '../../lib/hooks/usePaginationPageNumbers'
 
@@ -31,6 +31,7 @@ function Pagination({
   className?: string
 }) {
   const t = useTranslations()
+  const pageSizeId = useId()
   const pageNumbers = usePaginationPageNumbers({ currentPage, totalPages })
 
   return (
@@ -54,33 +55,39 @@ function Pagination({
             total: numOfObjects,
           })}
         </div>
-        <Select
-          items={[
-            {
-              value: '10',
-              label: t('manage.general.NEntriesPerPage', { N: 10 }),
-              data: { cy: 'pagination-page-size-10' },
-            },
-            {
-              value: '20',
-              label: t('manage.general.NEntriesPerPage', { N: 20 }),
-              data: { cy: 'pagination-page-size-20' },
-            },
-            {
-              value: '50',
-              label: t('manage.general.NEntriesPerPage', { N: 50 }),
-              data: { cy: 'pagination-page-size-50' },
-            },
-          ]}
-          value={String(pageSize)}
-          onChange={(value) => setPageSize(parseInt(value, 10))}
-          className={{
-            root: 'order-1 mb-2.5 justify-end self-end lg:order-2 lg:mb-0',
-            trigger: 'h-7.5 w-52 text-sm',
-            item: 'text-sm',
-          }}
-          data={{ cy: 'pagination-page-size' }}
-        />
+        <div className="order-1 mb-2.5 self-end lg:order-2 lg:mb-0">
+          <label className="sr-only" htmlFor={pageSizeId}>
+            {t('manage.general.NEntriesPerPage', { N: pageSize })}
+          </label>
+          <Select
+            id={pageSizeId}
+            items={[
+              {
+                value: '10',
+                label: t('manage.general.NEntriesPerPage', { N: 10 }),
+                data: { cy: 'pagination-page-size-10' },
+              },
+              {
+                value: '20',
+                label: t('manage.general.NEntriesPerPage', { N: 20 }),
+                data: { cy: 'pagination-page-size-20' },
+              },
+              {
+                value: '50',
+                label: t('manage.general.NEntriesPerPage', { N: 50 }),
+                data: { cy: 'pagination-page-size-50' },
+              },
+            ]}
+            value={String(pageSize)}
+            onChange={(value) => setPageSize(parseInt(value, 10))}
+            className={{
+              root: 'justify-end',
+              trigger: 'h-7.5 w-52 text-sm',
+              item: 'text-sm',
+            }}
+            data={{ cy: 'pagination-page-size' }}
+          />
+        </div>
       </div>
       {totalPages > 1 && (
         <PaginationComponent className="w-full">
