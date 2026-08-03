@@ -17,10 +17,12 @@ export default {
       reasoningEffortHint:
         'Higher effort can improve difficult responses at the cost of additional latency.',
       reasoningEfforts: {
+        none: 'None',
         minimal: 'Minimal',
         low: 'Low',
         medium: 'Medium',
         high: 'High',
+        xhigh: 'Extra high',
       },
     },
     credits: {

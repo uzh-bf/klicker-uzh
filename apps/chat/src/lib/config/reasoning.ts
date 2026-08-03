@@ -5,7 +5,14 @@ export type ReasoningEffort = string
 // Reasoning efforts are configured per chatbot and per model, so the value is a
 // free-form string. Only the well-known ones get a localized label; anything
 // else falls back to its raw name — same contract as `modes.ts`.
-const KNOWN_REASONING_EFFORTS = ['minimal', 'low', 'medium', 'high'] as const
+const KNOWN_REASONING_EFFORTS = [
+  'none',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+] as const
 
 type KnownReasoningEffort = (typeof KNOWN_REASONING_EFFORTS)[number]
 

@@ -19,10 +19,12 @@ export default {
       reasoningEffortHint:
         'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
       reasoningEfforts: {
+        none: 'Aus',
         minimal: 'Minimal',
         low: 'Niedrig',
         medium: 'Mittel',
         high: 'Hoch',
+        xhigh: 'Sehr hoch',
       },
     },
     credits: {
