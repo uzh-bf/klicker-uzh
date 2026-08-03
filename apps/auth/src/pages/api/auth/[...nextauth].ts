@@ -147,7 +147,6 @@ function getParticipantConfig({
             )
             return false
           }
-
           // Store participantId for jwt callback
           ;(profile as any).participantId = participant.id
           console.log(

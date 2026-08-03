@@ -1,7 +1,7 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementType,
   LiveQuizResponse,
-  PrismaClient,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -13,7 +13,6 @@ import {
   ElementResultsSelection,
 } from '@klicker-uzh/types'
 import { getInitialInstanceResults } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { createHash } from 'node:crypto'
 
 // ! IMPORTANT INFORMATION
@@ -200,9 +199,6 @@ function aggregateLiveQuizResponses({
 }
 
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: liveQuizId, status: { in: ['PUBLISHED', 'ENDED'] } },

@@ -14,13 +14,16 @@ tags:
 
 ## PR gates
 
-Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-types` (which change-scopes package checking via Turbo). All use pnpm 11.5.0, pin Node 24 via the root Volta configuration (`package.json`), and utilize the Turbo remote cache.
+Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-types` (which change-scopes package checking via Turbo), plus `check-knip` and `check-gitleaks`. The Node/pnpm workflows use pnpm 11.5.0, pin Node 24 via the root Volta configuration (`package.json`), and utilize the Turbo remote cache; `check-gitleaks` is a standalone secret scan that installs the Gitleaks binary directly and needs neither.
 
 - **Path filtering**: A custom composite action `.github/actions/changed-paths` executes on PR events. Heavy test suites (e.g. `test-graphql` and `test-playwright`) run path-scoped filters to only build and spawn backing services (Postgres, Redis, Hatchet) when relevant files are changed.
 - **Required status contexts**: To safely mark path-filtered workflows as required in branch protection, they include dedicated status checkers (e.g. `test-graphql-status`, `test-playwright-status`) that always execute and fail-open.
 - **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
 - **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.
-- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside. `knip` is manual only. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
+- **Format + lint**: `check-format` runs Biome (code) + Prettier (Markdown/YAML and `playwright/`/`cypress/`) and is **blocking**. `check-lint` runs an **advisory** Biome lint step (non-blocking during the migration) before the blocking Turbo/ESLint pass (the Next.js safety net), plus `check:prisma-sync` and `check:agents-md`.
+- **Unused code**: `check-knip` runs Knip **advisory** (non-blocking); ratchets to blocking once the per-workspace entry config is tuned.
+- **Secret scanning**: `check-gitleaks` runs a **blocking** full-tree Gitleaks scan (`.gitleaks.toml`, default ruleset + false-positive allowlist); a local husky pre-commit hook scans staged changes when the binary is present.
+- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 
 ## Image builds
 

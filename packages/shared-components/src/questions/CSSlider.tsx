@@ -1,5 +1,4 @@
 import { Slider } from '@uzh-bf/design-system'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface CSSliderProps {

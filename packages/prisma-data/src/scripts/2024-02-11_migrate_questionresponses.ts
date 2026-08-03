@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   await prisma.questionResponse.deleteMany({
     where: {
       questionInstanceId: 3745,
