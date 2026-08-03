@@ -19,11 +19,21 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
+import { emitAdaptiveOperationalEvent } from './adaptivePracticeQuizEvents.js'
+import { purgeAttemptFreeAdaptivePublications } from './adaptivePracticeQuizPublicationCleanup.js'
+import {
+  lockAdaptiveAdministratorForShare,
+  lockAdaptiveCourseForUpdate,
+  lockAdaptivePracticeQuizConfigForUpdate,
+  lockPracticeQuizForUpdateInCourse,
+} from './adaptivePracticeQuizRepository.js'
+import { withAdaptiveOperationalTransaction } from './adaptiveTransactions.js'
 import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
@@ -2658,6 +2668,69 @@ export async function toggleArchiveCourse(
   return course
 }
 
+export async function setCourseAdaptiveLearningEnabled(
+  { courseId, enabled }: { courseId: string; enabled: boolean },
+  ctx: ContextWithUser
+) {
+  const course = await withAdaptiveOperationalTransaction(
+    ctx.prisma,
+    async (prisma) => {
+      const administrator = await lockAdaptiveAdministratorForShare(
+        ctx.user.sub,
+        prisma
+      )
+      if (
+        ctx.user.role !== DB.UserRole.ADMIN ||
+        administrator?.role !== DB.UserRole.ADMIN
+      ) {
+        throw new GraphQLError(
+          'Only administrators can change the adaptive-learning rollout.',
+          { extensions: { code: 'ADAPTIVE_ROLLOUT_FORBIDDEN' } }
+        )
+      }
+
+      const existing = await lockAdaptiveCourseForUpdate(courseId, prisma)
+      if (!existing) {
+        throw new GraphQLError('Course not found.', {
+          extensions: { code: 'NOT_FOUND' },
+        })
+      }
+      if (existing.isAdaptiveLearningEnabled === enabled) {
+        return await prisma.course.findUniqueOrThrow({
+          where: { id: courseId },
+        })
+      }
+
+      const updated = await prisma.course.update({
+        where: { id: courseId },
+        data: { isAdaptiveLearningEnabled: enabled },
+      })
+      await prisma.activityLogEntry.create({
+        data: {
+          type: DB.ActivityLogType.MODIFICATION,
+          objectType: DB.ObjectType.COURSE,
+          courseId,
+          userId: ctx.user.sub,
+          message: `Adaptive learning rollout ${enabled ? 'enabled' : 'disabled'} by an administrator.`,
+        },
+      })
+      return updated
+    },
+    {
+      errorCode: 'ADAPTIVE_ROLLOUT_CONFLICT',
+      errorMessage:
+        'The adaptive-learning rollout could not be changed due to concurrent activity.',
+    }
+  )
+  emitAdaptiveOperationalEvent({
+    name: 'adaptive_course_gate',
+    action: enabled ? 'ENABLED' : 'DISABLED',
+    courseId,
+  })
+  ctx.emitter.emit('invalidate', { typename: 'Course', id: courseId })
+  return course
+}
+
 interface UpdateCourseSettingsArgs {
   id: string
   name?: string | null
@@ -2786,6 +2859,7 @@ export async function updateCourseSettings(
               updateMany: {
                 where: {
                   isDeleted: false,
+                  mode: DB.PracticeQuizMode.STANDARD,
                   status: {
                     in: [
                       DB.PublicationStatus.DRAFT,
@@ -3091,22 +3165,60 @@ export async function deleteCourse(
   // updates of derived permissions on the course and some cascaded objects are automatic (since course is hard-deleted)
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
-  const course = await ctx.prisma.course.findUnique({
-    where: { id, isAssessmentEnabled: false },
-    include: {
-      liveQuizzes: true,
-      practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
-      microLearnings: { include: { stacks: { include: { elements: true } } } },
-      groupActivities: { include: { stacks: { include: { elements: true } } } },
-    },
-  })
-
-  if (!course) {
-    throw new Error('Course not found or permission denied')
-  }
-
-  const deletedCourse = await ctx.prisma.$transaction(
+  const { course, deletedCourse } = await withAdaptiveOperationalTransaction(
+    ctx.prisma,
     async (prisma) => {
+      const lockedCourse = await lockAdaptiveCourseForUpdate(id, prisma)
+      if (!lockedCourse) {
+        throw new GraphQLError('Course not found.', {
+          extensions: { code: 'NOT_FOUND' },
+        })
+      }
+      const course = await prisma.course.findUnique({
+        where: { id, isAssessmentEnabled: false },
+        include: {
+          liveQuizzes: true,
+          practiceQuizzes: {
+            include: { stacks: { include: { elements: true } } },
+          },
+          microLearnings: {
+            include: { stacks: { include: { elements: true } } },
+          },
+          groupActivities: {
+            include: { stacks: { include: { elements: true } } },
+          },
+        },
+      })
+      if (!course) {
+        throw new GraphQLError('Course not found.', {
+          extensions: { code: 'NOT_FOUND' },
+        })
+      }
+
+      const adaptiveQuizIds = course.practiceQuizzes
+        .filter((quiz) => quiz.mode === DB.PracticeQuizMode.ADAPTIVE)
+        .map(({ id }) => id)
+        .sort()
+      for (const practiceQuizId of adaptiveQuizIds) {
+        await lockPracticeQuizForUpdateInCourse(practiceQuizId, id, prisma)
+        await lockAdaptivePracticeQuizConfigForUpdate(practiceQuizId, prisma)
+      }
+      const [attemptCount, snapshotCount] = await Promise.all([
+        prisma.adaptivePracticeQuizAttempt.count({ where: { courseId: id } }),
+        prisma.adaptivePracticeQuizCohortSnapshot.count({
+          where: { practiceQuizId: { in: adaptiveQuizIds } },
+        }),
+      ])
+      if (attemptCount > 0 || snapshotCount > 0) {
+        throw new GraphQLError(
+          'This course contains retained adaptive-learning history and cannot be deleted. Archive the course instead.',
+          { extensions: { code: 'ADAPTIVE_COURSE_HISTORY_RETAINED' } }
+        )
+      }
+      for (const practiceQuizId of adaptiveQuizIds) {
+        await purgeAttemptFreeAdaptivePublications(practiceQuizId, prisma)
+      }
+
       // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
       // live quizzes are disconnected from the course on deletion
       const deleted = await prisma.course.delete({ where: { id } })
@@ -3143,9 +3255,13 @@ export async function deleteCourse(
         await recomputeDerivedPermissions({ elementId }, prisma)
       }
 
-      return deleted
+      return { course, deletedCourse: deleted }
     },
-    { timeout: 60000 }
+    {
+      errorCode: 'ADAPTIVE_COURSE_DELETION_CONFLICT',
+      errorMessage:
+        'The course could not be deleted due to concurrent adaptive-learning activity.',
+    }
   )
 
   // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
@@ -3498,6 +3614,7 @@ export async function getCourseData(
       isGamificationEnabled: practiceQuiz.isGamificationEnabled,
       isAssessmentEnabled: practiceQuiz.isAssessmentEnabled,
       type: ActivityType.PRACTICE_QUIZ,
+      mode: practiceQuiz.mode,
       status: practiceQuiz.status,
       courseId: course.id,
       courseName: course.name,
@@ -4019,6 +4136,7 @@ export async function getCoursePracticeQuiz(
     pointsMultiplier: 1,
     resetTimeDays: 6,
     orderType: DB.ElementOrderType.SPACED_REPETITION,
+    mode: DB.PracticeQuizMode.STANDARD,
     status: DB.PublicationStatus.PUBLISHED,
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,

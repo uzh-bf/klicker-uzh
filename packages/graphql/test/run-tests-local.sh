@@ -210,9 +210,7 @@ DATABASE_URL="$DATABASE_URL" \
 HATCHET_CLIENT_TOKEN="$HATCHET_CLIENT_TOKEN" \
 HATCHET_CLIENT_TLS_STRATEGY="$HATCHET_CLIENT_TLS_STRATEGY" \
 NODE_ENV="$NODE_ENV" \
-
-# pass the first argument to the vitest command, or run all tests if no argument is given
-pnpm test ${1:-}
+pnpm test "$@"
 
 TEST_EXIT_CODE=$?
 echo ""

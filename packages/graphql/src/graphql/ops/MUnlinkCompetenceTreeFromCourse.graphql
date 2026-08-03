@@ -1,0 +1,3 @@
+mutation UnlinkCompetenceTreeFromCourse($treeId: String!, $courseId: String!) {
+  unlinkCompetenceTreeFromCourse(treeId: $treeId, courseId: $courseId)
+}

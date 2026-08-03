@@ -1,0 +1,26 @@
+mutation CreateCompetenceTreeScaleVersion(
+  $treeId: String!
+  $supersedesVersionId: String
+  $priorMean: Float
+  $priorStandardDeviation: Float
+  $gridMin: Float
+  $gridMax: Float
+  $gridStep: Float
+  $classificationPolicyVersion: Int
+  $levels: [CompetenceTreeScaleLevelInput!]
+) {
+  createCompetenceTreeScaleVersion(
+    treeId: $treeId
+    supersedesVersionId: $supersedesVersionId
+    priorMean: $priorMean
+    priorStandardDeviation: $priorStandardDeviation
+    gridMin: $gridMin
+    gridMax: $gridMax
+    gridStep: $gridStep
+    classificationPolicyVersion: $classificationPolicyVersion
+    levels: $levels
+  ) {
+    id
+    status
+  }
+}
