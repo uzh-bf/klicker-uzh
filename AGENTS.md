@@ -74,6 +74,8 @@ apps/
   frontend-manage/         # Lecturer UI (port 3002)
   frontend-pwa/            # Student PWA (port 3001)
   response-api/            # Response API (port 7078)
+  mcp-lecturer/            # Lecturer MCP server for the manage assistant (port 7081)
+  mcp-student/             # Student practice MCP server used by chat (port 7080)
   hatchet-worker-general/  # General Hatchet worker
   hatchet-worker-response-processor/  # Response processing worker
   analytics/               # Analytics service

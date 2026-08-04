@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-28'
+timestamp: '2026-08-03'
 tags:
   - testing
   - ci
@@ -62,6 +62,8 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 - `smoke:negative` (`scripts/smoke-negative.ts`) — authZ/negative paths: garbage/wrong-secret/wrong-issuer/wrong-purpose/wrong-role/expired bearer tokens (all rejected with HTTP 401 at `initialize`, since FastMCP authenticates once per session and never re-checks the token on `tools/call`), a `manage:read`-only token (read tool succeeds, draft tool fails `MISSING_SCOPE`), an unknown-but-well-formed course UUID (non-enumerating `FORBIDDEN`), a malformed course id (schema-validation rejection), a foreign `sub` (zero courses, not an error), and a leak check that none of the captured error messages expose a stack trace, `node_modules` path, or `DATABASE_URL`.
 
 Both scripts need a migrated + seeded Postgres and a running `apps/mcp-lecturer` on the configured URL, with `APP_SECRET`/`APP_ORIGIN_AUTH` matching what the server booted with (`--help` on either script documents the env vars and defaults).
+
+`apps/mcp-student` has mocked vitest units (`pnpm --filter @klicker-uzh/mcp-student test`) plus its own `smoke:local` (`scripts/smoke.ts`), which additionally needs a reachable GraphQL API because the server reads elements through the persisted client rather than Prisma. **There is no `test-mcp-student` CI workflow** — only `test-mcp-lecturer` exists — so student-MCP changes get no automated service-level signal; run the smoke script locally before merging.
 
 ## CI matrix
 
