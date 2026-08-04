@@ -57,7 +57,6 @@
     "prisma:reset:seed": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:reset:seed:raw",
     "prisma:reset:seed:raw": "run-s --npm-path pnpm \"prisma:reset:raw {@}\" prisma:seed:raw --",
     "prisma:reset:yes": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:reset:raw -f",
-    "prisma:resetCypress": "pnpm run prisma:reset:raw",
     "prisma:resolve:prod": "../../util/_run_with_infisical.sh --env prd prisma migrate resolve",
     "prisma:resolve:qa": "../../util/_run_with_infisical.sh --env stg prisma migrate resolve",
     "prisma:seed": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:seed:raw",

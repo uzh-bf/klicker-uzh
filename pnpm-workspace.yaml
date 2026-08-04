@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - cypress
   - playwright
 
 # Delay automated dependency resolution for newly published packages by 14 days
@@ -57,7 +56,6 @@ onlyBuiltDependencies:
   - azure-functions-core-tools
   - core-js
   - core-js-pure
-  - cypress
   - esbuild
   - prisma
   - protobufjs
@@ -75,7 +73,6 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
-  cypress: true
   esbuild: true
   keytar: false
   prisma: true
