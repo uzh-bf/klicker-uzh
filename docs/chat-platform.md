@@ -11,7 +11,14 @@ tags:
 
 # Chat Platform (`apps/chat`)
 
-> **Migration in flight (2026-07):** the chat backend is slated to move to a Mastra-based `apps/chat-api` service (PR #5126, draft; tutor architecture in PR #5129). This page describes the current AI-SDK reality and stays authoritative until those PRs merge — but check their status before investing heavily in the route-handler/AI-SDK layer. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
+> **Framework status (2026-08-03):** the AI-SDK route-handler layer described
+> here **is** the current production path — the AI SDK 7 / assistant-ui 0.14
+> upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
+> A Mastra-based `apps/chat-api` service split remains an open exploration in the
+> draft PRs #5126 / #5129 (tutor architecture in #5129) with no landing date, so
+> build on this layer as normal production work; the earlier "don't invest here"
+> framing is obsolete. Staged doc/skill changes for that exploration:
+> `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
 **This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
@@ -22,7 +29,14 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
 - `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
+- `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.
 - `src/components/thread.tsx`, `src/components/message-parts.tsx`, and `src/hooks/` — assistant-ui composition and transport.
+- `src/components/ui/` — the app's own shadcn-style primitives (`tooltip.tsx`, `action-bar-button.ts`), separate from `@uzh-bf/design-system`.
+- `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
+- `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
+- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
+- `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
+- `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 
 ## Auth guard pattern (route handlers)
@@ -33,18 +47,27 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). Registry gotchas that have caused production incidents:
 
-The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. Its
-current PRD tier map is SIMPLE → GPT-5.6 Luna medium, MEDIUM/COMPLEX → Luna
-xhigh, and REASONING → GPT-5.6 Sol low (`deploy/env-uzh-prd/values.yaml` and
-the Klicker section of the AI deployment's `litellm/config.yaml`). The local
-devcontainer mirrors that contract in `util/litellm/config.yaml` using the
-generic `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary; it does
-not copy production Azure URLs or secret names. The local chat registry maps
-the user-facing `auto` model id to the `complexity-router` LiteLLM deployment
-and exposes `gpt-5.6-luna` for a direct comparison. The seeded Benibot fixture
-allow-lists all three of `auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly,
-so it satisfies the fallback invariant below without relying on the
-`|| m.fallback` exemption that the runtime filters apply anyway.
+The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. The
+only in-repo record of its tier map is the comment above `modelRegistry` in
+`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-4.1`, MEDIUM =
+`gpt-5.4-low`, COMPLEX = `gpt-5.4-medium`, REASONING = `gpt-5.5-low`. The
+authoritative router configuration lives in the external AI deployment
+repository's `litellm/config.yaml` and **cannot be verified from this
+repository** — treat the values.yaml comment as the best available record and
+confirm against the deployment before making a routing claim. Neither
+deployment ships a GPT-5.6 model at all.
+
+The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
+**not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
+its own tier assignment, and the generic
+`UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
+production Azure URLs or secret names. Local Auto Mode behaviour is therefore
+evidence about the wiring only, never about production routing. The local chat
+registry maps the user-facing `auto` model id to the `complexity-router`
+LiteLLM deployment and exposes `gpt-5.6-luna` for a direct comparison. The
+seeded Benibot fixture allow-lists all three of `auto`, `gpt-5.6-luna` and
+`gpt-4.1-mini` explicitly, so it satisfies the fallback invariant below without
+relying on the `|| m.fallback` exemption that the runtime filters apply anyway.
 
 The local LiteLLM service uses the deployed semantic-router-compatible image
 `ghcr.io/berriai/litellm-database:v1.88.1`, has a healthcheck, and is included
@@ -61,6 +84,17 @@ Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migratio
 `src/stores/settingsStore.ts:loadCredits` clears `creditsLoaded` for every refresh and accepts
 only the latest request generation, so a failed refresh or a late response from another
 chatbot cannot expose stale credit/model state as current.
+
+Two further credit conventions are easy to break:
+
+- `getNextResetTime` (`src/utils/creditPeriods.ts`) returns **`null` for
+  `CreditResetPeriod.NONE`** — meaning "never refills", not "date unknown".
+  Consumers must branch on the null rather than pass it to a date formatter;
+  the footer renders the localized `chat.credits.resetNone` copy ("These credits
+  do not refill automatically") for that case.
+- The credits footer is **absent, not zeroed, until the first successful credits
+  fetch**: `credits-footer.tsx` returns `null` while `creditsLoaded` is false, so
+  an in-flight or failed refresh shows nothing instead of a misleading `0`.
 
 ## Theming and design tokens
 
@@ -129,6 +163,14 @@ composer, wraps Markdown tables in horizontal scrolling, and makes the mode pill
 scrollable. Embedded mode shows the loading state and compact credit/model information through
 the shared settings components. Direct thread URL activation resynchronizes the thread's stored
 chat mode once per activation, without overriding a mode manually chosen afterward.
+
+Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
+persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
+recent message's `chatMode`, so a switch that is never followed by a message leaves no trace.
+Whether that is the intended contract or the switcher should persist immediately is an open
+product ruling (`project/2026-07-27-student-chat-v3-follow-up-roadmap.md`, W7 item 1). The
+switcher is hidden entirely when a chatbot exposes a single mode — `mode-switcher.tsx` returns
+`null` for one or fewer mode keys, so there is no disabled one-pill state to style.
 
 ## Sources and citations
 
@@ -227,7 +269,7 @@ unreadable-args combination (which would otherwise render a blank panel).
 
 ## Localization
 
-Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
 
 Model answers are held to the same orthography server-side: the chat route wraps every system
 prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
@@ -239,14 +281,16 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode switcher's native tooltip uses the same localized label, never the English-only registry description. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by gpt-5.1 and gpt-5.5 in the deployed registries, though by no model in the local default one — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode switcher's tooltip — a Radix popover, not a native `title` — uses the same localized label, never the English-only registry description. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
 
-Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
+Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote; [ADR 0002](./adr/0002-message-feedback-as-a-rating-field.md) records why a field on the message beat a separate feedback entity). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
 A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating.
+
+Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
 PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
 
@@ -258,6 +302,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
+- **Static assets need a middleware allowlist entry.** `src/middleware.ts` matches `/:path*` and passes through only `/noLogin`, `/KlickerLogo.png`, `/user-solid.svg`, `/_next…`, `/api…`, and `/favicon…`. Any other file added to `apps/chat/public/` is redirected to the login page for requests without a valid participant token (authenticated participants still get it served) — assets referenced from unauthenticated pages like `/noLogin` therefore break silently, so add new public files to that allowlist in the same change.
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 - **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
@@ -271,8 +316,16 @@ The `Chatbot Source Citations` block in that spec exercises the citation pipelin
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,
-the package Vitest suite, and the package production build in the worktree's devcontainer.
+the package Vitest suite (`pnpm --filter @klicker-uzh/chat test:run` — the package has no
+plain `test` script), and the package production build in the worktree's devcontainer.
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
+
+**That suite runs in no GitHub workflow.** No file under `.github/workflows/` invokes it —
+`check-types` compiles the test files but never executes them — so a green CI run is not
+evidence that the chat tests pass, and a regression in them merges unnoticed. Run the suite
+locally before claiming it as verification; adding a `test-chat.yml` workflow is a named
+follow-up ([Testing](./testing.md), and P1-2 in
+`project/2026-08-03-student-chat-v3-production-readiness-report.md`).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
