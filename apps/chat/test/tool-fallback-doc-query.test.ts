@@ -172,19 +172,20 @@ describe('getDocQueryPanelContent', () => {
   // Mirrors `getDocQueryChipState`'s "cancelled call still holding the
   // placeholder" and "garbage result" cases: the chip label may still read
   // plain "done", but nothing parsed, so the raw payload must stay visible.
-  test.each(['Loading...', 'Executing...', 'not json {'])(
-    'unparseable result (%s) keeps the raw path even when the chip state is done',
-    (result) => {
-      expect(
-        getDocQueryPanelContent({
-          isDocQuery: true,
-          argsText,
-          result,
-          docQueryState: 'done',
-        })
-      ).toBeUndefined()
-    }
-  )
+  test.each([
+    'Loading...',
+    'Executing...',
+    'not json {',
+  ])('unparseable result (%s) keeps the raw path even when the chip state is done', (result) => {
+    expect(
+      getDocQueryPanelContent({
+        isDocQuery: true,
+        argsText,
+        result,
+        docQueryState: 'done',
+      })
+    ).toBeUndefined()
+  })
 
   test('parsed answer-mode payload with sources shows the query and the sources hint', () => {
     expect(
