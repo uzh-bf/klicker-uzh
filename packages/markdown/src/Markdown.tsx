@@ -3,12 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useMemo } from 'react'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeKatex from 'rehype-katex'
-// import rehypePrism from 'rehype-prism-plus'
+import rehypePrism from 'rehype-prism-plus'
 import rehypeReact from 'rehype-react'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 // import remarkDirective from 'remark-directive'
-// import remarkGfm from 'remark-gfm'
 import * as runtime from 'react/jsx-runtime'
+import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
 import remarkRehype from 'remark-rehype'
@@ -50,7 +50,7 @@ export interface MarkdownProps {
 
 function Markdown({
   className,
-  content = '<br>',
+  content = '',
   components = {},
   withModal = true,
   withLinkButtons = true,
@@ -81,7 +81,7 @@ function Markdown({
         unified()
           .use(remarkParse)
           .use(remarkMath, { singleDollarTextMath })
-          // .use(remarkGfm)
+          .use(remarkGfm)
           // .use(remarkDirective)
           .use(remarkRehype, { allowDangerousHtml: false })
           .use(rehypeSanitize, {
@@ -104,9 +104,13 @@ function Markdown({
                 ...(defaultSchema?.attributes?.a || []),
                 ['className', 'href', 'target', 'rel'],
               ],
+              code: [
+                ...(defaultSchema?.attributes?.code || []),
+                ['className', /^language-/],
+              ],
             },
           })
-          // .use(rehypePrism)
+          .use(rehypePrism)
           .use(rehypeExternalLinks, {
             target: '_blank',
             rel: ['noopener', 'noreferrer', 'nofollow'],
@@ -203,7 +207,7 @@ function Markdown({
         data-cy={data?.cy}
         data-test={data?.test}
         className={twMerge(
-          'prose prose-p:mt-0 prose-heading:mt-0 hover:prose-a:text-primary-100 max-w-none',
+          'markdown-content prose prose-p:mt-0 prose-heading:mt-0 hover:prose-a:text-primary-100 max-w-none',
           className?.root
         )}
       >
@@ -214,7 +218,7 @@ function Markdown({
 
   return (
     <div
-      className={twMerge('max-w-none', className?.root)}
+      className={twMerge('markdown-content max-w-none', className?.root)}
       data-cy={data?.cy}
       data-test={data?.test}
     >

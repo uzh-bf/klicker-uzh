@@ -601,6 +601,13 @@ export default {
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
         'Select this setting to include a LaTeX formula centered on a separate line.',
+      codeBlock: 'Select this setting to include a code block.',
+      table: 'Select this setting to insert a table.',
+      addRow: 'Add row',
+      deleteRow: 'Delete row',
+      addColumn: 'Add column',
+      deleteColumn: 'Delete column',
+      deleteTable: 'Delete table',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',

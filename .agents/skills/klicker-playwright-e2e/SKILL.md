@@ -100,7 +100,9 @@ Action menus:
 
 Editors and selects:
 
-- Use `fillEditorField` and `verifyEditorField` for Slate/rich-text fields.
+- Use the shared `fillEditorField` / answer / feedback helpers for Tiptap fields. They clear through `ControlOrMeta+A` plus `Backspace`; locator `.clear()` does not model contenteditable deletion reliably.
+- Use `pasteEditorField` when the test contract depends on clipboard parsing. It dispatches a plain-text paste instead of using `.fill()`, which bypasses Tiptap's paste handlers.
+- `verifyEditorField` remains the read-only content helper.
 - Use direct `toHaveValue` for ordinary inputs; do not wrap simple fields just for symmetry.
 - Use `switchElementType` and `setElementStatus` for element modal dropdowns when applicable.
 - Prefer `selectOption` from repo helpers for design-system selects.
