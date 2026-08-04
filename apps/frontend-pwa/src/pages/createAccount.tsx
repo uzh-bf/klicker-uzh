@@ -1,4 +1,4 @@
-import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import { verifyJWT } from '@klicker-uzh/util'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
@@ -13,7 +13,6 @@ import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import bodyParser from 'body-parser'
 
 interface Props {
   signedLtiData?: string
@@ -112,7 +111,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   try {
-    const { req, res, query } = ctx
+    const { query } = ctx
     const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
@@ -158,47 +157,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         signedLtiData.token = token
         signedLtiData.ssoId = parsedToken.sub
         signedLtiData.email = parsedToken.email
-      }
-    }
-    // LTI 1.1 authentication flow
-    else if (req.method === 'POST') {
-      const { request }: any = await new Promise((resolve) => {
-        bodyParser.urlencoded({ extended: true })(req, res, () => {
-          bodyParser.json()(req, res, () => {
-            resolve({ request: req })
-          })
-        })
-      })
-
-      if (request?.body?.lis_person_sourcedid) {
-        const pwaOrigin =
-          process.env.ASSESSMENT_MODE === 'true'
-            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
-            : process.env.APP_ORIGIN_PWA
-        if (!pwaOrigin) {
-          throw new Error(
-            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
-          )
-        }
-
-        signedLtiData.token = await signJWT(
-          {
-            sub: request.body.lis_person_sourcedid,
-            email: request.body.lis_person_contact_email_primary,
-            scope: 'LTI1.1',
-          },
-          process.env.APP_SECRET as string,
-          {
-            algorithm: 'HS256',
-            expiresIn: '5m',
-            issuer:
-              process.env.ASSESSMENT_MODE === 'true'
-                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
-                : process.env.APP_ORIGIN_PWA,
-          }
-        )
-        signedLtiData.ssoId = request.body.lis_person_sourcedid
-        signedLtiData.email = request.body.lis_person_contact_email_primary
       }
     }
 
