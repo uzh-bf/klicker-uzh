@@ -188,20 +188,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     : forwardedProto || 'https'
   const host = ctx.req.headers.host as string
   const requestBase = `${proto}://${host}`
-  const configuredPwaUrl = process.env.NEXT_PUBLIC_PWA_URL
-  const pwaUrl = configuredPwaUrl || requestBase
+  const isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+  // The assessment build is served from its own origin, so both the redirect
+  // validation and the post-login target must be anchored there. Anchoring them
+  // on the regular PWA origin sends students to an app that has no Edu-ID login.
+  const configuredAppUrl = isAssessment
+    ? process.env.NEXT_PUBLIC_ASSESSMENT_URL
+    : process.env.NEXT_PUBLIC_PWA_URL
+  const appUrl = configuredAppUrl || requestBase
   const redirectPath = getSafeRedirectPath(
     ctx.query.redirect_to,
-    pwaUrl,
+    appUrl,
     process.env.NEXT_PUBLIC_CHAT_URL
   )
 
   // In assessment mode, SSR-redirect to Auth /student to avoid client-side flash
-  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
-    if (!configuredPwaUrl) {
-      throw new Error('NEXT_PUBLIC_PWA_URL is required in assessment mode')
-    }
-    const targetUrl = new URL(redirectPath, configuredPwaUrl).toString()
+  if (isAssessment) {
+    const targetUrl = new URL(redirectPath, appUrl).toString()
     const authBase =
       process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
 
