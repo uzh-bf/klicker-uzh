@@ -72,6 +72,9 @@ The file is nested for direct use by an AI evaluator:
     "messages": 2,
     "attachments": 0
   },
+  "warnings": {
+    "invalidParentReferences": []
+  },
   "chatbots": [
     {
       "id": "chatbot_00001",
@@ -119,7 +122,8 @@ The exported `ChatThread` data contains:
 
 The exported `ChatMessage` data contains:
 
-- export-local `id` and nullable remapped `parentId`
+- export-local `id` and nullable remapped `parentId`; a source parent that does
+  not resolve inside the same thread is exported as `null`
 - `role`, `content`, `chatMode`, `modelId`, and `reasoningEffort`
 - `reasoningContent` and `creditsUsed`
 - `createdAt` and `updatedAt`
@@ -159,15 +163,15 @@ only by export-local identifiers on threads.
 Privacy-relevant record and relationship identifiers are replaced consistently
 within one export:
 
-| Source identifier          | Export value         |
-| -------------------------- | -------------------- |
-| `Chatbot.id`               | `chatbot_00001`      |
-| `ChatThread.participantId` | `participant_00001`  |
-| `ChatThread.id`            | `thread_00001`       |
-| `ChatMessage.id`           | `message_00001`      |
-| `ChatMessage.parentId`     | matching message key |
-| `ChatAttachment.id`        | `attachment_00001`   |
-| JSON property `toolCallId` | `tool_call_00001`    |
+| Source identifier          | Export value                   |
+| -------------------------- | ------------------------------ |
+| `Chatbot.id`               | `chatbot_00001`                |
+| `ChatThread.participantId` | `participant_00001`            |
+| `ChatThread.id`            | `thread_00001`                 |
+| `ChatMessage.id`           | `message_00001`                |
+| `ChatMessage.parentId`     | matching message key or `null` |
+| `ChatAttachment.id`        | `attachment_00001`             |
+| JSON property `toolCallId` | `tool_call_00001`              |
 
 Mappings are type-specific, start at one, and use five-digit zero padding.
 They are deterministic for the same selected database state and independent of
@@ -194,9 +198,9 @@ records and are material evaluation context.
    read-only Prisma client.
 3. Abort without writing if any requested chatbot is missing.
 4. Establish canonical ordering and build the export-local identifier maps.
-5. Validate that every non-null message `parentId` resolves inside the same
-   thread and that no parent chain contains a self-reference or cycle. Abort on
-   an invalid relationship.
+5. Inspect parent relationships. Replace a parent that does not resolve inside
+   the same thread with `null` in the export and record a warning using only the
+   export-local thread and message IDs. Abort on a self-reference or cycle.
 6. Transform the queried rows into the nested, secret-free output shape.
 7. Serialize one pretty-printed JSON file with a trailing newline and restricted
    permissions.
@@ -212,6 +216,12 @@ Thread titles, system prompts, message content, reasoning content, and
 attachment descriptions are preserved and can contain personal information.
 The operator remains responsible for choosing an approved AI evaluation system
 and handling the artifact according to applicable data-protection rules.
+
+The warning does not expose the unresolved source parent ID. Its reason is
+`not_in_thread`, which deliberately covers both a missing source row and a
+parent row belonging to another thread without querying or exporting that row.
+This normalization changes only the generated JSON document; the database is
+never updated.
 
 ## Components
 
@@ -234,13 +244,14 @@ The command exits non-zero and writes no partial artifact for:
 - a missing option value or unknown argument
 - duplicate `--outputDir`
 - any requested chatbot ID not found
-- an unresolved parent-message relationship
-- a cross-thread, self-referencing, or cyclic parent-message relationship
+- a self-referencing or cyclic parent-message relationship
 - an unsafe output directory or an existing output file/symlink
 - query, transformation, serialization, or file-system failure
 
-A chatbot with no threads, a thread with no messages, and a message with no
-attachments are valid results rather than errors.
+A chatbot with no threads, a thread with no messages, a message with no
+attachments, and an unresolved or cross-thread parent reference are valid
+results rather than errors. The latter produces a `null` exported `parentId`
+and a pseudonymized `warnings.invalidParentReferences` entry.
 
 ## Verification
 
@@ -256,7 +267,10 @@ Automated tests cover:
 - absence of original structural UUIDs and excluded secret/configuration fields
 - omission of attachment image payloads while retaining descriptions
 - date and decimal serialization
-- missing-chatbot and unresolved-parent failures without output
+- missing-chatbot failures without output
+- unresolved and cross-thread parents normalized to `null` with pseudonymized
+  warnings, without emitting the unresolved source ID
+- self-referencing and cyclic parent failures without output
 - empty chatbot/thread handling
 - owner-only file and directory permissions
 - no-clobber handling for existing files and symlinks

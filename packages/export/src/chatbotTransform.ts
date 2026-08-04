@@ -117,6 +117,13 @@ export interface ChatbotExportDocument {
     messages: number
     attachments: number
   }
+  warnings: {
+    invalidParentReferences: Array<{
+      threadId: string
+      messageId: string
+      reason: 'not_in_thread'
+    }>
+  }
   chatbots: ChatbotExportChatbot[]
 }
 
@@ -237,6 +244,10 @@ function validateThreadParents(thread: RawChatbotExportRow['threads'][number]) {
   const messagesById = new Map(
     thread.messages.map((message) => [message.id, message])
   )
+  const invalidParentReferences: Array<{
+    threadId: string
+    messageId: string
+  }> = []
 
   for (const message of thread.messages) {
     if (message.parentId == null) continue
@@ -246,9 +257,10 @@ function validateThreadParents(thread: RawChatbotExportRow['threads'][number]) {
       )
     }
     if (!messagesById.has(message.parentId)) {
-      throw new Error(
-        `Unresolved parent message id in thread ${thread.id}: ${message.parentId}`
-      )
+      invalidParentReferences.push({
+        threadId: thread.id,
+        messageId: message.id,
+      })
     }
   }
 
@@ -264,11 +276,13 @@ function validateThreadParents(thread: RawChatbotExportRow['threads'][number]) {
 
     state.set(messageId, 'visiting')
     const parentId = messagesById.get(messageId)?.parentId
-    if (parentId != null) visit(parentId)
+    if (parentId != null && messagesById.has(parentId)) visit(parentId)
     state.set(messageId, 'visited')
   }
 
   for (const message of thread.messages) visit(message.id)
+
+  return invalidParentReferences
 }
 
 export function buildChatbotExportDocument(
@@ -282,7 +296,10 @@ export function buildChatbotExportDocument(
   const messages = threads.flatMap((thread) => thread.messages)
   const attachments = messages.flatMap((message) => message.attachments)
 
-  for (const thread of threads) validateThreadParents(thread)
+  const invalidParentReferences = threads.flatMap(validateThreadParents)
+  const invalidParentMessageIds = new Set(
+    invalidParentReferences.map(({ messageId }) => messageId)
+  )
 
   const chatbotIds = createKeyMap(
     chatbots.map((chatbot) => chatbot.id),
@@ -322,6 +339,19 @@ export function buildChatbotExportDocument(
     messageIds,
     attachmentIds
   )
+  const warnings = {
+    invalidParentReferences: invalidParentReferences
+      .map(({ threadId, messageId }) => ({
+        threadId: requiredKey(threadIds, threadId, 'warning thread id'),
+        messageId: requiredKey(messageIds, messageId, 'warning message id'),
+        reason: 'not_in_thread' as const,
+      }))
+      .sort(
+        (left, right) =>
+          left.threadId.localeCompare(right.threadId) ||
+          left.messageId.localeCompare(right.messageId)
+      ),
+  }
 
   return {
     schemaVersion: 1,
@@ -339,6 +369,7 @@ export function buildChatbotExportDocument(
       messages: messages.length,
       attachments: attachments.length,
     },
+    warnings,
     chatbots: chatbots.map((chatbot) => ({
       id: requiredKey(chatbotIds, chatbot.id, 'chatbot id'),
       name: chatbot.name,
@@ -368,7 +399,8 @@ export function buildChatbotExportDocument(
           .map((message) => ({
             id: requiredKey(messageIds, message.id, 'message id'),
             parentId:
-              message.parentId == null
+              message.parentId == null ||
+              invalidParentMessageIds.has(message.id)
                 ? null
                 : requiredKey(messageIds, message.parentId, 'parent id'),
             role: message.role,

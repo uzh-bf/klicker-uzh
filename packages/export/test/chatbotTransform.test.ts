@@ -302,9 +302,10 @@ describe('chatbot export transformation', () => {
       warning:
         'Conversation text and attachment descriptions are unchanged; this export is not anonymized.',
     })
+    expect(document.warnings).toEqual({ invalidParentReferences: [] })
   })
 
-  it('rejects unresolved parent message ids', () => {
+  it('normalizes unresolved parent message ids without exposing them', () => {
     const orphanParentRow = rawChatbot({
       threads: [
         {
@@ -333,11 +334,17 @@ describe('chatbot export transformation', () => {
       ],
     })
 
-    expect(() =>
-      buildChatbotExportDocument([orphanParentRow], exportedAt)
-    ).toThrow(
-      'Unresolved parent message id in thread source-thread-a: missing-message'
-    )
+    const document = buildChatbotExportDocument([orphanParentRow], exportedAt)
+
+    expect(document.chatbots[0]!.threads[0]!.messages[0]!.parentId).toBeNull()
+    expect(document.warnings.invalidParentReferences).toEqual([
+      {
+        threadId: 'thread_00001',
+        messageId: 'message_00001',
+        reason: 'not_in_thread',
+      },
+    ])
+    expect(JSON.stringify(document)).not.toContain('missing-message')
   })
 
   it('scopes repeated tool call ids to their thread', () => {
@@ -376,7 +383,7 @@ describe('chatbot export transformation', () => {
     expect(secondToolCallId).toBe('tool_call_00002')
   })
 
-  it('rejects parent ids that point into another thread', () => {
+  it('normalizes parent ids that point into another thread', () => {
     const row = rawChatbot({
       threads: [
         rawThread('source-thread-a', [rawMessage('source-message-a')]),
@@ -388,9 +395,16 @@ describe('chatbot export transformation', () => {
       ],
     })
 
-    expect(() => buildChatbotExportDocument([row], exportedAt)).toThrow(
-      'Unresolved parent message id in thread source-thread-b: source-message-a'
-    )
+    const document = buildChatbotExportDocument([row], exportedAt)
+
+    expect(document.chatbots[0]!.threads[1]!.messages[0]!.parentId).toBeNull()
+    expect(document.warnings.invalidParentReferences).toEqual([
+      {
+        threadId: 'thread_00002',
+        messageId: 'message_00002',
+        reason: 'not_in_thread',
+      },
+    ])
   })
 
   it('rejects self-referencing parent ids', () => {

@@ -2,7 +2,7 @@
 
 ## 2026-08-04
 
-- **Update**: [data-and-migrations](./data-and-migrations.md) and [chat-platform](./chat-platform.md) document the read-only, nested chatbot evaluation export, its deterministic export-local identifiers, omitted secrets and attachment images, and the pseudonymized-not-anonymized handling boundary.
+- **Update**: [data-and-migrations](./data-and-migrations.md) and [chat-platform](./chat-platform.md) document the read-only, nested chatbot evaluation export, its deterministic export-local identifiers, omitted secrets and attachment images, pseudonymized-not-anonymized handling boundary, and export-only normalization of parent references that do not resolve inside their thread.
 
 ## 2026-07-20
 

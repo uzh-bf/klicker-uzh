@@ -31,8 +31,10 @@ ordinary draft pull request.
 - [x] Keep semantic model IDs and all message/reasoning text unchanged.
 - [x] Scope tool-call identifiers by thread so unrelated provider IDs cannot be
       linked accidentally.
-- [x] Reject missing, cross-thread, self-referencing, and cyclic parent-message
-      relationships before touching the filesystem.
+- [x] Normalize missing and cross-thread parent-message relationships to
+      `null` in the export with warnings that contain only export-local IDs.
+- [x] Reject self-referencing and cyclic parent-message relationships before
+      touching the filesystem.
 - [x] Use the existing compile-time and runtime read-only Prisma guard.
 - [x] Create new output directories owner-only, require existing directories to
       already be owner-only, and write files with `0600` permissions.
@@ -68,3 +70,13 @@ The behavior and privacy contract live in:
 - `packages/export/README.md`
 - `docs/chat-platform.md`
 - `docs/data-and-migrations.md`
+
+## Production-data compatibility amendment
+
+`ChatMessage.parentId` is not enforced as a database self-relation, so existing
+data can contain a value that is absent from the message's thread. The exporter
+must not modify that data. Instead, it normalizes only the generated document:
+the affected exported `parentId` is `null`, and
+`warnings.invalidParentReferences` identifies the affected exported thread and
+message without disclosing the unresolved source ID. Self-references and cycles
+remain hard transformation failures.

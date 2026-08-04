@@ -218,7 +218,7 @@ describe('chatbot export service', () => {
   it('builds the document before touching the filesystem', async () => {
     const outputDir = await makeOutputDirectory()
     const row = rawChatbot('source-chatbot-a')
-    row.threads[0]!.messages[0]!.parentId = 'missing-message'
+    row.threads[0]!.messages[0]!.parentId = row.threads[0]!.messages[0]!.id
 
     await expect(
       exportChatbotData(
@@ -227,7 +227,7 @@ describe('chatbot export service', () => {
         outputDir,
         { exportedAt }
       )
-    ).rejects.toThrow('Unresolved parent message id')
+    ).rejects.toThrow('Self-referencing parent message id')
     await expect(readdir(outputDir)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 

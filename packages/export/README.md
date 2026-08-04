@@ -143,9 +143,13 @@ overwritten.
 > This output is **pseudonymized, not anonymized**. System prompts, thread titles, message/reasoning content, and attachment descriptions remain unchanged and can contain personal information. Use only an approved AI evaluation system and handle the artifact according to the applicable data-protection rules.
 
 The command uses the same compile-time and runtime read-only Prisma guard as the
-course exporter. It validates that every requested chatbot exists and that
-parent-message relationships stay within one thread and contain no
-self-reference or cycle before writing the artifact.
+course exporter. It validates that every requested chatbot exists. If a
+message's parent does not resolve inside that message's thread, the exported
+`parentId` is `null` and `warnings.invalidParentReferences` records only the
+affected export-local thread and message IDs; the unresolved source ID is not
+emitted. This changes only the generated JSON and never updates database data.
+Self-referencing and cyclic parent chains remain hard errors before the
+artifact is written.
 
 ## Development
 
