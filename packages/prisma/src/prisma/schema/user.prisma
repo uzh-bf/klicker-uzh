@@ -122,7 +122,6 @@ model User {
   practiceQuizzes            PracticeQuiz[]
   microLearnings             MicroLearning[]
   liveQuizzes                LiveQuiz[]
-  reversedLiveQuizRewardRuns LiveQuizRewardRun[] @relation("LiveQuizRewardRunReversedBy")
   competencyTrees            CompetencyTree[]
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]

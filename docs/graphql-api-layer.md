@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-31'
+timestamp: '2026-08-04'
 tags:
   - backend
   - graphql
@@ -47,9 +47,11 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 
 ## Resetting an ended Live Quiz
 
-For regular quizzes, `getLiveQuizResetSummary` and `resetLiveQuiz` require full lecturer access and activity `ADMIN` authorization (`packages/graphql/src/schema/query.ts:getLiveQuizResetSummary`, `packages/graphql/src/schema/mutation.ts:resetLiveQuiz`). That admits the activity owner and users or administrators with the derived activity-admin permission; `READ`, `EXECUTE`, and `WRITE` grants are insufficient. Assessment summaries and resets additionally require course `OWNER` or `ADMIN` access. The regular reset action is available only for `ENDED` quizzes in the manage UI.
+For regular quizzes, `getLiveQuizResetSummary` and `resetLiveQuiz` require full lecturer access and activity `ADMIN` authorization (`packages/graphql/src/schema/query.ts:getLiveQuizResetSummary`, `packages/graphql/src/schema/mutation.ts:resetLiveQuiz`). That admits the activity owner and users with a derived activity `ADMIN` or `OWNER` permission; `READ`, `EXECUTE`, and `WRITE` grants are insufficient. The regular reset mutation accepts only ended, non-deleted, non-assessment quizzes. Assessment reset remains a separate operation through `resetAssessmentLiveQuiz` and keeps its course-owner/course-admin policy.
 
-The summary is informational and reports execution-data counts, exact reward deltas, eligibility, and legacy reconstruction status (`packages/graphql/src/services/liveQuizResetSummary.ts:getLiveQuizResetSummary`). An authorization miss on this nullable query returns `null`. The mutation reloads authorization, state, and reward data inside its serializable transaction (`packages/graphql/src/services/liveQuizResetTransaction.ts:executeLiveQuizReset`) and returns one structured outcome: `SUCCESS`, `INVALID_STATE`, `REWARD_DATA_UNAVAILABLE`, or `CONFLICT`; outer mutation authorization failures use the standard GraphQL error path. `packages/graphql/src/services/liveQuizReset.ts:resetLiveQuiz` owns audit delivery and post-commit cleanup. Audit events carry the actor, activity, operation identifier, outcome, and aggregate reversal totals but no participant-level data. `resetAssessmentLiveQuiz` remains the assessment compatibility field and keeps the additional assessment-reviewer UI policy.
+The informational summary reports four counts: responses, feedback, confusion feedback, and quiz-scoped leaderboard entries (persistent `SESSION` plus temporary entries). It also returns `eligible` and one reason: `ELIGIBLE`, `INVALID_STATE`, or `ASSESSMENT_POLICY` (`packages/graphql/src/services/liveQuizResetSummary.ts:getLiveQuizResetSummary`). An authorization miss on this nullable query returns `null`.
+
+The mutation locks the quiz row and reloads authorization and lifecycle state inside the reset transaction (`packages/graphql/src/services/liveQuizResetTransaction.ts:executeLiveQuizReset`). It returns `SUCCESS` with the reusable draft activity or `INVALID_STATE` with no activity; outer mutation authorization failures use the standard GraphQL error path. `packages/graphql/src/services/liveQuizReset.ts:resetLiveQuiz` owns privacy-safe audit delivery and post-commit cache cleanup. Audit events carry the actor, activity, operation identifier, and outcome, but no participant-level or reward data.
 
 Live Quiz creation/editing, course listing, and reset results all format the GraphQL `ActivityInfo` payload through `packages/graphql/src/services/liveQuizActivityInfo.ts:formatLiveQuizActivityInfo`. Callers supply their course-visibility and reviewer context so permission flags, sharing counts, and common activity fields cannot drift.
 

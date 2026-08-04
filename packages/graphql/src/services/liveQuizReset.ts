@@ -6,12 +6,10 @@ import type {
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { clearLiveQuizExecutionCache } from './liveQuizExecutionCache.js'
-import type { LiveQuizResetOutcome } from './liveQuizResetSummary.js'
 import {
   executeLiveQuizReset,
   type ResetLiveQuizServiceResult,
 } from './liveQuizResetTransaction.js'
-import { recomputeWeeklyTimelineEntry } from './liveQuizRewards.js'
 
 export * from './liveQuizExecutionCache.js'
 export * from './liveQuizResetCleanup.js'
@@ -34,7 +32,7 @@ type LiveQuizResetAuditDetails =
       operationId: string
       occurredAt: string
       sequence: 2
-      outcome: Exclude<LiveQuizResetOutcome, 'SUCCESS'>
+      outcome: 'INVALID_STATE'
     }
   | {
       event: 'LIVE_QUIZ_RESET_COMPLETED'
@@ -43,12 +41,7 @@ type LiveQuizResetAuditDetails =
       operationId: string
       occurredAt: string
       sequence: 2
-      rewardRunId: string | null
       outcome: 'SUCCESS'
-      coursePoints: number
-      participantXp: number
-      timelineChanges: number
-      achievementChanges: number
     }
   | {
       event: 'LIVE_QUIZ_RESET_FAILED'
@@ -122,13 +115,6 @@ async function runPostCommitCleanup({
     liveQuizId: id,
     isAssessmentEnabled: result.activity.isAssessmentEnabled,
     cacheGenerationSnapshot,
-    weeklyTimelineRecomputations: result.weeklyTimelineRecomputations.map(
-      (entry) => ({
-        participationId: entry.participationId,
-        courseId: entry.courseId,
-        weekStart: entry.weekStart.toISOString(),
-      })
-    ),
   }
   const redis = result.activity.isAssessmentEnabled
     ? ctx.redisAssessmentExec
@@ -136,12 +122,6 @@ async function runPostCommitCleanup({
 
   let fallbackRequired = false
   try {
-    for (const recomputation of result.weeklyTimelineRecomputations) {
-      await recomputeWeeklyTimelineEntry({
-        ...recomputation,
-        prisma: ctx.prisma,
-      })
-    }
     fallbackRequired = !(await clearLiveQuizExecutionCache({
       liveQuizId: id,
       redis,
@@ -217,12 +197,7 @@ export async function resetLiveQuiz(
         operationId,
         occurredAt: new Date().toISOString(),
         sequence: 2,
-        rewardRunId: result.rewardRunId,
         outcome: result.outcome,
-        coursePoints: result.totals.coursePoints,
-        participantXp: result.totals.participantXp,
-        timelineChanges: result.totals.timelineChanges,
-        achievementChanges: result.totals.achievementChanges,
       })
     } catch {
       logResetDeliveryFailure('audit')
@@ -244,21 +219,4 @@ export async function resetLiveQuiz(
     logResetDeliveryFailure('audit')
   }
   return result
-}
-
-export async function resetAssessmentLiveQuiz(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id, isAssessmentEnabled: true },
-    select: { id: true },
-  })
-  if (!quiz) return null
-  try {
-    const result = await resetLiveQuiz({ id }, ctx)
-    return result.outcome === 'SUCCESS' ? result.activity : null
-  } catch {
-    return null
-  }
 }

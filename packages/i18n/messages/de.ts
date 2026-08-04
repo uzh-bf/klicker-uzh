@@ -2480,21 +2480,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resetLiveQuiz: 'Live Quiz zurücksetzen',
       deleteLiveQuiz: 'Live Quiz löschen',
       resetLiveQuizMessage:
-        'Dasselbe Live Quiz wird in den Entwurfsstatus zurückgesetzt. Die ausgewählten Durchführungsdaten und Belohnungen werden dauerhaft entfernt. Links, PIN, Fragen, Einstellungen, Kurszuordnung und Freigaben bleiben unverändert. Diese protokollierte Aktion kann nicht rückgängig gemacht werden.',
-      resetRewards:
-        '{points} Kurspunkte, {xp} XP, {timeline} Zeitleistenänderungen und {achievements} Achievement-Änderungen werden rückgängig gemacht.',
-      noRewardsToReset:
-        'Es müssen keine Ranglisten- oder externen Belohnungen rückgängig gemacht werden.',
-      resetBlockedRewardData:
-        'Dieses ältere gamifizierte Live Quiz kann nicht zurückgesetzt werden, weil die vollständige Belohnungshistorie nicht mehr verfügbar ist. Duplizieren Sie stattdessen das Quiz.',
+        'Bitte bestätigen Sie das Zurücksetzen dieses Assessment-Live Quizzes. Alle Antworten der Studierenden und gesammelten Punkte werden gelöscht. Diese Aktion wird im Audit-Log dokumentiert und kann nicht rückgängig gemacht werden.',
+      resetRegularLiveQuizMessage:
+        'Dasselbe Live Quiz wird in den Entwurfsstatus zurückgesetzt. Seine Antworten, Resultate, Rückmeldungen und die Sitzungsrangliste werden dauerhaft gelöscht.',
+      resetRegularRunData:
+        '{responses} Antworten, {feedbacks} Q&A-Rückmeldungen, {confusion} Verwirrungsrückmeldungen und {leaderboard} Einträge der Sitzungsrangliste werden gelöscht.',
+      resetPreservedRewards:
+        'Bereits vergebene Kurspunkte, XP, Zeitleistenbelohnungen, Achievements und Auszeichnungen bleiben unverändert.',
       resetInvalidState:
         'Dieses Live Quiz befindet sich nicht mehr im Status „beendet“. Aktualisieren Sie die Aktivitätenliste und versuchen Sie es erneut.',
-      resetConflict:
-        'Eine andere Zurücksetzung hat dieses Live Quiz geändert. Aktualisieren Sie die Aktivitätenliste, um den aktuellen Status zu sehen.',
       resetOutcomeError:
         'Das Live Quiz konnte nicht zurückgesetzt werden. Es wurde keine erfolgreiche Zurücksetzung gemeldet.',
-      resetPreservedData:
-        'Aktivitätsidentität, PIN, Fragen, Einstellungen, Kurs und Freigaben bleiben erhalten.',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
       noResponsesToDelete:

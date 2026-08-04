@@ -18,30 +18,13 @@ export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
 })
 
 export const ResetLiveQuizOutcome = builder.enumType('ResetLiveQuizOutcome', {
-  values: [
-    'SUCCESS',
-    'INVALID_STATE',
-    'REWARD_DATA_UNAVAILABLE',
-    'CONFLICT',
-  ] as const,
+  values: ['SUCCESS', 'INVALID_STATE'] as const,
 })
 
 export const LiveQuizResetEligibilityReason = builder.enumType(
   'LiveQuizResetEligibilityReason',
   {
-    values: [
-      'ELIGIBLE',
-      'INVALID_STATE',
-      'ASSESSMENT_POLICY',
-      'REWARD_DATA_UNAVAILABLE',
-    ] as const,
-  }
-)
-
-export const LiveQuizLegacyReconstructionStatus = builder.enumType(
-  'LiveQuizLegacyReconstructionStatus',
-  {
-    values: ['NOT_REQUIRED', 'AVAILABLE', 'UNAVAILABLE'] as const,
+    values: ['ELIGIBLE', 'INVALID_STATE', 'ASSESSMENT_POLICY'] as const,
   }
 )
 
@@ -55,15 +38,8 @@ export const LiveQuizResetSummaryType = LiveQuizResetSummaryRef.implement({
     numOfFeedbacks: t.exposeInt('numOfFeedbacks'),
     numOfConfusionFeedbacks: t.exposeInt('numOfConfusionFeedbacks'),
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
-    coursePointsToReverse: t.exposeInt('coursePointsToReverse'),
-    xpToReverse: t.exposeInt('xpToReverse'),
-    numOfTimelineChanges: t.exposeInt('numOfTimelineChanges'),
-    numOfAchievementChanges: t.exposeInt('numOfAchievementChanges'),
     eligible: t.exposeBoolean('eligible'),
     reason: t.expose('reason', { type: LiveQuizResetEligibilityReason }),
-    legacyReconstructionStatus: t.expose('legacyReconstructionStatus', {
-      type: LiveQuizLegacyReconstructionStatus,
-    }),
   }),
 })
 

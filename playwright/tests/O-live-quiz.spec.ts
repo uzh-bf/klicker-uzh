@@ -4405,11 +4405,13 @@ test.describe.serial('Different live-quiz workflows', () => {
 
     const confirmReset = page.getByTestId('confirmation-modal-confirm')
     await expect(confirmReset).toBeDisabled()
-    await expect(page.getByTestId('confirm-reset-responses')).toBeVisible()
-    await clickIfVisible(page, 'confirm-reset-responses')
-    await clickIfVisible(page, 'confirm-reset-qa-feedbacks')
-    await clickIfVisible(page, 'confirm-reset-confusion-feedbacks')
-    await clickIfVisible(page, 'confirm-reset-rewards')
+    await expect(page.getByTestId('confirm-reset-run-data')).toBeVisible()
+    await expect(
+      page.getByText(messages.manage.liveQuizzes.resetPreservedRewards, {
+        exact: true,
+      })
+    ).toBeVisible()
+    await page.getByTestId('confirm-reset-run-data').click()
     await expect(confirmReset).toBeEnabled()
     await confirmReset.click()
 
@@ -4848,6 +4850,14 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`).click()
 
     const confirmReset = page.getByTestId('confirmation-modal-confirm')
+    await expect(confirmReset).toBeDisabled()
+    await expect(page.getByTestId('confirm-reset-run-data')).toBeVisible()
+    await expect(
+      page.getByText(messages.manage.liveQuizzes.resetPreservedRewards, {
+        exact: true,
+      })
+    ).toBeVisible()
+    await page.getByTestId('confirm-reset-run-data').click()
     await expect(confirmReset).toBeEnabled()
     let stateChanged = false
     try {
@@ -4875,39 +4885,6 @@ test.describe.serial('Different live-quiz workflows', () => {
           status: 'ENDED',
         })
       }
-    }
-  })
-
-  test('Block reset for a legacy gamified live quiz without complete reward data', async ({
-    page: testPage,
-  }, testInfo) => {
-    page = testPage
-    aliases.clear()
-    testInfo.setTimeout(600_000)
-    page.setDefaultNavigationTimeout(300_000)
-    await loginLecturer(page)
-    await runTask('seedLegacyGamifiedLiveQuizResetBlock', {
-      name: data.sharing.quiz4,
-    })
-
-    try {
-      await openActivitiesListForQuiz(page, data.sharing.quiz4)
-      await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
-      await page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`).click()
-
-      await expect(
-        page.getByText(messages.manage.liveQuizzes.resetBlockedRewardData, {
-          exact: true,
-        })
-      ).toBeVisible()
-      await expect(
-        page.getByTestId('confirmation-modal-confirm')
-      ).toBeDisabled()
-      await page.getByTestId('confirmation-modal-cancel').click()
-    } finally {
-      await runTask('restoreLegacyGamifiedLiveQuizResetBlock', {
-        name: data.sharing.quiz4,
-      })
     }
   })
 

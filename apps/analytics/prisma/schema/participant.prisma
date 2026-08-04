@@ -93,7 +93,6 @@ model Participant {
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
-  liveQuizRewardEntries           LiveQuizRewardEntry[]
   verificationRecords             VerifiableCredential[]
 
   createdAt DateTime @default(now())
@@ -159,9 +158,8 @@ model Participation {
   courseLeaderboard   LeaderboardEntry? @relation(fields: [courseLeaderboardId], references: [id], onDelete: SetNull, onUpdate: SetNull)
   courseLeaderboardId Int?              @unique
 
-  sessionLeaderboards   LeaderboardEntry[]    @relation("SessionLeaderboards")
-  timelineEntries       TimelineEntry[]
-  liveQuizRewardEntries LiveQuizRewardEntry[]
+  sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
+  timelineEntries     TimelineEntry[]
 
   responses               QuestionResponse[]
   detailResponses         QuestionResponseDetail[]

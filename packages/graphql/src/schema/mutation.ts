@@ -1462,7 +1462,7 @@ export const Mutation = builder.mutationType({
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) =>
-            LiveQuizResetService.resetAssessmentLiveQuiz(args, ctx)
+            LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
         ),
       }),
 

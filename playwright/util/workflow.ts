@@ -29,7 +29,6 @@ import {
   LECTURER_INST_ID,
   LECTURER_INST_SHORTNAME,
   LECTURER_SHORTNAME,
-  PARTICIPANT_IDS,
   STUDENT_EMAIL,
   STUDENT_NOGROUP,
   STUDENT_PASSWORD,
@@ -1206,59 +1205,6 @@ export async function runTask(name: string, args: any = {}) {
       pinCode: quiz.pinCode,
       status: quiz.status,
     }
-  }
-  if (name === 'seedLegacyGamifiedLiveQuizResetBlock') {
-    const quiz = await prisma.liveQuiz.findFirstOrThrow({
-      where: { name: args.name, isDeleted: false },
-      select: { id: true },
-    })
-    await prisma.liveQuiz.update({
-      where: { id: quiz.id },
-      data: {
-        status: 'ENDED',
-        isGamificationEnabled: true,
-        finishedAt: new Date(),
-      },
-    })
-    await prisma.leaderboardEntry.upsert({
-      where: {
-        type_participantId_liveQuizId: {
-          type: 'SESSION',
-          participantId: PARTICIPANT_IDS[0]!,
-          liveQuizId: quiz.id,
-        },
-      },
-      create: {
-        type: 'SESSION',
-        score: 10,
-        participantId: PARTICIPANT_IDS[0]!,
-        liveQuizId: quiz.id,
-      },
-      update: { score: 10 },
-    })
-    return true
-  }
-  if (name === 'restoreLegacyGamifiedLiveQuizResetBlock') {
-    const quiz = await prisma.liveQuiz.findFirstOrThrow({
-      where: { name: args.name, isDeleted: false },
-      select: { id: true },
-    })
-    await prisma.leaderboardEntry.deleteMany({
-      where: {
-        liveQuizId: quiz.id,
-        type: 'SESSION',
-        participantId: PARTICIPANT_IDS[0]!,
-      },
-    })
-    await prisma.liveQuiz.update({
-      where: { id: quiz.id },
-      data: {
-        status: 'ENDED',
-        isGamificationEnabled: false,
-        finishedAt: null,
-      },
-    })
-    return true
   }
   if (name === 'verifyLiveQuizPin') {
     return (

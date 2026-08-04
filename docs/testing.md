@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-30'
+timestamp: '2026-08-04'
 tags:
   - testing
   - ci
@@ -46,11 +46,11 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 The regular Live Quiz reset verification uses real Postgres/Redis GraphQL tests plus the existing serial Live Quiz browser workflow. The following commands are config-derived:
 
 ```bash
-pnpm --filter @klicker-uzh/graphql test:local -- liveQuizReset.test.ts
+pnpm --filter @klicker-uzh/graphql test:local liveQuizReset.test.ts
 pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium
 ```
 
-Run the complete `O-live-quiz.spec.ts`: its reset, permission, and legacy-data scenarios intentionally reuse quizzes and states established by preceding tests, so selecting only those cases with `--grep` does not provision their prerequisites.
+The GraphQL suite proves that reset deletes run data and per-quiz leaderboards while cumulative reward records remain exactly unchanged. Run the complete `O-live-quiz.spec.ts`: its reset and permission scenarios intentionally reuse quizzes and states established by preceding tests, so selecting only those cases with `--grep` does not provision their prerequisites.
 
 ## E2E environment dependencies
 

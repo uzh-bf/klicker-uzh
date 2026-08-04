@@ -1775,12 +1775,6 @@ type LiveQuizInfo {
   name: String!
 }
 
-enum LiveQuizLegacyReconstructionStatus {
-  AVAILABLE
-  NOT_REQUIRED
-  UNAVAILABLE
-}
-
 type LiveQuizMeta {
   availableFrom: Date
   id: ID!
@@ -1792,21 +1786,15 @@ enum LiveQuizResetEligibilityReason {
   ASSESSMENT_POLICY
   ELIGIBLE
   INVALID_STATE
-  REWARD_DATA_UNAVAILABLE
 }
 
 type LiveQuizResetSummary {
-  coursePointsToReverse: Int!
   eligible: Boolean!
-  legacyReconstructionStatus: LiveQuizLegacyReconstructionStatus!
-  numOfAchievementChanges: Int!
   numOfConfusionFeedbacks: Int!
   numOfFeedbacks: Int!
   numOfLeaderboardEntries: Int!
   numOfResponses: Int!
-  numOfTimelineChanges: Int!
   reason: LiveQuizResetEligibilityReason!
-  xpToReverse: Int!
 }
 
 type LiveQuizSelectionItem {
@@ -2593,9 +2581,7 @@ type ReducedActivityInfo {
 }
 
 enum ResetLiveQuizOutcome {
-  CONFLICT
   INVALID_STATE
-  REWARD_DATA_UNAVAILABLE
   SUCCESS
 }
 

@@ -1,11 +1,9 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementBlockStatus,
-  LiveQuizRewardRunStatus,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-  TimelineEntryType,
 } from '@klicker-uzh/prisma/client'
 import type { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
@@ -14,10 +12,7 @@ import { graphql, print } from 'graphql/index.js'
 import { v4 as uuidv4 } from 'uuid'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
-import {
-  GetLiveQuizResetSummaryDocument,
-  ResetLiveQuizDocument,
-} from '../src/ops.js'
+import { ResetLiveQuizDocument } from '../src/ops.js'
 import {
   clearLiveQuizExecutionCache,
   getLiveQuizResetSummary,
@@ -35,6 +30,7 @@ import {
   seedLiveQuiz,
   testCleanup,
   testInitialization,
+  type LiveQuizResetFixture,
 } from './helpers.js'
 
 describe('live quiz reset summary', () => {
@@ -91,6 +87,82 @@ describe('live quiz reset summary', () => {
         } as unknown as ElementData,
       },
     })
+  }
+
+  async function readCumulativeRewardSnapshot(fixture: LiveQuizResetFixture) {
+    const [
+      courseLeaderboard,
+      participant,
+      participation,
+      timelineEntries,
+      achievement,
+      awards,
+      performance,
+    ] = await Promise.all([
+      fixture.courseId
+        ? prisma.leaderboardEntry.findUnique({
+            where: {
+              type_participantId_courseId: {
+                type: 'COURSE',
+                participantId: fixture.participantId,
+                courseId: fixture.courseId,
+              },
+            },
+          })
+        : null,
+      prisma.participant.findUniqueOrThrow({
+        where: { id: fixture.participantId },
+        include: { titles: true },
+      }),
+      fixture.participationId
+        ? prisma.participation.findUniqueOrThrow({
+            where: { id: fixture.participationId },
+          })
+        : null,
+      fixture.participationId && fixture.courseId
+        ? prisma.timelineEntry.findMany({
+            where: {
+              participationId: fixture.participationId,
+              courseId: fixture.courseId,
+            },
+            orderBy: { id: 'asc' },
+          })
+        : [],
+      fixture.achievementId
+        ? prisma.participantAchievementInstance.findUnique({
+            where: {
+              participantId_achievementId: {
+                participantId: fixture.participantId,
+                achievementId: fixture.achievementId,
+              },
+            },
+          })
+        : null,
+      prisma.awardEntry.findMany({
+        where: { participantId: fixture.participantId },
+        orderBy: { id: 'asc' },
+      }),
+      fixture.courseId
+        ? prisma.participantPerformance.findUnique({
+            where: {
+              participantId_courseId: {
+                participantId: fixture.participantId,
+                courseId: fixture.courseId,
+              },
+            },
+          })
+        : null,
+    ])
+
+    return {
+      courseLeaderboard,
+      participant,
+      participation,
+      timelineEntries,
+      achievement,
+      awards,
+      performance,
+    }
   }
 
   function mockResetDelivery(ctx: ContextWithUser) {
@@ -156,10 +228,18 @@ describe('live quiz reset summary', () => {
 
   it('summarizes every destructive category for an eligible regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
+    await prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: uuidv4(),
+        quizId: fixture.liveQuizId,
+        username: 'Synthetic temporary summary participant',
+        score: 2,
+      },
+    })
 
     const summary = await getLiveQuizResetSummary(
       { quizId: fixture.liveQuizId },
@@ -169,39 +249,16 @@ describe('live quiz reset summary', () => {
     expect(summary).toEqual({
       eligible: true,
       reason: 'ELIGIBLE',
-      legacyReconstructionStatus: 'NOT_REQUIRED',
       numOfResponses: 1,
       numOfFeedbacks: 1,
       numOfConfusionFeedbacks: 1,
-      numOfLeaderboardEntries: 1,
-      coursePointsToReverse: fixture.awardedCoursePoints,
-      xpToReverse: fixture.awardedParticipantXp,
-      numOfTimelineChanges: 1,
-      numOfAchievementChanges: 1,
+      numOfLeaderboardEntries: 2,
     })
-  })
-
-  it('summarizes the exact achievement occurrence-count delta', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
-      userOneCtx
-    )
-    await prisma.liveQuizRewardEntry.updateMany({
-      where: {
-        rewardRunId: fixture.rewardRunId!,
-        participantId: fixture.participantId,
-      },
-      data: { achievementCountAwarded: 2 },
-    })
-
-    await expect(
-      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toMatchObject({ numOfAchievementChanges: 2 })
   })
 
   it('counts aggregate-only responses when they exceed persisted rows', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -220,7 +277,7 @@ describe('live quiz reset summary', () => {
 
   it('counts persisted responses when they exceed aggregate totals', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await prisma.elementInstance.update({
@@ -238,7 +295,7 @@ describe('live quiz reset summary', () => {
 
   it('allows an activity administrator to inspect a regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await prisma.permission.create({
@@ -296,7 +353,7 @@ describe('live quiz reset summary', () => {
 
   it('returns null without owner or administrator permission', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
 
@@ -338,147 +395,23 @@ describe('live quiz reset summary', () => {
     await expect(
       getLiveQuizResetSummary({ quizId: quiz.id }, userOneCtx)
     ).resolves.toMatchObject({
-      eligible: true,
-      reason: 'ELIGIBLE',
+      eligible: false,
+      reason: 'ASSESSMENT_POLICY',
     })
     await expect(
       getLiveQuizResetSummary({ quizId: quiz.id }, userTwoCtx)
     ).resolves.toMatchObject({
-      eligible: true,
-      reason: 'ELIGIBLE',
+      eligible: false,
+      reason: 'ASSESSMENT_POLICY',
     })
     await expect(
       getLiveQuizResetSummary({ quizId: quiz.id }, userThreeCtx)
     ).resolves.toBeNull()
   })
 
-  it('does not require reconstruction for a non-gamified legacy quiz', async () => {
+  it('deletes run data and preserves cumulative rewards exactly', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
-      userOneCtx
-    )
-
-    await expect(
-      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toMatchObject({
-      eligible: true,
-      reason: 'ELIGIBLE',
-      legacyReconstructionStatus: 'NOT_REQUIRED',
-    })
-  })
-
-  it('reconstructs legacy XP for a standalone gamified regular quiz', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: false, withCourse: false },
-      userOneCtx
-    )
-
-    await expect(
-      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toMatchObject({
-      eligible: true,
-      reason: 'ELIGIBLE',
-      legacyReconstructionStatus: 'AVAILABLE',
-      coursePointsToReverse: 0,
-      xpToReverse: fixture.awardedParticipantXp,
-      numOfTimelineChanges: 0,
-    })
-  })
-
-  it('blocks invalid cross-quiz and non-applied reward pointers', async () => {
-    const crossQuizFixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: false },
-      userOneCtx
-    )
-    const otherQuiz = await seedLiveQuiz(
-      { elements: [], status: PublicationStatus.ENDED },
-      userOneCtx
-    )
-    const otherRun = await prisma.liveQuizRewardRun.create({
-      data: {
-        liveQuizId: otherQuiz.id,
-        endedAt: crossQuizFixture.timelineDate,
-      },
-    })
-    await prisma.liveQuiz.update({
-      where: { id: crossQuizFixture.liveQuizId },
-      data: { activeRewardRunId: otherRun.id },
-    })
-
-    await expect(
-      getLiveQuizResetSummary(
-        { quizId: crossQuizFixture.liveQuizId },
-        userOneCtx
-      )
-    ).resolves.toMatchObject({
-      eligible: false,
-      reason: 'REWARD_DATA_UNAVAILABLE',
-      legacyReconstructionStatus: 'UNAVAILABLE',
-    })
-
-    const reversedFixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: false },
-      userOneCtx
-    )
-    const reversedRun = await prisma.liveQuizRewardRun.create({
-      data: {
-        liveQuizId: reversedFixture.liveQuizId,
-        endedAt: reversedFixture.timelineDate,
-        status: 'REVERSED',
-      },
-    })
-    await prisma.liveQuiz.update({
-      where: { id: reversedFixture.liveQuizId },
-      data: { activeRewardRunId: reversedRun.id },
-    })
-
-    await expect(
-      getLiveQuizResetSummary(
-        { quizId: reversedFixture.liveQuizId },
-        userOneCtx
-      )
-    ).resolves.toMatchObject({
-      eligible: false,
-      reason: 'REWARD_DATA_UNAVAILABLE',
-      legacyReconstructionStatus: 'UNAVAILABLE',
-    })
-  })
-
-  it('rejects a ledger entry whose participation belongs to another participant', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
-      userOneCtx
-    )
-    const otherParticipant = await prisma.participant.create({
-      data: {
-        username: uuidv4(),
-        password: 'synthetic-test-password',
-      },
-    })
-    const otherParticipation = await prisma.participation.create({
-      data: {
-        courseId: fixture.courseId!,
-        participantId: otherParticipant.id,
-        isActive: true,
-      },
-    })
-    await prisma.liveQuizRewardEntry.updateMany({
-      where: { rewardRunId: fixture.rewardRunId! },
-      data: { participationId: otherParticipation.id },
-    })
-
-    await expect(
-      getLiveQuizResetSummary({ quizId: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toMatchObject({
-      eligible: false,
-      reason: 'REWARD_DATA_UNAVAILABLE',
-      legacyReconstructionStatus: 'UNAVAILABLE',
-    })
-  })
-
-  it('atomically reverses rewards, clears run data, and preserves the quiz definition', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -504,6 +437,7 @@ describe('live quiz reset summary', () => {
     await prisma.liveQuiz.update({
       where: { id: fixture.liveQuizId },
       data: {
+        startedAt: fixture.timelineDate,
         activeBlockId: block.id,
         availableFrom: scheduledAt,
         scheduledPublicationTaskId: 'synthetic-scheduled-task',
@@ -514,57 +448,86 @@ describe('live quiz reset summary', () => {
         id: uuidv4(),
         quizId: fixture.liveQuizId,
         username: 'Synthetic temporary participant',
-        score: 1,
+        score: 3,
       },
     })
     const original = await prisma.liveQuiz.findUniqueOrThrow({
       where: { id: fixture.liveQuizId },
-      include: { blocks: true },
+      include: { blocks: { include: { elements: true } } },
+    })
+    const cumulativeBefore = await readCumulativeRewardSnapshot(fixture)
+    expect(cumulativeBefore.courseLeaderboard).toMatchObject({
+      type: 'COURSE',
+      liveQuizId: fixture.liveQuizId,
+      score: fixture.awardedCoursePoints,
+    })
+    expect(cumulativeBefore.participant).toMatchObject({
+      xp: fixture.awardedParticipantXp,
+      titles: [expect.objectContaining({ courseId: fixture.courseId })],
+    })
+    expect(cumulativeBefore.performance).toMatchObject({
+      firstErrorRate: 0.8,
+      firstPerformance: 'LOW',
+      lastErrorRate: 0.5,
+      lastPerformance: 'MEDIUM',
+      totalErrorRate: 0.2,
+      totalPerformance: 'HIGH',
     })
 
-    const result = await resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-
-    expect(result).toMatchObject({
+    await expect(
+      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
+    ).resolves.toMatchObject({
       outcome: 'SUCCESS',
-      rewardRunId: fixture.rewardRunId,
-      activity: { isActivityReviewer: true },
-      totals: {
-        coursePoints: fixture.awardedCoursePoints,
-        participantXp: fixture.awardedParticipantXp,
-        timelineChanges: 1,
-        achievementChanges: fixture.awardedAchievementCount,
-      },
+      activity: { id: fixture.liveQuizId, status: PublicationStatus.DRAFT },
     })
+    expect(await readCumulativeRewardSnapshot(fixture)).toEqual(
+      cumulativeBefore
+    )
     const resetQuiz = await prisma.liveQuiz.findUniqueOrThrow({
       where: { id: fixture.liveQuizId },
-      include: { blocks: true },
+      include: { blocks: { include: { elements: true } } },
     })
     expect(resetQuiz).toMatchObject({
-      id: fixture.liveQuizId,
+      id: original.id,
       status: PublicationStatus.DRAFT,
       startedAt: null,
       finishedAt: null,
       availableFrom: null,
       scheduledPublicationTaskId: null,
       activeBlockId: null,
-      activeRewardRunId: null,
       namespace: original.namespace,
       pinCode: original.pinCode,
       courseId: original.courseId,
       name: original.name,
       displayName: original.displayName,
+      description: original.description,
       isGamificationEnabled: original.isGamificationEnabled,
       isAssessmentEnabled: original.isAssessmentEnabled,
     })
-    expect(resetQuiz.blocks).toEqual([
-      expect.objectContaining({
-        status: ElementBlockStatus.SCHEDULED,
-        startedAt: null,
-        closedAt: null,
-        expiresAt: null,
-        execution: original.blocks[0]!.execution + 1,
-      }),
-    ])
+    const originalBlock = original.blocks[0]!
+    const resetBlock = resetQuiz.blocks[0]!
+    expect(resetBlock).toMatchObject({
+      id: originalBlock.id,
+      order: originalBlock.order,
+      status: ElementBlockStatus.SCHEDULED,
+      startedAt: null,
+      closedAt: null,
+      expiresAt: null,
+      execution: originalBlock.execution + 1,
+    })
+    const originalInstance = originalBlock.elements[0]!
+    const resetInstance = resetBlock.elements[0]!
+    expect(resetInstance).toMatchObject({
+      id: originalInstance.id,
+      order: originalInstance.order,
+      elementId: originalInstance.elementId,
+      type: originalInstance.type,
+      elementType: originalInstance.elementType,
+      options: originalInstance.options,
+      elementData: originalInstance.elementData,
+      results: { choices: {}, total: 0 },
+      anonymousResults: { choices: {}, total: 0 },
+    })
     const [
       responses,
       feedbacks,
@@ -572,11 +535,6 @@ describe('live quiz reset summary', () => {
       confusionFeedbacks,
       sessionLeaderboardEntries,
       temporaryLeaderboardEntries,
-      courseLeaderboard,
-      participant,
-      timelineEntries,
-      achievement,
-      rewardRun,
     ] = await Promise.all([
       prisma.liveQuizResponse.count({
         where: {
@@ -594,35 +552,6 @@ describe('live quiz reset summary', () => {
       prisma.temporaryLeaderboardEntry.count({
         where: { quizId: fixture.liveQuizId },
       }),
-      prisma.leaderboardEntry.findUnique({
-        where: {
-          type_participantId_courseId: {
-            type: 'COURSE',
-            participantId: fixture.participantId,
-            courseId: fixture.courseId!,
-          },
-        },
-      }),
-      prisma.participant.findUniqueOrThrow({
-        where: { id: fixture.participantId },
-      }),
-      prisma.timelineEntry.findMany({
-        where: {
-          participationId: fixture.participationId!,
-          courseId: fixture.courseId!,
-        },
-      }),
-      prisma.participantAchievementInstance.findUnique({
-        where: {
-          participantId_achievementId: {
-            participantId: fixture.participantId,
-            achievementId: fixture.achievementId!,
-          },
-        },
-      }),
-      prisma.liveQuizRewardRun.findUniqueOrThrow({
-        where: { id: fixture.rewardRunId! },
-      }),
     ])
     expect({
       responses,
@@ -639,20 +568,11 @@ describe('live quiz reset summary', () => {
       sessionLeaderboardEntries: 0,
       temporaryLeaderboardEntries: 0,
     })
-    expect(courseLeaderboard).toBeNull()
-    expect(participant.xp).toBe(0)
-    expect(timelineEntries).toEqual([])
-    expect(achievement).toBeNull()
-    expect(rewardRun).toMatchObject({
-      status: LiveQuizRewardRunStatus.REVERSED,
-      reversedById: userOneCtx.user.sub,
-      reversedAt: expect.any(Date),
-    })
   })
 
   it('allows an activity administrator to reset a regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -683,7 +603,7 @@ describe('live quiz reset summary', () => {
 
   it('does not grant course-reviewer status to an activity owner', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: true },
+      { gamified: false, withCourse: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -705,7 +625,7 @@ describe('live quiz reset summary', () => {
 
   it('counts shared users when the implicit owner has no permission row', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -754,7 +674,7 @@ describe('live quiz reset summary', () => {
 
   it('allows an administrator derived through an activity group permission', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -796,7 +716,7 @@ describe('live quiz reset summary', () => {
     PermissionLevel.WRITE,
   ])('rejects an activity caller with %s access', async (permissionLevel) => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await prisma.permission.create({
@@ -824,169 +744,9 @@ describe('live quiz reset summary', () => {
     ).resolves.toMatchObject({ status: PublicationStatus.ENDED })
   })
 
-  it('rolls back the run transition and every reset mutation on reward underflow', async () => {
+  it('resets a non-gamified standalone regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
-      userOneCtx
-    )
-    await prisma.participant.update({
-      where: { id: fixture.participantId },
-      data: { xp: fixture.awardedParticipantXp - 1 },
-    })
-    const before = {
-      responses: await prisma.liveQuizResponse.count({
-        where: {
-          instance: { elementBlock: { liveQuizId: fixture.liveQuizId } },
-        },
-      }),
-      feedbacks: await prisma.feedback.count({
-        where: { liveQuizId: fixture.liveQuizId },
-      }),
-      courseLeaderboard: await prisma.leaderboardEntry.findUniqueOrThrow({
-        where: {
-          type_participantId_courseId: {
-            type: 'COURSE',
-            participantId: fixture.participantId,
-            courseId: fixture.courseId!,
-          },
-        },
-      }),
-    }
-
-    await expect(
-      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'LIVE_QUIZ_PARTICIPANT_XP_UNDERFLOW' },
-    })
-
-    await expect(
-      prisma.liveQuizRewardRun.findUniqueOrThrow({
-        where: { id: fixture.rewardRunId! },
-      })
-    ).resolves.toMatchObject({ status: LiveQuizRewardRunStatus.APPLIED })
-    await expect(
-      prisma.liveQuiz.findUniqueOrThrow({
-        where: { id: fixture.liveQuizId },
-      })
-    ).resolves.toMatchObject({
-      status: PublicationStatus.ENDED,
-      activeRewardRunId: fixture.rewardRunId,
-    })
-    expect(
-      await prisma.liveQuizResponse.count({
-        where: {
-          instance: { elementBlock: { liveQuizId: fixture.liveQuizId } },
-        },
-      })
-    ).toBe(before.responses)
-    expect(
-      await prisma.feedback.count({
-        where: { liveQuizId: fixture.liveQuizId },
-      })
-    ).toBe(before.feedbacks)
-    await expect(
-      prisma.leaderboardEntry.findUniqueOrThrow({
-        where: { id: before.courseLeaderboard.id },
-      })
-    ).resolves.toEqual(before.courseLeaderboard)
-  })
-
-  it.each([
-    {
-      reward: 'course points',
-      code: 'LIVE_QUIZ_COURSE_REWARD_UNDERFLOW',
-      corrupt: async (
-        fixture: Awaited<ReturnType<typeof seedEndedRegularLiveQuizForReset>>
-      ) => {
-        await prisma.leaderboardEntry.update({
-          where: {
-            type_participantId_courseId: {
-              type: 'COURSE',
-              participantId: fixture.participantId,
-              courseId: fixture.courseId!,
-            },
-          },
-          data: { score: fixture.awardedCoursePoints - 1 },
-        })
-      },
-    },
-    {
-      reward: 'timeline totals',
-      code: 'LIVE_QUIZ_TIMELINE_REWARD_UNDERFLOW',
-      corrupt: async (
-        fixture: Awaited<ReturnType<typeof seedEndedRegularLiveQuizForReset>>
-      ) => {
-        await prisma.timelineEntry.update({
-          where: {
-            participationId_courseId_timestamp_type: {
-              participationId: fixture.participationId!,
-              courseId: fixture.courseId!,
-              timestamp: fixture.timelineDate,
-              type: 'DAILY',
-            },
-          },
-          data: { collectedPoints: fixture.awardedTimelinePoints - 1 },
-        })
-      },
-    },
-    {
-      reward: 'achievement count',
-      code: 'LIVE_QUIZ_ACHIEVEMENT_REWARD_UNDERFLOW',
-      corrupt: async (
-        fixture: Awaited<ReturnType<typeof seedEndedRegularLiveQuizForReset>>
-      ) => {
-        await prisma.participantAchievementInstance.delete({
-          where: {
-            participantId_achievementId: {
-              participantId: fixture.participantId,
-              achievementId: fixture.achievementId!,
-            },
-          },
-        })
-      },
-    },
-  ])(
-    'rolls back the attempted transition when $reward underflows',
-    async ({ code, corrupt }) => {
-      const fixture = await seedEndedRegularLiveQuizForReset(
-        { gamified: true, withRewardRun: true },
-        userOneCtx
-      )
-      await corrupt(fixture)
-
-      await expect(
-        resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-      ).rejects.toMatchObject({ extensions: { code } })
-      await expect(
-        prisma.liveQuizRewardRun.findUniqueOrThrow({
-          where: { id: fixture.rewardRunId! },
-        })
-      ).resolves.toMatchObject({
-        status: LiveQuizRewardRunStatus.APPLIED,
-        reversedAt: null,
-        reversedById: null,
-      })
-      await expect(
-        prisma.liveQuiz.findUniqueOrThrow({
-          where: { id: fixture.liveQuizId },
-        })
-      ).resolves.toMatchObject({
-        status: PublicationStatus.ENDED,
-        activeRewardRunId: fixture.rewardRunId,
-      })
-      expect(
-        await prisma.liveQuizResponse.count({
-          where: {
-            instance: { elementBlock: { liveQuizId: fixture.liveQuizId } },
-          },
-        })
-      ).toBe(1)
-    }
-  )
-
-  it('reconstructs, persists, and reverses a complete legacy run in one reset', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -995,40 +755,7 @@ describe('live quiz reset summary', () => {
       resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
     ).resolves.toMatchObject({
       outcome: 'SUCCESS',
-      rewardRunId: expect.any(String),
-      totals: {
-        coursePoints: fixture.awardedCoursePoints,
-        participantXp: fixture.awardedParticipantXp,
-      },
-    })
-    await expect(
-      prisma.liveQuizRewardRun.findFirstOrThrow({
-        where: { liveQuizId: fixture.liveQuizId },
-      })
-    ).resolves.toMatchObject({
-      status: LiveQuizRewardRunStatus.REVERSED,
-      isLegacyReconstructed: true,
-    })
-  })
-
-  it('resets a non-gamified regular quiz without a reward run', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
-      userOneCtx
-    )
-    await makeFixtureInstanceResettable(fixture.instanceId)
-
-    await expect(
-      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toMatchObject({
-      outcome: 'SUCCESS',
-      rewardRunId: null,
-      totals: {
-        coursePoints: 0,
-        participantXp: 0,
-        timelineChanges: 0,
-        achievementChanges: 0,
-      },
+      activity: { id: fixture.liveQuizId, status: PublicationStatus.DRAFT },
     })
   })
 
@@ -1047,7 +774,7 @@ describe('live quiz reset summary', () => {
 
   it('does not reset a deleted ended regular quiz', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await prisma.liveQuiz.update({
@@ -1063,80 +790,35 @@ describe('live quiz reset summary', () => {
     })
   })
 
-  it('returns reward data unavailable for an orphan ledger without resetting', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+  it('rejects an ended assessment quiz through the regular reset service', async () => {
+    const course = await seedCourse(
+      { isAssessmentEnabled: true, isGamificationEnabled: false },
       userOneCtx
     )
-    await makeFixtureInstanceResettable(fixture.instanceId)
-    await prisma.liveQuizRewardEntry.updateMany({
-      where: { rewardRunId: fixture.rewardRunId! },
-      data: { participantId: null },
-    })
-
-    await expect(
-      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toEqual({
-      outcome: 'REWARD_DATA_UNAVAILABLE',
-      activity: null,
-    })
-    await expect(
-      prisma.liveQuizRewardRun.findUniqueOrThrow({
-        where: { id: fixture.rewardRunId! },
-      })
-    ).resolves.toMatchObject({ status: LiveQuizRewardRunStatus.APPLIED })
-  })
-
-  it('never reverses a reward run that belongs to another quiz', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: false },
-      userOneCtx
-    )
-    const otherQuiz = await seedLiveQuiz(
-      { elements: [], status: PublicationStatus.ENDED },
-      userOneCtx
-    )
-    const otherEndedAt = new Date()
-    await prisma.liveQuiz.update({
-      where: { id: otherQuiz.id },
-      data: { finishedAt: otherEndedAt },
-    })
-    const otherRun = await prisma.liveQuizRewardRun.create({
-      data: {
-        liveQuizId: otherQuiz.id,
-        endedAt: otherEndedAt,
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [],
+        courseId: course.id,
+        status: PublicationStatus.ENDED,
       },
-    })
-    await prisma.liveQuiz.update({
-      where: { id: fixture.liveQuizId },
-      data: { activeRewardRunId: otherRun.id },
+      userOneCtx
+    )
+    const before = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: quiz.id },
     })
 
-    await expect(
-      resetLiveQuiz({ id: fixture.liveQuizId }, userOneCtx)
-    ).resolves.toEqual({
-      outcome: 'REWARD_DATA_UNAVAILABLE',
+    await expect(resetLiveQuiz({ id: quiz.id }, userOneCtx)).resolves.toEqual({
+      outcome: 'INVALID_STATE',
       activity: null,
     })
     await expect(
-      prisma.liveQuizRewardRun.findUniqueOrThrow({
-        where: { id: otherRun.id },
-      })
-    ).resolves.toMatchObject({
-      liveQuizId: otherQuiz.id,
-      status: LiveQuizRewardRunStatus.APPLIED,
-      reversedAt: null,
-    })
-    await expect(
-      prisma.liveQuiz.findUniqueOrThrow({
-        where: { id: fixture.liveQuizId },
-      })
-    ).resolves.toMatchObject({ status: PublicationStatus.ENDED })
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).resolves.toEqual(before)
   })
 
-  it('returns one success and one conflict for concurrent reset attempts', async () => {
+  it('returns one success and one invalid state for concurrent reset attempts', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1158,22 +840,14 @@ describe('live quiz reset summary', () => {
     ])
 
     expect([first.outcome, second.outcome].sort()).toEqual([
-      'CONFLICT',
+      'INVALID_STATE',
       'SUCCESS',
     ])
-    expect(
-      await prisma.liveQuizRewardRun.count({
-        where: {
-          liveQuizId: fixture.liveQuizId,
-          status: LiveQuizRewardRunStatus.REVERSED,
-        },
-      })
-    ).toBe(1)
   })
 
   it('exposes the authenticated reset summary and canonical mutation', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1189,16 +863,29 @@ describe('live quiz reset summary', () => {
 
     const summaryResult = await graphql({
       schema,
-      source: print(GetLiveQuizResetSummaryDocument),
+      source: `
+        query GetLiveQuizResetSummary($quizId: String!) {
+          getLiveQuizResetSummary(quizId: $quizId) {
+            numOfResponses
+            numOfFeedbacks
+            numOfConfusionFeedbacks
+            numOfLeaderboardEntries
+            eligible
+            reason
+          }
+        }
+      `,
       variableValues: { quizId: fixture.liveQuizId },
       contextValue: userOneCtx,
     })
     expect(summaryResult.errors).toBeUndefined()
-    expect(summaryResult.data?.getLiveQuizResetSummary).toMatchObject({
+    expect(summaryResult.data?.getLiveQuizResetSummary).toEqual({
       eligible: true,
       reason: 'ELIGIBLE',
-      coursePointsToReverse: fixture.awardedCoursePoints,
-      xpToReverse: fixture.awardedParticipantXp,
+      numOfResponses: 1,
+      numOfFeedbacks: 1,
+      numOfConfusionFeedbacks: 1,
+      numOfLeaderboardEntries: 1,
     })
 
     const resetResult = await graphql({
@@ -1225,6 +912,15 @@ describe('live quiz reset summary', () => {
     expect(auditPayload).toContain('"outcome":"SUCCESS"')
     expect(auditPayload).not.toContain(fixture.participantId)
     expect(auditPayload).not.toContain('synthetic response content')
+    for (const rewardField of [
+      'rewardRunId',
+      'coursePoints',
+      'participantXp',
+      'timelineChanges',
+      'achievementChanges',
+    ]) {
+      expect(auditPayload).not.toContain(rewardField)
+    }
     expect(auditEvents).toEqual([
       expect.objectContaining({
         event: 'LIVE_QUIZ_RESET_INITIATED',
@@ -1244,59 +940,102 @@ describe('live quiz reset summary', () => {
     expect(Date.parse(auditEvents[1]!.occurredAt)).not.toBeNaN()
   })
 
-  it.each([
-    {
-      expectedOutcome: 'INVALID_STATE',
-      prepare: async () => {
-        const quiz = await seedLiveQuiz(
-          { elements: [], status: PublicationStatus.DRAFT },
-          userOneCtx
-        )
-        return quiz.id
-      },
-    },
-    {
-      expectedOutcome: 'REWARD_DATA_UNAVAILABLE',
-      prepare: async () => {
-        const fixture = await seedEndedRegularLiveQuizForReset(
-          { gamified: true, withRewardRun: true },
-          userOneCtx
-        )
-        await prisma.liveQuizRewardEntry.updateMany({
-          where: { rewardRunId: fixture.rewardRunId! },
-          data: { participantId: null },
-        })
-        return fixture.liveQuizId
-      },
-    },
-  ])(
-    'returns structured $expectedOutcome through the canonical mutation',
-    async ({ expectedOutcome, prepare }) => {
-      const id = await prepare()
-      await recomputeDerivedPermissions(
-        { liveQuizId: id, userId: userOneCtx.user.sub },
-        prisma
-      )
-      mockResetDelivery(userOneCtx)
-
-      const result = await graphql({
-        schema,
-        source: print(ResetLiveQuizDocument),
-        variableValues: { id },
-        contextValue: userOneCtx,
-      })
-
-      expect(result.errors).toBeUndefined()
-      expect(result.data?.resetLiveQuiz).toEqual({
-        outcome: expectedOutcome,
-        activity: null,
-      })
-    }
-  )
-
-  it('returns one SUCCESS and one CONFLICT through concurrent canonical mutations', async () => {
+  it('returns structured INVALID_STATE through the canonical mutation', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: false, withCourse: false },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: fixture.liveQuizId },
+      data: { status: PublicationStatus.DRAFT },
+    })
+    await recomputeDerivedPermissions(
+      { liveQuizId: fixture.liveQuizId, userId: userOneCtx.user.sub },
+      prisma
+    )
+    const { audit } = mockResetDelivery(userOneCtx)
+
+    const result = await graphql({
+      schema,
+      source: print(ResetLiveQuizDocument),
+      variableValues: { id: fixture.liveQuizId },
+      contextValue: userOneCtx,
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.resetLiveQuiz).toEqual({
+      outcome: 'INVALID_STATE',
+      activity: null,
+    })
+    const auditEvents = audit.mock.calls
+      .flatMap(([entries]) => entries)
+      .map((entry) => JSON.parse(entry.message.info))
+    expect(auditEvents).toEqual([
+      expect.objectContaining({
+        event: 'LIVE_QUIZ_RESET_INITIATED',
+        sequence: 1,
+      }),
+      expect.objectContaining({
+        event: 'LIVE_QUIZ_RESET_BLOCKED',
+        outcome: 'INVALID_STATE',
+        sequence: 2,
+      }),
+    ])
+    const auditPayload = JSON.stringify(auditEvents)
+    expect(auditPayload).not.toContain(fixture.participantId)
+    for (const rewardField of [
+      'rewardRunId',
+      'coursePoints',
+      'participantXp',
+      'timelineChanges',
+      'achievementChanges',
+    ]) {
+      expect(auditPayload).not.toContain(rewardField)
+    }
+  })
+
+  it('rejects an ended assessment quiz through the canonical mutation', async () => {
+    const course = await seedCourse(
+      { isAssessmentEnabled: true, isGamificationEnabled: false },
+      userOneCtx
+    )
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [],
+        courseId: course.id,
+        status: PublicationStatus.ENDED,
+      },
+      userOneCtx
+    )
+    await recomputeDerivedPermissions(
+      { liveQuizId: quiz.id, userId: userOneCtx.user.sub },
+      prisma
+    )
+    mockResetDelivery(userOneCtx)
+    const before = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: quiz.id },
+    })
+
+    const result = await graphql({
+      schema,
+      source: print(ResetLiveQuizDocument),
+      variableValues: { id: quiz.id },
+      contextValue: userOneCtx,
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.resetLiveQuiz).toEqual({
+      outcome: 'INVALID_STATE',
+      activity: null,
+    })
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: quiz.id } })
+    ).resolves.toEqual(before)
+  })
+
+  it('returns one SUCCESS and one INVALID_STATE through concurrent canonical mutations', async () => {
+    const fixture = await seedEndedRegularLiveQuizForReset(
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1337,12 +1076,12 @@ describe('live quiz reset summary', () => {
             ?.outcome
       )
       .sort()
-    expect(outcomes).toEqual(['CONFLICT', 'SUCCESS'])
+    expect(outcomes).toEqual(['INVALID_STATE', 'SUCCESS'])
   })
 
   it('rejects an unauthenticated canonical reset at the schema boundary', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
 
@@ -1361,7 +1100,7 @@ describe('live quiz reset summary', () => {
 
   it('blocks the reset when initiation audit scheduling fails', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await userOneCtx.redisExec.set(
@@ -1384,7 +1123,7 @@ describe('live quiz reset summary', () => {
 
   it('audits unexpected failures without exception or participant data', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     const { audit } = mockResetDelivery(userOneCtx)
@@ -1405,7 +1144,7 @@ describe('live quiz reset summary', () => {
 
   it('schedules idempotent cleanup after synchronous Redis cleanup fails', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1429,46 +1168,13 @@ describe('live quiz reset summary', () => {
           status: 'AVAILABLE',
           generation: null,
         },
-        weeklyTimelineRecomputations: [
-          expect.objectContaining({
-            participationId: fixture.participationId,
-            courseId: fixture.courseId,
-            weekStart: expect.any(String),
-          }),
-        ],
       },
     ])
   })
 
-  it('schedules cleanup after historical-week recomputation fails', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
-      userOneCtx
-    )
-    await makeFixtureInstanceResettable(fixture.instanceId)
-    const { cleanup } = mockResetDelivery(userOneCtx)
-    const failingPrisma = prisma.$extends({
-      query: {
-        timelineEntry: {
-          aggregate() {
-            throw new Error('synthetic historical aggregation outage')
-          },
-        },
-      },
-    })
-
-    await expect(
-      resetLiveQuiz(
-        { id: fixture.liveQuizId },
-        { ...userOneCtx, prisma: failingPrisma as unknown as PrismaClient }
-      )
-    ).resolves.toMatchObject({ outcome: 'SUCCESS' })
-    expect(cleanup).toHaveBeenCalledTimes(1)
-  })
-
   it('keeps committed success when completion audit scheduling fails', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1488,7 +1194,7 @@ describe('live quiz reset summary', () => {
 
   it('keeps committed success when cache invalidation listeners throw', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: false, withRewardRun: false, withCourse: false },
+      { gamified: false, withCourse: false },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1723,7 +1429,6 @@ describe('live quiz reset summary', () => {
         status: 'AVAILABLE' as const,
         generation: null,
       },
-      weeklyTimelineRecomputations: [],
     }
 
     await expect(
@@ -1738,73 +1443,6 @@ describe('live quiz reset summary', () => {
     await expect(
       userOneCtx.redisExec.get(`lq:${liveQuizId}:synthetic`)
     ).resolves.toBe('stale')
-  })
-
-  it('recomputes historical weeks even after the quiz has been deleted', async () => {
-    const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
-      userOneCtx
-    )
-    const weekStart = new Date('2026-07-27T00:00:00.000Z')
-    await prisma.timelineEntry.create({
-      data: {
-        participationId: fixture.participationId!,
-        courseId: fixture.courseId!,
-        type: TimelineEntryType.WEEKLY,
-        timestamp: weekStart,
-        collectedPoints: 999,
-        collectedXp: 999,
-      },
-    })
-    await userOneCtx.redisExec.hset(`lq:${fixture.liveQuizId}:meta`, {
-      cacheGeneration: uuidv4(),
-    })
-    await userOneCtx.redisExec.set(
-      `lq:${fixture.liveQuizId}:synthetic`,
-      'orphaned'
-    )
-    await prisma.liveQuiz.delete({ where: { id: fixture.liveQuizId } })
-
-    await handleCleanupLiveQuizResetCache(
-      {
-        liveQuizId: fixture.liveQuizId,
-        isAssessmentEnabled: false,
-        cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
-        weeklyTimelineRecomputations: [
-          {
-            participationId: fixture.participationId!,
-            courseId: fixture.courseId!,
-            weekStart: fixture.timelineDate.toISOString(),
-          },
-        ],
-      },
-      globalHandlerContext(userOneCtx)
-    )
-
-    await expect(
-      prisma.timelineEntry.findUniqueOrThrow({
-        where: {
-          participationId_courseId_timestamp_type: {
-            participationId: fixture.participationId!,
-            courseId: fixture.courseId!,
-            timestamp: weekStart,
-            type: TimelineEntryType.WEEKLY,
-          },
-        },
-      })
-    ).resolves.toMatchObject({
-      collectedPoints: fixture.awardedTimelinePoints,
-      collectedXp: fixture.awardedTimelineXp,
-    })
-    await expect(
-      userOneCtx.redisExec.hget(
-        `lq:${fixture.liveQuizId}:meta`,
-        'cacheGeneration'
-      )
-    ).resolves.toBeNull()
-    await expect(
-      userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
-    ).resolves.toBeNull()
   })
 
   it('clears orphaned cache for a soft-deleted quiz', async () => {
@@ -1827,7 +1465,6 @@ describe('live quiz reset summary', () => {
           liveQuizId: quiz.id,
           isAssessmentEnabled: false,
           cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
-          weeklyTimelineRecomputations: [],
         },
         globalHandlerContext(userOneCtx)
       )
@@ -1842,7 +1479,7 @@ describe('live quiz reset summary', () => {
 
   it('schedules generation-safe cleanup when generation snapshotting fails', async () => {
     const fixture = await seedEndedRegularLiveQuizForReset(
-      { gamified: true, withRewardRun: true },
+      { gamified: true },
       userOneCtx
     )
     await makeFixtureInstanceResettable(fixture.instanceId)
@@ -1864,13 +1501,6 @@ describe('live quiz reset summary', () => {
       liveQuizId: fixture.liveQuizId,
       isAssessmentEnabled: false,
       cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
-      weeklyTimelineRecomputations: [
-        {
-          participationId: fixture.participationId,
-          courseId: fixture.courseId,
-          weekStart: expect.any(String),
-        },
-      ],
     })
     await expect(
       userOneCtx.redisExec.get(`lq:${fixture.liveQuizId}:synthetic`)
@@ -1904,7 +1534,6 @@ describe('live quiz reset summary', () => {
           liveQuizId: quiz.id,
           isAssessmentEnabled: false,
           cacheGenerationSnapshot: { status: 'UNAVAILABLE' },
-          weeklyTimelineRecomputations: [],
         },
         globalHandlerContext(userOneCtx)
       )

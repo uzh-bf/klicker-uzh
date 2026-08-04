@@ -5,7 +5,6 @@ import {
   clearAllLiveQuizExecutionCache,
   clearLiveQuizExecutionCache,
 } from './liveQuizExecutionCache.js'
-import { recomputeWeeklyTimelineEntry } from './liveQuizRewards.js'
 
 async function recoverAndClearUnavailableLiveQuizExecutionCache({
   liveQuizId,
@@ -66,21 +65,12 @@ export const handleCleanupLiveQuizResetCache = (async (
     liveQuizId,
     isAssessmentEnabled,
     cacheGenerationSnapshot,
-    weeklyTimelineRecomputations,
   }: Parameters<HatchetHandlers['handleCleanupLiveQuizResetCache']>[0],
   globalCtx: Parameters<HatchetHandlers['handleCleanupLiveQuizResetCache']>[1],
   _executionCtx?: Parameters<
     HatchetHandlers['handleCleanupLiveQuizResetCache']
   >[2]
 ) => {
-  for (const recomputation of weeklyTimelineRecomputations) {
-    await recomputeWeeklyTimelineEntry({
-      participationId: recomputation.participationId,
-      courseId: recomputation.courseId,
-      weekStart: new Date(recomputation.weekStart),
-      prisma: globalCtx.prisma,
-    })
-  }
   const redis = isAssessmentEnabled
     ? globalCtx.redisAssessmentExec
     : globalCtx.redisExec

@@ -7,14 +7,6 @@ import {
   type LiveQuizActivityInfo,
   type LiveQuizActivityInfoPermission,
 } from './liveQuizActivityInfo.js'
-import {
-  inspectLegacyRegularLiveQuizRewards,
-  persistLiveQuizRewardRun,
-  reverseLiveQuizRewardRun,
-  type RewardReversalTotals,
-  type WeeklyTimelineRecomputation,
-} from './liveQuizRewards.js'
-import { hasValidLiveQuizRewardEntries } from './liveQuizRewardValidation.js'
 
 function resetActivityInfoInclude(userId: string) {
   return {
@@ -92,6 +84,7 @@ export async function resetLiveQuizExecutionState({
       id: liveQuizId,
       status: DB.PublicationStatus.ENDED,
       isDeleted: false,
+      isAssessmentEnabled: false,
     },
     data: {
       status: DB.PublicationStatus.DRAFT,
@@ -100,12 +93,11 @@ export async function resetLiveQuizExecutionState({
       availableFrom: null,
       scheduledPublicationTaskId: null,
       activeBlockId: null,
-      activeRewardRunId: null,
     },
   })
   if (transitioned.count !== 1) {
     throw resetError(
-      'LIVE_QUIZ_RESET_CONFLICT',
+      'LIVE_QUIZ_RESET_STATE_CHANGED',
       'Live quiz state changed while it was being reset'
     )
   }
@@ -115,7 +107,9 @@ export async function resetLiveQuizExecutionState({
     data: {
       feedbacks: { deleteMany: {} },
       confusionFeedbacks: { deleteMany: {} },
-      leaderboard: { deleteMany: {} },
+      leaderboard: {
+        deleteMany: { type: DB.LeaderboardType.SESSION },
+      },
       temporaryLeaderboard: { deleteMany: {} },
     },
     include: resetActivityInfoInclude(userId),
@@ -168,22 +162,11 @@ export function formatResetActivityInfo(activity: ResetActivityInfoSource) {
   })
 }
 
-export type ResetActivityInfo = ReturnType<typeof formatResetActivityInfo>
-
 export type ResetLiveQuizServiceResult =
-  | {
-      outcome: 'SUCCESS'
-      activity: LiveQuizActivityInfo
-      rewardRunId: string | null
-      totals: RewardReversalTotals
-      weeklyTimelineRecomputations: WeeklyTimelineRecomputation[]
-    }
-  | {
-      outcome: 'INVALID_STATE' | 'REWARD_DATA_UNAVAILABLE' | 'CONFLICT'
-      activity: null
-    }
+  | { outcome: 'SUCCESS'; activity: LiveQuizActivityInfo }
+  | { outcome: 'INVALID_STATE'; activity: null }
 
-async function loadResettableQuiz({
+async function loadResettableRegularQuiz({
   id,
   userId,
   tx,
@@ -195,213 +178,65 @@ async function loadResettableQuiz({
   const quiz = await tx.liveQuiz.findUnique({
     where: { id },
     include: {
-      activeRewardRun: {
-        include: {
-          entries: {
-            include: {
-              participation: {
-                select: { participantId: true, courseId: true },
-              },
-            },
-          },
-        },
-      },
-      rewardRuns: { select: { id: true, status: true } },
-      permissions: { where: { userId } },
-      course: {
-        include: {
-          permissions: { where: { userId } },
-        },
+      permissions: {
+        where: { userId },
+        select: { permissionLevel: true },
       },
     },
   })
   if (!quiz) return null
 
-  const isAdministrator = (
-    permissions: Array<{ permissionLevel: DB.PermissionLevel }>
-  ) =>
-    permissions.some(
-      (permission) =>
-        permission.permissionLevel === DB.PermissionLevel.ADMIN ||
-        permission.permissionLevel === DB.PermissionLevel.OWNER
-    )
-  const regularAuthorized =
-    quiz.ownerId === userId || isAdministrator(quiz.permissions)
-  const assessmentAuthorized =
-    quiz.course !== null && isAdministrator(quiz.course.permissions)
-  if (
-    (quiz.isAssessmentEnabled && !assessmentAuthorized) ||
-    (!quiz.isAssessmentEnabled && !regularAuthorized)
-  ) {
+  const isAdministrator = quiz.permissions.some(
+    (permission) =>
+      permission.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission.permissionLevel === DB.PermissionLevel.OWNER
+  )
+  if (quiz.ownerId !== userId && !isAdministrator) {
     throw resetError('FORBIDDEN', 'LIVE_QUIZ_RESET_FORBIDDEN')
   }
   return quiz
-}
-
-type ResettableQuiz = NonNullable<
-  Awaited<ReturnType<typeof loadResettableQuiz>>
->
-
-async function resolveAppliedRewardRun({
-  quiz,
-  ctx,
-  tx,
-}: {
-  quiz: ResettableQuiz
-  ctx: ContextWithUser
-  tx: DB.Prisma.TransactionClient
-}): Promise<string | 'REWARD_DATA_UNAVAILABLE' | null> {
-  const activeRun = quiz.activeRewardRun
-  const appliedRuns = quiz.rewardRuns.filter(
-    (run) => run.status === DB.LiveQuizRewardRunStatus.APPLIED
-  )
-  const hasAnyRewardRunState =
-    quiz.activeRewardRunId !== null || quiz.rewardRuns.length > 0
-
-  if (hasAnyRewardRunState) {
-    const validActiveRun =
-      activeRun !== null &&
-      quiz.activeRewardRunId === activeRun.id &&
-      activeRun.liveQuizId === quiz.id &&
-      activeRun.status === DB.LiveQuizRewardRunStatus.APPLIED &&
-      quiz.finishedAt !== null &&
-      activeRun.endedAt.getTime() === quiz.finishedAt.getTime() &&
-      appliedRuns.length === 1 &&
-      appliedRuns[0]!.id === activeRun.id &&
-      hasValidLiveQuizRewardEntries(activeRun.entries, {
-        persisted: true,
-        uniqueParticipants: true,
-      }) &&
-      (quiz.isGamificationEnabled || activeRun.entries.length === 0)
-    return validActiveRun ? activeRun.id : 'REWARD_DATA_UNAVAILABLE'
-  }
-
-  if (!quiz.isGamificationEnabled) return null
-
-  const inspection = await inspectLegacyRegularLiveQuizRewards(
-    { liveQuizId: quiz.id, prisma: tx },
-    ctx
-  )
-  if (inspection.status === 'UNAVAILABLE') {
-    return 'REWARD_DATA_UNAVAILABLE'
-  }
-  try {
-    return await persistLiveQuizRewardRun({
-      liveQuizId: quiz.id,
-      plan: inspection.plan,
-      tx,
-    })
-  } catch (error) {
-    if (isRewardRunConflict(error)) {
-      throw resetError(
-        'LIVE_QUIZ_RESET_CONFLICT',
-        'Live quiz reward state changed while it was being reconstructed'
-      )
-    }
-    throw error
-  }
-}
-
-function errorCode(error: unknown): unknown {
-  return typeof error === 'object' &&
-    error !== null &&
-    'extensions' in error &&
-    typeof error.extensions === 'object' &&
-    error.extensions !== null &&
-    'code' in error.extensions
-    ? error.extensions.code
-    : undefined
-}
-
-function isPrismaSerializationConflict(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'P2034'
-  )
-}
-
-function isRewardRunConflict(error: unknown): boolean {
-  return (
-    errorCode(error) === 'LIVE_QUIZ_REWARD_CONFLICT' ||
-    errorCode(error) === 'LIVE_QUIZ_RESET_CONFLICT'
-  )
-}
-
-function isRewardDataUnavailable(error: unknown): boolean {
-  return errorCode(error) === 'LIVE_QUIZ_REWARD_DATA_UNAVAILABLE'
 }
 
 export async function executeLiveQuizReset(
   { id }: { id: string },
   ctx: ContextWithUser
 ): Promise<ResetLiveQuizServiceResult> {
-  try {
-    return await ctx.prisma.$transaction(
-      async (tx) => {
-        const quiz = await loadResettableQuiz({
-          id,
-          userId: ctx.user.sub,
-          tx,
-        })
-        if (
-          !quiz ||
-          quiz.isDeleted ||
-          quiz.status !== DB.PublicationStatus.ENDED
-        ) {
-          return { outcome: 'INVALID_STATE', activity: null }
-        }
-
-        const rewardRunId = quiz.isAssessmentEnabled
-          ? null
-          : await resolveAppliedRewardRun({ quiz, ctx, tx })
-        if (rewardRunId === 'REWARD_DATA_UNAVAILABLE') {
-          return { outcome: 'REWARD_DATA_UNAVAILABLE', activity: null }
-        }
-
-        let totals: RewardReversalTotals = {
-          coursePoints: 0,
-          participantXp: 0,
-          timelineChanges: 0,
-          achievementChanges: 0,
-        }
-        let weeklyTimelineRecomputations: WeeklyTimelineRecomputation[] = []
-        if (rewardRunId) {
-          const reversal = await reverseLiveQuizRewardRun({
-            rewardRunId,
-            actorId: ctx.user.sub,
-            tx,
-          })
-          totals = reversal.totals
-          weeklyTimelineRecomputations = reversal.weeklyTimelineRecomputations
-        }
-
-        const updatedQuiz = await resetLiveQuizExecutionState({
-          liveQuizId: id,
-          userId: ctx.user.sub,
-          tx,
-        })
-        return {
-          outcome: 'SUCCESS',
-          activity: formatResetActivityInfo(updatedQuiz),
-          rewardRunId,
-          totals,
-          weeklyTimelineRecomputations,
-        }
-      },
-      {
-        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
-        timeout: 60000,
+  return ctx.prisma.$transaction(
+    async (tx) => {
+      const lockedRows = await tx.$queryRaw<{ id: string }[]>`
+        SELECT "id"
+        FROM "LiveQuiz"
+        WHERE "id" = ${id}::uuid
+        FOR UPDATE
+      `
+      if (lockedRows.length === 0) {
+        return { outcome: 'INVALID_STATE', activity: null }
       }
-    )
-  } catch (error) {
-    if (isPrismaSerializationConflict(error) || isRewardRunConflict(error)) {
-      return { outcome: 'CONFLICT', activity: null }
-    }
-    if (isRewardDataUnavailable(error)) {
-      return { outcome: 'REWARD_DATA_UNAVAILABLE', activity: null }
-    }
-    throw error
-  }
+
+      const quiz = await loadResettableRegularQuiz({
+        id,
+        userId: ctx.user.sub,
+        tx,
+      })
+      if (
+        !quiz ||
+        quiz.isDeleted ||
+        quiz.isAssessmentEnabled ||
+        quiz.status !== DB.PublicationStatus.ENDED
+      ) {
+        return { outcome: 'INVALID_STATE', activity: null }
+      }
+
+      const activity = await resetLiveQuizExecutionState({
+        liveQuizId: id,
+        userId: ctx.user.sub,
+        tx,
+      })
+      return {
+        outcome: 'SUCCESS',
+        activity: formatResetActivityInfo(activity),
+      }
+    },
+    { timeout: 60_000 }
+  )
 }

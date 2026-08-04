@@ -2443,21 +2443,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       resetLiveQuiz: 'Reset Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
       resetLiveQuizMessage:
-        'The same live quiz will return to draft. The selected run data and rewards are permanently removed. Links, PIN, questions, settings, course assignment, and sharing remain unchanged. This audited action cannot be undone.',
-      resetRewards:
-        '{points} course points, {xp} XP, {timeline} timeline changes, and {achievements} achievement changes will be reversed.',
-      noRewardsToReset:
-        'No leaderboard or external rewards need to be reversed.',
-      resetBlockedRewardData:
-        'This legacy gamified live quiz cannot be reset because its complete reward history is no longer available. Duplicate the quiz instead.',
+        'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
+      resetRegularLiveQuizMessage:
+        'The same live quiz will return to draft. Its responses, results, feedback, and session leaderboard will be permanently deleted.',
+      resetRegularRunData:
+        '{responses} responses, {feedbacks} feedback entries, {confusion} confusion entries, and {leaderboard} session leaderboard entries will be deleted.',
+      resetPreservedRewards:
+        'Previously awarded course points, XP, timeline rewards, achievements, and awards remain unchanged.',
       resetInvalidState:
         'This live quiz is no longer in an ended state. Refresh the activity list and try again.',
-      resetConflict:
-        'Another reset changed this live quiz. Refresh the activity list to see its current state.',
       resetOutcomeError:
         'The live quiz could not be reset. No reset was reported as successful.',
-      resetPreservedData:
-        'The activity identity, PIN, questions, settings, course, and sharing are preserved.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:

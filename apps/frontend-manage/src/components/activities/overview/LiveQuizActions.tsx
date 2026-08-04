@@ -14,6 +14,7 @@ import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
+import RegularLiveQuizResetModal from '../../courses/modals/RegularLiveQuizResetModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -269,8 +270,20 @@ function LiveQuizActions({
           />
         )}
 
-        {resetModal && (
+        {resetModal && liveQuiz.isAssessmentEnabled ? (
           <LiveQuizResetModal
+            quizId={liveQuiz.id}
+            courseId={liveQuiz.courseId}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled}
+            onClose={() => setResetModal(false)}
+            onSuccess={async () => {
+              await refetchActivities?.()
+            }}
+          />
+        ) : null}
+
+        {resetModal && !liveQuiz.isAssessmentEnabled ? (
+          <RegularLiveQuizResetModal
             quizId={liveQuiz.id}
             courseId={liveQuiz.courseId}
             onClose={() => setResetModal(false)}
@@ -278,7 +291,7 @@ function LiveQuizActions({
               await refetchActivities?.()
             }}
           />
-        )}
+        ) : null}
 
         {templateDeletionModal && (
           <TemplateDeletionModal

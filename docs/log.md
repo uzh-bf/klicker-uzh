@@ -1,14 +1,14 @@
 # Log
 
-## 2026-07-31
+## 2026-08-04
 
-- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now reference the focused Live Quiz reward, typed current-state preflight, reset transaction/summary/cleanup, neutral execution-cache, and shared activity-mapping modules. Reward reporting explicitly uses exact achievement occurrence deltas and counts only timeline rows actually modified.
+- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now document the supervisor-approved regular Live Quiz reset boundary: delete run data and per-quiz leaderboards while preserving every cumulative reward. The reset API has four summary counts, two mutation outcomes, a separate assessment mutation, and cache cleanup with no reward/history work.
+
+- **Update**: [testing](./testing.md) records the cumulative-reward preservation contract and retains the complete serial `O-live-quiz.spec.ts` requirement without the superseded legacy-reward scenario.
 
 ## 2026-07-30
 
-- **Update**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now document exact regular Live Quiz reward ledgers, owner/activity-admin reset authorization, structured reset outcomes, legacy exact-or-reject behavior, and generation-fenced cache cleanup.
-
-- **Update**: [testing](./testing.md) and the `klicker-playwright-e2e` skill record that the regular Live Quiz reset scenarios depend on the complete serial `O-live-quiz.spec.ts` workflow rather than a focused `--grep` selection.
+- **Update**: [testing](./testing.md) and the `klicker-playwright-e2e` skill record that the regular Live Quiz reset scenarios depend on the complete serial `O-live-quiz.spec.ts` workflow rather than a focused `--grep` selection. The reward-reversal design documented on this date was superseded by the 2026-08-04 preservation boundary.
 
 ## 2026-07-20
 

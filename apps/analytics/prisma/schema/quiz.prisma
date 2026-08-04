@@ -79,11 +79,6 @@ enum AccessMode {
   RESTRICTED
 }
 
-enum LiveQuizRewardRunStatus {
-  APPLIED
-  REVERSED
-}
-
 model LiveQuiz {
   id String @id @default(uuid()) @db.Uuid
 
@@ -123,9 +118,6 @@ model LiveQuiz {
   blocks               ElementBlock[]
   leaderboard          LeaderboardEntry[]
   temporaryLeaderboard TemporaryLeaderboardEntry[]
-  activeRewardRun      LiveQuizRewardRun?          @relation("ActiveLiveQuizRewardRun", fields: [activeRewardRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  activeRewardRunId    String?                     @unique @db.Uuid
-  rewardRuns           LiveQuizRewardRun[]         @relation("LiveQuizRewardRuns")
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
@@ -149,61 +141,6 @@ model LiveQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model LiveQuizRewardRun {
-  id                    String                  @id @default(uuid()) @db.Uuid
-  status                LiveQuizRewardRunStatus @default(APPLIED)
-  isLegacyReconstructed Boolean                 @default(false)
-  endedAt               DateTime
-  reversedAt            DateTime?
-
-  liveQuiz   LiveQuiz @relation("LiveQuizRewardRuns", fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  liveQuizId String   @db.Uuid
-
-  activeForLiveQuiz LiveQuiz? @relation("ActiveLiveQuizRewardRun")
-
-  reversedBy   User?   @relation("LiveQuizRewardRunReversedBy", fields: [reversedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  reversedById String? @db.Uuid
-
-  entries LiveQuizRewardEntry[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([liveQuizId, status])
-}
-
-model LiveQuizRewardEntry {
-  id Int @id @default(autoincrement())
-
-  rewardRun   LiveQuizRewardRun @relation(fields: [rewardRunId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  rewardRunId String            @db.Uuid
-
-  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  participantId String?      @db.Uuid
-
-  participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  participationId Int?
-
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  courseId String? @db.Uuid
-
-  achievement   Achievement? @relation(fields: [achievementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  achievementId Int?
-
-  coursePointsAwarded     Int       @default(0)
-  participantXpAwarded    Int       @default(0)
-  timelineDate            DateTime? @db.Date
-  timelinePointsAwarded   Float     @default(0)
-  timelineXpAwarded       Float     @default(0)
-  achievementCountAwarded Int       @default(0)
-
-  createdAt DateTime @default(now())
-
-  @@unique([rewardRunId, participantId])
-  @@index([participantId])
-  @@index([participationId, courseId, timelineDate])
 }
 
 // #endregion

@@ -4,12 +4,7 @@ query GetLiveQuizResetSummary($quizId: String!) {
     numOfFeedbacks
     numOfConfusionFeedbacks
     numOfLeaderboardEntries
-    coursePointsToReverse
-    xpToReverse
-    numOfTimelineChanges
-    numOfAchievementChanges
     eligible
     reason
-    legacyReconstructionStatus
   }
 }

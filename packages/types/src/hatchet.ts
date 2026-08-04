@@ -31,11 +31,6 @@ export type CleanupLiveQuizResetCacheInput = {
   liveQuizId: string
   isAssessmentEnabled: boolean
   cacheGenerationSnapshot: LiveQuizResetCacheGenerationSnapshot
-  weeklyTimelineRecomputations: Array<{
-    participationId: number
-    courseId: string
-    weekStart: string
-  }>
 }
 
 // Shared contract for Hatchet task handler injections.

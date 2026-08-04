@@ -5,24 +5,11 @@ import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
 import isoWeek from 'dayjs/plugin/isoWeek.js'
-import utc from 'dayjs/plugin/utc.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 dayjs.extend(isoWeek)
-dayjs.extend(utc)
-
-export function getTimelineWeekBounds(date: Date): {
-  weekStart: Date
-  weekEnd: Date
-} {
-  const weekStart = dayjs(date).utc().startOf('isoWeek').toDate()
-  return {
-    weekStart,
-    weekEnd: dayjs(weekStart).add(1, 'week').toDate(),
-  }
-}
 
 export async function getSelf(
   { liveQuizId }: { liveQuizId?: string | null },
