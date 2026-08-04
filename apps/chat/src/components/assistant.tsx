@@ -15,7 +15,11 @@ import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
+import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
+import { getKlickerChatContextLabel } from '../services/chatContext'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
@@ -46,9 +50,9 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
-  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
-  // sessionStorage and strip it from the URL on first render.
+  // Stuff CHIPS fallback tokens into sessionStorage and strip them from the URL.
   useChatGuestTokenBootstrap()
+  usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
@@ -281,6 +285,7 @@ export const Assistant = ({
             isOpen={showDisclaimerModal}
             onAccept={handleAcceptDisclaimer}
             onDecline={handleDeclineDisclaimer}
+            stacked={embedded}
           />
         )}
       </>
@@ -302,6 +307,7 @@ export const Assistant = ({
           isOpen={showDisclaimerModal}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
+          stacked={embedded}
         />
       )}
     </>
@@ -361,7 +367,10 @@ function SidebarMain({
               <Loader2 className="text-muted-foreground size-6 animate-spin" />
             </div>
           )}
-          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+          <Thread
+            chatbotAvatar={chatbot.avatar ?? ''}
+            chatbotName={chatbot.name}
+          />
         </div>
         {showFooter && <Footer />}
       </div>
@@ -375,6 +384,10 @@ function AssistantLayout({
   chatbot: { id: string; name: string; avatar?: string }
 }) {
   const { showSidebar, showFooter } = useChatUi()
+  useEmbeddedChatContext()
+  const context = useChatContextStore((state) => state.context)
+  const contextLabel = getKlickerChatContextLabel(context)
+  const hasQuestionContext = Boolean(context?.question)
 
   if (showSidebar) {
     return (
@@ -386,15 +399,17 @@ function AssistantLayout({
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-gray-50 px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
-        <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
-          {chatbot.name}
-        </div>
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+      <div className="absolute right-3 top-3 z-10">
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        <Thread
+          chatbotAvatar={chatbot.avatar ?? ''}
+          chatbotName={chatbot.name}
+          contextLabel={contextLabel}
+          contextualSuggestions={hasQuestionContext}
+        />
         {showFooter && <Footer />}
       </div>
     </div>

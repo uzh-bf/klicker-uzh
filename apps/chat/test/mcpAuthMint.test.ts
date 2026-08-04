@@ -1,9 +1,14 @@
 import { verifyJWT } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
+  LECTURER_MCP_SCOPE_FULL,
+  LECTURER_MCP_SCOPE_READ_ONLY,
   McpAuthMintError,
+  __resetLecturerMcpJwtCacheForTests,
   __resetParticipantMcpJwtCacheForTests,
+  mintLecturerMcpJwt,
   mintParticipantMcpJwt,
+  resolveLecturerMcpScope,
 } from '../src/lib/server/mcpAuthMint'
 
 const TEST_SECRET = 'unit-test-app-secret-abcd'
@@ -13,11 +18,13 @@ describe('mintParticipantMcpJwt', () => {
   beforeEach(() => {
     vi.stubEnv('APP_SECRET', TEST_SECRET)
     vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
+    __resetLecturerMcpJwtCacheForTests()
     __resetParticipantMcpJwtCacheForTests()
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    __resetLecturerMcpJwtCacheForTests()
     __resetParticipantMcpJwtCacheForTests()
   })
 
@@ -85,5 +92,107 @@ describe('mintParticipantMcpJwt', () => {
     await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
       McpAuthMintError
     )
+  })
+})
+
+describe('mintLecturerMcpJwt', () => {
+  beforeEach(() => {
+    vi.stubEnv('APP_SECRET', TEST_SECRET)
+    vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
+    __resetLecturerMcpJwtCacheForTests()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    __resetLecturerMcpJwtCacheForTests()
+  })
+
+  test('minted token verifies and is scoped to lecturer MCP for a full-access session', async () => {
+    const jwt = await mintLecturerMcpJwt('lecturer-a', 'ACCOUNT_OWNER')
+
+    const payload = await verifyJWT(jwt, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+
+    expect(payload.sub).toBe('lecturer-a')
+    expect(payload.role).toBe('USER')
+    expect(payload.purpose).toBe('lecturer-mcp')
+    expect(payload.scope).toBe('manage:read manage:draft')
+    expect(payload.iss).toBe(TEST_ISSUER)
+    expect(typeof payload.exp).toBe('number')
+  })
+
+  test('uses a dedicated lecturer MCP secret when configured', async () => {
+    const lecturerSecret = 'dedicated-lecturer-secret'
+    vi.stubEnv('MCP_LECTURER_JWT_SECRET', lecturerSecret)
+
+    const jwt = await mintLecturerMcpJwt('lecturer-secret', 'ACCOUNT_OWNER')
+    const payload = await verifyJWT(jwt, lecturerSecret, {
+      issuer: TEST_ISSUER,
+    })
+
+    expect(payload.sub).toBe('lecturer-secret')
+  })
+
+  test('cache is keyed per lecturer (no cross-lecturer leakage)', async () => {
+    const a = await mintLecturerMcpJwt('lecturer-a', 'ACCOUNT_OWNER')
+    const b = await mintLecturerMcpJwt('lecturer-b', 'ACCOUNT_OWNER')
+    expect(a).not.toBe(b)
+
+    const aAgain = await mintLecturerMcpJwt('lecturer-a', 'ACCOUNT_OWNER')
+    expect(aAgain).toBe(a)
+  })
+
+  test('cache is keyed per effective MCP scope (same user, different session scopes)', async () => {
+    const fullAccess = await mintLecturerMcpJwt(
+      'lecturer-multi',
+      'ACCOUNT_OWNER'
+    )
+    const readOnly = await mintLecturerMcpJwt('lecturer-multi', 'READ_ONLY')
+    expect(fullAccess).not.toBe(readOnly)
+
+    const fullAccessPayload = await verifyJWT(fullAccess, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+    const readOnlyPayload = await verifyJWT(readOnly, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+    expect(fullAccessPayload.scope).toBe(LECTURER_MCP_SCOPE_FULL)
+    expect(readOnlyPayload.scope).toBe(LECTURER_MCP_SCOPE_READ_ONLY)
+
+    // Re-minting each scope for the same user still hits its own cache slot.
+    const fullAccessAgain = await mintLecturerMcpJwt(
+      'lecturer-multi',
+      'ACCOUNT_OWNER'
+    )
+    expect(fullAccessAgain).toBe(fullAccess)
+  })
+
+  test('missing issuer throws McpAuthMintError', async () => {
+    delete process.env.APP_ORIGIN_AUTH
+    await expect(
+      mintLecturerMcpJwt('lecturer-x', 'ACCOUNT_OWNER')
+    ).rejects.toBeInstanceOf(McpAuthMintError)
+  })
+
+  test('OTP session scope is rejected outright', async () => {
+    await expect(
+      mintLecturerMcpJwt('lecturer-otp', 'OTP')
+    ).rejects.toBeInstanceOf(McpAuthMintError)
+  })
+})
+
+describe('resolveLecturerMcpScope', () => {
+  test.each([
+    ['ACCOUNT_OWNER', LECTURER_MCP_SCOPE_FULL],
+    ['FULL_ACCESS', LECTURER_MCP_SCOPE_FULL],
+    ['SESSION_EXEC', LECTURER_MCP_SCOPE_READ_ONLY],
+    ['READ_ONLY', LECTURER_MCP_SCOPE_READ_ONLY],
+    ['ACTIVATION', LECTURER_MCP_SCOPE_READ_ONLY],
+    ['EDUID', LECTURER_MCP_SCOPE_READ_ONLY],
+    ['SOME_FUTURE_SCOPE', LECTURER_MCP_SCOPE_READ_ONLY],
+    [undefined, LECTURER_MCP_SCOPE_READ_ONLY],
+  ])('maps session scope %s to %s', (sessionScope, expected) => {
+    expect(resolveLecturerMcpScope(sessionScope)).toBe(expected)
   })
 })

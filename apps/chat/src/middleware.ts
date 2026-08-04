@@ -1,3 +1,8 @@
+import {
+  PWA_CHAT_EMBED_QUERY_KEY,
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+  PWA_CHAT_EMBED_SESSION_SCOPE,
+} from '@/src/lib/pwaEmbedAuth'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
@@ -70,6 +75,29 @@ async function verifyChatGuestTokenInMiddleware(
   }
 }
 
+async function verifyPwaEmbedTokenInMiddleware({
+  chatbotId,
+  token,
+}: {
+  chatbotId: string
+  token: string
+}): Promise<boolean> {
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) return false
+
+  try {
+    const result = await jwtVerify(token, new TextEncoder().encode(appSecret))
+    return (
+      typeof result.payload.sub === 'string' &&
+      result.payload.scope === PWA_CHAT_EMBED_SESSION_SCOPE &&
+      result.payload.chatbotId === chatbotId &&
+      typeof result.payload.courseId === 'string'
+    )
+  } catch {
+    return false
+  }
+}
+
 function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   const noLoginUrl = request.nextUrl.clone()
   noLoginUrl.pathname = '/noLogin'
@@ -87,10 +115,13 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname === '/noLogin' ||
+    pathname === '/manage' ||
+    pathname.startsWith('/manage/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/auth/lti')
+    pathname.startsWith('/auth/lti') ||
+    pathname.startsWith('/auth/pwa-embed')
   ) {
     return applyFrameAncestorsCSP(NextResponse.next())
   }
@@ -118,8 +149,24 @@ export async function middleware(request: NextRequest) {
     // Invalid guest token → fall through to participant_token.
   }
 
-  // 2. participant_token (account). Account-mode header fallback is not
-  // supported by API guards yet, so keep middleware behavior consistent.
+  const pwaEmbedToken =
+    request.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value ||
+    request.nextUrl.searchParams.get(PWA_CHAT_EMBED_QUERY_KEY) ||
+    extractBearerToken(request.headers.get('authorization'))
+  if (pwaEmbedToken) {
+    if (
+      await verifyPwaEmbedTokenInMiddleware({
+        chatbotId: pathSegments[0],
+        token: pwaEmbedToken,
+      })
+    ) {
+      return applyFrameAncestorsCSP(NextResponse.next())
+    }
+  }
+
+  // 2. participant_token (account). Raw participant-token header fallback is
+  // intentionally not supported; PWA iframe fallback uses the scoped token
+  // branch above.
   const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -144,5 +191,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/:path*'],
+  // The Manage chat route owns a streaming 16 MiB request limit. Excluding it
+  // here prevents Next.js middleware from first cloning and buffering the body
+  // (10 MiB by default), which would both truncate supported requests and
+  // defeat the route's bounded streaming reader.
+  matcher: ['/((?!api/manage/chat$).*)'],
 }

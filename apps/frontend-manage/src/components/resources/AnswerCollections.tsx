@@ -13,7 +13,7 @@ function AnswerCollections() {
   })
 
   return (
-    <div className="h-full w-full">
+    <div className="min-h-full w-full shrink-0">
       <H2>{t('manage.resources.answerCollections')}</H2>
       <div className="mb-2">
         {t.rich('manage.resources.answerCollectionsDescription', {

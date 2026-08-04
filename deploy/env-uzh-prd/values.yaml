@@ -330,9 +330,9 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
-    limits:
       memory: 200Mi
+    limits:
+      memory: 400Mi
 
 mcpStudent:
   priorityClassName: production-workload
@@ -371,6 +371,56 @@ mcpStudent:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.61
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      memory: 200Mi
+
+mcpLecturer:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: Always
     tag: v3.4.0-alpha.61
 

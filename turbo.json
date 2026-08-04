@@ -62,6 +62,7 @@
     "LTI_DEV_MODE",
     "LTI_AAS_MODE",
     "NODE_ENV",
+    "NODE_EXTRA_CA_CERTS",
     "NOTIFICATION_SECRET",
     "NOTIFICATION_SUPPORT_MAIL",
     "NOTIFICATION_URL",
@@ -96,6 +97,7 @@
     "APP_ORIGIN_CONTROL",
     "APP_ORIGIN_ASSESSMENT_API",
     "APP_ORIGIN_ASSESSMENT_PWA",
+    "APP_ORIGIN_CHAT",
     "OPENAI_API_KEY",
     "OPENAI_BASE_URL",
     "CHAT_OPENAI_STORE_RESPONSES",
@@ -105,13 +107,20 @@
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
     "LANGFUSE_HOST",
+    "NEXT_PUBLIC_CHAT_URL",
+    "NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED",
     "MCP_STUDENT_GRAPHQL_ENDPOINT",
     "MCP_STUDENT_HOST",
     "MCP_STUDENT_PATH",
     "MCP_STUDENT_PORT",
     "MCP_STUDENT_QUESTION_REF_SECRET",
     "MCP_STUDENT_QUESTION_REF_TTL_SECONDS",
-    "MCP_STUDENT_URL"
+    "MCP_STUDENT_URL",
+    "MCP_LECTURER_HOST",
+    "MCP_LECTURER_JWT_SECRET",
+    "MCP_LECTURER_PATH",
+    "MCP_LECTURER_PORT",
+    "MCP_LECTURER_URL"
   ],
   "tasks": {
     "lint": {
@@ -121,6 +130,10 @@
       "cache": false,
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
+    },
+    "@klicker-uzh/prisma#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "src/prisma/client/**"]
     },
     "build": {
       "dependsOn": ["^build"],

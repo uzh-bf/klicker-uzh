@@ -11,7 +11,8 @@ export async function register() {
 
   const langfuseSpanProcessor = new LangfuseSpanProcessor()
 
-  const tracerProvider = new NodeTracerProvider()
-  tracerProvider.addSpanProcessor(langfuseSpanProcessor)
+  const tracerProvider = new NodeTracerProvider({
+    spanProcessors: [langfuseSpanProcessor],
+  })
   tracerProvider.register()
 }

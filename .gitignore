@@ -1,6 +1,9 @@
 .pnpm-store/
 **/__pycache__/
 **/.venv/
+**/.deepeval/
+**/.pytest_cache/
+**/.ruff_cache/
 **/node_modules/
 .pnpm-store/
 coverage/

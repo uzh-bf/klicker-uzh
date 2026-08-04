@@ -45,6 +45,43 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
+export async function getParticipantCourseChatbots(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    select: { id: true },
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    return []
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+    },
+    where: { courseId },
+  })
+
+  return chatbots.map(({ id, name, description, avatar }) => ({
+    id,
+    name,
+    description,
+    avatar,
+  }))
+}
+
 const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
   {
     id: 'gpt-5.5',

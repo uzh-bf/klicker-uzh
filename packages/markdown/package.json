@@ -21,8 +21,6 @@
     "unified": "11.0.5"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
@@ -31,8 +29,6 @@
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
     "postcss-import": "~16.1.0",
-    "rollup": "~4.34.9",
-    "rollup-plugin-copy": "~3.5.0",
     "typescript": "~6.0.3",
     "vitest": "~3.2.4"
   },
@@ -49,14 +45,16 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "build": "run-s --npm-path pnpm build:ts",
+    "build": "run-s --npm-path pnpm build:clean build:ts build:copy",
+    "build:clean": "rm -rf dist",
+    "build:copy": "mkdir -p dist && cp src/public/styles.css dist/styles.css",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production tsc -p tsconfig.json",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
-    "dev": "run-p --npm-path pnpm dev:ts",
+    "dev": "run-s --npm-path pnpm build:copy dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
+    "dev:ts": "cross-env NODE_ENV=development tsc -p tsconfig.json --watch --preserveWatchOutput",
     "test": "vitest run"
   },
   "engines": {

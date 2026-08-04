@@ -1,0 +1,165 @@
+name: Test lecturer MCP server
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/mcp-lecturer/|packages/prisma/|packages/prisma-data/|packages/types/|packages/grading/|packages/util/|util/mcpSmokeClient\.mts|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-mcp-lecturer\.yml|\.github/actions/changed-paths/)'
+
+  test-mcp-lecturer:
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: true
+
+      # Unit tests are fully mocked (no Prisma client, no DB) so they can run
+      # as a cheap early failure before any build or database work.
+      - name: Run mcp-lecturer unit tests
+        run: pnpm --filter @klicker-uzh/mcp-lecturer run test:run
+
+      # seed:test imports @klicker-uzh/types and @klicker-uzh/util, which
+      # resolve via their gitignored dist/ only — build the whole chain
+      # (util additionally depends on grading), mirroring test-graphql.yml.
+      - name: Build dependency packages
+        run: |
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../util
+          pnpm run build
+
+      - name: Setup database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Seed test data
+        run: pnpm --filter @klicker-uzh/prisma-data run seed:test
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Build mcp-lecturer
+        run: pnpm --filter @klicker-uzh/mcp-lecturer run build
+
+      - name: Boot server and run smoke tests
+        run: |
+          set -euo pipefail
+
+          LOG_FILE=$(mktemp)
+
+          cleanup() {
+            if [[ -n "${SERVER_PID:-}" ]]; then
+              if kill -0 "${SERVER_PID}" >/dev/null 2>&1; then
+                kill "${SERVER_PID}" >/dev/null 2>&1 || true
+                wait "${SERVER_PID}" 2>/dev/null || true
+              fi
+            fi
+            rm -f "${LOG_FILE}"
+          }
+          trap cleanup EXIT
+
+          node apps/mcp-lecturer/dist/index.js > "${LOG_FILE}" 2>&1 &
+          SERVER_PID=$!
+
+          READY=false
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:7081/healthz >/dev/null 2>&1; then
+              READY=true
+              break
+            fi
+            if ! kill -0 "${SERVER_PID}" >/dev/null 2>&1; then
+              echo "mcp-lecturer server process exited early" >&2
+              break
+            fi
+            sleep 1
+          done
+
+          if [[ "${READY}" != "true" ]]; then
+            echo "mcp-lecturer did not become healthy in time. Server logs:" >&2
+            cat "${LOG_FILE}" >&2
+            exit 1
+          fi
+
+          pnpm --filter @klicker-uzh/mcp-lecturer run smoke:local
+          pnpm --filter @klicker-uzh/mcp-lecturer run smoke:negative
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          APP_SECRET: abcd
+          APP_ORIGIN_AUTH: http://localhost:3010
+          NODE_ENV: production
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job can be used as a required check in branch protection.
+  test-mcp-lecturer-status:
+    needs: [filter, test-mcp-lecturer]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ needs.filter.result }}" != "success" ]; then
+            echo "Filter job failed: ${{ needs.filter.result }}"
+            exit 1
+          fi
+          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
+            echo "Tests skipped by path filter."
+            exit 0
+          fi
+          if [ "${{ needs.test-mcp-lecturer.result }}" != "success" ]; then
+            echo "test-mcp-lecturer result: ${{ needs.test-mcp-lecturer.result }}"
+            exit 1
+          fi

@@ -6,7 +6,12 @@ import {
   MoveRightIcon,
 } from 'lucide-react'
 import { useState, type FC } from 'react'
+import {
+  getManageProposalResult,
+  ManageProposalCard,
+} from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
+import { formatToolName } from './tool-labels'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -23,7 +28,7 @@ function TruncatedOutput({ text }: { text: string }) {
           <button
             type="button"
             onClick={() => setShowAll(false)}
-            className="text-muted-foreground hover:text-foreground mt-1 text-xs underline"
+            className="text-muted-foreground hover:text-foreground mt-1 text-xs underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Show less
           </button>
@@ -40,21 +45,12 @@ function TruncatedOutput({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => setShowAll(true)}
-        className="text-muted-foreground hover:text-foreground mt-1 text-xs underline"
+        className="text-muted-foreground hover:text-foreground mt-1 text-xs underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Show more ({lines.length - MAX_PREVIEW_LINES} more lines)
       </button>
     </div>
   )
-}
-
-function formatToolName(raw: string) {
-  const sep = raw.indexOf('_')
-  if (sep === -1) return { server: null, tool: raw }
-  return {
-    server: raw.slice(0, sep),
-    tool: raw.slice(sep + 1).replace(/_/g, ' '),
-  }
 }
 
 interface ToolFallbackProps {
@@ -77,6 +73,17 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     return <StudentPracticeQuizCard result={result} status={status} />
   }
 
+  const manageProposalResult = getManageProposalResult(result)
+  if (manageProposalResult) {
+    return (
+      <ManageProposalCard
+        result={manageProposalResult}
+        status={status}
+        toolName={toolName}
+      />
+    )
+  }
+
   const resultText =
     result === undefined
       ? undefined
@@ -89,30 +96,33 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {isCollapsed ? (
-          <ChevronRightIcon className="size-3" />
+          <ChevronRightIcon className="size-3" aria-hidden="true" />
         ) : (
-          <ChevronDownIcon className="size-3" />
+          <ChevronDownIcon className="size-3" aria-hidden="true" />
         )}
         {status.type === 'running' ? (
           <>
-            <LoaderCircleIcon className="size-3 animate-spin" />
+            <LoaderCircleIcon
+              className="size-3 animate-spin"
+              aria-hidden="true"
+            />
             {server && (
               <>
                 <span className="font-medium uppercase">{server}</span>
-                <MoveRightIcon className="size-2.5" />
+                <MoveRightIcon className="size-2.5" aria-hidden="true" />
               </>
             )}
-            {tool}...
+            {tool}…
           </>
         ) : (
           <>
             {server && (
               <>
                 <span className="font-medium uppercase">{server}</span>
-                <MoveRightIcon className="size-2.5" />
+                <MoveRightIcon className="size-2.5" aria-hidden="true" />
               </>
             )}
             {tool}

@@ -77,13 +77,16 @@ import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import nookies from 'nookies'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
+import { CourseChatDrawer } from '../../../../components/chatbot/CourseChatDrawer'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+import { buildPracticeQuizChatContext } from '../../../../lib/chatbot/chatContext'
 
 const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
 const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
@@ -120,6 +123,7 @@ function PracticeQuizPage({
   embedded: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
@@ -134,6 +138,17 @@ function PracticeQuizPage({
   })
 
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const chatContext = useMemo(
+    () =>
+      buildPracticeQuizChatContext({
+        courseId,
+        currentIx,
+        locale: router.locale ?? 'en',
+        practiceQuiz: data?.practiceQuiz ?? null,
+        totalSteps,
+      }),
+    [courseId, currentIx, data?.practiceQuiz, router.locale, totalSteps]
+  )
 
   useEffect(() => {
     if (!embedded) return
@@ -271,6 +286,12 @@ function PracticeQuizPage({
             : undefined
         }
         previewOnly={data.practiceQuiz.isOwner ?? undefined}
+      />
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
       />
       {!embedded && (
         <Footer

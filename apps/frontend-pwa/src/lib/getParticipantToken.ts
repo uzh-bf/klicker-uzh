@@ -72,9 +72,7 @@ export default async function getParticipantToken({
   }
 
   try {
-    let result:
-      | { data?: LoginParticipantWithLtiMutation | null }
-      | undefined
+    let result: { data?: LoginParticipantWithLtiMutation | null } | undefined
 
     const cookiesAvailable = ltiProbeAvailable
 

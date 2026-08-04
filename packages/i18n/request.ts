@@ -3,6 +3,15 @@ import { getRequestConfig } from 'next-intl/server'
 import { getMessageFallback, onError } from './index'
 import { routing } from './routing'
 
+async function loadMessages(locale: Locale) {
+  switch (locale) {
+    case 'de':
+      return (await import('./messages/de')).default
+    default:
+      return (await import('./messages/en')).default
+  }
+}
+
 export default getRequestConfig(async ({ requestLocale }) => {
   // this typically corresponds to the `[locale]` segment
   const requested = (await requestLocale) as Locale
@@ -17,7 +26,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
+    messages: await loadMessages(locale),
     onError,
     getMessageFallback,
   }

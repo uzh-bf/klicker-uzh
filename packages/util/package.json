@@ -17,25 +17,23 @@
     "uuid": "10.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
     "@types/uuid": "^10.0.0",
     "cross-env": "~7.0.3",
     "ioredis": "~5.4.1",
     "npm-run-all": "~4.1.5",
-    "rollup": "~4.34.9",
     "typescript": "~6.0.3",
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "run-s --npm-path pnpm build:ts",
+    "build": "run-s --npm-path pnpm build:clean build:ts",
+    "build:clean": "rm -rf dist",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production tsc -p tsconfig.json",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
+    "dev:ts": "cross-env NODE_ENV=development tsc -p tsconfig.json --watch --preserveWatchOutput",
     "test": "vitest run",
     "test:watch": "vitest"
   },

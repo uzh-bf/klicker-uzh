@@ -97,6 +97,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
 [post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
@@ -113,6 +114,7 @@ else
 [post-start]   LTI Service  -> http://localhost:4000
 [post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 fi

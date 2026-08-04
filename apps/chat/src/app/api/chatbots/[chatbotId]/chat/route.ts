@@ -14,6 +14,10 @@ import {
 import { type NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  formatKlickerChatContextForPrompt,
+  sanitizeKlickerChatContext,
+} from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
@@ -666,6 +670,9 @@ const mapAssistantStepContent = (
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
 export async function POST(
+  // Legacy endpoint complexity predates this PR; this branch only adds scoped
+  // context handling. S3776 is suppressed in sonar-project.properties because
+  // Biome moves an inline NOSONAR marker off the declaration line.
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -725,6 +732,7 @@ export async function POST(
       .transform((val) => val?.toLowerCase())
       .default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     images: z
@@ -756,7 +764,23 @@ export async function POST(
     parentId,
     assistantMessageId,
     images,
+    chatContext: rawChatContext,
   } = parsed
+
+  const sanitizedChatContext = sanitizeKlickerChatContext(rawChatContext)
+  const chatContext =
+    sanitizedChatContext?.courseId === authChatbot.courseId
+      ? sanitizedChatContext
+      : null
+
+  if (sanitizedChatContext && !chatContext) {
+    console.warn('Ignoring chat context for unrelated course', {
+      requestId,
+      chatbotId,
+      contextCourseId: sanitizedChatContext.courseId,
+      chatbotCourseId: authChatbot.courseId,
+    })
+  }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
     typeof image === 'string'
@@ -784,6 +808,7 @@ export async function POST(
     selectedModel: parsed.selectedModel,
     selectedMode,
     messageCount: messages.length,
+    hasChatContext: Boolean(chatContext),
   })
 
   let selectedModel = parsed.selectedModel
@@ -982,9 +1007,13 @@ export async function POST(
     ...studentPracticeTools,
   }
   const toolNames = Object.keys(chatTools)
-  const effectiveSystemPrompt = practiceCandidatePrompt
-    ? `${systemPrompt}\n\n${practiceCandidatePrompt}`
+  const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
+  const contextAwareSystemPrompt = chatContextPrompt
+    ? `${systemPrompt}\n\n${chatContextPrompt}`
     : systemPrompt
+  const effectiveSystemPrompt = practiceCandidatePrompt
+    ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
+    : contextAwareSystemPrompt
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -1189,6 +1218,7 @@ export async function POST(
     toolCount: toolNames.length,
     toolNames,
     practiceCandidateCount,
+    hasChatContext: Boolean(chatContextPrompt),
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,

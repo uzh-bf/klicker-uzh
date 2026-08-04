@@ -82,7 +82,7 @@ http:
     csp-frame-ancestors:
       headers:
         customResponseHeaders:
-          Content-Security-Policy: "frame-ancestors 'self' *.uzh.ch"
+          Content-Security-Policy: "frame-ancestors 'self' https://*.klicker.com *.uzh.ch"
 
   services:
     api:

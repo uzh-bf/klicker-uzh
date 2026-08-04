@@ -206,7 +206,7 @@ export function StudentPracticeQuizCard({
     () => (quiz ? toElementStack(quiz) : EMPTY_STACK),
     [quiz]
   )
-  const startedAtMs = useRef(Date.now())
+  const startedAtMs = useRef<number | null>(null)
   const [activeElementIx, setActiveElementIx] = useState(0)
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
@@ -319,7 +319,9 @@ export function StudentPracticeQuizCard({
             responses: built.responses,
             stackAnswerTimeSeconds: Math.max(
               0,
-              Math.round((Date.now() - startedAtMs.current) / 1000)
+              Math.round(
+                (Date.now() - (startedAtMs.current ?? Date.now())) / 1000
+              )
             ),
           }),
           headers: { 'Content-Type': 'application/json' },

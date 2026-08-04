@@ -301,10 +301,10 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 200Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 400Mi
 
 mcpStudent:
   priorityClassName: staging-workload
@@ -329,6 +329,43 @@ mcpStudent:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: Always
+    tag: v3
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+mcpLecturer:
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: Always
     tag: v3
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { imageAttachmentAdapter } from '../src/lib/attachments/imageAttachmentAdapter'
 
 class MockFileReader {
@@ -13,6 +13,10 @@ class MockFileReader {
 }
 
 describe('imageAttachmentAdapter', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   beforeEach(() => {
     vi.stubGlobal('FileReader', MockFileReader as any)
     vi.stubGlobal('crypto', {
