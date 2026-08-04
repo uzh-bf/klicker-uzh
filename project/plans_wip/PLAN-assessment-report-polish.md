@@ -66,3 +66,9 @@ browser report experience:
 - **2026-08-04:** The isolated DevPod could not finish its repository bootstrap
   because the unrelated `packages/hatchet` Rollup build failed. App-level
   browser verification remains pending for CI or a repaired local stack.
+- **2026-08-04:** `pnpm run check:all`, focused PWA and Playwright checks,
+  frozen lockfile installation, formatting, static browser/PDF validation, and
+  commit hooks passed. The full repository build remains blocked by the
+  unrelated `packages/word-cloud` Rollup parser failure. Opened PR #5306
+  targeting `v3`; real-stack assessment-report Playwright verification remains
+  a CI follow-up because the isolated DevPod fails during bootstrap.
