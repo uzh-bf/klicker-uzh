@@ -9,80 +9,26 @@ import {
   faRotateLeft,
   faRotateRight,
   faSuperscript,
-  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  convertToMd,
-  convertToSlate,
-} from '@klicker-uzh/shared-components/src/utils/slateMdConversion'
+import Image from '@tiptap/extension-image'
+import Placeholder from '@tiptap/extension-placeholder'
+import { Markdown } from '@tiptap/markdown'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import { Tooltip } from '@uzh-bf/design-system'
-import isHotkey from 'is-hotkey'
 import { useTranslations } from 'next-intl'
-import React, {
-  PropsWithChildren,
-  ReactNode,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react'
-import {
-  BaseEditor,
-  createEditor,
-  Descendant,
-  Editor,
-  Element as SlateElement,
-  Transforms,
-} from 'slate'
-import { HistoryEditor, withHistory } from 'slate-history'
-import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
+import React, { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MediaLibrary from './MediaLibrary'
 
-// ! START SLATE TYPE DEFINITIONS
-type CustomEditor = BaseEditor & ReactEditor & HistoryEditor
+const normalizeMarkdown = (str: string) =>
+  str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
 
-type ParagraphElement = {
-  type: 'paragraph'
-  children: CustomText[]
+const normalizeLegacyEmptyContent = (content?: string) => {
+  const currentContent = content ?? ''
+  return /^\s*(<br\s*\/?>\s*)+$/i.test(currentContent) ? '' : currentContent
 }
-
-type ListItemElement = {
-  type: 'list-item'
-  children: CustomText[]
-}
-
-type BlockType =
-  | 'block-quote'
-  | 'bulleted-list'
-  | 'numbered-list'
-  | 'heading_one'
-  | 'heading_two'
-  | 'heading_three'
-type BlockElement = {
-  type: BlockType
-  children: CustomElement[]
-}
-
-type FormatType = 'bold' | 'italic' | 'code'
-type CustomText = {
-  text: string
-  bold?: boolean
-  italic?: boolean
-  code?: boolean
-}
-
-type CustomElement = ParagraphElement | ListItemElement | BlockElement
-type CustomElementTypes = CustomElement['type']
-
-declare module 'slate' {
-  interface CustomTypes {
-    Editor: CustomEditor
-    Element: CustomElement
-    Text: CustomText
-  }
-}
-// ! END SLATE TYPE DEFINITIONS
 
 export interface ContentInputClassName {
   root?: string
@@ -99,19 +45,13 @@ interface Props {
   showToolbarOnFocus?: boolean
   placeholder: string
   autoFocus?: boolean
-  content: string
+  content?: string
   className?: ContentInputClassName
   data?: {
     test?: string
     cy?: string
   }
 }
-
-const HOTKEYS: Record<string, FormatType> = {
-  'mod+b': 'bold',
-  'mod+i': 'italic',
-}
-const LIST_TYPES = ['numbered-list', 'bulleted-list']
 
 function ContentInput({
   content,
@@ -126,19 +66,75 @@ function ContentInput({
   data,
 }: Props): React.ReactElement {
   const t = useTranslations()
-
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
 
-  const renderElement = useCallback(
-    (props: ElementProps) => <Element {...props} />,
-    []
-  )
-  const renderLeaf = useCallback((props: LeafProps) => <Leaf {...props} />, [])
-  const editor = useMemo(() => withHistory(withReact(createEditor())), [])
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image,
+      Markdown,
+      Placeholder.configure({
+        placeholder: placeholder,
+        emptyEditorClass: 'is-editor-empty',
+      }),
+    ],
+    content: normalizeLegacyEmptyContent(content),
+    contentType: 'markdown',
+    immediatelyRender: false,
+    autofocus: autoFocus ? 'end' : false,
+    editable: !disabled,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getMarkdown())
+    },
+    editorProps: {
+      attributes: {
+        'data-cy': data?.cy || '',
+        'data-test': data?.test || '',
+        class: twMerge(
+          'prose prose-sm prose-blockquote:text-gray-500 focus:outline-none! max-w-none leading-6 min-h-[80px]',
+          className?.editor
+        ),
+      },
+    },
+  })
 
-  const editorValue = useMemo(() => {
-    return convertToSlate(content) as Descendant[]
-  }, [content])
+  // Sync content prop when it changes externally
+  useEffect(() => {
+    if (!editor) return
+    const normalizedContent = normalizeLegacyEmptyContent(content)
+    if (
+      normalizeMarkdown(normalizedContent) !==
+      normalizeMarkdown(editor.getMarkdown())
+    ) {
+      editor.commands.setContent(normalizedContent, {
+        emitUpdate: false,
+        contentType: 'markdown',
+      })
+    }
+  }, [content, editor])
+
+  // Sync disabled/editable state
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(!disabled, false)
+  }, [disabled, editor])
+
+  if (!editor) {
+    return (
+      <div
+        className={twMerge(
+          disabled && 'pointer-events-none opacity-70',
+          'relative min-h-[120px] flex-1 rounded border border-solid',
+          error && touched && 'border-red-500',
+          className?.root
+        )}
+      >
+        <div className={twMerge('p-3 text-gray-400', className?.content)}>
+          {placeholder}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -150,242 +146,233 @@ function ContentInput({
         className?.root
       )}
     >
-      <Slate
-        editor={editor}
-        initialValue={editorValue}
-        onChange={(newValue) => onChange(convertToMd(newValue))}
+      <style>{`
+        .ProseMirror p.is-editor-empty:first-child::before {
+          color: #a3adb7;
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+      `}</style>
+
+      <div className={twMerge('p-3', className?.content)}>
+        <EditorContent editor={editor} />
+      </div>
+
+      <div
+        className={twMerge(
+          'toolbar bg-uzh-grey-20 mr-10 flex h-8 w-full flex-row px-1 text-sm',
+          showToolbarOnFocus && 'hidden group-focus-within:flex'
+        )}
       >
-        <div className={twMerge('p-3', className?.content)}>
-          <Editable
-            className={twMerge(
-              'prose prose-sm prose-blockquote:text-gray-500 focus:outline-none! max-w-none leading-6',
-              className?.editor
-            )}
-            autoFocus={autoFocus}
-            spellCheck
-            placeholder={placeholder}
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            onKeyDown={(event) => {
-              for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event)) {
-                  event.preventDefault()
-                  const mark = HOTKEYS[hotkey]
-                  toggleMark(editor, mark)
-                }
-              }
-            }}
-            data-test={data?.test}
-            data-cy={data?.cy}
-          />
-        </div>
         <div
-          className={twMerge(
-            'toolbar bg-uzh-grey-20 mr-10 flex h-8 w-full flex-row px-1 text-sm',
-            showToolbarOnFocus && 'hidden group-focus-within:flex'
-          )}
+          className={twMerge('flex flex-1 flex-row gap-1', className?.toolbar)}
         >
-          <div
-            className={twMerge(
-              'flex flex-1 flex-row gap-1',
-              className?.toolbar
-            )}
+          <Tooltip
+            tooltip={t('shared.contentInput.boldStyle')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
           >
-            <Tooltip
-              tooltip={t('shared.contentInput.boldStyle')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            <ToolbarButton
+              active={editor.isActive('bold')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleBold().run()
               }}
             >
-              <MarkButton format="bold" icon={faBold} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.italicStyle')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <MarkButton format="italic" icon={faItalic} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.codeStyle')}
-              className={{
-                tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
-              }}
-            >
-              <MarkButton format="code" icon={faCode} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.citationStyle')}
-              className={{
-                tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <BlockButton format="block-quote" icon={faQuoteRight} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.numberedList')}
-              className={{
-                tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton format="numbered-list" icon={faListOl} />
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.unnumberedList')}
-              className={{
-                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton format="bulleted-list" icon={faListUl} />
-            </Tooltip>
-
-            {/* TODO: Add heading buttons */}
-            {/* <Tooltip
-              tooltip="Heading 1"
-              className={{
-                tooltip:
-                  'max-w-[40%] whitespace-nowrap text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton
-                format="heading_one"
-                icon={faHeading}
-                className="text-lg font-bold"
+              <FontAwesomeIcon
+                icon={faBold}
+                color={editor.isActive('bold') ? 'black' : 'grey'}
               />
-            </Tooltip>
+            </ToolbarButton>
+          </Tooltip>
 
-            <Tooltip
-              tooltip="Heading 2"
-              className={{
-                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton
-                format="heading_two"
-                icon={faHeading}
-                className="text-base font-bold"
-              />
-            </Tooltip>
-
-            <Tooltip
-              tooltip="Heading 3"
-              className={{
-                tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
-              }}
-            >
-              <BlockButton
-                format="heading_three"
-                icon={faHeading}
-                className="text-xs font-normal"
-              />
-            </Tooltip> */}
-
-            <Tooltip
-              delay={2000}
-              tooltip={t('shared.contentInput.image')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={isImageDropzoneOpen}
-                editor={editor}
-                format="paragraph"
-                onClick={() => {
-                  setIsImageDropzoneOpen((prev) => !prev)
-                }}
-              >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faImage} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.latex')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertText(editor, '$$1 + 2$$')
-                }}
-              >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
-
-            <Tooltip
-              tooltip={t('shared.contentInput.latexCentered')}
-              className={{
-                tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-              }}
-            >
-              <SlateButton
-                active={false}
-                editor={editor}
-                format="paragraph"
-                onClick={(e: any) => {
-                  e.preventDefault()
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '1 + 2' }],
-                  })
-                  Transforms.insertNodes(editor, {
-                    type: 'paragraph',
-                    children: [{ text: '$$' }],
-                  })
-                }}
-              >
-                <div className="ml-1 mt-0.5">
-                  <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                </div>
-              </SlateButton>
-            </Tooltip>
-          </div>
-          <SlateButton
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.undo()}
-            type="button"
-            className="mr-3"
+          <Tooltip
+            tooltip={t('shared.contentInput.italicStyle')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
           >
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faRotateLeft} color="grey" />
-            </div>
-          </SlateButton>
-          <SlateButton
-            active={false}
-            editor={editor}
-            format="paragraph"
-            onClick={() => editor.redo()}
-            type="button"
-            className="mr-0.5"
+            <ToolbarButton
+              active={editor.isActive('italic')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleItalic().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faItalic}
+                color={editor.isActive('italic') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.codeStyle')}
+            className={{
+              tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
+            }}
           >
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faRotateRight} color="grey" />
-            </div>
-          </SlateButton>
+            <ToolbarButton
+              active={editor.isActive('code')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleCode().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faCode}
+                color={editor.isActive('code') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.citationStyle')}
+            className={{
+              tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={editor.isActive('blockquote')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleBlockquote().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faQuoteRight}
+                color={editor.isActive('blockquote') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.numberedList')}
+            className={{
+              tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={editor.isActive('orderedList')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleOrderedList().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faListOl}
+                color={editor.isActive('orderedList') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.unnumberedList')}
+            className={{
+              tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={editor.isActive('bulletList')}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().toggleBulletList().run()
+              }}
+            >
+              <FontAwesomeIcon
+                icon={faListUl}
+                color={editor.isActive('bulletList') ? 'black' : 'grey'}
+              />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            delay={2000}
+            tooltip={t('shared.contentInput.image')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={isImageDropzoneOpen}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                setIsImageDropzoneOpen((prev) => !prev)
+              }}
+            >
+              <FontAwesomeIcon icon={faImage} color="grey" />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.latex')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={false}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor.chain().focus().insertContent('$$1 + 2$$').run()
+              }}
+            >
+              <FontAwesomeIcon icon={faSuperscript} color="grey" />
+            </ToolbarButton>
+          </Tooltip>
+
+          <Tooltip
+            tooltip={t('shared.contentInput.latexCentered')}
+            className={{
+              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
+            }}
+          >
+            <ToolbarButton
+              active={false}
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault()
+                editor
+                  .chain()
+                  .focus()
+                  .insertContent('\n$$\n1 + 2\n$$\n', {
+                    contentType: 'markdown',
+                  })
+                  .run()
+              }}
+            >
+              <div className="flex flex-row items-center gap-0.5">
+                <FontAwesomeIcon icon={faSuperscript} color="grey" />
+                <span className="text-[9px] font-bold text-gray-500">C</span>
+              </div>
+            </ToolbarButton>
+          </Tooltip>
         </div>
-      </Slate>
+
+        <ToolbarButton
+          active={false}
+          onClick={(e: React.MouseEvent) => {
+            e.preventDefault()
+            editor.chain().focus().undo().run()
+          }}
+          className="mr-3"
+        >
+          <FontAwesomeIcon icon={faRotateLeft} color="grey" />
+        </ToolbarButton>
+
+        <ToolbarButton
+          active={false}
+          onClick={(e: React.MouseEvent) => {
+            e.preventDefault()
+            editor.chain().focus().redo().run()
+          }}
+          className="mr-0.5"
+        >
+          <FontAwesomeIcon icon={faRotateRight} color="grey" />
+        </ToolbarButton>
+      </div>
 
       {isImageDropzoneOpen && (
         <div
@@ -396,10 +383,7 @@ function ContentInput({
         >
           <MediaLibrary
             onImageClick={(href, name) => {
-              Transforms.insertNodes(editor, {
-                type: 'paragraph',
-                children: [{ text: `![${name}](${href})` }],
-              })
+              editor.chain().focus().setImage({ src: href, alt: name }).run()
               setIsImageDropzoneOpen(false)
             }}
           />
@@ -409,216 +393,28 @@ function ContentInput({
   )
 }
 
-const toggleBlock = (
-  editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: BlockType
-) => {
-  const isActive = isBlockActive(editor, format)
-  const isList = LIST_TYPES.includes(format)
-
-  Transforms.unwrapNodes(editor, {
-    match: (node) =>
-      !Editor.isEditor(node) &&
-      SlateElement.isElement(node) &&
-      LIST_TYPES.includes(node.type),
-    split: true,
-  })
-  const newProperties: { type: CustomElementTypes } = {
-    type: isActive ? 'paragraph' : isList ? 'list-item' : format,
-  }
-  Transforms.setNodes<SlateElement>(editor, newProperties)
-
-  if (!isActive && isList) {
-    const block = { type: format, children: [] }
-    Transforms.wrapNodes(editor, block)
-  }
-}
-
-const toggleMark = (
-  editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: FormatType
-) => {
-  const isActive = isMarkActive(editor, format)
-
-  if (isActive) {
-    Editor.removeMark(editor, format)
-  } else {
-    Editor.addMark(editor, format, true)
-  }
-}
-
-const isBlockActive = (
-  editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: string
-) => {
-  const { selection } = editor
-  if (!selection) return false
-
-  const [match] = Array.from(
-    Editor.nodes(editor, {
-      at: Editor.unhangRange(editor, selection),
-      match: (n) =>
-        !Editor.isEditor(n) && SlateElement.isElement(n) && n.type === format,
-    })
-  )
-
-  return !!match
-}
-
-const isMarkActive = (
-  editor: BaseEditor & ReactEditor & HistoryEditor,
-  format: FormatType
-) => {
-  const marks = Editor.marks(editor)
-  return marks ? marks[format] === true : false
-}
-
-interface ElementProps {
-  attributes: any
-  children: ReactNode
-  element: CustomElement
-}
-
-const Element = ({ attributes, children, element }: ElementProps) => {
-  switch (element.type) {
-    case 'block-quote':
-      return (
-        <blockquote {...attributes}>
-          <p>{children}</p>
-        </blockquote>
-      )
-    case 'bulleted-list':
-      return <ul {...attributes}>{children}</ul>
-    case 'heading_one':
-      return (
-        <h1 {...attributes} className="mb-2 mt-4 text-2xl font-bold">
-          {children}
-        </h1>
-      )
-    case 'heading_two':
-      return (
-        <h2 {...attributes} className="mb-2 mt-3 text-xl font-bold">
-          {children}
-        </h2>
-      )
-    case 'heading_three':
-      return (
-        <h3 {...attributes} className="mb-2 mt-2 text-lg font-semibold">
-          {children}
-        </h3>
-      )
-    case 'list-item':
-      return <li {...attributes}>{children}</li>
-    case 'numbered-list':
-      return <ol {...attributes}>{children}</ol>
-    default:
-      return <p {...attributes}>{children}</p>
-  }
-}
-
-interface LeafProps {
-  attributes: any
-  children: ReactNode
-  leaf: CustomText
-}
-
-const Leaf = ({ attributes, children, leaf }: LeafProps) => {
-  let formattedChildren = children
-  if (leaf.bold) {
-    formattedChildren = <strong>{formattedChildren}</strong>
-  }
-
-  if (leaf.code) {
-    formattedChildren = (
-      <code className="bg-uzh-grey-40 opacity-80">{formattedChildren}</code>
-    )
-  }
-
-  if (leaf.italic) {
-    formattedChildren = <em>{formattedChildren}</em>
-  }
-
-  return <span {...attributes}>{formattedChildren}</span>
-}
-
-const BlockButton = ({
-  format,
-  icon,
-  className,
-}: {
-  format: BlockType
-  icon: IconDefinition
-  className?: string
-}) => {
-  const editor = useSlate()
-  return (
-    <SlateButton
-      active={isBlockActive(editor, format)}
-      editor={editor}
-      format={format}
-      onClick={(event: React.MouseEvent<HTMLElement>) => {
-        event.preventDefault()
-        toggleBlock(editor, format)
-      }}
-    >
-      <div className={twMerge('mt-0.5', className)}>
-        <FontAwesomeIcon
-          icon={icon}
-          color={isBlockActive(editor, format) ? 'black' : 'grey'}
-        />
-      </div>
-    </SlateButton>
-  )
-}
-
-const MarkButton = ({
-  format,
-  icon,
-  className,
-}: {
-  format: FormatType
-  icon: IconDefinition
-  className?: string
-}) => {
-  const editor = useSlate()
-  return (
-    <SlateButton
-      active={isMarkActive(editor, format)}
-      onClick={(event: React.MouseEvent<HTMLElement>) => {
-        event.preventDefault()
-        toggleMark(editor, format)
-      }}
-    >
-      <div className={twMerge('mt-0.5', className)}>
-        <FontAwesomeIcon
-          icon={icon}
-          color={isMarkActive(editor, format) ? 'black' : 'grey'}
-        />
-      </div>
-    </SlateButton>
-  )
-}
-
-const SlateButton = React.forwardRef<
+const ToolbarButton = React.forwardRef<
   HTMLSpanElement,
   PropsWithChildren<{
     active: boolean
-    reversed: boolean
-    className: string
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void
+    className?: string
     [key: string]: any
   }>
->(({ className, active, reversed, ...props }, ref) => (
+>(({ className, active, onClick, children, ...props }, ref) => (
   <span
     {...props}
+    onClick={onClick}
     className={twMerge(
       className,
-      'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-      active && !reversed && 'bg-uzh-grey-40',
-      !active && reversed && 'bg-uzh-grey-40'
+      'hover:bg-uzh-grey-20 my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+      active && 'bg-uzh-grey-40'
     )}
     ref={ref}
-  />
+  >
+    {children}
+  </span>
 ))
-SlateButton.displayName = 'Button'
+ToolbarButton.displayName = 'ToolbarButton'
 
 export default ContentInput

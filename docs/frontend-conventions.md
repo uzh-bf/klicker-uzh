@@ -31,6 +31,8 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
+- **Rich content persists as Markdown.** `ContentInput` accepts and emits Markdown rather than editor HTML; its pages-router initialization sets `immediatelyRender: false`. Programmatic content and disabled-state synchronization must not emit a Formik update. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`)
+- **Empty rich content is an empty string.** Pass `''` or `undefined` to `ContentInput`; never synthesize the legacy `'<br>'` sentinel. Read paths retain compatibility for already-stored legacy content. (`apps/frontend-manage/src/components/common/ContentInput.tsx:ContentInput`, `apps/frontend-manage/src/components/elements/manipulation/ElementContentInput.tsx:ElementContentInput`)
 
 ## Markdown and Video Embeds
 
