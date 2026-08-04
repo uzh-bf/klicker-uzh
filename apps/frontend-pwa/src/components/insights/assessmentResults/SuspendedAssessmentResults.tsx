@@ -50,9 +50,13 @@ function getAssessmentReportIssueErrorKey(error: unknown) {
 function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
   const locale = useLocale()
+  // `errorPolicy: 'all'` keeps a failing query (e.g. a participant without an
+  // accepted course invitation) out of the error boundary: without it the thrown
+  // error takes down the whole app instead of rendering the notification below.
   const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
     variables: { courseId },
     fetchPolicy: 'network-only',
+    errorPolicy: 'all',
   })
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -90,7 +94,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     link.remove()
   }
 
-  const results = data.studentAssessmentResults
+  const results = data?.studentAssessmentResults
   const liveQuizzes = results?.liveQuizzes ?? []
   const practiceQuizzes = results?.practiceQuizzes ?? []
   const microLearnings = results?.microLearnings ?? []
