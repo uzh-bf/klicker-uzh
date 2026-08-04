@@ -67,6 +67,12 @@ The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lan
 
 `.github/workflows/deploy-stg-promote.yml` writes the built commit's short SHA into all 15, once **every** `v3_*-stg.yml` image build has succeeded for that commit — so a rollout can never start against a half-published `:v3`, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 8 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
 
-Two operational notes. It needs `secrets.STG_PROMOTE_TOKEN` (a PAT or GitHub App token with `contents: write` + `pull-requests: write`) — a PR opened with the default `GITHUB_TOKEN` does not trigger workflows, so its required checks would never report and auto-merge would never fire. And the annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and `:v3` then holds the later images. Immutable per-commit tags are the fix if that ever matters. Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
+Three operational notes.
+
+- It needs `secrets.STG_PROMOTE_TOKEN`, an **admin-owned PAT** with `contents: write` + `pull-requests: write`. Two independent reasons it cannot be the default `GITHUB_TOKEN` or a plain App token: a PR opened with `GITHUB_TOKEN` does not trigger workflows, so its required checks never report and auto-merge never fires; and `v3`'s push restrictions carry an _empty_ user/team/app allowlist, which only repository admins bypass.
+- Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all 13 images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
+- The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and `:v3` then holds the later images. Immutable per-commit tags are the fix if that ever matters.
+
+Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
 
 Prd is unaffected — it promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.

@@ -34,6 +34,12 @@ The workflow publishes as an **auto-merging pull request**, not a direct push.
 
 ## Consequences
 
+Each merge now produces a **second** commit on `v3` (the promotion). Because `v3` sets `required_status_checks.strict: true`, every other open PR is knocked out of date again by that second commit — with 20+ PRs typically open, that roughly doubles the branch-update churn. A promotion PR that is itself overtaken becomes un-mergeable and self-heals only when the next merge supersedes it.
+
+The required set is derived from the `v3_*-stg.yml` files, which includes `v3_analytics-stg.yml` — and `analytics` has **no** Deployment in the chart. A failed analytics image build therefore blocks the staging rollout of 15 components that do not depend on it. Accepted deliberately: a hardcoded exception would rot the moment a 14th stg app appears, and the failure is visible in the promoter's run log.
+
+Two repository settings are load-bearing and recorded nowhere else: `squash_merge_commit_title` must remain `PR_TITLE` so the `[skip ci]` marker reaches the squash commit, and auto-merge must stay enabled. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so a flipped setting degrades to wasted rebuilds rather than an unbounded promotion loop.
+
 All 15 components roll on every merge to `v3`, including the Hatchet workers. The workers' SDK drains in-flight tasks on `SIGTERM` and their tasks declare retries, but the chart sets no `terminationGracePeriodSeconds` and no `preStop`, and both worker Dockerfiles use shell-form `CMD`, so signal delivery is not guaranteed. This is pre-existing and applies equally to every manual sync today; automation only changes how often it happens. Hardening it is tracked separately.
 
 A failed migration now blocks the entire staging rollout automatically rather than only when someone syncs by hand. That is the intended behaviour from ADR-0001, but it makes a bad migration a stop-the-world event on stg.

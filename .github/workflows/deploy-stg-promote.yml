@@ -110,35 +110,45 @@ jobs:
           set -euo pipefail
           # Matched per workflow *file* via `.path`. Check-runs cannot be used: all 13
           # stg workflows name their jobs `build-arm`/`build-amd`, so the names collide.
-          gh api --paginate --slurp \
-            "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&event=push&per_page=100" \
-            | jq '[.[].workflow_runs[] | select(.head_branch == "v3")]' > runs.json
+          # Re-poll rather than giving up on the first look. This job is only ever
+          # triggered by a build completing, so if the API has not yet indexed the
+          # last run when the surviving promoter evaluates, there is no later trigger
+          # to recover -- staging would stall silently until the next merge.
+          for attempt in 1 2 3 4 5 6; do
+            gh api --paginate --slurp \
+              "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&event=push&per_page=100" \
+              | jq '[.[].workflow_runs[] | select(.head_branch == "v3")]' > runs.json
 
-          missing=(); notgreen=()
-          # Required set derived from the checkout, so adding a 14th stg app needs no
-          # edit here -- only the trigger list above.
-          for wf in .github/workflows/v3_*-stg.yml; do
-            run=$(jq -c --arg p "$wf" \
-              '[.[] | select(.path == $p)] | sort_by(.id) | last // empty' runs.json)
-            if [ -z "$run" ]; then missing+=("$wf [no run]"); continue; fi
-            st=$(jq -r '.status'     <<<"$run")
-            cc=$(jq -r '.conclusion' <<<"$run")
-            if   [ "$st" != "completed" ]; then missing+=("$wf [$st]")
-            # `skipped` is deliberately NOT success: on push every job runs, so a
-            # skipped run means no image was published for that component.
-            elif [ "$cc" != "success"   ]; then notgreen+=("$wf [$cc]")
+            missing=(); notgreen=()
+            # Required set derived from the checkout, so adding a 14th stg app needs no
+            # edit here -- only the trigger list above.
+            for wf in .github/workflows/v3_*-stg.yml; do
+              run=$(jq -c --arg p "$wf" \
+                '[.[] | select(.path == $p)] | sort_by(.id) | last // empty' runs.json)
+              if [ -z "$run" ]; then missing+=("$wf [no run]"); continue; fi
+              st=$(jq -r '.status'     <<<"$run")
+              cc=$(jq -r '.conclusion' <<<"$run")
+              if   [ "$st" != "completed" ]; then missing+=("$wf [$st]")
+              # `skipped` is deliberately NOT success: on push every job runs, so a
+              # skipped run means no image was published for that component.
+              elif [ "$cc" != "success"   ]; then notgreen+=("$wf [$cc]")
+              fi
+            done
+
+            # A genuine failure is final -- no amount of waiting fixes it.
+            if [ ${#notgreen[@]} -gt 0 ]; then
+              echo "::notice::not promoting ${SHA}; not green: ${notgreen[*]}"
+              echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
             fi
+            if [ ${#missing[@]} -eq 0 ]; then
+              echo "go=true" >>"$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "attempt ${attempt}: waiting on ${missing[*]}"
+            [ "$attempt" -eq 6 ] || sleep 20
           done
 
-          if [ ${#notgreen[@]} -gt 0 ]; then
-            echo "::notice::not promoting ${SHA}; not green: ${notgreen[*]}"
-            echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
-          fi
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice::waiting on: ${missing[*]}"
-            echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
-          fi
-          echo "go=true" >>"$GITHUB_OUTPUT"
+          echo "::notice::giving up on ${SHA}; still waiting on: ${missing[*]}"
+          echo "go=false" >>"$GITHUB_OUTPUT"
 
       - name: Skip if already promoted or superseded
         id: guard
@@ -151,11 +161,25 @@ jobs:
           git merge-base --is-ancestor "$SHA" origin/v3 \
             || { echo "::error::$SHA is not an ancestor of origin/v3"; exit 1; }
 
+          # Never promote a promotion. The `[skip ci]` marker in the PR title normally
+          # stops the squash-merge from rebuilding and re-firing this workflow, but that
+          # depends on the repository's `squash_merge_commit_title` setting, which lives
+          # outside this repo and is not recorded anywhere as load-bearing. This check
+          # does not depend on it, and without it a flipped setting yields a runaway loop
+          # that burns 13 image builds and a full stg rollout per iteration.
+          if git log -1 --format='%s' "$SHA" | grep -q '^chore(deploy): promote '; then
+            echo "::notice::${SHA} is itself a promotion commit"
+            echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
+          fi
+
           CUR=$(sed -n "s/^[[:space:]]*rollout\.klicker\.uzh\.ch\/release: '\(.*\)'$/\1/p" "$F" | head -1)
           # Stale-promotion guard, and the idempotence check for the 13 re-fires:
-          # `--is-ancestor` is true for equal commits. A legacy value such as
-          # `v3.4.0-alpha.64` does not resolve to a commit and correctly falls through.
-          if [ -n "$CUR" ] && git cat-file -e "${CUR}^{commit}" 2>/dev/null; then
+          # `--is-ancestor` is true for equal commits. Restricted to hex so a legacy
+          # release-tag value is not silently resolved as a commit -- `v3.4.0-alpha.64`
+          # IS a tag in this repo, and comparing against a tag newer than the target
+          # would skip a promotion that should have happened.
+          if printf '%s' "$CUR" | grep -qE '^[0-9a-f]{7,40}$' \
+             && git cat-file -e "${CUR}^{commit}" 2>/dev/null; then
             if git merge-base --is-ancestor "$SHA" "$CUR"; then
               echo "::notice::${CUR} is already promoted and is newer than or equal to ${SHA}"
               echo "go=false" >>"$GITHUB_OUTPUT"; exit 0
@@ -199,8 +223,12 @@ jobs:
 
           # Supersede any promotion still open: with `strict: true` an older one can
           # sit un-mergeable behind a newer commit and would otherwise roll stg back.
+          # Exclude the branch we are about to create, so a re-run of a flaky build
+          # within the promotion window cannot close this SHA's own open PR.
           for n in $(gh pr list --state open --limit 100 --json number,headRefName \
-                       --jq '.[] | select(.headRefName | startswith("chore/promote-stg-")) | .number'); do
+                       | jq -r --arg b "$BRANCH" \
+                         '.[] | select(.headRefName | startswith("chore/promote-stg-"))
+                              | select(.headRefName != $b) | .number'); do
             gh pr close "$n" --delete-branch \
               --comment "Superseded by the promotion of ${SHORT}." || true
           done
@@ -232,3 +260,23 @@ jobs:
             --body-file /tmp/pr-body.md
 
           gh pr merge "$BRANCH" --squash --auto --delete-branch
+
+          # `--auto` returns immediately, so a PR that can NEVER merge would otherwise
+          # leave a green run, an open PR nobody looks at, and staging exactly as stale
+          # as before -- the silent no-op this whole workflow exists to prevent. Watch
+          # it briefly and fail loudly instead. Still pending after this is fine: that
+          # is auto-merge waiting on checks, which will complete on its own.
+          STATE=''
+          for attempt in 1 2 3 4 5 6; do
+            sleep 20
+            STATE=$(gh pr view "$BRANCH" --json state,mergeStateStatus \
+                      --jq '.state + "/" + .mergeStateStatus')
+            case "$STATE" in
+              MERGED/*)
+                echo "::notice::promotion of ${SHORT} merged"; exit 0 ;;
+              */BLOCKED | */DIRTY)
+                echo "::error::promotion PR for ${SHORT} is ${STATE} and will not merge on its own - staging will NOT update"
+                exit 1 ;;
+            esac
+          done
+          echo "::notice::promotion PR for ${SHORT} is ${STATE}; auto-merge will complete it"
