@@ -40,7 +40,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 ### Deployment migrations
 
-`prisma migrate deploy` runs **automatically** on every stg/prd rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. Mechanics:
+`prisma migrate deploy` runs **automatically** on every stg rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook ships **disabled** until the pinned tags reach a migrator-bearing release (see Bootstrap and rollback below), so prd migrations remain manual for now. Mechanics:
 
 - A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
 - The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
@@ -55,12 +55,14 @@ Where `migrate deploy` is invoked in deployment is now the PreSync hook above (s
 
 A failed hook blocks **every** sync to that environment, by design. Recovery order:
 
-1. **Get the logs first.** `kubectl logs job/<release>-migrate -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
+Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+
+1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
 3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
 4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
 5. **Need to ship an app-only hotfix while the DB is wedged?** Set `migrator.enabled: false`, sync, then re-enable it — track the re-enable, since a silently disabled hook is the failure mode this whole feature exists to prevent.
-6. **A migration that applied but shouldn't have** has no automatic undo: rolling the app image back leaves the schema ahead. That is why migrations must be expand-contract — roll _forward_ with a compensating migration.
+6. **A migration that applied but shouldn't have** has no automatic undo: rolling the app image back leaves the schema ahead. That is why migrations must be expand-contract — roll _forward_ with a compensating migration. This repo documents no point-in-time restore procedure and the hook creates no restore point; whatever backup the managed Postgres provides is the only fallback, and recovering through it is a database-team operation, not a deploy step.
 
 Long DDL runs unattended against the live database with no `lock_timeout`: a statement waiting on an `ACCESS EXCLUSIVE` lock queues application queries behind it until the deadline. Review lock-heavy migrations before release.
 
@@ -70,11 +72,17 @@ Long DDL runs unattended against the live database with no `lock_timeout`: a sta
 docker build -f packages/prisma/Dockerfile -t migrator-check .   # repo root
 docker network create mcheck && docker run -d --name mcheck-pg --network mcheck \
   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=klicker docker.io/library/postgres:15
-docker run --rm --network mcheck -e DATABASE_URL='postgresql://postgres:test@mcheck-pg:5432/klicker' migrator-check
+until docker exec mcheck-pg pg_isready -U postgres; do sleep 1; done   # Postgres needs a few seconds
+export MURL='postgresql://postgres:test@mcheck-pg:5432/klicker'
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # all migrations applied, exit 0
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # idempotent: no pending migrations
+docker run --rm --network mcheck migrator-check                          # no DATABASE_URL: must fail, exit 1
 docker rm -f mcheck-pg && docker network rm mcheck && docker image rm migrator-check
 ```
 
-Expect all migrations applied and exit 0; a second run reports no pending migrations.
+The third run proves `prisma.config.ts` is actually consulted — a migrator that cannot see `DATABASE_URL` must fail loudly rather than no-op.
+
+Fresh-install caveat: the Job references a PriorityClass that the chart creates in the **Sync** phase, so a first-ever install into an empty namespace must have the PriorityClasses applied before the PreSync hook runs (or `migrator.priorityClassName` left unset). Both existing environments already have them.
 
 ## Seeding
 
