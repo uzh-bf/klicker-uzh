@@ -53,7 +53,9 @@ Manage and PWA login pages treat return targets as untrusted input:
 
 **The anchoring origin is build-specific.** The regular build anchors on `NEXT_PUBLIC_PWA_URL`, the assessment build on `NEXT_PUBLIC_ASSESSMENT_URL`, and either falls back to the request `Host` when its variable is unset (`apps/frontend-pwa/src/pages/login.tsx:getServerSideProps`). Anchoring assessment mode on `NEXT_PUBLIC_PWA_URL` is a regression, not a shortcut: the two builds run on separate origins with separate sessions, and the regular PWA offers no Edu-ID login, so students sent there after Edu-ID cannot sign in at all. The Next.js 16 upgrade (#5166) introduced exactly that regression on `v3`; production never shipped it, because prd stayed pinned to a pre-#5166 tag while staging floats `v3`.
 
-The chat login-required page validates its own return target against `NEXT_PUBLIC_CHAT_URL` before passing an absolute URL to the PWA (`apps/chat/src/app/noLogin/page.tsx:getChatRedirectUrl`). Assessment login receives the same sanitized target through the auth app.
+The chat login-required page validates its own return target against `NEXT_PUBLIC_CHAT_URL` before passing an absolute URL to the PWA (`apps/chat/src/app/noLogin/page.tsx:getChatRedirectUrl`). That page always routes through `NEXT_PUBLIC_PWA_URL/login`, so a chat target never reaches the assessment build.
+
+**The PWA-side sanitizer is not the only gate.** The auth app independently validates the `/student` `redirectTo` against `AUTH_STUDENT_ALLOWED_HOSTS` and returns `400 Invalid redirect URL` for anything outside it (`apps/auth/src/middleware.ts`). That second gate is what keeps the request-`Host` fallback above safe, and it is also what a `400` from `/student` means: the target origin is missing from that env var (`assessment.klicker.stg.df-app.ch` on stg, `assessment.klicker.uzh.ch` on prd).
 
 ## Where authorization happens
 
