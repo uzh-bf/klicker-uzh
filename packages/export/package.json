@@ -26,10 +26,12 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js",
+    "build:ts": "cross-env NODE_ENV=production rollup -c && chmod +x dist/scripts/export-course.js dist/scripts/export-chatbots.js",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "export": "node dist/scripts/export-course.js",
+    "export:chatbots": "node dist/scripts/export-chatbots.js",
+    "export:chatbots:dev": "tsx src/scripts/export-chatbots.ts",
     "export:dev": "tsx src/scripts/export-course.ts",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -41,7 +43,8 @@
     "extends": "../../package.json"
   },
   "bin": {
-    "klicker-export": "dist/scripts/export-course.js"
+    "klicker-export": "dist/scripts/export-course.js",
+    "klicker-export-chatbots": "dist/scripts/export-chatbots.js"
   },
   "type": "module"
 }

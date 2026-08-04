@@ -22,8 +22,8 @@ const config = defineConfig([
     external: [/@klicker-uzh*/, /node_modules/],
   },
   {
-    // CLI binary: compile the export script so production runs need no tsx/esbuild
-    input: ['src/scripts/export-course.ts'],
+    // CLI binaries: compile the export scripts so production runs need no tsx/esbuild
+    input: ['src/scripts/export-course.ts', 'src/scripts/export-chatbots.ts'],
     output: {
       dir: 'dist/scripts',
       format: 'esm',

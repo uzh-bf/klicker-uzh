@@ -1,10 +1,12 @@
 # @klicker-uzh/export
 
-Standalone, **read-only** CLI that exports a single course's (or several courses') live-quiz data to CSV + XLSX for offline analysis.
+Standalone, **read-only** CLIs for course live-quiz analysis exports and pseudonymized chatbot conversation exports.
 
 It is **not** imported by any app and **not** part of any deployment — it is run manually by an operator, on demand. The only production contact is pointing it at a read-only production `DATABASE_URL`.
 
-## Scope
+## Course live-quiz export
+
+### Scope
 
 Exports **live-quiz data only**:
 
@@ -16,7 +18,7 @@ Exports **live-quiz data only**:
 
 It does **not** include practice-quiz / microlearning `QuestionResponse`, `QuestionResponseDetail`, or `GroupActivityInstance`. The scope (included/excluded models) is recorded in every export's `manifest.json` so a course with those activity types is not mistaken for "fully exported".
 
-## Usage
+### Usage
 
 ```bash
 # build the compiled binary (no tsx at runtime)
@@ -42,7 +44,7 @@ Flags:
 - `--outputDir <path>` — default `./export-output`
 - `--pseudonymize` — de-identify direct identifiers (see below)
 
-## Output
+### Output
 
 ```
 <outputDir>/
@@ -60,7 +62,7 @@ Flags:
 
 Files are written `0600`, directories `0700`.
 
-### Sheets and join keys
+#### Sheets and join keys
 
 | Sheet               | Join key                                                             |
 | ------------------- | -------------------------------------------------------------------- |
@@ -73,7 +75,7 @@ Files are written `0600`, directories `0700`.
 
 `RESPONSES` carries both the raw `response` JSON and flattened `response_choices` / `response_value` / `response_selection` / `response_assessment` columns so analysts can avoid parsing JSON.
 
-## Safety
+### Safety
 
 - **Read-only DB access** — `createReadonlyClient` narrows the Prisma client to read operations at compile time, and a runtime `$allOperations` guard blocks every non-read operation, including raw queries (`$queryRaw` / `$executeRaw` / `…Unsafe`).
 - **PII modes** — default `full` writes identifiers verbatim (with a loud stderr warning); `--pseudonymize` hashes email / SSO id+email / matriculation number (per-run HMAC-SHA256 salt, never persisted) and redacts free-text answers and raw response JSON.
@@ -82,10 +84,64 @@ Files are written `0600`, directories `0700`.
 
 Output directories contain PII and are gitignored.
 
+## Chatbot evaluation export
+
+The chatbot exporter writes one nested JSON file intended for direct evaluation by an AI system. Supply one or more database chatbot IDs; the exporter includes each chatbot's threads, messages, and attachment descriptions.
+
+```bash
+# build the compiled binaries
+pnpm --filter @klicker-uzh/export build
+
+# one chatbot
+pnpm --filter @klicker-uzh/export export:chatbots -- \
+  --chatbotId 8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f
+
+# multiple chatbots and a custom output directory
+pnpm --filter @klicker-uzh/export export:chatbots -- \
+  --chatbotId <uuid1> \
+  --chatbotId <uuid2> \
+  --outputDir <path>
+
+# development (runs via tsx, no build step)
+pnpm --filter @klicker-uzh/export export:chatbots:dev -- \
+  --chatbotId <uuid>
+```
+
+Flags:
+
+- `--chatbotId <uuid>` — required and repeatable; duplicates are ignored
+- `--outputDir <path>` — optional; defaults to `./export-output`
+
+Each run writes one owner-only (`0600`) timestamped file under an owner-only (`0700`) output directory:
+
+```text
+<outputDir>/chatbot-export-YYYY-MM-DDTHH-mm-ss-sssZ.json
+```
+
+The JSON is nested as `chatbots → threads → messages → attachments`. It includes:
+
+- chatbot prompts, credit configuration, allowed models, and timestamps
+- thread titles and pseudonymized participant keys
+- message content, branching relationships, model/reasoning metadata, per-message credit use, and timestamps
+- attachment type, position, description, and timestamps
+
+It excludes:
+
+- `ChatUsageCredits`, disclaimer, MCP, user, course, and participant records
+- chatbot API credentials, base URLs, avatar, and owner/course/disclaimer relations
+- attachment image and preview base64 payloads
+
+Chatbot, participant, thread, message, attachment, parent-message, and tool-call identifiers are deterministically replaced with export-local values such as `message_00001`. Model IDs remain unchanged because they are evaluation context rather than database or participant identities.
+
+> [!WARNING]
+> This output is **pseudonymized, not anonymized**. System prompts, thread titles, message/reasoning content, and attachment descriptions remain unchanged and can contain personal information. Use only an approved AI evaluation system and handle the artifact according to the applicable data-protection rules.
+
+The command uses the same compile-time and runtime read-only Prisma guard as the course exporter. It validates that every requested chatbot and parent-message relationship exists before writing the artifact.
+
 ## Development
 
 ```bash
 pnpm --filter @klicker-uzh/export check   # tsc --noEmit
 pnpm --filter @klicker-uzh/export test     # vitest
-pnpm --filter @klicker-uzh/export build    # rollup -> dist/ + dist/scripts/export-course.js
+pnpm --filter @klicker-uzh/export build    # rollup -> dist/ + both compiled CLIs
 ```

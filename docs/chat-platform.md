@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-10'
+timestamp: '2026-08-04'
 tags:
   - frontend
   - chat
@@ -38,6 +38,10 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
+
+## Operator conversation export
+
+`packages/export/src/scripts/export-chatbots.ts` exports selected chatbots and their nested threads/messages as pseudonymized JSON for AI evaluation. It queries the Prisma models directly, so it does not depend on the current AI-SDK route handlers or the in-flight Mastra service boundary. Attachment descriptions are included but image base64 is omitted; message content remains unchanged and can contain personal information. See [`packages/export/README.md`](../packages/export/README.md) for the command, identifier policy, and exact included/excluded scope.
 
 ## Client-state gotchas
 

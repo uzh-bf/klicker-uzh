@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-04
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) and [chat-platform](./chat-platform.md) document the read-only, nested chatbot evaluation export, its deterministic export-local identifiers, omitted secrets and attachment images, and the pseudonymized-not-anonymized handling boundary.
+
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
