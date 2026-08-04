@@ -18,8 +18,7 @@
     "redis_assessment",
     "redis_cache",
     "mailhog",
-    "hatchet",
-    "hatchet_token"
+    "hatchet"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {
