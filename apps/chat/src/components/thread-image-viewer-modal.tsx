@@ -97,7 +97,9 @@ export function ThreadImageViewerModal({
 
         {error ? (
           <div className="space-y-3">
-            <p className="text-sm text-red-600">{error}</p>
+            {/* text-destructive on white is ~4.8:1, close to the 4.5:1 AA
+                floor — same margin as the red-600 it replaces. */}
+            <p className="text-destructive text-sm">{error}</p>
             <Button data={{ cy: 'chat-image-viewer-retry' }} onClick={onRetry}>
               <Button.Label>{t('chat.imageViewer.retry')}</Button.Label>
             </Button>

@@ -17,10 +17,12 @@ export default {
       reasoningEffortHint:
         'Higher effort can improve difficult responses at the cost of additional latency.',
       reasoningEfforts: {
+        none: 'None',
         minimal: 'Minimal',
         low: 'Low',
         medium: 'Medium',
         high: 'High',
+        xhigh: 'Extra high',
       },
     },
     credits: {
@@ -100,6 +102,8 @@ export default {
       cancel: 'Cancel',
       editName: 'Edit name',
       deleteChat: 'Delete chat',
+      deleteConfirm: 'Delete?',
+      deleteConfirmAria: 'Confirm deleting this chat',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
@@ -142,6 +146,8 @@ export default {
       disclaimerHint:
         'Chatbot answers can be wrong — verify against your course materials.',
       attachmentLimitError: 'You can only attach up to {max} images.',
+      attachmentReadError:
+        'The image could not be read. Please try a different file.',
       dismissError: 'Dismiss error',
       dropImages: 'Drop images to attach',
       attachmentPreviewAlt: 'Attachment preview',
@@ -158,12 +164,15 @@ export default {
       showLess: 'Show less',
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
+      docQueryQueryLabel: 'Search query',
+      docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
       searchingCourseMaterial: 'Searching course materials...',
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
+      imageAnalyzed: 'Image analyzed',
     },
     sources: {
       title: 'Sources',
@@ -191,6 +200,8 @@ export default {
         "I'm sorry, something went wrong while processing your request. Please try again.",
       connectionInterrupted:
         'Connection interrupted — response may be incomplete.',
+      truncated:
+        'Response truncated — ask “continue” or request a shorter answer.',
     },
   },
   shared: {

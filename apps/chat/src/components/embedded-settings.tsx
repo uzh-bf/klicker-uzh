@@ -1,6 +1,6 @@
 'use client'
 
-import { Zap } from 'lucide-react'
+import { ChevronDown, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
@@ -18,11 +18,11 @@ export function EmbeddedSettings() {
   if (modeKeys.length <= 1) return null
 
   return (
-    <div className="min-w-0 max-w-[12rem] shrink sm:max-w-xs">
+    <div className="relative min-w-0 max-w-[12rem] shrink sm:max-w-xs">
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
-        className="border-input bg-background text-foreground w-full cursor-pointer truncate rounded-md border px-2 py-1 text-xs outline-none"
+        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
         {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
             + isKnownMode, D3-pattern for unknown modes) — labels here must
@@ -39,6 +39,13 @@ export function EmbeddedSettings() {
           )
         })}
       </select>
+      {/* `appearance-none` above drops the browser-default arrow, so we draw
+          our own — purely decorative, the select itself stays keyboard/AT
+          accessible as a native control. */}
+      <ChevronDown
+        aria-hidden
+        className="text-muted-foreground pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2"
+      />
     </div>
   )
 }

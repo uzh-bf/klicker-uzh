@@ -113,7 +113,7 @@ services:
 
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
-    image: ghcr.io/berriai/litellm:main-v1.61.12
+    image: ghcr.io/berriai/litellm-database:v1.88.1
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
@@ -124,6 +124,17 @@ services:
     environment:
       # Supplied by the user in their local env or .devcontainer.env to enable chat
       - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
+      - UPSTREAM_OPENAI_BASE_URL=${UPSTREAM_OPENAI_BASE_URL:-https://api.openai.com/v1}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   pgdata:

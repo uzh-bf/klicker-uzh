@@ -1,4 +1,8 @@
-import { imageAttachmentAdapter } from '@/src/lib/attachments/imageAttachmentAdapter'
+import {
+  ATTACHMENT_ERROR_CODE,
+  AttachmentAdapterError,
+  imageAttachmentAdapter,
+} from '@/src/lib/attachments/imageAttachmentAdapter'
 import {
   ActionBarPrimitive,
   AttachmentPrimitive,
@@ -13,12 +17,12 @@ import {
   useMessageRuntime,
   useThread,
   useThreadComposerAttachment,
-  useThreadRuntime,
 } from '@assistant-ui/react'
 import {
   ArrowDownIcon,
   CheckIcon,
   CopyIcon,
+  ImageIcon,
   ImagePlusIcon,
   PencilIcon,
   PencilOffIcon,
@@ -43,9 +47,13 @@ import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
+  parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
-import { useChatStore } from '@/src/stores/chatStore'
+import {
+  type ExtendedThreadMessageLike,
+  useChatStore,
+} from '@/src/stores/chatStore'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -72,6 +80,7 @@ import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
+const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -285,7 +294,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
-        <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
+        <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
         {/* S6: standalone-only, same as ThreadScrollToBottom above — an
@@ -767,7 +776,17 @@ const ComposerAttachButton: FC<{
       try {
         await composerRuntime.addAttachment(file)
       } catch (e) {
-        lastAdapterError = e instanceof Error ? e.message : String(e)
+        // the adapter rejects with a typed error + stable code for failures
+        // that need a localized message (e.g. FileReader errors, which
+        // otherwise stringify to "[object ProgressEvent]"); other adapter
+        // errors already carry a readable `message`
+        lastAdapterError =
+          e instanceof AttachmentAdapterError &&
+          e.code === ATTACHMENT_ERROR_CODE.readFailed
+            ? t('chat.composer.attachmentReadError')
+            : e instanceof Error
+              ? e.message
+              : String(e)
       }
     }
 
@@ -946,7 +965,14 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           {editDisabled ? (
-            <button disabled className={actionBarButtonClassName}>
+            <button
+              type="button"
+              aria-disabled="true"
+              className={twMerge(
+                actionBarButtonClassName,
+                'cursor-not-allowed opacity-50'
+              )}
+            >
               <PencilOffIcon />
               <span className="sr-only">
                 {t('chat.message.editUnavailable')}
@@ -1013,7 +1039,6 @@ const EditComposer: FC = () => {
   const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
   const composerText = useEditComposer((s) => s.text)
   const originalText = extractMessageText(message)
-  const threadRuntime = useThreadRuntime()
   const messageRuntime = useMessageRuntime()
 
   useEffect(() => {
@@ -1048,24 +1073,23 @@ const EditComposer: FC = () => {
     if (!canSubmit) return
 
     try {
-      const editComposer = messageRuntime.composer
-      const state = editComposer.getState()
-      const completeAttachments = await Promise.all(
-        state.attachments.map(async (attachment) =>
-          attachment.status?.type === 'complete'
-            ? attachment
-            : await imageAttachmentAdapter.send(attachment as never)
-        )
-      )
-
-      threadRuntime.append({
-        role: 'user',
-        content: [{ type: 'text', text: composerText }],
-        attachments: completeAttachments as never,
-        parentId: message.parentId ?? undefined,
-        sourceId: message.id,
-      })
-      editComposer.cancel()
+      // The edit MUST go through the edit composer's own send: it is the
+      // only path that submits the composer's captured `parentId` without
+      // loss, so editing a thread's first message (parentId `null`) still
+      // reaches the store's `onEdit` and creates a sibling branch. The
+      // public `threadRuntime.append()` normalizes a `null` parentId to
+      // "last message in the current path" (@assistant-ui/core
+      // thread-runtime `toAppendMessage`), which made the external store
+      // treat root edits as brand-new turns — the bug that kept the
+      // BranchPicker permanently hidden.
+      //
+      // `startRun: true` because the vendor's own change gate
+      // (`text !== previous || attachmentsChanged`) cannot see the *kept*
+      // original attachments this app tracks outside the composer
+      // (`editRemovedAttachmentKeysByMessageId`), and would silently
+      // no-op a kept-attachment-only edit. `canSubmit` above is the real
+      // change gate; once it passes, the run should start unconditionally.
+      messageRuntime.composer.send({ startRun: true })
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : String(error))
     }
@@ -1166,6 +1190,42 @@ const EditComposer: FC = () => {
   )
 }
 
+/**
+ * Friendly activity chip, styled like the doc-query tool chips in
+ * `tool-fallback.tsx`, shown on an assistant reply whose parent user
+ * message (one hop up the active branch's `parentId` chain) attached at
+ * least one image. There is no async "analyzing" state to track — the
+ * image was already sent with the request — so this is a static badge,
+ * not a running/done toggle like the tool chips.
+ */
+const ImageAnalyzedChip: FC = () => {
+  const t = useTranslations()
+  const message = useMessage() as MessageWithCustomMetadata
+  const hasImageAttachment = useChatStore((state) => {
+    const activeThread = state.threads.find(
+      (thread) => thread.id === state.activeThreadId
+    )
+    return parentMessageHasImageAttachment(
+      activeThread?.messages ?? EMPTY_MESSAGES,
+      message.id
+    )
+  })
+
+  if (!hasImageAttachment) return null
+
+  return (
+    <div className="mb-1">
+      <span
+        data-cy="chat-image-analyzed"
+        className="text-muted-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+      >
+        <ImageIcon className="size-3" aria-hidden />
+        {t('chat.tools.imageAnalyzed')}
+      </span>
+    </div>
+  )
+}
+
 const AssistantMessage: FC<{
   chatbotAvatar: string
 }> = ({ chatbotAvatar }) => {
@@ -1235,6 +1295,7 @@ const AssistantMessage: FC<{
         )}
       >
         {isPendingEmpty && <ThinkingDots />}
+        <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
           <SourcesSection />

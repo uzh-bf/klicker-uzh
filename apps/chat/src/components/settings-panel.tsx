@@ -68,12 +68,14 @@ export function SettingsPanel() {
         <span className="text-base font-medium">
           {t('chat.settingsPanel.title')}
         </span>
-        {/* up and down arrow on the right based on whether is opened or not */}
+        {/* Chevron points down while closed (more to reveal) and flips up
+            once open (collapse), matching the universal disclosure
+            convention and GroupedDisclosure's own chevron direction. */}
         <span className="ml-auto">
           {!open ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
             <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
           )}
         </span>
       </button>

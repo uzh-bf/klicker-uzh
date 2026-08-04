@@ -165,9 +165,16 @@ const defaultComponents = memoizeMarkdownComponents({
       />
     )
   },
+  // Styled as a soft amber info callout (e.g. a model-emitted "Hinweis" note),
+  // not a plain citation-style quote: rounded block, amber left accent, and
+  // `break-words` so long tokens (URLs) wrap instead of overflowing on
+  // mobile widths.
   blockquote: ({ className, ...props }) => (
     <blockquote
-      className={cn('border-l-2 pl-6 italic', className)}
+      className={cn(
+        'my-5 break-words rounded-md border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-amber-900',
+        className
+      )}
       {...props}
     />
   ),

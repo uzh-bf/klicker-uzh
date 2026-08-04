@@ -67,6 +67,10 @@ export function parseTimestampSeconds(value: string): number | undefined {
   return undefined
 }
 
+function parseLabeledTimestampSeconds(value: string): number | undefined {
+  return /^\s*\d+\s*$/.test(value) ? undefined : parseTimestampSeconds(value)
+}
+
 /**
  * A video position for the card and the hover preview.
  *
@@ -80,7 +84,7 @@ export function parseTimestampSeconds(value: string): number | undefined {
  */
 export function getSourceTimestamp(source: ChatSource): string | undefined {
   if (source.labeledPage) {
-    const labeled = parseTimestampSeconds(source.labeledPage)
+    const labeled = parseLabeledTimestampSeconds(source.labeledPage)
     if (labeled !== undefined) return formatTimestamp(labeled)
   }
 
@@ -182,11 +186,14 @@ export function getSourceSecondaryLine(
     parts.push(t('chat.sources.page', { page: source.page }))
   }
   // A labeled page ("IV", "A-3") is the publisher's own numbering and only
-  // adds something next to the numeric page; a labeled timestamp already went
-  // to the video branch above.
+  // adds something next to the numeric page. A clock- or duration-shaped
+  // label ("12:34", "1h2m") is not publisher numbering at all: it is the
+  // timestamp channel `getSourceTimestamp` reads, so it is dropped here
+  // rather than printed as a page label. Documents and links never reach the
+  // video branch above, so this filter is what keeps the two apart.
   if (
     source.labeledPage &&
-    parseTimestampSeconds(source.labeledPage) === undefined
+    parseLabeledTimestampSeconds(source.labeledPage) === undefined
   ) {
     parts.push(source.labeledPage)
   }

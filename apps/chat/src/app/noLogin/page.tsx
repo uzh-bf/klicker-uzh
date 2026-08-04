@@ -66,7 +66,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
         <Link
           data-cy="chat-no-login-link"
           href={loginHref}
-          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           prefetch={false}
         >
           {t('chat.noLogin.loginButton')}

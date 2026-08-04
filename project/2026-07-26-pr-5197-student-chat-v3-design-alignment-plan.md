@@ -521,3 +521,128 @@ simplify subagent on the exact commit → integrate accepted findings → re-ver
   items (thumbnails, transcript hover previews, durations) already tracked in
   §"Citation system — phase 2".
   Next: commit slices, push, PR body update, Greptile replies.
+- 2026-07-27 improvement round (S14–S17, Opus subagents; from the S12 gap
+  map): CI first — `680fee56c` anchors the display-url test regex (CodeQL
+  false-positive on `startsWith('example.com')`), `1f1f9667b` excludes
+  `packages/i18n/messages/**` from Sonar CPD (parallel locale catalogs read
+  as duplication by construction). S14 `b5fd85929`: markdown blockquotes in
+  answers restyled as amber info callouts (mockup "Merke" boxes); override
+  only renders from assistant messages. S15 `3f4a7c465`: thread list shows a
+  mode icon + localized label under each title (`formatModeLabel` in
+  `lib/config/modes.ts`, unknown modes capitalize; 3 unit tests). S16
+  `0f3805887`: branch pager fix — pager UI + `parentId` persistence already
+  existed, but EditComposer bypassed the runtime edit path via
+  `threadRuntime.append()`, whose public normalization collapses a null
+  parentId to "last message", so root edits became new turns and the picker
+  never showed. Fix routes edits through
+  `messageRuntime.composer.send({ startRun: true })` (startRun forces the
+  vendor change gate that cannot see kept-original attachments; app-side
+  canSubmit is the real gate). Verified in browser: edit → 2/2 pager,
+  prev/next switches, survives reload; vitest 170/170, tsc clean. Note: the
+  worktree DB lost its seed (OOM-reap earlier) — re-seeded via
+  `prisma db push --force-reset` + `seed:test` in-container. S17 `9378fbee9`:
+  "Image analyzed"/"Bild analysiert" chip on replies to image-bearing turns —
+  pure `parentMessageHasImageAttachment` over the chatStore message list (the
+  runtime-converted message hides `imageAttachments` in `metadata.custom`),
+  chip styled like the doc-query tool chips, no server changes; vitest
+  175/175, browser-verified both locales against a DB-seeded image thread.
+  Environment notes for reruns: `docker exec` psql seeding needs `-i` (a
+  heredoc without it silently executes nothing); the chat app can crash with
+  Turbopack EMFILE ("Too many open files") — kill `turbo run dev` in-container
+  and re-run `devrouter ensure` from the WORKTREE directory (a `devrouter
+  ensure/exec .` from the primary checkout hits the primary's stack, and the
+  shared-devnet `postgres` alias collision means its post-create can reset
+  this worktree's DB); `seed:assessment-course` currently fails upstream
+  (P2025 in `packages/util` `recomputeDerivedPermissions`), which makes any
+  full post-create lifecycle fail — `seed:test` alone suffices for chat work.
+  Next: S18 round verify, review, push, PR update.
+- 2026-07-27 S18 finish: Opus round review over `68edbd13d..5c097b95e` — one
+  actionable finding (edit-branch fix lacked automated coverage) fixed by
+  `7deb4d09f` (un-skipped the root-edit branching spec as a regression guard +
+  chip assertion in the stored-attachment spec; both pass host-run, 2/2).
+  Vitest 175/175 at head. `acc424981` prettier-fixes the spec (CI
+  check-format caught the `--no-verify` commit). Pushed; PR body updated to
+  cover the whole branch at `acc424981`. Host-run Playwright gotcha
+  confirmed: node-postgres cannot cross the SNI route — socat TCP proxy into
+  the compose network, then plain `DATABASE_URL` against 127.0.0.1.
+  Remaining work handed off:
+  [2026-07-27-student-chat-v3-follow-up-roadmap.md](./2026-07-27-student-chat-v3-follow-up-roadmap.md).
+- 2026-07-28 takeover: live GitHub state superseded the handoff. PR #5197 was
+  `DIRTY` / `CONFLICTING` after Office Add-in PR #4643 landed on `v3`, with
+  conflicts limited to `docs/log.md`, `pnpm-lock.yaml`, and
+  `sonar-project.properties`. An initial merge of `origin/v3` at `7ed533edf`
+  resolved those three files, but GitHub kept rejecting the branch because
+  `v3` requires linear history. The first recovery replayed the 116 feature
+  commits onto `7ed533edf`, combined both wiki-log entries and Sonar CPD
+  exclusions, regenerated the lockfile, and removed every merge commit.
+  During final verification, `v3` advanced again to Prisma 7 at `f16b9ceb4`.
+  The same 116 feature commits were therefore replayed onto that current base.
+  Both conflicted lockfile states were regenerated offline against the
+  relevant package manifests, with pnpm's supply-chain policy passing and
+  zero downloads. The final branch is linear and contains no merge commits.
+  Ten unresolved CodeRabbit threads were verified against current code:
+  eight valid final-polish findings were accepted (disclaimer live region,
+  localized mode tooltip, missing Tailwind v4 composer gradient, focusable
+  disabled-edit explanation, own-key mode detection, numeric publisher-label
+  ambiguity, stale Langfuse plan wording, and wrong roadmap source path).
+  Two were rejected: Swiss orthography is already enforced unconditionally
+  by `withLanguageStyleContract`, and relative `../src` imports are the
+  established `apps/chat/test` convention.
+- 2026-07-28 takeover verification: all 178 chat tests passed; chat lint passed
+  with six known warnings; and the repository type-check passed all 25 tasks
+  against the final Prisma 7 base; the full repository build passed all 22
+  tasks. The broader `check:all` remains blocked only by the pre-existing
+  analytics pandas compiler setup, while the wiki validator reports six
+  pre-existing frontmatter/type errors and does not flag
+  `docs/chat-platform.md`. Browser verification used the real local chat app
+  and normal delegated test-user authentication. Desktop (1440x900) and mobile
+  (390x844) captures cover four source cards plus the amber callout, branch
+  position 2/2, English and German image-analysis chips, and localized
+  thread-mode subtitles. Additional desktop captures prove the keyboard-
+  focusable German unavailable-edit tooltip and the German disclaimer
+  `role="alert"` failure. Clean reloads had no page errors; console output was
+  limited to normal development/HMR messages. The final Standards + Spec diff
+  review found no further actionable issues. All ten review threads have
+  verified replies and are resolved. Next: push the exact linear head, update
+  the PR body, attach the ten captures when the authenticated browser is
+  available, and watch the required CI matrix.
+- 2026-07-29 pre-merge design-improvement round (user-approved Tier 1+2 scope,
+  Opus subagents). Two design-review agents (code + live app) produced 18
+  findings; the approved scope landed as seven concerns implemented by six
+  parallel agents with disjoint file ownership: (1) chat-error data parts —
+  stream/send/truncation errors render as an `AlertCircle` callout via a
+  `{ type: 'data', name: 'chat-error' }` content part excluded from model
+  history, plus a localized truncation notice and typed attachment-read
+  errors; (2) symmetric U+2060 citation-chip joiner (leading + trailing) so
+  trailing punctuation cannot orphan-wrap, contract pinned in
+  `test/citation-chip.test.ts`; (3) neutral popover tooltips replacing
+  inverted-blue, with the citation tooltip's secondary text moved to
+  `text-muted-foreground` (cross-agent contrast fix); (4) friendly doc_query
+  disclosure panel (`getDocQueryPanelContent`) showing the parsed search
+  query + sources hint instead of raw JSON, raw path preserved for
+  running/failed/unparseable and blank-panel cases; (5) two-step
+  thread-delete confirm with the pure `transitionDeleteConfirm` state machine
+  (`thread-list-state.ts`), 4s/Escape/pointer-leave/blur reverts, Playwright
+  spec updated plus a new revert test; (6) source-card index badge matched to
+  the inline chip (bare digit, `bg-primary/10`); (7) chrome polish — settings
+  chevron direction, disclaimer `bg-muted` tokens, declined-screen
+  `hover:brightness-90` (AA fix over alpha-lightening red), embedded select
+  custom chevron, `noLogin` primary tokens. Consolidated Opus review verdict
+  SHIP-AFTER-FIXES; its single should-fix (R-01 blank-panel guard in
+  `getDocQueryPanelContent`) is applied with a covering test. Verifying the
+  full suite exposed a pre-existing order-dependent flake: the suite runs in
+  one fork (`singleFork`), and `image-attachment-adapter.test.ts` left
+  `window`/`URL` stubs alive across the file boundary, so whichever file the
+  scheduler imported next saw broken globals at module-evaluation time
+  (zustand persist built a storage wrapper over `window.localStorage ===
+  undefined` and `getDisplayUrl`'s `new URL` failed). Fixed twice over:
+  `unstubGlobals: true` in `vitest.config.ts` (restores stubs before every
+  test) plus an explicit `afterEach(vi.unstubAllGlobals)` in the stubbing
+  file (covers the next file's import, which happens before the config-level
+  unstub fires). Verification: chat vitest 207/207 across 24 files, stable
+  over eight shuffled-order runs; prettier and lint clean (six known
+  warnings); in-container typegen + tsc clean. Tier 3 items deferred to the
+  follow-up roadmap as W7; W6 parked decisions untouched. Wiki
+  `docs/chat-platform.md` updated (error data-parts, joiner contract,
+  friendly disclosure, delete confirm, tooltip/hover token rules, pure-module
+  test pattern).

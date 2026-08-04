@@ -261,7 +261,7 @@ services:
       - klicker
 
   litellm:
-    image: ghcr.io/berriai/litellm-database:main-1.80.15-stable.1
+    image: ghcr.io/berriai/litellm-database:v1.88.1
     ports:
       - '4000:4000'
     environment:

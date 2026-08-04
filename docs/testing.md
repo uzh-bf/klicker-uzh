@@ -45,6 +45,12 @@ For authoring specifics, helper patterns, and failure triage, use the skills —
 
 ## E2E environment dependencies
 
+- The local Chat model simulation includes LiteLLM's `complexity-router` and
+  the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
+  LiteLLM liveness endpoint and the chat credits response before browser
+  testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  `UPSTREAM_OPENAI_API_KEY` is required for a streamed answer; service health
+  alone is not model-call evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
 - **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.

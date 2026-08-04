@@ -110,7 +110,7 @@ export const DisclaimerModal = ({
 
         {/* Core Content - Fixed Disclaimer Text */}
         <div className="max-w-none space-y-6">
-          <div className="prose prose-sm max-w-none rounded-lg bg-slate-100 p-4">
+          <div className="prose prose-sm bg-muted max-w-none rounded-lg p-4">
             <h3 className="text-lg font-semibold">
               {t('chat.disclaimer.studentResponsibilityTitle')}
             </h3>
@@ -119,7 +119,7 @@ export const DisclaimerModal = ({
             </p>
           </div>
 
-          <div className="prose-sm prose max-w-none rounded-lg bg-slate-100 p-4">
+          <div className="prose-sm prose bg-muted max-w-none rounded-lg p-4">
             <h3 className="text-lg font-semibold">
               {t('chat.disclaimer.dataProtectionTitle')}
             </h3>
@@ -133,6 +133,7 @@ export const DisclaimerModal = ({
         {/* Action Error */}
         {errorMessage && (
           <p
+            role="alert"
             data-cy="chat-disclaimer-error"
             className="text-destructive text-sm"
           >

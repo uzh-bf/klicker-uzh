@@ -310,10 +310,46 @@ test.describe('Chatbot Thread Management', () => {
       hasText: 'Delete me',
     })
     await item.hover()
-    await item.getByTestId('chat-thread-delete-button').click()
+    const deleteButton = item.getByTestId('chat-thread-delete-button')
+
+    // First click only arms an inline confirm — it must not delete yet.
+    await deleteButton.click()
+    await expect(deleteButton).toHaveText('Delete?')
+    await expect(deleteButton).toHaveAccessibleName(
+      'Confirm deleting this chat'
+    )
+    await expect(page.getByTestId('chat-thread-item')).toHaveCount(2)
+
+    // Second click while still armed performs the actual delete.
+    await deleteButton.click()
 
     await expect(page.getByTestId('chat-thread-item')).toHaveCount(1)
     await expect(page.getByText('Delete me')).toHaveCount(0)
+  })
+
+  test('Delete confirm reverts when the pointer leaves the row', async ({
+    page,
+  }) => {
+    await seedThread(participantId, { title: 'Keep me armed-free' })
+    await visitChat(page)
+
+    const item = page.getByTestId('chat-thread-item').filter({
+      hasText: 'Keep me armed-free',
+    })
+    await item.hover()
+    const deleteButton = item.getByTestId('chat-thread-delete-button')
+
+    await deleteButton.click()
+    await expect(deleteButton).toHaveText('Delete?')
+
+    // Move the pointer well away from the sidebar row rather than clicking
+    // again — the confirm button is hidden again once not hovered, so
+    // re-hover the row afterwards to read its state back out.
+    await page.getByTestId('chat-composer-input').hover()
+    await item.hover()
+
+    await expect(deleteButton).toHaveAccessibleName('Delete chat')
+    await expect(page.getByTestId('chat-thread-item')).toHaveCount(1)
   })
 
   test('Empty thread list shows no thread items', async ({ page }) => {
@@ -759,42 +795,43 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect(content('only in A')).toHaveCount(0)
   })
 
-  // KNOWN BUG: editing the ROOT user message does not create a branch (the
-  // branch picker never appears), unlike editing a non-root message above.
-  test.fixme(
-    'Editing the ROOT user message creates a new branch',
-    async ({ page }) => {
-      await visitChat(page)
-      await sendMessage(page, 'Root prompt')
-      await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
-        timeout: 15_000,
-      })
+  // Regression guard for the root-edit branch fix: the edit must go through
+  // the edit composer's own send (see thread.tsx:EditComposer) — submitting
+  // via threadRuntime.append() collapses the root message's null parentId
+  // and silently turns the edit into a new turn instead of a sibling branch.
+  test('Editing the ROOT user message creates a new branch', async ({
+    page,
+  }) => {
+    await visitChat(page)
+    await sendMessage(page, 'Root prompt')
+    await expect(page.getByTestId('chat-assistant-message')).toBeVisible({
+      timeout: 15_000,
+    })
 
-      const rootMessage = page.getByTestId('chat-user-message').first()
-      await rootMessage.hover()
-      await rootMessage.getByTestId('chat-edit-message-button').click()
+    const rootMessage = page.getByTestId('chat-user-message').first()
+    await rootMessage.hover()
+    await rootMessage.getByTestId('chat-edit-message-button').click()
 
-      const editInput = page.getByTestId('chat-edit-composer-input')
-      await expect(editInput).toBeVisible()
-      await editInput.fill('Root edited')
-      await page.getByTestId('chat-edit-send-button').click()
+    const editInput = page.getByTestId('chat-edit-composer-input')
+    await expect(editInput).toBeVisible()
+    await editInput.fill('Root edited')
+    await page.getByTestId('chat-edit-send-button').click()
 
-      await expect(
-        page
-          .getByTestId('chat-user-message-content')
-          .filter({ hasText: 'Root edited' })
-      ).toBeVisible()
-
-      await page
-        .getByTestId('chat-user-message')
+    await expect(
+      page
+        .getByTestId('chat-user-message-content')
         .filter({ hasText: 'Root edited' })
-        .hover()
-      await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
-      await expect(
-        page.getByTestId('chat-branch-indicator').first()
-      ).toContainText('/ 2')
-    }
-  )
+    ).toBeVisible()
+
+    await page
+      .getByTestId('chat-user-message')
+      .filter({ hasText: 'Root edited' })
+      .hover()
+    await expect(page.getByTestId('chat-branch-picker').first()).toBeVisible()
+    await expect(
+      page.getByTestId('chat-branch-indicator').first()
+    ).toContainText('/ 2')
+  })
 })
 
 // ===========================================================================
@@ -882,6 +919,10 @@ test.describe('Chatbot Image Attachments', () => {
 
     const tile = page.getByTestId('chat-message-attachment').first()
     await expect(tile).toBeVisible()
+
+    // The reply to an image-bearing turn carries the localized activity chip.
+    await expect(page.getByTestId('chat-image-analyzed')).toBeVisible()
+
     await tile.click()
 
     await expect(page.getByTestId('chat-image-viewer-image')).toBeVisible()
