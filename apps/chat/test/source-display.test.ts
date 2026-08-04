@@ -53,12 +53,15 @@ describe('parseTimestampSeconds', () => {
 
   // A labeled page is free-form, so anything that is not a time notation must
   // not be mistaken for one.
-  test.each([['Kapitel IV'], ['IV'], [''], ['12:99'], ['abc']])(
-    'rejects %s',
-    (value) => {
-      expect(parseTimestampSeconds(value)).toBeUndefined()
-    }
-  )
+  test.each([
+    ['Kapitel IV'],
+    ['IV'],
+    [''],
+    ['12:99'],
+    ['abc'],
+  ])('rejects %s', (value) => {
+    expect(parseTimestampSeconds(value)).toBeUndefined()
+  })
 })
 
 describe('getSourceTimestamp', () => {

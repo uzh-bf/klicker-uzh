@@ -65,12 +65,12 @@ describe('getDocQueryChipState', () => {
   // A cancelled call leaves the in-flight placeholder behind as the result
   // (see `hooks/useChatResponse.ts`); claiming the search found nothing would
   // be worse than the neutral label.
-  test.each(['Loading...', 'Executing...'])(
-    'settled call still holding the %s placeholder reads as plain done',
-    (placeholder) => {
-      expect(getDocQueryChipState(baseParams({ result: placeholder }))).toBe(
-        'done'
-      )
-    }
-  )
+  test.each([
+    'Loading...',
+    'Executing...',
+  ])('settled call still holding the %s placeholder reads as plain done', (placeholder) => {
+    expect(getDocQueryChipState(baseParams({ result: placeholder }))).toBe(
+      'done'
+    )
+  })
 })
