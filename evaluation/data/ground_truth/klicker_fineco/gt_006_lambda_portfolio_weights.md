@@ -1,5 +1,6 @@
 ---
 question: If lambda equals (0.2, 0.5, 0.3), what do the individual entries mean, and how much is invested in the risk-free asset and portfolios A and B?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

@@ -1,5 +1,6 @@
 ---
 question: Is ex-post alpha measured the same way under homogeneous and heterogeneous expectations?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

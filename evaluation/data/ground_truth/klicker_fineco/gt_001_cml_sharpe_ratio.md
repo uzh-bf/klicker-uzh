@@ -1,5 +1,6 @@
 ---
 question: Does the CML in the CAPM have the slope of the Sharpe ratio?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

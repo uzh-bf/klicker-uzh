@@ -1,5 +1,6 @@
 ---
 question: How can I calculate the shares in the risk-free asset and risky portfolio if risk aversion is 5.6 and I already calculated the optimal tangency portfolio without risk aversion?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

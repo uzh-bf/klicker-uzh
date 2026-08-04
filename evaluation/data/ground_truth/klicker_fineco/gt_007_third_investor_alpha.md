@@ -1,5 +1,6 @@
 ---
 question: How can I derive the alpha of a third portfolio if I know investor i's wealth and alpha, investor j's wealth and alpha, and only investor 3's wealth?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

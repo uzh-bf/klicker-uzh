@@ -1,5 +1,6 @@
 ---
 question: What is the formula where the weighted sum of alpha and a equals zero, and how should I interpret it?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---

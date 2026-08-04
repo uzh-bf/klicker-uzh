@@ -1,6 +1,6 @@
 ---
-question: >-
-  Given the four matrices A=(1 2; -2 4), B=(1 2; 2 -1), C=(4 -2; -2 3), and D=(5 3; 3 1), which of them can be covariance matrices?
+question: Given the four matrices A=(1 2; -2 4), B=(1 2; 2 -1), C=(4 -2; -2 3), and D=(5 3; 3 1), which of them can be covariance matrices?
+mode: explainer
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---
