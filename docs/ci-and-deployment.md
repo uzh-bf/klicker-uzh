@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-03'
+timestamp: '2026-08-04'
 tags:
   - ci
   - deployment
@@ -44,7 +44,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): workers ride the floating `v3` tag; releases tracked via a `rollout.klicker.uzh.ch/release` pod annotation.
+- **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating `v3` tag, so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
@@ -56,6 +56,17 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to break-glass): [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
-## Open questions (verify before documenting further)
+## Staging promotion
 
-Whether ArgoCD auto-syncs on git change or is synced manually, and the exact per-release image-tag bump/promotion trigger (the tag values in `deploy/env-uzh-{stg,prd}/values.yaml` are edited by hand today).
+**ArgoCD auto-syncs on git change** (prune + selfHeal, app `app-klicker`), but only when the _rendered manifest_ differs. Two things therefore do **not** trigger a sync, and both have bitten us:
+
+- **A rebuilt floating tag.** stg pulls `:v3`, so a new image leaves the Deployment spec byte-identical. `pullPolicy: Always` means a restart _would_ pick it up, but nothing asks for a restart.
+- **A hook-only change.** ArgoCD excludes hook manifests from the OutOfSync comparison, so a commit touching only the PreSync migration Job shows as "Synced" at the new revision with the hook never executed (this is why the hook in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) needed one manual sync to fire the first time).
+
+The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. It appears 15 times in `deploy/env-uzh-stg/values.yaml` and zero times in prd, which needs no such trigger because its pinned tags change on every release.
+
+`.github/workflows/deploy-stg-promote.yml` writes the built commit's short SHA into all 15, once **every** `v3_*-stg.yml` image build has succeeded for that commit — so a rollout can never start against a half-published `:v3`, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 8 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
+
+Two operational notes. It needs `secrets.STG_PROMOTE_TOKEN` (a PAT or GitHub App token with `contents: write` + `pull-requests: write`) — a PR opened with the default `GITHUB_TOKEN` does not trigger workflows, so its required checks would never report and auto-merge would never fire. And the annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and `:v3` then holds the later images. Immutable per-commit tags are the fix if that ever matters. Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
+
+Prd is unaffected — it promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.
