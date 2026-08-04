@@ -1,3 +1,5 @@
+import { SAFE_TOOL_ERROR } from '../toolOutput'
+
 export type PersistedAssistantContentPart =
   | { type: 'text'; text: string }
   | { type: 'reasoning'; text: string }
@@ -9,8 +11,6 @@ export type PersistedAssistantContentPart =
       result?: unknown
       isError?: boolean
     }
-
-const SAFE_TOOL_ERROR = 'Tool execution failed'
 
 export function mapAssistantStepContent(
   steps: Array<{ content?: unknown[] }> | undefined

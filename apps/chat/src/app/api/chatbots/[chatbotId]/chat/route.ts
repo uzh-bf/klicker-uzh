@@ -1249,6 +1249,23 @@ export async function POST(
 
       onEnd: async (result) => {
         sawFinish = true
+        // ai@7 still flushes onEnd after an abort once at least one step
+        // completed. onAbort already persisted the partial answer and charged
+        // the per-step cost, so continuing here would overwrite it with
+        // completed-steps-only content and re-run the credit deduction.
+        if (sawAbort) {
+          logEvent('stream.finish', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: result.steps?.length ?? 0,
+            hadPriorError: Boolean(firstError),
+            hadAbort: true,
+            skippedAfterAbort: true,
+            // Keep the log shape stable for operators filtering on this
+            // field; null means not-applicable on a cancelled turn.
+            reasoningTokensIncludedInOutput: null,
+          })
+          return
+        }
         const creditsUsed = result.usage
           ? calcCost(
               selectedModelConfig.cost,
@@ -1390,7 +1407,7 @@ export async function POST(
           }
         }
 
-        if (!firstError && !sawAbort) {
+        if (!firstError) {
           emitFinalOnce('success', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             usage: result.usage
@@ -1470,14 +1487,30 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
+        // A pure tool-call abort has no partial text or reasoning, but the
+        // completed steps still carry persistable tool calls — without them a
+        // cancelled tool-only turn is charged yet leaves no assistant row.
+        // Only used when nothing streamed, since partialContent already
+        // contains the completed steps' text.
+        const completedStepContent =
+          !partialContent.trim() && !abortedReasoningContent
+            ? mapAssistantStepContent(
+                Array.isArray(steps?.steps) ? steps.steps : undefined
+              )
+            : []
+
         // save partial message
         if (
           currentThreadId &&
           owningThread &&
-          (partialContent.trim() || abortedReasoningContent)
+          (partialContent.trim() ||
+            abortedReasoningContent ||
+            completedStepContent.length > 0)
         ) {
           try {
-            const partialAssistantContent: PersistedAssistantContentPart[] = []
+            const partialAssistantContent: PersistedAssistantContentPart[] = [
+              ...completedStepContent,
+            ]
             if (partialContent.trim()) {
               partialAssistantContent.push({
                 type: 'text',

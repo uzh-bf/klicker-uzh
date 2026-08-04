@@ -7,6 +7,7 @@ import {
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
+  OTHER_PARTICIPANT_ID,
   resetChatState,
   seedThread,
   setCredits,
@@ -673,6 +674,107 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
   })
 
+  // A vote only counts if it survives leaving the page: the runtime's own
+  // optimistic patch lives in its message repository, so the pressed state
+  // after a reload can only come from the persisted rating being mapped back
+  // in (`convertMessage` in RuntimeProvider).
+  test('A stored rating is restored after a page reload', async ({ page }) => {
+    const assistantMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c41'
+    await seedThread(participantId, {
+      title: 'Rating persistence test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A question' }] },
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A rateable answer' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    await expect(page).toHaveURL(/\/threads\//)
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    await expect(assistant).toBeVisible()
+    await assistant.hover()
+
+    await page.getByTestId('chat-rate-up-button').click()
+    await expect(page.getByTestId('chat-rate-up-button')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+
+    const reloadedAssistant = page.getByTestId('chat-assistant-message')
+    await expect(reloadedAssistant).toBeVisible()
+    await reloadedAssistant.hover()
+
+    await expect(page.getByTestId('chat-rate-up-button')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await expect(page.getByTestId('chat-rate-down-button')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+  })
+
+  // The feedback route scopes its lookup by participant AND chatbot, and
+  // reports someone else's message as missing rather than forbidden, so the
+  // message id cannot be used to probe which ids exist. The own-message call
+  // first proves the request shape is right — otherwise any typo in the URL
+  // would produce the expected 404 for the wrong reason.
+  test('Rating another participant’s message returns 404', async ({ page }) => {
+    const ownMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c42'
+    const ownThread = await seedThread(participantId, {
+      title: 'Own rateable thread',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'My question' }] },
+        {
+          id: ownMessageId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'My answer' }],
+        },
+      ],
+    })
+
+    const foreignMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c43'
+    await resetChatState(OTHER_PARTICIPANT_ID)
+    const foreignThread = await seedThread(OTHER_PARTICIPANT_ID, {
+      title: 'Someone else’s thread',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'Their question' }] },
+        {
+          id: foreignMessageId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Their answer' }],
+        },
+      ],
+    })
+
+    // `page.request` shares this context's cookie jar, so both calls carry the
+    // participant token minted in `beforeEach` for `participantId`.
+    const feedbackUrl = (threadId: string, messageId: string) =>
+      `${chatUrl()}/api/chatbots/${CHATBOT_ID}/threads/${threadId}/messages/${messageId}/feedback`
+
+    const ownResponse = await page.request.post(
+      feedbackUrl(ownThread.id, ownMessageId),
+      { data: { rating: 'UP' } }
+    )
+    expect(ownResponse.status()).toBe(200)
+    await expect.poll(() => getMessageRating(ownMessageId)).toBe('UP')
+
+    const foreignResponse = await page.request.post(
+      feedbackUrl(foreignThread.id, foreignMessageId),
+      { data: { rating: 'UP' } }
+    )
+    expect(foreignResponse.status()).toBe(404)
+    expect(await getMessageRating(foreignMessageId)).toBeNull()
+  })
+
   test('Regenerating a response replaces it with a new one', async ({
     page,
   }) => {
@@ -1163,15 +1265,64 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
+  // The selector only appears for a model that supports reasoning with more
+  // than one allowed effort, and the picked effort has to travel all the way
+  // into the chat request — asserting the panel alone would pass even if the
+  // selection never left the settings store.
   test('Reasoning effort selector is wired up when model selection is enabled', async ({
     page,
   }) => {
     await setModelSelection(participantId, true)
+    await mockChatStream(page, {
+      metadata: {
+        chatMode: 'tutor',
+        modelId: 'gpt-5.6-luna',
+        reasoningEffort: 'high',
+      },
+    })
     await visitChat(page)
     await openSettings(page)
 
     await expect(page.getByTestId('chat-settings-panel')).toBeVisible()
     await expect(page.getByTestId('chat-model-selection')).toBeVisible()
+
+    // Pick the non-reasoning model explicitly rather than relying on the
+    // registry's default ordering (which varies per deployment), then assert
+    // the effort selector is hidden for it.
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
+    await expect(
+      page.getByTestId('chat-reasoning-effort-selection')
+    ).toHaveCount(0)
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+
+    await expect(
+      page.getByTestId('chat-reasoning-effort-selection')
+    ).toBeVisible()
+    // Read the selected effort off the trigger, not the surrounding section:
+    // the section's hint text ("Higher effort can improve...") would make a
+    // "High" assertion pass before anything was selected.
+    const effortSelect = page.getByTestId('chat-reasoning-effort-select')
+    // "Medium" is the default this model resolves to, so "High" is a real
+    // change rather than a no-op.
+    await expect(effortSelect).toContainText('Medium')
+    await selectOption(page, '[data-cy="chat-reasoning-effort-select"]', 'High')
+    await expect(effortSelect).toContainText('High')
+
+    const chatRequestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+    await sendMessage(page, 'Selected reasoning effort check')
+
+    const chatRequest = await chatRequestPromise
+    const payload = chatRequest.postDataJSON() as { reasoningEffort?: string }
+    expect(payload.reasoningEffort).toBe('high')
+
+    // The caption under the answer reflects the effort the stream reported.
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('High', { timeout: 15_000 })
   })
 
   // S2: opening a thread by direct URL (bookmark/reload) must resync the
@@ -1270,6 +1421,24 @@ test.describe('Chatbot Source Citations', () => {
           },
         ],
       },
+    }
+  }
+
+  /** The same doc_query answer-mode payload as `docQueryPart`, but shaped as
+   * the live `tool-output-available` output: the raw MCP CallToolResult
+   * envelope the streaming parser stores as the tool result. */
+  function docQueryToolOutput(sources: DocQuerySource[]) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            answer: 'Course-material excerpt relevant to the question.',
+            sources_used: sources.length,
+            sources,
+          }),
+        },
+      ],
     }
   }
 
@@ -1585,6 +1754,56 @@ test.describe('Chatbot Source Citations', () => {
     await expect(genericToggle.locator('svg.lucide-search')).toHaveCount(0)
   })
 
+  // Every other citation test reads a persisted thread, where the tool result
+  // arrives as stored JSON. This one goes through the streaming path instead
+  // (`tool-output-available` -> `normalizeLiveToolOutput`), which is what a
+  // student actually sees first.
+  test('Citations and source cards render on a live streamed answer', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Live answer citing [1] and also [2].',
+      toolCalls: [
+        {
+          toolCallId: 'live-call-1',
+          toolName: 'KB_doc_query',
+          input: { query: 'live query' },
+          output: docQueryToolOutput([
+            {
+              file_name: 'Live Alpha.pdf',
+              source_url: 'https://example.com/live-alpha.pdf',
+              source_type: 'document',
+              page_number: 2,
+            },
+            {
+              file_name: 'Live Beta.pdf',
+              source_url: 'https://example.com/live-beta.pdf',
+              source_type: 'document',
+              page_number: 6,
+            },
+          ]),
+        },
+      ],
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Search the course materials')
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible({ timeout: 15_000 })
+    await expect(section).toContainText('Sources · 2')
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
+
+    const citations = page.getByTestId('chat-citation')
+    await expect(citations).toHaveCount(2)
+    await expect(citations.nth(0)).toHaveAccessibleName(
+      'Source 1: Live Alpha.pdf'
+    )
+    await expect(citations.nth(1)).toHaveAccessibleName(
+      'Source 2: Live Beta.pdf'
+    )
+  })
+
   test('Composer hint is visible in standalone mode and hidden when embedded', async ({
     page,
   }) => {
@@ -1665,5 +1884,105 @@ test.describe('Chatbot Source Citations', () => {
 
     expect(lastLine).toBeTruthy()
     expect(lastLine?.startsWith('—')).toBe(false)
+  })
+})
+
+// ===========================================================================
+// Streamed Answer Metadata & Failure States
+// ===========================================================================
+// These exercise the live streaming path (`hooks/useChatResponse.ts`) rather
+// than a persisted thread: the mocked SSE stream carries the same `finish`
+// metadata and `error` parts the real route emits.
+test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('Caption under a streamed answer shows the mode and credit cost', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      metadata: {
+        chatMode: 'explainer',
+        modelId: 'gpt-4.1-mini',
+        reasoningEffort: 'medium',
+        creditsUsed: 0.5,
+      },
+    })
+    await visitChat(page)
+
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await explainerOption.click()
+    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+
+    await sendMessage(page, 'What does the caption say?')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toContainText('assistant reply #1', {
+      timeout: 15_000,
+    })
+    await expect(content).toContainText('Explainer')
+    await expect(content).toContainText('Medium')
+    // `creditsUsed` 0.5 renders through `formatCredits` + the plural message.
+    await expect(content).toContainText('0.5 credits')
+
+    // The sidebar row picks up the same mode (D6). Scope to the first row and
+    // wait for it: the row itself depends on the unmocked thread round-trip,
+    // unlike the instantly-mocked stream above.
+    const threadRow = page.getByTestId('chat-thread-select').first()
+    await expect(threadRow).toBeVisible()
+    await expect(threadRow.getByTestId('chat-thread-mode')).toContainText(
+      'Explainer'
+    )
+  })
+
+  // A renderer regression here shows an empty bubble while CI stays green, so
+  // assert the callout has actual text and not just a node.
+  test('A stream error renders the error callout with visible text', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Partial answer before the failure.',
+      errorText: 'upstream provider failed',
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Trigger a stream error')
+
+    const callout = page.getByTestId('chat-message-error')
+    await expect(callout).toBeVisible({ timeout: 15_000 })
+    await expect(callout).toContainText('Error')
+    await expect(callout).toContainText('something went wrong')
+    expect((await callout.innerText()).trim().length).toBeGreaterThan(0)
+
+    // The text streamed before the error is kept alongside the callout.
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('Partial answer before the failure.')
+  })
+
+  test('A length-truncated answer appends the truncation notice', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'An answer that ran out of',
+      metadata: { finishReason: 'length', chatMode: 'tutor' },
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Give me a very long answer')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toContainText('An answer that ran out of', {
+      timeout: 15_000,
+    })
+    await expect(content).toContainText('Response truncated')
+    await expect(page.getByTestId('chat-message-error')).toHaveCount(0)
   })
 })

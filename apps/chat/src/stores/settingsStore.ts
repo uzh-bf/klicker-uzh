@@ -12,6 +12,7 @@ export interface ModeOption {
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
+let creditsLoadedChatbotId: string | null = null
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -197,8 +198,19 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       loadCredits: async (chatbotId: string) => {
+        // `creditsLoaded` is sticky once a load has succeeded FOR THIS
+        // chatbot: a refresh (or a failed one) keeps the last known balance
+        // visible instead of hiding the footer for the rest of the session.
+        // A different chatbot id must not inherit the stickiness, or a failed
+        // cross-chatbot load would pin the previous chatbot's balance.
         const requestGeneration = ++creditsRequestGeneration
-        set({ creditsLoaded: false })
+        if (
+          creditsLoadedChatbotId !== null &&
+          creditsLoadedChatbotId !== chatbotId
+        ) {
+          creditsLoadedChatbotId = null
+          set({ creditsLoaded: false })
+        }
 
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
@@ -221,6 +233,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           set((state) => {
             if (requestGeneration !== creditsRequestGeneration) return state
+            creditsLoadedChatbotId = chatbotId
 
             let selectedModel = state.selectedModel
 
@@ -254,9 +267,6 @@ export const useSettingsStore = create<SettingsState>()(
           })
         } catch (error) {
           console.error('Error loading credits:', error)
-          if (requestGeneration === creditsRequestGeneration) {
-            set({ creditsLoaded: false })
-          }
         }
       },
 

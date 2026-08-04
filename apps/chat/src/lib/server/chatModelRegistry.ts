@@ -98,7 +98,7 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
     .map((model) => normalizeChatModelConfig(model))
 }
 
-const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
   {
     id: 'auto',
     deploymentId: 'complexity-router',
