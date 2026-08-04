@@ -15,7 +15,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | Chat app logic (`apps/chat`)                 | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
 | `packages/graphql` services/schema           | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
 | Auth adapter against shared Prisma client    | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
-| UI or user flows                             | e2e — use `klicker-playwright-e2e`                                                                                                                                          |
+| UI or user flows                             | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
 | React component appearance/behavior only     | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest     | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 
