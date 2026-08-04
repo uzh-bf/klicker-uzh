@@ -18,6 +18,10 @@
   Turbopack build until a `pnpm install --force`.
   The PR's earlier 148/148 evaluator pass and green CI predate this base merge.
 
+- **Update**: [data-and-migrations](./data-and-migrations.md) gains a failed-migration-hook runbook (log capture before the next sync deletes the Job, `P3009` partial-DDL recovery and why `migrate resolve` is not a rollback, the `migrator.enabled: false` unblock lever, lock contention) plus the hook's scope limit (assessment DB may not be covered) and the prd bootstrap/rollback rule: no migrator image exists for pre-hook release tags, so prd keeps the hook disabled until its tags reach a migrator-bearing release. Same constraint recorded in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) and the expand-contract rule in the `klicker-data-model` skill.
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) and [ci-and-deployment](./ci-and-deployment.md) document automatic deployment migrations: `prisma migrate deploy` runs as an ArgoCD PreSync hook Job from a dedicated Prisma 7 migrator image (local `prisma` install + `prisma.config.ts`), with manual deploy demoted to break-glass. Decision record: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md), including the materialised version-drift lesson now guarded by `util/check-prisma-sync.sh`.
+
 ## 2026-08-01
 
 - **Update**: [chat-platform](./chat-platform.md) records the Manage assistant's
