@@ -163,15 +163,21 @@ function rewriteContent(
   value: Prisma.JsonValue,
   knownIds: Map<string, string>,
   toolCallIds: Map<string, string>,
+  threadId: string,
   key?: string
 ): Prisma.JsonValue {
   if (typeof value === 'string') {
-    if (key === 'toolCallId') return toolCallIds.get(value) ?? value
+    if (key === 'text') return value
+    if (key === 'toolCallId') {
+      return toolCallIds.get(`${threadId}\0${value}`) ?? value
+    }
     return knownIds.get(value) ?? value
   }
 
   if (Array.isArray(value)) {
-    return value.map((entry) => rewriteContent(entry, knownIds, toolCallIds))
+    return value.map((entry) =>
+      rewriteContent(entry, knownIds, toolCallIds, threadId)
+    )
   }
 
   if (value == null || typeof value !== 'object') return value
@@ -183,6 +189,7 @@ function rewriteContent(
         entryValue,
         knownIds,
         toolCallIds,
+        threadId,
         entryKey
       )
     }
@@ -226,6 +233,44 @@ function mergeKnownIds(...maps: Array<Map<string, string>>) {
   return merged
 }
 
+function validateThreadParents(thread: RawChatbotExportRow['threads'][number]) {
+  const messagesById = new Map(
+    thread.messages.map((message) => [message.id, message])
+  )
+
+  for (const message of thread.messages) {
+    if (message.parentId == null) continue
+    if (message.parentId === message.id) {
+      throw new Error(
+        `Self-referencing parent message id in thread ${thread.id}: ${message.id}`
+      )
+    }
+    if (!messagesById.has(message.parentId)) {
+      throw new Error(
+        `Unresolved parent message id in thread ${thread.id}: ${message.parentId}`
+      )
+    }
+  }
+
+  const state = new Map<string, 'visiting' | 'visited'>()
+  const visit = (messageId: string) => {
+    const currentState = state.get(messageId)
+    if (currentState === 'visiting') {
+      throw new Error(
+        `Cyclic parent message chain in thread ${thread.id}: ${messageId}`
+      )
+    }
+    if (currentState === 'visited') return
+
+    state.set(messageId, 'visiting')
+    const parentId = messagesById.get(messageId)?.parentId
+    if (parentId != null) visit(parentId)
+    state.set(messageId, 'visited')
+  }
+
+  for (const message of thread.messages) visit(message.id)
+}
+
 export function buildChatbotExportDocument(
   rows: RawChatbotExportRow[],
   exportedAt: string
@@ -236,6 +281,8 @@ export function buildChatbotExportDocument(
   const threads = chatbots.flatMap((chatbot) => chatbot.threads)
   const messages = threads.flatMap((thread) => thread.messages)
   const attachments = messages.flatMap((message) => message.attachments)
+
+  for (const thread of threads) validateThreadParents(thread)
 
   const chatbotIds = createKeyMap(
     chatbots.map((chatbot) => chatbot.id),
@@ -257,11 +304,17 @@ export function buildChatbotExportDocument(
     attachments.map((attachment) => attachment.id),
     'attachment'
   )
-  const toolCallSourceIds = new Set<string>()
-  for (const message of messages) {
-    collectToolCallIds(message.content, toolCallSourceIds)
+  const toolCallSourceIds: string[] = []
+  for (const thread of threads) {
+    const threadToolCallIds = new Set<string>()
+    for (const message of thread.messages) {
+      collectToolCallIds(message.content, threadToolCallIds)
+    }
+    for (const toolCallId of threadToolCallIds) {
+      toolCallSourceIds.push(`${thread.id}\0${toolCallId}`)
+    }
   }
-  const toolCallIds = createKeyMap([...toolCallSourceIds], 'tool_call')
+  const toolCallIds = createKeyMap(toolCallSourceIds, 'tool_call')
   const knownIds = mergeKnownIds(
     chatbotIds,
     participantIds,
@@ -269,12 +322,6 @@ export function buildChatbotExportDocument(
     messageIds,
     attachmentIds
   )
-
-  for (const message of messages) {
-    if (message.parentId != null && !messageIds.has(message.parentId)) {
-      throw new Error(`Unresolved parent message id: ${message.parentId}`)
-    }
-  }
 
   return {
     schemaVersion: 1,
@@ -325,7 +372,12 @@ export function buildChatbotExportDocument(
                 ? null
                 : requiredKey(messageIds, message.parentId, 'parent id'),
             role: message.role,
-            content: rewriteContent(message.content, knownIds, toolCallIds),
+            content: rewriteContent(
+              message.content,
+              knownIds,
+              toolCallIds,
+              thread.id
+            ),
             chatMode: message.chatMode,
             modelId: message.modelId,
             reasoningEffort: message.reasoningEffort,

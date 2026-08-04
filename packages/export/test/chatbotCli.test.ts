@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   CHATBOT_EXPORT_USAGE,
+  CliHelpError,
   parseExportChatbotArgs,
 } from '../src/chatbotCli.js'
 import { CliUsageError } from '../src/cli.js'
@@ -44,6 +45,7 @@ describe('chatbot export CLI', () => {
   })
 
   it('uses the chatbot usage text for help', () => {
+    expect(() => parseExportChatbotArgs(['--help'])).toThrow(CliHelpError)
     expect(() => parseExportChatbotArgs(['--help'])).toThrow(
       CHATBOT_EXPORT_USAGE
     )

@@ -1,4 +1,14 @@
-import { mkdtemp, readdir, readFile, rm, stat } from 'node:fs/promises'
+import {
+  chmod,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -219,5 +229,49 @@ describe('chatbot export service', () => {
       )
     ).rejects.toThrow('Unresolved parent message id')
     await expect(readdir(outputDir)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('rejects an insecure existing output directory without changing it', async () => {
+    const outputDir = await mkdtemp(join(tmpdir(), 'chatbot-export-test-'))
+    temporaryDirectories.push(outputDir)
+    await chmod(outputDir, 0o750)
+
+    await expect(
+      exportChatbotData(
+        fakeReadonlyPrisma([rawChatbot('source-chatbot-a')]),
+        ['source-chatbot-a'],
+        outputDir,
+        { exportedAt }
+      )
+    ).rejects.toThrow('Output directory must be owner-only')
+    expect((await stat(outputDir)).mode & 0o777).toBe(0o750)
+    expect(await readdir(outputDir)).toEqual([])
+  })
+
+  it('does not follow or overwrite an existing output-file symlink', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'chatbot-export-test-'))
+    temporaryDirectories.push(root)
+    const outputDir = join(root, 'output')
+    const targetPath = join(root, 'target.json')
+    const outputPath = join(
+      outputDir,
+      'chatbot-export-2026-08-04T12-00-00-000Z.json'
+    )
+    await mkdir(outputDir, { mode: 0o700 })
+    await writeFile(targetPath, 'keep me', { mode: 0o600 })
+    await symlink(targetPath, outputPath)
+
+    await expect(
+      exportChatbotData(
+        fakeReadonlyPrisma([rawChatbot('source-chatbot-a')]),
+        ['source-chatbot-a'],
+        outputDir,
+        { exportedAt }
+      )
+    ).rejects.toThrow(`Output file already exists: ${outputPath}`)
+    expect(await readFile(targetPath, 'utf8')).toBe('keep me')
+    expect(await readdir(outputDir)).toEqual([
+      'chatbot-export-2026-08-04T12-00-00-000Z.json',
+    ])
   })
 })

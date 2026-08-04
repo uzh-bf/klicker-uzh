@@ -112,7 +112,8 @@ Flags:
 - `--chatbotId <uuid>` — required and repeatable; duplicates are ignored
 - `--outputDir <path>` — optional; defaults to `./export-output`
 
-Each run writes one owner-only (`0600`) timestamped file under an owner-only (`0700`) output directory:
+Each run writes one owner-only (`0600`) timestamped file under an owner-only
+(`0700` or stricter) output directory:
 
 ```text
 <outputDir>/chatbot-export-YYYY-MM-DDTHH-mm-ss-sssZ.json
@@ -133,10 +134,18 @@ It excludes:
 
 Chatbot, participant, thread, message, attachment, parent-message, and tool-call identifiers are deterministically replaced with export-local values such as `message_00001`. Model IDs remain unchanged because they are evaluation context rather than database or participant identities.
 
+New output directories are created as `0700`. An existing output directory must
+already be owner-only; the exporter never changes caller-owned directory
+permissions. Existing output files and symlinks are never followed or
+overwritten.
+
 > [!WARNING]
 > This output is **pseudonymized, not anonymized**. System prompts, thread titles, message/reasoning content, and attachment descriptions remain unchanged and can contain personal information. Use only an approved AI evaluation system and handle the artifact according to the applicable data-protection rules.
 
-The command uses the same compile-time and runtime read-only Prisma guard as the course exporter. It validates that every requested chatbot and parent-message relationship exists before writing the artifact.
+The command uses the same compile-time and runtime read-only Prisma guard as the
+course exporter. It validates that every requested chatbot exists and that
+parent-message relationships stay within one thread and contain no
+self-reference or cycle before writing the artifact.
 
 ## Development
 

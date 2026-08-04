@@ -4,6 +4,13 @@ export const CHATBOT_EXPORT_USAGE =
   'Usage: pnpm --filter @klicker-uzh/export export:chatbots -- --chatbotId <id> [--chatbotId <id2> ...] [--outputDir <path>]\n' +
   'Writes one nested, pseudonymized JSON file for AI evaluation. Message text and attachment descriptions remain unchanged.'
 
+export class CliHelpError extends CliUsageError {
+  constructor() {
+    super(CHATBOT_EXPORT_USAGE)
+    this.name = 'CliHelpError'
+  }
+}
+
 function readOptionValue(
   args: string[],
   index: number,
@@ -48,7 +55,7 @@ export function parseExportChatbotArgs(args: string[]): {
     }
 
     if (arg === '--help' || arg === '-h') {
-      throw new CliUsageError(CHATBOT_EXPORT_USAGE)
+      throw new CliHelpError()
     }
 
     throw new CliUsageError(`Unknown argument: ${arg}`)

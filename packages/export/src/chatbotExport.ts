@@ -1,4 +1,15 @@
-import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { join } from 'node:path'
 
 import type { Prisma } from '@klicker-uzh/prisma/client'
@@ -70,6 +81,55 @@ export interface ChatbotExportOptions {
   exportedAt?: string
 }
 
+function prepareOutputDirectory(outputDir: string) {
+  if (!existsSync(outputDir)) {
+    mkdirSync(outputDir, { recursive: true, mode: 0o700 })
+  }
+
+  const outputDirectoryStats = lstatSync(outputDir)
+  if (
+    outputDirectoryStats.isSymbolicLink() ||
+    !outputDirectoryStats.isDirectory()
+  ) {
+    throw new Error(`Output directory is not a regular directory: ${outputDir}`)
+  }
+  if ((outputDirectoryStats.mode & 0o077) !== 0) {
+    throw new Error(
+      `Output directory must be owner-only (0700 or stricter): ${outputDir}`
+    )
+  }
+}
+
+function writeOwnerOnlyFile(outputPath: string, content: string) {
+  const temporaryPath = `${outputPath}.${process.pid}-${randomUUID()}.tmp`
+  let fileDescriptor: number | undefined
+
+  try {
+    fileDescriptor = openSync(temporaryPath, 'wx', 0o600)
+    writeFileSync(fileDescriptor, content, { encoding: 'utf8' })
+    fsyncSync(fileDescriptor)
+    closeSync(fileDescriptor)
+    fileDescriptor = undefined
+
+    try {
+      linkSync(temporaryPath, outputPath)
+    } catch (error) {
+      if (
+        error != null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'EEXIST'
+      ) {
+        throw new Error(`Output file already exists: ${outputPath}`)
+      }
+      throw error
+    }
+  } finally {
+    if (fileDescriptor != null) closeSync(fileDescriptor)
+    if (existsSync(temporaryPath)) unlinkSync(temporaryPath)
+  }
+}
+
 export async function exportChatbotData(
   prisma: ReadonlyPrismaClient,
   chatbotIds: string[],
@@ -107,17 +167,11 @@ export async function exportChatbotData(
     })),
   }))
   const document = buildChatbotExportDocument(rawRows, exportedAt)
-  const filename = `chatbot-export-${exportedAt.replace(/[:.]/g, '-')}.json`
+  const filename = `chatbot-export-${exportedAt.replace(/[^0-9A-Za-z-]/g, '-')}.json`
 
-  mkdirSync(outputDir, { recursive: true, mode: 0o700 })
-  chmodSync(outputDir, 0o700)
-
+  prepareOutputDirectory(outputDir)
   const outputPath = join(outputDir, filename)
-  writeFileSync(outputPath, `${JSON.stringify(document, null, 2)}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  })
-  chmodSync(outputPath, 0o600)
+  writeOwnerOnlyFile(outputPath, `${JSON.stringify(document, null, 2)}\n`)
 
   return { outputPath, counts: document.counts, document }
 }

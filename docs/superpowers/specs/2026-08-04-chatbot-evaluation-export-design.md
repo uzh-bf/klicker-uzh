@@ -31,8 +31,9 @@ Each run creates one timestamped file:
 export-output/chatbot-export-YYYY-MM-DDTHH-mm-ss-sssZ.json
 ```
 
-The output directory is created with mode `0700` and the file with mode `0600`,
-following the existing export package. The directory remains gitignored.
+New output directories are created with mode `0700`; an existing directory must
+already be owner-only. Files use mode `0600`, and existing files or symlinks are
+never overwritten. The default directory remains gitignored.
 
 ## JSON structure
 
@@ -171,7 +172,9 @@ within one export:
 Mappings are type-specific, start at one, and use five-digit zero padding.
 They are deterministic for the same selected database state and independent of
 the order of CLI inputs or Prisma query results. Participant mappings are
-shared across all selected chatbots in the same file.
+shared across all selected chatbots in the same file. Tool-call source
+identifiers are scoped by thread, while their export values remain unique
+across the whole file.
 
 Known source record identifiers are also replaced when an exact string value
 appears inside structured message `content`. Exact `toolCallId` properties are
@@ -191,8 +194,9 @@ records and are material evaluation context.
    read-only Prisma client.
 3. Abort without writing if any requested chatbot is missing.
 4. Establish canonical ordering and build the export-local identifier maps.
-5. Validate that every non-null message `parentId` resolves to an exported
-   message. Abort on an unresolved relationship.
+5. Validate that every non-null message `parentId` resolves inside the same
+   thread and that no parent chain contains a self-reference or cycle. Abort on
+   an invalid relationship.
 6. Transform the queried rows into the nested, secret-free output shape.
 7. Serialize one pretty-printed JSON file with a trailing newline and restricted
    permissions.
@@ -231,6 +235,8 @@ The command exits non-zero and writes no partial artifact for:
 - duplicate `--outputDir`
 - any requested chatbot ID not found
 - an unresolved parent-message relationship
+- a cross-thread, self-referencing, or cyclic parent-message relationship
+- an unsafe output directory or an existing output file/symlink
 - query, transformation, serialization, or file-system failure
 
 A chatbot with no threads, a thread with no messages, and a message with no
@@ -245,6 +251,7 @@ Automated tests cover:
 - deterministic one-based mappings independent of input/query order
 - correct nesting and consistent participant, parent-message, and tool-call
   references
+- preservation of exact-token free text and thread-scoped tool-call mappings
 - replacement of known source IDs inside structured content
 - absence of original structural UUIDs and excluded secret/configuration fields
 - omission of attachment image payloads while retaining descriptions
@@ -252,6 +259,7 @@ Automated tests cover:
 - missing-chatbot and unresolved-parent failures without output
 - empty chatbot/thread handling
 - owner-only file and directory permissions
+- no-clobber handling for existing files and symlinks
 
 Verification runs the export package's tests, TypeScript check, production
 build, repository formatting checks, and static analysis. When the seeded local

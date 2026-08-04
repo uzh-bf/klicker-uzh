@@ -32,6 +32,46 @@ function rawChatbot(
   }
 }
 
+type RawThread = RawChatbotExportRow['threads'][number]
+type RawMessage = RawThread['messages'][number]
+
+function rawMessage(
+  id: string,
+  overrides: Partial<RawMessage> = {}
+): RawMessage {
+  return {
+    id,
+    parentId: null,
+    role: 'user',
+    content: [],
+    chatMode: null,
+    modelId: null,
+    reasoningEffort: null,
+    reasoningContent: null,
+    creditsUsed: null,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    attachments: [],
+    ...overrides,
+  }
+}
+
+function rawThread(
+  id: string,
+  messages: RawMessage[],
+  overrides: Partial<RawThread> = {}
+): RawThread {
+  return {
+    id,
+    title: null,
+    participantId: `participant-${id}`,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    messages,
+    ...overrides,
+  }
+}
+
 describe('chatbot export transformation', () => {
   it('creates deterministic, sorted, one-based export keys', () => {
     expect(
@@ -92,6 +132,10 @@ describe('chatbot export transformation', () => {
                 {
                   type: 'text',
                   text: 'Keep source-chatbot-a inside this sentence.',
+                },
+                {
+                  type: 'text',
+                  text: 'source-chatbot-a',
                 },
               ],
               chatMode: null,
@@ -195,6 +239,10 @@ describe('chatbot export transformation', () => {
         type: 'text',
         text: 'Keep source-chatbot-a inside this sentence.',
       },
+      {
+        type: 'text',
+        text: 'source-chatbot-a',
+      },
     ])
     expect(firstThread.messages[1]!.content).toEqual([
       {
@@ -224,7 +272,6 @@ describe('chatbot export transformation', () => {
     expect(serialized).not.toContain('private-owner-id')
     expect(serialized).not.toContain('private-api-key')
     expect(serialized).not.toContain('private-mcp-secret')
-    expect(serialized).not.toContain('"source-chatbot-a"')
     expect(document.counts).toEqual({
       chatbots: 2,
       participants: 1,
@@ -288,7 +335,97 @@ describe('chatbot export transformation', () => {
 
     expect(() =>
       buildChatbotExportDocument([orphanParentRow], exportedAt)
-    ).toThrow('Unresolved parent message id: missing-message')
+    ).toThrow(
+      'Unresolved parent message id in thread source-thread-a: missing-message'
+    )
+  })
+
+  it('scopes repeated tool call ids to their thread', () => {
+    const row = rawChatbot({
+      threads: [
+        rawThread('source-thread-a', [
+          rawMessage('source-message-a', {
+            content: [
+              { type: 'tool-call', toolCallId: 'provider-tool-call-id' },
+            ],
+          }),
+        ]),
+        rawThread('source-thread-b', [
+          rawMessage('source-message-b', {
+            content: [
+              { type: 'tool-call', toolCallId: 'provider-tool-call-id' },
+            ],
+          }),
+        ]),
+      ],
+    })
+
+    const document = buildChatbotExportDocument([row], exportedAt)
+    const firstToolCallId = (
+      document.chatbots[0]!.threads[0]!.messages[0]!.content as Array<{
+        toolCallId: string
+      }>
+    )[0]!.toolCallId
+    const secondToolCallId = (
+      document.chatbots[0]!.threads[1]!.messages[0]!.content as Array<{
+        toolCallId: string
+      }>
+    )[0]!.toolCallId
+
+    expect(firstToolCallId).toBe('tool_call_00001')
+    expect(secondToolCallId).toBe('tool_call_00002')
+  })
+
+  it('rejects parent ids that point into another thread', () => {
+    const row = rawChatbot({
+      threads: [
+        rawThread('source-thread-a', [rawMessage('source-message-a')]),
+        rawThread('source-thread-b', [
+          rawMessage('source-message-b', {
+            parentId: 'source-message-a',
+          }),
+        ]),
+      ],
+    })
+
+    expect(() => buildChatbotExportDocument([row], exportedAt)).toThrow(
+      'Unresolved parent message id in thread source-thread-b: source-message-a'
+    )
+  })
+
+  it('rejects self-referencing parent ids', () => {
+    const row = rawChatbot({
+      threads: [
+        rawThread('source-thread-a', [
+          rawMessage('source-message-a', {
+            parentId: 'source-message-a',
+          }),
+        ]),
+      ],
+    })
+
+    expect(() => buildChatbotExportDocument([row], exportedAt)).toThrow(
+      'Self-referencing parent message id in thread source-thread-a: source-message-a'
+    )
+  })
+
+  it('rejects cyclic parent chains', () => {
+    const row = rawChatbot({
+      threads: [
+        rawThread('source-thread-a', [
+          rawMessage('source-message-a', {
+            parentId: 'source-message-b',
+          }),
+          rawMessage('source-message-b', {
+            parentId: 'source-message-a',
+          }),
+        ]),
+      ],
+    })
+
+    expect(() => buildChatbotExportDocument([row], exportedAt)).toThrow(
+      'Cyclic parent message chain in thread source-thread-a'
+    )
   })
 
   it('rejects source identifiers reused across record types', () => {
