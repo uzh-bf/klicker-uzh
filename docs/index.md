@@ -23,6 +23,10 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
 - [Developing a Feature](./developing-a-feature.md) - The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
 
+## Decision records
+
+Architectural decisions live in [docs/adr/](./adr/README.md) as numbered ADRs — the durable record of _why_, kept separate from the concept pages above (which explain _what_ and _how_). The wiki links the relevant ADR for the rationale; it is not itself the decision record. Record a new ADR when a choice is hard to reverse, surprising without context, and a real trade-off.
+
 ## Skill routing
 
 Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki holds facts, skills hold workflows.

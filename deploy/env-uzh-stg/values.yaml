@@ -935,3 +935,10 @@ assessment:
       limits:
         cpu: 200m
         memory: 200Mi
+
+# Migration hook image: only the repo is pinned; the tag auto-tracks the
+# backendGraphql image tag above (floating v3 on stg).
+migrator:
+  priorityClassName: staging-workload
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
