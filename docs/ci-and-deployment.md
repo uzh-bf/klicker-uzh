@@ -23,11 +23,12 @@ Per-commit workflows: `check-format`, `check-lint`, `check-syncpack`, `check-typ
 - **Format + lint**: `check-format` runs Biome (code) + Prettier (Markdown/YAML and `playwright/`/`cypress/`) and is **blocking**. `check-lint` runs an **advisory** Biome lint step (non-blocking during the migration) before the blocking Turbo/ESLint pass (the Next.js safety net), plus `check:prisma-sync` and `check:agents-md`.
 - **Unused code**: `check-knip` runs Knip **advisory** (non-blocking); ratchets to blocking once the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** full-tree Gitleaks scan (`.gitleaks.toml`, default ruleset + false-positive allowlist); a local husky pre-commit hook scans staged changes when the binary is present.
+- **SonarCloud suppressions must live in `sonar-project.properties`.** Sonar reports rules such as `typescript:S3776` on the function declaration line, and Biome always moves a trailing `NOSONAR` comment onto its own line, so an inline marker silently stops suppressing after formatting. Use a scoped `sonar.issue.ignore.multicriteria` entry instead (current example: the chat POST handler's cognitive complexity).
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 
 ## Image builds
 
-13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`), pushing to ghcr.io with separate `-arm`/`-amd` jobs:
+15 stg + 15 prd image workflows (`v3_<app>-{stg,prd}.yml`) publishing 16 images — the PWA has both an ordinary and an assessment pair, and `v3_backend-docker-{stg,prd}.yml` additionally builds `backend-docker-migrator` (see [Deployment migrations](#deployment-migrations)) — pushing to ghcr.io with separate `-arm`/`-amd` jobs — including `mcp-lecturer` and `mcp-student`, which also have full chart workloads (`deployment-`, `service-`, `cm-`, `hpa-`, `pdb-mcp-{lecturer,student}.yaml`):
 
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
 - **prd**: tags `v*.*.*` only.

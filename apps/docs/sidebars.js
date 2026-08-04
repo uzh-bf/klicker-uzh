@@ -23,6 +23,7 @@ module.exports = {
       'tutorials/activity_batch_operations',
       'tutorials/element_updates_activities',
     ],
+    'Lecturer - AI': ['tutorials/ai_assistant', 'tutorials/course_ai_tutor'],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
       // 'tutorials/direct_sharing',

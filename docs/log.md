@@ -4,9 +4,10 @@
 
 - **Update**: PR #5109 integrated the current `v3-ai` base (TypeScript 6, Prisma
   7, Biome/Knip/Gitleaks quality gates). Under TypeScript 6, `apps/mcp-lecturer`
-  and `apps/mcp-student` needed `baseUrl` dropped and `"types": ["node"]` set
-  explicitly — the emitting build config no longer picks up `@types/node`
-  automatically, and only the check config was masking it via `vitest.config.ts`.
+  and `apps/mcp-student` needed `baseUrl` dropped; their emitting builds briefly
+  lost `@types/node` (masked in `check` via `vitest.config.ts`), which a later
+  reproduction traced to the mid-merge pnpm install state rather than the
+  `baseUrl` removal — `"types": ["node"]` is kept as an explicit declaration.
   `apps/mcp-student` also needed a `with { type: 'json' }` import attribute for
   `@klicker-uzh/graphql/dist/client.json` under `module: NodeNext`.
   `@assistant-ui/react-ai-sdk` stays pinned at `1.3.7`: `1.3.26` moved its runtime
@@ -17,6 +18,31 @@
   hoisted store — an incremental `pnpm add` can leave it unhoisted and break the
   Turbopack build until a `pnpm install --force`.
   The PR's earlier 148/148 evaluator pass and green CI predate this base merge.
+
+- **Update**: wiki audit for the PR #5109 feature set and the `v3-ai` base merge.
+  [architecture-overview](./architecture-overview.md) and the AGENTS.md repo
+  layout now list `apps/mcp-lecturer` and `apps/mcp-student`.
+  [chat-platform](./chat-platform.md) gains the student practice MCP (tutor-mode
+  only, signed `questionRef`s, silent degradation when unreachable), records that
+  `NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED` is a build-time UI-only kill switch
+  while `/api/manage/*` ships session-gated only, and documents the
+  `OPENAI_API_KEY` asymmetry between the participant and Manage routes.
+  [getting-started](./getting-started.md) adds the matching devcontainer failure
+  signature, the missing student MCP in `dev:container`, the emitting-config
+  `types: ["node"]` and JSON-import-attribute rules, and the stale
+  `engines.node: 20.x` on both MCP apps. [ci-and-deployment](./ci-and-deployment.md)
+  corrects the image-build count to 15 image pairs (14 apps — the PWA builds
+  twice), names the MCP chart workloads, and
+  records that SonarCloud suppressions must live in
+  `sonar-project.properties` because Biome relocates inline `NOSONAR`
+  comments. [testing](./testing.md)
+  records the student MCP's test surface and the absent `test-mcp-student` CI
+  workflow.
+
+- **New**: [solutions/build-error/emitting-tsconfig-loses-node-types](./solutions/build-error/emitting-tsconfig-loses-node-types.md) —
+  emitting build red while the package `check` stays green through
+  `vitest.config.ts`; root cause was an inconsistent pnpm install state during
+  the merge, not the `baseUrl` removal.
 
 - **Update**: [data-and-migrations](./data-and-migrations.md) gains a failed-migration-hook runbook (log capture before the next sync deletes the Job, `P3009` partial-DDL recovery and why `migrate resolve` is not a rollback, the `migrator.enabled: false` unblock lever, lock contention) plus the hook's scope limit (assessment DB may not be covered) and the prd bootstrap/rollback rule: no migrator image exists for pre-hook release tags, so prd keeps the hook disabled until its tags reach a migrator-bearing release. Same constraint recorded in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) and the expand-contract rule in the `klicker-data-model` skill.
 

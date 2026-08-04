@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-07-07'
+timestamp: '2026-08-03'
 tags:
   - architecture
 ---
@@ -25,6 +25,8 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/frontend-control`                               | Mobile live-quiz controller (pages router)                                          |
 | `apps/auth`                                           | Identity provider — Edu-ID OIDC + delegated login (Auth.js, `@auth/prisma-adapter`) |
 | `apps/chat`                                           | AI chat (Next.js **app** router — the only one; own conventions)                    |
+| `apps/mcp-lecturer`                                   | Internal FastMCP server (port 7081) backing the Manage lecturer assistant           |
+| `apps/mcp-student`                                    | FastMCP server (port 7080) serving participant practice tools to `apps/chat`        |
 | `apps/response-api`                                   | Bare-`http` ingest endpoint for student responses                                   |
 | `apps/hatchet-worker-general` / `-response-processor` | Async workers (Hatchet)                                                             |
 | `apps/analytics`                                      | Python analytics service (own Prisma client)                                        |
