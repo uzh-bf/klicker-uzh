@@ -50,15 +50,29 @@ function getAssessmentReportIssueErrorKey(error: unknown) {
 function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
   const locale = useLocale()
-  const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
-    variables: { courseId },
-    fetchPolicy: 'network-only',
-  })
+  // `errorPolicy: 'all'` returns GraphQL errors instead of throwing them (e.g. a
+  // participant without an accepted course invitation). There is no error boundary
+  // above this component, so a thrown error takes down the whole course page
+  // instead of rendering the notification below.
+  const { data, error } = useSuspenseQuery(
+    GetStudentAssessmentResultsDocument,
+    {
+      variables: { courseId },
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    }
+  )
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [reportArtifact, setReportArtifact] =
     useState<AssessmentReportArtifact | null>(null)
   const [issueAssessmentReport] = useMutation(MIssueCredentialDocument)
+
+  // Swallowing the error above would otherwise leave no trace of why the results
+  // failed to load - this keeps the cause recoverable from the browser console.
+  useEffect(() => {
+    if (error) console.error(error)
+  }, [error])
 
   useEffect(() => {
     if (!reportArtifact) return
@@ -90,7 +104,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     link.remove()
   }
 
-  const results = data.studentAssessmentResults
+  const results = data?.studentAssessmentResults
   const liveQuizzes = results?.liveQuizzes ?? []
   const practiceQuizzes = results?.practiceQuizzes ?? []
   const microLearnings = results?.microLearnings ?? []
