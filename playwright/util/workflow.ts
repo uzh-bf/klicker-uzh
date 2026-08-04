@@ -1195,6 +1195,17 @@ export async function runTask(name: string, args: any = {}) {
       })
     ).pinCode
   }
+  if (name === 'getLiveQuizIdentity') {
+    const quiz = await prisma.liveQuiz.findFirstOrThrow({
+      where: { name: args.name, isDeleted: false },
+      select: { id: true, pinCode: true, status: true },
+    })
+    return {
+      id: quiz.id,
+      pinCode: quiz.pinCode,
+      status: quiz.status,
+    }
+  }
   if (name === 'verifyLiveQuizPin') {
     return (
       (

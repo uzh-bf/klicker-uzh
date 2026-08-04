@@ -28,6 +28,7 @@ import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
+import { formatLiveQuizActivityInfo } from './liveQuizActivityInfo.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -3422,52 +3423,12 @@ export async function getCourseData(
       return []
     }
 
-    const {
-      isOwner,
-      isManager,
-      isEditor,
-      isExecutor,
-      isShared,
-      isRemovable,
-      sharingType,
-    } = getPermissionBooleans({
+    return formatLiveQuizActivityInfo({
+      activity: liveQuiz,
       permission,
-    })
-
-    return {
-      id: liveQuiz.id,
-      templateId: liveQuiz.templateInfo?.id ?? null,
-      name: liveQuiz.name,
-      displayName: liveQuiz.displayName,
-      reviewStatus: liveQuiz.reviewStatus,
-      isGamificationEnabled: liveQuiz.isGamificationEnabled,
-      isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
-      type: ActivityType.LIVE_QUIZ,
-      status: liveQuiz.status,
-      courseId: course.id,
-      courseName: course.name,
-      courseStartDate: course.startDate,
-      courseLanguage: course.language,
-      numOfStacks: liveQuiz.blocks.length,
-      numOfElements: liveQuiz.blocks.reduce(
-        (acc, block) => acc + block._count.elements,
-        0
-      ),
-      permissionLevel: permission.permissionLevel,
-      derivedAccess: permission.derived,
-      areInstancesOutdated: liveQuiz.areInstancesOutdated,
-      numSharedUsers: liveQuiz._count.permissions - 1,
-      pinCode: liveQuiz.pinCode,
-      isOwner,
-      isManager,
-      isEditor,
-      isExecutor,
-      isShared,
-      isRemovable,
+      course,
       isActivityReviewer,
-      sharingType,
-      updatedAt: liveQuiz.updatedAt,
-    }
+    })
   })
 
   const practiceQuizzesInfo = course.practiceQuizzes.flatMap((practiceQuiz) => {

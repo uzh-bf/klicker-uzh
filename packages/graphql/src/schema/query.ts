@@ -10,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LiveQuizResetService from '../services/liveQuizReset.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -74,6 +75,7 @@ import {
   LiveQuiz,
   LiveQuizEmbeddingInfo,
   LiveQuizInfo,
+  LiveQuizResetSummaryRef,
   LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
@@ -128,6 +130,7 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
 
     return {
       self: t.field({
@@ -498,6 +501,18 @@ export const Query = builder.queryType({
           async (_, args, ctx) => {
             return await LiveQuizService.getLiveQuizSummary(args, ctx)
           }
+        ),
+      }),
+
+      getLiveQuizResetSummary: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: LiveQuizResetSummaryRef,
+        args: { quizId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.quizId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) =>
+            LiveQuizResetService.getLiveQuizResetSummary(args, ctx)
         ),
       }),
 

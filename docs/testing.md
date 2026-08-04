@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-20'
+timestamp: '2026-08-04'
 tags:
   - testing
   - ci
@@ -42,6 +42,15 @@ Both frameworks click the same `data-cy` attributes ([Frontend Conventions](./fr
 The three seed paths (dev `seedTEST.ts`, Cypress, Playwright) are **independent** — a fixture added to one does not exist in the others ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical on both sides. `_run_app_dependencies.sh` with no args (or `local`/`dev`/`playwright`) applies the schema with `prisma:push` without forcing a reset; the `test`/`cypress` argument is the Cypress-specific **reset** path.
 
 For authoring specifics, helper patterns, and failure triage, use the skills — `klicker-cypress-e2e` and `klicker-playwright-e2e` ([.agents/skills/](../.agents/skills/)) — rather than duplicating their content here.
+
+The regular Live Quiz reset verification uses real Postgres/Redis GraphQL tests plus the existing serial Live Quiz browser workflow. The following commands are config-derived:
+
+```bash
+pnpm --filter @klicker-uzh/graphql test:local liveQuizReset.test.ts
+pnpm --filter @klicker-uzh/playwright test:run:raw -- tests/O-live-quiz.spec.ts --project=chromium
+```
+
+The GraphQL suite proves that reset deletes run data and per-quiz leaderboards while cumulative reward records remain exactly unchanged. Run the complete `O-live-quiz.spec.ts`: its reset and permission scenarios intentionally reuse quizzes and states established by preceding tests, so selecting only those cases with `--grep` does not provision their prerequisites.
 
 ## E2E environment dependencies
 

@@ -2481,6 +2481,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       deleteLiveQuiz: 'Live Quiz löschen',
       resetLiveQuizMessage:
         'Bitte bestätigen Sie das Zurücksetzen dieses Assessment-Live Quizzes. Alle Antworten der Studierenden und gesammelten Punkte werden gelöscht. Diese Aktion wird im Audit-Log dokumentiert und kann nicht rückgängig gemacht werden.',
+      resetRegularLiveQuizMessage:
+        'Dasselbe Live Quiz wird in den Entwurfsstatus zurückgesetzt. Seine Antworten, Resultate, Rückmeldungen und die Sitzungsrangliste werden dauerhaft gelöscht.',
+      resetRegularRunData:
+        '{responses} Antworten, {feedbacks} Q&A-Rückmeldungen, {confusion} Verwirrungsrückmeldungen und {leaderboard} Einträge der Sitzungsrangliste werden gelöscht.',
+      resetPreservedRewards:
+        'Bereits vergebene Kurspunkte, XP, Zeitleistenbelohnungen, Achievements und Auszeichnungen bleiben unverändert.',
+      resetInvalidState:
+        'Dieses Live Quiz befindet sich nicht mehr im Status „beendet“. Aktualisieren Sie die Aktivitätenliste und versuchen Sie es erneut.',
+      resetOutcomeError:
+        'Das Live Quiz konnte nicht zurückgesetzt werden. Es wurde keine erfolgreiche Zurücksetzung gemeldet.',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
       noResponsesToDelete:

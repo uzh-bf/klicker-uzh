@@ -2444,6 +2444,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       deleteLiveQuiz: 'Delete Live Quiz',
       resetLiveQuizMessage:
         'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
+      resetRegularLiveQuizMessage:
+        'The same live quiz will return to draft. Its responses, results, feedback, and session leaderboard will be permanently deleted.',
+      resetRegularRunData:
+        '{responses} responses, {feedbacks} feedback entries, {confusion} confusion entries, and {leaderboard} session leaderboard entries will be deleted.',
+      resetPreservedRewards:
+        'Previously awarded course points, XP, timeline rewards, achievements, and awards remain unchanged.',
+      resetInvalidState:
+        'This live quiz is no longer in an ended state. Refresh the activity list and try again.',
+      resetOutcomeError:
+        'The live quiz could not be reset. No reset was reported as successful.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:

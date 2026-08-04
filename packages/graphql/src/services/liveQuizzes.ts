@@ -33,6 +33,11 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import {
+  formatLiveQuizActivityInfo,
+  type LiveQuizActivityInfoPermission,
+} from './liveQuizActivityInfo.js'
+import { initializeLiveQuizExecutionCache } from './liveQuizExecutionCache.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -507,66 +512,26 @@ export async function manipulateLiveQuiz(
     id,
   })
 
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
-  const {
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
-    sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
-  })
-
-  return {
-    id: activity.id,
-    templateId: activity.templateInfo?.id ?? null,
-    name: activity.name,
-    displayName: activity.displayName,
-    reviewStatus: activity.reviewStatus,
-    type: ActivityType.LIVE_QUIZ,
-    status: activity.status,
-    courseId: isCourseAdminOwner ? activity.course?.id : null, // only return course id if the user can access corresponding course overview
-    courseName: activity.course?.name,
-    courseLanguage: activity.course?.language,
-    courseStartDate: activity.course?.startDate,
-    numOfStacks: activity.blocks.length,
-    numOfElements: activity.blocks.reduce(
-      (acc, block) => acc + block._count.elements,
-      0
-    ),
-    permissionLevel,
-    derivedAccess: derived,
-    areInstancesOutdated: activity.areInstancesOutdated,
-    isGamificationEnabled: activity.isGamificationEnabled,
-    isAssessmentEnabled: activity.isAssessmentEnabled,
-    pinCode: activity.pinCode,
-    numSharedUsers: id ? activity._count.permissions - 1 : 0,
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
+  const storedPermission = activity.permissions[0]
+  const permission: LiveQuizActivityInfoPermission = storedPermission ?? {
+    permissionLevel: DB.PermissionLevel.OWNER,
+    derived: false,
+    directPermission: null,
+  }
+  return formatLiveQuizActivityInfo({
+    activity,
+    permission,
+    course: activity.course,
+    implicitOwner: storedPermission === undefined,
+    exposedCourseId: isCourseAdminOwner ? activity.course?.id : null,
+    numSharedUsers: id ? Math.max(0, activity._count.permissions - 1) : 0,
     isActivityReviewer:
       !id || // activity creation -> automatically activity owner
       (activity.courseId === null &&
-        (activity.permissions[0]?.permissionLevel ===
-          DB.PermissionLevel.OWNER ||
-          activity.permissions[0]?.permissionLevel ===
-            DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
+        (permission.permissionLevel === DB.PermissionLevel.OWNER ||
+          permission.permissionLevel === DB.PermissionLevel.ADMIN)) || // live quiz not part of course -> activity admin
       (!!activity.course && activity.course._count.permissions > 0), // live quiz in course -> course admin
-    sharingType,
-    updatedAt: activity.updatedAt,
-  }
+  })
 }
 
 export async function removeLiveQuiz(
@@ -799,85 +764,131 @@ export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
 
 // ------ LIVE QUIZ EXECUTION (LECTURER) ------
 // #region
+type LiveQuizStartMode = 'MANUAL' | 'SCHEDULED'
+
+async function claimAndStartLiveQuiz({
+  id,
+  mode,
+  ctx,
+}: {
+  id: string
+  mode: LiveQuizStartMode
+  ctx: Pick<Context, 'prisma' | 'redisExec' | 'redisAssessmentExec'>
+}) {
+  return ctx.prisma.$transaction(
+    async (tx) => {
+      const lockedRows = await tx.$queryRaw<{ id: string }[]>`
+        SELECT "id"
+        FROM "LiveQuiz"
+        WHERE "id" = ${id}::uuid
+        FOR UPDATE
+      `
+      if (lockedRows.length === 0) {
+        return { outcome: 'NOT_ELIGIBLE' as const }
+      }
+
+      const liveQuiz = await tx.liveQuiz.findUnique({
+        where: { id },
+        include: { blocks: { orderBy: { id: 'asc' } } },
+      })
+      if (!liveQuiz) {
+        return { outcome: 'NOT_ELIGIBLE' as const }
+      }
+
+      if (mode === 'SCHEDULED' && liveQuiz.isDeleted) {
+        return { outcome: 'NOT_ELIGIBLE' as const }
+      }
+      if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
+        return {
+          outcome: 'ALREADY_PUBLISHED' as const,
+          liveQuiz,
+        }
+      }
+
+      const startedAt = new Date()
+      const isEligible =
+        mode === 'MANUAL'
+          ? liveQuiz.status === DB.PublicationStatus.DRAFT ||
+            liveQuiz.status === DB.PublicationStatus.SCHEDULED
+          : liveQuiz.status === DB.PublicationStatus.SCHEDULED &&
+            liveQuiz.availableFrom !== null &&
+            liveQuiz.availableFrom <= startedAt
+      if (!isEligible) {
+        return { outcome: 'NOT_ELIGIBLE' as const }
+      }
+
+      const redis = liveQuiz.isAssessmentEnabled
+        ? ctx.redisAssessmentExec
+        : ctx.redisExec
+      await initializeLiveQuizExecutionCache({
+        liveQuizId: liveQuiz.id,
+        namespace: liveQuiz.namespace,
+        isGamificationEnabled: liveQuiz.isGamificationEnabled,
+        isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+        redis,
+        startedAt,
+      })
+
+      const startedLiveQuiz = await tx.liveQuiz.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.PUBLISHED,
+          startedAt,
+          scheduledPublicationTaskId: null,
+        },
+        include: { blocks: { orderBy: { id: 'asc' } } },
+      })
+      return {
+        outcome: 'STARTED' as const,
+        liveQuiz: startedLiveQuiz,
+        scheduledPublicationTaskId: liveQuiz.scheduledPublicationTaskId,
+      }
+    },
+    {
+      maxWait: 60000,
+      timeout: 60000,
+    }
+  )
+}
+
 export async function startLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
   try {
-    const quiz = await ctx.prisma.liveQuiz.findFirst({
-      where: {
-        id,
-        status: {
-          in: [
-            DB.PublicationStatus.DRAFT,
-            DB.PublicationStatus.SCHEDULED,
-            DB.PublicationStatus.PUBLISHED,
-          ],
-        },
-      },
-      include: { blocks: { orderBy: { id: 'asc' } } },
+    const startResult = await claimAndStartLiveQuiz({
+      id,
+      mode: 'MANUAL',
+      ctx,
     })
 
-    // if there is no live quiz matching the current user and quiz id, exit early
-    if (!quiz) {
+    if (startResult.outcome === 'NOT_ELIGIBLE') {
       return null
     }
+    if (startResult.outcome === 'ALREADY_PUBLISHED') {
+      return startResult.liveQuiz
+    }
 
-    // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
-      ? ctx.redisAssessmentExec
-      : ctx.redisExec
-
-    switch (quiz.status) {
-      case DB.PublicationStatus.PUBLISHED:
-        return quiz
-
-      case DB.PublicationStatus.DRAFT:
-      case DB.PublicationStatus.SCHEDULED: {
-        try {
-          const pipeline = redis.pipeline()
-          pipeline.hmset(`lq:${quiz.id}:meta`, {
-            namespace: quiz.namespace,
-            startedAt: Number(new Date()),
-            isGamificationEnabled: quiz.isGamificationEnabled,
-            isAssessmentEnabled: quiz.isAssessmentEnabled,
-          })
-
-          await pipeline.exec()
-        } catch (e) {
-          console.error(e)
-        }
-
-        // remove the scheduled hatchet publication task, if it exists
-        if (quiz.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
-          }
-        }
-
-        // generate a random pin code
-        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
-            scheduledPublicationTaskId: null,
-          },
-        })
-
-        await sendTeamsNotification({
-          scope: 'graphql/startLiveQuiz',
-          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
-        })
-
-        return startedLiveQuiz
+    // remove the scheduled hatchet publication task, if it exists
+    if (startResult.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          startResult.scheduledPublicationTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled task for live quiz ${id}:`,
+          error
+        )
       }
     }
+
+    await sendTeamsNotification({
+      scope: 'graphql/startLiveQuiz',
+      text: `START Live quiz ${startResult.liveQuiz.name} with id ${startResult.liveQuiz.id}.`,
+    })
+
+    return startResult.liveQuiz
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
@@ -2515,7 +2526,7 @@ export async function resetAssessmentLiveQuiz(
             feedbacks: { deleteMany: {} },
             confusionFeedbacks: { deleteMany: {} },
             leaderboard: { deleteMany: {} },
-            temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
+            temporaryLeaderboard: { deleteMany: {} },
           },
           include: {
             course: true,
@@ -2630,7 +2641,7 @@ export async function resetAssessmentLiveQuiz(
       isExecutor,
       isShared,
       isRemovable,
-      isActivityReviewer: true, // requirement for this action
+      isActivityReviewer: true,
       sharingType,
       updatedAt: updatedQuiz.updatedAt,
     }
@@ -3150,17 +3161,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
     )
 
     try {
-      // check if the live quiz exists and if its availableFrom date is in the past
-      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
-        where: {
-          id: liveQuizId,
-          isDeleted: false,
-          status: DB.PublicationStatus.SCHEDULED,
-          availableFrom: { lte: new Date() },
-        },
+      const startResult = await claimAndStartLiveQuiz({
+        id: liveQuizId,
+        mode: 'SCHEDULED',
+        ctx: globalCtx,
       })
 
-      if (!liveQuiz) {
+      if (startResult.outcome === 'NOT_ELIGIBLE') {
         await sendTeamsNotification({
           scope: 'hatchet/live-quiz-start',
           text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
@@ -3169,38 +3176,19 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
           `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
         )
       }
-
-      // depending on the quiz assessment setting, select the corresponding redis instance
-      const redis = liveQuiz.isAssessmentEnabled
-        ? globalCtx.redisAssessmentExec
-        : globalCtx.redisExec
-
-      // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
-        })
-        .exec()
-
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
+      if (startResult.outcome === 'ALREADY_PUBLISHED') {
+        return true
+      }
 
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
-        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
+        text: `START Live quiz ${startResult.liveQuiz.name} with id ${startResult.liveQuiz.id}.`,
       })
 
       // invalidate the cache for the live quiz
       globalCtx.emitter.emit('invalidate', {
         typename: 'LiveQuiz',
-        id: startedLiveQuiz.id,
+        id: startResult.liveQuiz.id,
       })
 
       return true

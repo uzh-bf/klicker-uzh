@@ -2,6 +2,7 @@ import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from '@/services/groups.js'
+import { handleCleanupLiveQuizResetCache } from '@/services/liveQuizReset.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -16,6 +17,8 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  AchievementScope,
+  AchievementType,
   AnswerCollection,
   CatalogCollection,
   CourseAuthType,
@@ -23,11 +26,13 @@ import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
+  LeaderboardType,
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
   ResponseCorrectness,
+  TimelineEntryType,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
@@ -36,6 +41,7 @@ import {
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
+  type CleanupLiveQuizResetCacheInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -154,6 +160,17 @@ export async function testInitialization(
         console.info('Audit log triggered', message)
         return { success: true }
       },
+    }),
+    cleanupLiveQuizResetCache: hatchet.task({
+      name: 'cleanup-live-quiz-reset-cache',
+      retries: 3,
+      fn: async (input: CleanupLiveQuizResetCacheInput, executionCtx) => ({
+        success: await handleCleanupLiveQuizResetCache(
+          input,
+          hatchetCtx,
+          executionCtx
+        ),
+      }),
     }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
@@ -345,6 +362,7 @@ export async function testCleanup(prisma: PrismaClient) {
   await prisma.practiceQuiz.deleteMany()
   await prisma.microLearning.deleteMany()
   await prisma.groupActivity.deleteMany()
+  await prisma.title.deleteMany()
   await prisma.course.deleteMany()
 
   // verify that no permission or derived permission entries are left in the database (deleted through cascading)
@@ -893,6 +911,243 @@ export async function seedLiveQuiz(
   })
 
   return liveQuiz
+}
+
+export interface LiveQuizResetFixture {
+  liveQuizId: string
+  courseId: string | null
+  participantId: string
+  participationId: number | null
+  achievementId: number | null
+  instanceId: number
+  timelineDate: Date
+  awardedCoursePoints: number
+  awardedParticipantXp: number
+}
+
+export interface LiveQuizResetFixtureOptions {
+  gamified: boolean
+  withCourse?: boolean
+}
+
+export async function seedEndedRegularLiveQuizForReset(
+  { gamified, withCourse = gamified }: LiveQuizResetFixtureOptions,
+  ctx: ContextWithUser
+): Promise<LiveQuizResetFixture> {
+  const course = withCourse
+    ? await seedCourse(
+        {
+          isGamificationEnabled: gamified,
+          isAssessmentEnabled: false,
+        },
+        ctx
+      )
+    : null
+  const element = await ctx.prisma.element.create({
+    data: {
+      type: ElementType.SC,
+      name: `Synthetic reset element ${uuidv4()}`,
+      content: 'Synthetic reset content',
+      options: {},
+      ownerId: ctx.user.sub,
+    },
+  })
+  const seededLiveQuiz = await seedLiveQuiz(
+    {
+      elements: [{ id: element.id, type: ElementType.SC }],
+      courseId: course?.id,
+      status: PublicationStatus.ENDED,
+    },
+    ctx
+  )
+  const timelineDate = new Date('2026-07-30T00:00:00.000Z')
+  const liveQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id: seededLiveQuiz.id },
+    data: { finishedAt: timelineDate, isGamificationEnabled: gamified },
+  })
+  const instance = await ctx.prisma.elementInstance.findFirstOrThrow({
+    where: { elementBlock: { liveQuizId: liveQuiz.id } },
+  })
+
+  const awardedCoursePoints = gamified && course ? 70 : 0
+  const awardedParticipantXp = gamified ? 25 : 0
+
+  const participant = await ctx.prisma.participant.create({
+    data: {
+      username: uuidv4(),
+      password: 'synthetic-test-password',
+      xp: awardedParticipantXp,
+    },
+  })
+  const participation =
+    course !== null
+      ? await ctx.prisma.participation.create({
+          data: {
+            courseId: course.id,
+            participantId: participant.id,
+            isActive: true,
+          },
+        })
+      : null
+  const achievement =
+    gamified && participation
+      ? await ctx.prisma.achievement.upsert({
+          where: { id: 1_000_000 },
+          create: {
+            id: 1_000_000,
+            nameEN: 'Synthetic live quiz rank',
+            nameDE: 'Synthetischer Live-Quiz-Rang',
+            icon: 'star',
+            type: AchievementType.PARTICIPANT,
+            scope: AchievementScope.GLOBAL,
+            rewardedPoints: 10,
+            rewardedXP: 5,
+          },
+          update: {},
+        })
+      : null
+
+  await ctx.prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: timelineDate,
+      response: { choices: [{ ix: 0, selected: true }] },
+      correctness: ResponseCorrectness.CORRECT,
+      basePoints: 10,
+      correctnessPoints: 5,
+      bonusPoints: 0,
+      timeSpent: 1,
+      elementBlockExecution: 0,
+      instanceId: instance.id,
+      participantId: participant.id,
+    },
+  })
+  await ctx.prisma.elementInstance.update({
+    where: { id: instance.id },
+    data: {
+      results: { total: 1 } as ElementInstanceResults,
+      anonymousResults: { total: 0 } as ElementInstanceResults,
+    },
+  })
+  await ctx.prisma.feedback.create({
+    data: {
+      content: 'Synthetic reset feedback',
+      liveQuizId: liveQuiz.id,
+      participantId: participant.id,
+    },
+  })
+  await ctx.prisma.confusionTimestep.create({
+    data: {
+      difficulty: 1,
+      speed: 1,
+      liveQuizId: liveQuiz.id,
+    },
+  })
+
+  if (gamified && participation) {
+    await ctx.prisma.leaderboardEntry.create({
+      data: {
+        type: LeaderboardType.SESSION,
+        score: awardedCoursePoints,
+        participantId: participant.id,
+        liveQuizId: liveQuiz.id,
+        sessionParticipationId: participation.id,
+      },
+    })
+  } else if (gamified) {
+    await ctx.prisma.temporaryLeaderboardEntry.create({
+      data: {
+        id: participant.id,
+        quizId: liveQuiz.id,
+        username: participant.username,
+        avatar: participant.avatar,
+        score: awardedCoursePoints,
+      },
+    })
+  }
+  if (participation && awardedCoursePoints !== 0) {
+    await ctx.prisma.leaderboardEntry.create({
+      data: {
+        type: LeaderboardType.COURSE,
+        score: awardedCoursePoints,
+        participantId: participant.id,
+        liveQuizId: liveQuiz.id,
+        courseId: course!.id,
+        participation: { connect: { id: participation.id } },
+      },
+    })
+  }
+  if (
+    participation &&
+    (awardedCoursePoints !== 0 || awardedParticipantXp !== 0)
+  ) {
+    await ctx.prisma.timelineEntry.create({
+      data: {
+        type: TimelineEntryType.DAILY,
+        timestamp: timelineDate,
+        collectedPoints: awardedCoursePoints,
+        collectedXp: awardedParticipantXp,
+        courseId: course!.id,
+        participationId: participation.id,
+      },
+    })
+  }
+  if (achievement) {
+    await ctx.prisma.participantAchievementInstance.create({
+      data: {
+        participantId: participant.id,
+        achievementId: achievement.id,
+        achievedAt: timelineDate,
+        achievedCount: 1,
+      },
+    })
+  }
+
+  if (gamified && participation) {
+    await Promise.all([
+      ctx.prisma.awardEntry.create({
+        data: {
+          order: 999,
+          type: 'PARTICIPANT',
+          name: `synthetic-reset-award-${liveQuiz.id}`,
+          displayName: 'Synthetic reset award',
+          description: 'Synthetic cumulative reward',
+          courseId: course!.id,
+          participantId: participant.id,
+        },
+      }),
+      ctx.prisma.title.create({
+        data: {
+          name: `Synthetic reset title ${liveQuiz.id}`,
+          courseId: course!.id,
+          awardedTo: { connect: { id: participant.id } },
+        },
+      }),
+      ctx.prisma.participantPerformance.create({
+        data: {
+          firstErrorRate: 0.8,
+          firstPerformance: 'LOW',
+          lastErrorRate: 0.5,
+          lastPerformance: 'MEDIUM',
+          totalErrorRate: 0.2,
+          totalPerformance: 'HIGH',
+          participantId: participant.id,
+          courseId: course!.id,
+        },
+      }),
+    ])
+  }
+
+  return {
+    liveQuizId: liveQuiz.id,
+    courseId: course?.id ?? null,
+    participantId: participant.id,
+    participationId: participation?.id ?? null,
+    achievementId: achievement?.id ?? null,
+    instanceId: instance.id,
+    timelineDate,
+    awardedCoursePoints,
+    awardedParticipantXp,
+  }
 }
 
 /**

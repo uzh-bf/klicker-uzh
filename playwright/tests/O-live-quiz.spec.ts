@@ -714,6 +714,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz1}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
       'exist'
@@ -753,6 +756,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz2}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
       'exist'
@@ -784,6 +790,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz3}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
       'exist'
@@ -819,6 +828,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz4}`),
       'exist'
     )
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`)
+    ).toBeVisible()
     await expectByAssertion(
       page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
       'exist'
@@ -969,6 +981,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
       'exist'
@@ -1098,6 +1113,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
       'exist'
@@ -1238,6 +1256,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
       'exist'
@@ -1301,6 +1322,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz1}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz1}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`edit-live-quiz-${data.sharing.quiz1}`),
       'exist'
@@ -1344,6 +1368,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz2}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz2}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz2}`),
       'exist'
@@ -1379,6 +1406,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       'exist'
     )
     await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz3}`).click()
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz3}`)
+    ).toHaveCount(0)
     await expectByAssertion(
       page.getByTestId(`live-quiz-evaluation-${data.sharing.quiz3}`),
       'exist'
@@ -1418,6 +1448,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId(`duplicate-live-quiz-${data.sharing.quiz4}`),
       'exist'
     )
+    await expect(
+      page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`)
+    ).toBeVisible()
     await expectByAssertion(
       page.getByTestId(`show-embedding-modal-${data.sharing.quiz4}`),
       'exist'
@@ -4353,6 +4386,48 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.waitForTimeout(500)
   })
 
+  test('Reset an ended regular live quiz as its owner', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await openActivitiesListForQuiz(page, data.liveQuiz.name)
+    const identityBefore = await runTask('getLiveQuizIdentity', {
+      name: data.liveQuiz.name,
+    })
+    expect(identityBefore.status).toBe('ENDED')
+
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.liveQuiz.name}`).click()
+    await page.getByTestId(`reset-live-quiz-${data.liveQuiz.name}`).click()
+
+    const confirmReset = page.getByTestId('confirmation-modal-confirm')
+    await expect(confirmReset).toBeDisabled()
+    await expect(page.getByTestId('confirm-reset-run-data')).toBeVisible()
+    await expect(
+      page.getByText(messages.manage.liveQuizzes.resetPreservedRewards, {
+        exact: true,
+      })
+    ).toBeVisible()
+    await page.getByTestId('confirm-reset-run-data').click()
+    await expect(confirmReset).toBeEnabled()
+    await confirmReset.click()
+
+    await expect(
+      page.getByTestId(`start-live-quiz-${data.liveQuiz.name}`)
+    ).toBeVisible()
+    const identityAfter = await runTask('getLiveQuizIdentity', {
+      name: data.liveQuiz.name,
+    })
+    expect(identityAfter).toEqual({
+      id: identityBefore.id,
+      pinCode: identityBefore.pinCode,
+      status: 'DRAFT',
+    })
+  })
+
   test('Duplicate the live quiz and check that the same questions are contained therein', async ({
     page: testPage,
   }, testInfo) => {
@@ -4760,6 +4835,57 @@ test.describe.serial('Different live-quiz workflows', () => {
     testInfo.setTimeout(600_000)
     page.setDefaultNavigationTimeout(300_000)
     await verifyLiveQuizADMINPermissions(data, false)
+  })
+
+  test('Keep the reset modal open after an INVALID_STATE outcome', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await openActivitiesListForQuiz(page, data.sharing.quiz4)
+    await page.getByTestId(`actions-LIVE_QUIZ-${data.sharing.quiz4}`).click()
+    await page.getByTestId(`reset-live-quiz-${data.sharing.quiz4}`).click()
+
+    const confirmReset = page.getByTestId('confirmation-modal-confirm')
+    await expect(confirmReset).toBeDisabled()
+    await expect(page.getByTestId('confirm-reset-run-data')).toBeVisible()
+    await expect(
+      page.getByText(messages.manage.liveQuizzes.resetPreservedRewards, {
+        exact: true,
+      })
+    ).toBeVisible()
+    await page.getByTestId('confirm-reset-run-data').click()
+    await expect(confirmReset).toBeEnabled()
+    let stateChanged = false
+    try {
+      await runTask('changeActivityStatus', {
+        activityName: data.sharing.quiz4,
+        activityType: 'LIVE_QUIZ',
+        status: 'DRAFT',
+      })
+      stateChanged = true
+      await confirmReset.click()
+
+      await expect(
+        page.getByText(messages.manage.liveQuizzes.resetInvalidState, {
+          exact: true,
+        })
+      ).toBeVisible()
+      await expect(confirmReset).toBeVisible()
+      await expect(confirmReset).toBeEnabled()
+      await page.getByTestId('confirmation-modal-cancel').click()
+    } finally {
+      if (stateChanged) {
+        await runTask('changeActivityStatus', {
+          activityName: data.sharing.quiz4,
+          activityType: 'LIVE_QUIZ',
+          status: 'ENDED',
+        })
+      }
+    }
   })
 
   test('Revoke the direct individual permissions for all users through the activity owner account', async ({

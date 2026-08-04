@@ -1,6 +1,9 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  CleanupLiveQuizResetCacheInput,
+  HatchetHandlers,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -119,6 +122,18 @@ export function prepareHatchetTasks({
       )
       return { success }
     },
+  })
+
+  const cleanupLiveQuizResetCache = hatchet.task({
+    name: 'cleanup-live-quiz-reset-cache',
+    retries: 3,
+    fn: async (input: CleanupLiveQuizResetCacheInput, executionContext) => ({
+      success: await handlers.handleCleanupLiveQuizResetCache(
+        input,
+        globalContext,
+        executionContext
+      ),
+    }),
   })
   // #endregion
 
@@ -302,6 +317,7 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    cleanupLiveQuizResetCache,
     createAuditLogEntry,
   }
 }

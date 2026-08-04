@@ -14,6 +14,7 @@ import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
+import RegularLiveQuizResetModal from '../../courses/modals/RegularLiveQuizResetModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -175,8 +176,9 @@ function LiveQuizActions({
                 liveQuiz.status === PublicationStatus.Scheduled)
             ? ['deleteLiveQuiz']
             : []),
-        // completed assessment live quizzes can be reset by assessment course admins
-        ...(liveQuiz.isAssessmentEnabled && liveQuiz.isActivityReviewer
+        // regular live quizzes can be reset by managers; completed assessment
+        // live quizzes retain the additional assessment reviewer restriction
+        ...(!liveQuiz.isAssessmentEnabled || liveQuiz.isActivityReviewer
           ? ['resetLiveQuiz']
           : []),
         'deleteTemplate',
@@ -268,7 +270,7 @@ function LiveQuizActions({
           />
         )}
 
-        {resetModal && (
+        {resetModal && liveQuiz.isAssessmentEnabled ? (
           <LiveQuizResetModal
             quizId={liveQuiz.id}
             courseId={liveQuiz.courseId}
@@ -278,7 +280,18 @@ function LiveQuizActions({
               await refetchActivities?.()
             }}
           />
-        )}
+        ) : null}
+
+        {resetModal && !liveQuiz.isAssessmentEnabled ? (
+          <RegularLiveQuizResetModal
+            quizId={liveQuiz.id}
+            courseId={liveQuiz.courseId}
+            onClose={() => setResetModal(false)}
+            onSuccess={async () => {
+              await refetchActivities?.()
+            }}
+          />
+        ) : null}
 
         {templateDeletionModal && (
           <TemplateDeletionModal

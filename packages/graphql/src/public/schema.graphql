@@ -1782,6 +1782,21 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+enum LiveQuizResetEligibilityReason {
+  ASSESSMENT_POLICY
+  ELIGIBLE
+  INVALID_STATE
+}
+
+type LiveQuizResetSummary {
+  eligible: Boolean!
+  numOfConfusionFeedbacks: Int!
+  numOfFeedbacks: Int!
+  numOfLeaderboardEntries: Int!
+  numOfResponses: Int!
+  reason: LiveQuizResetEligibilityReason!
+}
+
 type LiveQuizSelectionItem {
   displayName: String!
   id: String!
@@ -1959,6 +1974,7 @@ type Mutation {
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
+  resetLiveQuiz(id: String!): ResetLiveQuizPayload!
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
@@ -2479,6 +2495,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
+  getLiveQuizResetSummary(quizId: String!): LiveQuizResetSummary
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
   getMatchingUserElementsTemplate(elementType: ElementType!, hasAnswerFeedbacks: Boolean, hasSampleSolution: Boolean): [TemplateElementInformation!]
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
@@ -2561,6 +2578,16 @@ type ReducedActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   status: PublicationStatus!
+}
+
+enum ResetLiveQuizOutcome {
+  INVALID_STATE
+  SUCCESS
+}
+
+type ResetLiveQuizPayload {
+  activity: ActivityInfo
+  outcome: ResetLiveQuizOutcome!
 }
 
 enum ResponseCorrectness {

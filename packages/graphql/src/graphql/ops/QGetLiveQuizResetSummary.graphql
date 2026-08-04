@@ -1,0 +1,10 @@
+query GetLiveQuizResetSummary($quizId: String!) {
+  getLiveQuizResetSummary(quizId: $quizId) {
+    numOfResponses
+    numOfFeedbacks
+    numOfConfusionFeedbacks
+    numOfLeaderboardEntries
+    eligible
+    reason
+  }
+}

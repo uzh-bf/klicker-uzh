@@ -58,6 +58,8 @@ volta run pnpm --filter @klicker-uzh/playwright exec playwright test --project=c
 volta run pnpm --filter @klicker-uzh/playwright test -- --project=chromium
 ```
 
+Before recommending `--grep` inside a serial workflow, verify that the selected tests provision all of their own prerequisites. If they reuse quizzes, permissions, or other state created by earlier tests, run and document the complete spec instead.
+
 For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
 
 ```bash

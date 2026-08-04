@@ -18,6 +18,21 @@ export interface HatchetHandlerGlobalContext {
   prisma: PrismaClient
 }
 
+export type LiveQuizResetCacheGenerationSnapshot =
+  | {
+      status: 'AVAILABLE'
+      generation: string | null
+    }
+  | {
+      status: 'UNAVAILABLE'
+    }
+
+export type CleanupLiveQuizResetCacheInput = {
+  liveQuizId: string
+  isAssessmentEnabled: boolean
+  cacheGenerationSnapshot: LiveQuizResetCacheGenerationSnapshot
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
@@ -90,6 +105,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleCleanupLiveQuizResetCache: (
+    input: CleanupLiveQuizResetCacheInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -133,6 +153,10 @@ export interface PreparedHatchetTasks {
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
     { liveQuizId: string; blockId: number },
+    { success: boolean }
+  >
+  cleanupLiveQuizResetCache: TaskWorkflowDeclaration<
+    CleanupLiveQuizResetCacheInput,
     { success: boolean }
   >
 }

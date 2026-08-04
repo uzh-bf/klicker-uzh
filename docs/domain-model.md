@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-08-04'
 tags:
   - backend
   - prisma
@@ -55,3 +55,9 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 - Leaderboards: `LeaderboardEntry` with `LeaderboardType` `SESSION | COURSE`, updated via `stacks.ts:updateLeaderboardOnQuestionResponse`.
 - `Achievement` (`gamification.prisma`) has `type` PARTICIPANT/GROUP/CLASS and `scope` GLOBAL/COURSE, with per-subject instance models; `Level` defines XP thresholds as a linked list; `Title` and `AwardEntry` complete the set.
 - **Unmapped (verify in code before relying on it):** the exact trigger points for achievement awards, and the LiveQuiz bonus-point formula (time-decay multipliers).
+
+### Resetting an ended regular Live Quiz
+
+An activity owner or activity administrator can return an ended regular Live Quiz to draft (`packages/graphql/src/services/liveQuizResetTransaction.ts:executeLiveQuizReset`). Reset preserves the quiz ID, PIN, definition, course assignment, sharing, and permissions. It deletes `LiveQuizResponse` records, aggregate and anonymous results, feedback (including its responses), confusion feedback, quiz-linked `SESSION` `LeaderboardEntry` records, and `TemporaryLeaderboardEntry` records. Blocks return to `SCHEDULED`, clear their execution timestamps, and increment their execution counters (`packages/graphql/src/services/liveQuizResetTransaction.ts:resetLiveQuizExecutionState`).
+
+Cumulative rewards are immutable: `COURSE` leaderboard points, participant XP, timeline entries, achievements, awards, participations, and cumulative performance records are not read or changed by reset. Running the quiz again can award additional cumulative rewards through the ordinary Live Quiz end flow.
