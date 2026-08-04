@@ -4,6 +4,7 @@ import {
   chatUrl,
   clearChatCookies,
   getEnrolledParticipantId,
+  getMessageRating,
   mockChatStream,
   resetChatState,
   seedThread,
@@ -524,6 +525,45 @@ test.describe('Chatbot Message Actions & Branching', () => {
     expect(clipboard).toContain('A copyable answer')
   })
 
+  test('Rating an answer persists, switches and clears', async ({ page }) => {
+    const assistantMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c40'
+    await seedThread(participantId, {
+      title: 'Rating test',
+      messages: [
+        { role: 'user', content: [{ type: 'text', text: 'A question' }] },
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'A rateable answer' }],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    await expect(assistant).toBeVisible()
+    await assistant.hover()
+
+    const up = page.getByTestId('chat-rate-up-button')
+    const down = page.getByTestId('chat-rate-down-button')
+
+    await up.click()
+    await expect(up).toHaveAttribute('aria-pressed', 'true')
+    await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
+
+    // Changing one's mind replaces the vote rather than stacking a second one.
+    await down.click()
+    await expect(down).toHaveAttribute('aria-pressed', 'true')
+    await expect(up).toHaveAttribute('aria-pressed', 'false')
+    await expect.poll(() => getMessageRating(assistantMessageId)).toBe('DOWN')
+
+    // Clicking the active vote retracts it.
+    await down.click()
+    await expect(down).toHaveAttribute('aria-pressed', 'false')
+    await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
+  })
+
   test('Regenerating a response replaces it with a new one', async ({
     page,
   }) => {
@@ -903,24 +943,29 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toHaveCount(0)
   })
 
-  test('Chat mode section shows available modes', async ({ page }) => {
+  test('Mode switcher shows available modes', async ({ page }) => {
     await visitChat(page)
-    await openSettings(page)
 
-    const modeSection = page.getByTestId('chat-mode-selection')
-    await expect(modeSection).toBeVisible()
-    await expect(modeSection).toContainText('Chat Mode')
+    await expect(page.getByTestId('chat-mode-switcher')).toBeVisible()
+    await expect(page.getByTestId('chat-mode-option-tutor')).toContainText(
+      'Tutor'
+    )
+    await expect(page.getByTestId('chat-mode-option-explainer')).toContainText(
+      'Explainer'
+    )
   })
 
   test('Selecting a different chat mode updates the selection', async ({
     page,
   }) => {
     await visitChat(page)
-    await openSettings(page)
 
-    await selectOption(page, '[data-cy="chat-mode-select"]', 'Explainer')
-    await expect(page.getByTestId('chat-mode-selection')).toContainText(
-      'Explainer'
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await explainerOption.click()
+    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
+      'aria-pressed',
+      'false'
     )
   })
 

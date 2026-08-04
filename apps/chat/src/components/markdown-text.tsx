@@ -11,6 +11,7 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
@@ -32,6 +33,7 @@ const MarkdownTextImpl = () => {
 export const MarkdownText = memo(MarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
+  const t = useTranslations()
   const { isCopied, copyToClipboard } = useCopyToClipboard()
   const onCopy = () => {
     if (!code || isCopied) return
@@ -49,10 +51,10 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
           >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
-            <span className="sr-only">Copy</span>
+            <span className="sr-only">{t('chat.markdown.copyCode')}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
+        <TooltipContent>{t('chat.markdown.copyCode')}</TooltipContent>
       </Tooltip>
     </div>
   )
@@ -78,8 +80,10 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  // Rendered as h2: the chatbot name is the page's single h1, so message
+  // headings must not compete at the same rank (visual size unchanged).
   h1: ({ className, ...props }) => (
-    <h1
+    <h2
       className={cn(
         'mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0',
         className
@@ -168,13 +172,12 @@ const defaultComponents = memoizeMarkdownComponents({
     <hr className={cn('my-5 border-b', className)} {...props} />
   ),
   table: ({ className, ...props }) => (
-    <table
-      className={cn(
-        'my-5 w-full border-separate border-spacing-0 overflow-y-auto',
-        className
-      )}
-      {...props}
-    />
+    <div className="my-5 overflow-x-auto">
+      <table
+        className={cn('w-full border-separate border-spacing-0', className)}
+        {...props}
+      />
+    </div>
   ),
   th: ({ className, ...props }) => (
     <th

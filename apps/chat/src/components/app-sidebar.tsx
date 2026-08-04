@@ -8,13 +8,16 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@uzh-bf/design-system'
 import { Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -23,15 +26,18 @@ export function AppSidebar({
   chatbotName,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { chatbotName?: string }) {
+  const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
+  const { setOpenMobile } = useSidebar()
 
   const handleNewThread = async () => {
     if (participationRequired) return
     try {
       const threadId = await createThread(chatbotId)
       router.push(`/${chatbotId}/threads/${threadId}`)
+      setOpenMobile(false)
     } catch {
       /* handled centrally */
     }
@@ -52,31 +58,43 @@ export function AppSidebar({
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}
-                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-6 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
                   >
                     <Plus className="size-4" />
-                    <span className="sr-only">New Chat</span>
+                    <span className="sr-only">{t('chat.sidebar.newChat')}</span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>New Chat</TooltipContent>
+                <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <SidebarTrigger className="mr-2 size-4 shrink-0" />
+                  {/* The design-system trigger ships a hardcoded English
+                      "Toggle Sidebar" sr-only label; an explicit aria-label
+                      wins over it so screen readers follow the UI locale. */}
+                  <SidebarTrigger
+                    className="mr-2 size-6 shrink-0"
+                    aria-label={t('chat.sidebar.closeSidebar')}
+                  />
                 </TooltipTrigger>
-                <TooltipContent>Close sidebar</TooltipContent>
+                <TooltipContent>
+                  {t('chat.sidebar.closeSidebar')}
+                </TooltipContent>
               </Tooltip>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <p className="text-foreground px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide">
+          {t('chat.sidebar.conversationsLabel')}
+        </p>
         <ThreadList />
       </SidebarContent>
 
       <SidebarRail />
       <SidebarFooter className="p-0">
         <SettingsPanel />
+        <CreditsFooter />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
@@ -87,9 +105,10 @@ export function AppSidebar({
               >
                 <Image
                   src="/KlickerLogo.png"
-                  alt="Klicker Logo"
+                  alt={t('chat.sidebar.logoAlt')}
                   width={120}
                   height={60}
+                  unoptimized
                   className="h-6 w-auto object-contain md:h-8"
                 />
               </Link>

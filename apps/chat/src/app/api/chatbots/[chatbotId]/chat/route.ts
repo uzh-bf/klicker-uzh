@@ -8,6 +8,11 @@ import {
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import {
+  getParentSpanContext,
+  getTraceIdForMessage,
+  isAiTelemetryEnabled,
+} from '@/src/lib/server/langfuseTracing'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
@@ -20,6 +25,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
 import {
   generateText,
   stepCountIs,
@@ -59,7 +65,6 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
-const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
@@ -1266,191 +1271,79 @@ export async function POST(
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
-  const result = streamText({
-    model,
-    maxOutputTokens,
-    experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
-    providerOptions: {
-      openai: {
-        ...(selectedModelConfig.supportsReasoning && {
-          store: getOpenAIResponsesStore(),
-        }),
-        ...(providerReasoningEffort && {
-          reasoningEffort: providerReasoningEffort,
-          reasoningSummary: 'auto',
-        }),
+  // Langfuse v4 addresses traces by OTel trace id, so the id is derived from the
+  // assistant message id here and re-derived when a rating comes in later.
+  const traceId = isAiTelemetryEnabled
+    ? await getTraceIdForMessage(assistantMessageId)
+    : null
+
+  const startStream = () =>
+    streamText({
+      model,
+      maxOutputTokens,
+      experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
+      providerOptions: {
+        openai: {
+          ...(selectedModelConfig.supportsReasoning && {
+            store: getOpenAIResponsesStore(),
+          }),
+          ...(providerReasoningEffort && {
+            reasoningEffort: providerReasoningEffort,
+            reasoningSummary: 'auto',
+          }),
+        },
       },
-    },
-    messages: modelMessages as ModelMessage[],
-    tools: mcpTools,
-    toolChoice: 'auto',
-    stopWhen: stepCountIs(5),
-    system: systemPrompt,
+      messages: modelMessages as ModelMessage[],
+      tools: mcpTools,
+      toolChoice: 'auto',
+      stopWhen: stepCountIs(5),
+      system: systemPrompt,
 
-    abortSignal: req.signal,
+      abortSignal: req.signal,
 
-    onChunk: ({ chunk }) => {
-      if (!hasLoggedFirstChunk) {
-        hasLoggedFirstChunk = true
-        logEvent('stream.chunk.first', {
-          firstChunkType: chunk.type,
-          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        })
-      }
-
-      if (chunk.type === 'text-delta' && chunk.text) {
-        partialContent += chunk.text
-      }
-      if (chunk.type === 'reasoning-delta' && chunk.text) {
-        partialReasoningContent += chunk.text
-      }
-    },
-
-    onFinish: async (result) => {
-      sawFinish = true
-      const creditsUsed = result.totalUsage
-        ? calcCost(
-            selectedModelConfig.cost,
-            result.totalUsage.inputTokens || 0,
-            result.totalUsage.outputTokens || 0
-          ) + imageDescriptionCost
-        : null
-      const finishedReasoningContent =
-        normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
-        normalizeReasoningContent(
-          result.reasoningText ||
-            result.steps
-              .map((step) => step.reasoningText || '')
-              .filter((value) => value.length > 0)
-              .join('\n\n')
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = finishedReasoningContent
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(result)?.providerMetadata
-      )
-      const finishOutputTokens = result.totalUsage?.outputTokens || 0
-
-      logEvent('stream.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        usage: result.totalUsage
-          ? {
-              inputTokens: result.totalUsage.inputTokens || 0,
-              outputTokens: result.totalUsage.outputTokens || 0,
-              totalTokens: result.totalUsage.totalTokens || 0,
-            }
-          : null,
-        creditsUsed,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? finishOutputTokens >= providerReasoningTokens
-            : null,
-        stepsCount: result.steps?.length ?? 0,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-        hadPriorError: Boolean(firstError),
-        hadAbort: sawAbort,
-      })
-
-      // save assistant response to database
-      if (
-        currentThreadId &&
-        owningThread &&
-        result.steps &&
-        result.steps.length > 0
-      ) {
-        try {
-          const content = mapAssistantStepContent(result.steps)
-          // save assistant message to db
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: finishedReasoningContent,
-            creditsUsed,
-          }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content,
-              ...metadata,
-            },
-          })
-
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
-            })
-
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.assistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
-                }
-              )
-            } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: content,
-                  ...metadata,
-                },
-              })
-            }
-          }
-
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
-          })
-        } catch (error) {
-          console.error('Failed to save assistant message:', {
-            requestId,
-            phase: 'persist.assistantMessage',
-            error,
+      onChunk: ({ chunk }) => {
+        if (!hasLoggedFirstChunk) {
+          hasLoggedFirstChunk = true
+          logEvent('stream.chunk.first', {
+            firstChunkType: chunk.type,
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
           })
         }
-      } else if (currentThreadId && !owningThread) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
-            requestId,
-            phase: 'persist.assistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
-          }
+
+        if (chunk.type === 'text-delta' && chunk.text) {
+          partialContent += chunk.text
+        }
+        if (chunk.type === 'reasoning-delta' && chunk.text) {
+          partialReasoningContent += chunk.text
+        }
+      },
+
+      onFinish: async (result) => {
+        sawFinish = true
+        const creditsUsed = result.totalUsage
+          ? calcCost(
+              selectedModelConfig.cost,
+              result.totalUsage.inputTokens || 0,
+              result.totalUsage.outputTokens || 0
+            ) + imageDescriptionCost
+          : null
+        const finishedReasoningContent =
+          normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
+          normalizeReasoningContent(
+            result.reasoningText ||
+              result.steps
+                .map((step) => step.reasoningText || '')
+                .filter((value) => value.length > 0)
+                .join('\n\n')
+          ) ??
+          normalizeReasoningContent(partialReasoningContent)
+        assistantReasoningContent = finishedReasoningContent
+        const providerReasoningTokens = extractReasoningTokens(
+          asObject(result)?.providerMetadata
         )
-      }
+        const finishOutputTokens = result.totalUsage?.outputTokens || 0
 
-      // deduct credits
-      if (creditsUsed !== null) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            creditsUsed
-          )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
-      }
-
-      if (!firstError && !sawAbort) {
-        emitFinalOnce('success', {
+        logEvent('stream.finish', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
           usage: result.totalUsage
             ? {
@@ -1459,35 +1352,100 @@ export async function POST(
                 totalTokens: result.totalUsage.totalTokens || 0,
               }
             : null,
+          creditsUsed,
+          reasoningTokens: providerReasoningTokens,
+          reasoningTokensIncludedInOutput:
+            providerReasoningTokens !== null
+              ? finishOutputTokens >= providerReasoningTokens
+              : null,
           stepsCount: result.steps?.length ?? 0,
+          partialTextLength: partialContent.length,
+          partialReasoningLength: partialReasoningContent.length,
+          hadPriorError: Boolean(firstError),
+          hadAbort: sawAbort,
         })
-      }
-    },
 
-    onAbort: async (steps) => {
-      sawAbort = true
-      let creditsUsed: number | null = null
-      if (steps && Array.isArray(steps.steps)) {
-        let totalCost = 0
-        let hasUsage = false
-        const costBase = selectedModelConfig.cost
+        // save assistant response to database
+        if (
+          currentThreadId &&
+          owningThread &&
+          result.steps &&
+          result.steps.length > 0
+        ) {
+          try {
+            const content = mapAssistantStepContent(result.steps)
+            // save assistant message to db
+            const metadata = {
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              reasoningEffort: appliedReasoningEffort,
+              reasoningContent: finishedReasoningContent,
+              creditsUsed,
+            }
+            const updated = await prisma.chatMessage.updateMany({
+              where: { id: assistantMessageId, threadId: currentThreadId },
+              data: {
+                content,
+                ...metadata,
+              },
+            })
 
-        for (const step of steps.steps) {
-          if (step.usage) {
-            hasUsage = true
-            totalCost += calcCost(
-              costBase,
-              step.usage.inputTokens || 0,
-              step.usage.outputTokens || 0
-            )
+            if (updated.count === 0) {
+              const existingMessage = await prisma.chatMessage.findUnique({
+                where: { id: assistantMessageId },
+                select: { id: true },
+              })
+
+              if (existingMessage) {
+                console.warn(
+                  'Skipping assistant message update: message exists outside current thread',
+                  {
+                    requestId,
+                    phase: 'persist.assistantMessage',
+                    messageId: assistantMessageId,
+                    threadId: currentThreadId,
+                  }
+                )
+              } else {
+                await prisma.chatMessage.create({
+                  data: {
+                    id: assistantMessageId,
+                    threadId: currentThreadId,
+                    parentId: userMessageId,
+                    role: 'assistant',
+                    content: content,
+                    ...metadata,
+                  },
+                })
+              }
+            }
+
+            // update thread's timestamp
+            await prisma.chatThread.update({
+              where: { id: currentThreadId },
+              data: { updatedAt: new Date() },
+            })
+          } catch (error) {
+            console.error('Failed to save assistant message:', {
+              requestId,
+              phase: 'persist.assistantMessage',
+              error,
+            })
           }
+        } else if (currentThreadId && !owningThread) {
+          console.warn(
+            'Skipping assistant message save: thread ownership mismatch',
+            {
+              requestId,
+              phase: 'persist.assistantMessage',
+              messageId: assistantMessageId,
+              threadId: currentThreadId,
+            }
+          )
         }
 
-        if (hasUsage) {
-          creditsUsed = totalCost + imageDescriptionCost
-        }
-
-        if (creditsUsed !== null && creditsUsed > 0) {
+        // deduct credits
+        if (creditsUsed !== null) {
           try {
             await CreditsService.decrementCredits(
               participantId,
@@ -1502,188 +1460,256 @@ export async function POST(
             })
           }
         }
-      }
 
-      const abortedReasoningContent =
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps) ? joinReasoningFromSteps(steps.steps) : ''
-        ) ??
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps)
-            ? steps.steps
-                .map((step) => step.reasoningText || '')
-                .filter((value) => value.length > 0)
-                .join('\n\n')
-            : ''
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = abortedReasoningContent
-
-      logEvent('stream.abort', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
-        creditsUsed,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-      })
-
-      // save partial message
-      if (
-        currentThreadId &&
-        owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        try {
-          const partialAssistantContent: PersistedAssistantContentPart[] = []
-          if (partialContent.trim()) {
-            partialAssistantContent.push({ type: 'text', text: partialContent })
-          }
-          if (abortedReasoningContent) {
-            partialAssistantContent.push({
-              type: 'reasoning',
-              text: abortedReasoningContent,
-            })
-          }
-
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: abortedReasoningContent,
-            creditsUsed,
-          }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content: partialAssistantContent,
-              ...metadata,
-            },
-          })
-
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
-            })
-
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.partialAssistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
+        if (!firstError && !sawAbort) {
+          emitFinalOnce('success', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            usage: result.totalUsage
+              ? {
+                  inputTokens: result.totalUsage.inputTokens || 0,
+                  outputTokens: result.totalUsage.outputTokens || 0,
+                  totalTokens: result.totalUsage.totalTokens || 0,
                 }
+              : null,
+            stepsCount: result.steps?.length ?? 0,
+          })
+        }
+      },
+
+      onAbort: async (steps) => {
+        sawAbort = true
+        let creditsUsed: number | null = null
+        if (steps && Array.isArray(steps.steps)) {
+          let totalCost = 0
+          let hasUsage = false
+          const costBase = selectedModelConfig.cost
+
+          for (const step of steps.steps) {
+            if (step.usage) {
+              hasUsage = true
+              totalCost += calcCost(
+                costBase,
+                step.usage.inputTokens || 0,
+                step.usage.outputTokens || 0
               )
-            } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: partialAssistantContent,
-                  ...metadata,
-                },
+            }
+          }
+
+          if (hasUsage) {
+            creditsUsed = totalCost + imageDescriptionCost
+          }
+
+          if (creditsUsed !== null && creditsUsed > 0) {
+            try {
+              await CreditsService.decrementCredits(
+                participantId,
+                chatbotId,
+                creditsUsed
+              )
+            } catch (error) {
+              console.error('Failed to deduct credits:', {
+                requestId,
+                phase: 'credits.decrement',
+                error,
               })
             }
           }
-
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
-          })
-        } catch (error) {
-          console.error('Failed to save partial message:', {
-            requestId,
-            phase: 'persist.partialAssistantMessage',
-            error,
-          })
         }
-      } else if (
-        currentThreadId &&
-        !owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
-            requestId,
-            phase: 'persist.partialAssistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
-          }
-        )
-      }
 
-      emitFinalOnce('aborted', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
-      })
-    },
+        const abortedReasoningContent =
+          normalizeReasoningContent(
+            Array.isArray(steps?.steps)
+              ? joinReasoningFromSteps(steps.steps)
+              : ''
+          ) ??
+          normalizeReasoningContent(
+            Array.isArray(steps?.steps)
+              ? steps.steps
+                  .map((step) => step.reasoningText || '')
+                  .filter((value) => value.length > 0)
+                  .join('\n\n')
+              : ''
+          ) ??
+          normalizeReasoningContent(partialReasoningContent)
+        assistantReasoningContent = abortedReasoningContent
 
-    onStepFinish: async (step) => {
-      const diagnostics = collectStepToolDiagnostics(step)
-      const toolCallNames = Array.from(
-        new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-      )
-      const toolCallsCount = diagnostics.length
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(step)?.providerMetadata
-      )
-      const stepOutputTokens = step.usage?.outputTokens || 0
-      logEvent('stream.step.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        finishReason: step.finishReason,
-        warningsCount: step.warnings?.length ?? 0,
-        usage: step.usage
-          ? {
-              inputTokens: step.usage.inputTokens || 0,
-              outputTokens: step.usage.outputTokens || 0,
-              totalTokens: step.usage.totalTokens || 0,
-            }
-          : null,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? stepOutputTokens >= providerReasoningTokens
-            : null,
-        toolCallsCount,
-        toolCallNames,
-        toolDiagnostics: diagnostics,
-      })
-    },
-
-    onError: async (error) => {
-      const serializedError = serializeStreamError(error)
-      firstError = firstError ?? serializedError
-      const classification = classifyStreamError(serializedError)
-
-      logEvent(
-        'stream.error',
-        {
+        logEvent('stream.abort', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          ...serializedError,
+          stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          creditsUsed,
+          partialTextLength: partialContent.length,
+          partialReasoningLength: partialReasoningContent.length,
+        })
+
+        // save partial message
+        if (
+          currentThreadId &&
+          owningThread &&
+          (partialContent.trim() || abortedReasoningContent)
+        ) {
+          try {
+            const partialAssistantContent: PersistedAssistantContentPart[] = []
+            if (partialContent.trim()) {
+              partialAssistantContent.push({
+                type: 'text',
+                text: partialContent,
+              })
+            }
+            if (abortedReasoningContent) {
+              partialAssistantContent.push({
+                type: 'reasoning',
+                text: abortedReasoningContent,
+              })
+            }
+
+            const metadata = {
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              reasoningEffort: appliedReasoningEffort,
+              reasoningContent: abortedReasoningContent,
+              creditsUsed,
+            }
+            const updated = await prisma.chatMessage.updateMany({
+              where: { id: assistantMessageId, threadId: currentThreadId },
+              data: {
+                content: partialAssistantContent,
+                ...metadata,
+              },
+            })
+
+            if (updated.count === 0) {
+              const existingMessage = await prisma.chatMessage.findUnique({
+                where: { id: assistantMessageId },
+                select: { id: true },
+              })
+
+              if (existingMessage) {
+                console.warn(
+                  'Skipping assistant message update: message exists outside current thread',
+                  {
+                    requestId,
+                    phase: 'persist.partialAssistantMessage',
+                    messageId: assistantMessageId,
+                    threadId: currentThreadId,
+                  }
+                )
+              } else {
+                await prisma.chatMessage.create({
+                  data: {
+                    id: assistantMessageId,
+                    threadId: currentThreadId,
+                    parentId: userMessageId,
+                    role: 'assistant',
+                    content: partialAssistantContent,
+                    ...metadata,
+                  },
+                })
+              }
+            }
+
+            // update thread's timestamp
+            await prisma.chatThread.update({
+              where: { id: currentThreadId },
+              data: { updatedAt: new Date() },
+            })
+          } catch (error) {
+            console.error('Failed to save partial message:', {
+              requestId,
+              phase: 'persist.partialAssistantMessage',
+              error,
+            })
+          }
+        } else if (
+          currentThreadId &&
+          !owningThread &&
+          (partialContent.trim() || abortedReasoningContent)
+        ) {
+          console.warn(
+            'Skipping assistant message save: thread ownership mismatch',
+            {
+              requestId,
+              phase: 'persist.partialAssistantMessage',
+              messageId: assistantMessageId,
+              threadId: currentThreadId,
+            }
+          )
+        }
+
+        emitFinalOnce('aborted', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+        })
+      },
+
+      onStepFinish: async (step) => {
+        const diagnostics = collectStepToolDiagnostics(step)
+        const toolCallNames = Array.from(
+          new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
+        )
+        const toolCallsCount = diagnostics.length
+        const providerReasoningTokens = extractReasoningTokens(
+          asObject(step)?.providerMetadata
+        )
+        const stepOutputTokens = step.usage?.outputTokens || 0
+        logEvent('stream.step.finish', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          finishReason: step.finishReason,
+          warningsCount: step.warnings?.length ?? 0,
+          usage: step.usage
+            ? {
+                inputTokens: step.usage.inputTokens || 0,
+                outputTokens: step.usage.outputTokens || 0,
+                totalTokens: step.usage.totalTokens || 0,
+              }
+            : null,
+          reasoningTokens: providerReasoningTokens,
+          reasoningTokensIncludedInOutput:
+            providerReasoningTokens !== null
+              ? stepOutputTokens >= providerReasoningTokens
+              : null,
+          toolCallsCount,
+          toolCallNames,
+          toolDiagnostics: diagnostics,
+        })
+      },
+
+      onError: async (error) => {
+        const serializedError = serializeStreamError(error)
+        firstError = firstError ?? serializedError
+        const classification = classifyStreamError(serializedError)
+
+        logEvent(
+          'stream.error',
+          {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            ...serializedError,
+            classification: classification.classification,
+            retryable: classification.retryable,
+            suggestedAction: classification.suggestedAction,
+          },
+          'error'
+        )
+
+        console.error('Error during streaming response:', {
+          requestId,
+          error: serializedError,
+        })
+
+        emitFinalOnce('error', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
           classification: classification.classification,
-          retryable: classification.retryable,
-          suggestedAction: classification.suggestedAction,
-        },
-        'error'
-      )
+        })
+      },
+    })
 
-      console.error('Error during streaming response:', {
-        requestId,
-        error: serializedError,
+  // The wrapper span only exists to put the derived trace id on the context the
+  // AI SDK reads when it opens its own spans; it is created and closed around
+  // the synchronous streamText call, while the spans it parents keep streaming.
+  const result = traceId
+    ? startActiveObservation('chat.stream', startStream, {
+        parentSpanContext: getParentSpanContext(traceId),
       })
-
-      emitFinalOnce('error', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        classification: classification.classification,
-      })
-    },
-  })
+    : startStream()
 
   logEvent('response.stream.created', {
     stage: 'response-object-created',

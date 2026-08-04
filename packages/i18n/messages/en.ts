@@ -1,4 +1,155 @@
 export default {
+  chat: {
+    modes: {
+      switcherLabel: 'Chat mode',
+      tutor: 'Tutor',
+      explainer: 'Explainer',
+    },
+    settingsPanel: {
+      title: 'Settings',
+      aiModelLabel: 'AI Model',
+      selectAiModel: 'Select AI Model',
+      autoSelectionInfo: 'Automatic selection based on credit availability.',
+      usingPrimaryModel: 'Using primary model with available credits.',
+      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      reasoningEffortLabel: 'Reasoning Effort',
+      selectReasoningEffort: 'Select reasoning effort',
+      reasoningEffortHint:
+        'Higher effort can improve difficult responses at the cost of additional latency.',
+      reasoningEfforts: {
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+      },
+    },
+    credits: {
+      title: 'Available credits',
+      costHint:
+        'Every message uses credits — how many depends on the model and the length of the exchange.',
+      resetAt: 'Refills on {date}.',
+      resetNone: 'These credits do not refill automatically.',
+      exhausted:
+        'You have used up all your credits. However, you can still use the smaller model.',
+    },
+    sidebar: {
+      newChat: 'New Chat',
+      closeSidebar: 'Close sidebar',
+      openSidebar: 'Open sidebar',
+      conversationsLabel: 'Conversations',
+      logoAlt: 'Klicker Logo',
+    },
+    assistant: {
+      participationRequiredTitle: 'Course Access Required',
+      participationRequiredDefaultMessage:
+        'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.',
+      openKlickerUzh: 'Open KlickerUZH',
+      loading: 'Loading chatbot...',
+      disclaimerDeclinedTitle: 'Chatbot unavailable',
+      disclaimerDeclinedMessage:
+        'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
+      showDisclaimerAgain: 'Show disclaimer again',
+    },
+    branchPicker: {
+      previous: 'Previous branch',
+      next: 'Next branch',
+    },
+    disclaimer: {
+      mediaTitle: 'Disclaimer media',
+      introAlt: 'Chatbot Introduction',
+      studentResponsibilityTitle: 'Student Responsibility',
+      studentResponsibilityText:
+        'Chatbot answers may contain more or less information than what is required to pass the course and are therefore not exam relevant on their own (only the underlying course material is). While we aim to provide accurate information through the chatbot, we do not guarantee the correctness, completeness, or timeliness of the responses. Please verify important information against the official course materials and references.',
+      dataProtectionTitle: 'Data Protection',
+      dataProtectionText:
+        'Do not share any personal information with the chatbot. Your prompts are processed exclusively via Azure OpenAI instances hosted in the EU or Switzerland. Conversations may be reviewed in anonymised form by the KlickerUZH team or your lecturers to improve chatbot quality and course content.',
+      consentText:
+        'By using the chatbot you acknowledge and accept these conditions. If you have feedback or concerns, please contact your lecturers.',
+      decline: 'Decline',
+      saving: 'Saving...',
+      acceptAndContinue: 'Accept and continue',
+      consequenceTitle: 'What happens after your choice:',
+      consequenceAccept:
+        'Accept: You can use the chatbot and access all features.',
+      consequenceDecline:
+        'Decline: The chatbot remains blocked and you cannot send messages.',
+    },
+    markdown: {
+      copyCode: 'Copy',
+    },
+    attachments: {
+      hydrationError:
+        'Image attachments for this message could not be loaded. Please try again.',
+      attachedImageAlt: 'Attached image {index}',
+    },
+    imageViewer: {
+      previewUnavailable: 'Preview unavailable',
+      title: 'Image attachment',
+      loading: 'Loading full image...',
+      retry: 'Retry',
+    },
+    threadList: {
+      groupToday: 'Today',
+      groupYesterday: 'Yesterday',
+      groupThisWeek: 'This Week',
+      groupEarlier: 'Earlier',
+      newChatTitle: 'New Chat',
+      save: 'Save',
+      cancel: 'Cancel',
+      editName: 'Edit name',
+      deleteChat: 'Delete chat',
+      emptyState: 'Start your first conversation with a message.',
+    },
+    thread: {
+      scrollToBottom: 'Scroll to bottom',
+      welcomeTitle: 'Hello there!',
+      welcomeSubtitle: 'How can I help you?',
+    },
+    message: {
+      creditsUsed:
+        '{count, plural, one {{credits} credit} other {{credits} credits}}',
+      reasoningToggle: 'Reasoning',
+      editUnavailable: 'Edit unavailable',
+      edit: 'Edit',
+      editDisabledTooltip:
+        'Cannot edit: selected model does not support images',
+      copy: 'Copy',
+      refresh: 'Refresh',
+      rateUp: 'Helpful answer',
+      rateDown: 'Not a helpful answer',
+      reasoningGroupLabel: 'Reasoning ({count} parts)',
+      toolCallsGroupLabel: '{count} tool calls',
+    },
+    composer: {
+      placeholder: 'Write a message...',
+      send: 'Send message',
+      stop: 'Stop response',
+      attachmentLimitError: 'You can only attach up to {max} images.',
+      dismissError: 'Dismiss error',
+      dropImages: 'Drop images to attach',
+      attachmentPreviewAlt: 'Attachment preview',
+      removeAttachment: 'Remove attachment',
+      attachImage: 'Attach image',
+      attachmentFallbackLabel: 'Attachment',
+      editCancel: 'Cancel',
+      editSend: 'Send',
+    },
+    toolFallback: {
+      running: 'Using {tool}...',
+      done: 'Used {tool}',
+      showLess: 'Show less',
+      showMore:
+        '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
+    },
+    noLogin: {
+      title: 'Login Required',
+      message:
+        'You need to create a KlickerUZH account or log in before you can access this chatbot.',
+      redirectNotice:
+        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      loginButton: 'Go to KlickerUZH Login',
+    },
+  },
   shared: {
     table: {
       download: 'Download as CSV',

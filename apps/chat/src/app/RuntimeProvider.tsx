@@ -77,7 +77,13 @@ export function RuntimeProvider({
     const previousContext = previousRuntimeContext.current
 
     if (embedded && !threadId) {
+      // No thread yet: skip thread loading, but chatbot-scoped settings
+      // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
+      void (async () => {
+        await loadModeOptions(chatbotId)
+        await loadCredits(chatbotId)
+      })()
       return
     }
 
@@ -264,7 +270,6 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {/* <RAGToolUI /> */}
       {children}
     </AssistantRuntimeProvider>
   )

@@ -1,22 +1,47 @@
+import { routing } from '@klicker-uzh/i18n'
 import {
   monoSpaceFont,
   sourceSansPro,
 } from '@klicker-uzh/shared-components/src/font'
 import 'katex/dist/katex.min.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import { hasLocale } from 'next-intl'
+import { setRequestLocale } from 'next-intl/server'
+import { cookies } from 'next/headers'
+import { RootIntlProvider } from './RootIntlProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'KlickerUZH Chat',
 }
 
-export default function RootLayout({
+// `viewportFit: 'cover'` (viewport-fit=cover) lets content extend under the
+// iOS notch/home-indicator so `env(safe-area-inset-*)` resolves to the real
+// inset instead of 0 — required for the composer's safe-area bottom padding.
+export const viewport: Viewport = {
+  viewportFit: 'cover',
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Chat has no `[locale]` route segment; resolve the active locale from the
+  // NEXT_LOCALE cookie (set by the backend on login / locale change) and fall
+  // back to the default. Reading cookies() opts this layout into dynamic
+  // rendering, which is acceptable — chat is auth-gated and already dynamic.
+  const requestedLocale = (await cookies()).get('NEXT_LOCALE')?.value
+  const locale = hasLocale(routing.locales, requestedLocale)
+    ? requestedLocale
+    : routing.defaultLocale
+  setRequestLocale(locale)
+
+  const messages = (await import(`@klicker-uzh/i18n/messages/${locale}`))
+    .default
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <style>{`
           :root {
@@ -29,7 +54,9 @@ export default function RootLayout({
       <body
         className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
       >
-        {children}
+        <RootIntlProvider locale={locale} messages={messages}>
+          {children}
+        </RootIntlProvider>
       </body>
     </html>
   )

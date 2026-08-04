@@ -1,5 +1,6 @@
 'use client'
 import { ThreadMessageLike } from '@assistant-ui/react'
+import type { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { create } from 'zustand'
 import {
   apiCall,
@@ -23,6 +24,14 @@ import {
   sortAttachmentsByPosition,
 } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { useSettingsStore } from './settingsStore'
+
+/**
+ * Participant feedback on an assistant answer. Aliased from the Prisma enum
+ * rather than re-typed so a new rating value cannot silently drift out of sync
+ * here; `import type` is erased at build time, so no server code is pulled in.
+ */
+export type MessageRating = ChatMessageRating
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -35,6 +44,7 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  rating?: MessageRating | null
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -54,6 +64,7 @@ export interface Thread {
   title?: string
   createdAt: Date
   updatedAt: Date
+  lastChatMode?: string | null // mode of the thread's most recent message (D6)
 }
 
 interface ChatState {
@@ -87,6 +98,11 @@ interface ChatState {
     sourceMessageId?: string
   ) => Promise<ExtendedThreadMessageLike | undefined>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
+  rateMessage: (
+    chatbotId: string,
+    messageId: string,
+    rating: MessageRating | null
+  ) => Promise<void>
   setIsRunning: (isRunning: boolean) => void
   resetSession: () => void
 
@@ -105,8 +121,10 @@ interface ChatState {
  * - API integration for persistence
  */
 export const useChatStore = create<ChatState>((set, get) => {
-  const DEFAULT_PARTICIPATION_MESSAGE =
-    'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
+  // The generic 403 body the API returns when a participant is not enrolled.
+  // It is a server-side identifier, not display text — see below.
+  const GENERIC_PARTICIPATION_ERROR =
+    'No valid participation found for this chatbot'
   const attachmentHydrationRequests = new Map<
     string,
     Promise<ExtendedThreadMessageLike | undefined>
@@ -115,9 +133,10 @@ export const useChatStore = create<ChatState>((set, get) => {
   const markParticipationRequired = (message?: string) => {
     set({
       participationRequired: true,
-      participationMessage: message?.trim()
-        ? message
-        : DEFAULT_PARTICIPATION_MESSAGE,
+      // null means "the server gave no specific reason", which lets the notice
+      // render the localized `chat.assistant.participationRequiredDefaultMessage`
+      // instead of an English string the store cannot translate.
+      participationMessage: message?.trim() ? message : null,
     })
   }
 
@@ -191,12 +210,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           ? ((error.body as { error?: string }).error ?? undefined)
           : undefined
 
-      const friendlyMessage =
-        apiMessage === 'No valid participation found for this chatbot'
-          ? DEFAULT_PARTICIPATION_MESSAGE
-          : apiMessage
-
-      markParticipationRequired(friendlyMessage)
+      // The generic enrolment error is dropped rather than shown: it is
+      // untranslated English aimed at API consumers, and dropping it hands the
+      // notice back to the localized default.
+      markParticipationRequired(
+        apiMessage === GENERIC_PARTICIPATION_ERROR ? undefined : apiMessage
+      )
     }
   }
 
@@ -314,6 +333,29 @@ export const useChatStore = create<ChatState>((set, get) => {
         const existingThread = state.threads.find((t) => t.id === threadId)
 
         set({ activeThreadId: threadId })
+
+        // D6: resync the composer mode to the mode the thread was last used in,
+        // but only when that mode is offered by this chatbot and actually differs.
+        const lastMode = existingThread?.lastChatMode
+        if (lastMode) {
+          const { modeOptions, selectedMode, setSelectedMode } =
+            useSettingsStore.getState()
+          // `in` (not truthiness): a mode may have an empty description string.
+          // An empty `modeOptions` means the chatbot's modes have simply not
+          // arrived yet — on a hard refresh into a thread URL, `loadThreads`
+          // and `loadModeOptions` race and the former often wins, which used to
+          // make this resync silently no-op for the rest of the page load.
+          // Trusting the thread's own mode in that window is safe because
+          // `loadModeOptions` re-validates `selectedMode` against the resolved
+          // options and falls back to the first one if it does not exist.
+          const optionsLoaded = Object.keys(modeOptions).length > 0
+          if (
+            (!optionsLoaded || lastMode in modeOptions) &&
+            lastMode !== selectedMode
+          ) {
+            setSelectedMode(lastMode)
+          }
+        }
 
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
@@ -485,6 +527,10 @@ export const useChatStore = create<ChatState>((set, get) => {
                 messages: [...thread.messages, message],
                 allMessages: [...thread.allMessages, message],
                 updatedAt: new Date(),
+                // Keep the thread's mode in sync with the message just sent so
+                // the sidebar icon and the switch-back resync (D6) stay correct
+                // within the session, before the next full loadThreads().
+                lastChatMode: message.chatMode ?? thread.lastChatMode,
               }
             : thread
         ),
@@ -772,6 +818,60 @@ export const useChatStore = create<ChatState>((set, get) => {
           thread.id === state.activeThreadId ? { ...thread, messages } : thread
         ),
       }))
+    },
+
+    /**
+     * Records the participant's thumbs up/down on an assistant message.
+     *
+     * Applied optimistically and rolled back on failure: the vote is a
+     * throwaway gesture, so waiting on a round-trip costs more than the rare
+     * revert. Passing null clears an existing vote.
+     */
+    rateMessage: async (chatbotId, messageId, rating) => {
+      const threadId = get().activeThreadId
+      if (!threadId) return
+
+      const applyRating = (next: MessageRating | null) => {
+        const setRating = (messages: ExtendedThreadMessageLike[]) =>
+          messages.map((message) =>
+            message.id === messageId ? { ...message, rating: next } : message
+          )
+
+        set((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id !== threadId
+              ? thread
+              : {
+                  ...thread,
+                  messages: setRating(thread.messages),
+                  allMessages: setRating(thread.allMessages),
+                }
+          ),
+        }))
+      }
+
+      const readRating = () =>
+        get()
+          .threads.find((thread) => thread.id === threadId)
+          ?.messages.find((message) => message.id === messageId)?.rating ?? null
+
+      const previous = readRating()
+
+      applyRating(rating)
+
+      try {
+        await apiCall(
+          `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
+          { method: 'POST', body: JSON.stringify({ rating }) }
+        )
+      } catch (error) {
+        console.error('Failed to save message feedback:', error)
+        // Only undo our own optimistic write. Changing one's mind mid-flight
+        // starts a second request, and if this (now superseded) one then fails,
+        // rolling back to its stale snapshot would contradict the vote that
+        // actually got persisted.
+        if (readRating() === rating) applyRating(previous)
+      }
     },
 
     /**

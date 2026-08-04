@@ -27,6 +27,8 @@ import {
   RefreshCwIcon,
   SendHorizontalIcon,
   SquareIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
   XIcon,
 } from 'lucide-react'
 import {
@@ -47,27 +49,31 @@ import {
   hasAnyImageAttachmentData,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import { useChatStore } from '@/src/stores/chatStore'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
+import { isKnownMode } from '../lib/config/modes'
+import { formatReasoningEffort } from '../lib/config/reasoning'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
+import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
+import { useParams } from 'next/navigation'
 
 import { Markdown } from '@klicker-uzh/markdown'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
-const attachmentLimitErrorMessage = () =>
-  `You can only attach up to ${MAX_IMAGE_ATTACHMENTS} images.`
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -137,6 +143,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     status?: { type: string }
   }
   const { modelOptions } = useSettingsStore()
+  const t = useTranslations()
 
   // Hide metadata while the assistant is still streaming
   if (message.role === 'assistant' && message.status?.type === 'running') {
@@ -151,17 +158,32 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const creditsUsed =
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
-  const modeLabel = chatMode ? formatTitleCase(chatMode) : null
+  // Same label the mode switcher shows, so the caption under an answer does not
+  // read "Explainer" in German while the live pill reads "Erklärer". Unknown
+  // per-chatbot keys have no translation and keep their raw name.
+  const modeLabel = !chatMode
+    ? null
+    : isKnownMode(chatMode)
+      ? t(`chat.modes.${chatMode}`)
+      : formatTitleCase(chatMode)
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
   const reasoningLabel = reasoningEffort
-    ? formatTitleCase(reasoningEffort)
+    ? formatReasoningEffort(t, reasoningEffort)
     : null
 
   const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
   if (includeCredits && typeof creditsUsed === 'number') {
-    parts.push(`${formatCredits(creditsUsed)} credits`)
+    parts.push(
+      // `count` selects the plural form and must be read off the *displayed*
+      // value: a raw 1.2 renders as "1" but plural-selects as `other`, so
+      // passing it through unrounded prints "1 credits".
+      t('chat.message.creditsUsed', {
+        count: Number(formatCredits(creditsUsed)),
+        credits: formatCredits(creditsUsed),
+      })
+    )
   }
 
   if (parts.length === 0) return null
@@ -174,6 +196,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
 }
 
 const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
+  const t = useTranslations()
   const message = useMessage() as MessageWithCustomMetadata
   const [isOpen, setIsOpen] = useState(false)
 
@@ -204,12 +227,14 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
         ) : (
           <ChevronRightIcon className="size-3" />
         )}
-        Reasoning
-        {reasoningEffort ? ` (${formatTitleCase(reasoningEffort)})` : ''}
+        {t('chat.message.reasoningToggle')}
+        {reasoningEffort
+          ? ` (${formatReasoningEffort(t, reasoningEffort)})`
+          : ''}
       </button>
 
       {isOpen ? (
-        <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
+        <div className="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm">
           <Markdown
             content={normalizeCustomMathTags(normalizedText)}
             singleDollarTextMath
@@ -255,7 +280,9 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
       <div
         className={twMerge(
           'absolute bottom-0 left-0 right-0 z-10 flex w-full flex-col items-center justify-end',
-          embedded ? 'px-2 pb-2' : 'px-2 pb-4 sm:px-4'
+          embedded
+            ? 'px-2 pb-2'
+            : 'px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
         <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
@@ -267,13 +294,14 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
 }
 
 const ThreadScrollToBottom: FC = () => {
+  const t = useTranslations()
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-gray-100/80 text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in hover:border-gray-300 hover:bg-gray-200/80 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
             <ArrowDownIcon />
-            <span className="sr-only">Scroll to bottom</span>
+            <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
@@ -282,6 +310,7 @@ const ThreadScrollToBottom: FC = () => {
 }
 
 const ThreadWelcome: FC = () => {
+  const t = useTranslations()
   return (
     <ThreadPrimitive.Empty>
       <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
@@ -291,10 +320,10 @@ const ThreadWelcome: FC = () => {
             className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center"
           >
             <div className="aui-thread-welcome-message-motion-1 text-2xl font-semibold">
-              Hello there!
+              {t('chat.thread.welcomeTitle')}
             </div>
             <div className="aui-thread-welcome-message-motion-2 text-muted-foreground/65 text-2xl">
-              How can I help you?
+              {t('chat.thread.welcomeSubtitle')}
             </div>
           </div>
         </div>
@@ -331,16 +360,17 @@ const AttachmentErrorBanner: FC<{
   onDismiss: () => void
   className?: string
 }> = ({ error, onDismiss, className }) => {
+  const t = useTranslations()
   if (!error) return null
   return (
     <div className={className}>
-      <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
+      <div className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs">
         <span>{error}</span>
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded hover:bg-red-100"
-          aria-label="Dismiss error"
+          className="hover:bg-destructive/20 rounded"
+          aria-label={t('chat.composer.dismissError')}
         >
           <XIcon className="size-3" />
         </button>
@@ -350,6 +380,7 @@ const AttachmentErrorBanner: FC<{
 }
 
 const Composer: FC = () => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
@@ -361,7 +392,7 @@ const Composer: FC = () => {
     >
       <ComposerPrimitive.Root
         data-cy="chat-composer"
-        className="flex w-full flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300"
+        className="focus-within:border-primary/40 focus-within:ring-primary/10 bg-background border-border flex w-full flex-col rounded-3xl border px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] transition-colors ease-in focus-within:ring-2"
       >
         <ComposerAttachments />
 
@@ -380,9 +411,9 @@ const Composer: FC = () => {
             data-cy="chat-composer-input"
             rows={1}
             autoFocus
-            placeholder="Write a message..."
+            placeholder={t('chat.composer.placeholder')}
             className={twMerge(
-              'placeholder:text-muted-foreground text-md flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
@@ -400,6 +431,7 @@ const useComposerAttachmentLimit = ({
   setError: (msg: string | null) => void
   currentCount?: number
 }) => {
+  const t = useTranslations()
   const composerRuntime = useComposerRuntime()
   const attachments = useComposer((s) => s.attachments ?? [])
   const composerAttachmentCount = attachments.length
@@ -415,7 +447,9 @@ const useComposerAttachmentLimit = ({
   useEffect(() => {
     if (attachments.length <= maxComposerAttachmentCount) return
 
-    setError(attachmentLimitErrorMessage())
+    setError(
+      t('chat.composer.attachmentLimitError', { max: MAX_IMAGE_ATTACHMENTS })
+    )
 
     const overflowAttachmentIndexes = attachments
       .map((_, index) => index)
@@ -427,7 +461,7 @@ const useComposerAttachmentLimit = ({
         composerRuntime.getAttachmentByIndex(index).remove()
       )
     )
-  }, [attachments, composerRuntime, maxComposerAttachmentCount, setError])
+  }, [attachments, composerRuntime, maxComposerAttachmentCount, setError, t])
 }
 
 const ComposerDropzone: FC<
@@ -447,7 +481,7 @@ const ComposerDropzone: FC<
       data-testid="composer-dropzone"
       disabled={!supportsImages}
       className={twMerge(
-        'group relative transition-colors data-[dragging]:ring-2 data-[dragging]:ring-slate-500',
+        'data-[dragging]:ring-primary/40 group relative transition-colors data-[dragging]:ring-2',
         roundedClass,
         className
       )}
@@ -460,16 +494,19 @@ const ComposerDropzone: FC<
 
 const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   roundedClass,
-}) => (
-  <div
-    className={twMerge(
-      'pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed border-slate-500 bg-white/80 px-4 text-center text-sm font-medium text-slate-900 shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
-      roundedClass
-    )}
-  >
-    Drop images to attach
-  </div>
-)
+}) => {
+  const t = useTranslations()
+  return (
+    <div
+      className={twMerge(
+        'border-primary/60 text-primary bg-background/85 pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed px-4 text-center text-sm font-medium shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+        roundedClass
+      )}
+    >
+      {t('chat.composer.dropImages')}
+    </div>
+  )
+}
 
 const ThreadComposerImageAttachment: FC = () => {
   const imageSrc = useThreadComposerAttachment(selectAttachmentImageSrc)
@@ -558,39 +595,45 @@ const AttachmentTile: FC<{
   label: string
   sizeClasses: string
   children: ReactNode
-}> = ({ imageSrc, label, sizeClasses, children }) => (
-  <>
-    {imageSrc ? (
-      <img
-        src={imageSrc}
-        alt={label || 'Attachment preview'}
-        className={twMerge('rounded-md border object-cover', sizeClasses)}
-      />
-    ) : (
-      <div
-        className={twMerge(
-          'text-muted-foreground bg-muted flex items-center justify-center rounded-md border px-2 text-[10px]',
-          sizeClasses
-        )}
-      >
-        {label}
-      </div>
-    )}
-    {children}
-  </>
-)
+}> = ({ imageSrc, label, sizeClasses, children }) => {
+  const t = useTranslations()
+  return (
+    <>
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={label || t('chat.composer.attachmentPreviewAlt')}
+          className={twMerge('rounded-lg border object-cover', sizeClasses)}
+        />
+      ) : (
+        <div
+          className={twMerge(
+            'text-foreground bg-muted flex items-center justify-center rounded-lg border px-2 text-[10px]',
+            sizeClasses
+          )}
+        >
+          {label}
+        </div>
+      )}
+      {children}
+    </>
+  )
+}
 
-const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => (
-  <button
-    type="button"
-    data-cy="chat-attachment-remove"
-    onClick={onClick}
-    className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
-    aria-label="Remove attachment"
-  >
-    ×
-  </button>
-)
+const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => {
+  const t = useTranslations()
+  return (
+    <button
+      type="button"
+      data-cy="chat-attachment-remove"
+      onClick={onClick}
+      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full border"
+      aria-label={t('chat.composer.removeAttachment')}
+    >
+      ×
+    </button>
+  )
+}
 
 const ComposerAttachmentView: FC<{
   imageSrc: string | null
@@ -627,6 +670,7 @@ const ComposerAttachButton: FC<{
   currentCount?: number
   dataCy?: string
 }> = ({ setError, currentCount, dataCy }) => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
   const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
@@ -654,7 +698,9 @@ const ComposerAttachButton: FC<{
     }
 
     if (rejectedCount > 0) {
-      setError(attachmentLimitErrorMessage())
+      setError(
+        t('chat.composer.attachmentLimitError', { max: MAX_IMAGE_ATTACHMENTS })
+      )
     } else if (lastAdapterError) {
       setError(lastAdapterError)
     }
@@ -684,7 +730,7 @@ const ComposerAttachButton: FC<{
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
           embedded ? 'size-7' : 'size-9'
         )}
-        aria-label="Attach image"
+        aria-label={t('chat.composer.attachImage')}
       >
         <ImagePlusIcon className={embedded ? 'size-4' : 'size-5'} />
       </button>
@@ -693,61 +739,54 @@ const ComposerAttachButton: FC<{
 }
 
 const ComposerAction: FC = () => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
-  const isEmpty = useComposer((s) => s.isEmpty)
-  const size = embedded ? '28px' : '36px'
+  // Shared shape/focus for both action buttons; the design-system `Button`'s
+  // focus ring is lost when swapping to a plain <button> (see Send note below),
+  // so restore an equivalent `focus-visible` ring here.
+  const baseAction = twMerge(
+    'focus-visible:ring-ring flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed',
+    embedded ? 'm-1' : 'm-2',
+    embedded ? 'size-7' : 'size-9'
+  )
 
   return (
     <>
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <Button
-            basic
+          {/*
+           * Plain button, not the design-system `Button`: the `Send asChild`
+           * Slot merges a className *string*, which clobbers `Button`'s object
+           * `className.root`. A raw <button> takes the class string cleanly, so
+           * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
+           */}
+          <button
+            type="button"
             data-cy="chat-send-button"
-            style={{
-              width: size,
-              height: size,
-              minWidth: size,
-              minHeight: size,
-              padding: '0',
-              margin: '5px',
-              color: isEmpty ? 'var(--muted-foreground)' : 'black',
-            }}
-            className={{
-              root: twMerge(
-                'flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2',
-                !isEmpty && 'hover:bg-accent'
-              ),
-            }}
+            aria-label={t('chat.composer.send')}
+            className={twMerge(
+              baseAction,
+              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+              'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none'
+            )}
           >
             <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
-          </Button>
+          </button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <Button
-            basic
+          <button
+            type="button"
             data-cy="chat-cancel-button"
-            style={{
-              width: size,
-              height: size,
-              minWidth: size,
-              minHeight: size,
-              padding: '0',
-              margin: '5px',
-              color: 'black',
-            }}
-            className={{
-              root: twMerge(
-                'hover:bg-accent flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2'
-              ),
-            }}
+            aria-label={t('chat.composer.stop')}
+            className={twMerge(
+              baseAction,
+              'text-foreground hover:bg-accent disabled:opacity-50'
+            )}
           >
             <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
-          </Button>
+          </button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
     </>
@@ -797,6 +836,7 @@ const UserMessage: FC = () => {
 }
 
 const UserActionBar: FC = () => {
+  const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
@@ -810,53 +850,51 @@ const UserActionBar: FC = () => {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
-      autohide="not-last"
       className="text-muted-foreground flex items-center gap-1"
     >
       <Tooltip>
         <TooltipTrigger asChild>
           {editDisabled ? (
-            <button
-              disabled
-              className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-            >
+            <button disabled className={actionBarButtonClassName}>
               <PencilOffIcon />
-              <span className="sr-only">Edit unavailable</span>
+              <span className="sr-only">
+                {t('chat.message.editUnavailable')}
+              </span>
             </button>
           ) : (
             <ActionBarPrimitive.Edit asChild>
               <button
                 data-cy="chat-edit-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <PencilIcon />
-                <span className="sr-only">Edit</span>
+                <span className="sr-only">{t('chat.message.edit')}</span>
               </button>
             </ActionBarPrimitive.Edit>
           )}
         </TooltipTrigger>
         <TooltipContent>
           {editDisabled
-            ? 'Cannot edit: selected model does not support images'
-            : 'Edit'}
+            ? t('chat.message.editDisabledTooltip')
+            : t('chat.message.edit')}
         </TooltipContent>
       </Tooltip>
 
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+            <button className={actionBarButtonClassName}>
               <MessagePrimitive.If copied>
                 <CheckIcon />
               </MessagePrimitive.If>
               <MessagePrimitive.If copied={false}>
                 <CopyIcon />
               </MessagePrimitive.If>
-              <span className="sr-only">Copy</span>
+              <span className="sr-only">{t('chat.message.copy')}</span>
             </button>
           </ActionBarPrimitive.Copy>
         </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
+        <TooltipContent>{t('chat.message.copy')}</TooltipContent>
       </Tooltip>
 
       <BranchPickerWrapper />
@@ -865,6 +903,7 @@ const UserActionBar: FC = () => {
 }
 
 const EditComposer: FC = () => {
+  const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
@@ -971,7 +1010,8 @@ const EditComposer: FC = () => {
               {visibleAttachmentEntries.map(({ attachment, key }) => {
                 const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
                 const label =
-                  attachment.imageDescription?.trim() || 'Attachment'
+                  attachment.imageDescription?.trim() ||
+                  t('chat.composer.attachmentFallbackLabel')
 
                 return (
                   <div key={key} className="relative">
@@ -998,35 +1038,35 @@ const EditComposer: FC = () => {
             dataCy="chat-edit-composer"
           />
           <div className="ml-auto flex items-center justify-center gap-2">
+            {/* Cancel keeps the design-system default (outline) variant. */}
             <Button
               data-cy="chat-edit-cancel-button"
               onClick={() => {
                 clearEditRemovedAttachmentKeys(message.id)
                 messageRuntime.composer.cancel()
               }}
-              style={{
-                backgroundColor: '#000000',
-                color: '#ffffff',
-              }}
-              className={{
-                root: 'rounded-full font-semibold hover:!bg-gray-800',
-              }}
+              className={{ root: 'rounded-full font-semibold' }}
             >
-              <Button.Label>Cancel</Button.Label>
+              <Button.Label>{t('chat.composer.editCancel')}</Button.Label>
             </Button>
+            {/*
+             * Send is the primary action → UZH-blue fill, applied by hand: the
+             * design-system `primary` prop paints `bg-primary-100`, a token this
+             * app never defines. Overriding through `className.root` means every
+             * class the `outline` variant sets must be answered explicitly, since
+             * twMerge only drops classes in the same conflict group — hence
+             * `hover:text-primary-foreground` (without it the label keeps the
+             * variant's `hover:text-accent-foreground`, i.e. black on blue).
+             */}
             <Button
               data-cy="chat-edit-send-button"
               onClick={() => void handleSend()}
               disabled={!canSubmit}
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#000000',
-              }}
               className={{
-                root: 'rounded-full font-semibold hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+                root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary rounded-full border-transparent font-semibold',
               }}
             >
-              <Button.Label>Send</Button.Label>
+              <Button.Label>{t('chat.composer.editSend')}</Button.Label>
             </Button>
           </div>
         </div>
@@ -1061,6 +1101,7 @@ const groupConsecutiveByType = (
 const PartGroup: FC<
   PropsWithChildren<{ groupKey: string | undefined; indices: number[] }>
 > = ({ groupKey, indices, children }) => {
+  const t = useTranslations()
   const [isOpen, setIsOpen] = useState(false)
 
   if (!groupKey || indices.length <= 1) {
@@ -1069,8 +1110,8 @@ const PartGroup: FC<
 
   const label =
     groupKey === 'reasoning'
-      ? `Reasoning (${indices.length} parts)`
-      : `${indices.length} tool calls`
+      ? t('chat.message.reasoningGroupLabel', { count: indices.length })
+      : t('chat.message.toolCallsGroupLabel', { count: indices.length })
 
   return (
     <div className="mt-1">
@@ -1088,7 +1129,7 @@ const PartGroup: FC<
         {label}
       </button>
       {isOpen ? (
-        <div className="mt-1 border-l-2 border-slate-200 pl-3">{children}</div>
+        <div className="border-border mt-1 border-l-2 pl-3">{children}</div>
       ) : null}
     </div>
   )
@@ -1119,7 +1160,7 @@ const AssistantMessage: FC<{
             width={chatbotAvatar ? '35' : '32'}
             height="35"
             className={twMerge(
-              'hover:bg-uzh-red-20 hidden cursor-pointer rounded-full bg-white sm:block',
+              'hidden rounded-full bg-white sm:block',
               chatbotAvatar ? '' : 'p-1'
             )}
           />
@@ -1133,7 +1174,7 @@ const AssistantMessage: FC<{
             width="24"
             height="24"
             className={twMerge(
-              'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white sm:hidden',
+              'rounded-full bg-white sm:hidden',
               chatbotAvatar ? '' : 'p-1'
             )}
           />
@@ -1166,6 +1207,7 @@ const AssistantMessage: FC<{
 }
 
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
+  const t = useTranslations()
   const { showMessageActions } = useChatUi()
   if (!showMessageActions) return null
 
@@ -1178,7 +1220,6 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
     >
       <ActionBarPrimitive.Root
         hideWhenRunning
-        autohide="not-last"
         className="text-muted-foreground -ml-1 flex gap-1"
       >
         <Tooltip>
@@ -1186,7 +1227,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
             <ActionBarPrimitive.Copy asChild>
               <button
                 data-cy="chat-copy-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <MessagePrimitive.If copied>
                   <CheckIcon />
@@ -1194,30 +1235,100 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
                 <MessagePrimitive.If copied={false}>
                   <CopyIcon />
                 </MessagePrimitive.If>
-                <span className="sr-only">Copy</span>
+                <span className="sr-only">{t('chat.message.copy')}</span>
               </button>
             </ActionBarPrimitive.Copy>
           </TooltipTrigger>
-          <TooltipContent>Copy</TooltipContent>
+          <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <ActionBarPrimitive.Reload asChild>
               <button
                 data-cy="chat-reload-message-button"
-                className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className={actionBarButtonClassName}
               >
                 <RefreshCwIcon />
-                <span className="sr-only">Refresh</span>
+                <span className="sr-only">{t('chat.message.refresh')}</span>
               </button>
             </ActionBarPrimitive.Reload>
           </TooltipTrigger>
-          <TooltipContent>Refresh</TooltipContent>
+          <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
         </Tooltip>
+
+        <MessageRatingButtons />
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>
     </div>
+  )
+}
+
+const MessageRatingButtons: FC = () => {
+  const t = useTranslations()
+  const message = useMessage()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const rateMessage = useChatStore((state) => state.rateMessage)
+  // The runtime's message object does not carry our own fields, so the current
+  // vote is read back from the store the mutation writes to.
+  const rating = useChatStore(
+    (state) =>
+      state.threads
+        .find((thread) => thread.id === state.activeThreadId)
+        ?.messages.find((entry) => entry.id === message.id)?.rating ?? null
+  )
+
+  if (!chatbotId) return null
+
+  const options = [
+    {
+      value: 'UP' as const,
+      Icon: ThumbsUpIcon,
+      label: t('chat.message.rateUp'),
+    },
+    {
+      value: 'DOWN' as const,
+      Icon: ThumbsDownIcon,
+      label: t('chat.message.rateDown'),
+    },
+  ]
+
+  return (
+    <>
+      {options.map(({ value, Icon, label }) => {
+        const isActive = rating === value
+        return (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <button
+                data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                aria-pressed={isActive}
+                // Clicking the active vote clears it, so a misclick is undoable.
+                onClick={() =>
+                  void rateMessage(
+                    chatbotId,
+                    message.id,
+                    isActive ? null : value
+                  )
+                }
+                className={twMerge(
+                  actionBarButtonClassName,
+                  isActive && 'text-primary'
+                )}
+              >
+                {/* The cast icon is filled, not merely recoloured: primary
+                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                    mode), so colour alone would leave the active vote
+                    indistinguishable under WCAG 1.4.1/1.4.11. */}
+                <Icon className={isActive ? 'fill-current' : undefined} />
+                <span className="sr-only">{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        )
+      })}
+    </>
   )
 }
 

@@ -3,6 +3,7 @@
 import { normalizeCustomMathTags } from '@/src/components/markdown-text'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 type MessageImageAttachment = {
   id?: string
@@ -24,6 +25,7 @@ interface ThreadImageViewerModalProps {
 }
 
 function AttachmentPlaceholder({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations()
   return (
     <div
       className={
@@ -32,7 +34,7 @@ function AttachmentPlaceholder({ compact = false }: { compact?: boolean }) {
           : 'text-muted-foreground bg-muted flex min-h-72 w-full items-center justify-center rounded-lg border text-sm font-medium'
       }
     >
-      Preview unavailable
+      {t('chat.imageViewer.previewUnavailable')}
     </div>
   )
 }
@@ -45,12 +47,13 @@ export function ThreadImageViewerModal({
   onClose,
   onRetry,
 }: ThreadImageViewerModalProps) {
+  const t = useTranslations()
   if (!attachment) return null
 
   const previewSrc =
     attachment.imageBase64 ?? attachment.imagePreviewBase64 ?? null
   const description = attachment.imageDescription?.trim() || null
-  const title = 'Image attachment'
+  const title = t('chat.imageViewer.title')
 
   return (
     <Modal
@@ -87,14 +90,16 @@ export function ThreadImageViewerModal({
         ) : null}
 
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading full image...</p>
+          <p className="text-muted-foreground text-sm">
+            {t('chat.imageViewer.loading')}
+          </p>
         ) : null}
 
         {error ? (
           <div className="space-y-3">
             <p className="text-sm text-red-600">{error}</p>
             <Button data={{ cy: 'chat-image-viewer-retry' }} onClick={onRetry}>
-              <Button.Label>Retry</Button.Label>
+              <Button.Label>{t('chat.imageViewer.retry')}</Button.Label>
             </Button>
           </div>
         ) : null}
