@@ -210,13 +210,13 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
+- **Keep this file high-level.** Facts and non-obvious concepts live in the engineering wiki at [docs/index.md](docs/index.md); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md). Update the matching page/ADR as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
 ## Engineering Wiki
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
-Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
+Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) — the decision record of _why_. The wiki explains non-obvious concepts and links the relevant ADR; it does not itself hold the decision. Retrospective fixes and durable lessons live in `docs/solutions/`; check both before re-deriving a solved problem.
 
 ## AI Assistance (Skills)
 
