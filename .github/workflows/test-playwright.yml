@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_cypress\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
 
   build-and-compile:
     needs: filter
@@ -282,7 +282,7 @@ jobs:
 
       - name: Prepare .env files
         run: |
-          ./util/_create_hatchet_token_cypress.sh
+          ./util/_create_hatchet_token_test.sh
         env:
           HATCHET_API_URL: http://hatchet:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
@@ -375,6 +375,12 @@ jobs:
     steps:
       - name: Check result
         run: |
+          # A run cancelled by concurrency (duplicate push, quick re-push) must not
+          # leave a red required check behind: the surviving run is the real signal.
+          if [ "${{ needs.filter.result }}" = "cancelled" ] || [ "${{ needs.test-playwright.result }}" = "cancelled" ]; then
+            echo "Superseded by a newer run; jobs were cancelled by concurrency."
+            exit 0
+          fi
           if [ "${{ needs.filter.result }}" != "success" ]; then
             echo "Filter job failed: ${{ needs.filter.result }}"
             exit 1

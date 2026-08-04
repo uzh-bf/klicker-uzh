@@ -190,7 +190,7 @@ services:
     command:
       - 'postgres'
       # Auto-kill sessions stuck "idle in transaction" after 5 minutes.
-      # Prevents cascading cypress failures when a run is interrupted mid-seed
+      # Prevents cascading e2e failures when a run is interrupted mid-seed
       # and leaves a BEGIN transaction holding locks on klicker-prod.
       - '-c'
       - 'idle_in_transaction_session_timeout=300000'
