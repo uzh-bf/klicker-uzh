@@ -54,11 +54,14 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   // participant without an accepted course invitation). There is no error boundary
   // above this component, so a thrown error takes down the whole course page
   // instead of rendering the notification below.
-  const { data, error } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
-    variables: { courseId },
-    fetchPolicy: 'network-only',
-    errorPolicy: 'all',
-  })
+  const { data, error } = useSuspenseQuery(
+    GetStudentAssessmentResultsDocument,
+    {
+      variables: { courseId },
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    }
+  )
   const [isExporting, setIsExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [reportArtifact, setReportArtifact] =
