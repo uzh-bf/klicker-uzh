@@ -138,7 +138,6 @@ Supported outcomes are:
 
 - `SUCCESS`
 - `INVALID_STATE`
-- `CONFLICT`
 
 Unexpected database or infrastructure failures remain GraphQL errors. Authentication and authorization failures follow the existing GraphQL behavior and do not disclose whether a quiz exists.
 
@@ -168,10 +167,10 @@ The regular reset runs in one database transaction:
 3. Verify authorization, non-deleted state, regular quiz type, and `ENDED` status.
 4. Reset blocks and increment execution counters.
 5. Reset aggregate instance results.
-6. Delete responses, feedback, confusion feedback, `SESSION` leaderboard entries, and temporary leaderboard entries.
+6. Delete responses, feedback, confusion feedback, leaderboard entries matching both the quiz ID and `type = SESSION`, and temporary leaderboard entries matching the quiz ID.
 7. Conditionally transition the quiz from `ENDED` to `DRAFT` and clear its execution fields.
 
-Any failure rolls back every database change. A concurrent or repeated request cannot perform a second reset after the first request changes the quiz to `DRAFT`; it returns `CONFLICT` or `INVALID_STATE` according to the observed lifecycle state.
+Any failure rolls back every database change. The row lock makes concurrent requests deterministic: after the first request changes the quiz to `DRAFT`, a waiting or repeated request observes the new state and returns `INVALID_STATE`.
 
 The transaction contains no reads or writes to cumulative reward models.
 
@@ -217,7 +216,7 @@ Opening the reset modal fetches the summary with a network-only policy. The moda
 
 Use one explicit destructive acknowledgment covering the run data deletion. Remove the reward-reversal acknowledgment and all wording that claims cumulative rewards will be reversed.
 
-On success, close the modal, refresh the activity list and relevant course data, and show the quiz as a normal draft. On a structured lifecycle conflict, keep the modal open and show localized guidance. Unexpected errors use the standard error handling.
+On success, close the modal, refresh the activity list and relevant course data, and show the quiz as a normal draft. On `INVALID_STATE`, keep the modal open and show localized guidance that the quiz is no longer eligible. Unexpected errors use the standard error handling.
 
 English and German text are required. Interactive controls retain stable `data-cy` identifiers that are not assessment-specific.
 
@@ -240,7 +239,7 @@ An audit delivery failure after a committed reset does not change the mutation r
 - Missing or inaccessible quizzes follow existing non-disclosing authorization behavior.
 - Non-ended or deleted quizzes produce `INVALID_STATE`.
 - Assessment quizzes are rejected by the regular reset path and continue to use the assessment mutation.
-- A losing concurrent reset produces `CONFLICT` or observes `INVALID_STATE`; it cannot delete data twice while reporting two successes.
+- A losing concurrent reset waits for the row lock, observes `DRAFT`, and returns `INVALID_STATE`; it cannot delete data twice while reporting two successes.
 - Database failures roll back the complete reset transaction.
 - Cache cleanup failures are retried without rolling back or re-running the committed database reset.
 
@@ -275,7 +274,7 @@ Cover:
 - Summary counts and destructive confirmation gating.
 - Copy stating both deleted per-run data and preserved cumulative rewards.
 - Successful regular reset and refreshed draft state.
-- Structured conflict handling.
+- Structured invalid-state handling when eligibility changes while the modal is open.
 - No reward-reversal or reward-unavailable UI.
 
 Verify the real manage frontend in English and German. Capture screenshots of the ended quiz action, confirmation modal, and resulting draft state at desktop and narrow viewports.
