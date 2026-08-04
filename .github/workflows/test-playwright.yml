@@ -143,6 +143,12 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
+      # Shares /config with the hatchet service so this job can read the worker
+      # API token that hatchet-lite-dev mints on boot. Reading it via `docker
+      # exec` (as the non-containerized workflows do) is impossible here: the
+      # Playwright image has no Docker CLI.
+      volumes:
+        - hatchet_lite_config:/config
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -211,14 +217,14 @@ jobs:
           - '7077:7077'
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
-          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
           SERVER_AUTH_COOKIE_INSECURE: 't'
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
-          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
           SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://localhost:8888
+          SERVER_URL: http://hatchet:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
@@ -228,6 +234,8 @@ jobs:
           --health-interval 30s
           --health-timeout 10s
           --health-retries 10
+        volumes:
+          - hatchet_lite_config:/config
 
     steps:
       - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
@@ -276,7 +284,7 @@ jobs:
         run: |
           ./util/_create_hatchet_token_cypress.sh
         env:
-          HATCHET_API_URL: http://localhost:8888
+          HATCHET_API_URL: http://hatchet:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
 
       - name: Apply migrations and reset database
@@ -329,13 +337,13 @@ jobs:
           REDIS_ASSESSMENT_PORT: 6379
           REDIS_ASSESSMENT_PASS: ''
           REDIS_ASSESSMENT_HOST: redis_assessment_exec
-          HATCHET_CHECK_HOST: localhost
+          HATCHET_CHECK_HOST: hatchet
           HATCHET_HTTP_PORT: 8888
           HATCHET_GRPC_PORT: 7077
-          HATCHET_API_URL: http://localhost:8888
+          HATCHET_API_URL: http://hatchet:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-          HATCHET_CLIENT_HOST_PORT: localhost:7077
-          HATCHET_HOST_PORT: localhost:7077
+          HATCHET_CLIENT_HOST_PORT: hatchet:7077
+          HATCHET_HOST_PORT: hatchet:7077
           HATCHET_CLIENT_TLS_STRATEGY: none
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010

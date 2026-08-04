@@ -3,10 +3,33 @@ set -euo pipefail
 
 IMAGE="${HATCHET_IMAGE:-ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0}"
 TENANT_ID="${HATCHET_TENANT_ID:-707d0855-80ab-4e1f-a156-f1c4546cbf52}"
-HATCHET_API_URL="${HATCHET_API_URL:-http://localhost:8888}"
-HATCHET_ADMIN_EMAIL="${HATCHET_ADMIN_EMAIL:-admin@example.com}"
-HATCHET_ADMIN_PASSWORD="${HATCHET_ADMIN_PASSWORD:-Admin123!!}"
+TOKEN_FILE="${HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
 TOKEN=""
+
+# hatchet-lite-dev mints the worker API token to /config on boot. Where that
+# directory is shared with us (a mounted volume), read it directly — this is the
+# only route available inside a container job, which has no Docker CLI.
+create_token_from_file() {
+  if [[ ! -e "$TOKEN_FILE" ]]; then
+    return 1
+  fi
+
+  echo "[hatchet-token] Reading token from ${TOKEN_FILE}..."
+  for i in {1..15}; do
+    TOKEN=$(tr -d '[:space:]' < "$TOKEN_FILE" 2>/dev/null || true)
+
+    if [[ -n "$TOKEN" ]]; then
+      echo "[hatchet-token] Token read from ${TOKEN_FILE}."
+      return 0
+    fi
+
+    echo "[hatchet-token] Attempt $i/15: token file still empty, waiting 2s..."
+    sleep 2
+  done
+
+  echo "[hatchet-token] ${TOKEN_FILE} never became readable." >&2
+  return 1
+}
 
 find_hatchet_container() {
   local container=""
@@ -31,10 +54,6 @@ find_hatchet_container() {
 }
 
 create_token_with_docker() {
-  if [[ "${HATCHET_TOKEN_FORCE_HTTP:-}" == "true" ]]; then
-    return 1
-  fi
-
   if ! command -v docker >/dev/null 2>&1; then
     return 1
   fi
@@ -95,52 +114,6 @@ create_token_with_docker() {
   done
 }
 
-create_token_with_http() {
-  echo "[hatchet-token] Falling back to HTTP API token retrieval..."
-  for i in {1..30}; do
-    if curl -s -f "${HATCHET_API_URL}/healthz" >/dev/null 2>&1; then
-      break
-    fi
-    sleep 2
-  done
-
-  local auth_cookie header_file login_file response_file
-  header_file=$(mktemp)
-  login_file=$(mktemp)
-  response_file=$(mktemp)
-
-  for i in {1..10}; do
-    if curl -s -f -D "$header_file" -o "$login_file" \
-      -H 'content-type: application/json' \
-      -d "{\"email\":\"${HATCHET_ADMIN_EMAIL}\",\"password\":\"${HATCHET_ADMIN_PASSWORD}\"}" \
-      "${HATCHET_API_URL}/api/v1/users/login" 2>/dev/null; then
-      auth_cookie=$(tr -d '\r' < "$header_file" | sed -n 's/^[Ss]et-[Cc]ookie: \(hatchet=[^;]*\).*/\1/p' | tail -n1)
-
-      if [[ -n "$auth_cookie" ]] && curl -s -f \
-        -H 'content-type: application/json' \
-        -H "Cookie: ${auth_cookie}" \
-        -d '{"name":"playwright-ci","expiresIn":"2160h"}' \
-        "${HATCHET_API_URL}/api/v1/tenants/${TENANT_ID}/api-tokens" > "$response_file" 2>/dev/null; then
-        TOKEN=$(node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(data.token || '')" "$response_file")
-
-        if [[ -n "$TOKEN" ]]; then
-          rm -f "$header_file" "$login_file" "$response_file"
-          echo "[hatchet-token] Token generated successfully through HTTP API."
-          return 0
-        fi
-      fi
-    fi
-
-    if [[ "$i" == "10" ]]; then
-      rm -f "$header_file" "$login_file" "$response_file"
-      echo "[hatchet-token] Failed to generate token through HTTP API after 10 attempts." >&2
-      return 1
-    fi
-
-    sleep 2
-  done
-}
-
 write_env_files() {
   local template target
 
@@ -168,8 +141,11 @@ write_env_files() {
   fi
 }
 
-if ! create_token_with_docker; then
-  create_token_with_http
+# The HTTP token API is not an option: hatchet-lite-dev disables auth, and its
+# POST /api/v1/tenants/{id}/api-tokens answers 401 for every caller.
+if ! create_token_from_file && ! create_token_with_docker; then
+  echo "[hatchet-token] Could not obtain a Hatchet token from ${TOKEN_FILE} or via Docker." >&2
+  exit 1
 fi
 
 write_env_files
