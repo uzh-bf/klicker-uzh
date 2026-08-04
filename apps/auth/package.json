@@ -41,7 +41,7 @@
     "cssnano": "~6.0.1",
     "eslint": "~9.30.1",
     "eslint-config-next": "~16.2.10",
-    "postcss": "~8.4.47",
+    "postcss": "~8.5.23",
     "tailwindcss": "~4.1.11",
     "tailwindcss-animate": "~1.0.7",
     "tw-animate-css": "~1.3.4",
