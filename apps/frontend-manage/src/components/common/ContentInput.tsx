@@ -20,16 +20,19 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown } from '@tiptap/markdown'
 import { Plugin } from '@tiptap/pm/state'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Tooltip } from '@uzh-bf/design-system'
 import { common, createLowlight } from 'lowlight'
 import { useTranslations } from 'next-intl'
-import React, { PropsWithChildren, useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MediaLibrary from './MediaLibrary'
 
 const lowlight = createLowlight(common)
+
+const ToolbarContext = React.createContext<{ disabled: boolean }>({
+  disabled: false,
+})
 
 const normalizeMarkdown = (str: string) =>
   str.replace(/\r\n/g, '\n').replace(/\n+$/, '')
@@ -218,6 +221,7 @@ function ContentInput({
 }: Props): React.ReactElement {
   const t = useTranslations()
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
+  const placeholderRef = useRef(placeholder)
 
   const editor = useEditor({
     extensions: [
@@ -227,8 +231,9 @@ function ContentInput({
       Image,
       Markdown,
       PasteMarkdown,
+      // eslint-disable-next-line react-hooks/refs -- Tiptap reads the callback from its ProseMirror plugin outside React render.
       Placeholder.configure({
-        placeholder: placeholder,
+        placeholder: () => placeholderRef.current,
         emptyEditorClass: 'is-editor-empty',
       }),
       CodeBlockLowlight.configure({
@@ -256,9 +261,33 @@ function ContentInput({
     },
   })
 
+  const activeEditorState = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      bold: editor?.isActive('bold') ?? false,
+      italic: editor?.isActive('italic') ?? false,
+      code: editor?.isActive('code') ?? false,
+      blockquote: editor?.isActive('blockquote') ?? false,
+      orderedList: editor?.isActive('orderedList') ?? false,
+      bulletList: editor?.isActive('bulletList') ?? false,
+      codeBlock: editor?.isActive('codeBlock') ?? false,
+      table: editor?.isActive('table') ?? false,
+    }),
+  })
+
+  // Placeholder extension options are created once. Refresh its decorations
+  // when the translated placeholder changes without recreating the editor.
+  useEffect(() => {
+    placeholderRef.current = placeholder
+    if (!editor) return
+
+    editor.view.dispatch(editor.state.tr)
+  }, [editor, placeholder])
+
   // Sync content prop when it changes externally
   useEffect(() => {
     if (!editor) return
+
     const normalizedContent = normalizeLegacyEmptyContent(content)
     if (
       normalizeMarkdown(normalizedContent) !==
@@ -304,16 +333,6 @@ function ContentInput({
         className?.root
       )}
     >
-      <style>{`
-        .ProseMirror p.is-editor-empty:first-child::before {
-          color: #a3adb7;
-          content: attr(data-placeholder);
-          float: left;
-          height: 0;
-          pointer-events: none;
-        }
-      `}</style>
-
       <div className={twMerge('p-3', className?.content)}>
         <EditorContent editor={editor} />
       </div>
@@ -324,174 +343,112 @@ function ContentInput({
           showToolbarOnFocus && 'hidden group-focus-within:flex'
         )}
       >
-        <div
-          className={twMerge('flex flex-1 flex-row gap-1', className?.toolbar)}
-        >
-          <Tooltip
-            tooltip={t('shared.contentInput.boldStyle')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
+        <ToolbarContext.Provider value={{ disabled }}>
+          <div
+            className={twMerge(
+              'flex flex-1 flex-row gap-1',
+              className?.toolbar
+            )}
           >
             <ToolbarButton
-              active={editor.isActive('bold')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBold().run()
-              }}
+              data-cy="toolbar-bold"
+              label={t('shared.contentInput.boldStyle')}
+              active={activeEditorState?.bold}
+              onClick={() => editor.chain().focus().toggleBold().run()}
             >
               <FontAwesomeIcon
                 icon={faBold}
-                color={editor.isActive('bold') ? 'black' : 'grey'}
+                color={activeEditorState?.bold ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.italicStyle')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={editor.isActive('italic')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleItalic().run()
-              }}
+              data-cy="toolbar-italic"
+              label={t('shared.contentInput.italicStyle')}
+              active={activeEditorState?.italic}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
             >
               <FontAwesomeIcon
                 icon={faItalic}
-                color={editor.isActive('italic') ? 'black' : 'grey'}
+                color={activeEditorState?.italic ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.codeStyle')}
-            className={{
-              tooltip: 'max-w-full text-sm md:max-w-full md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={editor.isActive('code')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleCode().run()
-              }}
+              data-cy="toolbar-inline-code"
+              label={t('shared.contentInput.codeStyle')}
+              active={activeEditorState?.code}
+              onClick={() => editor.chain().focus().toggleCode().run()}
             >
               <FontAwesomeIcon
                 icon={faCode}
-                color={editor.isActive('code') ? 'black' : 'grey'}
+                color={activeEditorState?.code ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.citationStyle')}
-            className={{
-              tooltip: 'max-w-[35%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={editor.isActive('blockquote')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBlockquote().run()
-              }}
+              data-cy="toolbar-blockquote"
+              label={t('shared.contentInput.citationStyle')}
+              active={activeEditorState?.blockquote}
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
             >
               <FontAwesomeIcon
                 icon={faQuoteRight}
-                color={editor.isActive('blockquote') ? 'black' : 'grey'}
+                color={activeEditorState?.blockquote ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.numberedList')}
-            className={{
-              tooltip: 'max-w-[35%] text-sm md:max-w-[50%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={editor.isActive('orderedList')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleOrderedList().run()
-              }}
+              data-cy="toolbar-ordered-list"
+              label={t('shared.contentInput.numberedList')}
+              active={activeEditorState?.orderedList}
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
             >
               <FontAwesomeIcon
                 icon={faListOl}
-                color={editor.isActive('orderedList') ? 'black' : 'grey'}
+                color={activeEditorState?.orderedList ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.unnumberedList')}
-            className={{
-              tooltip: 'max-w-[40%] text-sm md:max-w-[50%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={editor.isActive('bulletList')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleBulletList().run()
-              }}
+              data-cy="toolbar-bullet-list"
+              label={t('shared.contentInput.unnumberedList')}
+              active={activeEditorState?.bulletList}
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
             >
               <FontAwesomeIcon
                 icon={faListUl}
-                color={editor.isActive('bulletList') ? 'black' : 'grey'}
+                color={activeEditorState?.bulletList ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            delay={2000}
-            tooltip={t('shared.contentInput.image')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
+              data-cy="toolbar-image"
+              label={t('shared.contentInput.image')}
               active={isImageDropzoneOpen}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                setIsImageDropzoneOpen((prev) => !prev)
-              }}
+              onClick={() => setIsImageDropzoneOpen((prev) => !prev)}
             >
               <FontAwesomeIcon icon={faImage} color="grey" />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.latex')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={false}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().insertContent('$$1 + 2$$').run()
+              data-cy="toolbar-inline-math"
+              label={t('shared.contentInput.latex')}
+              onClick={() => {
+                editor
+                  .chain()
+                  .focus()
+                  .insertContent('$$1 + 2$$', { contentType: 'markdown' })
+                  .run()
               }}
             >
               <FontAwesomeIcon icon={faSuperscript} color="grey" />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.latexCentered')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
-              active={false}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
+              data-cy="toolbar-display-math"
+              label={t('shared.contentInput.latexCentered')}
+              onClick={() => {
                 editor
                   .chain()
                   .focus()
@@ -503,146 +460,96 @@ function ContentInput({
             >
               <div className="flex flex-row items-center gap-0.5">
                 <FontAwesomeIcon icon={faSuperscript} color="grey" />
-                <span className="text-[9px] font-bold text-gray-500">C</span>
+                <span className="text-[9px] font-bold text-gray-500">↔</span>
               </div>
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.codeBlock')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
               data-cy="toolbar-code-block"
-              active={editor.isActive('codeBlock')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                editor.chain().focus().toggleCodeBlock().run()
-              }}
+              label={t('shared.contentInput.codeBlock')}
+              active={activeEditorState?.codeBlock}
+              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             >
               <FontAwesomeIcon
                 icon={faTerminal}
-                color={editor.isActive('codeBlock') ? 'black' : 'grey'}
+                color={activeEditorState?.codeBlock ? 'black' : 'grey'}
               />
             </ToolbarButton>
-          </Tooltip>
 
-          <Tooltip
-            tooltip={t('shared.contentInput.table')}
-            className={{
-              tooltip: 'max-w-[45%] text-sm md:max-w-[70%] md:text-base',
-            }}
-          >
             <ToolbarButton
               data-cy="toolbar-table"
-              active={editor.isActive('table')}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault()
-                if (!editor.isActive('table')) {
-                  editor
-                    .chain()
-                    .focus()
-                    .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                    .run()
-                }
-              }}
+              label={t('shared.contentInput.table')}
+              disabled={activeEditorState?.table}
+              onClick={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                  .run()
+              }
             >
-              <FontAwesomeIcon
-                icon={faTable}
-                color={editor.isActive('table') ? 'black' : 'grey'}
-              />
+              <FontAwesomeIcon icon={faTable} color="grey" />
             </ToolbarButton>
-          </Tooltip>
-        </div>
+          </div>
 
-        {editor.isActive('table') && (
-          <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
-            <Tooltip tooltip={t('shared.contentInput.addRow')}>
+          {activeEditorState?.table && (
+            <div className="border-uzh-grey-40 mr-3 flex flex-row items-center gap-1 border-l pl-2">
               <ToolbarButton
                 data-cy="table-add-row"
-                active={false}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().addRowAfter().run()
-                }}
+                label={t('shared.contentInput.addRow')}
+                onClick={() => editor.chain().focus().addRowAfter().run()}
               >
-                <span className="text-[10px] font-bold">+R</span>
+                <span className="text-[10px] font-bold">+↕</span>
               </ToolbarButton>
-            </Tooltip>
-            <Tooltip tooltip={t('shared.contentInput.deleteRow')}>
               <ToolbarButton
                 data-cy="table-delete-row"
-                active={false}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteRow().run()
-                }}
+                label={t('shared.contentInput.deleteRow')}
+                onClick={() => editor.chain().focus().deleteRow().run()}
               >
-                <span className="text-[10px] font-bold text-red-500">-R</span>
+                <span className="text-[10px] font-bold text-red-500">−↕</span>
               </ToolbarButton>
-            </Tooltip>
-            <Tooltip tooltip={t('shared.contentInput.addColumn')}>
               <ToolbarButton
                 data-cy="table-add-column"
-                active={false}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().addColumnAfter().run()
-                }}
+                label={t('shared.contentInput.addColumn')}
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
               >
-                <span className="text-[10px] font-bold">+C</span>
+                <span className="text-[10px] font-bold">+↔</span>
               </ToolbarButton>
-            </Tooltip>
-            <Tooltip tooltip={t('shared.contentInput.deleteColumn')}>
               <ToolbarButton
                 data-cy="table-delete-column"
-                active={false}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteColumn().run()
-                }}
+                label={t('shared.contentInput.deleteColumn')}
+                onClick={() => editor.chain().focus().deleteColumn().run()}
               >
-                <span className="text-[10px] font-bold text-red-500">-C</span>
+                <span className="text-[10px] font-bold text-red-500">−↔</span>
               </ToolbarButton>
-            </Tooltip>
-            <Tooltip tooltip={t('shared.contentInput.deleteTable')}>
               <ToolbarButton
                 data-cy="table-delete"
-                active={false}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault()
-                  editor.chain().focus().deleteTable().run()
-                }}
+                label={t('shared.contentInput.deleteTable')}
+                onClick={() => editor.chain().focus().deleteTable().run()}
               >
-                <span className="text-[10px] font-bold text-red-700">Del</span>
+                <span className="text-sm font-bold text-red-700">×</span>
               </ToolbarButton>
-            </Tooltip>
-          </div>
-        )}
+            </div>
+          )}
 
-        <ToolbarButton
-          active={false}
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault()
-            editor.chain().focus().undo().run()
-          }}
-          className="mr-3"
-        >
-          <FontAwesomeIcon icon={faRotateLeft} color="grey" />
-        </ToolbarButton>
+          <ToolbarButton
+            data-cy="toolbar-undo"
+            label={t('shared.contentInput.undo')}
+            onClick={() => editor.chain().focus().undo().run()}
+            className="mr-3"
+          >
+            <FontAwesomeIcon icon={faRotateLeft} color="grey" />
+          </ToolbarButton>
 
-        <ToolbarButton
-          active={false}
-          onClick={(e: React.MouseEvent) => {
-            e.preventDefault()
-            editor.chain().focus().redo().run()
-          }}
-          className="mr-0.5"
-        >
-          <FontAwesomeIcon icon={faRotateRight} color="grey" />
-        </ToolbarButton>
+          <ToolbarButton
+            data-cy="toolbar-redo"
+            label={t('shared.contentInput.redo')}
+            onClick={() => editor.chain().focus().redo().run()}
+            className="mr-0.5"
+          >
+            <FontAwesomeIcon icon={faRotateRight} color="grey" />
+          </ToolbarButton>
+        </ToolbarContext.Provider>
       </div>
 
       {isImageDropzoneOpen && (
@@ -664,28 +571,51 @@ function ContentInput({
   )
 }
 
-const ToolbarButton = React.forwardRef<
-  HTMLSpanElement,
-  PropsWithChildren<{
-    active: boolean
-    onClick?: (e: React.MouseEvent<HTMLElement>) => void
-    className?: string
-    [key: string]: any
-  }>
->(({ className, active, onClick, children, ...props }, ref) => (
-  <span
-    {...props}
-    onClick={onClick}
-    className={twMerge(
+interface ToolbarButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
+  label: string
+  active?: boolean
+}
+
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  function ToolbarButton(
+    {
       className,
-      'hover:bg-uzh-grey-20 my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-      active && 'bg-uzh-grey-40'
-    )}
-    ref={ref}
-  >
-    {children}
-  </span>
-))
+      label,
+      active,
+      children,
+      disabled: buttonDisabled,
+      onClick,
+      ...props
+    },
+    ref
+  ) {
+    const { disabled: editorDisabled } = React.useContext(ToolbarContext)
+    const isDisabled = editorDisabled || buttonDisabled
+    return (
+      <button
+        ref={ref}
+        type="button"
+        title={label}
+        aria-label={label}
+        onClick={onClick}
+        aria-pressed={active}
+        disabled={isDisabled}
+        className={twMerge(
+          'focus-visible:outline-uzh-blue-80 my-auto flex h-7 w-7 items-center justify-center rounded border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-1',
+          isDisabled
+            ? 'cursor-not-allowed opacity-50'
+            : 'hover:bg-uzh-grey-20 cursor-pointer',
+          active && 'bg-uzh-grey-40',
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </button>
+    )
+  }
+)
 ToolbarButton.displayName = 'ToolbarButton'
 
 export default ContentInput

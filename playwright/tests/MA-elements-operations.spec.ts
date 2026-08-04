@@ -24,6 +24,7 @@ import {
   createQuestionSC,
   createQuestionSE,
   deleteElement,
+  fillEditorField,
   searchAndEdit,
   validateElement,
 } from '../util/fixtures/elements.js'
@@ -165,10 +166,7 @@ async function enterSCQuestionContent(page: Page) {
 }
 
 async function clearAndTypeEditor(page: Page, testId: string, text: string) {
-  const editor = page.getByTestId(testId)
-  await editor.click()
-  await editor.clear()
-  await editor.pressSequentially(text)
+  await fillEditorField(page, testId, text, true)
 }
 
 async function saveElementModal(page: Page) {

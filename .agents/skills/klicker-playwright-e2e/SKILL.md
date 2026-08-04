@@ -100,6 +100,7 @@ Action menus:
 
 Editors and selects:
 
+- Use `.ProseMirror` (with `.first()`/`.last()`) to target the Tiptap rich-text editor DOM.
 - Use the shared `fillEditorField` / answer / feedback helpers for Tiptap fields. They clear through `ControlOrMeta+A` plus `Backspace`; locator `.clear()` does not model contenteditable deletion reliably.
 - Use `pasteEditorField` when the test contract depends on clipboard parsing. It dispatches a plain-text paste instead of using `.fill()`, which bypasses Tiptap's paste handlers.
 - `verifyEditorField` remains the read-only content helper.
@@ -131,6 +132,7 @@ Cleanup dialogs:
 - **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — Cypress `.type()` works on the wrapper, Playwright does not. (`playwright/tests/K-elements-selection.spec.ts`)
 - **localforage parity**: Playwright creates a fresh context per test (Cypress keeps IndexedDB across `it` blocks). Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
 - **PIN-cookie bridges**: clear test-side PIN cookie bridges whenever the Cypress source clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **Tiptap Editor Layout Shifts & Accordion Clicks**: The Tiptap editor mounts asynchronously and shifts the surrounding layout. Before opening an accordion near it, wait for `.ProseMirror`, return when the stable child control is already visible, inspect `aria-expanded`, and click once only when closed. Never retry by blindly toggling the trigger.
 
 ## CI Notes
 

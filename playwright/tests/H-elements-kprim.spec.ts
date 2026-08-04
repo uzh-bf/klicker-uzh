@@ -60,8 +60,7 @@ test.describe('Test creation and editing functionalities for KPRIM elements', ()
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing option 2 disables save
-    await page.getByTestId('insert-answer-field-2').click()
-    await page.getByTestId('insert-answer-field-2').clear()
+    await fillAnswerField(page, 2, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 2, KP.choices[2])
     await page.getByTestId('insert-question-title').click()
@@ -218,11 +217,9 @@ test.describe('Test creation and editing functionalities for KPRIM elements', ()
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing feedbacks re-disables
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await fillFeedbackField(page, 1, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await page.getByTestId('insert-answer-feedback-0').click()
-    await page.getByTestId('insert-answer-feedback-0').clear()
+    await fillFeedbackField(page, 0, '', true)
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 0, KP.choicesFeedbacks[0])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()

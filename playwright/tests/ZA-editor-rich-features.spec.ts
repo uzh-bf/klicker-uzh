@@ -229,6 +229,33 @@ test.describe('Test Tiptap Editor Rich Text, Table, Code Block, and Preview Feat
       reopenedTable.locator('tr').first().locator('th, td')
     ).toHaveCount(4)
     await expect(reopenedEditor.locator('pre code')).toHaveCount(3)
+
+    // Selecting existing table content is a selection-only transaction. The
+    // contextual controls must still react without requiring a content edit.
+    await reopenedTable.locator('td').first().locator('p').click()
+    await expect(page.getByTestId('table-add-row')).toBeVisible()
+    await expect(page.getByTestId('toolbar-table')).toBeDisabled()
+
+    // 9. Legacy break-only rows reopen as an empty editor with its placeholder
+    await prisma.element.update({
+      where: { id: questionId },
+      data: { content: '<br>' },
+    })
+
+    try {
+      await page.goto(manageUrl)
+      await searchAndEdit(page, questionTitle)
+
+      const legacyEmptyEditor = page.getByTestId('insert-question-text')
+      await expect(
+        legacyEmptyEditor.locator('p.is-editor-empty')
+      ).toHaveAttribute('data-placeholder', 'Enter your content here...')
+    } finally {
+      await prisma.element.update({
+        where: { id: questionId },
+        data: { content: dbQuestion!.content },
+      })
+    }
   })
 
   test('Normalizes merged cells before persisting a pasted table', async ({

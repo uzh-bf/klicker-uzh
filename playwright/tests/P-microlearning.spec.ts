@@ -6,6 +6,7 @@
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import { test } from '../util/fixtures.js'
+import { fillEditorField } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
 import {
@@ -3028,11 +3029,11 @@ test.describe.serial('Different microlearning workflows', () => {
       page.getByTestId('insert-question-title'),
       data.manipulation.newSETitle
     )
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await typeInto(
-      page.getByTestId('insert-question-text'),
-      data.manipulation.newSEContent
+    await fillEditorField(
+      page,
+      'insert-question-text',
+      data.manipulation.newSEContent,
+      true
     )
     await page.getByTestId('save-new-question').click()
     await page.waitForTimeout(1000)
