@@ -400,21 +400,18 @@ describe('normalizeSourcesFromParts', () => {
     ['javascript:', 'javascript:alert(1)'],
     ['data:', 'data:text/html,<script>alert(1)</script>'],
     ['relative path', '/files/lecture-01.pdf'],
-  ])(
-    'answer mode keeps the card but drops a %s source_url',
-    (_label, sourceUrl) => {
-      const result = normalizeSourcesFromParts([
-        toolCallPart('KB_doc_query', {
-          answer: 'text',
-          sources: [{ file_name: 'lecture-01.pdf', source_url: sourceUrl }],
-        }),
-      ])
+  ])('answer mode keeps the card but drops a %s source_url', (_label, sourceUrl) => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        answer: 'text',
+        sources: [{ file_name: 'lecture-01.pdf', source_url: sourceUrl }],
+      }),
+    ])
 
-      expect(result).toHaveLength(1)
-      expect(result[0]?.title).toBe('lecture-01.pdf')
-      expect(result[0]?.url).toBeUndefined()
-    }
-  )
+    expect(result).toHaveLength(1)
+    expect(result[0]?.title).toBe('lecture-01.pdf')
+    expect(result[0]?.url).toBeUndefined()
+  })
 
   // `source_type` is a free-text label from the doc_query pipeline, and the
   // type it maps to decides both the card icon and which of the two grids in
