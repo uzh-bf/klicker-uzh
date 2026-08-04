@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-19'
+timestamp: '2026-08-04'
 tags:
   - frontend
 ---
@@ -12,6 +12,14 @@ tags:
 **Every user-visible string is TWO edits, and every interactive element gets a `data-cy`.** New text goes into BOTH `packages/i18n/messages/de.ts` and `en.ts` under the matching namespace, or one locale silently falls back. New buttons/inputs get a `data-cy` attribute — it is the single test hook consumed by Playwright (`playwright.config.ts` sets `testIdAttribute: 'data-cy'`, so `page.getByTestId(...)` reads it). There is no `data-testid` anywhere; don't introduce one.
 
 Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Next.js **pages router**. `apps/chat` is the app-router exception with its own conventions: [Chat Platform](./chat-platform.md).
+
+Assessment report exports intentionally keep two browser-side artifacts:
+`apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
+creates the self-contained HTML used by **View report**, while
+`createAssessmentReportArtifact` also renders a single-page A4 PDF for the
+download action. Both artifacts use the same server-issued snapshot and
+embedded assets, so viewing remains convenient while downloads are ready to
+share or print.
 
 ## Next.js tooling
 

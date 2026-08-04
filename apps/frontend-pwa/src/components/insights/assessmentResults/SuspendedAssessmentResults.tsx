@@ -13,17 +13,29 @@ import { routing } from '@klicker-uzh/i18n'
 import { ActivityType } from '@klicker-uzh/types'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { QRCode } from 'react-qrcode-logo'
 import AssessmentResultsList from './AssessmentResultsList'
 import {
   type AssessmentReportArtifact,
-  createAssessmentReport,
+  createAssessmentReportArtifact,
   type ExportReportTexts,
   loadPublicImageAsDataUrl,
 } from './exportReport'
 import { isScoreInHistogramBin } from './histogram'
 
 type IssuedAssessmentReport = MIssueCredentialMutation['issueAssessmentReport']
+const ASSESSMENT_REPORT_QR_ID = 'assessment-report-qr-code'
+
+type QrCodeRequest = {
+  logoDataUrl: string
+  value: string
+}
+
+type QrCodeRequestResult = {
+  reject: (error: Error) => void
+  resolve: (dataUrl: string) => void
+}
 
 function getAssessmentReportIssueErrorKey(error: unknown) {
   const code =
@@ -66,6 +78,8 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const [exportError, setExportError] = useState<string | null>(null)
   const [reportArtifact, setReportArtifact] =
     useState<AssessmentReportArtifact | null>(null)
+  const [qrCodeRequest, setQrCodeRequest] = useState<QrCodeRequest | null>(null)
+  const qrCodeRequestResult = useRef<QrCodeRequestResult | null>(null)
   const [issueAssessmentReport] = useMutation(MIssueCredentialDocument)
 
   // Swallowing the error above would otherwise leave no trace of why the results
@@ -79,8 +93,32 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
 
     return () => {
       URL.revokeObjectURL(reportArtifact.url)
+      URL.revokeObjectURL(reportArtifact.pdfUrl)
     }
   }, [reportArtifact])
+
+  function createLogoQrCodeDataUrl(
+    value: string,
+    logoDataUrl: string
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      qrCodeRequestResult.current = { resolve, reject }
+      setQrCodeRequest({ logoDataUrl, value })
+    })
+  }
+
+  function handleQrCodeLogoLoad() {
+    const canvas = document.getElementById(ASSESSMENT_REPORT_QR_ID)
+    const result = qrCodeRequestResult.current
+    if (!(canvas instanceof HTMLCanvasElement) || !result) {
+      result?.reject(new Error('ASSESSMENT_REPORT_QR_RENDER_FAILED'))
+      return
+    }
+
+    result.resolve(canvas.toDataURL('image/png'))
+    qrCodeRequestResult.current = null
+    setQrCodeRequest(null)
+  }
 
   function handleViewReport() {
     if (!reportArtifact) return
@@ -97,8 +135,8 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     if (!reportArtifact) return
     setExportError(null)
     const link = document.createElement('a')
-    link.href = reportArtifact.url
-    link.download = reportArtifact.filename
+    link.href = reportArtifact.pdfUrl
+    link.download = reportArtifact.pdfFilename
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -133,16 +171,14 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
       const localePrefix = locale === routing.defaultLocale ? '' : `/${locale}`
       const verificationUrl = `${window.location.origin}${localePrefix}/verify#${report.token}`
       try {
-        const [QRCode, uzhLogoDataUrl] = await Promise.all([
-          import('qrcode').then((module) => module.default),
+        const [klickerLogoDataUrl, uzhLogoDataUrl] = await Promise.all([
+          loadPublicImageAsDataUrl('/KlickerLogo.png'),
           loadPublicImageAsDataUrl('/uzhlogo_email.png'),
         ])
-        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-          errorCorrectionLevel: 'M',
-          margin: 2,
-          width: 320,
-          color: { dark: '#0028A5FF', light: '#FFFFFFFF' },
-        })
+        const qrCodeDataUrl = await createLogoQrCodeDataUrl(
+          verificationUrl,
+          klickerLogoDataUrl
+        )
         const identitySourceLabel = t(
           'pwa.assessment.identitySourceCourseInvitation'
         )
@@ -200,7 +236,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           verificationQrAlt: t('pwa.assessment.verificationQrAlt'),
         }
 
-        const artifact = createAssessmentReport({
+        const artifact = await createAssessmentReportArtifact({
           snapshot: report.snapshot,
           issuedAt: report.issuedAt,
           identitySourceLabel,
@@ -319,6 +355,25 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           <div>{t('pwa.assessment.noCompletedLiveQuizzesYet')}</div>
         )}
       </div>
+      {qrCodeRequest ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed -left-[10000px] top-0"
+        >
+          <QRCode
+            id={ASSESSMENT_REPORT_QR_ID}
+            ecLevel="H"
+            logoHeight={96 / 3.34}
+            logoImage={qrCodeRequest.logoDataUrl}
+            logoWidth={96}
+            logoOnLoad={handleQrCodeLogoLoad}
+            qrStyle="squares"
+            quietZone={8}
+            size={320}
+            value={qrCodeRequest.value}
+          />
+        </div>
+      ) : null}
       {practiceQuizzes.length > 0 && (
         <div>
           <H3>{t('shared.generic.practiceQuizzes')}</H3>

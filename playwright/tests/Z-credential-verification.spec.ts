@@ -66,10 +66,28 @@ async function exportAssessmentReport(page: Page) {
   ])
   const path = await download.path()
   if (!path) throw new Error('ASSESSMENT_REPORT_DOWNLOAD_PATH_MISSING')
-  const content = await fs.readFile(path, 'utf8')
+  const pdf = await fs.readFile(path)
+  const reportWindowPromise = page.waitForEvent('popup')
+  await viewButton.click()
+  const reportPage = await reportWindowPromise
+  await reportPage.waitForLoadState('load')
+  const content = await reportPage.content()
+  const qrCodeSize = await reportPage
+    .getByRole('img', { name: 'QR code for the KlickerUZH verification page' })
+    .evaluate((image: HTMLImageElement) => ({
+      height: image.naturalHeight,
+      width: image.naturalWidth,
+    }))
+  await reportPage.close()
   const match = content.match(/\/verify#([a-f0-9]{64})/)
   if (!match?.[1]) throw new Error('ASSESSMENT_REPORT_TOKEN_MISSING')
-  return { content, token: match[1] }
+  return {
+    content,
+    filename: download.suggestedFilename(),
+    pdf,
+    qrCodeSize,
+    token: match[1],
+  }
 }
 
 async function revokeThroughLecturerUi({
@@ -115,8 +133,13 @@ test.describe('Assessment report credential lifecycle', () => {
     loginFactory,
   }) => {
     await loginAssessmentStudent(loginFactory)
-    const { content, token } = await exportAssessmentReport(page)
+    const { content, filename, pdf, qrCodeSize, token } =
+      await exportAssessmentReport(page)
 
+    expect(filename).toMatch(/\.pdf$/)
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(pdf.toString().match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+    expect(qrCodeSize).toEqual({ height: 336, width: 336 })
     expect(content).toContain('Universität Zürich')
     expect(content).toContain(ASSESSMENT_REPORT_COURSE_NAME)
     expect(content).toContain(ASSESSMENT_REPORT_COURSE_REFERENCE)

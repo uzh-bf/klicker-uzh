@@ -40,9 +40,19 @@ export interface ExportReportTexts {
 export interface AssessmentReportArtifact {
   filename: string
   url: string
+  pdfFilename: string
+  pdfUrl: string
+}
+
+export interface AssessmentReportHtmlArtifact {
+  filename: string
+  url: string
+  html: string
+  pdfFilename: string
 }
 
 const REPORT_TIME_ZONE = 'Europe/Zurich'
+const PDF_FILENAME_PREFIX = 'KlickerUZH_Assessment_Report_'
 
 const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -189,6 +199,44 @@ export async function loadPublicImageAsDataUrl(path: string) {
   })
 }
 
+export async function createAssessmentReportPdf({
+  html,
+  filename,
+}: {
+  html: string
+  filename: string
+}) {
+  const html2pdfModule = await import('html2pdf.js')
+  const html2pdf = html2pdfModule.default
+  const pdfHtml = html
+    .replace('<html ', '<html class="pdf-export-document" ')
+    .replace('<body>', '<body class="pdf-export">')
+  const pdf = await html2pdf()
+    .set({
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      enableLinks: true,
+      pagebreak: {
+        mode: ['css'],
+        avoid: ['.pdf-avoid'],
+      },
+      html2canvas: {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: false,
+      },
+      jsPDF: {
+        format: 'a4',
+        orientation: 'portrait',
+        unit: 'mm',
+      },
+    })
+    .from(pdfHtml)
+    .outputPdf('blob')
+
+  return pdf as Blob
+}
+
 export function createAssessmentReport({
   snapshot,
   issuedAt,
@@ -207,7 +255,7 @@ export function createAssessmentReport({
   verificationUrl: string
   qrCodeDataUrl: string
   uzhLogoDataUrl: string
-}): AssessmentReportArtifact {
+}): AssessmentReportHtmlArtifact {
   const formattedIssuedAt = new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -276,9 +324,9 @@ export function createAssessmentReport({
     .brand { display: flex; align-items: center; gap: 20px; }
     .brand img { display: block; width: 184px; height: auto; }
     .product { border-left: 1px solid #b3b3b3; padding-left: 20px; font-size: 18px; font-weight: 700; }
-    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 20px; }
-    h3 { margin: 24px 0 8px; font-size: 17px; }
+    h1 { margin: 0; font-size: 22px; line-height: 1.15; }
+    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 18px; }
+    h3 { margin: 24px 0 8px; font-size: 15px; }
     p { margin: 8px 0; }
     .issued { margin-top: 6px; color: #555; text-align: right; }
     dl { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; margin: 20px 0 0; border-top: 1px solid #d6d6d6; }
@@ -301,7 +349,33 @@ export function createAssessmentReport({
     .verification a { color: #0028a5; overflow-wrap: anywhere; }
     .privacy { margin-top: 28px; border-left: 4px solid #007a92; padding-left: 14px; color: #444; }
     @media (max-width: 680px) { main { padding: 24px; } header { align-items: flex-start; flex-direction: column; } .issued { text-align: left; } dl { grid-template-columns: 1fr; } dt { border-bottom: 0; } .verification { grid-template-columns: 1fr; } }
-    @media print { main { max-width: none; padding: 0; } .chart, .verification { break-inside: avoid; } }
+    @media print { main { max-width: none; padding: 0; } .chart, .verification, .pdf-avoid { break-inside: avoid; } }
+
+    .pdf-export-document { width: 210mm; height: 280mm; overflow: hidden; }
+    .pdf-export { width: 210mm; height: 280mm; overflow: hidden; }
+    .pdf-export main { width: 210mm; height: 280mm; max-width: none; margin: 0; overflow: hidden; padding: 10mm 12mm; font-size: 9px; line-height: 1.25; }
+    .pdf-export header { gap: 12px; border-bottom-width: 2px; padding-bottom: 8px; }
+    .pdf-export .brand { gap: 8px; }
+    .pdf-export .brand img { width: 130px; }
+    .pdf-export .product { padding-left: 8px; font-size: 12px; }
+    .pdf-export h1 { font-size: 18px; }
+    .pdf-export h2 { margin: 12px 0 5px; padding-bottom: 3px; font-size: 14px; }
+    .pdf-export h3 { margin: 10px 0 4px; font-size: 11px; }
+    .pdf-export p { margin: 4px 0; }
+    .pdf-export .issued { margin-top: 3px; font-size: 8px; }
+    .pdf-export dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
+    .pdf-export dt, .pdf-export dd { padding: 4px 7px; }
+    .pdf-export table { margin-top: 5px; }
+    .pdf-export th, .pdf-export td { padding: 4px 7px; }
+    .pdf-export .percentile { padding: 5px 8px; font-size: 12px; }
+    .pdf-export .chart { overflow: visible; }
+    .pdf-export .chart svg { min-width: 0; height: 74px; }
+    .pdf-export .histogram-table { margin-top: 4px; font-size: 8px; }
+    .pdf-export .histogram-table th, .pdf-export .histogram-table td { padding: 2px 5px; }
+    .pdf-export .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
+    .pdf-export .verification img { width: 72px; height: 72px; }
+    .pdf-export .verification h2 { margin: 0 0 3px; }
+    .pdf-export .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 8px; }
   </style>
 </head>
 <body>
@@ -324,7 +398,7 @@ export function createAssessmentReport({
     <dt>${escapeHtml(texts.identitySource)}</dt><dd>${escapeHtml(identitySourceLabel)}</dd>
   </dl>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.pointsSummary)}</h2>
     <table class="results-table">
       <thead><tr><th></th><th>${escapeHtml(texts.achieved)}</th><th>${escapeHtml(texts.available)}</th></tr></thead>
@@ -332,12 +406,12 @@ export function createAssessmentReport({
     </table>
   </section>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.comparisonTitle)}</h2>
     ${comparison}
   </section>
 
-  <section class="verification">
+    <section class="verification pdf-avoid">
     <img src="${escapeHtml(qrCodeDataUrl)}" alt="${escapeHtml(texts.verificationQrAlt)}" />
     <div>
       <h2>${escapeHtml(texts.verificationTitle)}</h2>
@@ -361,7 +435,30 @@ export function createAssessmentReport({
     .replace(/^_+|_+$/g, '')
 
   return {
-    filename: `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`,
+    filename: `${PDF_FILENAME_PREFIX}${filename || 'Course'}.html`,
     url: URL.createObjectURL(blob),
+    pdfFilename: `${PDF_FILENAME_PREFIX}${filename || 'Course'}.pdf`,
+    html,
+  }
+}
+
+export async function createAssessmentReportArtifact(
+  options: Parameters<typeof createAssessmentReport>[0]
+): Promise<AssessmentReportArtifact> {
+  const htmlArtifact = createAssessmentReport(options)
+  try {
+    const pdfBlob = await createAssessmentReportPdf({
+      html: htmlArtifact.html,
+      filename: htmlArtifact.pdfFilename,
+    })
+    return {
+      filename: htmlArtifact.filename,
+      url: htmlArtifact.url,
+      pdfFilename: htmlArtifact.pdfFilename,
+      pdfUrl: URL.createObjectURL(pdfBlob),
+    }
+  } catch (error) {
+    URL.revokeObjectURL(htmlArtifact.url)
+    throw error
   }
 }

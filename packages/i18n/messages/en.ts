@@ -1343,11 +1343,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
         'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
-      exportReportButton: 'Export Performance Report (HTML)',
+      exportReportButton: 'Export Performance Report',
       exportReportExplanation:
-        'Issue an HTML report from the current assessment record. Once it is ready, you can open it or download the file. The report includes a link for checking its current status and claims.',
+        'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or download a single-page A4 PDF. The report includes a link for checking its current status and claims.',
       exportReportReady:
-        'Your assessment report is ready. Open it in a new tab or download the HTML file.',
+        'Your assessment report is ready. View it in a new tab or download the single-page A4 PDF.',
       viewReportButton: 'View report',
       downloadReportButton: 'Download report',
       refreshReportButton: 'Refresh report',
@@ -1362,9 +1362,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportReportIssuanceError:
         'The assessment report could not be issued. Check your connection and try again.',
       exportReportDownloadError:
-        'The report was issued, but the HTML file could not be created. Please try again.',
+        'The report was issued, but the report files could not be created. Please try again.',
       exportReportViewError:
-        'The report could not be opened in a new tab. Allow pop-ups for this page or download the HTML file instead.',
+        'The report could not be opened in a new tab. Allow pop-ups for this page or download the PDF instead.',
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
