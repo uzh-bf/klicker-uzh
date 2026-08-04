@@ -211,18 +211,23 @@ jobs:
           - '7077:7077'
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
-          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
           SERVER_AUTH_COOKIE_INSECURE: 't'
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
-          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
           SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://hatchet:8888
+          SERVER_URL: http://localhost:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
 
     steps:
       - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
@@ -233,12 +238,10 @@ jobs:
       - name: Define node version
         uses: actions/setup-node@v4
         with:
-          node-version-file: package.json
+          node-version: 24.x
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.0
-          run_install: false
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Get pnpm store directory
         shell: bash
@@ -248,8 +251,7 @@ jobs:
       - name: Setup pnpm cache
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ env.STORE_PATH }}
+          path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
@@ -274,7 +276,7 @@ jobs:
         run: |
           ./util/_create_hatchet_token_cypress.sh
         env:
-          HATCHET_API_URL: http://hatchet:8888
+          HATCHET_API_URL: http://localhost:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
 
       - name: Apply migrations and reset database
@@ -327,13 +329,13 @@ jobs:
           REDIS_ASSESSMENT_PORT: 6379
           REDIS_ASSESSMENT_PASS: ''
           REDIS_ASSESSMENT_HOST: redis_assessment_exec
-          HATCHET_CHECK_HOST: hatchet
+          HATCHET_CHECK_HOST: localhost
           HATCHET_HTTP_PORT: 8888
           HATCHET_GRPC_PORT: 7077
-          HATCHET_API_URL: http://hatchet:8888
+          HATCHET_API_URL: http://localhost:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-          HATCHET_CLIENT_HOST_PORT: hatchet:7077
-          HATCHET_HOST_PORT: hatchet:7077
+          HATCHET_CLIENT_HOST_PORT: localhost:7077
+          HATCHET_HOST_PORT: localhost:7077
           HATCHET_CLIENT_TLS_STRATEGY: none
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
