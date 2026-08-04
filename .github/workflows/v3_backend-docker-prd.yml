@@ -16,6 +16,14 @@ env:
 jobs:
   build-arm:
     if: github.event.pull_request.draft == false
+    # Gate the app image on the migrator image so the two tags can never drift
+    # apart in the dangerous direction. If the migrator build fails, this job is
+    # skipped and the backend tag stays put, leaving the migrator ahead of the
+    # app — the expand-contract state migrations must already tolerate. The
+    # reverse (app ahead of migrator) would let the PreSync hook run an old
+    # migrator, apply nothing, exit 0, and roll out code against an unmigrated
+    # schema.
+    needs: build-migrator-arm
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -56,6 +64,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
     if: github.event.pull_request.draft == false
+    # See build-arm: the app image must never advance without its migrator.
+    needs: build-migrator-amd
     runs-on: ubuntu-latest
     permissions:
       contents: read
