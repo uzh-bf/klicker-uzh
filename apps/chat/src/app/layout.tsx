@@ -1,3 +1,4 @@
+import { messagesByLocale } from '@/src/types/i18n'
 import { routing } from '@klicker-uzh/i18n'
 import {
   monoSpaceFont,
@@ -37,8 +38,9 @@ export default async function RootLayout({
     : routing.defaultLocale
   setRequestLocale(locale)
 
-  const messages = (await import(`@klicker-uzh/i18n/messages/${locale}`))
-    .default
+  // Same static map as `types/i18n.ts` — the dynamic bare-package-subpath
+  // import it replaces does not resolve under Turbopack.
+  const messages = messagesByLocale[locale]
 
   return (
     <html lang={locale}>

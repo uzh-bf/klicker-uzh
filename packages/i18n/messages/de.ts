@@ -142,6 +142,8 @@ export default {
       placeholder: 'Nachricht schreiben...',
       send: 'Nachricht senden',
       stop: 'Antwort stoppen',
+      disclaimerHint:
+        'Antworten des Chatbots können falsch sein — bitte anhand Deiner Kursmaterialien prüfen.',
       attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
       dismissError: 'Fehler schliessen',
       dropImages: 'Bilder zum Anhängen hier ablegen',
@@ -159,6 +161,22 @@ export default {
       showLess: 'Weniger anzeigen',
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
+    },
+    tools: {
+      searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
+      searchedCourseMaterial: 'Kursmaterialien durchsucht',
+      searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
+      searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+    },
+    sources: {
+      title: 'Quellen',
+      page: 'S. {page}',
+      video: 'Video',
+      image: 'Bild',
+    },
+    citations: {
+      label: 'Quelle {index}: {title}',
+      goToSource: 'Zur Quelle springen',
     },
     noLogin: {
       title: 'Anmeldung erforderlich',

@@ -1,8 +1,15 @@
 import {
+  isDocQueryToolName,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+} from '@/src/lib/sources/normalizeSources'
+import type { Translate } from '@/src/lib/sources/sourceDisplay'
+import {
   AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
+  SearchIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
@@ -70,6 +77,55 @@ function formatToolName(raw: string) {
   return (sep === -1 ? raw : raw.slice(sep + 1)).replace(/_/g, ' ')
 }
 
+export type DocQueryChipState = 'running' | 'done' | 'doneEmpty' | 'failed'
+
+/**
+ * Picks which of the four friendly `chat.tools.*` messages the doc_query
+ * chip should show. Pure so it can be unit-tested without mounting the
+ * component.
+ *
+ * "No results" is claimed only for a payload that actually parsed and
+ * yielded no sources. Anything unreadable stays plain "done": a cancelled
+ * call leaves the `'Loading...'`/`'Executing...'` placeholder from
+ * `hooks/useChatResponse.ts` behind as the result, and telling a student
+ * their search found nothing would be worse than saying nothing at all.
+ */
+export function getDocQueryChipState({
+  toolName,
+  isRunning,
+  isFailed,
+  result,
+  isError,
+}: {
+  toolName: string
+  isRunning: boolean
+  isFailed: boolean
+  result: unknown
+  isError?: boolean
+}): DocQueryChipState {
+  if (isFailed) return 'failed'
+  if (isRunning) return 'running'
+  if (!parseDocQueryPayload(result)) return 'done'
+
+  const sources = normalizeSourcesFromParts([
+    { type: 'tool-call', toolName, result, isError },
+  ])
+  return sources.length > 0 ? 'done' : 'doneEmpty'
+}
+
+function docQueryChipLabel(t: Translate, state: DocQueryChipState): string {
+  switch (state) {
+    case 'running':
+      return t('chat.tools.searchingCourseMaterial')
+    case 'doneEmpty':
+      return t('chat.tools.searchedCourseMaterialEmpty')
+    case 'failed':
+      return t('chat.tools.searchCourseMaterialFailed')
+    case 'done':
+      return t('chat.tools.searchedCourseMaterial')
+  }
+}
+
 interface ToolFallbackProps {
   toolName: string
   argsText: string
@@ -90,6 +146,11 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const isRunning = status.type === 'running'
   const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
+  const isDocQuery = isDocQueryToolName(toolName)
+
+  const docQueryState = isDocQuery
+    ? getDocQueryChipState({ toolName, isRunning, isFailed, result, isError })
+    : undefined
 
   const resultText =
     result === undefined
@@ -112,20 +173,32 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
         )}
       >
+        {/* Every icon here sits next to the chip's own text label, so none of
+            them carry meaning of their own. */}
         {isCollapsed ? (
-          <ChevronRightIcon className="size-3" />
+          <ChevronRightIcon className="size-3" aria-hidden />
         ) : (
-          <ChevronDownIcon className="size-3" />
+          <ChevronDownIcon className="size-3" aria-hidden />
         )}
         {isRunning && (
-          <LoaderCircleIcon className="text-primary size-3 animate-spin" />
+          <LoaderCircleIcon
+            className="text-primary size-3 animate-spin"
+            aria-hidden
+          />
         )}
-        {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
-        {isFailed
-          ? t('chat.toolFallback.failed', { tool })
-          : isRunning
-            ? t('chat.toolFallback.running', { tool })
-            : t('chat.toolFallback.done', { tool })}
+        {isFailed && (
+          <AlertCircleIcon className="text-destructive size-3" aria-hidden />
+        )}
+        {(docQueryState === 'done' || docQueryState === 'doneEmpty') && (
+          <SearchIcon className="size-3" aria-hidden />
+        )}
+        {docQueryState
+          ? docQueryChipLabel(t, docQueryState)
+          : isFailed
+            ? t('chat.toolFallback.failed', { tool })
+            : isRunning
+              ? t('chat.toolFallback.running', { tool })
+              : t('chat.toolFallback.done', { tool })}
       </button>
 
       <div

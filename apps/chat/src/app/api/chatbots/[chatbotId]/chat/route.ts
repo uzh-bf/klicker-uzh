@@ -7,12 +7,14 @@ import {
   getChatModelRegistry,
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
+import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
+import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   mapAssistantStepContent,
@@ -802,6 +804,17 @@ export async function POST(
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
   const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })

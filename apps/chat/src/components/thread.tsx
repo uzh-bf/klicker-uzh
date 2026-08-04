@@ -39,6 +39,7 @@ import {
   useState,
 } from 'react'
 
+import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
@@ -58,13 +59,15 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { MessageSourcesProvider } from './message-sources-context'
+import { SourcesSection } from './sources-section'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 
-import { useTranslations } from 'next-intl'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
@@ -136,9 +139,20 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const message = useMessage() as MessageWithCustomMetadata & {
     role: string
     status?: { type: string }
+    // `useMessage()` already returns `createdAt` at runtime (assistant-ui's
+    // `ThreadMessage`); declared here only to widen the local cast, like
+    // `role`/`status` above.
+    createdAt: Date
   }
   const { modelOptions } = useSettingsStore()
   const t = useTranslations()
+  const format = useFormatter()
+  // A ticking `now`, not `new Date()`: the caption is rendered once and its
+  // message only re-renders on its own state changes (a vote, an edit, a branch
+  // switch), so a fixed `now` would freeze an answer at "less than a minute
+  // ago" for as long as the student reads it. Passing `now` at all is also what
+  // keeps next-intl from logging an ENVIRONMENT_FALLBACK error every render.
+  const now = useNow({ updateInterval: 60_000 })
 
   // Hide metadata while the assistant is still streaming
   if (message.role === 'assistant' && message.status?.type === 'running') {
@@ -188,15 +202,45 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     reasoningLabel,
     creditsLabel,
   ].filter(Boolean)
+  const hasCustomMetadata = fullParts.length > 0
 
-  if (fullParts.length === 0) return null
+  // Relative send time. `title` sits on the <time> so hovering it shows the
+  // absolute date, while hovering the rest of the caption still shows the full
+  // mode/model/reasoning/credits detail. It renders plain (no sr-only /
+  // aria-hidden split) because there is only one version of this text.
+  const absoluteTimestamp = format.dateTime(message.createdAt, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+  const timestamp = (
+    <time dateTime={message.createdAt.toISOString()} title={absoluteTimestamp}>
+      {format.relativeTime(message.createdAt, now)}
+    </time>
+  )
 
-  // The `title` tooltip is mouse-only; the sr-only copy keeps the full
-  // detail (incl. model) reachable for screen readers.
+  // The `title` tooltip is mouse-only; the sr-only copy keeps the full detail
+  // (incl. model) reachable for screen readers. The timestamp always renders,
+  // so this caption is never empty even with no custom metadata at all.
+  //
+  // The trailing separator hangs off each metadata span rather than sitting in
+  // its own: `visibleParts` can be empty while `fullParts` is not — an answer
+  // carrying only a model id, from a chatbot with no modes, a non-reasoning
+  // model and credits off — and a standalone separator would then render the
+  // caption as a dangling "— 5 minutes ago".
   return (
-    <div className="text-foreground mt-1 text-xs" title={fullParts.join(' — ')}>
-      <span aria-hidden="true">{visibleParts.join(' — ')}</span>
-      <span className="sr-only">{fullParts.join(' — ')}</span>
+    <div
+      className="text-foreground mt-1 text-xs"
+      title={hasCustomMetadata ? fullParts.join(' — ') : undefined}
+    >
+      {hasCustomMetadata && (
+        <>
+          {visibleParts.length > 0 && (
+            <span aria-hidden="true">{visibleParts.join(' — ')} — </span>
+          )}
+          <span className="sr-only">{fullParts.join(' — ')} — </span>
+        </>
+      )}
+      {timestamp}
     </div>
   )
 }
@@ -244,6 +288,10 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
         <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
+        {/* S6: standalone-only, same as ThreadScrollToBottom above — an
+            embedded widget has little vertical room and the embedding page
+            already carries the disclaimer context. */}
+        {!embedded && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
@@ -429,6 +477,24 @@ const Composer: FC = () => {
         </div>
       </ComposerPrimitive.Root>
     </ComposerDropzone>
+  )
+}
+
+// Deliberately carries only the accuracy caveat. A per-message credit cost
+// belongs nowhere near here: `calcCost` in the chat route prices each answer
+// from input/output tokens, so the figure varies by model and exchange length —
+// which is exactly what `chat.credits.costHint` already says, in the credits
+// surfaces that can also show the balance it applies to.
+const ComposerHint: FC = () => {
+  const t = useTranslations()
+
+  return (
+    <p
+      data-cy="chat-composer-hint"
+      className="text-muted-foreground mt-1.5 w-full max-w-3xl px-2 text-center text-xs"
+    >
+      {t('chat.composer.disclaimerHint')}
+    </p>
   )
 }
 
@@ -1112,6 +1178,10 @@ const AssistantMessage: FC<{
       m.status?.type === 'running' &&
       m.content.length === 0
   )
+  // Computed once here (not inside SourcesSection/MarkdownText) and shared
+  // via context, so the sources grid and the inline `[n]` citation chips
+  // read the same normalized list instead of each re-parsing the tool JSON.
+  const messageSources = useMessageSources()
 
   return (
     <MessagePrimitive.Root
@@ -1127,7 +1197,7 @@ const AssistantMessage: FC<{
             src={
               chatbotAvatar
                 ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
+                : '/user-solid.svg'
             }
             alt=""
             width={chatbotAvatar ? '35' : '32'}
@@ -1142,7 +1212,7 @@ const AssistantMessage: FC<{
             src={
               chatbotAvatar
                 ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
+                : '/user-solid.svg'
             }
             alt=""
             width="24"
@@ -1165,7 +1235,10 @@ const AssistantMessage: FC<{
         )}
       >
         {isPendingEmpty && <ThinkingDots />}
-        <AssistantMessageParts />
+        <MessageSourcesProvider value={messageSources}>
+          <AssistantMessageParts />
+          <SourcesSection />
+        </MessageSourcesProvider>
         <MessageMetadata includeCredits />
       </div>
 

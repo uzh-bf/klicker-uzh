@@ -89,9 +89,95 @@ scrollable. Embedded mode shows the loading state and compact credit/model infor
 the shared settings components. Direct thread URL activation resynchronizes the thread's stored
 chat mode once per activation, without overriding a mode manually chosen afterward.
 
+## Sources and citations
+
+An answer's sources are **derived from the message's own tool-call parts**, not carried in a
+dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
+`src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
+cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
+keys off the same `isDocQueryToolName` predicate, so a tool the predicate misses silently loses
+all four at once.
+
+That predicate must tolerate MCP namespacing. `toSafeToolName` (`src/services/mcpClients.ts`)
+prefixes the server name and appends **8 hex characters of a sha256** when the namespaced name
+exceeds 64 characters or collides with another server's, so the same logical tool can arrive as
+`doc_query`, `KB_doc_query`, or `KB_doc_query_1a2b3c4d`. A chatbot with two RAG servers is the
+realistic trigger. The suffix length lives in `lib/config/toolNames.ts` and is imported by both
+the side that builds the name and the regex that matches it, so bumping it cannot silently break
+recognition — `mcpClients.ts` is `'use server'` and therefore cannot export the constant itself.
+
+One known edge, not currently handled: `withHashSuffix` truncates the whole `server_tool` string
+to 55 characters **from the end** before appending the hash. A server name longer than about 45
+characters pushes `doc_query` out of the kept prefix entirely, and the predicate then matches
+nothing — sources, citations, the activity chip and the prompt contract all switch off silently
+for that server. No such server name exists today; fix by truncating the server name rather than
+the combined string if one ever appears.
+
+`normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
+`CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
+an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it dedupes by
+file/page/url and numbers what survives **1..N in first-appearance order across every doc_query
+call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
+to break independently:
+
+- `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
+  literal text in the answer — which is the intended failure mode, not a bug.
+- A source returned again by a later search keeps its original number; no second index is ever
+  minted. `src/lib/server/citationInstructions.ts` therefore tells the model to **reuse** a repeat
+  source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
+  unique sources exist. That contract is appended to the system prompt only when a doc_query-style
+  tool is actually available for the request.
+- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+  whether a given model honours it needs a live model key, which the devcontainer does not carry.
+
+On the render side, `remarkCitationMarkers` rewrites `[n]` in markdown **text** nodes into
+`#cite-n` links, skipping anything inside a link label (including nested emphasis), and
+`markdown-text.tsx` intercepts those in its `a` override to render `CitationChip`. Normalization
+runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both the cards and
+the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf component.
+
+A chip must wrap **with** the word it cites, never start a line on its own. Two mechanisms
+enforce that and both are needed: `splitCitationMarkers` strips spaces/tabs directly before a
+marker (newlines survive — a soft break is content), and `CitationChip` prefixes a U+2060 WORD
+JOINER, because an atomic inline like the chip's button is a legal break point under UAX #14
+even with no whitespace before it. Removing either one reintroduces orphaned chips at narrow
+widths.
+
+The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
+`src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
+documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
+and fall back to a cleaned display URL when they carry no page; web links always lead with the
+display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
+lead with a `12:34`-style position; images keep their type label. **doc_query has no timestamp
+field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
+`labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
+`labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
+(`getSourceTimestamp`). `parseTimestampSeconds` deliberately rejects anything that is not a time
+notation so a chapter label like `Kapitel IV` is never misread as a position; a dedicated
+timestamp field is phase-2 work in the doc-query service. Card titles clamp at two lines with the
+full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
+so adding `block` alongside it silently disables the clamp. Document cards lay out with
+`repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
+tracks so fewer cards stretch across the whole row and only wrap when they genuinely no longer
+fit, and the `min(230px, 100%)` floor keeps a track from forcing horizontal overflow in
+containers narrower than 230px (embedded mode).
+
+The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
+"No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
+literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
+its result, and labelling that as an empty search would be a lie.
+
 ## Localization
 
-Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en`. It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
+
+Model answers are held to the same orthography server-side: the chat route wraps every system
+prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
+unlike the citation contract, because a lecturer's stored prompt replaces `DEFAULT_PROMPT`
+entirely and a rule written only in the default text silently disappears the moment a custom
+prompt is saved. The contract asks for Swiss High German ("ss" not "ß", real umlauts, never
+ae/oe/ue). As with the citation contract, only prompt assembly is unit-tested; model compliance
+needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
@@ -120,6 +206,8 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 ## Testing
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

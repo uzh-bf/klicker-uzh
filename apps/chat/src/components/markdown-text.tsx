@@ -15,13 +15,22 @@ import { useTranslations } from 'next-intl'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
+import {
+  parseCitationHref,
+  remarkCitationMarkers,
+} from '../lib/markdown/remarkCitationMarkers'
 import { cn } from '../lib/utils/ui'
+import { CitationChip } from './citation-chip'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+
+// Stable module-scope reference: recreating this array on every render would
+// defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
+const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
 
 const MarkdownTextImpl = () => {
   return (
     <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm, remarkMath]}
+      remarkPlugins={remarkPlugins}
       rehypePlugins={[rehypeKatex]}
       preprocess={normalizeCustomMathTags}
       className="aui-md"
@@ -139,17 +148,23 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        'text-primary font-medium underline underline-offset-4',
-        className
-      )}
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    />
-  ),
+  a: ({ className, href, ...props }) => {
+    const citationIndex = parseCitationHref(href)
+    if (citationIndex !== null) return <CitationChip index={citationIndex} />
+
+    return (
+      <a
+        className={cn(
+          'text-primary font-medium underline underline-offset-4',
+          className
+        )}
+        target="_blank"
+        rel="noopener noreferrer"
+        href={href}
+        {...props}
+      />
+    )
+  },
   blockquote: ({ className, ...props }) => (
     <blockquote
       className={cn('border-l-2 pl-6 italic', className)}

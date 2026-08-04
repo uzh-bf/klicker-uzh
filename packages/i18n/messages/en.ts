@@ -139,6 +139,8 @@ export default {
       placeholder: 'Write a message...',
       send: 'Send message',
       stop: 'Stop response',
+      disclaimerHint:
+        'Chatbot answers can be wrong — verify against your course materials.',
       attachmentLimitError: 'You can only attach up to {max} images.',
       dismissError: 'Dismiss error',
       dropImages: 'Drop images to attach',
@@ -156,6 +158,22 @@ export default {
       showLess: 'Show less',
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
+    },
+    tools: {
+      searchingCourseMaterial: 'Searching course materials...',
+      searchedCourseMaterial: 'Searched course materials',
+      searchedCourseMaterialEmpty: 'Searched course materials · no results',
+      searchCourseMaterialFailed: 'Course material search failed',
+    },
+    sources: {
+      title: 'Sources',
+      page: 'p. {page}',
+      video: 'Video',
+      image: 'Image',
+    },
+    citations: {
+      label: 'Source {index}: {title}',
+      goToSource: 'Go to source',
     },
     noLogin: {
       title: 'Login Required',
