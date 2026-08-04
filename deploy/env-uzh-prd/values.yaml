@@ -952,6 +952,17 @@ assessment:
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (see chart job-migrate.yaml).
+#
+# DISABLED UNTIL THE FIRST POST-HOOK RELEASE. No migrator image exists for any
+# release tag cut before this feature landed, so while backendGraphql.image.tag
+# still points at such a tag the hook would fail on ImagePullBackOff and abort
+# every prd sync — including a rollback to an older tag. Flip this to true in the
+# same commit that bumps the prd image tags to the first release whose CI built
+# `backend-docker-migrator-arm`. Until then prd migrations stay manual
+# (`prisma:deploy:prod`). Rolling back to a pre-hook tag requires setting this
+# back to false. See docs/data-and-migrations.md → Recovering a failed hook.
 migrator:
+  enabled: false
+  priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm

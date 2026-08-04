@@ -25,7 +25,12 @@ done
 # The migrator image (packages/prisma/Dockerfile) pins the Prisma CLI by literal
 # version; it must equal the packages/prisma devDependency or `migrate deploy`
 # runs with a mismatched engine (this drift shipped once — see ADR-0001).
-DOCKERFILE_PIN=$(grep -oE 'prisma@[0-9]+\.[0-9]+\.[0-9]+' ./packages/prisma/Dockerfile | head -1 | cut -d@ -f2)
+DOCKERFILE_PIN=$(grep -oE '^RUN npm install prisma@[0-9]+\.[0-9]+\.[0-9]+' ./packages/prisma/Dockerfile | head -1 | sed 's/.*prisma@//')
+if [ -z "$DOCKERFILE_PIN" ]; then
+  echo "Could not read the Prisma CLI pin from packages/prisma/Dockerfile."
+  echo "Expected a line of the form: RUN npm install prisma@<x.y.z>"
+  exit 1
+fi
 DEVDEP_PIN=$(node -p "require('./packages/prisma/package.json').devDependencies.prisma")
 if [ "$DOCKERFILE_PIN" != "$DEVDEP_PIN" ]; then
   echo "Prisma version drift: packages/prisma/Dockerfile pins prisma@$DOCKERFILE_PIN but packages/prisma/package.json devDependency is $DEVDEP_PIN."

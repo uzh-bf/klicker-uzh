@@ -20,7 +20,12 @@ metadata:
 spec:
   backoffLimit: {{ .Values.migrator.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.migrator.activeDeadlineSeconds }}
-  ttlSecondsAfterFinished: {{ .Values.migrator.ttlSecondsAfterFinished }}
+  {{- with .Values.migrator.ttlSecondsAfterFinished }}
+  # Optional and unset by default: the TTL controller deletes FAILED Jobs too, which
+  # would destroy the pod logs the hook-delete-policy above deliberately keeps.
+  # BeforeHookCreation already removes the previous Job on the next sync.
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
   template:
     metadata:
       labels:
@@ -28,6 +33,11 @@ spec:
         app.kubernetes.io/component: migrate
     spec:
       restartPolicy: Never
+      {{- with .Values.migrator.priorityClassName }}
+      # This Job gates every rollout: give it the same priority as the app workloads
+      # so node pressure cannot preempt or starve it against activeDeadlineSeconds.
+      priorityClassName: {{ include "chart.fullname" $ }}-{{ . }}
+      {{- end }}
       # The migrator needs zero Kubernetes API access — never mount the default
       # service-account token (SonarCloud kubernetes:S6865).
       automountServiceAccountToken: false
