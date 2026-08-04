@@ -1,6 +1,6 @@
 ---
 name: klicker-playwright-e2e
-description: Create, translate, refactor, run, and debug Playwright E2E tests for KlickerUZH. Use when working in playwright/tests, comparing Cypress and Playwright parity, fixing flaky Klicker Playwright specs, debugging local or GitHub Actions Playwright failures, adjusting Playwright CI, or preserving Cypress-to-Playwright coverage without reducing test cases.
+description: Create, refactor, run, and debug Playwright E2E tests for KlickerUZH. Use when working in playwright/tests, fixing flaky Klicker Playwright specs, debugging local or GitHub Actions Playwright failures, or adjusting Playwright CI.
 ---
 
 # KlickerUZH Playwright E2E
@@ -17,7 +17,6 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 - Activity helpers: `playwright/util/fixtures/activities.ts`
 - Element helpers: `playwright/util/fixtures/elements.ts`
 - Action-menu helpers: `playwright/util/actions.ts`
-- Cypress source specs: `cypress/cypress/e2e/**/*.cy.ts`
 
 ## Coverage And Parity Rules
 
@@ -28,11 +27,11 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 - Prefer behavior-preserving helper extraction over broad rewrites.
 - Keep explicit Playwright assertions when they document important state; Cypress chains may look shorter only because retries are implicit.
 
-Useful parity checks:
+Useful check:
 
 ```bash
 volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
-rg -n "it\\(|test\\(" cypress/cypress/e2e playwright/tests
+rg -n "test\\(" playwright/tests
 ```
 
 ## Local Test Setup

@@ -25,7 +25,7 @@ pnpm run format:check         # check formatting (biome + prettier)
 pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
-pnpm run dev:test             # dev in test/cypress mode
+pnpm run dev:playwright       # dev in test/playwright mode
 ```
 
 ### Workspace-filtered
@@ -94,24 +94,23 @@ packages/
   hatchet/                 # Hatchet task definitions
   next-config/             # Shared Next.js config
   transactional/           # Transactional email templates
-cypress/                   # E2E tests
 ```
 
 ## Tech Stack
 
-| Layer                  | Technology                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                                                      |
-| Styling                | TailwindCSS, @uzh-bf/design-system                                                 |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                                               |
-| GraphQL client         | Apollo Client                                                                      |
-| ORM                    | Prisma 7 (PostgreSQL)                                                              |
-| Caching                | Redis (ioredis)                                                                    |
-| Workflow orchestration | Hatchet (workers for async processing)                                             |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                   |
-| Build                  | Turborepo + Rollup                                                                 |
-| Test                   | Vitest (unit), Cypress (E2E)                                                       |
-| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + e2e specs), ESLint (Next.js safety net) |
+| Layer                  | Technology                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                             |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                        |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                                      |
+| GraphQL client         | Apollo Client                                                                             |
+| ORM                    | Prisma 7 (PostgreSQL)                                                                     |
+| Caching                | Redis (ioredis)                                                                           |
+| Workflow orchestration | Hatchet (workers for async processing)                                                    |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                          |
+| Build                  | Turborepo + Rollup                                                                        |
+| Test                   | Vitest (unit), Playwright (E2E)                                                           |
+| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + playwright specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
 
@@ -187,7 +186,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **Functional components** with hooks only (no class components)
 - **Component naming**: PascalCase files, `function` keyword for component declarations
 - **Biome** (code): no semicolons, single quotes, trailing comma es5, 2-space indent, line width 80; imports organized via Biome assist (`organizeImports`)
-- **Prettier**: Markdown/YAML plus the `playwright/` + `cypress/` e2e specs (Biome excludes those dirs)
+- **Prettier**: Markdown/YAML plus the `playwright/` e2e specs (Biome excludes those dirs)
 - Tailwind class sorting is not auto-enforced (deferred; previously `prettier-plugin-tailwindcss`)
 - **Imports**: use `@` and `~` path aliases
 - **GraphQL ops**: import from `@klicker-uzh/graphql`
@@ -198,7 +197,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 - **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/`+`cypress/` specs
+- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
 
@@ -220,7 +219,7 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) 
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
