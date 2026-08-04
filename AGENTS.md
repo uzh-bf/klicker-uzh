@@ -19,9 +19,9 @@
 pnpm install                  # install all deps
 pnpm run build                # build everything (turbo)
 pnpm run check                # typecheck all packages (tsc --noEmit)
-pnpm run lint                 # eslint across all packages
-pnpm run format               # prettier --write
-pnpm run format:check         # prettier --check
+pnpm run lint                 # eslint (Next.js safety net) across all packages
+pnpm run format               # biome format (code) + prettier (md/yaml, e2e specs)
+pnpm run format:check         # check formatting (biome + prettier)
 pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
@@ -99,19 +99,19 @@ cypress/                   # E2E tests
 
 ## Tech Stack
 
-| Layer                  | Technology                                            |
-| ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                         |
-| Styling                | TailwindCSS, @uzh-bf/design-system                    |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
-| GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 7 (PostgreSQL)                                 |
-| Caching                | Redis (ioredis)                                       |
-| Workflow orchestration | Hatchet (workers for async processing)                |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
-| Build                  | Turborepo + Rollup                                    |
-| Test                   | Vitest (unit), Cypress (E2E)                          |
-| Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
+| Layer                  | Technology                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                      |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                 |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                               |
+| GraphQL client         | Apollo Client                                                                      |
+| ORM                    | Prisma 7 (PostgreSQL)                                                              |
+| Caching                | Redis (ioredis)                                                                    |
+| Workflow orchestration | Hatchet (workers for async processing)                                             |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                   |
+| Build                  | Turborepo + Rollup                                                                 |
+| Test                   | Vitest (unit), Cypress (E2E)                                                       |
+| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + e2e specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
 
@@ -186,8 +186,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **TypeScript strict mode** everywhere
 - **Functional components** with hooks only (no class components)
 - **Component naming**: PascalCase files, `function` keyword for component declarations
-- **Prettier**: no semicolons, single quotes, trailing comma es5, 2-space indent
-- Plugins: `prettier-plugin-organize-imports` + `prettier-plugin-tailwindcss`
+- **Biome** (code): no semicolons, single quotes, trailing comma es5, 2-space indent, line width 80; imports organized via Biome assist (`organizeImports`)
+- **Prettier**: Markdown/YAML plus the `playwright/` + `cypress/` e2e specs (Biome excludes those dirs)
+- Tailwind class sorting is not auto-enforced (deferred; previously `prettier-plugin-tailwindcss`)
 - **Imports**: use `@` and `~` path aliases
 - **GraphQL ops**: import from `@klicker-uzh/graphql`
 - **State**: Apollo Client for server state, React hooks for local state
@@ -195,9 +196,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Pre-commit / Pre-push
 
-- **pre-commit** (husky): runs `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
+- **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged checks: `prettier --check` on all staged files
+- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/`+`cypress/` specs
 
 ## Important Notes
 
@@ -209,13 +210,13 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
+- **Keep this file high-level.** Facts and non-obvious concepts live in the engineering wiki at [docs/index.md](docs/index.md); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md). Update the matching page/ADR as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
 ## Engineering Wiki
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
-Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
+Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) — the decision record of _why_. The wiki explains non-obvious concepts and links the relevant ADR; it does not itself hold the decision. Retrospective fixes and durable lessons live in `docs/solutions/`; check both before re-deriving a solved problem.
 
 ## AI Assistance (Skills)
 

@@ -18,6 +18,8 @@ Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, includi
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. Cypress uses that baseline with its documented legacy non-strict compiler contract; it is not a TypeScript-version exception. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
+Code-quality tooling (config-derived) runs on the host and in CI, never baked into the devcontainer image. **Biome** (`biome.json`) is the formatter and general linter for code (TS/JS/JSON/CSS) with the house style (no semicolons, single quotes, `es5` trailing commas, 2-space indent, line width 80) and import organization via its assist; it **excludes** `playwright/` and `cypress/` (Biome mangles Playwright `test.describe.serial()` chains), which **Prettier** formats along with all Markdown/YAML. **ESLint** stays only as the Next.js safety net (`pnpm run lint` via Turbo, per-app `eslint .`). **Knip** (`knip.json`) reports unused files/deps/exports; **Gitleaks** (`.gitleaks.toml`) scans for secrets. In CI, formatting, types, syncpack, and Gitleaks are **blocking**; Biome lint and Knip are **advisory** during the migration.
+
 Compiler settings follow the code's runtime and build owner:
 
 | Role                                       | Compiler contract                                                                                                                                                                   |

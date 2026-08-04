@@ -43,7 +43,9 @@ function UseCase({ slug }: UseCaseProps) {
         <div className="col-span-1 lg:col-span-3">
           <H1 className={{ root: 'mb-4' }}>{useCase.title}</H1>
           <div className="flex flex-row flex-wrap gap-2">
-            {useCase.tags?.map((tag) => <Tag key={tag} label={tag} />)}
+            {useCase.tags?.map((tag) => (
+              <Tag key={tag} label={tag} />
+            ))}
           </div>
         </div>
 

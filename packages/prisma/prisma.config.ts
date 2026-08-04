@@ -1,3 +1,7 @@
+// NOTE: the migrator image (packages/prisma/Dockerfile) copies this file into a
+// container where ONLY the `prisma` package is installed. Imports here must stay
+// limited to `prisma/config` — a workspace dependency (e.g. @prisma/adapter-pg)
+// would build green and then fail module resolution in the ArgoCD PreSync hook.
 import { defineConfig } from 'prisma/config'
 
 export default defineConfig({

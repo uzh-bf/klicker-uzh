@@ -1,5 +1,11 @@
 # Log
 
+## 2026-08-03
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) gains a failed-migration-hook runbook (log capture before the next sync deletes the Job, `P3009` partial-DDL recovery and why `migrate resolve` is not a rollback, the `migrator.enabled: false` unblock lever, lock contention) plus the hook's scope limit (assessment DB may not be covered) and the prd bootstrap/rollback rule: no migrator image exists for pre-hook release tags, so prd keeps the hook disabled until its tags reach a migrator-bearing release. Same constraint recorded in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) and the expand-contract rule in the `klicker-data-model` skill.
+
+- **Update**: [data-and-migrations](./data-and-migrations.md) and [ci-and-deployment](./ci-and-deployment.md) document automatic deployment migrations: `prisma migrate deploy` runs as an ArgoCD PreSync hook Job from a dedicated Prisma 7 migrator image (local `prisma` install + `prisma.config.ts`), with manual deploy demoted to break-glass. Decision record: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md), including the materialised version-drift lesson now guarded by `util/check-prisma-sync.sh`.
+
 ## 2026-07-22
 
 - **Update**: [chat-platform](./chat-platform.md) documents the UZH-blue token layer and its `:root:root` cascade requirement, the cookie-driven locale resolution in the chat-local `getRequestConfig`, and the message-rating endpoint with its Langfuse v4 trace addressing (derived trace ids, score replacement, telemetry killswitch, and the OTel peer mismatch that currently keeps traces from exporting).
@@ -7,6 +13,7 @@
 ## 2026-07-20
 
 - **Update**: [getting-started](./getting-started.md) now records that the vanilla Office Add-in follows the TypeScript 6 workspace baseline with explicit Office global types. [testing](./testing.md) and the `klicker-testing-verification` procedure cover its URL tests, build, deployment parity, manifest, browser, and PowerPoint host checks.
+- **Update**: [getting-started](./getting-started.md) and [ci-and-deployment](./ci-and-deployment.md) document the repo-quality tooling migration — Biome as code formatter+linter (Prettier retained for Markdown/YAML and the `playwright/`+`cypress/` e2e trees), Knip for unused code/deps, and Gitleaks secret scanning (local husky hook + blocking CI). Biome lint and Knip are advisory in CI during the migration; formatting/types/syncpack/Gitleaks are blocking. Plan: `project/2026-07-19-biome-knip-repo-quality.md`.
 
 ## 2026-07-19
 

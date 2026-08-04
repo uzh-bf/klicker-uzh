@@ -1200,7 +1200,7 @@ export enum AchievementIds {
   'Vice-Vice-Champion' = 7,
   'Dream Team' = 8,
   'Team Spirit' = 9,
-  'Fearless' = 10,
+  Fearless = 10,
   'Creative Mastermind' = 11,
   Entertainer = 12,
   'Future Proof' = 13,
