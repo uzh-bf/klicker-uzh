@@ -25,7 +25,8 @@ const ThreadListItems: FC = () => {
     threadId?: string
   }>()
   const router = useRouter()
-  const { threads, deleteThread, isLoading } = useChatStore()
+  const { threads, deleteThread, isLoading, threadsLoadError, loadThreads } =
+    useChatStore()
   const { setOpenMobile } = useSidebar()
 
   const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
@@ -33,8 +34,49 @@ const ThreadListItems: FC = () => {
   if (groupedThreads.length === 0) {
     // While threads are still being fetched, an empty array means "unknown",
     // not "no history" — showing the first-conversation hint then would
-    // wrongly greet returning users during the loadThreads round-trip.
-    if (isLoading) return null
+    // wrongly greet returning users during the loadThreads round-trip. Show
+    // row skeletons instead of nothing (M4) — the S5b error state above
+    // still wins once threadsLoadError is set, even if isLoading lingers.
+    if (isLoading) {
+      return (
+        <div
+          data-cy="chat-thread-list-skeleton"
+          role="status"
+          className="flex flex-col gap-1.5 p-1"
+        >
+          <span className="sr-only">{t('chat.threadList.loading')}</span>
+          {[...Array(5)].map((_, index) => (
+            <div
+              key={index}
+              aria-hidden="true"
+              style={{ width: `${85 - index * 8}%` }}
+              className="bg-muted h-8 animate-pulse rounded motion-reduce:animate-none"
+            />
+          ))}
+        </div>
+      )
+    }
+
+    if (threadsLoadError) {
+      return (
+        <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">
+          <p
+            data-cy="chat-thread-list-error"
+            className="text-destructive px-2 text-sm"
+          >
+            {t('chat.threadList.loadError')}
+          </p>
+          <button
+            type="button"
+            data-cy="chat-thread-list-retry"
+            onClick={() => loadThreads(chatbotId)}
+            className="text-foreground hover:bg-accent focus-visible:ring-ring mx-2 inline-flex w-fit items-center justify-center rounded-md border px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1"
+          >
+            {t('chat.threadList.retry')}
+          </button>
+        </div>
+      )
+    }
 
     return (
       <div data-cy="chat-thread-list" className="flex flex-col gap-2 p-1">

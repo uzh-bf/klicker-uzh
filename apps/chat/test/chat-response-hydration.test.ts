@@ -14,6 +14,10 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ chatbotId: 'chatbot-1' }),
 }))
 
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => key,
+}))
+
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react')
 
@@ -419,5 +423,99 @@ describe('useChatResponse attachment hydration', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('could not be loaded')
     )
+  })
+
+  test('network-level send failure shows a localized error bubble instead of failing silently', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchSpy = vi.fn().mockRejectedValue(new Error('network down'))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'hello' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const messages = storeState.threads[0]?.messages ?? []
+    expect(messages).toHaveLength(2)
+    expect(messages[1]).toMatchObject({
+      id: 'assistant-message-id',
+      role: 'assistant',
+      content: [
+        {
+          type: 'text',
+          text: expect.stringContaining('chat.response.networkError'),
+        },
+      ],
+    })
+  })
+
+  test('a stream error part stops the read loop cleanly instead of stacking a connection-interrupted suffix', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"partial answer"}',
+          'data: {"type":"error","errorText":"boom"}',
+          'data: {"type":"text-delta","delta":" should not be appended"}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'hello' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const finalMessage = storeState.threads[0]?.messages.at(-1)
+    const content = finalMessage?.content as Array<{
+      type: string
+      text?: string
+    }>
+
+    // exactly one error part landed — the interrupted-connection suffix must
+    // not also stack on top of it
+    const errorParts = content.filter((part) =>
+      part.text?.includes('chat.response.genericError')
+    )
+    expect(errorParts).toHaveLength(1)
+
+    const interruptedParts = content.filter((part) =>
+      part.text?.includes('chat.response.connectionInterrupted')
+    )
+    expect(interruptedParts).toHaveLength(0)
+
+    // the text-delta received after the error part must not have been
+    // processed
+    expect(
+      content.some((part) => part.text?.includes('should not be appended'))
+    ).toBe(false)
   })
 })

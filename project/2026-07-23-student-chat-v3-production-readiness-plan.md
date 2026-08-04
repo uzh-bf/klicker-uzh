@@ -832,9 +832,318 @@ designing the question widget.
   browser: DE select "Tutor/Erklärer", DE panel hides description, EN shows it,
   testuser25 (zero threads) sees the DE hint post-load. Review: 1 finding
   (loading flash) — fixed + re-verified.
+- 2026-07-24: **U1 done.** assistant-ui 0.12.10→0.14.27 + react-markdown
+  0.12.3→0.14.6; official codemod ran but was a genuine no-op (none of the renamed
+  APIs are used — `switchToThread` etc. in RuntimeProvider/chatStore are our own
+  zustand methods). `Unstable_PartsGrouped` + markdown `components` still typecheck
+  in 0.14 (kept for U3). New: `pnpm-workspace.yaml` minimumReleaseAgeExclude gained
+  8 exact selectors (assistant-ui transitives inside the 14-day window; reviewed,
+  policy not loosened). Review confirmed lockfile diff is only the expected
+  transitives + benign pnpm peer-dedup churn; duplicate `@assistant-ui/core`
+  (0.2.2 via unused react-ai-sdk@1.3.26) is dormant — U5 resolves it. Browser
+  smoke on 0.14: threads list/switch, user+assistant messages, markdown, action
+  bars, thumbs persist→clear (feedback API called), composer + attach button OK.
+  Reasoning/tool-part rendering NOT live-verifiable (no LLM key) — deferred to
+  the U2+ verification block below.
+- 2026-07-24: **U2 done (live verification deferred).** ai 6.0.184→7.0.37,
+  @ai-sdk/openai 3.0.64→4.0.20, @ai-sdk/mcp 0.0.13→2.0.16; route.ts changed by
+  exactly 5 renames (stepCountIs→isStepCount, experimental_telemetry→telemetry,
+  system→instructions, onFinish→onEnd, onStepFinish→onStepEnd) + deprecated
+  `result.totalUsage`→`result.usage` (verified identical aggregate semantics in
+  both v6 and v7 .d.ts — the plan's feared usage-semantics shift does NOT apply:
+  the code always read totalUsage, which was and is aggregate-across-steps;
+  onAbort's per-step sum over `step.usage` also unchanged). Codemod bug: `--dry`
+  not honored + double-run double-wrapped extractReasoningTokens and rewrote
+  attachment `type: 'image'` literals — all bogus hunks hand-reverted; final diff
+  is minimal (12 lines in route.ts). Telemetry stays on globally-registered OTel
+  (no @ai-sdk/otel needed); reasoning providerOptions.openai path unchanged in
+  openai@4; MCP experimental_createMCPClient still exported; onChunk + client SSE
+  parser tolerant of new part types (v7 adds custom/reasoning-file/
+  tool-approval-response — unreachable with our features). Wire format of
+  toUIMessageStreamResponse+messageMetadata unchanged — hand parser still works.
+  Checks: chat check + vitest 40/40 + repo-wide check 23/23 in-container; browser
+  send exercises the v7 route end-to-end with identical error-path behavior.
+  **DEFERRED to S17 (needs LLM key): live multi-step credits-vs-DB audit,
+  reasoning stream, tool calls, telemetry non-throw under real spans.** Review:
+  no blockers; totalUsage deprecation fixed in-slice.
+- 2026-07-24: **U3 done (streaming behavior deferred).** Plan deviation: the
+  named Reasoning*/ToolGroup* components are NOT npm exports of
+  @assistant-ui/react 0.14.27 — they are shadcn-registry copy-in patterns.
+  Reimplemented locally in thread.tsx (same names/prop contracts, plain
+  useState/context instead of Radix Collapsible, no new deps).
+  `MessagePrimitive.GroupedParts` + `groupPartByType` (real exports) replace
+  Unstable_PartsGrouped + custom groupConsecutiveByType/PartGroup (fully
+  removed, incl. dead `reasoningGroupLabel` key). ToolFallback gained an
+  isError branch (destructive chip, `chat.toolFallback.failed` en+de);
+  `chat.message.toolCallsGroupLabel` is now an ICU plural. isError
+  propagation fixed end-to-end after review: types.ts surfaces MCP
+  `result.isError` top-level; route.ts mapAssistantStepContent gained the
+  missing `tool-error` branch (thrown tool errors were silently dropped from
+  persistence); useChatResponse.ts `tool-output-error` now sets
+  `isError: true`. Review F1 fixed: single tool call bypasses the group
+  wrapper (old PartGroup size guard restored). Verified in browser via a
+  DB-seeded thread (47f1e302-55d0-4dd2-87ef-9abefc7def72, testuser24):
+  reasoning collapsible expands/collapses, "2 Tool-Aufrufe"/"2 tool calls"
+  group, success pill + destructive failed chip ("Rate MCP getRate
+  fehlgeschlagen"/"Failed to use ..."), markdown + thumbs unchanged.
+  Checks: chat check + vitest 40/40 + prettier green in-container.
+  **DEFERRED to S17 (needs LLM key): live streaming auto-expand/collapse of
+  the reasoning panel + live tool-group running states.**
+- 2026-07-24: **U4 done.** `adapters.feedback.submit` →
+  `chatStore.rateMessage` (optimistic rollback + API route untouched);
+  MessageRatingButtons wrap `ActionBarPrimitive.FeedbackPositive/Negative`
+  (asChild) with identical markup/data-cy/aria-pressed. Two design notes:
+  the adapter has no clear/retract concept, so second-click-clears uses
+  `preventDefault()` (skips the composed internal submit — Radix
+  composeEventHandlers checks defaultPrevented) + direct
+  `rateMessage(..., null)`; and for external-store runtimes the runtime's
+  internal submittedFeedback patch is clobbered on every store sync, so
+  `convertMessage` injects `metadata.submittedFeedback` from the persisted
+  rating (load-bearing — makes ratings survive reload). Browser-verified
+  full cycle: click up → persisted after reload → switch to down → second
+  click clears (aria-pressed + data-submitted tracked). Review: clean
+  (WeakMap conversion caching intact, id stability, adapter wiring
+  confirmed against 0.14.27 compiled source). check + vitest 40/40 green.
+- 2026-07-24: **U5 skipped — spike gate (D9) tripped before code.** The gate's
+  premise is that the runtime swap only lands if it maps cleanly AND passes the
+  full live matrix (send/stream/reasoning/tool/error + credits refresh). With no
+  LLM key in this stack, that matrix cannot be run even once — an unverifiable
+  rewrite of the whole chat transport is exactly what the gate exists to stop.
+  Additional friction noted for a future attempt: @assistant-ui/react-ai-sdk
+  1.3.26 pins old core 0.2.2 + ai@6, so U5 also implies bumping it (new
+  release-age excludes) on top of the runtime rewrite. Fallback branch is now
+  active per plan: useChatResponse.ts stays; S2/S5/M2 authored against it; U4's
+  feedback adapter stays on useExternalStoreRuntime. Revisit U5 in a follow-up
+  branch once a dev LLM key exists.
+- 2026-07-24: **S2 done.** Mode-resync extracted to
+  `chatStore.resyncModeFromThread` (guards byte-identical; switchToThread
+  delegates). RuntimeProvider's cached-thread early-return branch now calls it,
+  gated by a `modeResyncedForThread` ref (once per thread activation) after
+  review caught that an ungated call re-fires on every `threads` update
+  (streaming/rating/rename) and would snap back a manually picked mode; the
+  switchToThread success path marks the ref too. Browser-verified: explainer
+  persisted → direct-load tutor thread → tutor pressed; tutor persisted →
+  direct-load explainer thread → explainer pressed; thread without chatMode →
+  no resync; manual mode choice survives a rating-induced store update; reload
+  re-resyncs. Playwright test added (Y-chat.spec.ts, seeds chatMode via a
+  minimal `SeedMessage.chatMode` passthrough in playwright/util/chat.ts) —
+  note: it guards the user-visible hard-load behavior end-to-end; reviewer
+  traced that the hard-load path resolves via switchToThread (store resets on
+  goto), so the gated early-return branch is belt-and-braces for soft-nav /
+  cached-activation passes. check green.
 - 2026-07-24: Environment note: worktree stack has no upstream LLM key
   (`UPSTREAM_OPENAI_API_KEY`), so live sends fail with the S5 error bubble (stacked
   strings reproduced live). Phase 0 does not need live LLM; **Phase U verification does**
   (credits). Key injection via infisical CLI + prototyping project 404s (domain pin);
   rs-infisical-operator profiles lack OPENROUTER_API_KEY read permission — needs user
   action before U2 verification.
+- 2026-07-24: **S5a done** (send/stream error surfaces; items 1-3 of S5).
+  `chat.response.errorLabel` i18n key added (en 'Error' / de 'Fehler', informal
+  Du + Swiss ss for the message bodies); all three error-prefix sites in
+  `useChatResponse.ts` (!response.ok bubble, stream `error` event suffix, outer
+  network catch) now use it instead of hardcoded '**Error**'. Stream-error
+  stacking fixed: `hasStreamError` flag makes repeated `error` events append the
+  suffix once. Tool-output errors set `isError: true` (carried from U3 chip).
+  Outer catch hardened after Opus review (finding #1, high): the network-failure
+  bubble previously replaced the assistant message with only the error text,
+  wiping any partially streamed answer on a mid-stream drop —
+  `orderedContentParts` is now hoisted before the `try` and the catch spreads it
+  ahead of the error text. Finding #2: `t` added to the useCallback deps. 2 new
+  vitest regressions (network bubble, no stacking) → 42/42 green; in-container
+  check green; prettier green. Browser-verified on the keyless stack: single
+  localized bubble per failed send (de 'Fehler: Es ist leider ein Fehler …'
+  and en 'Error: I'm sorry, something went wrong …'), no stacking, no
+  hardcoded-English leak in de. Next: S5b (disclaimer + thread-list error
+  states, items 4-5).
+- 2026-07-24: **S5b done** (disclaimer + thread-list error states; items 4-5 —
+  S5 complete). Disclaimer accept/decline failures (network catch and
+  !response.ok) now set a `disclaimerActionError` state in `assistant.tsx`,
+  rendered as a localized destructive inline error inside `DisclaimerModal`
+  (new `errorMessage` prop, `data-cy="chat-disclaimer-error"`); pressing
+  Accept/Decline again is the retry and clears the error. Thread-list:
+  `chatStore.threadsLoadError` set on non-403 `loadThreads` failures,
+  `thread-list.tsx` renders a localized error empty-state with retry button
+  (`data-cy` chat-thread-list-error/-retry) when the list is empty. New keys
+  `chat.disclaimer.actionError`, `chat.threadList.loadError`/`retry` (en+de,
+  informal Du, Swiss ss). Opus review integrated: loadThreads generation
+  guard (stale overlapping request can no longer stomp a newer result),
+  `handleApiError` now returns the participation-bool (403 check no longer
+  duplicated), race regression test added. 45/45 vitest, in-container check,
+  prettier green. Browser-verified via agent-browser route-abort: threads
+  endpoint aborted → error+retry shown, unroute+retry → list loads;
+  disclaimer POST aborted → inline modal error, unroute+Accept → clears and
+  closes (testuser24 acceptance reset via prisma then restored by the retry).
+  Deferred (informational, spec-compliant): background-refresh failure with a
+  cached list stays silent. Next: S12 motion.
+- 2026-07-24: **S12 done** (motion foundation). M1: dead `aui-*-motion-*`
+  classnames replaced with real `animate-in fade-in slide-in-from-bottom-2
+  duration-300 motion-reduce:animate-none` on the welcome title/subtitle
+  (subtitle `delay-100` cascade) and on User/Assistant `MessagePrimitive.Root`
+  (tw-animate-css already wired via globals.css — no new dep). M2: pulsing-dot
+  thinking indicator. The plan's premise ("last message is still the user
+  message during the gap") was wrong live: the external-store runtime injects a
+  synthetic EMPTY assistant message as soon as isRunning flips, so a sibling
+  row keyed on last-role=user never fires. Reworked: `ThinkingDots` renders
+  inside AssistantMessage's content area when `role==='assistant' &&
+  status.type==='running' && content.length===0` — the row already exists, so
+  content replacing the dots causes zero layout jump. `role="status"` +
+  sr-only `chat.thread.thinking` (en+de) after review. M5: ScrollToBottom now
+  fades — `transition-[opacity,...] duration-200 disabled:opacity-0` with
+  review-suggested `disabled:invisible
+  disabled:[transition:opacity_200ms,visibility_0s_200ms]` so it leaves the
+  a11y tree after the fade, plus `motion-reduce:transition-none`. Review:
+  branch-switch entrance replay accepted as-is (remount-keyed, matches
+  ChatGPT/Claude behavior). Verified live via delayed-fetch send: dots appear
+  mid-flight (MutationObserver), replaced by the error bubble; welcome +
+  message entrance classes computed; scroll button hidden(+invisible) at
+  bottom, visible/opacity-1 when scrolled (forced via small viewport). 45/45
+  tests, check, prettier green. Next: S13 welcome.
+- 2026-07-24: **S13 done** (welcome experience). ThreadWelcomeSuggestions
+  re-enabled as two tappable cards (ThreadPrimitive.Suggestion + autoSend;
+  deprecated `method` prop dropped per review) with S12-style staggered
+  entrances and 44px targets. Suggestions config reduced to a literal-union id
+  list; label AND sent prompt both come from i18n (`chat.suggestions.<id>` /
+  `<id>Prompt`, en + informal de — a German student now sends a German
+  prompt). Greeting stepped to `text-3xl sm:text-4xl` + `text-lg
+  text-muted-foreground` subtitle. Branded empty state: faint blurred
+  `bg-primary/5` circle (aria-hidden, pointer-events-none) behind the
+  greeting + chatbot avatar with `ring-1 ring-border` containment above the
+  title (gated, no broken-src fallback). Review: clean — no findings; noted
+  the delay-classname fallback for a hypothetical 3rd card is cosmetic-only,
+  embedded variant relies on the shared responsive path (not separately
+  screenshotted; S17 matrix covers it). Verified live: cards render + tap
+  sends the localized prompt (en+de), Swiss ss, no 375px overflow;
+  screenshots s13-de-375.png / s13-en-1440.png in scratchpad. check + 45/45
+  tests + prettier green. Next: S14 chrome.
+- 2026-07-24: **S14 done** (chrome decluttering). Header: chatbot avatar +
+  name always visible (dropped the `open && 'md:hidden'` wrapper in
+  assistant.tsx; sidebar's duplicate name removed; effectively one on-screen
+  toggle per state, long names truncate). Footer band removed from both
+  render paths and `showFooter` plumbing deleted (it was always ===
+  `!embedded` and embedded never showed it — dead code); legal line now sits
+  in the sidebar footer as muted text-xs (wording copied from the shared
+  Footer.tsx, hardcoded English there too, so no new i18n key). Captions:
+  `MessageMetadata` removed from UserMessage; assistant caption shows mode —
+  effort — credits with the full string incl. model in a `title` tooltip.
+  Review (1 CONFIRMED a11y finding): title-attr is mouse-only → added an
+  sr-only span with the full detail so AT users keep model access
+  (touch-only users rely on the tooltip-less terse caption — accepted, model
+  is the least load-bearing field). No Playwright caption assertions
+  existed. Verified live at 1440+375: header persists with sidebar
+  open/closed, "Tutor — Medium" visible + full title attr, user bubbles
+  caption-free, no footer band; screenshots s14-en-1440.png / s14-375.png.
+  check + 45/45 + prettier green. Next: S16 micro-polish.
+- 2026-07-24: **S16 done** (micro-interaction polish). M4 skeletons: thread
+  pane gets `ThreadSkeleton` (3 pulse bubbles, `role="status"` + sr-only
+  `chat.thread.loading`) replacing both spinner overlays; thread list gets 5
+  skeleton rows (`role="status"` + `chat.threadList.loading`) instead of
+  rendering nothing while loading — S5b error state still wins (loadThreads
+  clears isLoading before setting threadsLoadError). M6 send/stop: single
+  circular shell, both buttons permanently mounted and stacked, 150ms
+  opacity/scale crossfade driven by `useThread isRunning`; assistant-ui's own
+  disabled logic (verified in createActionButton) blocks the hidden button,
+  aria-hidden added on the inactive one so AT linear traversal skips the
+  decoy. M7 mode pills: sliding `bg-primary` thumb (refs + useLayoutEffect +
+  per-button ResizeObserver, transform/width 200ms); no first-paint flash
+  (thumb renders only once measured), observer disconnect verified. M3
+  remainder: tool-fallback detail panel now grid-rows accordion with
+  aria-hidden + `inert` (review finding: TruncatedOutput's "Show more" button
+  inside the collapsed-but-mounted panel would otherwise stay tabbable).
+  **Deferred**: settings-panel accordion — Playwright Y-chat.spec.ts:930,943
+  assert `chat-settings-panel` has count 0 when collapsed; keeping unmount
+  semantics (no animation) rather than breaking E2E. Review: 3 CONFIRMED
+  a11y findings (inert, decoy-button aria-hidden, silent main-pane skeleton)
+  — all fixed. Verified live: thumb slides 2px→81px with aria-pressed;
+  accordion 0↔217px with class+aria flips; crossfade cycles
+  idle→running→settled with data-cy hooks intact; thread-list skeleton
+  observed during a delayed retry load (fetch-wrapper + retry button),
+  clears to 10 threads; thread-pane skeleton verified by substitution (same
+  `isLoading` gate as the old spinner; S17 matrix re-checks). check + 45/45
+  tests + prettier green. Next: S17 finish gate.
+- 2026-07-24: **S17 finish gate completed.** The upgraded chat production build
+  failed only when the container leaked `NODE_ENV=development` into
+  `next build`; `apps/chat` now forces `NODE_ENV=production` for its Turbopack
+  build. Chat build, Vitest (45/45), chat check, repository-wide check (23/23),
+  and chat lint (zero errors) are green. The browser matrix was re-run at
+  1440/768/375px in English and German with no horizontal overflow; mobile
+  sidebar open/close behavior and German desktop accessible names were
+  verified. `SidebarTrigger` and `SidebarRail` now receive localized labels.
+  The active Phase-2 branch is the U5 fallback: `useChatResponse.ts` remains,
+  so S2/S5/M2 retain their custom transport. Live multi-step credit accounting,
+  reasoning/tool streaming, and telemetry remain explicitly deferred because
+  this stack has no LLM key. The environment could not launch the final
+  Playwright suite because its downloaded Chromium executable is incomplete
+  (`Invalid file descriptor to ICU data`); the suite's existing 50-test
+  coverage remains unchanged.
+- 2026-07-25: **S17 takeover review reopened and corrected the finish gate.**
+  Live branch/worktree/PR state was reconciled against the 2026-07-24 handoff
+  and the later Claude session. The unused `@assistant-ui/react-ai-sdk`
+  adapter was removed, leaving one AI SDK 7 / assistant-ui 0.14 dependency
+  line. Rapid feedback updates now serialize per message with immediate
+  optimistic UI and latest-request rollback. PostgreSQL stays authoritative;
+  the intermediate one-second Langfuse mirror was removed at the final gate
+  because the OTel mismatch makes every score orphaned. Analytical mirroring
+  is deferred until the tracing integration is operational. The 234-line dual disclosure-context
+  stack moved from `thread.tsx` into one `GroupedDisclosure` composition in
+  `message-parts.tsx`; hidden send/cancel controls are now inert and removed
+  from tab order, and assistant metadata meets text contrast. Provider tool
+  errors are sanitized before persistence for both thrown `tool-error` parts
+  and MCP `tool-result.output.isError` envelopes. Verification so far:
+  focused Vitest 5/5 for rating/disclosure state, persisted-content Vitest
+  4/4, chat and Playwright typechecks, focused real-app Playwright 1/1 for
+  persisted reasoning, adjacent/single tool grouping, and a sanitized failed
+  chip. Exact-commit review and simplification passed for both implementation
+  slices. The final full-suite/build/browser/security/maintainability gate and
+  PR evidence refresh remain next.
+- 2026-07-25: **S17 takeover finish gate passed.** Final security review
+  found one live MCP error leak and the browser accessibility pass found one
+  failed-tool-chip contrast defect; both are fixed, alongside the already
+  covered persisted-error sanitizer. The strict maintainability review also
+  rejected the nonfunctional Langfuse mirror, required stale credit requests
+  to be invalidated, and required the rating request coordinator to move out
+  of `chatStore.ts`; those corrections leave the store at 989 lines. Chat
+  Vitest passes 59/59 across 15 files, chat check passes, chat lint reports
+  zero errors and six pre-existing warnings, the production chat build passes,
+  and root `check:all` passes all 24 typecheck and six lint tasks plus format,
+  syncpack, instruction, and Prisma-schema checks. The final security gate
+  passes with no high-confidence findings. The exact final-code Playwright run
+  passes 50 tests with one known root-message-edit fixme and zero failures.
+  Axe reports no serious/critical or contrast violations at 1440×900 and no
+  violations at 375×812; the remaining desktop `region` result is a known
+  moderate landmark warning on mixed sidebar content. The browser gate also
+  exposed a real concurrent first-visit credit initialization failure:
+  `findUnique` + `create` raced the parallel credit request and raised Prisma
+  `P2002` on `(participantId, chatbotId)`. The initializer now uses an
+  explicitly database-native compound-key upsert that leaves existing balances
+  untouched. The disclaimer regression passes twice in isolation and in the
+  full suite; independent correctness, simplification, final security, and
+  strict maintainability reviews pass. The final screenshots then exposed
+  broken external chatbot avatar SVGs: their source URL returned `200`, but the
+  host was outside Next's image-optimizer allow-list. The four known avatar
+  instances now use the documented per-image `unoptimized` path; local fallback
+  icons keep their prior/default behavior. Typecheck, 59/59 Vitest, lint,
+  root checks, and independent maintainability/security reviews pass for that
+  fix. A post-fix pixel screenshot could not run because local Docker/OrbStack
+  stopped responding to CLI, inspect, and route probes; shared infrastructure
+  was deliberately not restarted. All other local gates are complete;
+  refreshing and pushing the draft PR is next.
+  - Hardest constraint: preserving rapid per-message rating ordering without
+    making the student request wait on unreliable telemetry. The final design
+    keeps ordered PostgreSQL writes and removes the unusable mirror.
+  - Simpler alternatives rejected: unbounded request waiting, a database
+    advisory lock held across HTTP, and a durable outbox in this branch. The
+    first two worsen the request path; the outbox is the right shape only after
+    tracing works and analytical delivery is approved as separate scope.
+  - Weakest verification: live model-backed reasoning/tool streaming,
+    multi-step credit accounting, and real telemetry remain unverified because
+    this environment has no model key and the OTel integration is broken.
+- 2026-07-26: **S17 takeover publication gate completed.** The verified
+  implementation was pushed at `495ec8f2a`, draft PR #5197 was refreshed from
+  whole-branch evidence, and the obsolete Langfuse review thread was resolved.
+  Fresh CI passed formatting, lint, syncpack, typecheck, build/compile, GraphQL,
+  all eight Playwright shards plus their aggregate gate, all three CodeQL
+  analyses, GitGuardian, and Greptile. Greptile reviewed the exact
+  implementation head at 5/5 with no correctness defect, and no unresolved
+  review thread remains. The PR deliberately stays draft. Its remaining live
+  boundaries are the Docker/OrbStack-blocked post-fix avatar screenshot, the
+  missing local model key, and the separately deferred OTel/Langfuse repair.

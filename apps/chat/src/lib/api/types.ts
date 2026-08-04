@@ -40,6 +40,15 @@ export type ApiContentPart =
         content?: Array<{ text: string; type: string }>
         isError?: boolean
       }
+      /**
+       * Top-level mirror of `result.isError`, populated by
+       * `convertApiMessageToMessage`. assistant-ui's `ToolCallMessagePart`
+       * reads `isError` as a sibling of `result`, not nested inside it (MCP
+       * tool results nest it under `result` per the MCP `CallToolResult`
+       * shape), so this field is what the `ToolFallback` error chip
+       * actually consumes.
+       */
+      isError?: boolean
     }
 
 export interface ApiHydratedImageAttachment {
@@ -180,6 +189,10 @@ export const convertApiMessageToMessage = (
         toolName: item.toolName,
         args: item.args,
         result: item.result,
+        // MCP tool results nest `isError` inside `result`; surface it at the
+        // top level too since that's where assistant-ui's ToolCallMessagePart
+        // (and our ToolFallback) reads it from.
+        isError: item.result?.isError ?? item.isError,
       }
     }
     // fallback for unknown types

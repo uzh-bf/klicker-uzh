@@ -36,6 +36,7 @@ export default {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
       openSidebar: 'Open sidebar',
+      toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
     },
@@ -73,6 +74,7 @@ export default {
         'Accept: You can use the chatbot and access all features.',
       consequenceDecline:
         'Decline: The chatbot remains blocked and you cannot send messages.',
+      actionError: 'Something went wrong. Please try again.',
     },
     markdown: {
       copyCode: 'Copy',
@@ -99,11 +101,24 @@ export default {
       editName: 'Edit name',
       deleteChat: 'Delete chat',
       emptyState: 'Start your first conversation with a message.',
+      loadError: 'Your chats could not be loaded.',
+      retry: 'Retry',
+      loading: 'Loading conversations...',
     },
     thread: {
       scrollToBottom: 'Scroll to bottom',
+      loading: 'Loading the conversation...',
+      thinking: 'Preparing an answer …',
       welcomeTitle: 'Hello there!',
       welcomeSubtitle: 'How can I help you?',
+    },
+    suggestions: {
+      explainConcept: 'Explain a random concept from the script',
+      explainConceptPrompt:
+        'Take a random concept from the course script and explain it in simple terms.',
+      examPrep: 'Help me prepare for the exam',
+      examPrepPrompt:
+        'Create a study plan for the upcoming exam covering all key topics based on the lecture materials.',
     },
     message: {
       creditsUsed:
@@ -117,8 +132,8 @@ export default {
       refresh: 'Refresh',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
-      reasoningGroupLabel: 'Reasoning ({count} parts)',
-      toolCallsGroupLabel: '{count} tool calls',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
     composer: {
       placeholder: 'Write a message...',
@@ -137,6 +152,7 @@ export default {
     toolFallback: {
       running: 'Using {tool}...',
       done: 'Used {tool}',
+      failed: 'Failed to use {tool}',
       showLess: 'Show less',
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
@@ -148,6 +164,15 @@ export default {
       redirectNotice:
         'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
       loginButton: 'Go to KlickerUZH Login',
+    },
+    response: {
+      errorLabel: 'Error',
+      networkError:
+        "I'm sorry, I couldn't reach the server. Please check your connection and try again.",
+      genericError:
+        "I'm sorry, something went wrong while processing your request. Please try again.",
+      connectionInterrupted:
+        'Connection interrupted — response may be incomplete.',
     },
   },
   shared: {

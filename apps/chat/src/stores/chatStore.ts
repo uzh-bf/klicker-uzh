@@ -24,6 +24,7 @@ import {
   sortAttachmentsByPosition,
 } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { createRatingRequestCoordinator } from './ratingRequestCoordinator'
 import { useSettingsStore } from './settingsStore'
 
 /**
@@ -32,6 +33,7 @@ import { useSettingsStore } from './settingsStore'
  * here; `import type` is erased at build time, so no server code is pulled in.
  */
 export type MessageRating = ChatMessageRating
+const runRatingRequest = createRatingRequestCoordinator<MessageRating | null>()
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -73,11 +75,25 @@ interface ChatState {
   isLoading: boolean
   participationRequired: boolean
   participationMessage: string | null
+  /**
+   * Set when `loadThreads` fails for a reason other than the 403
+   * participation case (which `handleApiError` already surfaces via
+   * `participationRequired`). Lets the thread list distinguish "no threads
+   * yet" from "we don't actually know, the fetch failed" and offer a retry.
+   */
+  threadsLoadError: boolean
 
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
+  /**
+   * Resyncs the composer mode to a given thread's own `lastChatMode` (D6).
+   * Extracted from `switchToThread` so callers that activate a thread without
+   * going through `switchToThread` (e.g. a direct URL load that already has
+   * the thread's messages cached) can still trigger the resync.
+   */
+  resyncModeFromThread: (threadId: string) => void
   deleteThread: (chatbotId: string, threadId: string) => Promise<boolean>
   updateThreadTitle: (
     chatbotId: string,
@@ -129,7 +145,6 @@ export const useChatStore = create<ChatState>((set, get) => {
     string,
     Promise<ExtendedThreadMessageLike | undefined>
   >()
-
   const markParticipationRequired = (message?: string) => {
     set({
       participationRequired: true,
@@ -200,7 +215,16 @@ export const useChatStore = create<ChatState>((set, get) => {
     )
   }
 
-  const handleApiError = (error: unknown) => {
+  // Monotonic id for loadThreads invocations; see the guard in loadThreads.
+  let loadThreadsGeneration = 0
+
+  /**
+   * Handles the participation/403 case shared by thread actions. Returns
+   * true when the error was a participation error (already surfaced via
+   * `participationRequired`), so callers can decide whether a generic
+   * error state is still needed.
+   */
+  const handleApiError = (error: unknown): boolean => {
     if (isApiError(error) && error.status === 403) {
       const apiMessage =
         typeof error.body === 'object' &&
@@ -216,7 +240,9 @@ export const useChatStore = create<ChatState>((set, get) => {
       markParticipationRequired(
         apiMessage === GENERIC_PARTICIPATION_ERROR ? undefined : apiMessage
       )
+      return true
     }
+    return false
   }
 
   return {
@@ -225,6 +251,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     isLoading: false,
     participationRequired: false,
     participationMessage: null,
+    threadsLoadError: false,
 
     /**
      * Creates a new conversation thread
@@ -270,11 +297,17 @@ export const useChatStore = create<ChatState>((set, get) => {
      * Fetches thread metadata (without messages) for sidebar display
      */
     loadThreads: async (chatbotId: string) => {
+      // Overlapping calls (fast chatbot switches, retry during a slow load)
+      // resolve in arbitrary order; only the latest invocation may write the
+      // result, otherwise a stale failure can overwrite a newer success (or
+      // vice versa) and leave `threadsLoadError`/`threads` wrong.
+      const generation = ++loadThreadsGeneration
       try {
-        set({ isLoading: true })
+        set({ isLoading: true, threadsLoadError: false })
         const apiThreads: ApiThread[] = await apiCall<ApiThread[]>(
           `/chatbots/${chatbotId}/threads`
         )
+        if (generation !== loadThreadsGeneration) return
 
         const freshThreads = apiThreads.map(convertApiThreadToThread)
 
@@ -308,12 +341,54 @@ export const useChatStore = create<ChatState>((set, get) => {
             isLoading: false,
             participationRequired: false,
             participationMessage: null,
+            threadsLoadError: false,
           }
         })
       } catch (error) {
         console.error('Failed to load threads:', error)
-        handleApiError(error)
-        set({ isLoading: false })
+        if (generation !== loadThreadsGeneration) return
+        // The 403/participation case is already surfaced via
+        // `participationRequired`; only flag the generic error state for
+        // failures that leave the student without any explanation.
+        const isParticipationError = handleApiError(error)
+        set({ isLoading: false, threadsLoadError: !isParticipationError })
+      }
+    },
+
+    /**
+     * D6: resyncs the composer mode to the mode a thread was last used in,
+     * but only when that mode is offered by this chatbot and actually
+     * differs from the currently selected one.
+     *
+     * Extracted from `switchToThread` (D6) so a thread activation that
+     * bypasses `switchToThread` — e.g. the RuntimeProvider URL-sync effect's
+     * early-return when the persisted `activeThreadId` already matches the
+     * URL and the thread's messages are already cached — still resyncs the
+     * mode instead of leaving whatever mode was previously selected.
+     *
+     * @param threadId - The thread whose `lastChatMode` should be applied
+     */
+    resyncModeFromThread: (threadId: string) => {
+      const existingThread = get().threads.find((t) => t.id === threadId)
+      const lastMode = existingThread?.lastChatMode
+      if (!lastMode) return
+
+      const { modeOptions, selectedMode, setSelectedMode } =
+        useSettingsStore.getState()
+      // `in` (not truthiness): a mode may have an empty description string.
+      // An empty `modeOptions` means the chatbot's modes have simply not
+      // arrived yet — on a hard refresh into a thread URL, `loadThreads`
+      // and `loadModeOptions` race and the former often wins, which used to
+      // make this resync silently no-op for the rest of the page load.
+      // Trusting the thread's own mode in that window is safe because
+      // `loadModeOptions` re-validates `selectedMode` against the resolved
+      // options and falls back to the first one if it does not exist.
+      const optionsLoaded = Object.keys(modeOptions).length > 0
+      if (
+        (!optionsLoaded || lastMode in modeOptions) &&
+        lastMode !== selectedMode
+      ) {
+        setSelectedMode(lastMode)
       }
     },
 
@@ -334,28 +409,8 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set({ activeThreadId: threadId })
 
-        // D6: resync the composer mode to the mode the thread was last used in,
-        // but only when that mode is offered by this chatbot and actually differs.
-        const lastMode = existingThread?.lastChatMode
-        if (lastMode) {
-          const { modeOptions, selectedMode, setSelectedMode } =
-            useSettingsStore.getState()
-          // `in` (not truthiness): a mode may have an empty description string.
-          // An empty `modeOptions` means the chatbot's modes have simply not
-          // arrived yet — on a hard refresh into a thread URL, `loadThreads`
-          // and `loadModeOptions` race and the former often wins, which used to
-          // make this resync silently no-op for the rest of the page load.
-          // Trusting the thread's own mode in that window is safe because
-          // `loadModeOptions` re-validates `selectedMode` against the resolved
-          // options and falls back to the first one if it does not exist.
-          const optionsLoaded = Object.keys(modeOptions).length > 0
-          if (
-            (!optionsLoaded || lastMode in modeOptions) &&
-            lastMode !== selectedMode
-          ) {
-            setSelectedMode(lastMode)
-          }
-        }
+        // D6: resync the composer mode to the mode the thread was last used in.
+        get().resyncModeFromThread(threadId)
 
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
@@ -830,6 +885,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     rateMessage: async (chatbotId, messageId, rating) => {
       const threadId = get().activeThreadId
       if (!threadId) return
+      const requestKey = `${threadId}:${messageId}`
 
       const applyRating = (next: MessageRating | null) => {
         const setRating = (messages: ExtendedThreadMessageLike[]) =>
@@ -855,23 +911,19 @@ export const useChatStore = create<ChatState>((set, get) => {
           .threads.find((thread) => thread.id === threadId)
           ?.messages.find((message) => message.id === messageId)?.rating ?? null
 
-      const previous = readRating()
-
-      applyRating(rating)
-
-      try {
-        await apiCall(
-          `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
-          { method: 'POST', body: JSON.stringify({ rating }) }
-        )
-      } catch (error) {
-        console.error('Failed to save message feedback:', error)
-        // Only undo our own optimistic write. Changing one's mind mid-flight
-        // starts a second request, and if this (now superseded) one then fails,
-        // rolling back to its stale snapshot would contradict the vote that
-        // actually got persisted.
-        if (readRating() === rating) applyRating(previous)
-      }
+      await runRatingRequest({
+        key: requestKey,
+        rating,
+        readRating,
+        applyRating,
+        send: () =>
+          apiCall(
+            `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
+            { method: 'POST', body: JSON.stringify({ rating }) }
+          ).then(() => undefined),
+        onError: (error) =>
+          console.error('Failed to save message feedback:', error),
+      })
     },
 
     /**

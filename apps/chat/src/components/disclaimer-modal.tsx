@@ -19,6 +19,7 @@ interface DisclaimerModalProps {
   isOpen: boolean
   onAccept: () => void
   onDecline: () => void
+  errorMessage?: string | null
 }
 
 export const DisclaimerModal = ({
@@ -26,6 +27,7 @@ export const DisclaimerModal = ({
   isOpen,
   onAccept,
   onDecline,
+  errorMessage,
 }: DisclaimerModalProps) => {
   const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
@@ -127,6 +129,16 @@ export const DisclaimerModal = ({
             <p className="text-sm">{t('chat.disclaimer.consentText')}</p>
           </div>
         </div>
+
+        {/* Action Error */}
+        {errorMessage && (
+          <p
+            data-cy="chat-disclaimer-error"
+            className="text-destructive text-sm"
+          >
+            {errorMessage}
+          </p>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">

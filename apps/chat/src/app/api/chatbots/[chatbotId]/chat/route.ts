@@ -14,6 +14,10 @@ import {
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import {
+  mapAssistantStepContent,
+  type PersistedAssistantContentPart,
+} from '@/src/lib/server/persistedAssistantContent'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
@@ -28,7 +32,7 @@ import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   generateText,
-  stepCountIs,
+  isStepCount,
   streamText,
   type ModelMessage,
   type StepResult,
@@ -569,94 +573,6 @@ const joinReasoningFromSteps = (
         : []
     )
     .join('\n\n')
-
-type PersistedAssistantContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'reasoning'; text: string }
-  | {
-      type: 'tool-call'
-      toolCallId: string
-      toolName: string
-      args?: unknown
-      result?: unknown
-    }
-
-const mapAssistantStepContent = (
-  steps: Array<{ content?: unknown[] }> | undefined
-): PersistedAssistantContentPart[] => {
-  const content: PersistedAssistantContentPart[] = []
-  const toolCallIndexById = new Map<string, number>()
-
-  for (const step of steps ?? []) {
-    if (!Array.isArray(step.content)) continue
-
-    for (const rawPart of step.content) {
-      if (!rawPart || typeof rawPart !== 'object') continue
-
-      const part = rawPart as {
-        type?: unknown
-        text?: unknown
-        toolCallId?: unknown
-        toolName?: unknown
-        input?: unknown
-        output?: unknown
-      }
-
-      if (part.type === 'text' && typeof part.text === 'string') {
-        content.push({ type: 'text', text: part.text })
-        continue
-      }
-
-      if (part.type === 'reasoning' && typeof part.text === 'string') {
-        content.push({ type: 'reasoning', text: part.text })
-        continue
-      }
-
-      if (
-        part.type === 'tool-call' &&
-        typeof part.toolCallId === 'string' &&
-        typeof part.toolName === 'string'
-      ) {
-        const nextToolCall = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: part.input,
-        }
-        content.push(nextToolCall)
-        toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
-        continue
-      }
-
-      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
-        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
-        if (toolCallIndex !== undefined) {
-          const existingToolCall = content[toolCallIndex]
-          if (existingToolCall?.type === 'tool-call') {
-            existingToolCall.result = part.output
-          }
-          continue
-        }
-
-        if (typeof part.toolName !== 'string') {
-          continue
-        }
-
-        const toolCallWithResult = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: {},
-          result: part.output,
-        }
-        content.push(toolCallWithResult)
-        toolCallIndexById.set(part.toolCallId, content.length - 1)
-      }
-    }
-  }
-
-  return content
-}
 
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
@@ -1281,7 +1197,7 @@ export async function POST(
     streamText({
       model,
       maxOutputTokens,
-      experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
+      telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
           ...(selectedModelConfig.supportsReasoning && {
@@ -1296,8 +1212,8 @@ export async function POST(
       messages: modelMessages as ModelMessage[],
       tools: mcpTools,
       toolChoice: 'auto',
-      stopWhen: stepCountIs(5),
-      system: systemPrompt,
+      stopWhen: isStepCount(5),
+      instructions: systemPrompt,
 
       abortSignal: req.signal,
 
@@ -1318,13 +1234,13 @@ export async function POST(
         }
       },
 
-      onFinish: async (result) => {
+      onEnd: async (result) => {
         sawFinish = true
-        const creditsUsed = result.totalUsage
+        const creditsUsed = result.usage
           ? calcCost(
               selectedModelConfig.cost,
-              result.totalUsage.inputTokens || 0,
-              result.totalUsage.outputTokens || 0
+              result.usage.inputTokens || 0,
+              result.usage.outputTokens || 0
             ) + imageDescriptionCost
           : null
         const finishedReasoningContent =
@@ -1341,15 +1257,15 @@ export async function POST(
         const providerReasoningTokens = extractReasoningTokens(
           asObject(result)?.providerMetadata
         )
-        const finishOutputTokens = result.totalUsage?.outputTokens || 0
+        const finishOutputTokens = result.usage?.outputTokens || 0
 
         logEvent('stream.finish', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          usage: result.totalUsage
+          usage: result.usage
             ? {
-                inputTokens: result.totalUsage.inputTokens || 0,
-                outputTokens: result.totalUsage.outputTokens || 0,
-                totalTokens: result.totalUsage.totalTokens || 0,
+                inputTokens: result.usage.inputTokens || 0,
+                outputTokens: result.usage.outputTokens || 0,
+                totalTokens: result.usage.totalTokens || 0,
               }
             : null,
           creditsUsed,
@@ -1464,11 +1380,11 @@ export async function POST(
         if (!firstError && !sawAbort) {
           emitFinalOnce('success', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-            usage: result.totalUsage
+            usage: result.usage
               ? {
-                  inputTokens: result.totalUsage.inputTokens || 0,
-                  outputTokens: result.totalUsage.outputTokens || 0,
-                  totalTokens: result.totalUsage.totalTokens || 0,
+                  inputTokens: result.usage.inputTokens || 0,
+                  outputTokens: result.usage.outputTokens || 0,
+                  totalTokens: result.usage.totalTokens || 0,
                 }
               : null,
             stepsCount: result.steps?.length ?? 0,
@@ -1641,7 +1557,7 @@ export async function POST(
         })
       },
 
-      onStepFinish: async (step) => {
+      onStepEnd: async (step) => {
         const diagnostics = collectStepToolDiagnostics(step)
         const toolCallNames = Array.from(
           new Set(diagnostics.map((diagnostic) => diagnostic.toolName))

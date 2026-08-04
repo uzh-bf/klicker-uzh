@@ -38,6 +38,7 @@ export default {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
       openSidebar: 'Seitenleiste öffnen',
+      toggleSidebar: 'Seitenleiste umschalten',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
     },
@@ -75,6 +76,8 @@ export default {
         'Akzeptieren: Du kannst den Chatbot nutzen und auf alle Funktionen zugreifen.',
       consequenceDecline:
         'Ablehnen: Der Chatbot bleibt gesperrt und Du kannst keine Nachrichten senden.',
+      actionError:
+        'Es ist leider ein Fehler aufgetreten. Bitte versuche es erneut.',
     },
     markdown: {
       copyCode: 'Kopieren',
@@ -101,11 +104,24 @@ export default {
       editName: 'Namen bearbeiten',
       deleteChat: 'Chat löschen',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
+      loadError: 'Deine Chats konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
+      loading: 'Deine Chats werden geladen...',
     },
     thread: {
       scrollToBottom: 'Nach unten scrollen',
+      loading: 'Die Konversation wird geladen...',
+      thinking: 'Antwort wird vorbereitet …',
       welcomeTitle: 'Hallo!',
       welcomeSubtitle: 'Wie kann ich Dir helfen?',
+    },
+    suggestions: {
+      explainConcept: 'Erkläre mir ein zufälliges Konzept aus dem Skript',
+      explainConceptPrompt:
+        'Nimm ein zufälliges Konzept aus dem Kursskript und erkläre es mir in einfachen Worten.',
+      examPrep: 'Hilf mir bei der Prüfungsvorbereitung',
+      examPrepPrompt:
+        'Erstelle einen Lernplan für die bevorstehende Prüfung, der alle wichtigen Themen aus den Vorlesungsunterlagen abdeckt.',
     },
     message: {
       creditsUsed:
@@ -119,8 +135,8 @@ export default {
       refresh: 'Aktualisieren',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
-      reasoningGroupLabel: 'Denkprozess ({count} Teile)',
-      toolCallsGroupLabel: '{count} Tool-Aufrufe',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
@@ -139,6 +155,7 @@ export default {
     toolFallback: {
       running: '{tool} wird verwendet...',
       done: '{tool} verwendet',
+      failed: '{tool} fehlgeschlagen',
       showLess: 'Weniger anzeigen',
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
@@ -150,6 +167,15 @@ export default {
       redirectNotice:
         'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
+    },
+    response: {
+      errorLabel: 'Fehler',
+      networkError:
+        'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
+      genericError:
+        'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      connectionInterrupted:
+        'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
     },
   },
   shared: {

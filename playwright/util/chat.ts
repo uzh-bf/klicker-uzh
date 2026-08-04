@@ -226,9 +226,24 @@ export type SeedAttachment = {
 export type SeedMessage = {
   id?: string
   role: 'user' | 'assistant'
-  content: { type: string; text: string }[]
+  content: Array<
+    | { type: 'text' | 'reasoning'; text: string }
+    | {
+        type: 'tool-call'
+        toolCallId: string
+        toolName: string
+        args?: Record<string, unknown>
+        result?: {
+          content?: Array<{ type: string; text: string }>
+          isError?: boolean
+        }
+      }
+  >
   parentId?: string | null
   attachments?: SeedAttachment[]
+  // Mode the message was sent/answered in ('tutor' | 'explainer' | ...). The
+  // most recent message's chatMode becomes the thread's `lastChatMode` (D6).
+  chatMode?: string | null
 }
 
 // 1x1 PNG as a test image
@@ -276,6 +291,7 @@ export async function seedThread(
         role: m.role,
         content: m.content,
         parentId: m.parentId !== undefined ? m.parentId : previousId,
+        chatMode: m.chatMode ?? null,
       },
     })
     if (m.attachments?.length) {

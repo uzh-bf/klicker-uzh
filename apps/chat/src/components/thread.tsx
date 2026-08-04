@@ -4,7 +4,6 @@ import {
   AttachmentPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
-  type ReasoningMessagePartProps,
   ThreadPrimitive,
   useComposer,
   useComposerRuntime,
@@ -12,14 +11,13 @@ import {
   useEditComposerAttachment,
   useMessage,
   useMessageRuntime,
+  useThread,
   useThreadComposerAttachment,
   useThreadRuntime,
 } from '@assistant-ui/react'
 import {
   ArrowDownIcon,
   CheckIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
   CopyIcon,
   ImagePlusIcon,
   PencilIcon,
@@ -33,6 +31,7 @@ import {
 } from 'lucide-react'
 import {
   type FC,
+  type MouseEvent,
   type PropsWithChildren,
   type ReactNode,
   useEffect,
@@ -40,10 +39,6 @@ import {
   useState,
 } from 'react'
 
-import {
-  MarkdownText,
-  normalizeCustomMathTags,
-} from '@/src/components/markdown-text'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
@@ -58,17 +53,17 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { isKnownMode } from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
+import { getThreadSuggestions } from '../lib/config/suggestions'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
-import { ToolFallback } from './tool-fallback'
+import { AssistantMessageParts } from './message-parts'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 
-import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
@@ -172,75 +167,36 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const reasoningLabel = reasoningEffort
     ? formatReasoningEffort(t, reasoningEffort)
     : null
+  const creditsLabel =
+    includeCredits && typeof creditsUsed === 'number'
+      ? // `count` selects the plural form and must be read off the
+        // *displayed* value: a raw 1.2 renders as "1" but plural-selects as
+        // `other`, so passing it through unrounded prints "1 credits".
+        t('chat.message.creditsUsed', {
+          count: Number(formatCredits(creditsUsed)),
+          credits: formatCredits(creditsUsed),
+        })
+      : null
 
-  const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
-  if (includeCredits && typeof creditsUsed === 'number') {
-    parts.push(
-      // `count` selects the plural form and must be read off the *displayed*
-      // value: a raw 1.2 renders as "1" but plural-selects as `other`, so
-      // passing it through unrounded prints "1 credits".
-      t('chat.message.creditsUsed', {
-        count: Number(formatCredits(creditsUsed)),
-        credits: formatCredits(creditsUsed),
-      })
-    )
-  }
+  // V6: the raw model id/name is dropped from the always-visible caption to
+  // keep it terse — it still lives in the `title` tooltip below (hover to
+  // reveal the full detail, including the model).
+  const visibleParts = [modeLabel, reasoningLabel, creditsLabel].filter(Boolean)
+  const fullParts = [
+    modeLabel,
+    modelLabel,
+    reasoningLabel,
+    creditsLabel,
+  ].filter(Boolean)
 
-  if (parts.length === 0) return null
+  if (fullParts.length === 0) return null
 
+  // The `title` tooltip is mouse-only; the sr-only copy keeps the full
+  // detail (incl. model) reachable for screen readers.
   return (
-    <div className="text-muted-foreground mt-1 text-xs">
-      {parts.join(' — ')}
-    </div>
-  )
-}
-
-const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
-  const t = useTranslations()
-  const message = useMessage() as MessageWithCustomMetadata
-  const [isOpen, setIsOpen] = useState(false)
-
-  const custom = message.metadata?.custom ?? {}
-  const reasoningEffort =
-    typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
-
-  // insert a paragraph break before any title (**Title**\n)
-  const normalizedText = text?.replace(
-    /([^\n])(\*\*[^*\n]+\*\*\n)/g,
-    '$1\n\n$2'
-  )
-
-  if (!normalizedText || normalizedText.trim().length === 0) {
-    return null
-  }
-
-  return (
-    <div className="mt-1">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((state) => !state)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-      >
-        {isOpen ? (
-          <ChevronDownIcon className="size-3" />
-        ) : (
-          <ChevronRightIcon className="size-3" />
-        )}
-        {t('chat.message.reasoningToggle')}
-        {reasoningEffort
-          ? ` (${formatReasoningEffort(t, reasoningEffort)})`
-          : ''}
-      </button>
-
-      {isOpen ? (
-        <div className="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm">
-          <Markdown
-            content={normalizeCustomMathTags(normalizedText)}
-            singleDollarTextMath
-          />
-        </div>
-      ) : null}
+    <div className="text-foreground mt-1 text-xs" title={fullParts.join(' — ')}>
+      <span aria-hidden="true">{visibleParts.join(' — ')}</span>
+      <span className="sr-only">{fullParts.join(' — ')}</span>
     </div>
   )
 }
@@ -264,7 +220,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
-        <ThreadWelcome />
+        <ThreadWelcome chatbotAvatar={chatbotAvatar} />
 
         <ThreadPrimitive.Messages
           components={{
@@ -299,7 +255,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -309,51 +265,103 @@ const ThreadScrollToBottom: FC = () => {
   )
 }
 
-const ThreadWelcome: FC = () => {
+// Pulsing-dot treatment for the pending assistant turn. The external-store
+// runtime injects a synthetic empty assistant message as soon as `isRunning`
+// flips true (before `useChatResponse` streams its first part), so the
+// indicator renders inside that message's content area — the row itself
+// already exists, meaning nothing jumps when real content replaces the dots.
+const THINKING_DOT_DELAYS = [
+  '[animation-delay:0ms]',
+  '[animation-delay:150ms]',
+  '[animation-delay:300ms]',
+]
+
+const ThinkingDots: FC = () => {
+  const t = useTranslations()
+  return (
+    <div
+      data-cy="chat-thinking-indicator"
+      role="status"
+      className="flex min-h-7 items-center gap-1 py-2"
+    >
+      {THINKING_DOT_DELAYS.map((delayClassName, index) => (
+        <span
+          key={index}
+          className={twMerge(
+            'bg-muted-foreground/40 size-1.5 animate-[pulse_1s_ease-in-out_infinite] rounded-full motion-reduce:animate-none',
+            delayClassName
+          )}
+        />
+      ))}
+      <span className="sr-only">{t('chat.thread.thinking')}</span>
+    </div>
+  )
+}
+
+const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
   const t = useTranslations()
   return (
     <ThreadPrimitive.Empty>
       <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="aui-thread-welcome-center flex w-full flex-grow flex-col items-center justify-center">
+        <div className="aui-thread-welcome-center relative flex w-full flex-grow flex-col items-center justify-center">
+          {/* Faint branded accent behind the greeting — restrained, no new assets. */}
+          <div
+            aria-hidden
+            className="bg-primary/5 pointer-events-none absolute left-1/2 top-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          />
           <div
             data-cy="chat-welcome-message"
-            className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center"
+            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-8 text-center"
           >
-            <div className="aui-thread-welcome-message-motion-1 text-2xl font-semibold">
+            {chatbotAvatar && (
+              <Image
+                src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`}
+                alt=""
+                width={56}
+                height={56}
+                unoptimized
+                className="ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 rounded-full bg-white ring-1 duration-300 motion-reduce:animate-none"
+              />
+            )}
+            <div className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold duration-300 motion-reduce:animate-none sm:text-4xl">
               {t('chat.thread.welcomeTitle')}
             </div>
-            <div className="aui-thread-welcome-message-motion-2 text-muted-foreground/65 text-2xl">
+            <div className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 text-lg delay-100 duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeSubtitle')}
             </div>
           </div>
         </div>
-        {/* <ThreadWelcomeSuggestions />  */}
+        <ThreadWelcomeSuggestions />
       </div>
     </ThreadPrimitive.Empty>
   )
 }
 
-// const ThreadWelcomeSuggestions: FC = () => {
-//   const suggestions = getThreadSuggestions()
+const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
-//   return (
-//     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-//       {suggestions.map((suggestion) => (
-//         <ThreadPrimitive.Suggestion
-//           key={suggestion.id}
-//           className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-//           prompt={suggestion.prompt}
-//           method="replace"
-//           autoSend
-//         >
-//           <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-//             {suggestion.text}
-//           </span>
-//         </ThreadPrimitive.Suggestion>
-//       ))}
-//     </div>
-//   )
-// }
+const ThreadWelcomeSuggestions: FC = () => {
+  const t = useTranslations()
+  const suggestions = getThreadSuggestions()
+
+  return (
+    <div className="mt-4 grid w-full grid-cols-1 gap-3 px-8 sm:grid-cols-2">
+      {suggestions.map((suggestion, index) => (
+        <ThreadPrimitive.Suggestion
+          key={suggestion.id}
+          data-cy="chat-welcome-suggestion"
+          className={twMerge(
+            'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
+            SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
+          )}
+          prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
+          autoSend
+        >
+          {t(`chat.suggestions.${suggestion.id}`)}
+        </ThreadPrimitive.Suggestion>
+      ))}
+    </div>
+  )
+}
 
 const AttachmentErrorBanner: FC<{
   error: string | null
@@ -741,55 +749,73 @@ const ComposerAttachButton: FC<{
 const ComposerAction: FC = () => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  // M6: a single persistent circular shell — both buttons always mount and
+  // stack in the same slot, so there is no layout jump between send and stop.
+  // `Send`/`Cancel` already self-disable via their own hooks (disabled when
+  // running/empty for Send, disabled when not running for Cancel — see
+  // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
+  // drives which one is *visible*; it never duplicates that disabled logic.
+  const isRunning = useThread((state) => state.isRunning)
+
+  const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
   // focus ring is lost when swapping to a plain <button> (see Send note below),
   // so restore an equivalent `focus-visible` ring here.
   const baseAction = twMerge(
-    'focus-visible:ring-ring flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed',
-    embedded ? 'm-1' : 'm-2',
-    embedded ? 'size-7' : 'size-9'
+    'focus-visible:ring-ring absolute inset-0 flex items-center justify-center rounded-full transition-[opacity,transform,background-color] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed motion-reduce:transition-none motion-reduce:transform-none'
   )
+  const crossfade = (visible: boolean) =>
+    visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0'
 
   return (
-    <>
-      <ThreadPrimitive.If running={false}>
-        <ComposerPrimitive.Send asChild>
-          {/*
-           * Plain button, not the design-system `Button`: the `Send asChild`
-           * Slot merges a className *string*, which clobbers `Button`'s object
-           * `className.root`. A raw <button> takes the class string cleanly, so
-           * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
-           */}
-          <button
-            type="button"
-            data-cy="chat-send-button"
-            aria-label={t('chat.composer.send')}
-            className={twMerge(
-              baseAction,
-              'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
-              'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none'
-            )}
-          >
-            <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
-          </button>
-        </ComposerPrimitive.Send>
-      </ThreadPrimitive.If>
-      <ThreadPrimitive.If running>
-        <ComposerPrimitive.Cancel asChild>
-          <button
-            type="button"
-            data-cy="chat-cancel-button"
-            aria-label={t('chat.composer.stop')}
-            className={twMerge(
-              baseAction,
-              'text-foreground hover:bg-accent disabled:opacity-50'
-            )}
-          >
-            <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
-          </button>
-        </ComposerPrimitive.Cancel>
-      </ThreadPrimitive.If>
-    </>
+    <div
+      className={twMerge(
+        'relative shrink-0',
+        embedded ? 'm-1 size-7' : 'm-2 size-9'
+      )}
+    >
+      <ComposerPrimitive.Send asChild>
+        {/*
+         * Plain button, not the design-system `Button`: the `Send asChild`
+         * Slot merges a className *string*, which clobbers `Button`'s object
+         * `className.root`. A raw <button> takes the class string cleanly, so
+         * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
+         */}
+        <button
+          type="button"
+          data-cy="chat-send-button"
+          aria-hidden={isRunning}
+          inert={isRunning}
+          tabIndex={isRunning ? -1 : 0}
+          aria-label={t('chat.composer.send')}
+          className={twMerge(
+            baseAction,
+            'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
+            'disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none',
+            crossfade(!isRunning)
+          )}
+        >
+          <SendHorizontalIcon className={iconSize} />
+        </button>
+      </ComposerPrimitive.Send>
+      <ComposerPrimitive.Cancel asChild>
+        <button
+          type="button"
+          data-cy="chat-cancel-button"
+          aria-hidden={!isRunning}
+          inert={!isRunning}
+          tabIndex={isRunning ? 0 : -1}
+          aria-label={t('chat.composer.stop')}
+          className={twMerge(
+            baseAction,
+            'text-foreground hover:bg-accent disabled:opacity-50',
+            crossfade(isRunning)
+          )}
+        >
+          <SquareIcon className={iconSize} />
+        </button>
+      </ComposerPrimitive.Cancel>
+    </div>
   )
 }
 
@@ -810,7 +836,7 @@ const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       data-cy="chat-user-message"
-      className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4"
+      className="animate-in fade-in slide-in-from-bottom-2 flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none sm:py-4"
     >
       <div
         data-cy="chat-user-message-content"
@@ -827,7 +853,6 @@ const UserMessage: FC = () => {
         <MessagePrimitive.Content />
       </div>
 
-      <MessageMetadata />
       <div className="flex min-h-6 items-center">
         <UserActionBar />
       </div>
@@ -1075,76 +1100,24 @@ const EditComposer: FC = () => {
   )
 }
 
-const groupConsecutiveByType = (
-  parts: readonly { type: string }[]
-): { groupKey: string | undefined; indices: number[] }[] => {
-  const groups: { groupKey: string | undefined; indices: number[] }[] = []
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]!
-    const key =
-      part.type === 'reasoning' || part.type === 'tool-call'
-        ? part.type
-        : undefined
-
-    const prev = groups[groups.length - 1]
-    if (prev && key !== undefined && prev.groupKey === key) {
-      prev.indices.push(i)
-    } else {
-      groups.push({ groupKey: key, indices: [i] })
-    }
-  }
-
-  return groups
-}
-
-const PartGroup: FC<
-  PropsWithChildren<{ groupKey: string | undefined; indices: number[] }>
-> = ({ groupKey, indices, children }) => {
-  const t = useTranslations()
-  const [isOpen, setIsOpen] = useState(false)
-
-  if (!groupKey || indices.length <= 1) {
-    return <>{children}</>
-  }
-
-  const label =
-    groupKey === 'reasoning'
-      ? t('chat.message.reasoningGroupLabel', { count: indices.length })
-      : t('chat.message.toolCallsGroupLabel', { count: indices.length })
-
-  return (
-    <div className="mt-1">
-      <button
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((s) => !s)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-      >
-        {isOpen ? (
-          <ChevronDownIcon className="size-3" />
-        ) : (
-          <ChevronRightIcon className="size-3" />
-        )}
-        {label}
-      </button>
-      {isOpen ? (
-        <div className="border-border mt-1 border-l-2 pl-3">{children}</div>
-      ) : null}
-    </div>
-  )
-}
-
 const AssistantMessage: FC<{
   chatbotAvatar: string
 }> = ({ chatbotAvatar }) => {
   const { embedded } = useChatUi()
+  // True only for the synthetic empty assistant message the runtime injects
+  // while a response is pending (before the first streamed part arrives).
+  const isPendingEmpty = useMessage(
+    (m) =>
+      m.role === 'assistant' &&
+      m.status?.type === 'running' &&
+      m.content.length === 0
+  )
 
   return (
     <MessagePrimitive.Root
       data-cy="chat-assistant-message"
       className={twMerge(
-        'relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 sm:py-4',
+        'animate-in fade-in slide-in-from-bottom-2 relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none sm:py-4',
         embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
@@ -1159,6 +1132,7 @@ const AssistantMessage: FC<{
             alt=""
             width={chatbotAvatar ? '35' : '32'}
             height="35"
+            unoptimized={Boolean(chatbotAvatar)}
             className={twMerge(
               'hidden rounded-full bg-white sm:block',
               chatbotAvatar ? '' : 'p-1'
@@ -1173,6 +1147,7 @@ const AssistantMessage: FC<{
             alt=""
             width="24"
             height="24"
+            unoptimized={Boolean(chatbotAvatar)}
             className={twMerge(
               'rounded-full bg-white sm:hidden',
               chatbotAvatar ? '' : 'p-1'
@@ -1189,15 +1164,8 @@ const AssistantMessage: FC<{
             : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
-        <MessagePrimitive.Unstable_PartsGrouped
-          groupingFunction={groupConsecutiveByType}
-          components={{
-            Text: MarkdownText,
-            Reasoning: AssistantReasoningPart,
-            tools: { Fallback: ToolFallback },
-            Group: PartGroup,
-          }}
-        />
+        {isPendingEmpty && <ThinkingDots />}
+        <AssistantMessageParts />
         <MessageMetadata includeCredits />
       </div>
 
@@ -1269,25 +1237,25 @@ const MessageRatingButtons: FC = () => {
   const message = useMessage()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const rateMessage = useChatStore((state) => state.rateMessage)
-  // The runtime's message object does not carry our own fields, so the current
-  // vote is read back from the store the mutation writes to.
-  const rating = useChatStore(
-    (state) =>
-      state.threads
-        .find((thread) => thread.id === state.activeThreadId)
-        ?.messages.find((entry) => entry.id === message.id)?.rating ?? null
-  )
+  // The active vote comes from the feedback adapter's own metadata field
+  // (populated by `convertMessage` in RuntimeProvider from the store's
+  // persisted rating), not a separate zustand selector.
+  const submittedFeedbackType = message.metadata.submittedFeedback?.type ?? null
 
   if (!chatbotId) return null
 
   const options = [
     {
       value: 'UP' as const,
+      feedbackType: 'positive' as const,
+      FeedbackPrimitive: ActionBarPrimitive.FeedbackPositive,
       Icon: ThumbsUpIcon,
       label: t('chat.message.rateUp'),
     },
     {
       value: 'DOWN' as const,
+      feedbackType: 'negative' as const,
+      FeedbackPrimitive: ActionBarPrimitive.FeedbackNegative,
       Icon: ThumbsDownIcon,
       label: t('chat.message.rateDown'),
     },
@@ -1295,39 +1263,48 @@ const MessageRatingButtons: FC = () => {
 
   return (
     <>
-      {options.map(({ value, Icon, label }) => {
-        const isActive = rating === value
-        return (
-          <Tooltip key={value}>
-            <TooltipTrigger asChild>
-              <button
-                data-cy={`chat-rate-${value.toLowerCase()}-button`}
-                aria-pressed={isActive}
-                // Clicking the active vote clears it, so a misclick is undoable.
-                onClick={() =>
-                  void rateMessage(
-                    chatbotId,
-                    message.id,
-                    isActive ? null : value
-                  )
-                }
-                className={twMerge(
-                  actionBarButtonClassName,
-                  isActive && 'text-primary'
-                )}
-              >
-                {/* The cast icon is filled, not merely recoloured: primary
-                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
-                    mode), so colour alone would leave the active vote
-                    indistinguishable under WCAG 1.4.1/1.4.11. */}
-                <Icon className={isActive ? 'fill-current' : undefined} />
-                <span className="sr-only">{label}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
-          </Tooltip>
-        )
-      })}
+      {options.map(
+        ({ value, feedbackType, FeedbackPrimitive, Icon, label }) => {
+          const isActive = submittedFeedbackType === feedbackType
+          return (
+            <Tooltip key={value}>
+              <TooltipTrigger asChild>
+                <FeedbackPrimitive
+                  asChild
+                  // The feedback adapter only models "submit a vote": clicking
+                  // the already-active vote here clears it instead, so a
+                  // misclick is undoable. That clear path bypasses the
+                  // adapter (there is no "retract" concept in assistant-ui)
+                  // and calls the same store action directly.
+                  onClick={(event: MouseEvent) => {
+                    if (isActive) {
+                      event.preventDefault()
+                      void rateMessage(chatbotId, message.id, null)
+                    }
+                  }}
+                >
+                  <button
+                    data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                    aria-pressed={isActive}
+                    className={twMerge(
+                      actionBarButtonClassName,
+                      isActive && 'text-primary'
+                    )}
+                  >
+                    {/* The cast icon is filled, not merely recoloured: primary
+                      against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                      mode), so colour alone would leave the active vote
+                      indistinguishable under WCAG 1.4.1/1.4.11. */}
+                    <Icon className={isActive ? 'fill-current' : undefined} />
+                    <span className="sr-only">{label}</span>
+                  </button>
+                </FeedbackPrimitive>
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+          )
+        }
+      )}
     </>
   )
 }

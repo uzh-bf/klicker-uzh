@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-07-22'
+timestamp: '2026-07-25'
 tags:
   - frontend
   - chat
@@ -13,16 +13,16 @@ tags:
 
 > **Migration in flight (2026-07):** the chat backend is slated to move to a Mastra-based `apps/chat-api` service (PR #5126, draft; tutor architecture in PR #5129). This page describes the current AI-SDK reality and stays authoritative until those PRs merge — but check their status before investing heavily in the route-handler/AI-SDK layer. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react` + `react-ai-sdk`) over the Vercel AI SDK (`@ai-sdk/*`). Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
-- `src/lib/server/` — server-only helpers: `apiGuards.ts`, `chatModelRegistry.ts`, `openaiResponsesOptions.ts`, `imagePreview.ts`.
+- `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
-- `src/components/thread.tsx` and `src/hooks/` — assistant-ui composition.
+- `src/components/thread.tsx`, `src/components/message-parts.tsx`, and `src/hooks/` — assistant-ui composition and transport.
 - Local model proxy: the `litellm` compose service (port 4000).
 
 ## Auth guard pattern (route handlers)
@@ -38,6 +38,9 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
+`src/stores/settingsStore.ts:loadCredits` clears `creditsLoaded` for every refresh and accepts
+only the latest request generation, so a failed refresh or a late response from another
+chatbot cannot expose stale credit/model state as current.
 
 ## Theming and design tokens
 
@@ -46,8 +49,45 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 - **The light token block must be `:root:root`, not `:root`.** A dependency stylesheet (assistant-ui) defines the same shadcn tokens at plain `:root`, and its chunk loads _after_ `globals.css`, so an equal-specificity block silently loses the cascade and the brand colour never applies. Raising it to (0,2,0) outranks the dependency's (0,1,0).
 - There is no dark mode: a latent `:root.dark` block plus its `@custom-variant dark` was removed (D1) because nothing in the app ever applied a `.dark` class, and the forced-on preview was half-broken anyway (sidebar/composer/footer stayed light; `--primary` fell back to shadcn's default gray instead of UZH blue). Wiring dark mode properly would be a separate feature with its own plan.
 - Use the semantic tokens (`bg-muted`, `border-border`, `text-foreground`) rather than raw `gray-*`/`slate-*` utilities, or the surface stops following the theme. Note that `text-muted-foreground` on `bg-muted` computes to ≈4.4:1 — below the WCAG AA floor for body text; use `text-foreground` for text that sits on a muted surface.
-- `@uzh-bf/design-system`'s `SidebarTrigger` renders a hardcoded English `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the accessible-name computation.
+- `@uzh-bf/design-system`'s `SidebarTrigger` and `SidebarRail` render a hardcoded English
+  `sr-only` "Toggle Sidebar" label. Pass an explicit localized `aria-label`; it wins the
+  accessible-name computation.
 - The design system's `Select` renders a Radix `SelectTrigger` — a real `<button role="combobox">`, so a plain `<label htmlFor>` does name it. Without that, the combobox's accessible name is whatever value is currently selected, which leaves several selects on a panel indistinguishable. Pass `id` to `Select` (it forwards to the trigger) and point the visible label at it.
+
+## Runtime and student-visible states
+
+The chat branch uses `@assistant-ui/react` 0.14's stable `GroupedParts` primitive. Local
+composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
+reasoning parts share one disclosure, adjacent tool calls share one group when there is more
+than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
+while active until the participant manually chooses an open state; that manual choice then wins.
+The runtime's feedback adapter delegates votes to `src/stores/chatStore.ts:rateMessage`, while
+the adapter maps the persisted `ChatMessage.rating` back into `metadata.submittedFeedback` so
+votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai`,
+`@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport
+because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
+key.
+
+Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
+empty running assistant message shows a localized thinking indicator. Send/stream failures,
+disclaimer action failures, and thread-list failures are localized with retry affordances where
+the action can be retried. A cached thread list intentionally remains visible if only its
+background refresh fails. The welcome view contains localized starter suggestions, and
+message action bars remain mounted for touch users rather than relying on hover.
+
+Assistant message persistence passes completed AI SDK steps through
+`src/lib/server/persistedAssistantContent.ts:mapAssistantStepContent`. Successful text,
+reasoning, tool arguments, and tool results remain intact. Both thrown `tool-error` parts and
+MCP `tool-result` envelopes with `output.isError === true` persist only the generic
+`Tool execution failed` result plus `isError: true`; never copy provider error messages or MCP
+error bodies into `ChatMessage.content`. The live SSE path applies the same boundary through
+`src/lib/toolOutput.ts:normalizeLiveToolOutput` before a result reaches `ToolFallback`.
+
+The mobile layout exports `viewportFit: 'cover'`, reserves the bottom safe area for the
+composer, wraps Markdown tables in horizontal scrolling, and makes the mode pills horizontally
+scrollable. Embedded mode shows the loading state and compact credit/model information through
+the shared settings components. Direct thread URL activation resynchronizes the thread's stored
+chat mode once per activation, without overriding a mode manually chosen afterward.
 
 ## Localization
 
@@ -62,11 +102,11 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason.
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating.
 
-Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-based**: a trace is addressed by its W3C trace id and the v3 `metadata.langfuseTraceId` convention is silently ignored. To reach a trace from a later, unrelated request, both sides derive the same id from the assistant message id with `createTraceId(messageId)` (`src/lib/server/langfuseTracing.ts`); the streaming route anchors the AI SDK's spans onto it via `startActiveObservation(..., { parentSpanContext })`. Scores go over `POST /api/public/scores` with HTTP Basic auth — no Langfuse client dependency — under a deterministic score id so a re-vote replaces rather than stacks, and a retracted vote issues the matching `DELETE`. Scoring honours the same `CHAT_ENABLE_AI_TELEMETRY` killswitch as the span processor; without it, a deployment with telemetry disabled writes scores against traces that were never emitted.
+PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
 
-> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. The scores are written correctly but are orphaned until the OTel major bump lands.
+> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. Rating-score mirroring is disabled until the OTel major bump lands.
 
 ## Client-state gotchas
 
@@ -79,6 +119,12 @@ Each vote is mirrored to Langfuse as a score. **Langfuse v4 is OpenTelemetry-bas
 
 ## Testing
 
-Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+
+The chat package uses Turbopack for development, test, and production builds
+(`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,
+the package Vitest suite, and the package production build in the worktree's devcontainer.
+The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
+those checks remain an explicit environment-gated follow-up rather than an unverified claim.
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.

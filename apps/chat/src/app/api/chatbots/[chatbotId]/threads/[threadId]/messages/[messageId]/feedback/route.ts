@@ -1,5 +1,4 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { recordFeedbackScore } from '@/src/lib/server/langfuseTracing'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
@@ -62,11 +61,6 @@ export async function POST(
       where: { id: message.id },
       data: { rating },
     })
-
-    // Mirrored onto the message's Langfuse trace so answer quality can be
-    // reviewed next to the generation. Awaited but non-throwing: the vote is
-    // already stored, and telemetry problems must not fail a student's click.
-    await recordFeedbackScore(message.id, rating)
 
     return NextResponse.json({ rating })
   } catch (error) {

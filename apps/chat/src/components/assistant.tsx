@@ -1,14 +1,14 @@
 'use client'
 
-import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
 } from '@uzh-bf/design-system'
-import { Loader2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -54,6 +54,7 @@ export const Assistant = ({
     useState<DisclaimerStatus | null>(null)
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [disclaimerActionError, setDisclaimerActionError] = useState(false)
 
   // Fetch disclaimer information on component mount
   useEffect(() => {
@@ -98,6 +99,8 @@ export const Assistant = ({
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
 
+    setDisclaimerActionError(false)
+
     try {
       const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
         method: 'POST',
@@ -122,13 +125,17 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to accept disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error accepting disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
   const handleDeclineDisclaimer = async () => {
+    setDisclaimerActionError(false)
+
     try {
       const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
         method: 'POST',
@@ -151,9 +158,11 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to decline disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error declining disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
@@ -270,6 +279,9 @@ export const Assistant = ({
             isOpen={showDisclaimerModal}
             onAccept={handleAcceptDisclaimer}
             onDecline={handleDeclineDisclaimer}
+            errorMessage={
+              disclaimerActionError ? t('chat.disclaimer.actionError') : null
+            }
           />
         )}
       </>
@@ -291,18 +303,47 @@ export const Assistant = ({
           isOpen={showDisclaimerModal}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
+          errorMessage={
+            disclaimerActionError ? t('chat.disclaimer.actionError') : null
+          }
         />
       )}
     </>
   )
 }
 
+/**
+ * M4: stand-in for the thread pane while the initial disclaimer/thread fetch
+ * is in flight. Shaped like a couple of message bubbles rather than a bare
+ * spinner so the layout the real thread will occupy is already legible.
+ */
+function ThreadSkeleton() {
+  const t = useTranslations()
+  return (
+    <div data-cy="chat-thread-skeleton" role="status" className="p-4">
+      <span className="sr-only">{t('chat.thread.loading')}</span>
+      <div
+        aria-hidden="true"
+        className="animate-pulse space-y-4 motion-reduce:animate-none"
+      >
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/3 rounded-lg" />
+        </div>
+        <div className="flex justify-start">
+          <div className="bg-muted h-20 w-2/3 rounded-lg" />
+        </div>
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/4 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SidebarMain({
   chatbot,
-  showFooter,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  showFooter: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -323,19 +364,28 @@ function SidebarMain({
   return (
     <SidebarInset>
       <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
-        <div
-          className={twMerge(
-            'flex min-w-0 items-center gap-2',
-            open && 'md:hidden'
-          )}
-        >
-          {/* Overrides the design system's hardcoded English sr-only label. */}
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Only visible when the sidebar is closed — once it's open, the
+              sidebar's own trigger closes it, so this stays the single
+              toggle on screen at any given time (Overrides the design
+              system's hardcoded English sr-only label). */}
           <SidebarTrigger
-            className="size-6"
+            className={twMerge('size-6', open && 'md:hidden')}
             aria-label={t('chat.sidebar.openSidebar')}
           />
-          {/* Primary label of the working chat view (Tailwind's preflight
-              reset keeps this visually identical to the previous span). */}
+          {/* Persistent header identity (V3): name (+ avatar) stays visible
+              here regardless of sidebar open/closed state, so the sidebar's
+              own header no longer repeats it (see app-sidebar.tsx). */}
+          {chatbot.avatar && (
+            <Image
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
+              alt=""
+              width={24}
+              height={24}
+              unoptimized
+              className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
+            />
+          )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
         <div className="flex min-w-0 flex-1 justify-center">
@@ -361,13 +411,12 @@ function SidebarMain({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
-              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         </div>
-        {showFooter && <Footer />}
       </div>
     </SidebarInset>
   )
@@ -378,14 +427,14 @@ function AssistantLayout({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) {
-  const { showSidebar, showFooter } = useChatUi()
+  const { showSidebar } = useChatUi()
   const { isLoading } = useChatStore()
 
   if (showSidebar) {
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
-        <AppSidebar chatbotName={chatbot.name} />
-        <SidebarMain chatbot={chatbot} showFooter={showFooter} />
+        <AppSidebar />
+        <SidebarMain chatbot={chatbot} />
       </SidebarProvider>
     )
   }
@@ -401,14 +450,13 @@ function AssistantLayout({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="bg-background absolute inset-0 z-10 flex items-center justify-center">
-              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
         </div>
         <EmbeddedCreditsBar />
-        {showFooter && <Footer />}
       </div>
     </div>
   )

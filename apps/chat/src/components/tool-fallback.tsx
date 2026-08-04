@@ -1,10 +1,12 @@
 import {
+  AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -73,6 +75,7 @@ interface ToolFallbackProps {
   argsText: string
   result?: unknown
   status: { type: string }
+  isError?: boolean
 }
 
 export const ToolFallback: FC<ToolFallbackProps> = ({
@@ -80,10 +83,12 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   argsText,
   result,
   status,
+  isError,
 }) => {
   const t = useTranslations()
   const [isCollapsed, setIsCollapsed] = useState(true)
   const isRunning = status.type === 'running'
+  const isFailed = isError === true && !isRunning
   const tool = formatToolName(toolName)
 
   const resultText =
@@ -97,9 +102,15 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     <div className="mb-1">
       <button
         type="button"
+        data-cy="chat-tool-call-toggle"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
-        className="text-muted-foreground hover:bg-accent hover:text-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors"
+        className={twMerge(
+          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors',
+          isFailed
+            ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+        )}
       >
         {isCollapsed ? (
           <ChevronRightIcon className="size-3" />
@@ -109,24 +120,39 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         {isRunning && (
           <LoaderCircleIcon className="text-primary size-3 animate-spin" />
         )}
-        {isRunning
-          ? t('chat.toolFallback.running', { tool })
-          : t('chat.toolFallback.done', { tool })}
+        {isFailed && <AlertCircleIcon className="text-destructive size-3" />}
+        {isFailed
+          ? t('chat.toolFallback.failed', { tool })
+          : isRunning
+            ? t('chat.toolFallback.running', { tool })
+            : t('chat.toolFallback.done', { tool })}
       </button>
 
-      {!isCollapsed && (
-        <div className="bg-muted mt-1 rounded p-2 text-xs">
-          {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
-              `--muted`, under the 4.5:1 AA floor for 12px text. */}
-          <p className="mb-1 font-mono">{toolName}</p>
-          <pre className="whitespace-pre-wrap">{argsText}</pre>
-          {resultText !== undefined && (
-            <div className="border-border mt-2 border-t border-dashed pt-2">
-              <TruncatedOutput text={resultText} />
-            </div>
-          )}
+      <div
+        aria-hidden={isCollapsed}
+        // `inert` (not just aria-hidden): the collapsed panel stays mounted
+        // for the height animation, and TruncatedOutput's "Show more" button
+        // inside it must not remain tabbable while visually collapsed.
+        inert={isCollapsed}
+        className={twMerge(
+          'grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none',
+          isCollapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="bg-muted mt-1 rounded p-2 text-xs">
+            {/* Not `text-muted-foreground`: that token only reaches 4.39:1 on
+                `--muted`, under the 4.5:1 AA floor for 12px text. */}
+            <p className="mb-1 font-mono">{toolName}</p>
+            <pre className="whitespace-pre-wrap">{argsText}</pre>
+            {resultText !== undefined && (
+              <div className="border-border mt-2 border-t border-dashed pt-2">
+                <TruncatedOutput text={resultText} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
