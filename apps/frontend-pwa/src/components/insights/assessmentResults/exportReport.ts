@@ -38,21 +38,11 @@ export interface ExportReportTexts {
 }
 
 export interface AssessmentReportArtifact {
-  filename: string
-  url: string
-  pdfFilename: string
-  pdfUrl: string
-}
-
-export interface AssessmentReportHtmlArtifact {
-  filename: string
   url: string
   html: string
-  pdfFilename: string
 }
 
 const REPORT_TIME_ZONE = 'Europe/Zurich'
-const PDF_FILENAME_PREFIX = 'KlickerUZH_Assessment_Report_'
 
 const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
@@ -199,44 +189,6 @@ export async function loadPublicImageAsDataUrl(path: string) {
   })
 }
 
-export async function createAssessmentReportPdf({
-  html,
-  filename,
-}: {
-  html: string
-  filename: string
-}) {
-  const html2pdfModule = await import('html2pdf.js')
-  const html2pdf = html2pdfModule.default
-  const pdfHtml = html
-    .replace('<html ', '<html class="pdf-export-document" ')
-    .replace('<body>', '<body class="pdf-export">')
-  const pdf = await html2pdf()
-    .set({
-      filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      enableLinks: true,
-      pagebreak: {
-        mode: ['css'],
-        avoid: ['.pdf-avoid'],
-      },
-      html2canvas: {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: false,
-      },
-      jsPDF: {
-        format: 'a4',
-        orientation: 'portrait',
-        unit: 'mm',
-      },
-    })
-    .from(pdfHtml)
-    .outputPdf('blob')
-
-  return pdf as Blob
-}
-
 export function createAssessmentReport({
   snapshot,
   issuedAt,
@@ -255,7 +207,7 @@ export function createAssessmentReport({
   verificationUrl: string
   qrCodeDataUrl: string
   uzhLogoDataUrl: string
-}): AssessmentReportHtmlArtifact {
+}): AssessmentReportArtifact {
   const formattedIssuedAt = new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -349,33 +301,35 @@ export function createAssessmentReport({
     .verification a { color: #0028a5; overflow-wrap: anywhere; }
     .privacy { margin-top: 28px; border-left: 4px solid #007a92; padding-left: 14px; color: #444; }
     @media (max-width: 680px) { main { padding: 24px; } header { align-items: flex-start; flex-direction: column; } .issued { text-align: left; } dl { grid-template-columns: 1fr; } dt { border-bottom: 0; } .verification { grid-template-columns: 1fr; } }
-    @media print { main { max-width: none; padding: 0; } .chart, .verification, .pdf-avoid { break-inside: avoid; } }
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { font-size: 12px; line-height: 1.3; }
+      main { max-width: none; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }
+      header { gap: 12px; border-bottom-width: 2px; padding-bottom: 8px; }
+      .brand { gap: 8px; }
+      .brand img { width: 130px; }
+      .product { padding-left: 8px; font-size: 12px; }
+      h1 { font-size: 16px; }
+      h2 { margin: 10px 0 5px; padding-bottom: 3px; font-size: 13px; }
+      h3 { margin: 8px 0 4px; font-size: 10px; }
+      p { margin: 4px 0; }
+      .issued { margin-top: 3px; font-size: 9px; }
+      dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
+      dt, dd { padding: 4px 7px; }
+      table { margin-top: 5px; }
+      th, td { padding: 3px 7px; }
+      .percentile { padding: 5px 8px; font-size: 12px; }
+      .chart { overflow: visible; }
+      .chart svg { min-width: 0; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+      .histogram-table { margin-top: 4px; font-size: 8px; }
+      .histogram-table th, .histogram-table td { padding: 2px 5px; }
+      .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
+      .verification img { width: 72px; height: 72px; }
+      .verification h2 { margin: 0 0 3px; }
+      .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
+      .chart, .verification, .pdf-avoid { break-inside: avoid; }
+    }
 
-    .pdf-export-document { width: 210mm; height: 280mm; overflow: hidden; }
-    .pdf-export { width: 210mm; height: 280mm; overflow: hidden; }
-    .pdf-export main { width: 210mm; height: 280mm; max-width: none; margin: 0; overflow: hidden; padding: 10mm 12mm; font-size: 9px; line-height: 1.25; }
-    .pdf-export header { gap: 12px; border-bottom-width: 2px; padding-bottom: 8px; }
-    .pdf-export .brand { gap: 8px; }
-    .pdf-export .brand img { width: 130px; }
-    .pdf-export .product { padding-left: 8px; font-size: 12px; }
-    .pdf-export h1 { font-size: 18px; }
-    .pdf-export h2 { margin: 12px 0 5px; padding-bottom: 3px; font-size: 14px; }
-    .pdf-export h3 { margin: 10px 0 4px; font-size: 11px; }
-    .pdf-export p { margin: 4px 0; }
-    .pdf-export .issued { margin-top: 3px; font-size: 8px; }
-    .pdf-export dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
-    .pdf-export dt, .pdf-export dd { padding: 4px 7px; }
-    .pdf-export table { margin-top: 5px; }
-    .pdf-export th, .pdf-export td { padding: 4px 7px; }
-    .pdf-export .percentile { padding: 5px 8px; font-size: 12px; }
-    .pdf-export .chart { overflow: visible; }
-    .pdf-export .chart svg { min-width: 0; height: 74px; }
-    .pdf-export .histogram-table { margin-top: 4px; font-size: 8px; }
-    .pdf-export .histogram-table th, .pdf-export .histogram-table td { padding: 2px 5px; }
-    .pdf-export .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
-    .pdf-export .verification img { width: 72px; height: 72px; }
-    .pdf-export .verification h2 { margin: 0 0 3px; }
-    .pdf-export .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 8px; }
   </style>
 </head>
 <body>
@@ -429,36 +383,9 @@ export function createAssessmentReport({
 </html>`
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const filename = snapshot.course.displayName
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/gi, '_')
-    .replace(/^_+|_+$/g, '')
 
   return {
-    filename: `${PDF_FILENAME_PREFIX}${filename || 'Course'}.html`,
     url: URL.createObjectURL(blob),
-    pdfFilename: `${PDF_FILENAME_PREFIX}${filename || 'Course'}.pdf`,
     html,
-  }
-}
-
-export async function createAssessmentReportArtifact(
-  options: Parameters<typeof createAssessmentReport>[0]
-): Promise<AssessmentReportArtifact> {
-  const htmlArtifact = createAssessmentReport(options)
-  try {
-    const pdfBlob = await createAssessmentReportPdf({
-      html: htmlArtifact.html,
-      filename: htmlArtifact.pdfFilename,
-    })
-    return {
-      filename: htmlArtifact.filename,
-      url: htmlArtifact.url,
-      pdfFilename: htmlArtifact.pdfFilename,
-      pdfUrl: URL.createObjectURL(pdfBlob),
-    }
-  } catch (error) {
-    URL.revokeObjectURL(htmlArtifact.url)
-    throw error
   }
 }

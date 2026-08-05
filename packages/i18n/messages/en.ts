@@ -1345,11 +1345,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
       exportReportButton: 'Export Performance Report',
       exportReportExplanation:
-        'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or download a single-page A4 PDF. The report includes a link for checking its current status and claims.',
+        'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
       exportReportReady:
-        'Your assessment report is ready. View it in a new tab or download the single-page A4 PDF.',
+        'Your assessment report is ready. View it in a new tab or use Save as PDF to open the browser print dialog.',
       viewReportButton: 'View report',
-      downloadReportButton: 'Download report',
+      downloadReportButton: 'Save as PDF',
       refreshReportButton: 'Refresh report',
       exportReportNotEligibleError:
         'No assessment report can be issued for this course. Confirm that you are enrolled and that assessed activities have ended, or contact your lecturers.',
@@ -1361,10 +1361,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The assessment data could not be validated for a report. Please try again later or contact your lecturers.',
       exportReportIssuanceError:
         'The assessment report could not be issued. Check your connection and try again.',
-      exportReportDownloadError:
-        'The report was issued, but the report files could not be created. Please try again.',
+      exportReportGenerationError:
+        'The report was issued, but its browser document could not be created. Please try again.',
       exportReportViewError:
-        'The report could not be opened in a new tab. Allow pop-ups for this page or download the PDF instead.',
+        'The report could not be opened in a new tab. Allow pop-ups for this page and try again.',
+      exportReportPrintError:
+        'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',

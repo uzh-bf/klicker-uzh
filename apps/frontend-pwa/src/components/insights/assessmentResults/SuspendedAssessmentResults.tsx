@@ -18,7 +18,7 @@ import { QRCode } from 'react-qrcode-logo'
 import AssessmentResultsList from './AssessmentResultsList'
 import {
   type AssessmentReportArtifact,
-  createAssessmentReportArtifact,
+  createAssessmentReport,
   type ExportReportTexts,
   loadPublicImageAsDataUrl,
 } from './exportReport'
@@ -26,6 +26,9 @@ import { isScoreInHistogramBin } from './histogram'
 
 type IssuedAssessmentReport = MIssueCredentialMutation['issueAssessmentReport']
 const ASSESSMENT_REPORT_QR_ID = 'assessment-report-qr-code'
+const ASSESSMENT_REPORT_PRINT_CHECK_INTERVAL_MS = 50
+const ASSESSMENT_REPORT_PRINT_TIMEOUT_MS = 10_000
+const ASSESSMENT_REPORT_QR_TIMEOUT_MS = 10_000
 
 type QrCodeRequest = {
   logoDataUrl: string
@@ -80,6 +83,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     useState<AssessmentReportArtifact | null>(null)
   const [qrCodeRequest, setQrCodeRequest] = useState<QrCodeRequest | null>(null)
   const qrCodeRequestResult = useRef<QrCodeRequestResult | null>(null)
+  const qrCodeRequestTimeout = useRef<number | null>(null)
   const [issueAssessmentReport] = useMutation(MIssueCredentialDocument)
 
   // Swallowing the error above would otherwise leave no trace of why the results
@@ -93,16 +97,58 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
 
     return () => {
       URL.revokeObjectURL(reportArtifact.url)
-      URL.revokeObjectURL(reportArtifact.pdfUrl)
     }
   }, [reportArtifact])
+
+  useEffect(() => {
+    return () => {
+      if (qrCodeRequestTimeout.current !== null) {
+        window.clearTimeout(qrCodeRequestTimeout.current)
+      }
+      qrCodeRequestTimeout.current = null
+      qrCodeRequestResult.current?.reject(
+        new Error('ASSESSMENT_REPORT_QR_RENDER_CANCELLED')
+      )
+      qrCodeRequestResult.current = null
+    }
+  }, [])
+
+  function clearQrCodeRequestTimeout() {
+    if (qrCodeRequestTimeout.current !== null) {
+      window.clearTimeout(qrCodeRequestTimeout.current)
+      qrCodeRequestTimeout.current = null
+    }
+  }
+
+  function rejectQrCodeRequest(error: Error) {
+    clearQrCodeRequestTimeout()
+    const result = qrCodeRequestResult.current
+    qrCodeRequestResult.current = null
+    result?.reject(error)
+    setQrCodeRequest(null)
+  }
+
+  function resolveQrCodeRequest(dataUrl: string) {
+    clearQrCodeRequestTimeout()
+    const result = qrCodeRequestResult.current
+    qrCodeRequestResult.current = null
+    result?.resolve(dataUrl)
+    setQrCodeRequest(null)
+  }
 
   function createLogoQrCodeDataUrl(
     value: string,
     logoDataUrl: string
   ): Promise<string> {
+    if (qrCodeRequestResult.current) {
+      rejectQrCodeRequest(new Error('ASSESSMENT_REPORT_QR_RENDER_REPLACED'))
+    }
+
     return new Promise((resolve, reject) => {
       qrCodeRequestResult.current = { resolve, reject }
+      qrCodeRequestTimeout.current = window.setTimeout(() => {
+        rejectQrCodeRequest(new Error('ASSESSMENT_REPORT_QR_RENDER_TIMEOUT'))
+      }, ASSESSMENT_REPORT_QR_TIMEOUT_MS)
       setQrCodeRequest({ logoDataUrl, value })
     })
   }
@@ -111,13 +157,23 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     const canvas = document.getElementById(ASSESSMENT_REPORT_QR_ID)
     const result = qrCodeRequestResult.current
     if (!(canvas instanceof HTMLCanvasElement) || !result) {
-      result?.reject(new Error('ASSESSMENT_REPORT_QR_RENDER_FAILED'))
+      if (result) {
+        rejectQrCodeRequest(new Error('ASSESSMENT_REPORT_QR_RENDER_FAILED'))
+      } else {
+        setQrCodeRequest(null)
+      }
       return
     }
 
-    result.resolve(canvas.toDataURL('image/png'))
-    qrCodeRequestResult.current = null
-    setQrCodeRequest(null)
+    try {
+      resolveQrCodeRequest(canvas.toDataURL('image/png'))
+    } catch (error) {
+      rejectQrCodeRequest(
+        error instanceof Error
+          ? error
+          : new Error('ASSESSMENT_REPORT_QR_RENDER_FAILED')
+      )
+    }
   }
 
   function handleViewReport() {
@@ -131,15 +187,93 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
     }
   }
 
-  function handleDownloadReport() {
+  function handlePrintReport() {
     if (!reportArtifact) return
     setExportError(null)
-    const link = document.createElement('a')
-    link.href = reportArtifact.pdfUrl
-    link.download = reportArtifact.pdfFilename
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
+
+    const openedWindow = window.open('about:blank', '_blank')
+    if (!openedWindow) {
+      setExportError(t('pwa.assessment.exportReportPrintError'))
+      return
+    }
+    const reportWindow: Window = openedWindow
+    const reportUrl = reportArtifact.url
+
+    let readinessCheck: number | null = null
+    let printTimeout: number | null = null
+    let settled = false
+
+    function cleanup() {
+      if (readinessCheck !== null) {
+        window.clearTimeout(readinessCheck)
+        readinessCheck = null
+      }
+      if (printTimeout !== null) {
+        window.clearTimeout(printTimeout)
+        printTimeout = null
+      }
+      reportWindow.removeEventListener('load', checkReadiness)
+    }
+
+    function failPrint(error?: unknown) {
+      if (settled) return
+      settled = true
+      cleanup()
+      if (error) console.error('Failed to print assessment report', error)
+      try {
+        reportWindow.close()
+      } catch {
+        // The popup may already be closed.
+      }
+      setExportError(t('pwa.assessment.exportReportPrintError'))
+    }
+
+    function checkReadiness() {
+      if (settled) return
+      if (readinessCheck !== null) {
+        window.clearTimeout(readinessCheck)
+        readinessCheck = null
+      }
+
+      try {
+        if (reportWindow.closed) {
+          failPrint()
+          return
+        }
+        if (
+          reportWindow.location.href !== reportUrl ||
+          reportWindow.document.readyState !== 'complete'
+        ) {
+          readinessCheck = window.setTimeout(
+            checkReadiness,
+            ASSESSMENT_REPORT_PRINT_CHECK_INTERVAL_MS
+          )
+          return
+        }
+
+        reportWindow.focus()
+        reportWindow.print()
+        settled = true
+        cleanup()
+      } catch (error) {
+        failPrint(error)
+      }
+    }
+
+    reportWindow.addEventListener('load', checkReadiness)
+    try {
+      reportWindow.location.href = reportUrl
+      readinessCheck = window.setTimeout(
+        checkReadiness,
+        ASSESSMENT_REPORT_PRINT_CHECK_INTERVAL_MS
+      )
+      printTimeout = window.setTimeout(
+        () => failPrint(),
+        ASSESSMENT_REPORT_PRINT_TIMEOUT_MS
+      )
+    } catch (error) {
+      failPrint(error)
+    }
   }
 
   const results = data?.studentAssessmentResults
@@ -236,7 +370,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           verificationQrAlt: t('pwa.assessment.verificationQrAlt'),
         }
 
-        const artifact = await createAssessmentReportArtifact({
+        const artifact = createAssessmentReport({
           snapshot: report.snapshot,
           issuedAt: report.issuedAt,
           identitySourceLabel,
@@ -247,8 +381,9 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           uzhLogoDataUrl,
         })
         setReportArtifact(artifact)
-      } catch {
-        setExportError(t('pwa.assessment.exportReportDownloadError'))
+      } catch (error) {
+        console.error('Failed to generate assessment report', error)
+        setExportError(t('pwa.assessment.exportReportGenerationError'))
       }
     } finally {
       setIsExporting(false)
@@ -302,7 +437,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
                 </Button.Label>
               </Button>
               <Button
-                onClick={handleDownloadReport}
+                onClick={handlePrintReport}
                 fluid={false}
                 disabled={isExporting}
                 data={{ cy: 'download-assessment-report' }}

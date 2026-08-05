@@ -6,10 +6,12 @@ Supersedes slice 2 of [PLAN-assessment-report-polish.md](PLAN-assessment-report-
 (client-side rasterised PDF via `html2pdf.js`). Slices 1, 3, and 4 of that plan
 stand. Branch `fix/assessment-report-polish`, [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306), base `v3`.
 
-Not yet executed. The mandatory read-only planning review returned
+Implementation is complete in the working tree and the plan remains the
+execution contract. The mandatory read-only planning review returned
 `DONE_WITH_CONCERNS`; its findings are incorporated and closed below through
-main-session verification. The plan is now ready to commit as the execution
-contract, but no implementation has started.
+main-session verification. Repository-native checks are passing, while the
+linked browser route and Playwright browser binary remain environment blockers;
+the final independent outcome review and publication are still pending.
 
 ## Goal
 
@@ -333,8 +335,9 @@ silently treating Chromium evidence as mobile evidence.
 - The print dialog cannot be fully automated; one manual step stays in the
   verification loop permanently.
 - The [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306) commit history is left as-is unless a squash is requested.
-- Rebase onto the current `origin/v3` before implementing. Do not rely on the
-  cached ahead/behind count from the takeover snapshot.
+- The branch was rebased onto the current `origin/v3` before implementation.
+  The feature remote's ahead/behind count is stale and must not be used as
+  evidence of current divergence.
 
 ## Progress
 
@@ -360,3 +363,22 @@ silently treating Chromium evidence as mobile evidence.
   plan ambiguities. Main-session verification closed them without changing
   behavior: the artifact boundary is now explicitly `{ url, html }`, and the
   ten-bin cleanup order is explicit and idempotent.
+- **2026-08-05:** Implemented the browser-print flow, exact single HTML
+  artifact, A4 print stylesheet with the histogram table retained, bounded QR
+  rendering, and the ten-bin fixture plus cleanup. Removed `html2pdf.js` and
+  synchronized the lockfile. Updated the engineering wiki and export log.
+- **2026-08-05:** Container checks passed for the PWA and Playwright packages;
+  the direct container fixture exercise created and removed all 30 synthetic
+  participants and responses. The focused Playwright run is blocked because
+  the expected Chromium headless-shell binary is unavailable; attempted
+  downloads did not complete and the partial full-Chromium extraction fails
+  with an ICU data error.
+- **2026-08-05:** `pnpm run check:all` reached the changed packages but its
+  analytics lint task failed while `uv` tried to build `pandas==2.2.2`; the
+  container has no `cc`, `gcc`, or `clang`. The changed PWA and Playwright
+  checks, formatting, frontend lint, syncpack, Prisma-sync, and AGENTS checks
+  passed; no unrelated toolchain installation was made.
+- **2026-08-05:** The mandatory `agent-browser` attempt reached the linked PWA
+  but its course URL returned Next.js 404. `devrouter ensure . --json` then
+  failed on the workspace lifecycle lock, so before/after report screenshots
+  and the manual Chrome/iOS checks remain unverified.

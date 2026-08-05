@@ -13,13 +13,17 @@ tags:
 
 Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Next.js **pages router**. `apps/chat` is the app-router exception with its own conventions: [Chat Platform](./chat-platform.md).
 
-Assessment report exports intentionally keep two browser-side artifacts:
+Assessment report exports intentionally keep one browser-side artifact:
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
-creates the self-contained HTML used by **View report**, while
-`createAssessmentReportArtifact` also renders a single-page A4 PDF for the
-download action. Both artifacts use the same server-issued snapshot and
-embedded assets, so viewing remains convenient while downloads are ready to
-share or print.
+creates the self-contained HTML used by both report actions. **View report**
+opens the blob directly; **Save as PDF** opens the same blob in a guarded popup
+and invokes the browser print dialog only after the report has loaded. The
+document title includes the human report title and course name, so the browser
+can suggest a course-specific PDF filename. Print CSS sets A4 portrait pages,
+keeps the SVG chart and accessible histogram table, and compacts the QR and
+metadata blocks without changing the on-screen report. QR rendering and popup
+navigation have bounded failure paths so export cannot remain stuck on a
+spinner.
 
 ## Next.js tooling
 
