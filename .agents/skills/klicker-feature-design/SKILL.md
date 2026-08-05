@@ -9,7 +9,7 @@ Spec before code. A design that answers the questions below prevents the classic
 
 ## The plan file
 
-Non-trivial work gets a plan in `project/plans_wip/PLAN-<slug>.md` (existing files there are the template). Keep it short: Goal, Non-goals, the answers below, slice list, Progress log. Update Progress as you work; move to `project/plans/` (or per repo convention) when done.
+Non-trivial work gets a plan in `project/plans_wip/PLAN-<slug>.md` (existing files there are the template). Keep it short: Goal, Non-goals, the answers below, slice list, Progress log. Update Progress as you work; move completed plans to `project/plans_archive/`. Deferred or future plans live in `project/plans_future/`.
 
 ## Questions a design MUST answer
 

@@ -2,7 +2,7 @@
 type: Playbook
 title: Developing a Feature
 description: The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
-timestamp: '2026-07-07'
+timestamp: '2026-08-05'
 tags:
   - workflow
 ---
@@ -13,7 +13,7 @@ tags:
 
 ## The lifecycle
 
-1. **Design first.** Nail the domain vocabulary ([Domain Model](./domain-model.md)): which activity type, which user population, gamification impact, which auth layer guards it, what i18n strings and test level it needs.
+1. **Design first.** Nail the domain vocabulary ([Domain Model](./domain-model.md)): which activity type, which user population, gamification impact, which auth layer guards it, what i18n strings and test level it needs. Record non-trivial work in `project/plans_wip/PLAN-<slug>.md`; move completed plans to `project/plans_archive/`, while deferred or future plans live in `project/plans_future/`.
 2. **Schema/data change** (only if needed): edit the split Prisma schema, then migrate → sync → generate ([Data & Migrations](./data-and-migrations.md)). Update seeds if e2e needs the fixture — remember the three seed paths are independent.
 3. **Shared types**: extend `packages/types` when frontend and backend share a shape.
 4. **API**: Pothos object/field in `packages/graphql/src/schema/`, logic in `services/`, three-layer auth (`t.withAuth` + `withPermission`) ([GraphQL API Layer](./graphql-api-layer.md)).
