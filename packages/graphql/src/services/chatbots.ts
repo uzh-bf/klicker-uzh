@@ -82,7 +82,30 @@ export async function getParticipantCourseChatbots(
   }))
 }
 
-const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+  {
+    id: 'auto',
+    deploymentId: 'complexity-router',
+    name: 'Auto Mode',
+    description:
+      'Automatic model selection through the LiteLLM complexity router',
+    fallback: false,
+    supportsReasoning: false,
+    supportedReasoningEfforts: [],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-5.6-luna',
+    deploymentId: 'gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
   {
     id: 'gpt-5.5',
     deploymentId: 'gpt-5.5',

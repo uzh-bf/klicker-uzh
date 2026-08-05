@@ -31,7 +31,9 @@ export function RuntimeProvider({
     setMessages: setMessagesInternal,
     loadThreads,
     switchToThread,
+    resyncModeFromThread,
     resetSession,
+    rateMessage,
   } = useChatStore()
   const {
     selectedModel,
@@ -50,6 +52,7 @@ export function RuntimeProvider({
     : `/${chatbotId}`
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
+  const modeResyncedForThread = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
   const syncRetryCount = useRef(0)
   const loadGeneration = useRef(0)
@@ -77,7 +80,13 @@ export function RuntimeProvider({
     const previousContext = previousRuntimeContext.current
 
     if (embedded && !threadId) {
+      // No thread yet: skip thread loading, but chatbot-scoped settings
+      // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
+      void (async () => {
+        await loadModeOptions(chatbotId)
+        await loadCredits(chatbotId)
+      })()
       return
     }
 
@@ -125,6 +134,7 @@ export function RuntimeProvider({
         useChatStore.setState({ activeThreadId: null })
       }
       lastSyncedThreadId.current = null
+      modeResyncedForThread.current = null
       syncInFlight.current = null
       syncRetryCount.current = 0
       return
@@ -145,6 +155,18 @@ export function RuntimeProvider({
         existingThread.allMessages.length > 0 ||
         existingThread.messages.length > 0
       ) {
+        // A direct URL load (bookmark/reload) can restore a persisted
+        // `activeThreadId` that already matches the URL with messages
+        // already cached, so `switchToThread` below never runs for this
+        // thread and its mode-resync would otherwise be skipped entirely.
+        // Resync at most once per thread activation: this effect re-runs on
+        // every `threads` update (streaming, rating, rename), and repeating
+        // the resync then would snap back a mode the user picked manually
+        // while viewing the thread.
+        if (modeResyncedForThread.current !== threadId) {
+          modeResyncedForThread.current = threadId
+          resyncModeFromThread(threadId)
+        }
         lastSyncedThreadId.current = threadId
         return
       }
@@ -170,6 +192,8 @@ export function RuntimeProvider({
     void switchToThread(chatbotId, threadId).then((success) => {
       if (success) {
         lastSyncedThreadId.current = threadId
+        // switchToThread already resynced the mode for this activation.
+        modeResyncedForThread.current = threadId
         syncRetryCount.current = 0
       } else if (syncRetryCount.current < 2) {
         syncRetryCount.current++
@@ -184,6 +208,7 @@ export function RuntimeProvider({
     activeThreadId,
     chatbotId,
     missingThreadRedirectPath,
+    resyncModeFromThread,
     router,
     switchToThread,
     syncRetryTrigger,
@@ -213,6 +238,7 @@ export function RuntimeProvider({
         reasoningEffort,
         creditsUsed,
         imageAttachments,
+        rating,
         metadata,
         ...rest
       } = message
@@ -225,11 +251,28 @@ export function RuntimeProvider({
         imageAttachments: imageAttachments ?? [],
       }
 
+      // The feedback adapter's active state (`ActionBarPrimitive.FeedbackPositive`
+      // / `FeedbackNegative`) reads `metadata.submittedFeedback` on every
+      // render. The zustand store is the source of truth for the vote
+      // (persisted via the feedback route and loaded back from the API), so
+      // it has to be mapped in here rather than relying on the runtime's own
+      // optimistic patch: that patch lives in the runtime's internal message
+      // repository and would be clobbered the next time this converter runs
+      // from a fresh store snapshot (thread switch, reload, or the next
+      // store update), leaving a stale/missing vote after reload.
+      const submittedFeedback =
+        rating === 'UP'
+          ? ({ type: 'positive' } as const)
+          : rating === 'DOWN'
+            ? ({ type: 'negative' } as const)
+            : undefined
+
       return {
         ...rest,
         metadata: {
           ...metadata,
           custom,
+          submittedFeedback,
         },
       }
     },
@@ -259,12 +302,24 @@ export function RuntimeProvider({
         ?.supportsImageAttachments !== false && {
         attachments: imageAttachmentAdapter,
       }),
+      // Only the "submit a vote" path goes through this adapter — assistant-ui's
+      // FeedbackAdapter has no concept of retracting a vote, so clearing an
+      // existing one (clicking the active vote again) is handled directly in
+      // `MessageRatingButtons` via the same store action.
+      feedback: {
+        submit: ({ message, type }) => {
+          void rateMessage(
+            chatbotId,
+            message.id,
+            type === 'positive' ? 'UP' : 'DOWN'
+          )
+        },
+      },
     },
   })
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {/* <RAGToolUI /> */}
       {children}
     </AssistantRuntimeProvider>
   )

@@ -9,14 +9,15 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 ## Route the change
 
-| You changed…                                                    | Run                                                                                                                                                                                         |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure logic in grading/util/export/word-cloud, or chat app logic | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
-| `packages/graphql` services/schema                              | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
-| Auth adapter against shared Prisma client                       | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
-| UI or user flows                                                | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green                                                        |
-| React component appearance/behavior only                        | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
-| Office Add-in source, build, or manifest                        | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+| You changed…                                 | Run                                                                                                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic in grading/util/export/word-cloud | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
+| Chat app logic (`apps/chat`)                 | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
+| `packages/graphql` services/schema           | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| Auth adapter against shared Prisma client    | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
+| UI or user flows                             | e2e — new specs go to `klicker-playwright-e2e` (primary suite); use `klicker-cypress-e2e` only to keep the frozen legacy suite green                                                        |
+| React component appearance/behavior only     | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
+| Office Add-in source, build, or manifest     | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 
 Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
 
@@ -33,6 +34,15 @@ CI runs Cypress (8-way split) and Playwright (8-way shard) on almost every code 
 - You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
 - Tear down afterwards (`./_down.sh`); leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
+
+For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
+separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
+chat credits payload before browser interaction. The local Auto Mode maps to
+LiteLLM's `complexity-router` and routes through the GPT-5.6 Luna/Sol aliases —
+a local-only tier map that the deployments do not ship, so never report local
+routing as production behaviour ([docs/chat-platform.md](../../../docs/chat-platform.md)).
+Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
+report the live-answer gap explicitly.
 
 ## Pre-PR verification checklist
 

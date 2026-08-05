@@ -22,6 +22,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Testing](./testing.md) - Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
 - [CI & Deployment](./ci-and-deployment.md) - PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
 - [Developing a Feature](./developing-a-feature.md) - The full-stack feature lifecycle step by step, with a real commit as the worked example and routing to the page or skill for each step.
+- [Architecture Decisions](./adr/) - Numbered ADRs recording why a structural choice was made and what it rules out. Pages above cite them instead of restating the rationale; superseded records are marked, never rewritten.
 
 ## Decision records
 
@@ -44,4 +45,4 @@ Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki h
 
 ## Maintenance
 
-Any PR that changes documented behavior updates the affected pages in the same PR. Find affected pages by grepping this directory for the symbol that changed. Record changes in [log.md](./log.md).
+Any PR that changes documented behavior updates the affected pages in the same PR. Find affected pages by grepping this directory for the symbol that changed. Record changes as a new dated file in [log/](./log/) (`YYYY-MM-DD-<slug>.md` — one file per change batch; never append to an existing log file, so concurrent branches cannot conflict).

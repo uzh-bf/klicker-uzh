@@ -4,6 +4,10 @@ import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { createHash } from 'crypto'
+import {
+  MAX_TOOL_NAME_LENGTH,
+  TOOL_NAME_SUFFIX_LENGTH,
+} from '../lib/config/toolNames'
 import { mintParticipantMcpJwt } from '../lib/server/mcpAuthMint'
 
 // Type definitions for MCP server configuration
@@ -28,9 +32,6 @@ export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
 }
-
-const MAX_TOOL_NAME_LENGTH = 64
-const TOOL_NAME_SUFFIX_LENGTH = 8
 
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 describe('chat model registry defaults', () => {
-  test('uses GPT-5.5 as the default primary model', async () => {
+  test('uses Auto Mode as the default primary model', async () => {
     vi.resetModules()
     vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', undefined)
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', undefined)
@@ -23,6 +23,8 @@ describe('chat model registry defaults', () => {
       expect.arrayContaining(['none', 'low', 'medium', 'high', 'xhigh'])
     )
     expect(gpt51?.supportedReasoningEfforts).not.toContain('xhigh')
-    expect(getAutomaticModelId({ current: 100 })).toBe('gpt-5.5')
+    // 'auto' maps to the LiteLLM complexity router deployment, which is the
+    // registry's first non-fallback entry and therefore the default primary.
+    expect(getAutomaticModelId({ current: 100 })).toBe('auto')
   })
 })

@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-23'
+timestamp: '2026-08-03'
 tags:
   - environment
   - onboarding
@@ -54,6 +54,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         devrouter ensure .
         ```
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
+     3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
 `post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
@@ -123,4 +124,4 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 - **Never start dev servers unprompted** ([AGENTS.md](../AGENTS.md) rule). Skills that need a running app say so explicitly and own the cleanup (`./_down.sh`).
 - **Browser verification**: always `npx agent-browser`, never bare `agent-browser` — a global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **Turbo persistent dev tasks must set `"cache": false`** in [turbo.json](../turbo.json); otherwise Turbo can replay stale `EADDRINUSE` logs from a previous failed `dev:test` run while nothing is actually listening.
-- **New Infisical-managed env vars must also be listed in `turbo.json` `globalEnv`**, or task runs and cache invalidation won't see them.
+- **Any non-`NEXT_PUBLIC_` env var an app must see when started through a turbo task (`dev`, `build`, `test`) has to be listed in `turbo.json` `globalEnv`**, or task runs and cache invalidation won't see it. This is not limited to Infisical-managed secrets: Turborepo runs in strict env mode here (no `envMode` or `globalPassThroughEnv` key), so an unlisted var is stripped from the task environment even when the container shell exports it — including vars set in `.devcontainer/devcontainer.env`. Symptom: `process.env.YOUR_VAR` is `undefined` inside the app while `echo $YOUR_VAR` in the same container prints a value. Two things legitimately bypass this rule: `NEXT_PUBLIC_*` vars are picked up by turbo's Next.js framework inference, and Next loads `.env`/`.env.local` itself. The production image is **not** a bypass — only its runtime entrypoint (`node apps/chat/server.js`) is turbo-free, while its build stage runs `pnpm run build` → `turbo run build`, so anything inlined at build time (`next.config.ts` reads, values baked into the standalone bundle) still needs a `globalEnv` entry even when the Dockerfile declares a matching `ARG`. Confirm a var is listed with `pnpm exec turbo run dev --filter=<pkg> --dry=json | jq '.globalCacheInputs.environmentVariables.specified.env'`. In the per-task `environmentVariables` block, `specified.env` and `configured` are empty because this repo declares no per-task `env`; framework-inferred `NEXT_PUBLIC_*` vars show up under `inferred`.

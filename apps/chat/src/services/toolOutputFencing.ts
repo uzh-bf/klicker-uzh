@@ -1,4 +1,4 @@
-import type { ToolCallOptions, ToolSet } from 'ai'
+import type { ToolExecutionOptions, ToolSet } from 'ai'
 import { randomUUID } from 'crypto'
 import { closeFenceMarker, openFenceMarker } from './toolFenceSyntax'
 
@@ -183,14 +183,17 @@ export function fenceToolSetResults(
   return Object.fromEntries(
     Object.entries(tools).map(([name, toolDefinition]) => {
       const originalExecute = toolDefinition.execute as
-        | ((input: unknown, options: ToolCallOptions) => unknown)
+        | ((input: unknown, options: ToolExecutionOptions<unknown>) => unknown)
         | undefined
 
       if (typeof originalExecute !== 'function') {
         return [name, toolDefinition]
       }
 
-      const fencedExecute = async (input: unknown, options: ToolCallOptions) =>
+      const fencedExecute = async (
+        input: unknown,
+        options: ToolExecutionOptions<unknown>
+      ) =>
         fenceToolResultPayload(await originalExecute(input, options), sentinel)
 
       return [name, { ...toolDefinition, execute: fencedExecute }]

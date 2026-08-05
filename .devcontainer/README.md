@@ -122,19 +122,7 @@ the hardcoded defaults only know `klicker.com`.
 
 ## Hatchet token
 
-`backend` needs a `HATCHET_CLIENT_TOKEN`, minted per Hatchet instance. The
-`hatchet_token` sidecar mints one to a shared volume; `post-create` writes it to
-`.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The
-backend **requires** it to boot — its `HatchetClient.init` runs at module load
-(not lazy), so without the token the API crashes at startup and never serves.
-
-The sidecar runs `hatchet-admin token create`, which writes to Hatchet's DB. It
-must hit the **same** DB the server uses: hatchet-lite's generated `/config`
-points the admin tool at its internal bundled Postgres (`127.0.0.1:5431`, only
-reachable inside the hatchet container), so the sidecar is given `DATABASE_URL`
-for the shared `postgres` service to override it. It mints within seconds of the
-hatchet DB migrations finishing. If the API is down, check
-`docker logs <project>-hatchet_token-1` and `.devcontainer/.hatchet.env`.
+`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine automatically mints its worker API token on boot to `/config/authdisabled-token` (shared volume); `post-create` writes it to `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The backend **requires** it to boot — its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 
@@ -144,9 +132,8 @@ hatchet DB migrations finishing. If the API is down, check
 | `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)                |
 | `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                         |
 | `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                         |
-| `hatchet`                           | `hatchet-lite:v0.73.1`                     | workflow engine (gRPC :7077)                                          |
-| `hatchet_token`                     | `hatchet-lite:v0.73.1`                     | one-shot: mint the client token                                       |
-| `litellm`                           | `ghcr.io/berriai/litellm`                  | LLM proxy for chat (port 4000 intra-net)                              |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                              |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.88.1` | LLM proxy + complexity router for chat (port 4000 intra-net)          |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then

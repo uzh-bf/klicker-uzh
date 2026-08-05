@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { imageAttachmentAdapter } from '../src/lib/attachments/imageAttachmentAdapter'
+import {
+  ATTACHMENT_ERROR_CODE,
+  AttachmentAdapterError,
+  imageAttachmentAdapter,
+} from '../src/lib/attachments/imageAttachmentAdapter'
 
 class MockFileReader {
   result: string | ArrayBuffer | null = null
@@ -12,7 +16,25 @@ class MockFileReader {
   }
 }
 
+// Simulates a FileReader that fails to read the file (e.g. a corrupt or
+// unreadable blob). The real FileReader invokes `onerror` with a
+// ProgressEvent; the fake event object here stands in for it since the
+// adapter must produce the same typed error regardless of the event shape.
+class FailingMockFileReader {
+  result: string | ArrayBuffer | null = null
+  onload: null | (() => void) = null
+  onerror: null | ((event: unknown) => void) = null
+
+  readAsDataURL() {
+    this.onerror?.({ type: 'error' })
+  }
+}
+
 describe('imageAttachmentAdapter', () => {
+  // The suite shares one fork, and the config-level `unstubGlobals` only runs
+  // before each test — after the NEXT file has already been imported. A leaked
+  // `window`/`URL` stub at that import breaks module-level feature detection
+  // (e.g. zustand persist), so this file must restore globals itself.
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -70,5 +92,26 @@ describe('imageAttachmentAdapter', () => {
         },
       ],
     })
+  })
+
+  test('add rejects with a typed, stable-code error instead of the raw FileReader event', async () => {
+    vi.stubGlobal('FileReader', FailingMockFileReader as any)
+    const file = new File(['hello'], 'image.png', { type: 'image/png' })
+
+    let caught: unknown
+    try {
+      await imageAttachmentAdapter.add({ file } as any)
+    } catch (e) {
+      caught = e
+    }
+
+    expect(caught).toBeInstanceOf(AttachmentAdapterError)
+    expect((caught as AttachmentAdapterError).code).toBe(
+      ATTACHMENT_ERROR_CODE.readFailed
+    )
+    // guards against the regression this fixes: stringifying the rejection
+    // must never leak the raw FileReader event as "[object ProgressEvent]"
+    // (or any other bare "[object ...]" stand-in)
+    expect(String(caught)).not.toContain('[object')
   })
 })

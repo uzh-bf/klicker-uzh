@@ -117,6 +117,8 @@ export async function middleware(request: NextRequest) {
     pathname === '/noLogin' ||
     pathname === '/manage' ||
     pathname.startsWith('/manage/') ||
+    pathname === '/KlickerLogo.png' ||
+    pathname === '/user-solid.svg' ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||

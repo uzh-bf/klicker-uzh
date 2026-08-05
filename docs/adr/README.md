@@ -12,3 +12,4 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 ## Index
 
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
+- [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation

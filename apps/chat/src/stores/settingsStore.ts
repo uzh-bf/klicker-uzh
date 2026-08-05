@@ -14,6 +14,8 @@ export interface ModeOption {
 export type AuthMode = 'account' | 'anonymous'
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
+let creditsRequestGeneration = 0
+let creditsLoadedChatbotId: string | null = null
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -47,16 +49,6 @@ const resolveReasoningEffortForModel = (
   return allowedReasoningEfforts[0]
 }
 
-const getCreditsFallbackState = (state: SettingsState) => ({
-  credits: { current: 0, total: 0 },
-  modelOptions: [],
-  selectedReasoningEffort: resolveReasoningEffortForModel(
-    state.selectedReasoningEffort,
-    undefined
-  ),
-  authMode: 'account' as AuthMode,
-})
-
 interface SettingsState {
   // Current selections
   selectedModel: ModelID
@@ -65,7 +57,13 @@ interface SettingsState {
   credits: {
     current: number
     total: number
+    // ISO timestamp of the next refill; null when the chatbot never refills.
+    nextResetAt: string | null
   }
+  // False until a credits fetch has succeeded. The placeholder credits below
+  // would otherwise read as "0 left, never refills", which is a claim we
+  // cannot make before the server has answered.
+  creditsLoaded: boolean
   modelSelectionEnabled: boolean
   authMode: AuthMode
 
@@ -93,7 +91,9 @@ export const useSettingsStore = create<SettingsState>()(
       credits: {
         current: 0.0,
         total: 0.0,
+        nextResetAt: null,
       },
+      creditsLoaded: false,
       modelSelectionEnabled: false,
       authMode: 'account' as AuthMode,
       modeOptions: {},
@@ -203,13 +203,28 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       loadCredits: async (chatbotId: string) => {
+        // `creditsLoaded` is sticky once a load has succeeded FOR THIS
+        // chatbot: a refresh (or a failed one) keeps the last known balance
+        // visible instead of hiding the footer for the rest of the session.
+        // A different chatbot id must not inherit the stickiness, or a failed
+        // cross-chatbot load would pin the previous chatbot's balance.
+        const requestGeneration = ++creditsRequestGeneration
+        if (
+          creditsLoadedChatbotId !== null &&
+          creditsLoadedChatbotId !== chatbotId
+        ) {
+          creditsLoadedChatbotId = null
+          set({ creditsLoaded: false })
+        }
+
         try {
           const response = await authedFetch(
             `/api/chatbots/${chatbotId}/credits`
           )
+          if (requestGeneration !== creditsRequestGeneration) return
+
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
-            set(getCreditsFallbackState)
             return
           }
 
@@ -218,6 +233,7 @@ export const useSettingsStore = create<SettingsState>()(
           const creditsData = {
             current: data.current ?? 0,
             total: data.total ?? 0,
+            nextResetAt: data.nextResetAt ?? null,
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
@@ -225,6 +241,9 @@ export const useSettingsStore = create<SettingsState>()(
             data.authMode === 'anonymous' ? 'anonymous' : 'account'
 
           set((state) => {
+            if (requestGeneration !== creditsRequestGeneration) return state
+            creditsLoadedChatbotId = chatbotId
+
             let selectedModel = state.selectedModel
 
             if (!state.modelSelectionEnabled) {
@@ -249,6 +268,7 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               credits: creditsData,
+              creditsLoaded: true,
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,
@@ -257,7 +277,6 @@ export const useSettingsStore = create<SettingsState>()(
           })
         } catch (error) {
           console.error('Error loading credits:', error)
-          set(getCreditsFallbackState)
         }
       },
 

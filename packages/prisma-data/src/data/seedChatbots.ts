@@ -7,6 +7,8 @@ export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 export const CHATBOT_AVATAR_HASH = '217ed4744160a52219711edc6636550d49b6d672'
 
 const SEEDED_CHATBOT_MODEL_IDS = [
+  'auto',
+  'gpt-5.6-luna',
   'gpt-5.5',
   'gpt-5.4',
   'gpt-5.1',

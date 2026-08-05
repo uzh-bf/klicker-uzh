@@ -1,13 +1,14 @@
 'use client'
 
-import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
 } from '@uzh-bf/design-system'
-import { Loader2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -24,7 +25,8 @@ import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
-import { EmbeddedSettings } from './embedded-settings'
+import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -50,6 +52,7 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
+  const t = useTranslations()
   // Stuff CHIPS fallback tokens into sessionStorage and strip them from the URL.
   useChatGuestTokenBootstrap()
   usePwaEmbedTokenBootstrap()
@@ -60,6 +63,7 @@ export const Assistant = ({
     useState<DisclaimerStatus | null>(null)
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [disclaimerActionError, setDisclaimerActionError] = useState(false)
 
   // Fetch disclaimer information on component mount
   useEffect(() => {
@@ -106,6 +110,8 @@ export const Assistant = ({
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
 
+    setDisclaimerActionError(false)
+
     try {
       const response = await authedFetch(
         `/api/chatbots/${chatbot.id}/disclaimer`,
@@ -133,13 +139,17 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to accept disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error accepting disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
   const handleDeclineDisclaimer = async () => {
+    setDisclaimerActionError(false)
+
     try {
       const response = await authedFetch(
         `/api/chatbots/${chatbot.id}/disclaimer`,
@@ -165,9 +175,11 @@ export const Assistant = ({
         setShowDisclaimerModal(false)
       } else {
         console.error('Failed to decline disclaimer')
+        setDisclaimerActionError(true)
       }
     } catch (error) {
       console.error('Error declining disclaimer:', error)
+      setDisclaimerActionError(true)
     }
   }
 
@@ -196,7 +208,7 @@ export const Assistant = ({
               embedded ? 'text-lg' : 'text-2xl'
             )}
           >
-            Course Access Required
+            {t('chat.assistant.participationRequiredTitle')}
           </h1>
           <p
             className={twMerge(
@@ -205,15 +217,15 @@ export const Assistant = ({
             )}
           >
             {participationMessage ??
-              'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'}
+              t('chat.assistant.participationRequiredDefaultMessage')}
           </p>
           {!embedded && (
             <Link
               href={pwaBaseUrl}
-              className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               prefetch={false}
             >
-              Open KlickerUZH
+              {t('chat.assistant.openKlickerUzh')}
             </Link>
           )}
         </div>
@@ -232,7 +244,7 @@ export const Assistant = ({
         )}
       >
         <div className={embedded ? 'text-sm' : 'text-lg'}>
-          Loading chatbot...
+          {t('chat.assistant.loading')}
         </div>
       </div>
     )
@@ -251,29 +263,34 @@ export const Assistant = ({
         >
           <div
             className={twMerge(
-              'rounded-lg bg-red-50 text-center',
+              'bg-destructive/10 rounded-lg text-center',
               embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
             )}
           >
             <h2
               className={twMerge(
-                'font-semibold text-red-800',
+                'text-foreground font-semibold',
                 embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
               )}
             >
-              Chatbot unavailable
+              {t('chat.assistant.disclaimerDeclinedTitle')}
             </h2>
-            <p className={twMerge('text-red-700', embedded && 'text-sm')}>
-              You declined the chatbot disclaimer. Accept the terms to continue
-              using the chatbot.
+            <p className={twMerge('text-foreground', embedded && 'text-sm')}>
+              {t('chat.assistant.disclaimerDeclinedMessage')}
             </p>
             {!embedded && (
+              // text-white, not text-destructive-foreground: this app's
+              // theme only defines --color-destructive (see globals.css),
+              // no matching foreground token. White sits ~4.8:1 on the solid
+              // destructive bg, near the 4.5:1 AA floor — so the hover must
+              // darken (brightness-90), not alpha-lighten like the app's
+              // hover:bg-primary/90 pattern, which would drop below AA here.
               <button
                 data-cy="chat-show-disclaimer-again"
                 onClick={() => setShowDisclaimerModal(true)}
-                className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                className="bg-destructive mt-4 rounded px-4 py-2 text-white transition-[filter] hover:brightness-90"
               >
-                Show disclaimer again
+                {t('chat.assistant.showDisclaimerAgain')}
               </button>
             )}
           </div>
@@ -285,6 +302,9 @@ export const Assistant = ({
             isOpen={showDisclaimerModal}
             onAccept={handleAcceptDisclaimer}
             onDecline={handleDeclineDisclaimer}
+            errorMessage={
+              disclaimerActionError ? t('chat.disclaimer.actionError') : null
+            }
             stacked={embedded}
           />
         )}
@@ -307,6 +327,9 @@ export const Assistant = ({
           isOpen={showDisclaimerModal}
           onAccept={handleAcceptDisclaimer}
           onDecline={handleDeclineDisclaimer}
+          errorMessage={
+            disclaimerActionError ? t('chat.disclaimer.actionError') : null
+          }
           stacked={embedded}
         />
       )}
@@ -314,13 +337,40 @@ export const Assistant = ({
   )
 }
 
+/**
+ * M4: stand-in for the thread pane while the initial disclaimer/thread fetch
+ * is in flight. Shaped like a couple of message bubbles rather than a bare
+ * spinner so the layout the real thread will occupy is already legible.
+ */
+function ThreadSkeleton() {
+  const t = useTranslations()
+  return (
+    <div data-cy="chat-thread-skeleton" role="status" className="p-4">
+      <span className="sr-only">{t('chat.thread.loading')}</span>
+      <div
+        aria-hidden="true"
+        className="animate-pulse space-y-4 motion-reduce:animate-none"
+      >
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/3 rounded-lg" />
+        </div>
+        <div className="flex justify-start">
+          <div className="bg-muted h-20 w-2/3 rounded-lg" />
+        </div>
+        <div className="flex justify-end">
+          <div className="bg-muted h-8 w-1/4 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SidebarMain({
   chatbot,
-  showFooter,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  showFooter: boolean
 }) {
+  const t = useTranslations()
   const { open } = useSidebar()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
@@ -338,33 +388,56 @@ function SidebarMain({
 
   return (
     <SidebarInset>
-      <div
-        className={twMerge(
-          'flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5',
-          open && 'md:hidden'
-        )}
-      >
-        <SidebarTrigger className="size-5" />
-        <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
+      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Only visible when the sidebar is closed — once it's open, the
+              sidebar's own trigger closes it, so this stays the single
+              toggle on screen at any given time (Overrides the design
+              system's hardcoded English sr-only label). */}
+          <SidebarTrigger
+            className={twMerge('size-6', open && 'md:hidden')}
+            aria-label={t('chat.sidebar.openSidebar')}
+          />
+          {/* Persistent header identity (V3): name (+ avatar) stays visible
+              here regardless of sidebar open/closed state, so the sidebar's
+              own header no longer repeats it (see app-sidebar.tsx). */}
+          {chatbot.avatar && (
+            <Image
+              src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
+              alt=""
+              width={24}
+              height={24}
+              unoptimized
+              className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
+            />
+          )}
+          <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
+        </div>
+        <div className="flex min-w-0 flex-1 justify-center">
+          <ModeSwitcher />
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               onClick={handleNewThread}
               disabled={participationRequired}
-              className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+              className={twMerge(
+                'text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
+                open && 'md:hidden'
+              )}
             >
               <Plus className="size-4" />
-              <span className="sr-only">New Chat</span>
+              <span className="sr-only">{t('chat.sidebar.newChat')}</span>
             </button>
           </TooltipTrigger>
-          <TooltipContent>New Chat</TooltipContent>
+          <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           )}
           <Thread
@@ -372,7 +445,6 @@ function SidebarMain({
             chatbotName={chatbot.name}
           />
         </div>
-        {showFooter && <Footer />}
       </div>
     </SidebarInset>
   )
@@ -383,7 +455,8 @@ function AssistantLayout({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) {
-  const { showSidebar, showFooter } = useChatUi()
+  const { showSidebar } = useChatUi()
+  const { isLoading } = useChatStore()
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
@@ -392,25 +465,35 @@ function AssistantLayout({
   if (showSidebar) {
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
-        <AppSidebar chatbotName={chatbot.name} />
-        <SidebarMain chatbot={chatbot} showFooter={showFooter} />
+        <AppSidebar />
+        <SidebarMain chatbot={chatbot} />
       </SidebarProvider>
     )
   }
 
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-      <div className="absolute right-3 top-3 z-10">
+    <div className="flex h-dvh w-full flex-col overflow-hidden">
+      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
+        <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
+          {chatbot.name}
+        </h1>
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Thread
-          chatbotAvatar={chatbot.avatar ?? ''}
-          chatbotName={chatbot.name}
-          contextLabel={contextLabel}
-          contextualSuggestions={hasQuestionContext}
-        />
-        {showFooter && <Footer />}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {isLoading && (
+            <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
+              <ThreadSkeleton />
+            </div>
+          )}
+          <Thread
+            chatbotAvatar={chatbot.avatar ?? ''}
+            chatbotName={chatbot.name}
+            contextLabel={contextLabel}
+            contextualSuggestions={hasQuestionContext}
+          />
+        </div>
+        <EmbeddedCreditsBar />
       </div>
     </div>
   )

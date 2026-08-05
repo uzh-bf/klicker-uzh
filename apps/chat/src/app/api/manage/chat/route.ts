@@ -18,7 +18,7 @@ import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 import { createFenceSentinel } from '@/src/services/toolOutputFencing'
 import { createOpenAI } from '@ai-sdk/openai'
-import { convertToModelMessages, stepCountIs, streamText } from 'ai'
+import { convertToModelMessages, isStepCount, streamText } from 'ai'
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
         providerOptions: {
           openai: getManageAssistantOpenAIProviderOptions(),
         },
-        stopWhen: stepCountIs(5),
+        stopWhen: isStepCount(5),
         system: buildManageAssistantSystemPrompt(
           context,
           toolCount > 0,
