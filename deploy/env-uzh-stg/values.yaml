@@ -301,10 +301,10 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 250Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 768Mi
 
 frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
