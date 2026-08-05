@@ -11,7 +11,8 @@ execution contract. The mandatory read-only planning review returned
 `DONE_WITH_CONCERNS`; its findings are incorporated and closed below through
 main-session verification. Repository-native checks are passing, while the
 linked browser route and Playwright browser binary remain environment blockers;
-the final independent outcome review and publication are still pending.
+the final independent outcome review is complete and publication is still
+pending.
 
 ## Goal
 
@@ -382,3 +383,7 @@ silently treating Chromium evidence as mobile evidence.
   but its course URL returned Next.js 404. `devrouter ensure . --json` then
   failed on the workspace lifecycle lock, so before/after report screenshots
   and the manual Chrome/iOS checks remain unverified.
+- **2026-08-05:** The cost-constrained final read-only outcome review of
+  commit `6cdfe30c6` returned `ready` with no findings. It confirmed the four
+  user rulings and left only the browser, Playwright, Chrome, and iOS evidence
+  gaps already recorded above.
