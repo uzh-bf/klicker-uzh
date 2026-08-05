@@ -387,3 +387,16 @@ silently treating Chromium evidence as mobile evidence.
   commit `6cdfe30c6` returned `ready` with no findings. It confirmed the four
   user rulings and left only the browser, Playwright, Chrome, and iOS evidence
   gaps already recorded above.
+- **2026-08-06:** Playwright evidence completed on the linked worktree stack:
+  restored the container's Chromium headless shell and ffmpeg binaries, routed
+  Chromium's resolver to the devnet Traefik IP with a temporary local-only
+  launch flag (Docker's internal DNS answers `*.klicker.<workspace>.localhost`
+  with `127.0.0.1`), and touched the manage results route to recover from a
+  stale Next.js 404. The full `Z-credential-verification.spec.ts` now passes
+  9/9, including the one-page A4 PDF assertions, retained histogram table
+  (3 and 10 bins), course-qualified document title, bounded QR error, and
+  `window.print` call-count contract. The temporary resolver flag was reverted
+  before commit. Agent-browser screenshots of the report tab, export actions,
+  and rendered report are now stored under `assets/assessment-report-polish/`.
+  Remaining explicit gaps: manual Chrome save-as-PDF filename contract and iOS
+  Safari print behavior (no device available).
