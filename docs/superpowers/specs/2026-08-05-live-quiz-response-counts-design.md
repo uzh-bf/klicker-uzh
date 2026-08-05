@@ -3,16 +3,18 @@
 ## Goal
 
 Show lecturers how many answer submissions the response API has received and
-how many have been incorporated into live results for every started LiveQuiz
-`ElementBlock` in the cockpit.
+how many have been incorporated into live results for every `ElementInstance`
+in a started LiveQuiz block in the cockpit.
 
-The counts are submission totals across all answerable `ElementInstance`s in a
-block. For example, ten participants answering three questions produce thirty
-received and, after successful aggregation, thirty processed responses.
+The counts are reported separately for every element. For example, when ten
+participants answer each of three questions, every question displays ten
+received and, after successful aggregation, ten processed responses. The
+cockpit does not sum these into a block total.
 
 ## Non-goals
 
 - Replacing the existing block participant count.
+- Aggregating element response counts into a block total.
 - Adding participant-level processing details or a response failure list.
 - Persisting operational response counts in PostgreSQL.
 - Changing response validation, deduplication, scoring, XP, or leaderboards.
@@ -21,7 +23,7 @@ received and, after successful aggregation, thirty processed responses.
 ## Semantics
 
 `numOfResponsesReceived` is the number of response events accepted by the
-response API for the block's instances. The response API records a received
+response API for one element instance. The response API records a received
 marker before handing the event to Hatchet. This makes enqueue failures visible
 as received-but-not-processed work.
 
@@ -59,16 +61,16 @@ the failure observable as an unprocessed response.
 
 ### Cockpit query
 
-Extend GraphQL `ElementBlock` with nullable integer fields:
+Extend GraphQL `ElementInstance` with nullable integer fields:
 
 - `numOfResponsesReceived`
 - `numOfResponsesProcessed`
 
 `getCockpitQuiz` reads the two set cardinalities for every instance in started
-blocks and sums them per block. Scheduled blocks return `null` for both fields,
-so the UI can distinguish “not started” from a started block with zero answers.
-Active and executed blocks return explicit integer values, defaulting missing
-Redis keys to zero.
+blocks and attaches them to that instance. Instances in scheduled blocks return
+`null` for both fields, so the UI can distinguish “not started” from a started
+element with zero answers. Instances in active and executed blocks return
+explicit integer values, defaulting missing Redis keys to zero.
 
 The existing `numOfParticipants` calculation and field remain unchanged because
 they answer a different question: how many participants have processed answers
@@ -80,22 +82,23 @@ subscription is added.
 ### Lecturer UI
 
 The live quiz cockpit block card keeps its block label, status, participant
-count, questions, and countdown. For active and executed blocks it adds a compact
-response status line with localized labels:
+count, questions, and countdown. For every element in an active or executed
+block, the element row adds a compact response status with localized labels:
 
-> Received 12 · Processed 10
+> Question name — Received 12 · Processed 10
 
-Scheduled blocks do not display the response status line. The status line gets
-a stable `data-cy` selector for end-to-end coverage. English and German messages
-are added through the existing `next-intl` catalogs.
+Elements in scheduled blocks do not display response status. Each status gets a
+stable `data-cy` selector containing the element-instance ID for end-to-end
+coverage. English and German messages are added through the existing `next-intl`
+catalogs.
 
 ## Layer Footprint
 
 - `apps/response-api`: record received response identifiers.
 - `apps/hatchet-worker-response-processor`: record identifiers after successful
   regular or assessment aggregation.
-- `packages/graphql`: expose block fields, aggregate Redis cardinalities, update
-  the cockpit operation, and regenerate checked-in GraphQL artifacts.
+- `packages/graphql`: expose element-instance fields, attach Redis cardinalities,
+  update the cockpit operation, and regenerate checked-in GraphQL artifacts.
 - `apps/frontend-manage`: render the response status on cockpit block cards.
 - `packages/i18n`: add English and German labels.
 - `playwright`: extend the existing live quiz lifecycle coverage.
@@ -115,7 +118,8 @@ not change leaderboard data.
 
 ## Error Handling
 
-- Missing tracking keys on a started block are interpreted as zero.
+- Missing tracking keys for an element in a started block are interpreted as
+  zero.
 - A received-marker Redis failure rejects ingress before enqueueing, preventing
   an accepted response from becoming invisible to the metric.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
@@ -128,14 +132,16 @@ not change leaderboard data.
 
 ## Verification
 
-1. Add focused tests for the block aggregation behavior: scheduled fields are
-   `null`, started empty blocks report zero, and multi-instance counts are summed.
+1. Add focused tests for the element-level query behavior: scheduled element
+   fields are `null`, started elements with no submissions report zero, and each
+   instance receives only its own counts.
 2. Verify regular and assessment processors add processed markers only after
    their final result aggregation succeeds.
 3. Regenerate GraphQL operations and verify the generated schema, operation
    types, and persisted-operation manifests are committed.
 4. Extend the existing Playwright live quiz workflow to assert that the lecturer
-   cockpit shows the received and processed totals after student submissions.
+   cockpit shows separate received and processed counts for each element after
+   student submissions.
 5. Run targeted package checks, repository formatting/type/lint checks, and the
    production build.
 6. Run the real local stack, validate the cockpit in a browser in English and
