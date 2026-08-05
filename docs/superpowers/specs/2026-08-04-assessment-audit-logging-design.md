@@ -2,6 +2,7 @@
 
 - **Status:** Approved design, awaiting written-spec review
 - **Date:** 2026-08-04
+- **Last updated:** 2026-08-05
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946), [ClickUp task 86caazaea](https://app.clickup.com/t/86caazaea)
 
@@ -9,7 +10,7 @@
 
 KlickerUZH needs a provider-neutral audit mechanism for assessment LiveQuizzes. It must preserve evidence of assessment configuration, lecturer actions, participant interactions, authoritative submission processing, corrections, and privileged evidence access. The evidence is intended to reconstruct disputes such as “I submitted answer X” or “I did not delete that question.”
 
-The production evidence store is Azure Table Storage. Runtime delivery is create-only, records are retained for one year, and only Klicker users with the `ADMIN` role may retrieve or export them. A canonical JSON bundle is the authoritative export; CSV is a human-readable projection.
+The production evidence store is Azure Table Storage. Runtime delivery is create-only and records are retained for one year. Exactly two human principals—the user and their supervisor, who own the Azure Resource Group—receive Azure data-plane read access. No Klicker account, role, permission, API, or UI grants evidence access. A canonical JSON bundle is the authoritative export; CSV is a human-readable projection.
 
 The selected architecture is a transactional PostgreSQL outbox followed by asynchronous delivery through a provider-neutral evidence-store interface. Critical lecturer mutations and authoritative response state changes commit their business data and outbox event atomically. Azure availability is therefore removed from the request path without allowing committed business changes to escape auditing.
 
@@ -23,7 +24,7 @@ Azure Table Storage cannot independently prove that a privileged subscription ad
 - Make critical lecturer mutations and authoritative database changes inseparable from durable audit capture.
 - Keep Azure outages outside the interactive assessment path while retrying delivery durably.
 - Prevent normal application identities from updating, deleting, or querying audit evidence.
-- Provide `ADMIN` users with verified CSV and canonical JSON evidence exports.
+- Provide the two authorized Azure evidence owners with verified CSV and canonical JSON evidence exports through an operator tool authenticated by Azure Entra ID.
 - Retain evidence and integrity manifests for one year.
 - Keep domain producers independent of Azure SDK types, table keys, credentials, and error codes.
 - Roll out progressively, with explicit coverage start times and no claims about historical actions that were never captured.
@@ -33,7 +34,7 @@ Azure Table Storage cannot independently prove that a privileged subscription ad
 - General-purpose observability or application logging.
 - Mouse movements, keystrokes, focus changes, route changes, performance telemetry, or unchanged autosaves.
 - A lecturer- or participant-visible audit history.
-- Automatic adjudication of complaints. The feature exports facts and provenance; administrators interpret them.
+- Automatic adjudication of complaints. The feature exports facts and provenance; the two Azure evidence owners interpret them.
 - Auditing non-assessment activities before they enter assessment scope.
 - Proving actions that occurred solely in a browser but were never transmitted. Such gaps must be reported honestly.
 - Reusing the existing sharing-domain `AuditLogEntry` as the assessment evidence store.
@@ -112,11 +113,12 @@ PR #4872 and its child PR #4946 are design and implementation references, not st
    - Creates immutable daily hash manifests in Azure Blob Storage.
    - Creates chained immutable addenda for events delivered after the daily manifest is sealed.
 
-8. **Admin evidence service and UI**
+8. **Evidence verification and export tool**
 
-   - Authorizes only `asUser` callers with `UserRole.ADMIN`.
-   - Runs asynchronous searches, integrity verification, exports, and short-lived downloads.
-   - Records export requests, generation, download, failure, and privileged storage access as audit events.
+   - Runs locally for an operator authenticated through Azure Entra ID.
+   - Relies exclusively on Azure data-plane authorization; it has no Klicker login, API endpoint, or hosted UI.
+   - Queries evidence, verifies manifests, and writes CSV plus canonical JSON bundles to an operator-selected local path.
+   - Records reads and exports through Azure Storage data-plane diagnostic logs and includes the authenticated Azure principal in the export receipt.
 
 9. **Retention worker**
    - Uses a separate delete-capable identity.
@@ -139,9 +141,9 @@ PostgreSQL outbox ──→ dispatcher ──→ provider-neutral append interfa
                                       ├─→ Azure Table Storage (create-only evidence)
                                       └─→ immutable Azure Blob hash manifests
 
-ADMIN export request ──→ read-only provider ──→ verify manifests
-                                              ├─→ CSV report
-                                              └─→ canonical JSON evidence bundle
+Azure evidence owner ── Entra-authenticated operator tool ──→ verify manifests
+                                                           ├─→ local CSV report
+                                                           └─→ local canonical JSON evidence bundle
 ```
 
 The “audit service” is a logical service boundary implemented initially as focused packages and a worker. It is not a new publicly reachable microservice. Participant ingestion uses existing authenticated server boundaries; only server-side code can append to the outbox.
@@ -160,7 +162,7 @@ Every record has the following common envelope:
 | `clientOccurredAt` | Optional untrusted browser timestamp retained as context.                                                |
 | `actor`            | Server-derived `User`, `Participant`, service, or system reference.                                      |
 | `scope`            | Course, LiveQuiz, block, ElementInstance, source Element, and Participation references where applicable. |
-| `correlationId`    | Connects one user intent across API, worker, persistence, and export events.                             |
+| `correlationId`    | Connects one user intent across API, worker, and persistence events.                                     |
 | `causationId`      | Optional preceding event that caused this record.                                                        |
 | `clientSequence`   | Optional monotonic sequence for client-observed state changes.                                           |
 | `producer`         | Trusted server component and deployment version.                                                         |
@@ -253,24 +255,26 @@ The business change and evidence event are committed atomically.
 - Block aggregation, grading, or finalization.
 - Audit delivery delayed, conflict detected, quarantined, or recovered.
 - Manifest sealed, addendum sealed, or manifest verification failed.
-- Export requested, generated, downloaded, or failed.
 - Retention cleanup started, completed, or partially failed.
-- Break-glass or administrator storage access.
+
+Evidence reads and exports are not Klicker-produced audit events. Azure Storage data-plane diagnostics provide the external access trail for queries, including the Entra principal and operation metadata, while the operator tool creates an export receipt covered by the bundle's root hash. Direct and break-glass resource operations are additionally covered by Azure control-plane logs.
 
 ## Trust, privacy, and authorization
 
 - Actor identities, server times, event IDs, permissions, and authentication outcomes come from trusted server context. Clients cannot override them.
 - `receivedAt` is authoritative. `clientOccurredAt` is contextual and is checked for unreasonable clock skew.
-- Azure stores stable pseudonymous database references, not names or email addresses. The admin export may resolve those references through current authorized Klicker data into a separate human-readable column.
+- Azure stores stable pseudonymous database references, not names or email addresses. Evidence export does not call Klicker APIs or use Klicker permissions. Any separate identity resolution is outside this feature and requires independently authorized database access.
 - Exact assessment answers are retained because they are the subject of potential disputes. Unrelated personal data is excluded.
 - Stack traces are reduced to stable error codes and sanitized component metadata before audit insertion.
 - The normal runtime identity can append but cannot query, update, or delete evidence.
 - The conflict-verifier identity can read one addressed entity through a narrowly scoped service path but cannot append, update, or delete.
-- The export identity can query but cannot append, update, or delete.
+- A dedicated Azure Entra group containing exactly the user and their supervisor is the only human principal granted Table and manifest data-plane read access. Resource Group ownership alone is not treated as implicit data-plane authorization; the assignment is explicit and tested.
+- No Klicker `UserRole`, Course permission, participant session, service endpoint, or frontend route grants evidence read access.
+- The operator tool uses the invoking evidence owner's Azure token and has no shared export credential.
 - The retention identity is separate, disabled outside its scheduled job window, and its code accepts only buckets beyond the retention boundary. Azure cannot enforce event age within a table credential, so immutable manifests and control-plane alerts remain the independent detection mechanism for misuse of this privileged identity.
-- Blob immutability administration and any break-glass storage access are restricted and monitored through Azure control-plane logs.
-- Export operations require `asUser` plus `UserRole.ADMIN`; Course permissions alone are insufficient.
-- Generated export artifacts use short-lived download authorization and are removed after 24 hours. The underlying evidence remains subject to one-year retention.
+- Required non-human identities are limited to append delivery, single-row conflict verification, manifest sealing, diagnostics, and retention. They do not establish a human access path.
+- Blob immutability administration and any direct or break-glass storage access are restricted to the same two Azure evidence owners and monitored through Azure control-plane and Storage data-plane logs.
+- Export artifacts are written locally to an operator-selected path. Klicker does not host them, issue download links, or retain copies.
 
 No event contains raw credentials, JWTs, session cookies, magic links, PINs, authorization headers, connection strings, or Infisical values. Representative forbidden-data fixtures are scanned in automated tests.
 
@@ -313,9 +317,11 @@ An export is verified only when every selected table row is covered by a valid m
 
 ## Export and retention
 
-An `ADMIN` user may filter evidence by assessment, time range, pseudonymous actor reference, correlation ID, event category, or outcome. Export generation is asynchronous.
+Either authorized Azure evidence owner may run the repository's operator tool and filter evidence by assessment, time range, pseudonymous actor reference, correlation ID, event category, or outcome. The tool obtains an Entra token from the invoking operator and fails before querying if the principal lacks Azure data-plane read permission. There is no Klicker export API or UI.
 
-The CSV is a readable timeline. It includes resolved identity information only when currently available and authorized. It is not the canonical integrity artifact.
+The CSV is a readable timeline containing pseudonymous actor references. It is not the canonical integrity artifact.
+
+Local export files are created with owner-only filesystem permissions, are never uploaded by the tool, and are not overwritten without explicit confirmation. Their later storage and deletion remain the evidence owner's responsibility.
 
 The canonical JSON bundle contains:
 
@@ -336,27 +342,25 @@ The retention receipt records the bucket, event count, final manifest hash, star
 Expected implementation areas are:
 
 - `packages/prisma`: durable audit scope, outbox, response-ingress state, and migrations; analytics schema sync where required.
-- A new `packages/audit` workspace: canonical contract, normalization, hashing, provider-neutral interfaces, and isolated provider adapters. Azure types never cross its core interfaces.
-- `packages/graphql`: scope resolution, baseline capture, lecturer mutations, admin authorization, export orchestration, and generated operations.
-- `packages/hatchet`: outbox delivery, manifest, export, response relay, and retention task declarations.
-- `apps/hatchet-worker-general`: delivery, sealing, export, and retention execution.
+- A new `packages/audit` workspace: canonical contract, normalization, hashing, provider-neutral interfaces, isolated provider adapters, and the Entra-authenticated operator export command. Azure types never cross its core interfaces.
+- `packages/graphql`: scope resolution, baseline capture, lecturer mutations, participant ingestion, and generated operations where the active API architecture requires them. No evidence-read operation is exposed.
+- `packages/hatchet`: outbox delivery, manifest, response relay, and retention task declarations.
+- `apps/hatchet-worker-general`: delivery, sealing, and retention execution.
 - `apps/response-api`: authenticated durable submission receipt.
 - `apps/hatchet-worker-response-processor`: authoritative validation, persistence, scoring, and recovery evidence.
 - `apps/frontend-pwa`: meaningful selection capture, persistent local queue, and gap reporting.
-- `apps/frontend-manage`: minimal `ADMIN` evidence search/export surface.
-- `packages/i18n`: German and English administrator-facing strings.
-- `packages/prisma-data` and Playwright fixtures: synthetic assessment, admin, and participant evidence scenarios without real personal data.
+- `packages/prisma-data` and Playwright fixtures: synthetic assessment, lecturer, and participant evidence scenarios without real personal data.
 - Deployment configuration: Azure Table, immutable Blob container, separate identities, environment configuration, dashboards, and alerts.
 - `docs/` and relevant repository skills: architecture, operations, verification, and incident guidance.
 
-GraphQL is the current protected API boundary. At the start of the relevant stack layer, new admin and ingestion operations use whichever protected API boundary has become the repository standard after the in-flight GraphQL-to-tRPC migration. The audit package and outbox contract remain transport-neutral in either case.
+GraphQL is the current protected application API boundary. At the start of the relevant stack layer, participant ingestion uses whichever protected API boundary has become the repository standard after the in-flight GraphQL-to-tRPC migration. Evidence reads bypass application APIs entirely and use Azure Entra authorization. The audit package and outbox contract remain transport-neutral.
 
 ## UI, gamification, and fixtures
 
-- The only new UI is an internal `ADMIN` search/export surface and any narrowly scoped assessment-audit status message needed during activation or delayed delivery.
-- User-visible strings require German and English translations.
+- There is no Klicker evidence-search or export UI. Assessment participants, lecturers, and Klicker administrators cannot browse audit evidence through the product.
+- No new evidence-access translations or frontend routes are required.
 - No points, XP, achievements, leaderboards, or grading algorithms change. Their existing outputs and corrections are recorded as evidence.
-- Tests use synthetic admin Users, Participants, an assessment-enabled Course, a LiveQuiz, and ElementInstances covering SC, MC, KPRIM, free-text, numerical, selection, case-study, and content behavior.
+- Tests use synthetic lecturer Users, Participants, an assessment-enabled Course, a LiveQuiz, and ElementInstances covering SC, MC, KPRIM, free-text, numerical, selection, case-study, and content behavior.
 - No real course, roster, response, name, email, or student identifier may be committed.
 
 ## Verification and rollout
@@ -370,13 +374,13 @@ GraphQL is the current protected API boundary. At the start of the relevant stac
 - Transaction tests proving critical business changes cannot commit without outbox evidence.
 - Response tests for attempted, received, validated, rejected, duplicate, persisted, scored, failed, and recovered stages.
 - Failure injection for Azure, Hatchet, process, manifest, duplicate, malformed-event, and delayed-delivery failures.
-- Authorization tests proving Participants, ordinary Users, and non-read service identities cannot retrieve or export evidence.
-- Playwright complaint scenarios for participant submissions, lecturer deletion/modification, corrections, and verified export download.
+- Authorization tests proving that no Klicker identity can retrieve evidence, infrastructure assertions proving that the evidence-owner group is the only human data-plane assignment, and a negative access test using a representative unauthorized Entra principal.
+- Playwright complaint scenarios generate participant submission, lecturer deletion/modification, and correction evidence; the operator CLI then verifies and exports the resulting timeline outside the browser.
 - Load tests demonstrating that audit capture does not materially degrade assessment submissions.
 
 ### Operational gates
 
-- Dashboards expose outbox depth, oldest event, delivery latency, quarantine, client gaps, manifest age, export failures, and retention failures.
+- Dashboards expose outbox depth, oldest event, delivery latency, quarantine, client gaps, manifest age, denied storage access, and retention failures.
 - Alerts have an owner and runbook.
 - Schema readers remain compatible with every schema version retained for one year.
 - Staging proves the separate Azure permission identities and immutable retention policy.
@@ -386,12 +390,12 @@ GraphQL is the current protected API boundary. At the start of the relevant stac
 
 1. Deploy the dormant contract and outbox.
 2. Deploy Azure delivery and generate synthetic evidence.
-3. Deploy and verify admin export and retention.
+3. Deploy and verify Azure-owner export and retention.
 4. Enable assessment capture in staging.
 5. Run complaint-reconstruction, failure, privacy, and load scenarios.
 6. Enable one controlled production assessment and record its explicit coverage start.
 7. Independently verify its evidence export and operational metrics.
-8. Expand only after administrator and operations sign-off.
+8. Expand only after both Azure evidence owners and operations sign off.
 
 ## Stacked PR topology
 
@@ -403,10 +407,10 @@ This feature uses two sequential native GitHub stacks so reviewer attention is n
    - Event contract, validation, hashing, redaction, scope/outbox schema, transaction helper, and tests.
 2. **Azure delivery and immutable manifests**
    - Provider adapter, dispatcher, retries, chunking, conflicts, quarantine, manifests, telemetry, deployment, and conformance tests.
-3. **Admin evidence export and retention**
-   - Admin authorization, UI/API, CSV/JSON bundles, verifier, short-lived artifacts, separate identities, one-year cleanup, and runbooks.
+3. **Azure-owner evidence export and retention**
+   - Entra-authenticated operator tool, Azure role assignments, CSV/JSON bundles, verifier, Storage diagnostics, separate workload identities, one-year cleanup, and runbooks. No Klicker read API or UI is added.
 
-Stack A is complete when a synthetic event survives an Azure outage, reaches Table Storage, is sealed into an immutable manifest, verifies successfully, and can be exported only by an `ADMIN` user.
+Stack A is complete when a synthetic event survives an Azure outage, reaches Table Storage, is sealed into an immutable manifest, verifies successfully, and can be exported by either of the two Azure evidence owners but by no other human principal.
 
 ### Stack B: assessment coverage
 
@@ -423,7 +427,7 @@ Stack B starts only after Stack A is stable.
 5. **Production hardening and controlled rollout**
    - End-to-end dispute scenarios, failure recovery, privacy and authorization evidence, dashboards, alerts, runbooks, and pilot gate.
 
-Stack B is complete when an administrator can reconstruct lecturer and participant disputes from a verified export without relying on ordinary application logs.
+Stack B is complete when either Azure evidence owner can reconstruct lecturer and participant disputes from a verified export without relying on ordinary application logs.
 
 The source branches for PRs #4872 and #4946 remain untouched until the union of both replacement stacks is compared with their complete diffs. Every deliberate omission is documented before maintainers decide whether to close the old PRs.
 
@@ -437,7 +441,7 @@ The source branches for PRs #4872 and #4946 remain untouched until the union of 
 - Azure downtime accumulates a durable backlog and recovery delivers it without duplicates or silent loss.
 - The append-delivery credential cannot query, update, or delete Table evidence.
 - Table changes, missing rows, unexpected rows, and chunk corruption are detected through immutable manifests.
-- Only `UserRole.ADMIN` can search or export evidence.
+- Exactly the two designated Azure evidence owners—and no Klicker role or other human principal—can query Table evidence and manifests or run a successful export.
 - A CSV and canonical JSON bundle can reconstruct a representative complaint and pass independent hash verification.
 - Forbidden credentials and unrelated direct identifiers are absent from stored and exported canonical events.
 - Evidence and manifests expire according to the approved one-year rule, with verified deletion receipts.
