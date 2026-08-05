@@ -333,9 +333,10 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 250Mi
     limits:
-      memory: 200Mi
+      cpu: 200m
+      memory: 768Mi
 
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch'
