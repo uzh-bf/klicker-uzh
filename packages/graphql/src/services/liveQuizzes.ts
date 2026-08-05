@@ -15,6 +15,7 @@ import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
+  getLiveQuizResponseTrackingKey,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -988,6 +989,60 @@ export async function getCockpitQuiz(
     ? ctx.redisAssessmentExec
     : ctx.redisExec
 
+  const responseCounts = new Map<
+    number,
+    { received: number; processed: number }
+  >()
+  const startedInstances = liveQuiz.blocks.flatMap((block) =>
+    block.status === DB.ElementBlockStatus.SCHEDULED ? [] : block.elements
+  )
+
+  if (startedInstances.length > 0) {
+    const responseCountPipeline = redis.pipeline()
+    startedInstances.forEach((instance) => {
+      responseCountPipeline.scard(
+        getLiveQuizResponseTrackingKey({
+          liveQuizId: id,
+          instanceId: instance.id,
+          status: 'received',
+        })
+      )
+      responseCountPipeline.scard(
+        getLiveQuizResponseTrackingKey({
+          liveQuizId: id,
+          instanceId: instance.id,
+          status: 'processed',
+        })
+      )
+    })
+
+    const responseCountResults = await responseCountPipeline.exec()
+    if (!responseCountResults) {
+      throw new Error(`Failed to load response counts for live quiz ${id}`)
+    }
+
+    startedInstances.forEach((instance, index) => {
+      const receivedResult = responseCountResults[index * 2]
+      const processedResult = responseCountResults[index * 2 + 1]
+
+      if (!receivedResult || receivedResult[0]) {
+        throw (
+          receivedResult?.[0] ?? new Error('Missing received response count')
+        )
+      }
+      if (!processedResult || processedResult[0]) {
+        throw (
+          processedResult?.[0] ?? new Error('Missing processed response count')
+        )
+      }
+
+      responseCounts.set(instance.id, {
+        received: Number(receivedResult[1] ?? 0),
+        processed: Number(processedResult[1] ?? 0),
+      })
+    })
+  }
+
   // number of participants per block
   const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
@@ -1035,16 +1090,28 @@ export async function getCockpitQuiz(
         ...block,
         numOfParticipants: blockParticipants[block.id],
         elements: block.elements.map((instance) => {
+          const counts =
+            block.status === DB.ElementBlockStatus.SCHEDULED
+              ? null
+              : (responseCounts.get(instance.id) ?? {
+                  received: 0,
+                  processed: 0,
+                })
+          const responseCountFields = {
+            numOfResponsesReceived: counts?.received ?? null,
+            numOfResponsesProcessed: counts?.processed ?? null,
+          }
           const elementData = instance.elementData
           if (
             !elementData ||
             typeof elementData !== 'object' ||
             Array.isArray(elementData)
           ) {
-            return instance
+            return { ...instance, ...responseCountFields }
           } else {
             return {
               ...instance,
+              ...responseCountFields,
               elementData: {
                 ...elementData,
                 options: null,

@@ -1161,6 +1161,8 @@ type ElementInstance {
   elementType: ElementType!
   feedbacks: [ElementFeedback!]
   id: Int!
+  numOfResponsesProcessed: Int
+  numOfResponsesReceived: Int
   options: ElementInstanceOptions
   type: ElementInstanceType!
 }

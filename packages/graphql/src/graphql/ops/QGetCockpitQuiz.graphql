@@ -31,6 +31,8 @@ query GetCockpitQuiz($id: String!) {
         id
         type
         elementType
+        numOfResponsesReceived
+        numOfResponsesProcessed
         ...ElementDataInfo
       }
     }
