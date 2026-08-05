@@ -4,10 +4,12 @@
 
 Supersedes slice 2 of [PLAN-assessment-report-polish.md](PLAN-assessment-report-polish.md)
 (client-side rasterised PDF via `html2pdf.js`). Slices 1, 3, and 4 of that plan
-stand. Branch `fix/assessment-report-polish`, PR #5306, base `v3`.
+stand. Branch `fix/assessment-report-polish`, [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306), base `v3`.
 
-Not yet executed. The plan has **not** passed the mandatory read-only plan
-review gate; that must run before any of this lands in the PR.
+Not yet executed. The mandatory read-only planning review returned
+`DONE_WITH_CONCERNS`; its findings are incorporated and closed below through
+main-session verification. The plan is now ready to commit as the execution
+contract, but no implementation has started.
 
 ## Goal
 
@@ -16,9 +18,19 @@ engine, driven from the already-generated report HTML blob. The report HTML
 stays the single artifact; "Download report" becomes "Save as PDF" and prints
 that blob.
 
-This closes all three defects found during the PR #5306 review, removes a
+This closes all three defects found during the [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306) review, removes a
 dependency, and upgrades the output from a rasterised image to vector text with
 live links.
+
+## Research
+
+- Local source inspection verified the current artifact state, popup handlers,
+  translation keys, QR library callback surface, and Playwright 1.58.2 PDF
+  options.
+- Real-stack browser measurements in the handoff are the evidence for the
+  print dimensions. The three-bin fixture fits on one A4 page at 13px; the
+  ten-bin case remains an acceptance check, not an assumption.
+- No external research is required for this browser-local change.
 
 ## Non-goals
 
@@ -97,8 +109,9 @@ branch and rendered through Chromium's print pipeline (A4, 12 mm margins,
 | 13px (≈9.75pt)     | 917px         | 1        |
 
 One page is reachable at a readable 13px while keeping both the chart and the
-histogram table — the 9px type the dead `.pdf-export` rules reached for is not
-needed.
+histogram table in the 3-bin fixture. The 10-bin case needs additional
+print-only compaction around the table; the table itself stays present and
+legible.
 
 Baseline for comparison, same HTML, current `@media print` block only: 1802 px
 of content, 1.72 A4 pages of raw height, **3** actual pages once the four
@@ -115,50 +128,103 @@ Output quality, current pipeline vs print:
 **Caveat that shapes decision 1 below:** the seeded fixture has 3 histogram
 bins. Production merges down from 10. Seven extra rows is roughly 140 px against
 89 px of headroom at 13px body size, so the one-page result above is a best
-case.
+case. The table stays in print; the 10-bin case must recover that space through
+print-only compaction elsewhere.
 
 ## Decisions
 
-Recommendations were put to the user in chat; these are the assumed rulings.
-Each is reversible and can be vetoed before slice 2.
+Recommendations were put to the user in chat; the recorded rulings below are
+the execution contract for slice 2.
 
 | # | Decision | Ruling | Consequence |
 | - | -------- | ------ | ----------- |
-| 1 | Histogram table in print | Hide it (`@media print { .histogram-table { display: none } }`) | One page holds across every bin count. Costs the accessible data-table alternative inside the PDF; the SVG keeps its `aria-label`, and the table stays in the on-screen HTML report. |
+| 1 | Histogram table in print | Keep it and recover space through print-only compaction | Preserves the accessible data table in the PDF. The one-page contract requires tighter print-only spacing, typography, chart, and verification-block sizing and must be measured against the 10-bin case. |
 | 2 | Print entry point | Keep two buttons — "View report" opens the blob, "Save as PDF" opens it and prints | Preserves the promise in the copy and the existing `data-cy` hooks. A print button inside the report is not possible: the report's own CSP (`default-src 'none'`) blocks inline script. |
 | 3 | Chrome's print footer shows the raw `blob:` URL | Accept | Cannot be suppressed from CSS. Mildly ugly on a document framed as a credential; flagged for a look during verification. |
-| 4 | Save-as-PDF filename | Comes from `<title>` — keep the human title | "Assessment performance report - <Course>". `PDF_FILENAME_PREFIX` and `pdfFilename` become dead and are removed. |
+| 4 | Save-as-PDF filename | Comes from `<title>` — keep the human title and require the course name | The title and resulting filename remain "Assessment performance report - <Course>". The course name is mandatory so reports from different courses do not collide; `PDF_FILENAME_PREFIX` and `pdfFilename` become dead and are removed. The manual Chrome check must inspect the suggested filename. |
+
+## Planning-stage review
+
+- **Reviewer:** configured read-only planning reviewer, inspecting the live
+  branch and the complete draft.
+- **Result:** `DONE_WITH_CONCERNS`. The print direction and four rulings were
+  accepted in principle, but the original slice order and verification
+  contract had concrete gaps.
+- **Verified findings accepted:** make artifact removal and print wiring one
+  typecheckable slice; specify the bounded popup state machine; use valid
+  Playwright PDF options; add a named ten-bin fixture helper and cleanup; test
+  QR timeout with a successful malformed image response; check the course name
+  in Chrome's suggested filename; rewrite the stale generation-error key; and
+  remove volatile branch-count metadata.
+- **Fallback review:** after the first revision, the configured reviewer was
+  terminated by an interrupted turn. A budget-constrained `gpt-5.4-mini`
+  read-only review found two remaining clarifications: make ten-bin teardown
+  idempotent and make the artifact-interface collapse explicit.
+- **Closure:** those two edits below add no behavior or scope; the main session
+  verified them against the live Prisma relations and current artifact callers.
+  They are closed by main-session verification rather than another reviewer
+  invocation.
 
 ## Implementation slices
 
-### Slice 1 — Remove the PDF pipeline
+### Slice 1 — Keep one HTML artifact and wire the print action end to end
 
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts`:
 
-- Delete `createAssessmentReportPdf` (202-238).
-- Delete `createAssessmentReportArtifact` (445-464) and the
-  `AssessmentReportArtifact` interface (40-45).
-- Delete the dead `.pdf-export*` block (354-378).
-- Delete `PDF_FILENAME_PREFIX` and the `pdfFilename` field; `filename` is
-  already unused by the caller.
-- Fix the 4-space indentation on the three `<section class="pdf-avoid">` lines
-  (401, 409, 414).
-- `createAssessmentReport` returns `{ url, html }` synchronously.
+- Delete `createAssessmentReportPdf`, `createAssessmentReportArtifact`, the
+  dead `.pdf-export*` block, `PDF_FILENAME_PREFIX`, and both old artifact
+  interfaces. Define one `AssessmentReportArtifact` shape as exactly
+  `{ url: string; html: string }`; no `filename`, `pdfFilename`, or `pdfUrl`
+  field remains in the module.
+- Make `createAssessmentReport` synchronous and return that exact artifact
+  shape.
+- Keep the document `<title>` as the human title plus the escaped course name:
+  `Assessment performance report - <Course>`.
+- Fix the indentation on the three report sections while touching the markup.
 
-`SuspendedAssessmentResults.tsx`: call `createAssessmentReport` without `await`,
-revoke only `.url` in the cleanup effect (91-98).
+`SuspendedAssessmentResults.tsx` in the same slice:
+
+- Keep the report ready state and `View report` action, but revoke only `.url`
+  during cleanup.
+- Replace `handleDownloadReport` with `handlePrintReport` so deleting the PDF
+  fields cannot leave an intermediate type error.
+- The print handler opens the blob in a new window, handles a null popup with
+  the print-failure translation, and only calls `focus()`/`print()` after both
+  `location.href === reportArtifact.url` and `document.readyState ===
+  'complete'`.
+- Use a load listener plus a short guarded readiness check, bounded by a fixed
+  timeout. Clean the listener, check, and timeout on success, popup close, or
+  failure; close the print window on timeout/navigation failure and show the
+  translated error. Do not treat the initial `about:blank` complete state as
+  ready.
+- Keep `reportWindow.opener = null` for the view action; it does not invalidate
+  the parent's reference to the print window.
+
+`packages/i18n/messages/en.ts` and `de.ts` in this slice must contain every key
+used by the new flow:
+
+- explain printing through the browser instead of downloading a separate PDF;
+- label the second action "Save as PDF" / "Als PDF speichern";
+- rewrite `exportReportViewError` so it no longer suggests a PDF download;
+- rename or rewrite `exportReportDownloadError` as a report-generation error;
+- add a print-failure error key and use it for popup/navigation/print failures;
+- log the caught generation error in `handleExport` before showing the translated
+  generation error.
 
 `apps/frontend-pwa/package.json`: drop `html2pdf.js` and
-`@types/html2pdf.js`. Reinstall in the container, commit `pnpm-lock.yaml`.
+`@types/html2pdf.js`; reinstall in the container and commit the synchronized
+`pnpm-lock.yaml`.
 
-Verify: typecheck passes; export yields the ready state with both buttons.
+Verify inside the container: `pnpm --filter @klicker-uzh/frontend-pwa check`,
+then the real browser ready state shows both buttons and the print action no
+longer references a PDF artifact field.
 
 ### Slice 2 — Real print CSS
 
 Replace the one-line `@media print` rule (exportReport.ts:352) with:
 
 - `@page { size: A4 portrait; margin: 12mm }`
-- `main { max-width: none; margin: 0; padding: 0; font-size: 13px; line-height: 1.3 }`
+- `main { max-width: none; margin: 0; padding: 0; font-size: 12px; line-height: 1.3 }`; reduce the body to 11px only if the ten-bin measurement still spills
 - header/heading/table compaction as measured (header gap 12px, `.brand img`
   130px, `h1` 16px, `h2` 13px, `dt`/`dd` padding 4px 7px, `th`/`td` 3px 7px,
   `.issued` and `.privacy` 9px)
@@ -166,75 +232,75 @@ Replace the one-line `@media print` rule (exportReport.ts:352) with:
   — width-capped, not height-capped, per the letterbox trap above
 - `.verification { grid-template-columns: 72px 1fr }`, `.verification img`
   72 × 72
-- `.histogram-table { display: none }` (decision 1)
+- keep `.histogram-table` visible, with compact cell padding and font sizing
+  applied only in print (for example 8px text and 2px vertical cell padding),
+  without hiding rows or removing the accessible table (decision 1)
 - retain `.chart, .verification, .pdf-avoid { break-inside: avoid }`
 
-Verify: one A4 page at both the 3-bin fixture and a 10-bin worst case.
+Verify the real generated report at one A4 page with the three-bin fixture and
+the ten-bin fixture introduced in Slice 4. Both the SVG and all table rows must
+remain visible and legible; no height-only SVG scaling that letterboxes the
+chart is acceptable.
 
-### Slice 3 — Print action
+### Slice 3 — Make QR rendering fail closed
 
-`handleDownloadReport` (134-143) becomes `handlePrintReport`: open the blob in a
-new window and call `print()` on it, keeping the existing popup-blocked error
-branch.
-
-Known pitfall to code around: immediately after `window.open`, the handle points
-at `about:blank`, whose `readyState` is already `complete`. A naive `load`
-listener or readyState check fires against the wrong document. Guard on the
-window's URL having actually changed to the blob before calling `print()`.
-
-`reportWindow.opener = null` in `handleViewReport` (128) nulls the child's
-back-reference only; the parent's handle stays usable, so it can remain.
-
-Verify: manual click in a real browser — the print dialog is the one thing
-headless cannot confirm.
-
-### Slice 4 — QR promise robustness
-
-`createLogoQrCodeDataUrl` (100-108): wrap resolve and reject in a 10 s timeout
+`createLogoQrCodeDataUrl`: wrap resolve and reject in a 10 s timeout
 that clears `qrCodeRequestResult.current`, unmounts the hidden `<QRCode>` via
 `setQrCodeRequest(null)`, and rejects with
 `ASSESSMENT_REPORT_QR_RENDER_TIMEOUT`. Apply the same cleanup on the existing
-reject branch in `handleQrCodeLogoLoad` (113-115), which currently leaks both.
+reject branch in `handleQrCodeLogoLoad`, and on component unmount or request
+replacement, so no timer, pending resolver, or hidden QR component survives.
 
-Verify: unit-level or manual — block `/KlickerLogo.png` and confirm the spinner
-clears with an error rather than hanging.
+Verify with a deterministic browser route that returns HTTP 200 but malformed
+image bytes for `/KlickerLogo.png`. The fetch must succeed, the QR logo decode
+must never call `logoOnLoad`, the timeout must reject, the hidden component must
+unmount, and the export spinner must clear with the generation error. A plain
+blocked/404 request is insufficient because it fails before the QR promise.
 
-### Slice 5 — Copy and the swallowed error
-
-`SuspendedAssessmentResults.tsx:250`: `} catch {` becomes
-`} catch (error) { console.error(error); … }`, matching the `useEffect` above
-it. This bare catch is why the `lab()` failure shipped unnoticed.
-
-`packages/i18n/messages/en.ts` and `de.ts`:
-
-- `exportReportExplanation` and `exportReportReady` — describe saving as PDF
-  through the browser's print dialog instead of downloading a file.
-- `downloadReportButton` — "Download report" → "Save as PDF" /
-  "Bericht herunterladen" → "Als PDF speichern".
-- `exportReportViewError` — currently tells the user to download the PDF
-  instead, which will no longer exist as a separate path.
-- Add a print-failure key.
-
-### Slice 6 — Spec and docs
+### Slice 4 — Prove print output and the ten-bin layout contract
 
 `playwright/tests/Z-credential-verification.spec.ts`: `waitForEvent('download')`
-(63-66) no longer fires. Replace with `reportPage.pdf({ format: 'A4',
-printBackground: true, margin: 12mm })` on the popup — the same print pipeline
-the user gets — then keep `%PDF-` and tighten `/Type /Page` to exactly 1. The
-project runs Chromium only (`playwright/playwright.config.ts:57`), so
-`page.pdf()` is available.
+(in the current export helper) no longer fires. Install a context-level
+`window.print` stub before opening the report so the popup inherits it, then
+assert the print action was called. Render the same popup with valid Chromium
+options: `reportPage.pdf({ format: 'A4', printBackground: true,
+preferCSSPageSize: true })`. Keep `%PDF-` and tighten `/Type /Page` to exactly
+one. Do not use the invalid `margin: 12mm` syntax; the report's `@page` rule is
+the margin source.
 
-The print click is testable: stub `window.print` on the popup via
-`addInitScript` and assert it was called.
+Keep the title/content assertions, including the exact course name in the
+document title and report HTML. Assert the histogram table is present and its
+row count matches the rendered bins.
 
 `qrCodeSize` and the content assertions are unaffected — the QR lives in the
 HTML.
 
-Add a 10-bin worst-case fixture assertion for the one-page contract.
+Add a named helper in `playwright/util/credentialVerification.ts` plus its
+synthetic participant IDs in `playwright/util/constants.ts` to create a
+30-participant score distribution with three responses in each of the ten base
+score bins. The helper must clean up its extra participants, invitations,
+participations, and responses through an idempotent cleanup called by
+`resetAssessmentReportFixture`: delete extra responses first, then invitations,
+participations, and participants by their explicit synthetic IDs so the unique
+course invitation rows cannot survive. The ten-bin test must call the helper,
+assert ten SVG bars and ten table rows, and invoke the reset cleanup in a
+`finally` block as well as relying on the next test's reset.
+
+### Slice 5 — Update the engineering record and collect browser evidence
 
 Update `docs/log/2026-08-04-assessment-report-export.md` and the frontend
 conventions wiki page, per the repo rule that behaviour changes update the wiki
 in the same PR.
+
+Run the mandatory `agent-browser` flow on the real course page and capture
+before/after screenshots in
+`project/plans_wip/assets/assessment-report-polish/`. Manually click "Save as
+PDF" in Chrome, confirm the dialog opens, confirm its suggested filename
+contains the course name, save the result, and check page count, selectable
+text, live verification link, and the accepted raw `blob:` footer. Check iOS
+Safari print behaviour before claiming mobile support; if no iOS device is
+available, record that verification as an explicit release blocker rather than
+silently treating Chromium evidence as mobile evidence.
 
 ## Verification
 
@@ -249,25 +315,48 @@ in the same PR.
    frontend changes; before/after screenshots into
    `project/plans_wip/assets/assessment-report-polish/`.
 4. Playwright `Z-credential-verification.spec.ts`.
-5. Manual: click "Save as PDF" in a real browser, confirm the dialog opens, save
-   the result, check page count, selectable text, live verification link, and
-   what the footer shows.
+5. Manual Chrome: click "Save as PDF", confirm the dialog opens, confirm the
+   suggested filename contains the course name, save the result, check page
+   count, selectable text, live verification link, and the accepted raw
+   `blob:` footer.
+6. Manual iOS Safari: check the same print flow before claiming mobile support;
+   if unavailable, report it as unverified and do not mark that support gate
+   complete.
 
 ## Risks and open items
 
-- The one-page contract at 10 bins is projected, not measured. If it fails,
-  fall back to softening the copy to "A4 PDF" and accepting 1-2 pages.
-- iOS Safari print behaviour inside the PWA needs a device check; the student
-  audience is heavily mobile.
+- The one-page contract at 10 bins is projected, not measured until Slice 4.
+  If it fails after print-only compaction, reduce non-table whitespace and
+  chart/QR sizing further before considering softer copy or accepting 1-2 pages.
+- iOS Safari is a required manual release check because the student audience is
+  heavily mobile; current Chromium evidence cannot substitute for it.
 - The print dialog cannot be fully automated; one manual step stays in the
   verification loop permanently.
-- PR #5306's commit history is left as-is unless a squash is requested.
-- Branch is 3 ahead / 10 behind `origin/v3` as of 2026-08-05; rebase before
-  implementing.
+- The [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306) commit history is left as-is unless a squash is requested.
+- Rebase onto the current `origin/v3` before implementing. Do not rely on the
+  cached ahead/behind count from the takeover snapshot.
 
 ## Progress
 
-- **2026-08-05:** Plan drafted after the PR #5306 review reproduced all three
+- **2026-08-05:** Plan drafted after the [PR #5306](https://github.com/uzh-bf/klicker-uzh/pull/5306) review reproduced all three
   defects on a real stack. Print-based approach measured against the actual
   report HTML (one A4 page at 13px body, 169 KB, vector text). Decisions 1-4
-  assumed per recommendation, pending user veto. Plan review gate not yet run.
+  were still open at draft time.
+- **2026-08-05:** User ruled to keep the histogram table in print. The plan now
+  preserves it and makes print-only compaction the one-page strategy.
+- **2026-08-05:** User ruled to keep both report actions: viewing the HTML
+  report and saving it through the browser's print flow.
+- **2026-08-05:** User ruled to accept Chrome's raw `blob:` URL in the print
+  footer; the print CSS will not attempt to suppress it.
+- **2026-08-05:** User ruled that the human title and course name must remain
+  in the generated document title and Save-as-PDF filename.
+- **2026-08-05:** Planning review returned `DONE_WITH_CONCERNS`. The revised
+  slices now keep the first slice typecheckable, define the popup timeout and
+  QR timeout checks, use valid Playwright PDF options, name ten-bin fixture
+  setup/cleanup, require the course-name filename check, and make iOS evidence
+  explicit. The plan was not yet commit-ready until the two follow-up
+  clarifications below were verified.
+- **2026-08-05:** The budget-constrained follow-up review found two remaining
+  plan ambiguities. Main-session verification closed them without changing
+  behavior: the artifact boundary is now explicitly `{ url, html }`, and the
+  ten-bin cleanup order is explicit and idempotent.
