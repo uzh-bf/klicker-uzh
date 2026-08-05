@@ -122,6 +122,19 @@ are excluded. Local configuration-file reads have separate
 `dependency.read_failed` events while the HTTP boundary owns
 `http.request.failed`.
 
+Chat wraps every Node API route with a hard-coded parameterized template. It
+owns one immediate HTTP completion record and separate once-only stream outcome
+events. Prompts, messages, model output, model/deployment identifiers, MCP server
+and tool names, upstream URLs, API keys, and provider errors never become log
+fields. MCP milestones use counts and categorical outcomes only.
+
+Manage, PWA, assessment PWA, and control emit Node startup records. PWA
+`getServerSideProps` failures use a request child with a parameterized page
+route, and the same validated request/correlation context is propagated only to
+the internal server-side GraphQL call. Browser-side GraphQL requests and
+external providers do not receive these headers. Browser console behavior is
+outside this server logging contract.
+
 ## Privacy boundary
 
 Logging is allowlist-first. Do not log:
@@ -179,3 +192,40 @@ supports queries such as:
 The collector preserves the original JSON line and non-JSON third-party output.
 It stores level, event, request, correlation, and trace/span identifiers as
 structured metadata rather than indexed labels.
+
+Application deployment does not depend on the companion cloud MRs: the existing
+collector already forwards container stdout, so production NDJSON is available
+immediately as raw Loki lines. The cloud changes add Kubernetes-derived
+`service_name`, application timestamp parsing, and queryable structured
+metadata; they do not establish or replace log transport.
+
+## Server console guard
+
+`pnpm run check:server-console` rejects active
+`console.log/info/warn/error/debug` calls in the server-owned path allowlist. It
+strips comments with a deterministic scanner and reports `path:line`. Shared
+browser/server pages are deliberately excluded; operator scripts keep terminal
+output. The sole sink exception is `packages/logging/src/edge.ts`, where the
+Edge adapter serializes its already-allowlisted record to the runtime console.
+
+Add a new server-owned path to the guard when it adopts the shared logger. Do
+not add file exceptions for migrations; convert the call or keep truly
+interactive output under an operator `scripts/` directory.
+
+## Staging acceptance and rollback
+
+After both application and cloud changes reach staging:
+
+1. query every standard and assessment component by `service_name`;
+2. locate `logging-canary-20260805` across response API, GraphQL, and Hatchet
+   records using `correlation_id`;
+3. confirm `level` and `event` filtering without adding them as stream labels;
+4. verify existing non-JSON/third-party lines remain present and unchanged;
+5. send fake token, cookie, email, body, and URL canaries through test paths and
+   prove none appear in Loki;
+6. inspect stream cardinality and volume, confirming diagnostic IDs are
+   structured metadata rather than labels.
+
+Application rollback is an ordinary image rollback. Collector enrichment rolls
+back by reverting the `df-cloud-klickeruzh` submodule-pointer commit; raw NDJSON
+continues through the existing transport in either case.

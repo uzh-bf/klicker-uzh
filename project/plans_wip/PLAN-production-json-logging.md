@@ -190,3 +190,20 @@ checkout's unrelated untracked files.
   OLAT container harness also failed before its test phase while rebuilding the
   unrelated shared `util` package for Linux; its focused socket-free adapter
   tests pass on the restored host toolchain.
+- 2026-08-05: Layer 5 wraps every Chat Node API route with fixed-template
+  request ownership, removes the previous prompt/tool/provider diagnostic dump,
+  adds safe stream and MCP milestones, and verifies 45 Chat tests plus the
+  production build. Chat was committed as `c3f76b7b3`.
+- 2026-08-05: Manage, standard/assessment PWA, and Control now have Node startup
+  roots. PWA SSR failures use safe request children and propagate diagnostic
+  headers only to internal GraphQL. The deterministic server-console guard is
+  part of `check:all`; all three production builds and compiled NDJSON service
+  smoke checks passed. This slice was committed as `5aa3d63b0`.
+- 2026-08-05: The linked cloud helper worktree is
+  `/Users/paldov/Documents/df-cloud-klickeruzh/trees/klicker-structured-logging`
+  on parent/helper branch `feat/klicker-structured-logging`. Alloy and Loki
+  helper commits `0b04794` and `1bb9fa4` pass the full Node 20/pnpm 9 build, all
+  six Node tests, formatting, targeted OpenGrep, and strict maintainability
+  review. Draft helper MR [!23](https://gitlab.uzh.ch/uzh-bf/cloud/azure-helpers/-/merge_requests/23)
+  targets `infra-2025`; it remains unmerged pending explicit approval, so the
+  parent gitlink MR has not been created.
