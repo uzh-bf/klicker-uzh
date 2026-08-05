@@ -1,12 +1,13 @@
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { ThreadService } from '@/src/services/threads'
-import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.
  * Used by the frontend to display threads in the sidebar.
  */
-export async function GET(
+async function handleGET(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -20,8 +21,7 @@ export async function GET(
   try {
     const threads = await ThreadService.getAllThreads(participantId, chatbotId)
     return NextResponse.json(threads)
-  } catch (error) {
-    console.error('Failed to fetch threads:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch threads' },
       { status: 500 }
@@ -33,7 +33,7 @@ export async function GET(
  * Creates a new chat thread with an optional title for the authenticated participant.
  * Used when explicitly creating a thread or starting a new conversation.
  */
-export async function POST(
+async function handlePOST(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -52,11 +52,24 @@ export async function POST(
       title
     )
     return NextResponse.json(thread)
-  } catch (error) {
-    console.error('Failed to create thread:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to create thread' },
       { status: 500 }
     )
   }
+}
+
+type RouteContext = { params: Promise<{ chatbotId: string }> }
+
+export function GET(req: NextRequest, context: RouteContext) {
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', () =>
+    handleGET(req, context)
+  )
+}
+
+export function POST(req: NextRequest, context: RouteContext) {
+  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', () =>
+    handlePOST(req, context)
+  )
 }

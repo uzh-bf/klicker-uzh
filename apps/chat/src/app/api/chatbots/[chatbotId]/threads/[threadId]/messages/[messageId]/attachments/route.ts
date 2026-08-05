@@ -1,8 +1,9 @@
-import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { prisma } from '@klicker-uzh/prisma'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
-export async function GET(
+async function handleGET(
   req: NextRequest,
   {
     params,
@@ -66,8 +67,7 @@ export async function GET(
         },
       }
     )
-  } catch (error) {
-    console.error('Failed to fetch message attachments:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch message attachments' },
       {
@@ -78,4 +78,20 @@ export async function GET(
       }
     )
   }
+}
+
+type RouteContext = {
+  params: Promise<{
+    chatbotId: string
+    threadId: string
+    messageId: string
+  }>
+}
+
+export function GET(req: NextRequest, context: RouteContext) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/threads/:threadId/messages/:messageId/attachments',
+    () => handleGET(req, context)
+  )
 }

@@ -1,6 +1,7 @@
 'use server'
 
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { createHash } from 'crypto'
@@ -12,6 +13,7 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -211,13 +213,20 @@ export async function createMCPClient(
       transport: httpTransport,
     })
 
-    console.log(`MCP Client for ${server.name} initialized successfully`)
+    getRouteLogger().info(
+      { event: 'chat.mcp.client.initialized', outcome: 'success' },
+      'Initialized MCP client'
+    )
     return client
-  } catch (error) {
-    console.error('Failed to create MCP client', {
-      server: server.name,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+  } catch {
+    getRouteLogger().warn(
+      {
+        event: 'chat.mcp.connection.failed',
+        outcome: 'client_initialization_failed',
+        err: toSafeError('Failed to create MCP client'),
+      },
+      'Failed to create MCP client'
+    )
     throw error
   }
 }
@@ -314,8 +323,13 @@ async function loadServerTools(
       }
     })
 
-    console.log(
-      `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
+    getRouteLogger().info(
+      {
+        event: 'chat.mcp.tools.loaded',
+        outcome: 'success',
+        toolCount: Object.keys(filteredTools).length,
+      },
+      'Loaded MCP tools'
     )
     return filteredTools
   } catch (error) {
@@ -323,11 +337,25 @@ async function loadServerTools(
       error instanceof RequiredMCPUnavailableError ||
       runtimePolicy.required
     ) {
-      console.error('Required MCP tools unavailable', { server: server.name })
+      getRouteLogger().error(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'required_unavailable',
+          err: toSafeError('Required MCP tools unavailable'),
+        },
+        'Required MCP tools unavailable'
+      )
       throw new RequiredMCPUnavailableError()
     }
 
-    console.error('Optional MCP tools unavailable', { server: server.name })
+    getRouteLogger().warn(
+      {
+        event: 'chat.mcp.tools.load_failed',
+        outcome: 'optional_unavailable',
+        err: toSafeError('Optional MCP tools unavailable'),
+      },
+      'Optional MCP tools unavailable'
+    )
     // Return empty object to allow other servers to continue loading
     return {}
   }
@@ -341,10 +369,17 @@ export async function getAggregatedMCPTools(
   chatbotId: string,
   options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
-  console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+  const log = getRouteLogger()
+  log.info(
+    { event: 'chat.mcp.load.started', serverCount: serversWithConfigs.length },
+    'Loading MCP tools'
+  )
 
   if (serversWithConfigs.length === 0) {
-    console.log('No MCP servers configured')
+    log.info(
+      { event: 'chat.mcp.load.completed', outcome: 'not_configured' },
+      'No MCP servers configured'
+    )
     return {}
   }
 
@@ -378,14 +413,25 @@ export async function getAggregatedMCPTools(
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) throw error
 
-      console.error(
-        `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
+      log.warn(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'continuing',
+          err: toSafeError('Failed to load MCP tools'),
+        },
+        'Failed to load MCP tools; continuing with other servers'
       )
     }
   }
 
-  console.log(`Total aggregated tools: ${Object.keys(aggregatedTools).length}`)
-  console.log('Available tools:', Object.keys(aggregatedTools))
+  log.info(
+    {
+      event: 'chat.mcp.load.completed',
+      outcome: 'success',
+      toolCount: Object.keys(aggregatedTools).length,
+    },
+    'Loaded MCP tools'
+  )
 
   return aggregatedTools
 }
@@ -395,13 +441,20 @@ export async function getAggregatedMCPTools(
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
 export async function getMCPTools(chatbotId: string) {
-  console.log(' Using legacy MCP configuration from environment variables')
+  const log = getRouteLogger()
+  log.info(
+    { event: 'chat.mcp.configuration.selected', outcome: 'legacy_environment' },
+    'Selected legacy MCP configuration'
+  )
 
   const mcpKey = process.env.MCP_KEY
   const mcpUrl = process.env.MCP_URL
 
   if (!mcpUrl) {
-    console.log('No MCP_URL environment variable found, returning empty tools')
+    log.info(
+      { event: 'chat.mcp.load.completed', outcome: 'not_configured' },
+      'No MCP server configured'
+    )
     return {}
   }
 
@@ -425,8 +478,15 @@ export async function getMCPTools(chatbotId: string) {
       chatbotId
     )
     return serverTools
-  } catch (error) {
-    console.error('Failed to load legacy MCP Tools:', error)
+  } catch {
+    log.warn(
+      {
+        event: 'chat.mcp.tools.load_failed',
+        outcome: 'using_empty_toolset',
+        err: toSafeError('Failed to load legacy MCP tools'),
+      },
+      'Failed to load MCP tools'
+    )
     return {}
   }
 }

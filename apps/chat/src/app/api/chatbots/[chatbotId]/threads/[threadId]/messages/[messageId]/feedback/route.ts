@@ -1,4 +1,6 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatMessageRating } from '@klicker-uzh/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
@@ -9,7 +11,7 @@ const FeedbackSchema = z.object({
   rating: z.nativeEnum(ChatMessageRating).nullable(),
 })
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
   {
     params,
@@ -19,7 +21,8 @@ export async function POST(
       threadId: string
       messageId: string
     }>
-  }
+  },
+  log: AppLogger
 ) {
   const { chatbotId, threadId, messageId } = await params
   const authResult = await withChatbotAuth(req, chatbotId)
@@ -63,11 +66,34 @@ export async function POST(
     })
 
     return NextResponse.json({ rating })
-  } catch (error) {
-    console.error('Failed to save message feedback:', error)
+  } catch {
+    log.error(
+      {
+        event: 'chat.feedback.persist_failed',
+        err: toSafeError('Failed to persist chat feedback'),
+      },
+      'Failed to persist chat feedback'
+    )
     return NextResponse.json(
       { error: 'Failed to save message feedback' },
       { status: 500 }
     )
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: {
+    params: Promise<{
+      chatbotId: string
+      threadId: string
+      messageId: string
+    }>
+  }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/threads/:threadId/messages/:messageId/feedback',
+    (log) => handlePOST(req, context, log)
+  )
 }

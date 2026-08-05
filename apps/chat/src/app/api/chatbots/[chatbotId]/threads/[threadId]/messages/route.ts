@@ -1,13 +1,14 @@
+import { prisma } from '@klicker-uzh/prisma'
+import { type NextRequest, NextResponse } from 'next/server'
 import { buildHistoryAttachmentDto } from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { prisma } from '@klicker-uzh/prisma'
-import { NextRequest, NextResponse } from 'next/server'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 
 /**
  * Retrieves all messages for a specific thread in chronological order.
  * Used by the frontend to load conversation history when switching threads.
  */
-export async function GET(
+async function handleGET(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
@@ -61,11 +62,23 @@ export async function GET(
         updatedAt: msg.updatedAt.toISOString(),
       }))
     )
-  } catch (error) {
-    console.error('Failed to fetch messages:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch messages' },
       { status: 500 }
     )
   }
+}
+
+export function GET(
+  req: NextRequest,
+  context: {
+    params: Promise<{ chatbotId: string; threadId: string }>
+  }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/threads/:threadId/messages',
+    () => handleGET(req, context)
+  )
 }

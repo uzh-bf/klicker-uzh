@@ -1,8 +1,10 @@
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { getRouteLogger } from './requestLogging'
 
 export async function getParticipantId(
   req: NextRequest
@@ -10,6 +12,10 @@ export async function getParticipantId(
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
+    getRouteLogger().info(
+      { event: 'chat.authentication.rejected', outcome: 'missing_token' },
+      'Rejected chat authentication'
+    )
     return {
       response: NextResponse.json(
         { error: 'No authentication token found' },
@@ -29,6 +35,10 @@ export async function getParticipantId(
         : null
 
     if (!participantId) {
+      getRouteLogger().info(
+        { event: 'chat.authentication.rejected', outcome: 'missing_subject' },
+        'Rejected chat authentication'
+      )
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
@@ -38,8 +48,11 @@ export async function getParticipantId(
     }
 
     return { participantId }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
+  } catch {
+    getRouteLogger().info(
+      { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
+      'Rejected chat authentication'
+    )
     return {
       response: NextResponse.json(
         { error: 'Invalid authentication token' },
@@ -143,6 +156,13 @@ export async function requireParticipation(
     })
 
     if (!participation) {
+      getRouteLogger().info(
+        {
+          event: 'chat.authorization.rejected',
+          outcome: 'missing_participation',
+        },
+        'Rejected chat authorization'
+      )
       return {
         response: NextResponse.json(
           { error: 'No valid participation found for this chatbot' },
@@ -152,8 +172,15 @@ export async function requireParticipation(
     }
 
     return { ok: true }
-  } catch (error) {
-    console.error('Error checking participation:', error)
+  } catch {
+    getRouteLogger().error(
+      {
+        event: 'chat.authorization.failed',
+        outcome: 'failure',
+        err: toSafeError('Failed to verify chat participation'),
+      },
+      'Failed to check participation'
+    )
     return {
       response: NextResponse.json(
         { error: 'Error checking participation' },
