@@ -118,7 +118,7 @@ write_env_files() {
   local template target
 
   for d in apps/backend-docker; do
-    template="$d/.env.cypress"
+    template="$d/.env.test"
     target="$d/.env"
     if [[ -f "$template" ]]; then
       sed "s|__HATCHET_CLIENT_TOKEN__|$TOKEN|g" "$template" > "$target"
