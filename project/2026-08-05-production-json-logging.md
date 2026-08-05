@@ -776,7 +776,7 @@ Change `prepareHatchetTasks` to accept `logger?: AppLogger`. When present, wrap
 each task handler; when absent, execute the existing handler unchanged. This
 preserves backend compatibility until layer 3.
 
-- [ ] **Step 4: Verify and commit the Hatchet contract**
+- [x] **Step 4: Verify and commit the Hatchet contract**
 
 ```bash
 pnpm install
@@ -853,7 +853,7 @@ restrictions, participant identity, or audit payload text. Internal UUIDs such
 as instance/live-quiz IDs are allowed only on the reviewed operational events
 above and remain record metadata.
 
-- [ ] **Step 4: Verify layer 2 and commit**
+- [x] **Step 4: Verify layer 2 and commit**
 
 ```bash
 pnpm --filter @klicker-uzh/hatchet-worker-response-processor check
@@ -866,6 +866,10 @@ git commit -m "feat(logging): correlate response worker logs"
 
 Expected: old inputs compile because `loggingContext` remains optional, and the
 two deployment modes emit different `service` values.
+
+Execution note: the shared contract and both worker modes were committed as the
+single layer-two work package (`792a26727`) after all targeted and repository
+checks passed.
 
 ### Task 6: Add safe request logging to response-api
 
