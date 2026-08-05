@@ -32,10 +32,7 @@ export async function createTransport() {
       })
 
       await transport.verify()
-
-      console.log('Email transport verified')
-    } catch (e) {
-      console.error('Error creating email transport: ', e)
+    } catch {
       return null
     }
   }
@@ -63,8 +60,7 @@ export async function hydrateTemplate(
     if (!template) return null
 
     template = template.html
-  } catch (e) {
-    console.error('Error reading email template: ', e)
+  } catch {
     return null
   }
 
@@ -101,8 +97,7 @@ export async function sendEmail({
       html,
       ...(replyTo ? { replyTo } : {}),
     })
-  } catch (e) {
-    console.error('Error sending email: ', e)
+  } catch {
     return false
   }
 

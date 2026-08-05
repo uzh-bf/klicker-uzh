@@ -1,4 +1,5 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
@@ -36,6 +37,11 @@ function createCtx(): Context {
     emitter: new EventEmitter(),
     hatchet: {} as any,
     tasks: {} as any,
+    requestContext: {
+      requestId: 'account-lti-test-request',
+      correlationId: 'account-lti-test-request',
+    },
+    log: createLogger({ service: 'graphql-account-lti-test', environment: 'test' }),
   } as Context
 }
 

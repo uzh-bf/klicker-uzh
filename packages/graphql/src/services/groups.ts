@@ -608,7 +608,10 @@ export async function manualRandomGroupAssignments(
 
     return updatedCourse.participantGroups
   } catch (e) {
-    console.error(e)
+    ctx.log.error(
+      { event: 'group.assignment.failed' },
+      'Manual group assignment failed'
+    )
     await sendTeamsNotification({
       scope: 'graphql/manualRandomGroupAssignments',
       text: `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
@@ -1427,7 +1430,10 @@ export async function startGroupActivity(
 
     return { ...groupActivity, group, activityInstance }
   } catch (e) {
-    console.error(e)
+    ctx.log.error(
+      { event: 'group.activity.join.failed' },
+      'Joining group activity failed'
+    )
     return null
   }
 }
@@ -1538,7 +1544,13 @@ export async function submitGroupActivityDecisions(
             response: { assessment: inputResponse.caseStudyResponse },
           })
         } else {
-          console.log('Element type not supported for group activity')
+          ctx.log.warn(
+            {
+              event: 'group.activity.response.rejected',
+              reason: 'unsupported_element_type',
+            },
+            'Group activity response rejected'
+          )
           return
         }
 
@@ -1604,14 +1616,20 @@ export async function publishGroupActivity(
       const publicationTask =
         await ctx.tasks.publishScheduledGroupActivity.schedule(
           groupActivity.scheduledStartAt,
-          { groupActivityId: groupActivity.id }
+          {
+            groupActivityId: groupActivity.id,
+            loggingContext: ctx.requestContext,
+          }
         )
       const publicationTaskId = publicationTask.metadata.id
 
       // schedule the task to end the group activity at the scheduled end date
       const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
         groupActivity.scheduledEndAt,
-        { groupActivityId: groupActivity.id }
+        {
+          groupActivityId: groupActivity.id,
+          loggingContext: ctx.requestContext,
+        }
       )
       const completionTaskId = completionTask.metadata.id
 
@@ -1627,8 +1645,11 @@ export async function publishGroupActivity(
 
       ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
       return updatedGroupActivity
-    } catch (error) {
-      console.error(`Failed to schedule task for group activity ${id}:`, error)
+    } catch {
+      ctx.log.error(
+        { event: 'hatchet.schedule.failed', task: 'group-activity-publish' },
+        'Hatchet task scheduling failed'
+      )
       return null
     }
   } else if (groupActivity.scheduledEndAt < new Date()) {
@@ -1645,7 +1666,10 @@ export async function publishGroupActivity(
   // if the start date is in the past, but the end date is in the future, schedule the completion task
   const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
     groupActivity.scheduledEndAt,
-    { groupActivityId: groupActivity.id }
+    {
+      groupActivityId: groupActivity.id,
+      loggingContext: ctx.requestContext,
+    }
   )
   const completionTaskId = completionTask.metadata.id
 
@@ -1680,10 +1704,10 @@ export async function openGroupActivity(
       await ctx.hatchet.scheduled.delete(
         groupActivity.scheduledPublicationTaskId
       )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled task for group activity ${id}:`,
-        error
+    } catch {
+      ctx.log.warn(
+        { event: 'hatchet.schedule.delete_failed', task: 'group-activity' },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -1693,7 +1717,10 @@ export async function openGroupActivity(
   if (!groupActivity.scheduledCompletionTaskId) {
     const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
       groupActivity.scheduledEndAt,
-      { groupActivityId: groupActivity.id }
+      {
+        groupActivityId: groupActivity.id,
+        loggingContext: ctx.requestContext,
+      }
     )
     scheduledCompletionTaskId = completionTask.metadata.id
   }
@@ -1731,10 +1758,13 @@ export async function unpublishGroupActivity(
       await ctx.hatchet.scheduled.delete(
         groupActivity.scheduledPublicationTaskId
       )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled publication task for group activity ${id}:`,
-        error
+    } catch {
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'group-activity-publish',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -1745,10 +1775,13 @@ export async function unpublishGroupActivity(
       await ctx.hatchet.scheduled.delete(
         groupActivity.scheduledCompletionTaskId
       )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for group activity ${id}:`,
-        error
+    } catch {
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'group-activity-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -1785,10 +1818,13 @@ export async function endGroupActivity(
       await ctx.hatchet.scheduled.delete(
         groupActivity.scheduledCompletionTaskId
       )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for group activity ${id}:`,
-        error
+    } catch {
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'group-activity-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -1840,16 +1876,22 @@ export async function extendGroupActivity(
       await ctx.hatchet.scheduled.delete(
         groupActivity.scheduledCompletionTaskId
       )
-    } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for group activity ${id}:`,
-        error
+    } catch {
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'group-activity-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
   const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
     endDate,
-    { groupActivityId: groupActivity.id }
+    {
+      groupActivityId: groupActivity.id,
+      loggingContext: ctx.requestContext,
+    }
   )
 
   // store the task ID of the completion task on the group activity
@@ -1932,10 +1974,13 @@ export async function deleteGroupActivity(
           await ctx.hatchet.scheduled.delete(
             deletedItem.scheduledPublicationTaskId
           )
-        } catch (error) {
-          console.error(
-            `Failed to delete scheduled publication task for group activity ${id}:`,
-            error
+        } catch {
+          ctx.log.warn(
+            {
+              event: 'hatchet.schedule.delete_failed',
+              task: 'group-activity-publish',
+            },
+            'Hatchet scheduled task deletion failed'
           )
         }
       }
@@ -1950,10 +1995,13 @@ export async function deleteGroupActivity(
           await ctx.hatchet.scheduled.delete(
             deletedItem.scheduledCompletionTaskId
           )
-        } catch (error) {
-          console.error(
-            `Failed to delete scheduled completion task for group activity ${id}:`,
-            error
+        } catch {
+          ctx.log.warn(
+            {
+              event: 'hatchet.schedule.delete_failed',
+              task: 'group-activity-end',
+            },
+            'Hatchet scheduled task deletion failed'
           )
         }
       }
@@ -2003,11 +2051,14 @@ export async function deleteGroupActivity(
           await ctx.hatchet.scheduled.delete(
             groupActivityForSoftDelete.scheduledCompletionTaskId
           )
-        } catch (error) {
-          console.error(
-            `Failed to delete scheduled completion task for microlearning ${id}:`,
-            error
-          )
+          } catch {
+            ctx.log.warn(
+              {
+                event: 'hatchet.schedule.delete_failed',
+                task: 'group-activity-end',
+              },
+              'Hatchet scheduled task deletion failed'
+            )
         }
       }
 
@@ -2183,8 +2234,11 @@ export async function changeGroupActivityName(
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
     return true
-  } catch (error) {
-    console.error('Error changing group activity name:', error)
+  } catch {
+    ctx.log.error(
+      { event: 'group.activity.rename.failed' },
+      'Group activity rename failed'
+    )
     return false
   }
 }
@@ -2602,7 +2656,6 @@ export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGro
 
       return true
     } catch (error) {
-      console.error('Error ending expired group activity:', error)
       await sendTeamsNotification({
         scope: 'hatchet/group-activity-end',
         text: `Error ending group activity with ID ${groupActivityId}: ${error}`,
@@ -2653,7 +2706,6 @@ export const handlePublishScheduledGroupActivity: HatchetHandlers['handlePublish
 
       return true
     } catch (error) {
-      console.error('Error publishing scheduled group activity:', error)
       await sendTeamsNotification({
         scope: 'hatchet/group-activity-start',
         text: `Error publishing group activity with ID ${groupActivityId}: ${error}`,

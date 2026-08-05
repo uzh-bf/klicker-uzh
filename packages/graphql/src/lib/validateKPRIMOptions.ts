@@ -7,7 +7,6 @@ function validateKPRIMOptions(options?: ElementOptionsInput | null) {
 
   // KPRIM only: exactly four choice options are required
   if (options!.choices!.length !== 4) {
-    console.error('Exactly four choices are required for KPRIM questions')
     return false
   }
 

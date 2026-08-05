@@ -11,12 +11,14 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
+import { logger } from './logger.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
@@ -83,8 +85,11 @@ let cache: Cache
 if (redisCache) {
   try {
     cache = createRedisCache({ redis: redisCache })
-  } catch (e) {
-    console.error(e)
+  } catch {
+    logger.warn(
+      { event: 'dependency.degraded', dependency: 'redis-cache' },
+      'Redis response cache unavailable; using in-memory cache'
+    )
     cache = createInMemoryCache()
   }
 } else {
@@ -108,7 +113,8 @@ const pubSub = createPubSub({ eventTarget })
 // #region
 getChatModelRegistry()
 
-migrate(prisma).then(() => {
+migrate(prisma)
+  .then(() => {
   // initialize tasks to be able to call / schedule them inside service functions
   const tasks = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -118,9 +124,16 @@ migrate(prisma).then(() => {
     redisExec,
     redisAssessmentExec,
     handlers,
+    logger,
   })
 
-  console.log('Hatchet tasks initialized.', Object.keys(tasks))
+  logger.info(
+    {
+      event: 'hatchet.tasks.initialized',
+      taskCount: Object.keys(tasks).length,
+    },
+    'Hatchet tasks initialized'
+  )
   // #endregion
 
   const { app, yogaApp } = prepareApp({
@@ -137,12 +150,21 @@ migrate(prisma).then(() => {
 
   // Validate required environment variables at startup
   if (!process.env.APP_ORIGIN_API) {
-    console.error('APP_ORIGIN_API is required but not defined')
+    logger.fatal(
+      { event: 'configuration.invalid', variable: 'APP_ORIGIN_API' },
+      'Required configuration is missing'
+    )
     process.exit(1)
   }
 
   const server = app.listen(3000, () => {
-    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+    logger.info(
+      {
+        event: 'service.started',
+        http: { port: 3000, route: yogaApp.graphqlEndpoint },
+      },
+      'GraphQL API started'
+    )
 
     const wsServer = new WebSocket.WebSocketServer({
       server,
@@ -163,6 +185,19 @@ migrate(prisma).then(() => {
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),
         onSubscribe: async (ctx, msg) => {
+          const request = ctx.extra.request as typeof ctx.extra.request & {
+            locals?: Record<string, unknown>
+          }
+          const requestContext = resolveRequestContext({
+            requestId: request.headers['x-request-id'],
+            correlationId: request.headers['x-correlation-id'],
+          })
+          request.locals = {
+            ...request.locals,
+            requestContext,
+            log: logger.child(requestContext),
+          }
+
           const {
             schema,
             execute,
@@ -172,7 +207,7 @@ migrate(prisma).then(() => {
             validate,
           } = yogaApp.getEnveloped({
             ...ctx,
-            req: ctx.extra.request,
+            req: request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })
@@ -197,5 +232,12 @@ migrate(prisma).then(() => {
       wsServer as Parameters<typeof useServer>[1]
     )
   })
-})
+  })
+  .catch(() => {
+    logger.fatal(
+      { event: 'service.startup.failed' },
+      'GraphQL API startup failed'
+    )
+    process.exit(1)
+  })
 // #endregion

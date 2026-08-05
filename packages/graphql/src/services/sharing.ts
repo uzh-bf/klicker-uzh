@@ -764,9 +764,9 @@ export async function requestCatalogCollection(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
+    ctx.log.warn(
+      { event: 'access-request.rejected', reason: 'no_approver' },
+      'Access request rejected'
     )
     return null
   }
@@ -1147,9 +1147,9 @@ export async function requestCatalogObject(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    console.log(
-      'No admin or owner could be found on the catalog collection ',
-      catalogCollectionId
+    ctx.log.warn(
+      { event: 'access-request.rejected', reason: 'no_approver' },
+      'Access request rejected'
     )
     return false
   }

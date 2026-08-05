@@ -50,6 +50,7 @@
     "@graphql-typed-document-node/core": "~3.2.0",
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
     "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/logging": "workspace:*",
     "@parcel/watcher": "~2.4.1",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",

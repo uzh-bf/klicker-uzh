@@ -1,10 +1,38 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http'
+import { logger } from './logger.js'
+import {
+  beginNodeRequest,
+  type NodeRequestLog,
+  type ResponseApiRoute,
+} from './requestLogging.js'
+
+const requests = new WeakMap<ServerResponse, NodeRequestLog>()
+
+function startRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  route: ResponseApiRoute
+) {
+  const request = beginNodeRequest(req, res, logger, route)
+  requests.set(res, request)
+  return request
+}
+
+function requestFor(res: ServerResponse) {
+  const request = requests.get(res)
+  if (!request) throw new Error('Request logging context is unavailable')
+  return request
+}
 
 const redis = new Redis({
   family: 4,
@@ -52,6 +80,7 @@ function sendJson(
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.setHeader('Content-Length', Buffer.byteLength(json))
   res.end(json)
+  requests.get(res)?.complete(status)
 }
 
 function badRequest(
@@ -91,19 +120,32 @@ async function readBody(req: IncomingMessage): Promise<any> {
 }
 
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
+  const request = requestFor(res)
   let payload: any
   try {
     payload = await readBody(req)
   } catch (err: any) {
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_json' },
+      'Response rejected'
+    )
     return badRequest(req, res, err.message)
   }
 
   if (!payload || typeof payload !== 'object') {
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_body' },
+      'Response rejected'
+    )
     return badRequest(req, res, 'Body must be a JSON object')
   }
 
   const { response, liveQuizId, instanceId } = payload
   if (!response || !liveQuizId || typeof instanceId === 'undefined') {
+    request.log.info(
+      { event: 'response.rejected', reason: 'missing_fields' },
+      'Response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -138,6 +180,10 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+    loggingContext: {
+      requestId: request.context.requestId,
+      correlationId: request.context.correlationId,
+    },
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -150,9 +196,19 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
-
-  await hatchetClient.events.push(eventName, message)
+  request.log.info({ event: 'response.accepted' }, 'Response accepted')
+  try {
+    await hatchetClient.events.push(eventName, message)
+  } catch {
+    request.log.error(
+      {
+        event: 'response.publish.failed',
+        err: toSafeError('Hatchet response publish failed'),
+      },
+      'Response could not be published'
+    )
+    throw new Error('Response publish failed')
+  }
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
@@ -160,6 +216,7 @@ async function handleAddAssessmentResponse(
   req: IncomingMessage,
   res: ServerResponse
 ) {
+  const request = requestFor(res)
   // track the time where the response was received
   const responseTimestamp = Date.now()
 
@@ -167,16 +224,18 @@ async function handleAddAssessmentResponse(
   try {
     payload = await readBody(req)
   } catch (err: any) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
-    })
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_json' },
+      'Assessment response rejected'
+    )
     return badRequest(req, res, err.message)
   }
 
   if (!payload || typeof payload !== 'object') {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
-    })
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_body' },
+      'Assessment response rejected'
+    )
     return badRequest(req, res, 'submission_failure')
   }
 
@@ -187,11 +246,10 @@ async function handleAddAssessmentResponse(
     typeof instanceId === 'undefined' ||
     !correlationKey
   ) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Missing required fields in request body: ${JSON.stringify(
-        payload
-      )}`,
-    })
+    request.log.info(
+      { event: 'response.rejected', reason: 'missing_fields' },
+      'Assessment response rejected'
+    )
 
     return badRequest(req, res, 'missing_response')
   }
@@ -204,12 +262,11 @@ async function handleAddAssessmentResponse(
       process.env.APP_SECRET as string,
       { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
-  } catch (err) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Failed to verify correlationKey: ${err} for response ${JSON.stringify(
-        payload
-      )}`,
-    })
+  } catch {
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission' },
+      'Assessment response rejected'
+    )
     return badRequest(req, res, 'invalid_submission')
   }
 
@@ -218,9 +275,10 @@ async function handleAddAssessmentResponse(
     correlationData.instanceId !== instanceId ||
     correlationData.liveQuizId !== liveQuizId
   ) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
-    })
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission' },
+      'Assessment response rejected'
+    )
     return badRequest(req, res, 'invalid_submission')
   }
 
@@ -248,21 +306,24 @@ async function handleAddAssessmentResponse(
           { issuer: process.env.APP_ORIGIN_AUTH }
         )
       : null
-  } catch (err) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(
-        payload
-      )}`,
-    })
+  } catch {
+    request.log.info(
+      { event: 'response.rejected', reason: 'invalid_assessment_cookie' },
+      'Assessment response rejected'
+    )
     return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
   }
 
   const isAssessmentCookieValid =
     !!user && user.role === 'PARTICIPANT' && user.scope === UserLoginScope.EDUID
   if (!user || !user.sub || !isAssessmentCookieValid) {
-    hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
-    })
+    request.log.info(
+      {
+        event: 'response.rejected',
+        reason: 'missing_invalid_assessment_cookie',
+      },
+      'Assessment response rejected'
+    )
     return sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
     })
@@ -272,28 +333,35 @@ async function handleAddAssessmentResponse(
   const combinedCorrelationKey = `${correlationKey}:${user.sub}`
   const MD5 = createHash('md5')
   MD5.update(combinedCorrelationKey)
-  const correlationId = MD5.digest('hex')
+  const assessmentSubmissionId = MD5.digest('hex')
 
   // audit log entry for received response
   hatchetClient.events.push('create-audit-log-entry', {
-    correlationId,
-    info: `[AddResponse Assessment] Response-API received response for instance ${instanceId} in live quiz ${liveQuizId} from participant ${user.sub}: ${JSON.stringify(
-      response
-    )}`,
+    correlationId: assessmentSubmissionId,
+    info: '[AddResponse Assessment] Response received.',
+    loggingContext: {
+      requestId: request.context.requestId,
+      correlationId: request.context.correlationId,
+    },
   })
 
   // check if there already exists an entry in the votes table with the given correlationId
   const votes = await assessmentRedis.hget(
     `lq:${liveQuizId}:i:${instanceId}:votes`,
-    correlationId
+    assessmentSubmissionId
   )
   if (votes) {
-    console.log(
-      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
+    request.log.info(
+      { event: 'response.duplicate' },
+      'Assessment response already recorded'
     )
     hatchetClient.events.push('create-audit-log-entry', {
-      correlationId,
-      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
+      correlationId: assessmentSubmissionId,
+      info: '[AddResponse Assessment] Duplicate response received.',
+      loggingContext: {
+        requestId: request.context.requestId,
+        correlationId: request.context.correlationId,
+      },
     })
 
     // show success message that response was already recorded before and that first response counts
@@ -304,35 +372,34 @@ async function handleAddAssessmentResponse(
   }
 
   const message = {
-    correlationId,
+    correlationId: assessmentSubmissionId,
     participantId: user.sub,
     liveQuizId: String(liveQuizId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
     responseTimestamp,
+    loggingContext: {
+      requestId: request.context.requestId,
+      correlationId: request.context.correlationId,
+    },
   }
 
   // start the processing of an assessment response
-  console.log(
-    `Pushing event ${'response-received:assessment'} with payload`,
-    message
+  request.log.info(
+    { event: 'response.accepted' },
+    'Assessment response accepted'
   )
 
   try {
     await hatchetClient.events.push('response-received:assessment', message)
-  } catch (error) {
-    try {
-      await hatchetClient.events.push('create-audit-log-entry', {
-        correlationId,
-        info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
-      })
-    } catch (loggingError) {
-      // TODO: send error directly to audit-logging service through network request
-      console.error('Failed to push create-audit-log-entry event', {
-        originalError: error,
-        loggingError,
-      })
-    }
+  } catch {
+    request.log.error(
+      {
+        event: 'response.publish.failed',
+        err: toSafeError('Hatchet assessment response publish failed'),
+      },
+      'Assessment response could not be published'
+    )
   }
 
   return sendJson(req, res, 200, {
@@ -345,6 +412,7 @@ const server = createServer(async (req, res) => {
   try {
     // handle CORS preflight requests
     if (req.method === 'OPTIONS') {
+      startRequest(req, res, '/')
       setCorsHeaders(req, res)
       res.statusCode = 204
       return res.end()
@@ -357,11 +425,13 @@ const server = createServer(async (req, res) => {
       req.method === 'GET' &&
       (url.pathname === '/healthz' || url.pathname === '/')
     ) {
+      startRequest(req, res, url.pathname === '/healthz' ? '/healthz' : '/')
       return sendJson(req, res, 200, { status: 'ok' })
     }
 
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
+      startRequest(req, res, '/AddResponse')
       // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)
@@ -373,47 +443,71 @@ const server = createServer(async (req, res) => {
     }
 
     // fallback to 404 Not Found
+    startRequest(req, res, '/')
     return sendJson(req, res, 404, { error: 'Not found' })
-  } catch (err: any) {
-    console.error('Server error', err)
+  } catch {
+    const request = requests.get(res)
+    request?.log.error(
+      {
+        event: 'http.request.failed',
+        err: toSafeError('Unhandled response API request failure'),
+      },
+      'Response API request failed'
+    )
     return sendJson(req, res, 500, { error: 'Internal server error' })
   }
 })
 
 async function initializeService() {
-  console.log('Starting response-api service...')
-  console.log(`Port: ${PORT}`)
-  console.log(
-    `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
-  )
-  console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
-
   // test connection to Redis cache for standard responses
-  console.log('Testing Redis (standard responses) connection...')
   try {
     await redis.ping()
-    console.log('Redis connection established')
-  } catch (error) {
-    console.error('Failed to connect to Redis:', error)
-    throw error
+    logger.info(
+      { event: 'dependency.connected', dependency: 'redis' },
+      'Redis connected'
+    )
+  } catch {
+    logger.error(
+      {
+        event: 'dependency.unavailable',
+        dependency: 'redis',
+        err: toSafeError('Redis connection failed'),
+      },
+      'Redis connection failed'
+    )
+    throw new Error('Redis connection failed')
   }
 
   // test connection to Redis cache for assessment responses
-  console.log('Testing Redis (assessment responses) connection...')
   try {
     await assessmentRedis.ping()
-    console.log('Assessment Redis connection established')
-  } catch (error) {
-    console.error('Failed to connect to assessment Redis:', error)
-    throw error
+    logger.info(
+      { event: 'dependency.connected', dependency: 'redis-assessment' },
+      'Assessment Redis connected'
+    )
+  } catch {
+    logger.error(
+      {
+        event: 'dependency.unavailable',
+        dependency: 'redis-assessment',
+        err: toSafeError('Assessment Redis connection failed'),
+      },
+      'Assessment Redis connection failed'
+    )
+    throw new Error('Assessment Redis connection failed')
   }
-
-  console.log('All connections established successfully')
 }
 
 // initialize and start server
 await initializeService()
 
 server.listen(PORT, () => {
-  console.log(`[response-api] Ready and listening on http://localhost:${PORT}`)
+  logger.info(
+    {
+      event: 'service.started',
+      port: PORT,
+      assessment: process.env.ASSESSMENT_MODE === 'true',
+    },
+    'Response API is ready'
+  )
 })

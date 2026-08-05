@@ -477,14 +477,20 @@ export async function publishMicroLearning(
       const publicationTask =
         await ctx.tasks.publishScheduledMicroLearning.schedule(
           microLearning.scheduledStartAt,
-          { microLearningId: microLearning.id }
+          {
+            microLearningId: microLearning.id,
+            loggingContext: ctx.requestContext,
+          }
         )
       const publicationTaskId = publicationTask.metadata.id
 
       // schedule hatchet task for automated ending
       const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
         microLearning.scheduledEndAt,
-        { microLearningId: microLearning.id }
+        {
+          microLearningId: microLearning.id,
+          loggingContext: ctx.requestContext,
+        }
       )
       const completionTaskId = completionTask.metadata.id
 
@@ -501,7 +507,10 @@ export async function publishMicroLearning(
       ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
       return updatedMicroLearning
     } catch (error) {
-      console.error(`Failed to schedule task for microlearning ${id}:`, error)
+      ctx.log.error(
+        { event: 'hatchet.schedule.failed', task: 'microlearning' },
+        'Hatchet task scheduling failed'
+      )
       return null
     }
   } else if (microLearning.scheduledEndAt < new Date()) {
@@ -518,7 +527,10 @@ export async function publishMicroLearning(
   // if the start date is in the past, but the end date is in the future, schedule the completion task
   const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
     microLearning.scheduledEndAt,
-    { microLearningId: microLearning.id }
+    {
+      microLearningId: microLearning.id,
+      loggingContext: ctx.requestContext,
+    }
   )
   const completionTaskId = completionTask.metadata.id
 
@@ -554,9 +566,12 @@ export async function unpublishMicroLearning(
         microLearning.scheduledPublicationTaskId
       )
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled publication task for microlearning ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'microlearning-publish',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -568,9 +583,12 @@ export async function unpublishMicroLearning(
         microLearning.scheduledCompletionTaskId
       )
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for microlearning ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'microlearning-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -615,15 +633,21 @@ export async function extendMicroLearning(
         microLearning.scheduledCompletionTaskId
       )
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for microlearning ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'microlearning-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
   const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
     endDate,
-    { microLearningId: microLearning.id }
+    {
+      microLearningId: microLearning.id,
+      loggingContext: ctx.requestContext,
+    }
   )
 
   // store the task ID of the completion task on the microlearning
@@ -651,9 +675,12 @@ export async function endMicroLearning(
         updatedMicroLearning.scheduledCompletionTaskId
       )
     } catch (error) {
-      console.error(
-        `Failed to delete scheduled completion task for microlearning ${id}:`,
-        error
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'microlearning-end',
+        },
+        'Hatchet scheduled task deletion failed'
       )
     }
   }
@@ -696,7 +723,10 @@ export async function changeMicroLearningName(
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return true
   } catch (error) {
-    console.error('Error changing microlearning name:', error)
+    ctx.log.error(
+      { event: 'microlearning.rename.failed' },
+      'Microlearning rename failed'
+    )
     return false
   }
 }
@@ -792,9 +822,12 @@ export async function deleteMicroLearning(
           deletedItem.scheduledPublicationTaskId
         )
       } catch (error) {
-        console.error(
-          `Failed to delete scheduled publication task for microlearning ${id}:`,
-          error
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'microlearning-publish',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -810,9 +843,12 @@ export async function deleteMicroLearning(
           deletedItem.scheduledCompletionTaskId
         )
       } catch (error) {
-        console.error(
-          `Failed to delete scheduled completion task for microlearning ${id}:`,
-          error
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'microlearning-end',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -842,9 +878,12 @@ export async function deleteMicroLearning(
               microLearning.scheduledCompletionTaskId
             )
           } catch (error) {
-            console.error(
-              `Failed to delete scheduled completion task for microlearning ${id}:`,
-              error
+            ctx.log.warn(
+              {
+                event: 'hatchet.schedule.delete_failed',
+                task: 'microlearning-end',
+              },
+              'Hatchet scheduled task deletion failed'
             )
           }
         }
@@ -967,7 +1006,6 @@ export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMic
 
       return true
     } catch (error) {
-      console.error('Error ending expired microlearning:', error)
       await sendTeamsNotification({
         scope: 'hatchet/microlearning-end',
         text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
@@ -1018,7 +1056,6 @@ export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublish
 
       return true
     } catch (error) {
-      console.error('Error publishing scheduled microlearning:', error)
       await sendTeamsNotification({
         scope: 'hatchet/microlearning-start',
         text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
