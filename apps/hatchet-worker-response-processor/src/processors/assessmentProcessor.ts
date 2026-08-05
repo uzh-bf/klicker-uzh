@@ -16,7 +16,10 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { getLiveQuizResponseTrackingKey } from '@klicker-uzh/util'
+import {
+  getLiveQuizResponseTrackingKey,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
@@ -597,13 +600,15 @@ export async function aggregateAssessmentResponses(
     }
   }
 
-  redis.sadd(
-    getLiveQuizResponseTrackingKey({
-      liveQuizId,
-      instanceId,
-      status: 'processed',
-    }),
-    correlationId
+  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+    liveQuizId,
+    instanceId,
+    status: 'processed',
+  })
+  redis.sadd(processedResponseTrackingKey, correlationId)
+  redis.expire(
+    processedResponseTrackingKey,
+    LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
   )
 
   try {

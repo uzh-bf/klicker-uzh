@@ -14,6 +14,7 @@ import type {
 import {
   getLiveQuizResponseTrackingKey,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
@@ -657,13 +658,15 @@ export async function processResponseMessage(
       }
     }
 
-    redisMulti.sadd(
-      getLiveQuizResponseTrackingKey({
-        liveQuizId: message.sessionId,
-        instanceId: message.instanceId,
-        status: 'processed',
-      }),
-      message.messageId
+    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+      status: 'processed',
+    })
+    redisMulti.sadd(processedResponseTrackingKey, message.messageId)
+    redisMulti.expire(
+      processedResponseTrackingKey,
+      LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
     )
   } catch (e) {
     ctx.logger.error(

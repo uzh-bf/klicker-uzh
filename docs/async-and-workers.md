@@ -58,8 +58,10 @@ The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, or failed responses. Tracking does not change the response
 pipeline's existing validation or result-aggregation retry behavior. The keys
-remain under the existing per-instance wildcard, so live-quiz cleanup applies
-the same one-day expiry as the other instance keys
+refresh a one-day expiry on every received or processed write, preventing a set
+created after cleanup's key scan from persisting indefinitely. They also remain
+under the existing per-instance wildcard, so live-quiz cleanup reapplies the
+same one-day expiry as the other instance keys
 (`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
 
 ## Worker task catalog

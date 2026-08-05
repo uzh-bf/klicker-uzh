@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { getLiveQuizResponseTrackingKey } from '../src/liveQuizResponseTracking.js'
+import {
+  getLiveQuizResponseTrackingKey,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+} from '../src/liveQuizResponseTracking.js'
 
 describe('live quiz response tracking', () => {
   it('builds per-instance received and processed keys', () => {
@@ -18,5 +21,9 @@ describe('live quiz response tracking', () => {
         status: 'processed',
       })
     ).toBe('lq:quiz-id:i:43:responses:processed')
+  })
+
+  it('keeps tracking sets for one day', () => {
+    expect(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS).toBe(60 * 60 * 24)
   })
 })

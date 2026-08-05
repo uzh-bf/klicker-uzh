@@ -4,6 +4,7 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   getLiveQuizResponseTrackingKey,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -30,6 +31,32 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
+
+async function trackLiveQuizResponse({
+  redisClient,
+  key,
+  member,
+}: {
+  redisClient: Redis
+  key: string
+  member: string
+}) {
+  const results = await redisClient
+    .multi()
+    .sadd(key, member)
+    .expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+    .exec()
+
+  if (results === null) {
+    throw new Error('Live quiz response tracking transaction was aborted')
+  }
+
+  for (const [error] of results) {
+    if (error) {
+      throw error
+    }
+  }
+}
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
@@ -148,14 +175,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   )
 
   if (instanceInfoExists === 1) {
-    await redis.sadd(
-      getLiveQuizResponseTrackingKey({
+    await trackLiveQuizResponse({
+      redisClient: redis,
+      key: getLiveQuizResponseTrackingKey({
         liveQuizId: String(liveQuizId),
         instanceId,
         status: 'received',
       }),
-      message.messageId
-    )
+      member: message.messageId,
+    })
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -330,14 +358,15 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
-  await assessmentRedis.sadd(
-    getLiveQuizResponseTrackingKey({
+  await trackLiveQuizResponse({
+    redisClient: assessmentRedis,
+    key: getLiveQuizResponseTrackingKey({
       liveQuizId: String(liveQuizId),
       instanceId,
       status: 'received',
     }),
-    correlationId
-  )
+    member: correlationId,
+  })
 
   // start the processing of an assessment response
   console.log(
