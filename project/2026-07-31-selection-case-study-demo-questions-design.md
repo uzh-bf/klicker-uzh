@@ -201,4 +201,4 @@ Perform a browser smoke test in the real local environment with a disposable fre
 
 ## Documentation
 
-Update `docs/data-and-migrations.md` with the first-login demo-seeding relationship between elements and answer collections. Add the behavior change to `docs/log.md`. No public documentation update is required.
+Update `docs/data-and-migrations.md` with the first-login demo-seeding relationship between elements and answer collections. Add the behavior change as a new dated file under `docs/log/`. No public documentation update is required.

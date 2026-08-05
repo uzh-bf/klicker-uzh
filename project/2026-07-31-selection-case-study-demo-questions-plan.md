@@ -21,7 +21,7 @@
 - Before editing Prisma calls, use Context7 to resolve Prisma ORM and confirm the installed Prisma 7 transaction, nested-create, relation-connect, and relation-include APIs.
 - Run pnpm, Prisma, and tests inside the self-contained DevPod through `devrouter exec . -- ...`.
 - Use Prettier formatting, strict TypeScript, no semicolons, single quotes, and trailing commas.
-- Use the approved design as the source of truth: `docs/superpowers/specs/2026-07-31-selection-case-study-demo-questions-design.md`.
+- Use the approved design as the source of truth: `project/2026-07-31-selection-case-study-demo-questions-design.md`.
 
 ---
 
@@ -32,7 +32,7 @@
 | `packages/graphql/src/services/accounts.ts` | Create the shared answer collection and both relational elements, then include them in the existing demo live quiz.                                               |
 | `packages/graphql/test/accounts.test.ts`    | Verify opt-in/opt-out behavior, relational integrity, exact case-study options, derived permissions, quiz snapshots, and initial results against a real database. |
 | `docs/data-and-migrations.md`               | Document first-login demo seeding as a fourth, request-driven seed path and explain the shared answer-collection relationship.                                    |
-| `docs/log.md`                               | Record the behavior and wiki update under 2026-07-31.                                                                                                             |
+| `docs/log/2026-08-04-...-seeding.md`        | Record the behavior and wiki update as a new dated log file (one file per change batch).                                                                          |
 
 ### Task 1: Seed the relational selection and case-study bundle
 
@@ -888,7 +888,7 @@ Expected: the commit contains only the new block wiring and its instance-level a
 **Files:**
 
 - Modify: `docs/data-and-migrations.md:41-50`
-- Modify: `docs/log.md:1-3`
+- Modify: `docs/log/2026-08-04-demo-selection-case-study-seeding.md` (new file)
 
 **Interfaces:**
 
@@ -909,10 +909,12 @@ This path does not run for users who opt out, does not backfill existing account
 
 - [ ] **Step 2: Add the wiki log entry**
 
-Insert this at the top of `docs/log.md`, after `# Log`:
+Create `docs/log/2026-08-04-demo-selection-case-study-seeding.md`. The wiki
+uses one log file per change batch — never append to `docs/log.md`, which
+exists only to explain that convention:
 
 ```md
-## 2026-07-31
+## 2026-08-04
 
 - **Update**: [data-and-migrations](./data-and-migrations.md) documents request-driven first-login demo seeding, including the shared answer collection used by the selection and case-study demos and their final Demo Live Quiz block.
 ```
@@ -922,9 +924,9 @@ Insert this at the top of `docs/log.md`, after `# Log`:
 Run:
 
 ```bash
-devrouter exec . -- pnpm exec prettier --write docs/data-and-migrations.md docs/log.md
+devrouter exec . -- pnpm exec prettier --write docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-study-seeding.md
 git diff --check
-git diff -- docs/data-and-migrations.md docs/log.md
+git diff -- docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-study-seeding.md
 ```
 
 Expected: Markdown is formatted, the diff is limited to the new subsection and dated log entry, and no public docs file changed.
@@ -932,7 +934,7 @@ Expected: Markdown is formatted, the diff is limited to the new subsection and d
 - [ ] **Step 4: Commit the wiki update**
 
 ```bash
-git add docs/data-and-migrations.md docs/log.md
+git add docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-study-seeding.md
 git diff --cached --check
 git commit -m "docs: document first-login demo seeding"
 ```
@@ -946,8 +948,8 @@ Expected: one documentation-only commit.
 - Verify: `packages/graphql/src/services/accounts.ts`
 - Verify: `packages/graphql/test/accounts.test.ts`
 - Verify: `docs/data-and-migrations.md`
-- Verify: `docs/log.md`
-- Compare against: `docs/superpowers/specs/2026-07-31-selection-case-study-demo-questions-design.md`
+- Verify: `docs/log/2026-08-04-demo-selection-case-study-seeding.md`
+- Compare against: `project/2026-07-31-selection-case-study-demo-questions-design.md`
 
 **Interfaces:**
 
@@ -1025,7 +1027,7 @@ Expected: no manual verification rows or demo resources remain outside the dispo
 
 ```bash
 git diff --stat origin/v3...HEAD
-git diff origin/v3...HEAD -- packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts docs/data-and-migrations.md docs/log.md
+git diff origin/v3...HEAD -- packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-study-seeding.md
 git status --short --branch
 ```
 
