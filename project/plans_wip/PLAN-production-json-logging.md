@@ -148,3 +148,8 @@ checkout's unrelated untracked files.
 - 2026-08-05: The wiki skill's documented external OKF validator was unavailable
   locally; repository formatting, AGENTS, link-reference, and diff checks are the
   verification fallback for this move.
+- 2026-08-05: Created `trees/logging-stack`, initialized the five native GitHub
+  stack branches against `v3`, and checked out `feat/logging-foundation` for
+  layer-one implementation.
+- 2026-08-05: Implemented the shared request, Node/Pino, and Edge logging seams
+  test-first; the general Hatchet worker is the first application canary.

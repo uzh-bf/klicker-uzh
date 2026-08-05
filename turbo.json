@@ -117,7 +117,9 @@
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_BASE_URL"
+    "LANGFUSE_BASE_URL",
+    "LOG_LEVEL",
+    "PINO_PRETTY"
   ],
   "tasks": {
     "lint": {
