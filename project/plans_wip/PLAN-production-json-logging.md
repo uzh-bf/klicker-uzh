@@ -153,3 +153,8 @@ checkout's unrelated untracked files.
   layer-one implementation.
 - 2026-08-05: Implemented the shared request, Node/Pino, and Edge logging seams
   test-first; the general Hatchet worker is the first application canary.
+- 2026-08-05: Layer 1 committed as `0e623fbe6` after 15 logging tests, focused
+  package and worker typechecks/builds, repository-wide `check:all`, the full
+  23-target production build, production NDJSON and development-pretty smoke
+  tests, and an OpenGrep scan with zero findings. Local Gitleaks remains
+  unavailable; CI will enforce the secret scan.
