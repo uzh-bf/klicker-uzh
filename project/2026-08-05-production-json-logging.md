@@ -637,7 +637,7 @@ verification sets passed.
   `LoggableHatchetInput { loggingContext?: HatchetLoggingContext }`, and
   `withHatchetTaskLogging({ logger, taskName, handler })`.
 
-- [ ] **Step 1: Check out layer 2 and write failing wrapper tests**
+- [x] **Step 1: Check out layer 2 and write failing wrapper tests**
 
 ```bash
 gh stack checkout feat/logging-hatchet-correlation
@@ -694,7 +694,7 @@ pnpm --filter @klicker-uzh/hatchet test -- logging.test.ts
 
 Expected: failure because the wrapper is not defined.
 
-- [ ] **Step 2: Implement the wrapper**
+- [x] **Step 2: Implement the wrapper**
 
 Use this contract:
 
@@ -759,7 +759,7 @@ export function withHatchetTaskLogging<
 }
 ```
 
-- [ ] **Step 3: Make task inputs additive and optional**
+- [x] **Step 3: Make task inputs additive and optional**
 
 Define `HatchetLoggingContext` in `packages/types/src/hatchet.ts`, where it is
 already re-exported by `packages/types/src/index.ts`. Import that type into the
@@ -805,7 +805,7 @@ git commit -m "feat(logging): add Hatchet task context"
 - Produces: distinct standard/assessment service names and correlated task
   boundary records while accepting queued inputs without `loggingContext`.
 
-- [ ] **Step 1: Create the mode-aware root logger**
+- [x] **Step 1: Create the mode-aware root logger**
 
 ```ts
 import { createLogger } from '@klicker-uzh/logging/node'
@@ -820,7 +820,7 @@ export const logger = createLogger({
 
 Add `@klicker-uzh/logging: workspace:*` to the app.
 
-- [ ] **Step 2: Wrap every declared task/workflow boundary**
+- [x] **Step 2: Wrap every declared task/workflow boundary**
 
 Wrap `processAnonymousResponseTask`, `processAuthenticatedResponseTask`, the
 assessment durable task, assessment failure hook, and aggregation task. Bind
@@ -833,7 +833,7 @@ Redis deduplication key and must never be promoted to the diagnostic log field.
 Keep Hatchet's SDK logger untouched. Klicker task records use the Pino root;
 Hatchet's own platform records remain SDK-owned.
 
-- [ ] **Step 3: Semantically migrate worker log calls**
+- [x] **Step 3: Semantically migrate worker log calls**
 
 Use stable events rather than copying prose. The minimum event map is:
 

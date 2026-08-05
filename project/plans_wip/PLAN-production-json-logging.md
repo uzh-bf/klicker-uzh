@@ -158,3 +158,8 @@ checkout's unrelated untracked files.
   23-target production build, production NDJSON and development-pretty smoke
   tests, and an OpenGrep scan with zero findings. Local Gitleaks remains
   unavailable; CI will enforce the secret scan.
+- 2026-08-05: Layer 2 implements optional Hatchet diagnostic context, validated
+  task-boundary records, general-worker handler wrapping, and standard versus
+  assessment response-worker roots. Sensitive SDK/console diagnostics in the
+  response processors were replaced with stable allowlisted application
+  events; verification is in progress.

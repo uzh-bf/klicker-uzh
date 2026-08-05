@@ -128,6 +128,7 @@ async function main() {
     redisAssessmentExec,
     redisCache,
     handlers,
+    logger,
   })
 
   const { selectedKeys, workflows } = selectWorkflows(preparedWorkflows)

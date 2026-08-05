@@ -2,8 +2,6 @@ import {
   NonRetryableError,
   type Context,
   type DurableContext,
-  type JsonObject,
-  type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
 import {
@@ -13,12 +11,14 @@ import {
 } from '@klicker-uzh/prisma/client'
 import type {
   FreeTextRestrictions,
+  HatchetLoggingContext,
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
+import { loggerForInput } from '../logger.js'
 import { getAssessmentRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPointsDetails,
@@ -32,37 +32,57 @@ import {
 
 const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
 
+export type AssessmentResponseMessage = {
+  correlationId: string
+  participantId: string
+  liveQuizId: string
+  instanceId: string
+  response: LiveQuizResponseInput
+  cookie?: string
+  responseTimestamp: number
+  loggingContext?: HatchetLoggingContext
+}
+
 export async function processAssessmentResponse(
-  message: {
-    correlationId: string
-    participantId: string
-    liveQuizId: string
-    instanceId: string
-    response: LiveQuizResponseInput
-    cookie?: string
-    responseTimestamp: number
-  },
-  ctx: DurableContext<UnknownInputType, {}>
+  message: AssessmentResponseMessage,
+  ctx: DurableContext<AssessmentResponseMessage, {}>
 ) {
+  const log = loggerForInput(message)
   const receivedMessage = `[INFO] [AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`
-  ctx.logger.info(receivedMessage)
+  log.info(
+    {
+      event: 'response.processing.started',
+      liveQuizId: message.liveQuizId,
+      instanceId: message.instanceId,
+    },
+    'Processing assessment response'
+  )
   ctx.v1.events.push('create-audit-log-entry', {
     correlationId: message.correlationId,
     info: receivedMessage,
+    ...(message.loggingContext
+      ? { loggingContext: message.loggingContext }
+      : {}),
   })
 
   try {
     assert(!!redisExec)
-  } catch (e) {
-    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
-    throw new Error(`Redis connection error ${String(e)}`)
+  } catch {
+    log.error(
+      { event: 'dependency.unavailable', dependency: 'redis' },
+      'Assessment Redis is unavailable'
+    )
+    throw new Error('Assessment Redis is unavailable')
   }
 
   try {
     assert(!!prisma)
-  } catch (e) {
-    ctx.logger.error(`Prisma client error: ${JSON.stringify(e)}`)
-    throw new Error(`Prisma client error ${String(e)}`)
+  } catch {
+    log.error(
+      { event: 'dependency.unavailable', dependency: 'prisma' },
+      'Prisma is unavailable'
+    )
+    throw new Error('Prisma is unavailable')
   }
 
   if (message.liveQuizId === 'ping') {
@@ -82,13 +102,14 @@ export async function processAssessmentResponse(
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
 
   if (!response && instanceInfo.type !== ElementType.CONTENT) {
-    ctx.logger.error(
-      'Missing response ' +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
+    log.info(
+      {
+        event: 'response.rejected',
+        reason: 'missing_response',
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+      'Assessment response rejected'
     )
     throw new NonRetryableError('Missing response')
   }
@@ -125,8 +146,13 @@ export async function processAssessmentResponse(
   }
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-    ctx.logger.error(
-      `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+    log.info(
+      {
+        event: 'response.block_closed',
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+      'Assessment response received after block closure'
     )
     ctx.cancel()
     return { status: 200 }
@@ -350,10 +376,21 @@ export async function processAssessmentResponse(
 
   // send audit-log event for computed points and XP
   const gradingLog = `[INFO] [AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`
-  ctx.logger.info(gradingLog)
+  log.info(
+    {
+      event: 'response.processed',
+      outcome: 'graded',
+      liveQuizId: message.liveQuizId,
+      instanceId: message.instanceId,
+    },
+    'Assessment response graded'
+  )
   ctx.v1.events.push('create-audit-log-entry', {
     correlationId: message.correlationId,
     info: gradingLog,
+    ...(message.loggingContext
+      ? { loggingContext: message.loggingContext }
+      : {}),
   })
 
   // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
@@ -385,8 +422,14 @@ export async function processAssessmentResponse(
   })
 
   if (existingVote) {
-    ctx.logger.error(
-      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
+    log.info(
+      {
+        event: 'response.rejected',
+        reason: 'already_processed',
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+      'Assessment response already processed'
     )
     ctx.cancel()
     return { status: 208 }
@@ -440,6 +483,9 @@ export async function processAssessmentResponse(
     pointsAwarded: awardedBasePoints,
     xpAwarded: awardedXp,
     response,
+    ...(message.loggingContext
+      ? { loggingContext: message.loggingContext }
+      : {}),
   })
 
   return {
@@ -451,21 +497,27 @@ export async function processAssessmentResponse(
   }
 }
 
+export type AssessmentAggregationMessage = {
+  correlationId: string
+  participantId: string
+  liveQuizId: string
+  blockId: string
+  instanceId: string
+  elementType: ElementType
+  isGamificationEnabled: boolean
+  pointsAwarded: number
+  xpAwarded: number
+  response: LiveQuizResponseInput
+  loggingContext?: HatchetLoggingContext
+}
+
 export async function aggregateAssessmentResponses(
-  message: {
-    correlationId: string
-    participantId: string
-    liveQuizId: string
-    blockId: string
-    instanceId: string
-    elementType: ElementType
-    isGamificationEnabled: boolean
-    pointsAwarded: number
-    xpAwarded: number
-    response: LiveQuizResponseInput
-  },
-  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
+  message: AssessmentAggregationMessage,
+  ctx:
+    | Context<AssessmentAggregationMessage, {}>
+    | DurableContext<AssessmentAggregationMessage, {}>
 ) {
+  const log = loggerForInput(message)
   // destructure message into components required for results aggregation
   const {
     participantId,
@@ -597,24 +649,27 @@ export async function aggregateAssessmentResponses(
 
   try {
     await redis.exec()
-    ctx.logger.info("Successfully aggregated a participant's results", {
-      correlationId: message.correlationId,
-      liveQuizId: message.liveQuizId,
-      instanceId: message.instanceId,
-    })
+    log.info(
+      {
+        event: 'response.aggregation.completed',
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+      'Assessment response aggregation completed'
+    )
     return { status: 200 }
-  } catch (e) {
-    ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${String(e)}` +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
+  } catch {
+    log.error(
+      {
+        event: 'dependency.unavailable',
+        dependency: 'redis',
+        operation: 'assessment_aggregation',
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+      'Assessment response aggregation failed'
     )
     redis.discard()
-    throw new Error(
-      `Redis pipeline for results aggregation failed ${String(e)}`
-    )
+    throw new Error('Assessment response aggregation failed')
   }
 }
