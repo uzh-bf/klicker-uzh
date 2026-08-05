@@ -702,6 +702,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -877,6 +880,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
@@ -1118,6 +1124,9 @@ importers:
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@klicker-uzh/logging':
+        specifier: workspace:*
+        version: link:../../packages/logging
       '@klicker-uzh/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown

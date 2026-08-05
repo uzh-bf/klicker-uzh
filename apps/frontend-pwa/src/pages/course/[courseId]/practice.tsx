@@ -84,6 +84,12 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/course/:courseId/practice'
+  )
+
   try {
     if (typeof ctx.params?.courseId !== 'string') {
       return {
@@ -94,7 +100,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       courseId: ctx.params.courseId,
@@ -120,8 +126,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     })
-  } catch (error) {
-    console.error('Error in getServerSideProps on practice:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -129,8 +135,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page
