@@ -8,12 +8,13 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementBlockStatus,
-  ElementBlock as ElementBlockType,
-  ElementInstance,
+  type ElementBlock as ElementBlockType,
+  type ElementInstance,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import type React from 'react'
+import { type Dispatch, type SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from './LiveQuizCountdown'
 
@@ -88,25 +89,44 @@ function LiveQuizBlock({
           />
         )}
       </div>
-      {block.elements?.map((instance) => (
-        <div key={instance.id}>
-          <Link
-            href={`/instances/${instance.id}`}
-            className="text-sm hover:text-slate-700"
-            legacyBehavior
-            passHref
-          >
-            <a
+      {block.elements?.map((instance) => {
+        const numOfResponsesReceived = instance.numOfResponsesReceived
+        const numOfResponsesProcessed = instance.numOfResponsesProcessed
+        const hasResponseCounts =
+          numOfResponsesReceived !== null &&
+          typeof numOfResponsesReceived !== 'undefined' &&
+          numOfResponsesProcessed !== null &&
+          typeof numOfResponsesProcessed !== 'undefined'
+
+        return (
+          <div key={instance.id}>
+            <Link
+              href={`/instances/${instance.id}`}
+              className="text-sm hover:text-slate-700"
               data-cy={`open-question-live-quiz-${instance.id}`}
               target="_blank"
               rel="noopener noreferrer"
             >
               {instance.elementData!.name}{' '}
               <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
-            </a>
-          </Link>
-        </div>
-      ))}
+            </Link>
+            {hasResponseCounts ? (
+              <span
+                className="ml-2 whitespace-nowrap text-xs text-gray-600"
+                data-cy={`live-quiz-response-counts-${instance.id}`}
+              >
+                {t('manage.cockpit.responsesReceived', {
+                  number: numOfResponsesReceived,
+                })}
+                <span aria-hidden="true"> · </span>
+                {t('manage.cockpit.responsesProcessed', {
+                  number: numOfResponsesProcessed,
+                })}
+              </span>
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -3140,6 +3140,39 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.waitForTimeout(500)
     await rememberStudentPwaState(page)
+
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
+      .click()
+
+    for (const { title, expected } of [
+      { title: data.SCML.title, expected: 1 },
+      { title: data.MCML.title, expected: 1 },
+      { title: data.KPML.title, expected: 1 },
+      { title: data.NR.title, expected: 0 },
+    ]) {
+      const elementRow = page
+        .getByRole('link', { name: title, exact: false })
+        .locator('xpath=..')
+      const counts = elementRow.getByTestId(/^live-quiz-response-counts-/)
+
+      await expect(counts).toContainText(
+        messages.manage.cockpit.responsesReceived.replace(
+          '{number}',
+          String(expected)
+        ),
+        { timeout: 30_000 }
+      )
+      await expect(counts).toContainText(
+        messages.manage.cockpit.responsesProcessed.replace(
+          '{number}',
+          String(expected)
+        ),
+        { timeout: 30_000 }
+      )
+    }
   })
 
   test('Test the live quiz functionalities on mobile devices', async ({

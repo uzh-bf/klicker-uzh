@@ -2515,6 +2515,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
+      responsesReceived: 'Received: {number}',
+      responsesProcessed: 'Processed: {number}',
       endQuiz: 'End quiz',
       audienceView: 'Audience view',
       evaluationResults: 'Evaluation (results)',
