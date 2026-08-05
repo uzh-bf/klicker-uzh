@@ -40,12 +40,14 @@ check. Set membership makes both counts idempotent across Hatchet retries
 `apps/response-api/src/index.ts:handleAddResponse`, and
 `apps/response-api/src/index.ts:handleAddAssessmentResponse`).
 
-The response API adds the received member before enqueueing a known instance.
+The response API attempts to add the received member before enqueueing a known
+instance. Tracking is best-effort: a tracking failure is logged but does not
+reject or delay the participant response.
 The standard response processor adds the matching processed member only after
 the Redis pipeline that updates live results succeeds; assessment mode does the
 same in `aggregateAssessmentResponses`, not when the database row is first
-stored. In both paths, a separate Redis transaction writes the processed member
-and refreshes the tracking set expiry
+stored. In both paths, processed tracking is also best-effort, so a metric-write
+failure cannot retry already-applied scoring, results, or leaderboard updates
 (`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`
 and
 `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`).
@@ -57,15 +59,18 @@ scheduled elements have no counts
 
 The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
-late, rejected, or failed responses. Tracking does not change the response
-pipeline's existing validation or result-aggregation retry behavior. If result
-aggregation succeeds but the separate tracking transaction fails, the worker
-fails and a retry can apply the existing non-idempotent aggregation again before
-tracking succeeds. The keys
-refresh a one-day expiry on every received or processed write, preventing a set
-created after cleanup's key scan from persisting indefinitely. They also remain
-under the existing per-instance wildcard, so live-quiz cleanup reapplies the
-same one-day expiry as the other instance keys
+late, rejected, failed, or untracked responses. Tracking does not change the
+response pipeline's existing validation or result-aggregation retry behavior.
+
+Tracking sets stay persistent while their element instance is active, matching
+the rest of the live execution cache. When a block closes, cleanup first starts
+the canonical instance-info key's one-day retention and then scans the instance
+keys. A concurrent tracking write atomically reads that info-key TTL with its
+set update and mirrors any remaining retention; if the info key is already
+missing, the tracking key receives a one-day safety expiry. This ordering covers
+writes on both sides of cleanup's key scan without erasing counts from an
+unlimited active block. The tracking keys also remain under the existing
+per-instance wildcard
 (`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
 
 ## Worker task catalog

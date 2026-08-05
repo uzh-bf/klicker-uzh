@@ -12,9 +12,10 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
+  getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
+  getLiveQuizResponseTrackingTtl,
   type JWTPayload,
-  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
@@ -685,29 +686,64 @@ export async function processResponseMessage(
       )
     }
 
-    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
-      liveQuizId: message.sessionId,
-      instanceId: message.instanceId,
-      status: 'processed',
-    })
-    const trackingTransaction = redisExec.multi()
-    trackingTransaction.sadd(processedResponseTrackingKey, message.messageId)
-    trackingTransaction.expire(
-      processedResponseTrackingKey,
-      LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
-    )
+    try {
+      const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+        liveQuizId: message.sessionId,
+        instanceId: message.instanceId,
+        status: 'processed',
+      })
+      const trackingTransaction = redisExec.multi()
+      trackingTransaction.sadd(processedResponseTrackingKey, message.messageId)
+      trackingTransaction.ttl(
+        getLiveQuizInstanceInfoKey({
+          liveQuizId: message.sessionId,
+          instanceId: message.instanceId,
+        })
+      )
 
-    const trackingResults = await trackingTransaction.exec()
-    if (trackingResults === null) {
-      throw new Error('Redis processed-response tracking returned no results')
-    }
+      const trackingResults = await trackingTransaction.exec()
+      if (
+        trackingResults === null ||
+        !trackingResults[0] ||
+        !trackingResults[1]
+      ) {
+        throw new Error('Redis processed-response tracking returned no results')
+      }
 
-    const trackingErrors = trackingResults.flatMap(([error]) =>
-      error ? [error] : []
-    )
-    if (trackingErrors.length > 0) {
-      throw new Error(
-        `Redis processed-response tracking commands failed: ${trackingErrors.join('; ')}`
+      const trackingErrors = trackingResults.flatMap(([error]) =>
+        error ? [error] : []
+      )
+      if (trackingErrors.length > 0) {
+        throw new Error(
+          `Redis processed-response tracking commands failed: ${trackingErrors.join('; ')}`
+        )
+      }
+
+      const instanceInfoTtl = Number(trackingResults[1][1])
+      if (!Number.isInteger(instanceInfoTtl)) {
+        throw new Error('Redis instance info returned an invalid TTL')
+      }
+
+      const trackingTtl = getLiveQuizResponseTrackingTtl(instanceInfoTtl)
+      if (trackingTtl !== null) {
+        const expiryApplied = await redisExec.expire(
+          processedResponseTrackingKey,
+          trackingTtl
+        )
+        if (expiryApplied !== 1) {
+          throw new Error(
+            'Redis processed-response tracking expiry was not applied'
+          )
+        }
+      }
+    } catch (trackingError) {
+      ctx.logger.error(
+        `Failed to track processed response: ${String(trackingError)} ` +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
       )
     }
 

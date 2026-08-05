@@ -2,9 +2,10 @@ import { createHash, randomUUID } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
+  getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
+  getLiveQuizResponseTrackingTtl,
   type JWTPayload,
-  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -35,25 +36,40 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
 async function trackLiveQuizResponse({
   redisClient,
   key,
+  instanceInfoKey,
   member,
 }: {
   redisClient: Redis
   key: string
+  instanceInfoKey: string
   member: string
 }) {
   const results = await redisClient
     .multi()
     .sadd(key, member)
-    .expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+    .ttl(instanceInfoKey)
     .exec()
 
-  if (results === null) {
+  if (results === null || !results[0] || !results[1]) {
     throw new Error('Live quiz response tracking transaction was aborted')
   }
 
   for (const [error] of results) {
     if (error) {
       throw error
+    }
+  }
+
+  const instanceInfoTtl = Number(results[1][1])
+  if (!Number.isInteger(instanceInfoTtl)) {
+    throw new Error('Live quiz instance info returned an invalid TTL')
+  }
+
+  const trackingTtl = getLiveQuizResponseTrackingTtl(instanceInfoTtl)
+  if (trackingTtl !== null) {
+    const expiryApplied = await redisClient.expire(key, trackingTtl)
+    if (expiryApplied !== 1) {
+      throw new Error('Live quiz response tracking expiry was not applied')
     }
   }
 }
@@ -170,20 +186,30 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     responseTimestamp,
   }
 
-  const instanceInfoExists = await redis.exists(
-    `lq:${liveQuizId}:i:${instanceId}:info`
-  )
-
-  if (instanceInfoExists === 1) {
-    await trackLiveQuizResponse({
-      redisClient: redis,
-      key: getLiveQuizResponseTrackingKey({
-        liveQuizId: String(liveQuizId),
-        instanceId,
-        status: 'received',
-      }),
-      member: message.messageId,
+  try {
+    const instanceInfoKey = getLiveQuizInstanceInfoKey({
+      liveQuizId: String(liveQuizId),
+      instanceId,
     })
+    const instanceInfoExists = await redis.exists(instanceInfoKey)
+
+    if (instanceInfoExists === 1) {
+      await trackLiveQuizResponse({
+        redisClient: redis,
+        key: getLiveQuizResponseTrackingKey({
+          liveQuizId: String(liveQuizId),
+          instanceId,
+          status: 'received',
+        }),
+        instanceInfoKey,
+        member: message.messageId,
+      })
+    }
+  } catch (error) {
+    console.error(
+      `Failed to track received response ${message.messageId} for live quiz ${liveQuizId}, instance ${instanceId}:`,
+      error
+    )
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -358,15 +384,26 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
-  await trackLiveQuizResponse({
-    redisClient: assessmentRedis,
-    key: getLiveQuizResponseTrackingKey({
-      liveQuizId: String(liveQuizId),
-      instanceId,
-      status: 'received',
-    }),
-    member: correlationId,
-  })
+  try {
+    await trackLiveQuizResponse({
+      redisClient: assessmentRedis,
+      key: getLiveQuizResponseTrackingKey({
+        liveQuizId: String(liveQuizId),
+        instanceId,
+        status: 'received',
+      }),
+      instanceInfoKey: getLiveQuizInstanceInfoKey({
+        liveQuizId: String(liveQuizId),
+        instanceId,
+      }),
+      member: correlationId,
+    })
+  } catch (error) {
+    console.error(
+      `Failed to track received assessment response ${correlationId} for live quiz ${liveQuizId}, instance ${instanceId}:`,
+      error
+    )
+  }
 
   // start the processing of an assessment response
   console.log(

@@ -15,7 +15,9 @@ import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
+  getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -1489,6 +1491,34 @@ async function removeCacheEntriesBlock({
   isLastBlock: boolean
   redis: Redis
 }) {
+  const instanceIds = block.elements.map((instance) => instance.id)
+
+  if (instanceIds.length > 0) {
+    const instanceInfoExpiry = redis.pipeline()
+    for (const instanceId of instanceIds) {
+      instanceInfoExpiry.expire(
+        getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
+        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+      )
+    }
+
+    const expiryResults = await instanceInfoExpiry.exec()
+    if (expiryResults === null) {
+      throw new Error(
+        `Failed to start cache retention for live quiz block ${blockId}`
+      )
+    }
+
+    const expiryErrors = expiryResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (expiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+      )
+    }
+  }
+
   if (isLastBlock) {
     // if the last block was closed, clean up the entire cache for this live quiz
     const keys = await redis.keys(`lq:${liveQuizId}:*`)
@@ -1496,13 +1526,12 @@ async function removeCacheEntriesBlock({
       const pipe = redis.pipeline()
       for (const key of keys) {
         // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
       await pipe.exec()
     }
   } else {
     // only remove information from the cache that is specific to the closed block and the instances therein
-    const instanceIds = block.elements.map((instance) => instance.id)
     const instanceKeysNested = await Promise.all(
       instanceIds.map(
         async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
@@ -1516,7 +1545,7 @@ async function removeCacheEntriesBlock({
       const pipe = redis.pipeline()
       for (const key of keys) {
         // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
       await pipe.exec()
     }
