@@ -179,3 +179,14 @@ checkout's unrelated untracked files.
   fresh container build stopped when Docker's credential helper canceled the
   GHCR request. Core API code was committed as `1c16d74d6`; local Gitleaks is
   unavailable and remains CI-enforced.
+- 2026-08-05: Layer 4 replaces sensitive auth Node/Edge diagnostics with
+  request-scoped categorical outcomes, adds stable LTI lifecycle events, and
+  gives OLAT fixed-template Express request ownership plus safe dependency
+  errors. Auth, LTI, and OLAT checks/builds, two OLAT privacy tests,
+  repository-wide `check:all`, source guards, and targeted OpenGrep passed; code
+  was committed as `46a139e1a`.
+- 2026-08-05: Browser smoke remains blocked before container startup by the
+  Docker credential helper canceling the GHCR base-image request. The legacy
+  OLAT container harness also failed before its test phase while rebuilding the
+  unrelated shared `util` package for Linux; its focused socket-free adapter
+  tests pass on the restored host toolchain.
