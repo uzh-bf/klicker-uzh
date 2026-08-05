@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-08-05'
 tags:
   - backend
   - hatchet
@@ -27,6 +27,40 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+
+### Per-element response processing counts
+
+For every started live-quiz element instance, execution Redis stores two sets:
+`lq:<quiz-id>:i:<instance-id>:responses:received` and
+`lq:<quiz-id>:i:<instance-id>:responses:processed`. Standard responses use the
+response API's generated `messageId` as the member of both sets; assessment
+responses use their deterministic `correlationId`, after the existing duplicate
+check. Set membership makes both counts idempotent across Hatchet retries
+(`packages/util/src/liveQuizResponseTracking.ts:getLiveQuizResponseTrackingKey`,
+`apps/response-api/src/index.ts:handleAddResponse`, and
+`apps/response-api/src/index.ts:handleAddAssessmentResponse`).
+
+The response API adds the received member before enqueueing a known instance.
+The standard response processor adds the matching processed member in the same
+Redis pipeline that updates live results; assessment mode adds it only when
+`aggregateAssessmentResponses` updates those results, not when the database row
+is first stored
+(`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`
+and
+`apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`).
+The authorized `cockpitQuiz` query reads both set cardinalities per started
+element, and the lecturer cockpit's existing two-second polling displays them;
+scheduled elements have no counts
+(`packages/graphql/src/services/liveQuizzes.ts:getCockpitQuiz` and
+`apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx:Cockpit`).
+
+The difference between received and processed is an operational signal, not
+exact queue depth. It can include queued work as well as invalid, duplicate,
+late, rejected, or failed responses. Tracking does not change the response
+pipeline's existing validation or result-aggregation retry behavior. The keys
+remain under the existing per-instance wildcard, so live-quiz cleanup applies
+the same one-day expiry as the other instance keys
+(`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
 
 ## Worker task catalog
 

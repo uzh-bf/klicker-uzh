@@ -1,5 +1,11 @@
 # Log
 
+## 2026-08-05
+
+- **Update**: [async-and-workers](./async-and-workers.md) documents the
+  per-element live-quiz received/processed response signal, retry-safe Redis set
+  tracking, cockpit polling, and why the difference is not exact queue depth.
+
 ## 2026-08-03
 
 - **Update**: [data-and-migrations](./data-and-migrations.md) gains a failed-migration-hook runbook (log capture before the next sync deletes the Job, `P3009` partial-DDL recovery and why `migrate resolve` is not a rollback, the `migrator.enabled: false` unblock lever, lock contention) plus the hook's scope limit (assessment DB may not be covered) and the prd bootstrap/rollback rule: no migrator image exists for pre-hook release tags, so prd keeps the hook disabled until its tags reach a migrator-bearing release. Same constraint recorded in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) and the expand-contract rule in the `klicker-data-model` skill.
