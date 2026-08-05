@@ -38,7 +38,7 @@ lecturer live quiz cockpit.
 - [x] Per-element GraphQL fields and integration test.
 - [x] Lecturer UI, i18n, and Playwright assertion.
 - [x] Wiki documentation and full verification.
-- [ ] Independent branch review and draft PR.
+- [x] Independent branch review and draft PR preparation.
 
 ## Progress
 
@@ -91,3 +91,43 @@ lecturer live quiz cockpit.
   `pnpm run build` rerun passed all 22 tasks. Existing non-blocking next-intl,
   ESM deprecation, Browserslist, large-page-data, Rollup plugin TypeScript, and
   Manage `MISSING_MESSAGE` warnings remain unrelated to this feature.
+- 2026-08-05: Independent review found that unconditional tracking TTLs could
+  erase counts from an unlimited active block and that failing a processed
+  marker after successful aggregation could replay non-idempotent scoring on a
+  Hatchet retry. Both findings were resolved: tracking is now best-effort after
+  successful aggregation, active tracking sets remain persistent, block
+  cleanup starts retention on canonical instance-info keys before scanning,
+  and an atomic Redis script makes concurrent writers mirror the remaining
+  closure TTL without a crash window. The final util suite passed 50/50, the
+  script passed a real Redis smoke test for active, closed, and missing-info
+  states, all affected package typechecks and builds passed, and the
+  repository-wide pre-commit suite again passed all 25 tasks.
+- 2026-08-05: The final independent review approved committed HEAD
+  `5b313c0d5baada72eea3a79168b6666ff3ba3ff0` with no actionable findings. It
+  recorded only pre-existing aggregation-pipeline atomicity and cleanup tuple
+  inspection risks, plus the absence of a committed real-Redis integration
+  test for the Lua helper; the helper's active, closed, and missing-info
+  branches were covered by the successful real-Redis smoke test above.
+- 2026-08-05: Real-stack verification used the repository-supported local test
+  origins with the backend, auth, Manage, PWA, control, response API, and both
+  response workers. A clean GraphQL package rebuild was required because the
+  running local backend had loaded a mixed stale generated bundle. After the
+  rebuild, an authenticated `GetCockpitQuiz` request returned `1/1` for every
+  answered active element, `0/0` for unanswered active elements, and
+  `null/null` for scheduled elements. The standard response worker and Redis
+  sets independently reported the same `1/1` values.
+- 2026-08-05: The bounded real Playwright workflow through the feature
+  checkpoint passed 14/14 in 1.9 minutes. The response-count checkpoint also
+  passed twice in full-suite attempts (26.4 and 30.4 seconds). The first full
+  attempt passed 62/81 tests before the existing `disableAnimations()` helper
+  raced navigation in test 63; a clean retry reproduced the same unrelated
+  `page.addStyleTag`/missing document-root race at a different login boundary
+  in test 17 after the feature checkpoint had passed. No unrelated test helper
+  change was made.
+- 2026-08-05: Agent-browser verification at 1920x1080 confirmed English and
+  German active-cockpit labels, answered `1/1` values, unanswered `0/0` values,
+  scheduled-element omission, the existing participant count, question links,
+  and block controls. Seeded-data screenshots are stored at
+  `project/2026-08-05-live-quiz-response-counts/live-quiz-response-counts-en.png`
+  and
+  `project/2026-08-05-live-quiz-response-counts/live-quiz-response-counts-de.png`.
