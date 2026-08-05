@@ -1,8 +1,8 @@
 import {
-  NonRetryableError,
   type Context,
   type DurableContext,
   type JsonObject,
+  NonRetryableError,
   type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
@@ -16,6 +16,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
+import { getLiveQuizResponseTrackingKey } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
@@ -468,6 +469,7 @@ export async function aggregateAssessmentResponses(
 ) {
   // destructure message into components required for results aggregation
   const {
+    correlationId,
     participantId,
     liveQuizId,
     blockId,
@@ -594,6 +596,15 @@ export async function aggregateAssessmentResponses(
       break
     }
   }
+
+  redis.sadd(
+    getLiveQuizResponseTrackingKey({
+      liveQuizId,
+      instanceId,
+      status: 'processed',
+    }),
+    correlationId
+  )
 
   try {
     await redis.exec()

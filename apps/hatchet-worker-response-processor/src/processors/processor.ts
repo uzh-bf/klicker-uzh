@@ -11,7 +11,11 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  getLiveQuizResponseTrackingKey,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -652,6 +656,15 @@ export async function processResponseMessage(
         break
       }
     }
+
+    redisMulti.sadd(
+      getLiveQuizResponseTrackingKey({
+        liveQuizId: message.sessionId,
+        instanceId: message.instanceId,
+        status: 'processed',
+      }),
+      message.messageId
+    )
   } catch (e) {
     ctx.logger.error(
       `Error processing response: ${String(e)} ` +

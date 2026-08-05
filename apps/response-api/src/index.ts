@@ -1,10 +1,13 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
+import {
+  getLiveQuizResponseTrackingKey,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,
@@ -138,6 +141,21 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+  }
+
+  const instanceInfoExists = await redis.exists(
+    `lq:${liveQuizId}:i:${instanceId}:info`
+  )
+
+  if (instanceInfoExists === 1) {
+    await redis.sadd(
+      getLiveQuizResponseTrackingKey({
+        liveQuizId: String(liveQuizId),
+        instanceId,
+        status: 'received',
+      }),
+      message.messageId
+    )
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -311,6 +329,15 @@ async function handleAddAssessmentResponse(
     response, // pass through as-is; worker validates
     responseTimestamp,
   }
+
+  await assessmentRedis.sadd(
+    getLiveQuizResponseTrackingKey({
+      liveQuizId: String(liveQuizId),
+      instanceId,
+      status: 'received',
+    }),
+    correlationId
+  )
 
   // start the processing of an assessment response
   console.log(
