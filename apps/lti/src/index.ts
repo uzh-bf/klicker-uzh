@@ -1,12 +1,20 @@
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
 import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
+import { logger } from './logger.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
-  console.error('APP_ORIGIN_LTI is required but not defined')
+  logger.fatal(
+    {
+      event: 'service.configuration_invalid',
+      err: toSafeError('APP_ORIGIN_LTI is required'),
+    },
+    'LTI service configuration is invalid'
+  )
   process.exit(1)
 }
 
@@ -60,10 +68,19 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 // LTI launch callback (token has been verified by ltijs beforehand)
 // @ts-ignore The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
-  console.log('LTI launch callback:', token)
+  logger.info(
+    { event: 'lti.launch.accepted', outcome: 'verified' },
+    'Accepted verified LTI launch'
+  )
 
   if (!process.env.APP_ORIGIN_LTI) {
-    console.error('APP_ORIGIN_LTI is required but not defined')
+    logger.fatal(
+      {
+        event: 'service.configuration_invalid',
+        err: toSafeError('APP_ORIGIN_LTI is required'),
+      },
+      'LTI service configuration is invalid'
+    )
     process.exit(1)
   }
 
@@ -92,8 +109,15 @@ Provider.onConnect(async (token, req, res) => {
   })
 
   if (!launchTarget.ok) {
-    console.error(
-      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
+    logger.warn(
+      {
+        event: 'lti.launch.rejected',
+        outcome: 'invalid_target',
+        targetSource: launchTarget.source ?? 'none',
+        reason: launchTarget.reason,
+        rawType: getRawType(launchTarget.rawValue),
+      },
+      'Rejected LTI launch target'
     )
 
     // remove lti token to avoid issues caused by this cookie
@@ -111,8 +135,13 @@ Provider.onConnect(async (token, req, res) => {
   }
 
   const redirectUrl = appendJwt(launchTarget.target, jwt)
-  console.log(
-    `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
+  logger.info(
+    {
+      event: 'lti.redirect.selected',
+      outcome: 'success',
+      targetSource: launchTarget.source,
+    },
+    'Redirected verified LTI launch'
   )
 
   return res.redirect(redirectUrl)
@@ -120,10 +149,10 @@ Provider.onConnect(async (token, req, res) => {
 
 // setup function
 const setup = async () => {
-  const result = await Provider.deploy({
+  await Provider.deploy({
     port: Number(process.env.LTI_PORT) ?? 4000,
   })
-  console.log(result)
+  logger.info({ event: 'service.started' }, 'LTI service started')
 
   // Optional: Register platform if you're setting this up for the first time
   const platform = await Provider.registerPlatform({
@@ -142,13 +171,15 @@ const setup = async () => {
     throw new Error('Failed to register platform')
   }
 
-  console.log(await platform.platformPublicKey())
+  await platform.platformPublicKey()
+  logger.info(
+    { event: 'lti.platform.registered', outcome: 'success' },
+    'Registered LTI platform'
+  )
 }
 
 // Get user and context information
 Provider.app.get('/info', async (req, res) => {
-  console.log('GET-request to /info: ')
-
   const token = res.locals.token
 
   const info: {
@@ -171,7 +202,15 @@ Provider.app.get('/info', async (req, res) => {
   return res.send(info)
 })
 
-setup().catch((e) => console.error(e))
+setup().catch(() => {
+  logger.fatal(
+    {
+      event: 'service.start_failed',
+      err: toSafeError('Failed to start LTI service'),
+    },
+    'Failed to start LTI service'
+  )
+})
 
 function getRawType(value: unknown): string {
   if (value === null) return 'null'

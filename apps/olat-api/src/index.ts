@@ -1,10 +1,16 @@
 import { apiReference } from '@scalar/express-api-reference'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import express, { Request, Response } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { validate as validateUUID } from 'uuid'
+import { logger } from './logger.js'
+import {
+  createRequestLoggingMiddleware,
+  requestLogger,
+} from './requestLogging.js'
 import {
   getActivities,
   getActivityTypes,
@@ -26,8 +32,38 @@ const PORT = process.env.NODE_ENV === 'development' ? 3030 : 3000
 
 const API_KEY = process.env.OLAT_API_KEY
 if (!API_KEY) {
-  console.error('Undefined API Key')
+  logger.fatal(
+    {
+      event: 'service.configuration_invalid',
+      err: toSafeError('OLAT_API_KEY is required'),
+    },
+    'OLAT API configuration is invalid'
+  )
   process.exit(1)
+}
+
+function logRequestFailure(req: Request, res: Response, message: string) {
+  const log = requestLogger(res) ?? logger
+  log.error(
+    {
+      event: 'http.request.failed',
+      http: {
+        method: req.method,
+        route: res.locals.logRoute ?? 'unmatched',
+        statusCode: StatusCode.INTERNAL_SERVER_ERROR,
+        ...(typeof res.locals.logStartedAt === 'number'
+          ? {
+              durationMs: Math.round(
+                performance.now() - res.locals.logStartedAt
+              ),
+            }
+          : {}),
+      },
+      outcome: 'failure',
+      err: toSafeError(message),
+    },
+    message
+  )
 }
 
 async function apiKeyMiddleware(req: Request, res: Response, next: () => void) {
@@ -64,6 +100,7 @@ const limiter = rateLimit({
   },
 })
 
+app.use(createRequestLoggingMiddleware(logger))
 app.use(limiter)
 app.use('/api', apiKeyMiddleware)
 app.use(express.json())
@@ -84,8 +121,17 @@ app.get('/openapi.yaml', async (req: Request, res: Response) => {
     const yamlContent = await fs.readFile(specPath, 'utf-8')
     res.set('Content-Type', 'application/yaml')
     res.send(yamlContent)
-  } catch (error) {
-    console.error('Error serving OpenAPI specification:', error)
+  } catch {
+    const log = requestLogger(res) ?? logger
+    log.error(
+      {
+        event: 'dependency.read_failed',
+        dependency: 'openapi_specification',
+        err: toSafeError('Failed to read OpenAPI specification'),
+      },
+      'Failed to read OpenAPI specification'
+    )
+    logRequestFailure(req, res, 'Failed to serve OpenAPI specification')
     res.status(StatusCode.INTERNAL_SERVER_ERROR).json({
       error: 'Failed to load OpenAPI specification',
     })
@@ -193,8 +239,8 @@ app.post('/api/configuration/courses', (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
       })
     })
-    .catch((error) => {
-      console.error('Error fetching courses:', error)
+    .catch(() => {
+      logRequestFailure(req, res, 'Failed to fetch courses')
       return res
         .status(StatusCode.INTERNAL_SERVER_ERROR)
         .json({ error: 'Internal server error' })
@@ -202,7 +248,7 @@ app.post('/api/configuration/courses', (req: Request, res: Response) => {
 })
 
 app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
-  getActivityTypes()
+  getActivityTypes(requestLogger(res))
     .then((activityTypes) => {
       res.set('Content-Type', 'application/json')
       return res.status(StatusCode.SUCCESS).json({
@@ -210,8 +256,8 @@ app.get('/api/configuration/activityTypes', (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
       })
     })
-    .catch((error) => {
-      console.error('Error fetching activity types:', error)
+    .catch(() => {
+      logRequestFailure(req, res, 'Failed to fetch activity types')
       return res
         .status(StatusCode.INTERNAL_SERVER_ERROR)
         .json({ error: 'Internal server error' })
@@ -235,7 +281,12 @@ app.post(
       accountParameters as AccountParameters
     const { courseID } = courseParameters as CourseParameters
 
-    getCourseActivityTypes(provider, providerAccountId, courseID)
+    getCourseActivityTypes(
+      provider,
+      providerAccountId,
+      courseID,
+      requestLogger(res)
+    )
       .then((activityTypes) => {
         if (activityTypes === null) {
           return res
@@ -249,8 +300,8 @@ app.post(
           timestamp: new Date().toISOString(),
         })
       })
-      .catch((error) => {
-        console.error('Error fetching activity types for course:', error)
+      .catch(() => {
+        logRequestFailure(req, res, 'Failed to fetch course activity types')
         return res
           .status(StatusCode.INTERNAL_SERVER_ERROR)
           .json({ error: 'Internal server error' })
@@ -297,8 +348,8 @@ app.post(
             timestamp: new Date().toISOString(),
           })
         })
-        .catch((error) => {
-          console.error('Error fetching activity type for course:', error)
+        .catch(() => {
+          logRequestFailure(req, res, 'Failed to fetch course activities')
           return res
             .status(StatusCode.INTERNAL_SERVER_ERROR)
             .json({ error: 'Internal server error' })
@@ -312,8 +363,10 @@ app.post(
 )
 
 app.listen(PORT, () => {
-  console.log(`🚀 OLAT API server is running on port ${PORT}`)
-  console.log(`📍 Health check: http://localhost:${PORT}/health`)
+  logger.info(
+    { event: 'service.started', port: PORT },
+    'OLAT API service started'
+  )
 })
 
 export { StatusCode }
