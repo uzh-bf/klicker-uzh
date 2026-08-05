@@ -657,17 +657,6 @@ export async function processResponseMessage(
         break
       }
     }
-
-    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
-      liveQuizId: message.sessionId,
-      instanceId: message.instanceId,
-      status: 'processed',
-    })
-    redisMulti.sadd(processedResponseTrackingKey, message.messageId)
-    redisMulti.expire(
-      processedResponseTrackingKey,
-      LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
-    )
   } catch (e) {
     ctx.logger.error(
       `Error processing response: ${String(e)} ` +
@@ -682,7 +671,46 @@ export async function processResponseMessage(
   }
 
   try {
-    await redisMulti.exec()
+    const aggregationResults = await redisMulti.exec()
+    if (aggregationResults === null) {
+      throw new Error('Redis results aggregation returned no results')
+    }
+
+    const aggregationErrors = aggregationResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (aggregationErrors.length > 0) {
+      throw new Error(
+        `Redis results aggregation commands failed: ${aggregationErrors.join('; ')}`
+      )
+    }
+
+    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+      status: 'processed',
+    })
+    const trackingTransaction = redisExec.multi()
+    trackingTransaction.sadd(processedResponseTrackingKey, message.messageId)
+    trackingTransaction.expire(
+      processedResponseTrackingKey,
+      LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+    )
+
+    const trackingResults = await trackingTransaction.exec()
+    if (trackingResults === null) {
+      throw new Error('Redis processed-response tracking returned no results')
+    }
+
+    const trackingErrors = trackingResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (trackingErrors.length > 0) {
+      throw new Error(
+        `Redis processed-response tracking commands failed: ${trackingErrors.join('; ')}`
+      )
+    }
+
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,

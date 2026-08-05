@@ -4,8 +4,9 @@
 
 - **Update**: [async-and-workers](./async-and-workers.md) documents the
   per-element live-quiz received/processed response signal, retry-safe Redis set
-  tracking with a refreshed one-day expiry, cockpit polling, and why the
-  difference is not exact queue depth.
+  tracking with a refreshed one-day expiry, post-aggregation marker ordering,
+  the residual aggregation retry risk, cockpit polling, and why the difference
+  is not exact queue depth.
 
 ## 2026-08-03
 

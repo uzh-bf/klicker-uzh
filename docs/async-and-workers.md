@@ -41,10 +41,11 @@ check. Set membership makes both counts idempotent across Hatchet retries
 `apps/response-api/src/index.ts:handleAddAssessmentResponse`).
 
 The response API adds the received member before enqueueing a known instance.
-The standard response processor adds the matching processed member in the same
-Redis pipeline that updates live results; assessment mode adds it only when
-`aggregateAssessmentResponses` updates those results, not when the database row
-is first stored
+The standard response processor adds the matching processed member only after
+the Redis pipeline that updates live results succeeds; assessment mode does the
+same in `aggregateAssessmentResponses`, not when the database row is first
+stored. In both paths, a separate Redis transaction writes the processed member
+and refreshes the tracking set expiry
 (`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`
 and
 `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`).
@@ -57,7 +58,10 @@ scheduled elements have no counts
 The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, or failed responses. Tracking does not change the response
-pipeline's existing validation or result-aggregation retry behavior. The keys
+pipeline's existing validation or result-aggregation retry behavior. If result
+aggregation succeeds but the separate tracking transaction fails, the worker
+fails and a retry can apply the existing non-idempotent aggregation again before
+tracking succeeds. The keys
 refresh a one-day expiry on every received or processed write, preventing a set
 created after cleanup's key scan from persisting indefinitely. They also remain
 under the existing per-instance wildcard, so live-quiz cleanup reapplies the
