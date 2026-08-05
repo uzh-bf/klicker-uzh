@@ -573,6 +573,7 @@ type ResolveOrCreateParticipantForLtiResult =
         | 'not_found'
         | 'username_taken'
         | 'invalid_create_input'
+        | 'unsupported_scope'
     }
 
 interface ResolveOrCreateParticipantForLtiArgs {
@@ -602,6 +603,14 @@ async function resolveOrCreateParticipantForLti(
     email?: string
     sub: string
     scope: string
+  }
+
+  // LTI 1.1 is retired: its launches were never signature-verified, so any
+  // caller could mint a token for an arbitrary subject or email. Only accept
+  // LTI 1.3, which is verified by apps/lti before the JWT is issued.
+  if (ltiData.scope !== 'LTI1.3') {
+    console.warn(`event=lti_rejected_scope scope=${ltiData.scope}`)
+    return { type: 'unsupported_scope' }
   }
 
   return ctx.prisma.$transaction(async (prisma) => {

@@ -2,36 +2,41 @@
 
 import { useState } from 'react'
 import { type ModelID } from '../lib/config/models'
-import { type ReasoningEffort } from '../lib/config/reasoning'
+import {
+  formatReasoningEffort,
+  type ReasoningEffort,
+} from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
-import { Progress, Select } from '@uzh-bf/design-system'
-import { ChevronDown, ChevronUp, Settings2, Zap } from 'lucide-react'
+import { Select } from '@uzh-bf/design-system'
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+
+/**
+ * Ids that tie each visible label to the control it names. The design system
+ * leaks the `id` onto every `SelectItem` as well as the trigger, so while a
+ * popover is open these ids are duplicated; the trigger still wins `htmlFor`
+ * because the popover content is portaled to the end of the document.
+ */
+const MODEL_SELECT_ID = 'chat-model-select'
+const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
 
 export function SettingsPanel() {
+  const t = useTranslations()
+  const locale = useLocale()
   const {
     selectedModel,
-    selectedMode,
     selectedReasoningEffort,
     credits,
     modelOptions,
-    modeOptions,
     modelSelectionEnabled,
     setSelectedModel,
-    setSelectedMode,
     setSelectedReasoningEffort,
   } = useSettingsStore()
   const [open, setOpen] = useState(false)
 
-  const creditsPercentage =
-    credits.total > 0 ? (credits.current / credits.total) * 100 : 0
-
   const handleModelChange = (value: string) => {
     setSelectedModel(value as ModelID)
-  }
-
-  const handleModeChange = (value: string) => {
-    setSelectedMode(value as string)
   }
 
   const handleReasoningEffortChange = (value: string) => {
@@ -49,57 +54,58 @@ export function SettingsPanel() {
 
   return (
     <div>
-      <div
+      {/* A real button, not a clickable div: this toggle is the only way to
+          reach the model and reasoning-effort selectors, so keyboard and switch
+          users must be able to focus and activate it (WCAG 2.1.1 / 4.1.2). */}
+      <button
+        type="button"
         data-cy="chat-settings-toggle"
-        className="flex cursor-pointer items-center gap-2 border-t px-3 py-2 hover:bg-gray-100"
+        aria-expanded={open}
+        className="hover:bg-accent focus-visible:ring-ring flex w-full items-center gap-2 border-t px-3 py-2 text-start transition-colors focus-visible:outline-none focus-visible:ring-1"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
-        <span className="text-basefont-medium">Settings</span>
-        {/* up and down arrow on the right based on whether is opened or not */}
+        <span className="text-base font-medium">
+          {t('chat.settingsPanel.title')}
+        </span>
+        {/* Chevron points down while closed (more to reveal) and flips up
+            once open (collapse), matching the universal disclosure
+            convention and GroupedDisclosure's own chevron direction. */}
         <span className="ml-auto">
           {!open ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
             <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
           )}
         </span>
-      </div>
+      </button>
       {open && (
         <div
           data-cy="chat-settings-panel"
-          className="border-muted space-y-3 border-t px-3 pb-2 pt-2"
+          className="border-border space-y-3 border-t px-3 pb-2 pt-2"
         >
           <div>
-            {/* mode selection */}
-            <div data-cy="chat-mode-selection" className="space-y-1">
-              <label className="text-sm font-bold">Chat Mode</label>
-              <Select
-                data={{ cy: 'chat-mode-select' }}
-                placeholder="Select Chat Mode"
-                items={
-                  Object.keys(modeOptions).length > 0
-                    ? Object.entries(modeOptions).map(([key]) => ({
-                        value: key,
-                        label: key.charAt(0).toUpperCase() + key.slice(1),
-                      }))
-                    : []
-                }
-                onChange={(newValue) => {
-                  handleModeChange(newValue)
-                }}
-                value={selectedMode}
-              />
-            </div>
-
             {/* model selection */}
-            <div data-cy="chat-model-selection" className="mt-2 space-y-1">
-              <label className="text-sm font-bold">AI Model</label>
+            <div data-cy="chat-model-selection" className="space-y-1">
+              {/* htmlFor, not just visual proximity: the design-system Select
+                  renders a Radix combobox whose accessible name would otherwise
+                  be the currently selected value, leaving two comboboxes that
+                  screen readers cannot tell apart (WCAG 1.3.1 / 4.1.2). */}
+              <label
+                // Only the `modelSelectionEnabled` branch renders a control;
+                // the read-only branch is a plain div, and a `for` pointing at
+                // an element that is not in the DOM is worse than none.
+                htmlFor={modelSelectionEnabled ? MODEL_SELECT_ID : undefined}
+                className="text-sm font-bold"
+              >
+                {t('chat.settingsPanel.aiModelLabel')}
+              </label>
               {modelSelectionEnabled ? (
                 <>
                   <Select
+                    id={MODEL_SELECT_ID}
                     data={{ cy: 'chat-model-select' }}
-                    placeholder="Select AI Model"
+                    placeholder={t('chat.settingsPanel.selectAiModel')}
                     items={modelOptions.map((option) => ({
                       value: option.id,
                       label: option.name,
@@ -109,12 +115,21 @@ export function SettingsPanel() {
                     }}
                     value={selectedModel}
                   />
-                  <p className="text-muted-foreground text-sm">
-                    {
-                      modelOptions.find((option) => option.id === selectedModel)
-                        ?.description
-                    }
-                  </p>
+                  {/* D3: registry model descriptions are English-only text
+                      from the deployment model registry, not translated
+                      copy — showing them in a DE UI leaks raw English.
+                      Hide until the registry supports per-locale
+                      descriptions rather than mistranslate or drop them
+                      for `en` users. */}
+                  {locale === 'en' && (
+                    <p className="text-muted-foreground text-sm">
+                      {
+                        modelOptions.find(
+                          (option) => option.id === selectedModel
+                        )?.description
+                      }
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
@@ -126,10 +141,10 @@ export function SettingsPanel() {
                       ?.name || selectedModel}
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Automatic selection based on credit availability.
+                    {t('chat.settingsPanel.autoSelectionInfo')}{' '}
                     {credits.current > 0
-                      ? ' Using primary model with available credits.'
-                      : ' Using fallback model (no credits remaining).'}
+                      ? t('chat.settingsPanel.usingPrimaryModel')
+                      : t('chat.settingsPanel.usingFallbackModel')}
                   </p>
                 </>
               )}
@@ -140,13 +155,19 @@ export function SettingsPanel() {
                 data-cy="chat-reasoning-effort-selection"
                 className="mt-2 space-y-1"
               >
-                <label className="text-sm font-bold">Reasoning Effort</label>
+                <label
+                  htmlFor={REASONING_EFFORT_SELECT_ID}
+                  className="text-sm font-bold"
+                >
+                  {t('chat.settingsPanel.reasoningEffortLabel')}
+                </label>
                 <Select
+                  id={REASONING_EFFORT_SELECT_ID}
                   data={{ cy: 'chat-reasoning-effort-select' }}
-                  placeholder="Select reasoning effort"
+                  placeholder={t('chat.settingsPanel.selectReasoningEffort')}
                   items={availableReasoningEfforts.map((value) => ({
                     value,
-                    label: value.charAt(0).toUpperCase() + value.slice(1),
+                    label: formatReasoningEffort(t, value),
                   }))}
                   onChange={(newValue) => {
                     handleReasoningEffortChange(newValue)
@@ -154,55 +175,13 @@ export function SettingsPanel() {
                   value={selectedReasoningEffort}
                 />
                 <p className="text-muted-foreground text-sm">
-                  Higher effort can improve difficult responses at the cost of
-                  additional latency.
+                  {t('chat.settingsPanel.reasoningEffortHint')}
                 </p>
               </div>
             ) : null}
           </div>
         </div>
       )}
-
-      <div data-cy="chat-credits-section" className="border-t px-3 py-2">
-        {/* credits display */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="text-sm font-medium">Available Credits</span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span
-                data-cy="chat-credits-display"
-                className="text-muted-foreground"
-              >
-                {Math.round(credits.current)} / {credits.total}
-              </span>
-              <span className="text-muted-foreground">
-                {Math.round(creditsPercentage)}%
-              </span>
-            </div>
-            <Progress
-              value={creditsPercentage}
-              max={100}
-              className={{
-                root: 'h-2 font-bold',
-                indicator: `h-2 ${creditsPercentage < 10 ? 'bg-red-600' : creditsPercentage < 20 ? 'bg-yellow-400' : 'bg-blue-400'}`,
-              }}
-              formatter={() => null}
-            />
-            {credits.current === 0 ? (
-              <div
-                data-cy="chat-credits-empty-message"
-                className="text-muted-foreground text-sm"
-              >
-                You have used up all your credits. However, you can still use
-                the smaller model.
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

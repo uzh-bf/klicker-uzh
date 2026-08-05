@@ -2,6 +2,7 @@
 
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 interface ChatbotDisclaimer {
@@ -18,6 +19,7 @@ interface DisclaimerModalProps {
   isOpen: boolean
   onAccept: () => void
   onDecline: () => void
+  errorMessage?: string | null
 }
 
 export const DisclaimerModal = ({
@@ -25,7 +27,9 @@ export const DisclaimerModal = ({
   isOpen,
   onAccept,
   onDecline,
+  errorMessage,
 }: DisclaimerModalProps) => {
+  const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleAccept = async () => {
@@ -60,7 +64,7 @@ export const DisclaimerModal = ({
           referrerPolicy="no-referrer-when-downgrade"
           sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
           frameBorder="0"
-          title="Disclaimer media"
+          title={t('chat.disclaimer.mediaTitle')}
         />
       )
     }
@@ -69,7 +73,7 @@ export const DisclaimerModal = ({
       return (
         <img
           src={disclaimer.mediaUrl}
-          alt="Chatbot Introduction"
+          alt={t('chat.disclaimer.introAlt')}
           className="mx-auto h-auto w-full max-w-lg rounded-lg object-contain"
         />
       )
@@ -106,34 +110,36 @@ export const DisclaimerModal = ({
 
         {/* Core Content - Fixed Disclaimer Text */}
         <div className="max-w-none space-y-6">
-          <div className="prose prose-sm max-w-none rounded-lg bg-slate-100 p-4">
-            <h3 className="text-lg font-semibold">Student Responsibility</h3>
+          <div className="prose prose-sm bg-muted max-w-none rounded-lg p-4">
+            <h3 className="text-lg font-semibold">
+              {t('chat.disclaimer.studentResponsibilityTitle')}
+            </h3>
             <p className="text-sm">
-              Chatbot answers may contain more or less information than what is
-              required to pass the course and are therefore not exam relevant on
-              their own (only the underlying course material is). While we aim
-              to provide accurate information through the chatbot, we do not
-              guarantee the correctness, completeness, or timeliness of the
-              responses. Please verify important information against the
-              official course materials and references.
+              {t('chat.disclaimer.studentResponsibilityText')}
             </p>
           </div>
 
-          <div className="prose-sm prose max-w-none rounded-lg bg-slate-100 p-4">
-            <h3 className="text-lg font-semibold">Data Protection</h3>
+          <div className="prose-sm prose bg-muted max-w-none rounded-lg p-4">
+            <h3 className="text-lg font-semibold">
+              {t('chat.disclaimer.dataProtectionTitle')}
+            </h3>
             <p className="mb-4 text-sm">
-              Do not share any personal information with the chatbot. Your
-              prompts are processed exclusively via Azure OpenAI instances
-              hosted in the EU or Switzerland. Conversations may be reviewed in
-              anonymised form by the KlickerUZH team or your lecturers to
-              improve chatbot quality and course content.
+              {t('chat.disclaimer.dataProtectionText')}
             </p>
-            <p className="text-sm">
-              By using the chatbot you acknowledge and accept these conditions.
-              If you have feedback or concerns, please contact your lecturers.
-            </p>
+            <p className="text-sm">{t('chat.disclaimer.consentText')}</p>
           </div>
         </div>
+
+        {/* Action Error */}
+        {errorMessage && (
+          <p
+            role="alert"
+            data-cy="chat-disclaimer-error"
+            className="text-destructive text-sm"
+          >
+            {errorMessage}
+          </p>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -142,27 +148,27 @@ export const DisclaimerModal = ({
             onClick={handleDecline}
             disabled={isLoading}
           >
-            Decline
+            {t('chat.disclaimer.decline')}
           </Button>
           <Button
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}
             disabled={isLoading}
           >
-            {isLoading ? 'Saving...' : 'Accept and continue'}
+            {isLoading
+              ? t('chat.disclaimer.saving')
+              : t('chat.disclaimer.acceptAndContinue')}
           </Button>
         </div>
 
         {/* Consequence Information */}
         <div className="prose prose-sm max-w-none rounded-lg bg-yellow-50 p-4">
           <p className="font-medium text-yellow-800">
-            What happens after your choice:
+            {t('chat.disclaimer.consequenceTitle')}
           </p>
           <ul className="mt-2 list-disc space-y-1 text-yellow-700">
-            <li>Accept: You can use the chatbot and access all features.</li>
-            <li>
-              Decline: The chatbot remains blocked and you cannot send messages.
-            </li>
+            <li>{t('chat.disclaimer.consequenceAccept')}</li>
+            <li>{t('chat.disclaimer.consequenceDecline')}</li>
           </ul>
         </div>
       </div>
