@@ -23,9 +23,12 @@ cockpit does not sum these into a block total.
 ## Semantics
 
 `numOfResponsesReceived` is the number of response events accepted by the
-response API for one element instance. The response API records a received
-marker before handing the event to Hatchet. This makes enqueue failures visible
-as received-but-not-processed work.
+response API for one element instance and successfully recorded by the tracking
+write. The response API attempts to record a received marker before handing the
+event to Hatchet. Tracking is best-effort so an unavailable metric store never
+rejects a participant response; such a failure can temporarily undercount
+received responses. A later Hatchet enqueue failure normally remains visible as
+received-but-not-processed work.
 
 `numOfResponsesProcessed` is the number of response events successfully
 incorporated into live results. For regular quizzes, this happens after the
@@ -36,7 +39,8 @@ response row is stored.
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
 duplicate, rejected, or failed responses that were accepted at ingress but not
-incorporated into results.
+incorporated into results. Best-effort tracking failures can also make either
+value lower than the corresponding pipeline activity.
 
 ## Architecture
 
@@ -52,12 +56,15 @@ regular-versus-assessment Redis selection as the existing execution data:
 
 Redis set cardinality supplies the count. `SADD` makes repeated task execution
 idempotent for reporting, unlike integer increments. The new keys remain under
-the existing `lq:<quiz-id>:i:<instance-id>:*` namespace, so the current block
-closure and quiz cleanup paths apply without a new retention mechanism.
+the existing `lq:<quiz-id>:i:<instance-id>:*` namespace. They stay persistent
+while the instance is active. Block closure starts one-day retention on the
+canonical instance-info key before scanning the instance namespace; each
+tracking write atomically reads that TTL, adds its member, and mirrors remaining
+retention. A missing info key applies the same one-day safety retention.
 
-The response API must not enqueue a response when it cannot record the received
-marker. A Hatchet enqueue failure leaves the received marker in place, making
-the failure observable as an unprocessed response.
+Received and processed marker failures are logged without changing response
+ingress, aggregation, scoring, or retry behavior. In particular, a failed
+processed marker cannot retry already-applied non-idempotent aggregation.
 
 ### Cockpit query
 
@@ -120,10 +127,12 @@ not change leaderboard data.
 
 - Missing tracking keys for an element in a started block are interpreted as
   zero.
-- A received-marker Redis failure rejects ingress before enqueueing, preventing
-  an accepted response from becoming invisible to the metric.
+- A received-marker Redis failure is logged and ingress continues; operational
+  counts can therefore undercount during a tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
 - A processing or aggregation failure does not add the processed marker.
+- A processed-marker Redis failure is logged after aggregation succeeds and
+  does not fail the worker or replay scoring and leaderboard updates.
 - Worker retries do not increase either count for the same tracking identifier.
 - Duplicate standard submissions can legitimately increase received without
   processed because regular-response deduplication currently happens in the
@@ -136,7 +145,8 @@ not change leaderboard data.
    fields are `null`, started elements with no submissions report zero, and each
    instance receives only its own counts.
 2. Verify regular and assessment processors add processed markers only after
-   their final result aggregation succeeds.
+   their final result aggregation succeeds and do not retry aggregation when a
+   best-effort marker write fails.
 3. Regenerate GraphQL operations and verify the generated schema, operation
    types, and persisted-operation manifests are committed.
 4. Extend the existing Playwright live quiz workflow to assert that the lecturer

@@ -14,8 +14,9 @@ import type {
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
-  getLiveQuizResponseTrackingTtl,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
@@ -692,49 +693,22 @@ export async function processResponseMessage(
         instanceId: message.instanceId,
         status: 'processed',
       })
-      const trackingTransaction = redisExec.multi()
-      trackingTransaction.sadd(processedResponseTrackingKey, message.messageId)
-      trackingTransaction.ttl(
+      const instanceInfoTtl = await redisExec.eval(
+        LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+        2,
+        processedResponseTrackingKey,
         getLiveQuizInstanceInfoKey({
           liveQuizId: message.sessionId,
           instanceId: message.instanceId,
-        })
+        }),
+        message.messageId,
+        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       )
 
-      const trackingResults = await trackingTransaction.exec()
-      if (
-        trackingResults === null ||
-        !trackingResults[0] ||
-        !trackingResults[1]
-      ) {
-        throw new Error('Redis processed-response tracking returned no results')
-      }
-
-      const trackingErrors = trackingResults.flatMap(([error]) =>
-        error ? [error] : []
-      )
-      if (trackingErrors.length > 0) {
+      if (!Number.isInteger(Number(instanceInfoTtl))) {
         throw new Error(
-          `Redis processed-response tracking commands failed: ${trackingErrors.join('; ')}`
+          'Redis processed-response tracking returned invalid TTL'
         )
-      }
-
-      const instanceInfoTtl = Number(trackingResults[1][1])
-      if (!Number.isInteger(instanceInfoTtl)) {
-        throw new Error('Redis instance info returned an invalid TTL')
-      }
-
-      const trackingTtl = getLiveQuizResponseTrackingTtl(instanceInfoTtl)
-      if (trackingTtl !== null) {
-        const expiryApplied = await redisExec.expire(
-          processedResponseTrackingKey,
-          trackingTtl
-        )
-        if (expiryApplied !== 1) {
-          throw new Error(
-            'Redis processed-response tracking expiry was not applied'
-          )
-        }
       }
     } catch (trackingError) {
       ctx.logger.error(

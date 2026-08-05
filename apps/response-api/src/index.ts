@@ -4,8 +4,9 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
-  getLiveQuizResponseTrackingTtl,
   type JWTPayload,
+  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -44,33 +45,17 @@ async function trackLiveQuizResponse({
   instanceInfoKey: string
   member: string
 }) {
-  const results = await redisClient
-    .multi()
-    .sadd(key, member)
-    .ttl(instanceInfoKey)
-    .exec()
+  const instanceInfoTtl = await redisClient.eval(
+    LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+    2,
+    key,
+    instanceInfoKey,
+    member,
+    String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+  )
 
-  if (results === null || !results[0] || !results[1]) {
-    throw new Error('Live quiz response tracking transaction was aborted')
-  }
-
-  for (const [error] of results) {
-    if (error) {
-      throw error
-    }
-  }
-
-  const instanceInfoTtl = Number(results[1][1])
-  if (!Number.isInteger(instanceInfoTtl)) {
-    throw new Error('Live quiz instance info returned an invalid TTL')
-  }
-
-  const trackingTtl = getLiveQuizResponseTrackingTtl(instanceInfoTtl)
-  if (trackingTtl !== null) {
-    const expiryApplied = await redisClient.expire(key, trackingTtl)
-    if (expiryApplied !== 1) {
-      throw new Error('Live quiz response tracking expiry was not applied')
-    }
+  if (!Number.isInteger(Number(instanceInfoTtl))) {
+    throw new Error('Live quiz response tracking returned an invalid TTL')
   }
 }
 

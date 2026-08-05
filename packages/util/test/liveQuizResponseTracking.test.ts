@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
-  getLiveQuizResponseTrackingTtl,
+  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '../src/liveQuizResponseTracking.js'
 
@@ -31,17 +31,11 @@ describe('live quiz response tracking', () => {
     ).toBe('lq:quiz-id:i:42:info')
   })
 
-  it('does not expire tracking sets while the instance is active', () => {
-    expect(getLiveQuizResponseTrackingTtl(-1)).toBeNull()
-  })
-
-  it('mirrors the remaining retention of a closed instance', () => {
-    expect(getLiveQuizResponseTrackingTtl(123)).toBe(123)
-  })
-
-  it('bounds tracking sets when the instance info is already missing', () => {
-    expect(getLiveQuizResponseTrackingTtl(-2)).toBe(
-      LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+  it('updates membership and retention in one Redis script', () => {
+    expect(LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT).toContain("redis.call('SADD'")
+    expect(LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT).toContain("redis.call('EXPIRE'")
+    expect(LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT).toContain(
+      "redis.call('TTL', KEYS[2])"
     )
   })
 
