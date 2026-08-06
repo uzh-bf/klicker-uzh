@@ -1032,7 +1032,7 @@ approval.
 - Modify:
   `apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizBlock.tsx`
 - Modify:
-  `docs/superpowers/specs/2026-08-05-live-quiz-response-counts-design.md`
+  `project/2026-08-05-live-quiz-response-counts/design.md`
 - Replace:
   `project/2026-08-05-live-quiz-response-counts/live-quiz-response-counts-en.png`
 - Replace:
