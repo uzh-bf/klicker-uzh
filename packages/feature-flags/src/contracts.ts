@@ -2,7 +2,9 @@
 // own unknown-feature fallback, which is `false`, so this object is never read
 // at runtime; constraining it to `false` keeps the two in agreement instead of
 // letting a `true` here advertise a fallback the evaluation path cannot honor.
-export const FEATURE_FLAG_DEFAULTS = {} as const satisfies Record<string, false>
+export const FEATURE_FLAG_DEFAULTS = {
+  'learning-analytics': false,
+} as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
   [Key in keyof typeof FEATURE_FLAG_DEFAULTS]: boolean
