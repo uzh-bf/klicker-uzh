@@ -2,7 +2,7 @@
 // Helper: validates GrowthBook analytics and private-preview availability.
 
 import type { ElementType } from '@klicker-uzh/prisma/client'
-import { expect, Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 import { openCourseActionMenu } from '../actions.js'
 import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
@@ -33,15 +33,10 @@ export async function mockGrowthBookLearningAnalytics(
 
 export async function updateLecturerPrivatePreview(privatePreview: boolean) {
   const prisma = await getPrisma()
-  try {
-    await prisma.user.update({
-      where: { shortname: LECTURER_SHORTNAME },
-      data: { privatePreview },
-    })
-    return true
-  } catch (error) {
-    throw error
-  }
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { privatePreview },
+  })
 }
 
 export async function validateFeatureAvailabilityFixture(
