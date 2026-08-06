@@ -76,6 +76,17 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
   })
 
+  it('fails closed when the feature payload cannot be loaded', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+    })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
+  })
+
   it('fails closed without configuration and does not fetch', async () => {
     const client = new NodeFeatureFlagClient<TestFeatures>({})
 

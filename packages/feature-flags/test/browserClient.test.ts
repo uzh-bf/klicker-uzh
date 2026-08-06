@@ -67,7 +67,10 @@ describe('createBrowserFeatureFlagClient', () => {
         clientKey: 'sdk-test',
       })
 
-    expect(await initialize()).toBe(true)
+    const initialization = initialize()
+    expect(initialize()).toBe(initialization)
+    expect(await initialization).toBe(true)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledWith(
       'https://growthbook.test/api/features/sdk-test',
       expect.any(Object)
@@ -77,6 +80,19 @@ describe('createBrowserFeatureFlagClient', () => {
     expect(growthbook.isOn('targeted-flag')).toBe(true)
 
     await growthbook.setAttributes(disabledAttributes)
+    expect(growthbook.isOn('targeted-flag')).toBe(false)
+  })
+
+  it('fails closed when the feature payload cannot be loaded', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const { growthbook, initialize } =
+      createBrowserFeatureFlagClient<TestFeatures>({
+        apiHost: 'https://growthbook.test',
+        clientKey: 'sdk-test',
+      })
+
+    expect(await initialize()).toBe(false)
+    await growthbook.setAttributes(enabledAttributes)
     expect(growthbook.isOn('targeted-flag')).toBe(false)
   })
 
