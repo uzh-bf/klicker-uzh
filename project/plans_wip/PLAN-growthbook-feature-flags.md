@@ -233,8 +233,9 @@ No management API mutation is part of either PR.
   `false`.
 - SDK initialization failures do not crash application startup or rendering;
   a valid cached payload may continue to serve its last known value.
-- Development mode may log SDK initialization failures without user IDs or
-  feature payload contents. Production avoids noisy per-evaluation logs.
+- The Node adapter returns SDK initialization status to its caller; the React
+  adapter fails closed without emitting user IDs or feature payload contents.
+  Production avoids noisy per-evaluation logs.
 - Backend adopters must initialize once, use request-scoped attributes, and
   choose polling or streaming explicitly for long-running processes.
 - Feature use is operationally distinguishable from experimentation. Exposure
@@ -271,8 +272,10 @@ draft PR.
 
 - Layer 1 adds `docs/feature-flags.md`, links it from `docs/index.md`, records
   ADR 0005, and adds a dated wiki log entry.
-- Layer 2 updates `docs/frontend-conventions.md` to replace the obsolete
-  dedicated-platform rejection and documents the learning-analytics example.
+- Layer 1 updates `docs/frontend-conventions.md` to replace the obsolete
+  dedicated-platform rejection while retaining both legacy preview fields.
+- Layer 2 documents the learning-analytics flag and migration of
+  `publicPreview` consumers.
 - Each PR description explains its exact place in the stack and includes only
   evidence available at that layer.
 
@@ -290,3 +293,13 @@ draft PR.
   foundation-first architecture.
 - 2026-08-06: native stack initialized with `feat/growthbook-foundation` based
   on `v3`.
+- 2026-08-06: foundation implemented with GrowthBook SDK `1.6.5` (the latest
+  versions published for both core and React packages) and 11 passing contract,
+  browser, targeting, and request-isolation tests.
+- 2026-08-06: foundation verification passed package check/build, Syncpack,
+  repository formatting, and Opengrep (213 rules, 0 findings). No application
+  imports the package in layer 1.
+- 2026-08-06: foundation review added a separate test TypeScript config so the
+  package `check` command covers both declarations and Vitest sources.
+- 2026-08-06: wiki files pass Prettier. The validator referenced by
+  `klicker-wiki-maintenance` was unavailable at its documented local path.

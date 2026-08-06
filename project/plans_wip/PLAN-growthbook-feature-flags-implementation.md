@@ -46,6 +46,8 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - `packages/feature-flags/package.json` — package exports and pinned SDK deps.
 - `packages/feature-flags/tsconfig.json` — ESM declaration build for core,
   browser, React, and Node modules.
+- `packages/feature-flags/tsconfig.test.json` — no-emit type-check for tests and
+  Vitest configuration.
 - `packages/feature-flags/vitest.config.ts` — isolated Node test runner.
 - `packages/feature-flags/src/contracts.ts` — flag registry, strict keys,
   attribute values, actor types, and environment normalization.
