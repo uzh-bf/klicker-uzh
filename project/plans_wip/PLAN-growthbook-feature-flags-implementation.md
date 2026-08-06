@@ -300,7 +300,7 @@ git commit -m "feat(feature-flags): add shared contracts"
   `initialize(): Promise<boolean>`, `isEnabled(key, attributes): boolean`, and
   `refresh(): Promise<void>`.
 
-- [ ] **Step 1: Write failing Node adapter tests**
+- [x] **Step 1: Write failing Node adapter tests**
 
 Use a local test feature map and mock `fetch` with this payload:
 
@@ -334,13 +334,13 @@ expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
 Also construct the client with `{}` and assert `initialize()` and every flag
 evaluation return `false` without calling `fetch`.
 
-- [ ] **Step 2: Run the Node tests and verify the red state**
+- [x] **Step 2: Run the Node tests and verify the red state**
 
 Run: `pnpm --filter @klicker-uzh/feature-flags test -- node.test.ts`
 
 Expected: failure because `NodeFeatureFlagClient` is not exported.
 
-- [ ] **Step 3: Implement the Node adapter around `GrowthBookClient`**
+- [x] **Step 3: Implement the Node adapter around `GrowthBookClient`**
 
 ```ts
 export type NodeFeatureFlagClientConfig = {
@@ -390,7 +390,7 @@ export class NodeFeatureFlagClient<
 Adjust only SDK result/property typings if the installed 1.6.5 declarations
 require it; preserve this public interface and request-scoped user context.
 
-- [ ] **Step 4: Run the Node tests and package checks**
+- [x] **Step 4: Run the Node tests and package checks**
 
 Run: `pnpm --filter @klicker-uzh/feature-flags test -- node.test.ts`
 
@@ -398,7 +398,7 @@ Run: `pnpm --filter @klicker-uzh/feature-flags check`
 
 Expected: all pass; alternating users on one singleton retain their own result.
 
-- [ ] **Step 5: Commit the Node adapter**
+- [x] **Step 5: Commit the Node adapter**
 
 ```bash
 git add packages/feature-flags/src/node.ts packages/feature-flags/test/node.test.ts
