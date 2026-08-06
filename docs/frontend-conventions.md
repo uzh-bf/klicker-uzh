@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-19'
+timestamp: '2026-08-04'
 tags:
   - frontend
 ---
@@ -12,6 +12,18 @@ tags:
 **Every user-visible string is TWO edits, and every interactive element gets a `data-cy`.** New text goes into BOTH `packages/i18n/messages/de.ts` and `en.ts` under the matching namespace, or one locale silently falls back. New buttons/inputs get a `data-cy` attribute — it is the single test hook consumed by Playwright (`playwright.config.ts` sets `testIdAttribute: 'data-cy'`, so `page.getByTestId(...)` reads it). There is no `data-testid` anywhere; don't introduce one.
 
 Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Next.js **pages router**. `apps/chat` is the app-router exception with its own conventions: [Chat Platform](./chat-platform.md).
+
+Assessment report exports intentionally keep one browser-side artifact:
+`apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
+creates the self-contained HTML used by both report actions. **View report**
+opens the blob directly; **Save as PDF** opens the same blob in a guarded popup
+and invokes the browser print dialog only after the report has loaded. The
+document title includes the human report title and course name, so the browser
+can suggest a course-specific PDF filename. Print CSS sets A4 portrait pages,
+keeps the SVG chart and accessible histogram table, and compacts the QR and
+metadata blocks without changing the on-screen report. QR rendering and popup
+navigation have bounded failure paths so export cannot remain stuck on a
+spinner.
 
 ## Next.js tooling
 
