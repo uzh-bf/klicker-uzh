@@ -1,8 +1,8 @@
 # Assessment Audit Logging Design
 
-- **Status:** Approved decisions (revision 5), awaiting written-spec review
+- **Status:** Approved decisions (revision 6), awaiting written-spec review
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-06 (revision 5 with independent client ingress)
+- **Last updated:** 2026-08-06 (revision 6 with durable client outbox)
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946)
 
@@ -30,12 +30,15 @@ audit records into the outbox. In v1, Lane 2 is limited to participant
 submissions; there is no generic Hatchet audit emitter.
 
 Client-observed evidence uses an independent third capture path. The PWA sends
-memory-only batches to a separately deployable audit ingress using a short-lived,
-assessment-scoped capture token. The ingress validates the token and batch, then
-acknowledges only after Azure Storage Queue durably accepts the message. A worker
-drains the queue, performs database-backed scope validation, and materializes
-canonical records into the shared outbox. The browser never persists audit
-events in IndexedDB, localStorage, Cache Storage, or another durable client store.
+events through a bounded IndexedDB client outbox to a separately deployable audit
+ingress using a short-lived, assessment-scoped capture token. The ingress
+validates the token and batch, then acknowledges only after Azure Storage Queue
+durably accepts the message. The PWA removes acknowledged records immediately;
+unacknowledged records become ineligible for replay after seven days and are
+purged the next time the origin runs cleanup. A worker drains the queue, performs
+database-backed scope validation, and materializes canonical records into the
+shared outbox. Capture tokens and direct participant identifiers are never
+persisted in the browser outbox.
 
 A dispatcher writes every canonical application record from the outbox to Azure
 Table Storage through a provider-neutral append interface. Owner annotations and
@@ -63,7 +66,7 @@ completed on 2026-08-06.
 | 1 | The core contract and sink boundary are reusable, but v1 instruments only assessment-enabled LiveQuiz. PracticeQuiz, MicroLearning, GroupActivity, and unrelated authentication activity are excluded. |
 | 2 | The implementation retains two server emission lanes that converge on one durable audit delivery path. Lane 1 writes canonical events to the PostgreSQL outbox. Lane 2 materializes evidence from an existing durable Hatchet assessment command into that outbox and is limited to submissions in v1. |
 | 3 | Critical authoritative assessment changes fail closed and commit their outbox evidence in the same Prisma transaction. |
-| 4 | Client-observed events use an independent audit ingress and durable Azure Storage Queue. The PWA uses a bounded memory-only buffer with retry while the page lives; no audit event is persisted in browser storage. |
+| 4 | Client-observed events use an independent audit ingress and durable Azure Storage Queue. Before transmission, the PWA commits them to a bounded IndexedDB client outbox and removes them after durable ingress acknowledgement or application-level expiry. Capture tokens remain memory-only. |
 | 5 | Client evidence describes what an authenticated browser session reported. Server evidence describes what Klicker accepted or persisted. Neither claims to prove a person's subjective intent. |
 | 6 | Every submission uses one stable `submissionId`; separate events represent server acceptance, rejection, duplication, persistence, and scoring. The Hatchet event ID is retained for correlation. |
 | 7 | Audit coverage starts with a complete activation baseline and remains sticky. Existing nonterminal assessment-enabled LiveQuizzes receive a clearly incomplete rollout-current-state baseline. |
@@ -75,6 +78,7 @@ completed on 2026-08-06.
 | 13 | Assessment report issuance, supersession, and revocation are in scope; public report reads and evidence reads are not audited. |
 | 14 | The rollout requires a UZH privacy review before the pilot. Formal approval is required only if the applicable UZH process demands it. |
 | 15 | Delivery is organized as two sequential native stacks: authoritative evidence first, then client-observed evidence. |
+| 16 | The browser-survival guarantee begins only after the IndexedDB transaction commits and covers ordinary reloads, browser restarts, and temporary offline periods for a seven-day replay window. Expired records are purged the next time the origin runs; IndexedDB cannot execute deletion while Klicker is not running. Replay-only token issuance is also capped from trusted server-side lifecycle time, so an altered browser clock cannot extend replay. Manual storage clearing, browser eviction, private-session termination, device loss, and failure before the commit remain explicit limitations. |
 
 ## Goals
 
@@ -87,8 +91,10 @@ completed on 2026-08-06.
   evidence from its existing durable Hatchet command, without emitting a
   duplicate audit message.
 - Keep client capture available during a main Klicker backend outage through an
-  independently deployable ingress and durable queue, without persisting answer
-  evidence in the browser.
+  independently deployable ingress and durable queue.
+- Preserve unacknowledged client evidence across ordinary reloads, browser
+  restarts, and temporary offline periods through a bounded seven-day client
+  outbox.
 - Distinguish browser-observed assertions, server transport acceptance, and
   authoritative database persistence.
 - Keep Azure SDK types, keys, credentials, and error codes outside domain
@@ -104,10 +110,18 @@ completed on 2026-08-06.
 - Instrumenting assessment-enabled PracticeQuiz, MicroLearning, or GroupActivity
   in v1.
 - A platform-wide authentication or observability system.
-- Persistent browser-side audit storage, including IndexedDB, localStorage, or
-  Cache Storage.
-- Guaranteeing that an unacknowledged client event survives a browser crash,
-  refresh, page close, device loss, or network failure.
+- Replaying browser-side audit records after durable ingress acknowledgement or
+  beyond seven days.
+- Persisting audit payloads in localStorage, sessionStorage, Cache Storage,
+  cookies, or any browser store other than the dedicated IndexedDB outbox.
+- Guaranteeing browser evidence survives manual site-data clearing, browser
+  eviction, private-session termination, device loss, or failure before its
+  IndexedDB transaction commits.
+- Guaranteeing physical browser-record deletion at an exact wall-clock deadline
+  while the Klicker origin is not running; cleanup occurs at the next execution
+  opportunity.
+- Changing response acceptance, deadline, or lifecycle rules, or guaranteeing
+  that an offline submit attempt later becomes an authoritative submission.
 - A generic Hatchet audit-emitter SDK for services without a concrete v1
   assessment command.
 - Auditing LTI, OLAT, LMS grade transfer, email delivery, or other external
@@ -220,12 +234,20 @@ direct-Azure exception.
 
 3. **Independent client ingress**
    - The authenticated assessment backend issues a short-lived capture token
-     containing the stable Participant UUID, LiveQuiz, session, lifecycle epoch,
-     permitted client event families, token ID, issue time, and expiry. The token
-     is audience-limited to the audit ingress and remains memory-only in the PWA.
-   - The PWA batches meaningful events in a bounded in-memory buffer. It retries
-     with backoff only while the page remains alive and makes one best-effort
-     keepalive flush when the page exits. It never blocks the assessment UI.
+     containing the stable Participant UUID, LiveQuiz, session or replay mode,
+     lifecycle epoch, permitted client event families, an opaque
+     assessment-specific client-subject binding, token ID, issue time, and
+     expiry. The token is audience-limited to the audit ingress and remains
+     memory-only in the PWA.
+   - The PWA commits each meaningful event to a bounded IndexedDB client outbox
+     before attempting transmission. It batches and retries pending records while
+     online and replays matching records after reload or restart once it obtains
+     a fresh capture token. A submit request waits for its
+     `SUBMISSION_ATTEMPTED` outbox commit; answer rendering remains responsive.
+   - IndexedDB contains normalized client evidence, event/stream identity,
+     sequence, applicable `submissionId`, schema version, expiry, and the opaque
+     subject binding only. It contains no token, cookie, solution, name, email,
+     matriculation number, stable Participant UUID, or full assessment baseline.
    - The independently deployable ingress validates token signature, issuer,
      audience, expiry, batch schema, limits, and rate policy. It derives actor and
      assessment scope from token claims and never trusts identity or scope from
@@ -234,6 +256,13 @@ direct-Azure exception.
      provider-neutral capture-queue interface, and acknowledges only after the
      Azure Storage Queue adapter confirms durable insertion. A lost response is
      retried with the same client event IDs.
+   - Temporary failures remain pending. For a permanently invalid client event,
+     the ingress first queues a metadata-only rejection record; only its
+     durable receipt permits the PWA to delete the invalid raw local payload.
+   - Batch responses contain a per-event durable outcome. The PWA deletes only
+     event IDs confirmed as queued or durably rejected; one malformed event
+     cannot cause acknowledged siblings to remain indefinitely or be deleted
+     without their own receipt.
    - A queue drainer validates event schema and database-backed assessment scope,
      records whether referenced content matches the known assessment history,
      and materializes canonical events into the outbox. Client claims remain
@@ -268,7 +297,7 @@ the contract and export:
 | Lane 1, authoritative mutation | Business state and canonical outbox records commit or roll back in one PostgreSQL transaction. | `receivedAt` is when the trusted API/worker received or initiated the action; `recordedAt` is when the canonical event was constructed in the transaction. |
 | Lane 1, standalone observation | The ingestion endpoint acknowledges acceptance only after the standalone outbox transaction commits. The browser interaction itself remains non-blocking. | `receivedAt` is when the trusted endpoint accepted the observation; `recordedAt` is when it constructed the canonical outbox event. |
 | Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAttemptedAt` is stamped immediately before the Hatchet push; the returned `hatchetEventId` proves acknowledgement; `recordedAt` is when the response processor materialized the canonical event. |
-| Independent client ingress | The ingress acknowledges only after Azure Storage Queue durably accepts the batch. The PWA does not block interaction and retries unacknowledged events only while its page remains alive. | `clientOccurredAt` is untrusted browser context; `receivedAt` is ingress receipt; `transportAcceptedAt` is the Queue service's returned insertion time; `recordedAt` is queue-drainer materialization time. |
+| Independent client ingress | A client event is staged after its IndexedDB transaction commits. The ingress returns a per-event acknowledgement only after Azure Storage Queue durably accepts that event or all of its parts; acknowledged local records are then deleted. Pending records are eligible to replay for seven days and are purged on the next cleanup after expiry. | `clientOccurredAt` is untrusted browser context; `receivedAt` is ingress receipt; `transportAcceptedAt` is the Queue service's returned insertion time; `recordedAt` is queue-drainer materialization time. |
 | Owner CLI exception | The CLI reports success only after the control record, locator, and retention-index registration exist. | `receivedAt` and `recordedAt` are trusted CLI times associated with the authenticated Azure principal. |
 
 `transportAcceptedAt` is populated only when the durable transport returns an
@@ -284,12 +313,12 @@ instead of collapsing transport attempt, acceptance, and later materialization.
 
 | Design choice | Argument | Difference from revision 2 |
 | --- | --- | --- |
-| Retain an outbox lane and a Hatchet-materialized lane | Klicker has two real server durability boundaries: PostgreSQL transactions for authoritative state and Hatchet acceptance for submissions. Modeling both makes the evidence claim and acknowledgement point explicit. | Revision 2 classified every non-PostgreSQL producer into a generic Hatchet audit lane. Revision 5 models only the existing assessment server workflow. |
+| Retain an outbox lane and a Hatchet-materialized lane | Klicker has two real server durability boundaries: PostgreSQL transactions for authoritative state and Hatchet acceptance for submissions. Modeling both makes the evidence claim and acknowledgement point explicit. | Revision 2 classified every non-PostgreSQL producer into a generic Hatchet audit lane. Revision 6 models only the existing assessment server workflow. |
 | Converge both lanes on one PostgreSQL outbox | One dispatcher, retry model, quarantine path, provider adapter, and Azure delivery source are easier to verify and operate. | This convergence is retained from revision 2. |
-| Reuse the existing submission command | The response API stays independent of PostgreSQL, and the Hatchet receipt is meaningful evidence of server acceptance. Reusing the command avoids ordering races between a submission and a duplicate audit message. | Revision 2 proposed a reusable typed audit emitter and append task for stateless services. Revision 5 needs no additional audit message for the response API. |
-| Keep critical authoritative effects in database transactions | Hatchet acceptance proves transport, but only the response transaction can prove persistence and scoring. Those events therefore remain atomic with their PostgreSQL effects. | Revision 2 allowed only Lane 1 to be critical. Revision 5 instead ties each critical event to its actual durability point: Hatchet receipt for accepted transport, PostgreSQL transaction for authoritative effects. |
+| Reuse the existing submission command | The response API stays independent of PostgreSQL, and the Hatchet receipt is meaningful evidence of server acceptance. Reusing the command avoids ordering races between a submission and a duplicate audit message. | Revision 2 proposed a reusable typed audit emitter and append task for stateless services. Revision 6 needs no additional audit message for the response API. |
+| Keep critical authoritative effects in database transactions | Hatchet acceptance proves transport, but only the response transaction can prove persistence and scoring. Those events therefore remain atomic with their PostgreSQL effects. | Revision 2 allowed only Lane 1 to be critical. Revision 6 instead ties each critical event to its actual durability point: Hatchet receipt for accepted transport, PostgreSQL transaction for authoritative effects. |
 | Use an independent client ingress and durable queue | Client observations can be accepted while the main Klicker backend, PostgreSQL, or Hatchet workers are temporarily unavailable. The scoped token preserves trusted participant and assessment attribution until database validation resumes. | This restores revision 2's independent-ingress benefit while adding explicit assessment scoping and delayed database validation. |
-| Keep the browser buffer memory-only | Exact answers are not left in persistent browser storage, and there is no client-side retention cleanup obligation. | Unlike revision 2, revision 5 accepts that a crash, refresh, close, or network loss before ingress acknowledgement may lose the unacknowledged tail. Sequence gaps and exports disclose what can and cannot be established. |
+| Use a narrow durable browser outbox | Once staged, client observations survive ordinary reloads and temporary offline periods. Immediate deletion after acknowledgement, a seven-day replay window, next-execution expiry cleanup, payload minimization, subject binding, and memory-only tokens limit the added device-side exposure. | Revision 2 also used IndexedDB, but did not define this complete storage lifecycle, scoped replay identity, or separation between persisted answer evidence and non-persisted credentials. |
 | Do not implement a generic Lane 2 yet | No other in-scope v1 assessment producer requires it. Avoiding an unused emitter SDK, bounded process buffers, producer heartbeats, and synthetic gap records reduces failure modes and review surface. | These mechanisms were required by revision 2 because its generic lane covered auth, stateless workers, and future services. Those producers are outside the current scope or can use Lane 1. |
 
 Lane 2 may be expanded later only for a concrete Klicker or Hatchet assessment
@@ -344,8 +373,20 @@ Hatchet types remain inside the response and worker adapters.
 
 4. **Assessment capture-token issuer**
    - Uses the existing authenticated `asParticipant` assessment boundary.
-   - Verifies active `Participation`, sticky LiveQuiz coverage, lifecycle epoch,
-     and assessment session before issuing a signed, audience-scoped token.
+   - For live capture, verifies active `Participation`, sticky LiveQuiz coverage,
+     lifecycle epoch, and assessment session before issuing a signed,
+     audience-scoped token.
+   - For pending events after reload, may issue a replay-only token to the same
+     authenticated Participant for the covered LiveQuiz/lifecycle during the
+     seven-day local window, even if the assessment session has ended. Replay
+     authority cannot submit a response, change assessment state, or extend the
+     event's local expiry.
+   - Caps replay-only token issuance at seven days after the covered lifecycle's
+     trusted server-side close. Client timestamps and browser clock changes
+     cannot extend this server-enforced cutoff.
+   - Includes an opaque assessment-specific client-subject binding that can
+     match pending local records without storing the Participant UUID in
+     IndexedDB or linking the browser record across assessments.
    - Uses an asymmetric signing key so the ingress receives verification
      capability only. Token duration covers the bounded assessment session plus
      a configured outage grace period; it cannot authorize evidence reads.
@@ -360,6 +401,9 @@ Hatchet types remain inside the response and worker adapters.
      queue acknowledgement. Azure deletion credentials remain inside the
      adapter. Repeated `clientEventId` values are safe and do not create
      duplicate canonical evidence.
+   - Distinguishes retryable transport/auth-refresh failures from permanent
+     schema or binding failures. Before returning a permanent rejection receipt,
+     it durably queues a metadata-only rejection record without the raw answer.
 
 6. **Client queue drainer**
    - Drains Azure Queue through a least-privileged managed identity whenever the
@@ -367,7 +411,8 @@ Hatchet types remain inside the response and worker adapters.
    - Performs database-backed coverage, lifecycle, Participation, ElementInstance,
      and content-version checks and records a stable validation result without
      upgrading client evidence to authoritative evidence.
-   - Inserts accepted client events and detected gaps into the outbox in an
+   - Inserts accepted client events, detected gaps, append-only gap-resolution
+     events, and durable client-rejection metadata into the outbox in an
      idempotent transaction, then deletes the source message.
    - Moves permanently malformed or unscoped messages to metadata-only
      quarantine; raw answers never enter logs or alerts.
@@ -463,10 +508,15 @@ Lane 2 — Hatchet command materialization
        -> or accepted + rejected/duplicate evidence in audit transaction
 
 Independent client capture
-  existing backend -> short-lived assessment capture token
   participant selection or submit attempt
-    -> memory-only PWA batch -> independent audit ingress
-    -> Azure Storage Queue receipt -> queue drainer -> audit outbox transaction
+    -> commit event to IndexedDB client outbox
+       -> if offline/reloaded: retain, obtain a fresh scoped token, replay
+       -> if online: independent audit ingress + live/replay token
+          -> Azure Storage Queue -> per-event durable receipt
+             -> PWA deletes acknowledged local record
+             -> queue drainer -> audit outbox transaction
+  after seven days: local record is replay-ineligible and purged at next cleanup
+  after trusted lifecycle close + seven days: no replay-only token is issued
 
 Both server lanes and the client drainer -> PostgreSQL outbox
   -> dispatcher -> provider-neutral append interface
@@ -506,7 +556,7 @@ Trusted Resource Group member
 | `submissionId` | Stable client-created submission idempotency key where applicable. |
 | `hatchetEventId` | Hatchet receipt identifier where applicable. |
 | `ingressReceiptId` | Non-secret independent-ingress receipt identifier where applicable; Azure deletion credentials are never canonical evidence. |
-| `captureTokenId` | Non-secret identifier of the scoped capture token used by the ingress. |
+| `captureTokenId` | Non-secret identifier of the scoped token that the ingress validated when accepting the batch; a token used only during earlier local staging is not trusted provenance. |
 | `scopeValidation` | Queue-drainer result for assessment/content references: matched, mismatched, or unavailable, with a stable reason. |
 | `clientEventId` | Stable browser-generated UUID preserved across retries of one client event. |
 | `clientStreamId` | Stable identifier for one browser event stream; a new stream receives a new ID. |
@@ -544,8 +594,8 @@ runtime; a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 | Source Elements and media | referenced source changed; effective content changed/unchanged; media captured/replaced | `LANE_1_OUTBOX` | GraphQL lecturer mutation and media readiness service | `AUTHORITATIVE` / `CRITICAL` | Source provenance and immutable media identity commit before the effective mutation succeeds. |
 | Eligibility and permissions | participant eligibility added/removed; assessment-relevant lecturer permission changed | `LANE_1_OUTBOX` | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Permission/Participation change and evidence commit atomically. |
 | Assessment session | session started, resumed, ended, forcibly terminated | `LANE_1_OUTBOX` | Existing authenticated assessment endpoints | `SERVER_OBSERVED` / `STANDARD` | A successful audit-only outbox transaction acknowledges recording; no passive page/focus events. |
-| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | Ingress acknowledges after durable queue insertion. The PWA never waits and retries unacknowledged events only while the page lives. |
-| Submission attempt | submit clicked; auto-submit triggered | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | Same ingress semantics; this evidence does not mean server acceptance. |
+| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | The PWA stages the event in IndexedDB before transmission. Ingress acknowledges after durable queue insertion; acknowledgement removes the local record. Answer rendering does not wait for ingress. |
+| Submission attempt | submit clicked; auto-submit triggered | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | The submit request follows the durable local outbox commit. This evidence still does not mean server acceptance. |
 | Submission validation and outcome | server accepted; validated; rejected; duplicate; processing failed/recovered | `LANE_2_HATCHET` | Response processor materializing the Hatchet command and result | `SERVER_OBSERVED`; accepted/validated/rejected/duplicate are `CRITICAL`, operational failure/recovery is `STANDARD` | Hatchet receipt exists first. Accepted plus validated/rejected/duplicate evidence commits in an audit-only or response transaction before task completion. |
 | Submission persistence and scoring | persisted; scored | `LANE_2_HATCHET` | Response processor | `AUTHORITATIVE` / `CRITICAL` | Persistence and scoring evidence commit atomically with the response and stored scoring result. |
 | Post-submission scoring and responses | score recomputed; response modified/deleted; points corrected; participant reset/removed | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new response or score, stable reason, actor, and algorithm/config version commit with the change. |
@@ -553,7 +603,8 @@ runtime; a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 | Assessment reports | issued; superseded; revoked | `LANE_1_OUTBOX` | Assessment-report service | `AUTHORITATIVE` / `CRITICAL` | Report row, snapshot hash, and audit event commit in one transaction. Public reads are excluded. |
 | Authenticated rejections | an authenticated assessment-scoped action was rejected | `LANE_1_OUTBOX` | Protected API or worker that rejects the action | `SERVER_OBSERVED` / `STANDARD` | An audit-only outbox transaction records attempted action and stable reason without raw request data. |
 | Evidence administration | evidence annotation; investigation hold placed/released | `OWNER_CLI` | Owner CLI | `ADMINISTRATIVE` / `STANDARD` | Direct Azure create in the control table references the original evidence or assessment. Existing evidence is never changed. |
-| Audit operations | gap detected; delivery delayed/conflicted/quarantined/recovered; manifest sealed/failed; retention completed/failed | `LANE_1_OUTBOX` | Audit services | `SERVER_OBSERVED` / `STANDARD` | Operational evidence never masquerades as an assessment action. |
+| Client-capture operations | client gap detected/resolved; client event permanently rejected | `CLIENT_INGRESS` | Independent ingress and client queue drainer | `SERVER_OBSERVED` / `STANDARD` | Permanent rejection metadata is durable in Azure Queue before the raw local payload may be deleted. Gap detection and resolution commit through standalone outbox transactions; earlier records are never updated. |
+| Audit operations | delivery delayed/conflicted/quarantined/recovered; manifest sealed/failed; retention completed/failed | `LANE_1_OUTBOX` | Audit services | `SERVER_OBSERVED` / `STANDARD` | Operational evidence never masquerades as an assessment action. Recovery is appended; earlier records are never updated. |
 
 Authenticated assessment-scoped rejections use stable reason codes. Raw
 unauthenticated traffic, credentials, tokens, cookies, PINs, headers, stack
@@ -609,11 +660,12 @@ The v1 contract defines these names; none are reserved without a producer:
   `ASSESSMENT_REPORT_SUPERSEDED`, and `ASSESSMENT_REPORT_REVOKED`.
 - Evidence administration: `EVIDENCE_ANNOTATION`,
   `EVIDENCE_HOLD_PLACED`, and `EVIDENCE_HOLD_RELEASED`.
-- Audit operations: `AUDIT_GAP_DETECTED`, `AUDIT_DELIVERY_DELAYED`,
-  `AUDIT_DELIVERY_CONFLICTED`, `AUDIT_DELIVERY_QUARANTINED`,
-  `AUDIT_DELIVERY_RECOVERED`, `AUDIT_MANIFEST_SEALED`,
-  `AUDIT_MANIFEST_FAILED`, `AUDIT_RETENTION_COMPLETED`, and
-  `AUDIT_RETENTION_FAILED`.
+- Client-capture operations: `AUDIT_GAP_DETECTED`, `AUDIT_GAP_RESOLVED`, and
+  `AUDIT_CLIENT_EVENT_REJECTED`.
+- Audit operations: `AUDIT_DELIVERY_DELAYED`, `AUDIT_DELIVERY_CONFLICTED`,
+  `AUDIT_DELIVERY_QUARANTINED`, `AUDIT_DELIVERY_RECOVERED`,
+  `AUDIT_MANIFEST_SEALED`, `AUDIT_MANIFEST_FAILED`,
+  `AUDIT_RETENTION_COMPLETED`, and `AUDIT_RETENTION_FAILED`.
 
 ## Baseline and media representation
 
@@ -655,13 +707,22 @@ activation baseline, and unrelated personal data.
 - Selection and case-study answers use normalized structured state.
 - Every event carries the full resulting answer state, ElementInstance version,
   stable client event and stream IDs, client sequence, untrusted
-  `clientOccurredAt`, and the non-secret capture-token ID. The ingress and
-  drainer add trusted receipt, transport-acceptance, materialization, actor, and
-  scope context.
-- The PWA keeps unacknowledged batches only in bounded process memory, removes
-  them after ingress acknowledgement, and retries with the same client event IDs
-  while the page remains alive. A best-effort keepalive flush on page exit does
-  not block navigation or claim guaranteed delivery.
+  `clientOccurredAt`, expiry, schema version, and opaque local subject binding.
+  The ingress records the validated replay token ID and adds trusted receipt,
+  transport-acceptance, actor, and scope context; the drainer adds validation and
+  materialization context.
+- The PWA commits each event to a bounded, schema-versioned IndexedDB client
+  outbox before transmission. It removes records only after a durable ingress
+  acknowledgement or application-level expiry and retries with the same client
+  event IDs while online. An event becomes ineligible for replay seven days after
+  capture and is purged at the next cleanup opportunity.
+- On startup, reload, or reconnection, the PWA obtains a fresh live or
+  replay-only capture token and replays only records whose opaque subject,
+  assessment, and lifecycle bindings match it. Capture tokens, direct
+  participant identifiers, and solutions are never stored in IndexedDB.
+- A submit request waits for the corresponding `SUBMISSION_ATTEMPTED` outbox
+  transaction to commit. Answer-selection rendering remains responsive and does
+  not wait for ingress or Azure.
 - Batches are size-aware and remain below the queue adapter's tested safe limit.
   The implementation plan measures the largest valid Klicker answer envelope;
   if one valid event cannot fit, deterministic multi-message parts are required
@@ -669,24 +730,36 @@ activation baseline, and unrelated personal data.
   silently dropped.
 - Late events remain evidence, are marked delayed, and never change an
   authoritative response or score.
-- Buffer capacity exhaustion, browser crash, refresh, page close, device loss, or
-  network failure before ingress acknowledgement can lose client evidence. A
-  later sequence exposes an internal gap; an untransmitted terminal tail remains
-  unknowable. The design does not claim otherwise.
-- Sequences are monotonic only within the memory-resident `clientStreamId`. Every
-  page load, tab, or device creates a new stream starting at sequence one. The
-  drainer deduplicates by
+- An event is covered by the browser-survival guarantee only after its IndexedDB
+  transaction commits. Manual site-data clearing, browser eviction,
+  private-session termination, device loss, expiry, or failure before commit can
+  still lose client evidence. The design does not claim otherwise.
+- IndexedDB unavailability, migration failure, or capacity exhaustion never
+  silently evicts the oldest record. The PWA exposes an actionable local
+  audit-degraded warning, retains what it safely can, and submits metadata-only
+  gap evidence after recovery.
+- Sequences are monotonic within a `clientStreamId`. Every page load, tab, or
+  device creates a new stream starting at sequence one; pending records from an
+  older stream remain replayable with their original identity. The drainer
+  deduplicates by
   `(Participant, LiveQuiz, clientEventId)` and evaluates gaps per stream, so
   multiple tabs or devices cannot collide or create cross-stream gaps.
 
 ### Submission lifecycle
 
-- The PWA creates `submissionId` before the first attempt and reuses it on
-  retries.
+- The PWA creates `submissionId` before the first attempt and persists it
+  atomically with `SUBMISSION_ATTEMPTED` before calling the response API. It
+  reuses that ID for every allowed retry, including reconciliation after reload.
+  After audit acknowledgement removes the raw event, a minimal retry marker may
+  retain only `submissionId` and scope until a definitive response outcome or
+  seven-day expiry.
 - The response API includes `submissionId` in the Hatchet event and returns it
   with `hatchetEventId` after successful push.
 - A failed Hatchet push returns an error; the client performs bounded retry with
   the same `submissionId`.
+- Replaying client audit evidence never creates or changes an authoritative
+  response. A post-reload response retry still passes normal authentication,
+  lifecycle, deadline, and duplicate validation at the response API.
 - The response processor uses the database uniqueness constraint as the
   duplicate authority. Redis remains only a cache and may not create an
   evidence-free success response.
@@ -732,25 +805,40 @@ these outcomes is durable.
 
 ### Standard server and client-ingress events
 
-The ingress acknowledges a client batch only after durable queue insertion, but
-the PWA never blocks assessment interaction on that request. A lost acknowledgement
-causes an idempotent retry while the page lives. If an already issued capture
-token remains valid, ingress and queue capture continue while the main Klicker
-backend, PostgreSQL, or Hatchet workers are unavailable; materialization resumes
-when the stack recovers.
+The ingress returns a per-event durable outcome only after queue insertion. The
+PWA retains each record in IndexedDB until its own acknowledgement, so a lost
+HTTP response, reload, browser restart, or temporary offline period causes an
+idempotent replay rather than loss. Ingress and Queue availability never block
+answer rendering. A submit request waits only for the local
+`SUBMISSION_ATTEMPTED` transaction, not for ingress or Azure.
 
-An invalid or expired token is rejected before queue insertion. Because the
-token is memory-only, a page reload discards even an otherwise unexpired token;
-issuing a replacement requires the normal authenticated backend. A reload during
-a backend outage or an outage that outlasts token validity can therefore create
-an honest coverage gap. Server-observed events without a business mutation retry
-their standalone outbox transaction where practical.
+If an already issued capture token remains valid, ingress and queue capture
+continue while the main Klicker backend, PostgreSQL, or Hatchet workers are
+unavailable; materialization resumes when the stack recovers. A reload discards
+the memory-only token but not staged evidence. Upload resumes after the normal
+authenticated backend issues a fresh live or replay-only token with matching
+opaque subject, assessment, and lifecycle bindings. Replay-only tokens remain
+available only until the trusted server-side replay cutoff, but cannot authorize
+response submission. The design does not claim that a reloaded,
+unauthenticated page can continue producing attributable assessment evidence
+during a complete backend outage.
+
+An invalid or expired token is retryable after refresh. Transport and Queue
+failures remain pending with bounded backoff. A permanently invalid event does
+not retry forever: the ingress queues `AUDIT_CLIENT_EVENT_REJECTED` with stable
+metadata and no raw answer, then returns a durable rejection receipt that permits
+local payload deletion.
 
 The drainer does not assume Azure Queue ordering. It applies an
 implementation-plan-defined reordering grace period before recording bracketed
-sequence gaps. Memory-buffer overflow or later received sequences can expose a
-gap, but abrupt termination may leave an unknowable tail and cannot reconstruct
-lost event content.
+sequence gaps. If delayed replay later fills a recorded gap, the drainer appends
+`AUDIT_GAP_RESOLVED`; it never mutates the original gap. Site-data clearing,
+browser eviction, private-session termination, device loss, expiration of the
+seven-day replay window, or failure before the IndexedDB commit may leave an
+unknowable tail.
+
+Server-observed events without a business mutation retry their standalone outbox
+transaction where practical.
 
 ### Azure delivery
 
@@ -761,10 +849,11 @@ lost event content.
 - Outbox evidence is not deleted until Table insertion is confirmed and the row
   is included in a successfully sealed immutable manifest.
 - Operational metrics expose outbox depth, oldest pending age, delivery latency,
-  retries, conflicts, quarantine, ingress acceptance/error rates, client queue
-  depth and oldest-message age, client drain latency, client gaps, oldest
-  unprocessed submission, Hatchet-receipt-to-outbox materialization latency,
-  permanently invalid command outcomes, manifest age, and retention failures.
+  retries, conflicts, quarantine, ingress acceptance/error rates, metadata-only
+  browser-outbox depth/age/storage-failure reports, Azure client-queue depth and
+  oldest-message age, client drain latency, client gaps, oldest unprocessed
+  submission, Hatchet-receipt-to-outbox materialization latency, permanently
+  invalid command outcomes, manifest age, and retention failures.
 - Metadata-only alerts may go to normal operations; evidence inspection remains
   limited to authorized Resource Group members.
 
@@ -825,6 +914,14 @@ members are outside v1.
   token IDs are retained. Queue messages contain exact client-observed answers
   transiently, receive the same encryption/access/logging restrictions as
   canonical evidence, and may never outlive its retention boundary.
+- IndexedDB contains exact client-observed answer state transiently. Records are
+  origin-scoped and minimized, become ineligible for replay after seven days,
+  and are purged when the origin next runs cleanup. They contain neither
+  credentials nor direct participant identifiers. V1 does not invent a custom
+  browser cryptographic envelope; the UZH privacy review may require a reviewed
+  encryption design before permitting the pilot.
+- No audit payload is persisted in localStorage, sessionStorage, Cache Storage,
+  or cookies.
 - Raw answers and submission objects are removed from ordinary application logs.
 - Human Table and manifest access is granted only through explicit Azure
   data-plane assignments to trusted Resource Group members. At design time, the
@@ -838,11 +935,13 @@ members are outside v1.
 - Evidence reads are not separately audited by this feature.
 
 Participants are informed that assessment answer changes and submission
-attempts are retained for integrity and dispute handling. Before the pilot, the
-responsible UZH data-protection contact reviews proportionality, lawful basis,
-notice wording, one-year retention, investigation holds, access, account
-deletion, and whether a formal data-protection impact assessment or approval is
-required.
+attempts may be stored temporarily on their device for reliable delivery and are
+then retained centrally for integrity and dispute handling. Before the pilot,
+the responsible UZH data-protection contact reviews proportionality, lawful
+basis, notice wording, the seven-day local replay window and next-execution
+deletion constraint, one-year central retention, investigation holds, access,
+account deletion, browser-storage protection, and whether a formal
+data-protection impact assessment or approval is required.
 
 Participant account deletion does not rewrite evidence. The stable Participant
 UUID remains for the approved retention period; identity resolution, if still
@@ -887,8 +986,13 @@ year after the anchor unless an investigation hold applies. Transient copies
 are removed as soon as their delivery purpose is fulfilled and may never outlive
 that boundary. The retention and cleanup processes cover:
 
-- PWA memory-buffer removal immediately after ingress acknowledgement; page
-  termination naturally destroys any unacknowledged in-memory tail.
+- IndexedDB client-outbox deletion immediately after ingress acknowledgement.
+  Unacknowledged records become ineligible for replay seven days after capture
+  and are purged on PWA startup and periodically while it remains open. If the
+  origin is not executed, it cannot physically delete its IndexedDB at the exact
+  deadline; the privacy review must accept this browser constraint. Manual
+  clearing or browser eviction may remove records earlier. No browser copy
+  participates in the one-year central-evidence retention period.
 - Azure client-queue deletion immediately after durable outbox handoff. The
   drainer and retention process reject or purge messages that have crossed the
   assessment evidence boundary; raw poison payloads are deleted after a
@@ -912,9 +1016,11 @@ must be deployed before the first evidence becomes eligible for deletion.
   object-specific `PermissionLevel` (`EXECUTE`, `WRITE`, or `ADMIN` as
   appropriate). Audit helpers receive and record the completed authorization
   decision; they do not replace authorization.
-- The capture-token issuer uses `asParticipant` and verifies active
+- The capture-token issuer uses `asParticipant`. Live tokens require active
   `Participation`, sticky LiveQuiz coverage, lifecycle epoch, and assessment
-  session. The ingress accepts only that audience-scoped token and exposes no
+  session; replay-only tokens require the same authenticated Participant and
+  covered historical lifecycle within the seven-day server-anchored replay
+  cutoff. The ingress accepts only these audience-scoped tokens and exposes no
   evidence-read operation.
 - The queue drainer performs delayed database-backed Participation, coverage,
   ElementInstance, and content-version validation before outbox materialization.
@@ -946,8 +1052,9 @@ Expected implementation areas:
   critical evidence share a transaction; Redis and later Hatchet work remain
   outside it.
 - `apps/frontend-pwa`: capture-token acquisition, meaningful interaction capture,
-  bounded memory-only batching/retry, best-effort exit flush, delayed-evidence
-  semantics, stable submission retry, and privacy notice.
+  schema-versioned IndexedDB client outbox, binding-aware replay, batching,
+  retry/expiry/cleanup, local degradation feedback, stable submission retry, and
+  privacy notice.
 - `packages/prisma-data` and Playwright fixtures: synthetic assessment evidence
   scenarios without real personal data.
 - Deployment configuration: independently routed ingress, exact PWA origin/CORS,
@@ -960,9 +1067,9 @@ Expected implementation areas:
 ## UI, gamification, and fixtures
 
 - There is no evidence-search or export UI.
-- The PWA adds only the privacy notice and any existing submission retry/error
-  feedback required by the corrected acknowledgement contract. It does not show
-  audit-health status.
+- The PWA adds the privacy notice, existing submission retry/error feedback, and
+  an actionable warning only when local audit durability is unavailable or
+  exhausted. It has no general evidence or system-wide audit-health UI.
 - New participant-visible text is translated in German and English.
 - Audit capture does not change points, XP, achievements, leaderboards, grading
   algorithms, or assessment results. It records their inputs and outputs.
@@ -986,15 +1093,23 @@ Expected implementation areas:
 - Immutable media capture, hashing, pinning, deduplication, missing-media, and
   external-media rejection tests.
 - Transaction rollback tests for every critical producer family.
-- Capture-token tests cover issuer, audience, expiry, signature/key rotation,
-  participant and assessment scoping, and denial of evidence-read authority.
+- Capture-token tests cover issuer, live/replay modes, audience, expiry,
+  signature/key rotation, participant/assessment/lifecycle binding, post-session
+  replay, browser clock manipulation and backdated client timestamps, and denial
+  of response, mutation, or evidence-read authority.
 - Ingress and queue-drainer tests cover schema/rate limits, durable
   acknowledgement, lost acknowledgements, idempotency, out-of-order delivery,
-  delayed database validation, expiry, poison handling, and recovery while the
-  main Klicker stack is stopped.
-- PWA tests prove bounded memory-only batching, retry while the page lives,
-  best-effort exit flushing, overflow/gap behavior, and the absence of audit
-  payloads from persistent browser storage.
+  delayed database validation, permanent client rejection, append-only gap
+  resolution, expiry, poison handling, and recovery while the main Klicker stack
+  is stopped.
+- PWA tests cover write-before-send, reload and browser-restart recovery,
+  offline replay, lost acknowledgements, fresh-token replay, account switching,
+  multiple tabs, schema migration, seven-day replay expiry, next-execution
+  cleanup, acknowledgement cleanup, IndexedDB unavailability, capacity
+  exhaustion, permanent rejection, and the absence of credentials, solutions,
+  direct identifiers, and unrelated data in persistent browser records. Tests
+  also prove that no audit payload enters localStorage, sessionStorage, Cache
+  Storage, or cookies.
 - Submission tests for attempted, server-accepted, rejected, duplicate,
   persisted, scored, failed, recovered, and permanently invalid commands.
 - Lane 2 crash-window tests cover successful Hatchet acceptance followed by a
@@ -1017,16 +1132,17 @@ Expected implementation areas:
 ### Operational gates
 
 - Dashboards expose outbox depth, oldest event, delivery latency, conflict,
-  quarantine, ingress availability and rejection rate, client queue depth and
-  oldest message, drain latency, client sequence gaps, oldest unprocessed
-  submission, Hatchet-receipt-to-outbox materialization latency, permanently
-  invalid command outcomes, manifest age, media capture failures, and retention
-  failures.
+  quarantine, ingress availability and rejection rate, metadata-only browser
+  outbox failures/expiry, Azure client-queue depth and oldest message, drain
+  latency, client sequence gaps and resolutions, oldest unprocessed submission,
+  Hatchet-receipt-to-outbox materialization latency, permanently invalid command
+  outcomes, manifest age, media capture failures, and retention failures.
 - Alerts contain metadata only and have an owner and runbook.
 - Schema readers remain compatible with every version retained for one year.
 - Staging proves independent ingress routing, exact CORS, capture-token key
-  rotation, outage-time queue capture, Azure assignments, Blob immutability,
-  media capture, exports, holds, and retention dry runs.
+  rotation, outage-time queue capture, browser reload/offline recovery,
+  seven-day replay expiry and next-execution cleanup, Azure assignments, Blob
+  immutability, media capture, exports, holds, and retention dry runs.
 - A UZH privacy review is recorded before the production pilot.
 
 ### Rollout order
@@ -1038,10 +1154,10 @@ Expected implementation areas:
 4. Verify transaction rollback, evidence completeness, media capture, retention
    calculation, and complaint reconstruction.
 5. Deploy the independent ingress and queue path with PWA capture still disabled.
-6. Prove queue capture while the main stack is stopped, then enable memory-only
-   client capture and the privacy notice in staging.
-7. Run submission, browser retry/termination, privacy, load, and coverage-gap
-   scenarios.
+6. Prove queue capture while the main stack is stopped, then enable the durable
+   IndexedDB client outbox and privacy notice in staging.
+7. Run submission, reload, restart, offline replay, account-switching, quota,
+   privacy, load, and coverage-gap scenarios.
 8. Enable one controlled fail-closed production assessment.
 9. Independently verify its export and operational metrics.
 10. Expand only after the trusted evidence owners and operations sign off.
@@ -1080,10 +1196,11 @@ worktree and one topology owner are used per stack.
 2. **Queue materialization:** idempotent drainer, delayed database validation,
    sequence-gap handling, outbox insertion, poison quarantine, expiry, cleanup,
    dashboards, and runbooks.
-3. **Memory-only PWA capture and rollout:** selection/submission-attempt capture,
-   batching, bounded in-memory retry, best-effort exit flush, privacy notice,
-   browser persistence assertions, coverage reporting, and controlled production
-   enablement.
+3. **Durable PWA client outbox and rollout:** selection/submission-attempt
+   capture, IndexedDB schema and migrations, write-before-send, binding-aware
+   batching/replay, seven-day replay expiry and next-execution cleanup, capacity
+   and degradation handling, privacy notice, browser durability assertions,
+   coverage reporting, and controlled production enablement.
 
 PRs #4872 and #4946 remain unchanged until the union of the replacement stacks
 is compared against their complete diffs. Every deliberate omission is
@@ -1117,27 +1234,47 @@ documented before maintainers decide whether to close them.
 - The provider-neutral contract contains no Azure or Hatchet SDK/command types;
   provider and transport mappings remain in their adapters.
 - Client events capture every meaningful discrete answer state and submit attempt
-  without recording keystrokes or blocking interaction.
+  without recording keystrokes. Answer rendering remains responsive; submission
+  transport starts only after the local attempt record commits.
 - Client capture uses an audience-scoped token and independent ingress. A valid
-  batch is acknowledged only after durable Azure Queue insertion, and repeated
-  client event IDs materialize at most one canonical event.
+  event is acknowledged only after durable Azure Queue insertion, batch results
+  identify each event independently, and repeated client event IDs materialize
+  at most one canonical event.
 - Every valid Klicker answer event fits the tested queue-safe envelope or uses a
   verified deterministic multi-message representation; size limits never cause
-  silent loss of a valid answer.
-- No audit event or answer payload is written to persistent browser storage.
-  Unacknowledged memory-buffer contents may be lost when the page or network is
-  lost, and exports do not disguise an unknowable terminal tail as complete.
-- While the current page retains a still-valid capture token, the ingress
-  continues accepting client evidence during a main-stack outage and the drainer
-  materializes it after recovery with explicit database scope-validation
-  results. Reloading during that outage loses this capability.
+  silent loss of a valid answer. A multipart event is acknowledged only after
+  every required part is durably queued.
+- IndexedDB capacity, unavailability, or migration failure never silently evicts
+  pending evidence; the PWA reports local degradation and later emits
+  metadata-only gap evidence where communication remains possible.
+- Once its IndexedDB transaction commits, an unacknowledged client event survives
+  ordinary reloads, browser restarts, and temporary offline periods, replays with
+  the same event identity, and is deleted after durable ingress acknowledgement
+  or becomes ineligible after seven days. Expired data is purged at the next
+  execution opportunity; exact wall-clock deletion while the origin is not
+  running is not claimed.
+- Capture tokens, credentials, solutions, direct participant identifiers, and
+  unrelated data are absent from IndexedDB. A fresh live or replay-only token
+  with matching opaque participant, assessment, and lifecycle bindings is
+  required after reload. Backdated client timestamps and browser clock changes
+  cannot extend the trusted server-side replay cutoff.
+- Manual site-data clearing, browser eviction, private-session termination,
+  device loss, expiry, and failure before the local transaction commits remain
+  explicit limitations; exports do not disguise an unknowable tail as complete.
+- While a page retains a still-valid capture token, ingress continues accepting
+  client evidence during a main-stack outage. A reloaded page preserves already
+  staged evidence but waits for the authenticated backend to recover before
+  replaying it with a fresh token.
+- Permanent client-event rejection and later resolution of a detected sequence
+  gap produce new metadata-only append records; neither condition rewrites
+  existing evidence.
 - Client timestamps and server timestamps remain distinct; late events cannot
   alter authoritative responses or scores.
 - Exports distinguish `CLIENT_OBSERVED`, `SERVER_OBSERVED`, and `AUTHORITATIVE`
   evidence and disclose gaps, delays, and rollout limitations.
 - Azure Table/Blob downtime accumulates an outbox backlog and later delivers it
   without duplicate evidence. Azure Queue downtime prevents ingress
-  acknowledgement, so the PWA retries only while its page remains alive.
+  acknowledgement, so IndexedDB retains the batch for later idempotent replay.
 - Identical conflicts are recognized as idempotent replay; differing conflicts,
   invalid records, and missing manifest coverage quarantine and alert.
 - Only explicitly authorized trusted Resource Group members have human Table and
@@ -1155,11 +1292,16 @@ documented before maintainers decide whether to close them.
 
 ## Implementation-plan parameters
 
-The implementation plan fixes the concrete idle debounce, batch limits, browser
-memory-buffer capacity, retry/backoff and exit-flush behavior, capture-token
-lifetime and outage grace, ingress rate limits, Azure Queue message size and
-retention settings, reordering grace, exact per-event idempotency-key formulas,
-Hatchet task retry and permanent-invalid-command criteria, Table partition/shard
-counts, polling intervals, alert thresholds, and exact file-level work packages.
-These parameters may change without reopening the product design as long as the
-guarantees and acceptance criteria above remain true.
+The implementation plan fixes the concrete idle debounce, IndexedDB database and
+schema versions, transactional write/delete protocol, byte/event capacity,
+migrations, cleanup schedule, batching, retry/backoff, subject-binding format,
+local degradation behavior, capture-token lifetime and outage grace, ingress
+rate limits, server-anchored replay-cutoff calculation, Azure Queue message size
+and retention settings, reordering grace, exact per-event idempotency-key
+formulas, Hatchet task retry and
+permanent-invalid-command criteria, Table partition/shard counts, polling
+intervals, alert thresholds, and exact file-level work packages. The seven-day
+local replay window and next-execution cleanup rule are product guarantees, not
+adjustable implementation parameters. Other parameters may change without
+reopening the product design as long as the guarantees and acceptance criteria
+above remain true.
