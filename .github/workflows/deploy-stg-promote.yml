@@ -95,7 +95,7 @@ jobs:
           [ -n "$SHA" ] || { echo "::error::no target SHA"; exit 1; }
           echo "sha=$SHA" >>"$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: v3
           fetch-depth: 0 # merge-base needs full history
