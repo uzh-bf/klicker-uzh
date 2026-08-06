@@ -8,7 +8,8 @@ lecturer live quiz cockpit.
 ## References
 
 - Design: `docs/superpowers/specs/2026-08-05-live-quiz-response-counts-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-08-05-live-quiz-response-counts.md`
+- Implementation plan:
+  `project/2026-08-05-live-quiz-response-counts/implementation-plan.md`
 
 ## Non-goals
 
