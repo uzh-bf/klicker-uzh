@@ -421,20 +421,20 @@ git commit -m "feat(feature-flags): add Node adapter"
   `useFeatureFlag(key): boolean` through the `./react` package export.
 - Keeps `createBrowserFeatureFlagClient<T>()` internal to the package.
 
-- [ ] **Step 1: Write the failing browser-client tests**
+- [x] **Step 1: Write the failing browser-client tests**
 
 Mock the SDK endpoint with the same `targeted-flag` payload as Task 2. Assert
 that initialization succeeds, `setAttributes(enabledAttributes)` evaluates
 true, `setAttributes(disabledAttributes)` evaluates false, and missing config
 initializes an empty payload without a fetch.
 
-- [ ] **Step 2: Run the browser test and verify the red state**
+- [x] **Step 2: Run the browser test and verify the red state**
 
 Run: `pnpm --filter @klicker-uzh/feature-flags test -- browserClient.test.ts`
 
 Expected: failure because the browser client does not exist.
 
-- [ ] **Step 3: Implement the internal browser client**
+- [x] **Step 3: Implement the internal browser client**
 
 ```ts
 export type BrowserFeatureFlagConfig = {
@@ -461,17 +461,18 @@ export function createBrowserFeatureFlagClient<
     }
 
     const result = await growthbook.init({ timeout: config.timeoutMs ?? 2000 })
-    return result.status
+    return result.success
   }
 
   return { growthbook, initialize }
 }
 ```
 
-Use the actual 1.6.5 browser init result field (`status`) confirmed by its
-declarations; keep the returned wrapper stable.
+Use the actual 1.6.5 browser init result field (`success`) confirmed by its
+declarations. Memoize the initialization promise inside the wrapper so React
+Strict Mode does not issue duplicate SDK requests.
 
-- [ ] **Step 4: Implement the React provider and typed hook**
+- [x] **Step 4: Implement the React provider and typed hook**
 
 ```tsx
 export function FeatureFlagProvider({
@@ -509,7 +510,7 @@ export function useFeatureFlag(key: FeatureFlagKey): boolean {
 Ensure `initialize` has stable identity (construct it once with the client) so
 the effect does not reinitialize on attribute updates.
 
-- [ ] **Step 5: Run all package tests, check, and build**
+- [x] **Step 5: Run all package tests, check, and build**
 
 Run: `pnpm --filter @klicker-uzh/feature-flags test`
 
@@ -519,7 +520,7 @@ Run: `pnpm --filter @klicker-uzh/feature-flags build`
 
 Expected: all pass and `dist/index.*`, `dist/react.*`, and `dist/node.*` exist.
 
-- [ ] **Step 6: Commit the browser and React adapters**
+- [x] **Step 6: Commit the browser and React adapters**
 
 ```bash
 git add packages/feature-flags/src packages/feature-flags/test
