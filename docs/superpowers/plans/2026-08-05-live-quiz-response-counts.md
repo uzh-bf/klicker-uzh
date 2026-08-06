@@ -1024,3 +1024,47 @@ explain that the difference is not exact queue depth, list every verification
 command and result, include both locale screenshots, and mention any explicitly
 deferred review finding. Do not mark ready or merge without separate user
 approval.
+
+### Task 7: Align the element links and response statuses
+
+**Files:**
+
+- Modify:
+  `apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizBlock.tsx`
+- Modify:
+  `docs/superpowers/specs/2026-08-05-live-quiz-response-counts-design.md`
+- Replace:
+  `project/2026-08-05-live-quiz-response-counts/live-quiz-response-counts-en.png`
+- Replace:
+  `project/2026-08-05-live-quiz-response-counts/live-quiz-response-counts-de.png`
+
+- [ ] **Step 1: Render the element list as one shared two-column grid**
+
+Keep every element link in the flexible left column and every response status
+in the content-sized, right-aligned column. Preserve an empty right-hand cell
+for scheduled elements, allow long element names to wrap, and keep each status
+on one line. Do not change the GraphQL data, translations, links, or stable
+`data-cy` selectors.
+
+- [ ] **Step 2: Format and typecheck the lecturer UI**
+
+Run:
+
+```bash
+pnpm exec biome check --write apps/frontend-manage/src/components/liveQuiz/cockpit/LiveQuizBlock.tsx
+pnpm --filter @klicker-uzh/frontend-manage check
+```
+
+- [ ] **Step 3: Verify the aligned layout and refresh PR screenshots**
+
+Use `npx agent-browser@0.32.2` against the real local lecturer cockpit. Verify
+that every active element status shares the same right-hand column, scheduled
+elements remain count-free, and the layout has no horizontal overflow in both
+English and German. Replace both checked-in locale screenshots with captures of
+the updated live UI.
+
+- [ ] **Step 4: Publish the refinement to the existing draft PR**
+
+Commit and push the component, design, plan, and screenshot updates. Update the
+existing draft PR description so both screenshot embeds point to the new commit
+and confirm that the rendered images show the two-column layout.

@@ -89,44 +89,51 @@ function LiveQuizBlock({
           />
         )}
       </div>
-      {block.elements?.map((instance) => {
-        const numOfResponsesReceived = instance.numOfResponsesReceived
-        const numOfResponsesProcessed = instance.numOfResponsesProcessed
-        const hasResponseCounts =
-          numOfResponsesReceived !== null &&
-          typeof numOfResponsesReceived !== 'undefined' &&
-          numOfResponsesProcessed !== null &&
-          typeof numOfResponsesProcessed !== 'undefined'
+      <div className="grid grid-cols-[minmax(0,1fr)_max-content] items-baseline gap-x-3">
+        {block.elements?.map((instance) => {
+          const numOfResponsesReceived = instance.numOfResponsesReceived
+          const numOfResponsesProcessed = instance.numOfResponsesProcessed
+          const hasResponseCounts =
+            numOfResponsesReceived !== null &&
+            typeof numOfResponsesReceived !== 'undefined' &&
+            numOfResponsesProcessed !== null &&
+            typeof numOfResponsesProcessed !== 'undefined'
 
-        return (
-          <div key={instance.id}>
-            <Link
-              href={`/instances/${instance.id}`}
-              className="text-sm hover:text-slate-700"
-              data-cy={`open-question-live-quiz-${instance.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {instance.elementData!.name}{' '}
-              <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
-            </Link>
-            {hasResponseCounts ? (
-              <span
-                className="ml-2 whitespace-nowrap text-xs text-gray-600"
-                data-cy={`live-quiz-response-counts-${instance.id}`}
+          return (
+            <div key={instance.id} className="contents">
+              <Link
+                href={`/instances/${instance.id}`}
+                className="min-w-0 text-sm hover:text-slate-700"
+                data-cy={`open-question-live-quiz-${instance.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {t('manage.cockpit.responsesReceived', {
-                  number: numOfResponsesReceived,
-                })}
-                <span aria-hidden="true"> · </span>
-                {t('manage.cockpit.responsesProcessed', {
-                  number: numOfResponsesProcessed,
-                })}
-              </span>
-            ) : null}
-          </div>
-        )
-      })}
+                {instance.elementData!.name}{' '}
+                <FontAwesomeIcon
+                  className="ml-1 text-xs"
+                  icon={faExternalLink}
+                />
+              </Link>
+              {hasResponseCounts ? (
+                <span
+                  className="whitespace-nowrap text-right text-xs text-gray-600"
+                  data-cy={`live-quiz-response-counts-${instance.id}`}
+                >
+                  {t('manage.cockpit.responsesReceived', {
+                    number: numOfResponsesReceived,
+                  })}
+                  <span aria-hidden="true"> · </span>
+                  {t('manage.cockpit.responsesProcessed', {
+                    number: numOfResponsesProcessed,
+                  })}
+                </span>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

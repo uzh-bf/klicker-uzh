@@ -99,6 +99,13 @@ stable `data-cy` selector containing the element-instance ID for end-to-end
 coverage. English and German messages are added through the existing `next-intl`
 catalogs.
 
+The element list uses one shared two-column layout: element names and their
+links occupy the flexible left column, while the received and processed values
+occupy a right-aligned, content-sized column. This keeps every status aligned
+independently of the element-name length. Long names may wrap in the left
+column, the status stays on one line, and scheduled elements reserve an empty
+right-hand cell so row alignment remains stable without displaying counts.
+
 ## Layer Footprint
 
 - `apps/response-api`: record received response identifiers.
