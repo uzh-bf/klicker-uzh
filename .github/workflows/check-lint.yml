@@ -42,7 +42,7 @@ jobs:
           python-version: '3.12'
           enable-cache: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0

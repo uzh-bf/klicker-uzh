@@ -28,7 +28,7 @@ jobs:
         with:
           pattern: '^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.github/workflows/check-syncpack\.yml|\.github/actions/changed-paths/|.*/package\.json)'
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0

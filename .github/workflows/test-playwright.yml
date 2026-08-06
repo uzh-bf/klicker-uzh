@@ -40,7 +40,7 @@ jobs:
         with:
           node-version-file: package.json
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: 11.5.0
           run_install: false
@@ -249,7 +249,7 @@ jobs:
           node-version: 24.x
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Get pnpm store directory
         shell: bash
