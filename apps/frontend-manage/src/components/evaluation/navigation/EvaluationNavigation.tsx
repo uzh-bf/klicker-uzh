@@ -1,12 +1,12 @@
-import { useQuery } from '@apollo/client'
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
-import {
-  StackEvaluation,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
+import type { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
+import type {
+  ActiveStackType,
+  ActivityEvaluationType,
+} from '../ActivityEvaluation'
 import useInstanceArrowNavigation from '../hooks/useInstanceArrowNavigation'
 import useStackInstanceUpdates from '../hooks/useStackInstanceUpdates'
 import InstanceNavigation from './InstanceNavigation'
@@ -42,9 +42,7 @@ function EvaluationNavigation({
   feedbacksAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
-  const { data: user, loading } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   // automatically switch the active stack based on the active instance
   useStackInstanceUpdates({
@@ -74,10 +72,9 @@ function EvaluationNavigation({
         <div />
       )}
       <div className="flex flex-row items-center gap-4">
-        {!loading &&
-        user?.userProfile?.publicPreview &&
-        type === 'Asynchronous' ? (
+        {type === 'Asynchronous' ? (
           <Button
+            disabled={!learningAnalyticsEnabled}
             className={{ root: 'h-8 py-0' }}
             onClick={() =>
               window.open(

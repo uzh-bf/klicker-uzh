@@ -19,17 +19,18 @@ import {
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
   UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
-import { ActivityAction } from './useAvailableActions'
+import { useTranslations } from 'next-intl'
+import { type Dispatch, type SetStateAction, useMemo } from 'react'
+import type { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
   microLearning,
@@ -54,6 +55,7 @@ function useMicroLearningActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument
   )
@@ -183,6 +185,7 @@ function useMicroLearningActions({
           router.push(
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
           ),
+        disabled: !learningAnalyticsEnabled,
         data: { cy: `open-analytics-async-activity` },
       },
       {
@@ -267,6 +270,7 @@ function useMicroLearningActions({
       microLearning.name,
       microLearning.courseId,
       href,
+      learningAnalyticsEnabled,
       setPublishModal,
       setExtensionModal,
       setEndingModal,

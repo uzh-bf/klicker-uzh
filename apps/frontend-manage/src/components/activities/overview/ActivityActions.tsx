@@ -1,9 +1,9 @@
 import { faEllipsis, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import type { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ActivityAction } from '../actions/useAvailableActions'
+import type { ActivityAction } from '../actions/useAvailableActions'
 
 function ActivityActions({
   availableActions,
@@ -46,17 +46,21 @@ function ActivityActions({
             label: t('manage.activities.activityInformation'),
             icon: faInfoCircle,
             className: '',
+            disabled: false,
             onClick: () => openActivityDetailsModal(),
             data: { cy: `activity-information-${activityName}` },
           },
           ...availableActions.slice(1),
         ].map((action) => ({
           id: action.label,
+          disabled: action.disabled,
           label: (
             <div
-              className={`flex cursor-pointer items-center rounded px-1.5 py-0.5 ${
-                action.className ?? ''
-              }`}
+              className={`flex items-center rounded px-1.5 py-0.5 ${
+                action.disabled
+                  ? 'cursor-not-allowed opacity-50'
+                  : 'cursor-pointer'
+              } ${action.className ?? ''}`}
             >
               <FontAwesomeIcon icon={action.icon} className="mr-2.5 h-4 w-4" />
               {action.label}
