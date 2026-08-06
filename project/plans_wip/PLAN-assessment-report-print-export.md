@@ -9,11 +9,12 @@ stand. Branch `fix/assessment-report-polish`, [PR #5306](https://github.com/uzh-
 Implementation is complete in the working tree and the plan remains the
 execution contract. The mandatory read-only planning review returned
 `DONE_WITH_CONCERNS`; its findings are incorporated and closed below through
-main-session verification. Repository-native checks pass, the browser route and
-Playwright evidence are recorded below, and the final independent outcome review
-is complete. The only open verification items are the manual Chrome
-save-as-PDF filename contract and iOS Safari print behavior; both need a human
-and the latter has no device available.
+main-session verification. Repository-native checks pass and the browser route
+and Playwright evidence are recorded below. Two final outcome reviews have run:
+one over the print-flow implementation and one over the later hardening delta
+in `9c0d05922`, which changed that reviewed flow. The only open verification
+items are the manual Chrome save-as-PDF filename contract and iOS Safari print
+behavior; both need a human and the latter has no device available.
 
 ## Goal
 
@@ -387,7 +388,9 @@ silently treating Chromium evidence as mobile evidence.
 - **2026-08-05:** The cost-constrained final read-only outcome review of
   commit `6cdfe30c6` returned `ready` with no findings. It confirmed the four
   user rulings and left only the browser, Playwright, Chrome, and iOS evidence
-  gaps already recorded above.
+  gaps already recorded above. A later rebase rewrote that commit; the reviewed
+  content is now `b9896a29b`, same subject, and `6cdfe30c6` is no longer
+  reachable from any branch.
 - **2026-08-06:** Playwright evidence completed on the linked worktree stack:
   restored the container's Chromium headless shell and ffmpeg binaries, routed
   Chromium's resolver to the devnet Traefik IP with a temporary local-only

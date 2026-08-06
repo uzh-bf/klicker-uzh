@@ -215,6 +215,9 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
       reportWindow.removeEventListener('load', checkReadiness)
     }
 
+    // Callers must have set `settled` and run cleanup() first: this reports the
+    // failure without disarming anything, so an unsettled caller would leave
+    // the readiness poll and the print timeout running behind the error.
     function reportPrintFailure(error?: unknown) {
       if (error) console.error('Failed to print assessment report', error)
       try {
