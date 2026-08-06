@@ -1,8 +1,8 @@
 # Assessment Audit Logging Design
 
-- **Status:** Approved decisions (revision 4), awaiting written-spec review
+- **Status:** Approved decisions (revision 4.1), awaiting written-spec review
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-06 (revision 4 with narrowed two-lane emission)
+- **Last updated:** 2026-08-06 (revision 4.1 with explicit lane guarantees)
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946)
 
@@ -223,6 +223,26 @@ source for Azure.
 All application outbox records converge on one dispatcher and one
 provider-neutral append interface.
 
+### Lane-specific capture guarantees and timestamps
+
+`CRITICAL` means that the component responsible for an event's declared
+durability point may not acknowledge success until a durable recovery source for
+that evidence exists. The mechanism differs by lane and must remain visible in
+the contract and export:
+
+| Path | Required guarantee | Trusted times |
+| --- | --- | --- |
+| Lane 1, authoritative mutation | Business state and canonical outbox records commit or roll back in one PostgreSQL transaction. | `receivedAt` is when the trusted API/worker received or initiated the action; `recordedAt` is when the canonical event was constructed in the transaction. |
+| Lane 1, standalone observation | The ingestion endpoint acknowledges acceptance only after the standalone outbox transaction commits. The browser interaction itself remains non-blocking. | `receivedAt` is when the trusted endpoint accepted the observation; `recordedAt` is when it constructed the canonical outbox event. |
+| Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAcceptedAt` is stamped immediately after the successful Hatchet acknowledgement; `recordedAt` is when the response processor materialized the canonical event. |
+| Owner CLI exception | The CLI reports success only after the control record, locator, and retention-index registration exist. | `receivedAt` and `recordedAt` are trusted CLI times associated with the authenticated Azure principal. |
+
+`transportAcceptedAt` is a response-API timestamp taken after Hatchet returns
+success; it is not represented as an internal Hatchet server timestamp. The
+Hatchet event ID is stored alongside it. Exports preserve all applicable times
+instead of collapsing transport acceptance and later evidence materialization
+into one timestamp.
+
 ### Why retain two narrowed emission lanes
 
 | Design choice | Argument | Difference from revision 2 |
@@ -241,6 +261,25 @@ acknowledgement point, idempotency identity, retry and cleanup lifecycle,
 criticality limits, monitoring, and how canonical records reach the shared
 outbox. Merely avoiding a database call is not sufficient justification.
 
+### Hatchet roles and provider-neutral boundary
+
+Hatchet has three distinct roles, only the first of which is an emission-lane
+durability boundary:
+
+1. **Submission transport:** Hatchet acceptance is the durable recovery source
+   for the Lane 2 submission command.
+2. **Response processing:** the response worker maps the Hatchet command and task
+   metadata into provider-neutral canonical audit events. Hatchet SDK and command
+   types do not cross into the audit contract package.
+3. **Audit worker runtime:** `hatchet-worker-general` may schedule or execute the
+   dispatcher, manifest, media, and retention jobs. For delivery, PostgreSQL
+   outbox rows—not Hatchet task state—remain the durable work source. Losing or
+   retrying a dispatcher task cannot lose an outbox record.
+
+The provider-neutral boundary starts at the canonical event and append-sink
+interfaces. Azure types remain inside the storage adapter, and Hatchet types
+remain inside the response and worker adapters.
+
 ### Components
 
 1. **Audit contract package** (`packages/audit`)
@@ -249,7 +288,7 @@ outbox. Merely avoiding a database call is not sufficient justification.
      provider-neutral interfaces, and test vectors.
    - Unknown event types are rejected; there is no default `STANDARD`
      classification.
-   - Contains no Azure SDK types or credentials.
+   - Contains no Azure or Hatchet SDK types, command types, or credentials.
 
 2. **Audit scope and baseline service**
    - Resolves sticky assessment coverage.
@@ -388,7 +427,9 @@ Trusted Resource Group member
 | `criticality` | `CRITICAL` or `STANDARD`; defined explicitly per event type. |
 | `evidenceClass` | `AUTHORITATIVE`, `SERVER_OBSERVED`, `CLIENT_OBSERVED`, or `ADMINISTRATIVE`. |
 | `recordedVia` | `TRANSACTIONAL_OUTBOX`, `CLIENT_BATCH`, `HATCHET_PROCESSOR`, `OWNER_CLI`, or `AUDIT_SERVICE`. |
-| `receivedAt` | Trusted server UTC timestamp. |
+| `receivedAt` | Trusted UTC time when the first Klicker component received or initiated the represented action. |
+| `transportAcceptedAt` | Optional trusted UTC time stamped by the response API immediately after Hatchet acknowledges a Lane 2 submission command. |
+| `recordedAt` | Trusted UTC time when the canonical evidence record was constructed for its durable sink. |
 | `clientOccurredAt` | Optional untrusted browser timestamp. |
 | `actor` | Trusted `User`, `Participant`, `SYSTEM`, service, or Azure principal reference. |
 | `initiatedBy` | Optional `User` that initiated later system work. |
@@ -407,6 +448,11 @@ Trusted Resource Group member
 | `eventHash` | SHA-256 of the canonical envelope excluding `eventHash`. |
 | `idempotencyKey` | Server-derived key preventing duplicate evidence for one transition. |
 
+`emissionPath` is exhaustive contract metadata derived from `eventType`, rather
+than a second producer-supplied envelope value that could drift. Exports include
+the derived path, and runtime validation rejects a `recordedVia` value that is
+not allowed for that path and event type.
+
 Canonical JSON follows RFC 8785 JCS. Domain normalization fixes answer option
 ordering and represents dates as UTC ISO 8601 strings. Test vectors cover
 numbers, nulls, Unicode, object key order, answer order, and dates. Exact values
@@ -414,29 +460,31 @@ are retained because hashes alone cannot reconstruct a dispute.
 
 ## Event matrix
 
-Every event has exactly one producer, evidence class, criticality, and durability
-point. The contract contains the individual stable names within each family.
+Every event has exactly one emission path, producer, evidence class, criticality,
+and durability point. The contract contains the individual stable names within
+each family. The lane classifies canonical event capture, not the worker runtime;
+a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 
-| Event family | Events included in v1 | Producer | Class / criticality | Durability and acknowledgement |
-| --- | --- | --- | --- | --- |
-| Coverage and baseline | audit activated; baseline root/part recorded; rollout-current-state recorded | GraphQL assessment activation or reopening of an excluded pre-rollout assessment | `AUTHORITATIVE` / `CRITICAL` | Coverage marker and all baseline outbox parts commit with activation or before reopening. |
-| Assessment lifecycle | assessment mode/course assignment changed; published; started; paused; resumed; completed; reopened; cancelled; reset; copied; imported; deleted | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Lifecycle state and event commit in one transaction. `SYSTEM` plus `initiatedBy` identifies scheduled work. |
-| LiveQuiz configuration | metadata, options, restrictions, points, timing, access settings, and grading configuration changed | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact affected-entity before/after values commit with the mutation. |
-| Blocks | created, updated, reordered, activated, closed, deleted | GraphQL lecturer mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact block before/after values commit with the mutation. |
-| ElementInstances | added, refreshed, updated, reordered, removed, deleted | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact effective instance before/after values and content hashes commit with the mutation. |
-| Source Elements and media | referenced source changed; effective content changed/unchanged; media captured/replaced | GraphQL lecturer mutation and media readiness service | `AUTHORITATIVE` / `CRITICAL` | Source provenance and immutable media identity commit before the effective mutation succeeds. |
-| Eligibility and permissions | participant eligibility added/removed; assessment-relevant lecturer permission changed | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Permission/Participation change and evidence commit atomically. |
-| Assessment session | session started, resumed, ended, forcibly terminated | Existing authenticated assessment endpoints | `SERVER_OBSERVED` / `STANDARD` | A successful audit-only outbox transaction acknowledges recording; no passive page/focus events. |
-| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Server acknowledges the batch after outbox commit. PWA interaction never waits and queued events retry. |
-| Submission attempt | submit clicked; auto-submit triggered | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Same client batch semantics; does not mean server acceptance. |
-| Submission validation and outcome | server accepted; validated; rejected; duplicate; processing failed/recovered | Response processor materializing the Hatchet command and result | `SERVER_OBSERVED`; accepted/validated/rejected/duplicate are `CRITICAL`, operational failure/recovery is `STANDARD` | Hatchet receipt exists first. Accepted plus validated/rejected/duplicate evidence commits in an audit-only or response transaction before task completion. |
-| Submission persistence and scoring | persisted; scored | Response processor | `AUTHORITATIVE` / `CRITICAL` | Persistence and scoring evidence commit atomically with the response and stored scoring result. |
-| Scoring and responses | score recomputed; response modified/deleted; points corrected; participant reset/removed | Response processor, GraphQL mutation, or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new response or score, stable reason, actor, and algorithm/config version commit with the change. |
-| Bulk operations | bulk operation started/completed plus per-item outcomes | GraphQL mutation or worker | `AUTHORITATIVE` / `CRITICAL` | Root and per-item outcome events are committed with each authoritative effect; partial outcomes remain explicit. |
-| Assessment reports | issued; superseded; revoked | Assessment-report service | `AUTHORITATIVE` / `CRITICAL` | Report row, snapshot hash, and audit event commit in one transaction. Public reads are excluded. |
-| Authenticated rejections | an authenticated assessment-scoped action was rejected | Protected API or worker that rejects the action | `SERVER_OBSERVED` / `STANDARD` | An audit-only outbox transaction records attempted action and stable reason without raw request data. |
-| Evidence administration | evidence annotation; investigation hold placed/released | Owner CLI | `ADMINISTRATIVE` / `STANDARD` | Direct Azure create in the control table references the original evidence or assessment. Existing evidence is never changed. |
-| Audit operations | gap detected; delivery delayed/conflicted/quarantined/recovered; manifest sealed/failed; retention completed/failed | Audit services | `SERVER_OBSERVED` / `STANDARD` | Operational evidence never masquerades as an assessment action. |
+| Event family | Events included in v1 | Emission path | Producer | Class / criticality | Durability and acknowledgement |
+| --- | --- | --- | --- | --- | --- |
+| Coverage and baseline | audit activated; baseline root/part recorded; rollout-current-state recorded | `LANE_1_OUTBOX` | GraphQL assessment activation or reopening of an excluded pre-rollout assessment | `AUTHORITATIVE` / `CRITICAL` | Coverage marker and all baseline outbox parts commit with activation or before reopening. |
+| Assessment lifecycle | assessment mode/course assignment changed; published; started; paused; resumed; completed; reopened; cancelled; reset; copied; imported; deleted | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Lifecycle state and event commit in one transaction. `SYSTEM` plus `initiatedBy` identifies scheduled work. |
+| LiveQuiz configuration | metadata, options, restrictions, points, timing, access settings, and grading configuration changed | `LANE_1_OUTBOX` | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact affected-entity before/after values commit with the mutation. |
+| Blocks | created, updated, reordered, activated, closed, deleted | `LANE_1_OUTBOX` | GraphQL lecturer mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact block before/after values commit with the mutation. |
+| ElementInstances | added, refreshed, updated, reordered, removed, deleted | `LANE_1_OUTBOX` | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact effective instance before/after values and content hashes commit with the mutation. |
+| Source Elements and media | referenced source changed; effective content changed/unchanged; media captured/replaced | `LANE_1_OUTBOX` | GraphQL lecturer mutation and media readiness service | `AUTHORITATIVE` / `CRITICAL` | Source provenance and immutable media identity commit before the effective mutation succeeds. |
+| Eligibility and permissions | participant eligibility added/removed; assessment-relevant lecturer permission changed | `LANE_1_OUTBOX` | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Permission/Participation change and evidence commit atomically. |
+| Assessment session | session started, resumed, ended, forcibly terminated | `LANE_1_OUTBOX` | Existing authenticated assessment endpoints | `SERVER_OBSERVED` / `STANDARD` | A successful audit-only outbox transaction acknowledges recording; no passive page/focus events. |
+| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `LANE_1_OUTBOX` | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Server acknowledges the batch after outbox commit. PWA interaction never waits and queued events retry. |
+| Submission attempt | submit clicked; auto-submit triggered | `LANE_1_OUTBOX` | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Same client batch semantics; does not mean server acceptance. |
+| Submission validation and outcome | server accepted; validated; rejected; duplicate; processing failed/recovered | `LANE_2_HATCHET` | Response processor materializing the Hatchet command and result | `SERVER_OBSERVED`; accepted/validated/rejected/duplicate are `CRITICAL`, operational failure/recovery is `STANDARD` | Hatchet receipt exists first. Accepted plus validated/rejected/duplicate evidence commits in an audit-only or response transaction before task completion. |
+| Submission persistence and scoring | persisted; scored | `LANE_2_HATCHET` | Response processor | `AUTHORITATIVE` / `CRITICAL` | Persistence and scoring evidence commit atomically with the response and stored scoring result. |
+| Post-submission scoring and responses | score recomputed; response modified/deleted; points corrected; participant reset/removed | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new response or score, stable reason, actor, and algorithm/config version commit with the change. |
+| Bulk operations | bulk operation started/completed plus per-item outcomes | `LANE_1_OUTBOX` | GraphQL mutation or worker | `AUTHORITATIVE` / `CRITICAL` | Root and per-item outcome events are committed with each authoritative effect; partial outcomes remain explicit. |
+| Assessment reports | issued; superseded; revoked | `LANE_1_OUTBOX` | Assessment-report service | `AUTHORITATIVE` / `CRITICAL` | Report row, snapshot hash, and audit event commit in one transaction. Public reads are excluded. |
+| Authenticated rejections | an authenticated assessment-scoped action was rejected | `LANE_1_OUTBOX` | Protected API or worker that rejects the action | `SERVER_OBSERVED` / `STANDARD` | An audit-only outbox transaction records attempted action and stable reason without raw request data. |
+| Evidence administration | evidence annotation; investigation hold placed/released | `OWNER_CLI` | Owner CLI | `ADMINISTRATIVE` / `STANDARD` | Direct Azure create in the control table references the original evidence or assessment. Existing evidence is never changed. |
+| Audit operations | gap detected; delivery delayed/conflicted/quarantined/recovered; manifest sealed/failed; retention completed/failed | `LANE_1_OUTBOX` | Audit services | `SERVER_OBSERVED` / `STANDARD` | Operational evidence never masquerades as an assessment action. |
 
 Authenticated assessment-scoped rejections use stable reason codes. Raw
 unauthenticated traffic, credentials, tokens, cookies, PINs, headers, stack
@@ -560,8 +608,9 @@ activation baseline, and unrelated personal data.
 - The response processor uses the database uniqueness constraint as the
   duplicate authority. Redis remains only a cache and may not create an
   evidence-free success response.
-- `SUBMISSION_SERVER_ACCEPTED` preserves the response API receipt time and
-  Hatchet event ID.
+- `SUBMISSION_SERVER_ACCEPTED` preserves the response API receipt time, the
+  response-API timestamp immediately after Hatchet acknowledgement, the Hatchet
+  event ID, and the later canonical materialization time.
 - `SUBMISSION_PERSISTED` commits with the response. Rejection and duplicate
   outcomes preserve stable reason codes and the last durable stage.
 - Raw submission payload logging is removed. Hatchet is treated as a temporary
@@ -591,6 +640,13 @@ and scoring events become authoritative only in the response transaction. An
 oldest-unprocessed-submission alert exposes commands that have not yet reached a
 terminal outbox outcome.
 
+A permanently invalid command may not retry forever. If trusted participant and
+assessment scope can still be established, the materializer writes a minimal
+normalized `SUBMISSION_REJECTED` event with a stable reason and no raw command
+payload. If trusted scope cannot be established, it writes a metadata-only
+quarantine record and alerts. The Hatchet task becomes terminal only after one of
+these outcomes is durable.
+
 ### Standard and client-observed events
 
 Client-event ingestion acknowledges only after its standalone outbox transaction
@@ -614,7 +670,8 @@ event count or content.
   is included in a successfully sealed immutable manifest.
 - Operational metrics expose outbox depth, oldest pending age, delivery latency,
   retries, conflicts, quarantine, client gaps, oldest unprocessed submission,
-  manifest age, and retention failures.
+  Hatchet-receipt-to-outbox materialization latency, permanently invalid command
+  outcomes, manifest age, and retention failures.
 - Metadata-only alerts may go to normal operations; evidence inspection remains
   limited to authorized Resource Group members.
 
@@ -662,8 +719,9 @@ members are outside v1.
 
 - Actor, authorization, scope, server time, event ID, and outcome are derived
   from trusted server context.
-- `receivedAt` is authoritative. `clientOccurredAt` is contextual and checked
-  for unreasonable skew.
+- `receivedAt`, applicable `transportAcceptedAt`, and `recordedAt` are trusted
+  server times with distinct meanings. `clientOccurredAt` is contextual and
+  checked for unreasonable skew.
 - Azure stores stable pseudonymous references, not names, emails, matriculation
   numbers, or a separate identity mapping.
 - Exact answers, solutions, and assessment content are retained because they are
@@ -810,7 +868,10 @@ Expected implementation areas:
 
 - Canonical serialization, normalization, redaction, hash, and binary chunk test
   vectors.
-- Exhaustive event classification: unknown and unclassified events fail tests.
+- Exhaustive event classification: unknown, unclassified, and lane-unassigned
+  events fail tests.
+- Dependency-boundary checks prove the provider-neutral contract imports neither
+  Azure nor Hatchet SDK/command types.
 - Baseline root/part completeness, incremental aggregate hash, large element,
   and bounded-memory tests.
 - Immutable media capture, hashing, pinning, deduplication, missing-media, and
@@ -819,7 +880,11 @@ Expected implementation areas:
 - Client batch auth, scope, content-version, idempotency, ordering, late-event,
   expiry, and IndexedDB retry tests.
 - Submission tests for attempted, server-accepted, rejected, duplicate,
-  persisted, scored, failed, recovered, and ambiguous retry paths.
+  persisted, scored, failed, recovered, and permanently invalid commands.
+- Lane 2 crash-window tests cover successful Hatchet acceptance followed by a
+  lost HTTP response, worker failure before outbox materialization, failure after
+  outbox/database commit but before Hatchet task acknowledgement, and every
+  ambiguous retry boundary.
 - Provider conformance with an in-memory adapter, Azurite, and real-Azure binary
   chunk/permission smoke tests.
 - Manifest completeness, late arrival, missed sealing, mutation, deletion, and
@@ -836,8 +901,9 @@ Expected implementation areas:
 ### Operational gates
 
 - Dashboards expose outbox depth, oldest event, delivery latency, conflict,
-  quarantine, client sequence gaps, oldest unprocessed submission, manifest age,
-  media capture failures, and retention failures.
+  quarantine, client sequence gaps, oldest unprocessed submission,
+  Hatchet-receipt-to-outbox materialization latency, permanently invalid command
+  outcomes, manifest age, media capture failures, and retention failures.
 - Alerts contain metadata only and have an owner and runbook.
 - Schema readers remain compatible with every version retained for one year.
 - Staging proves Azure assignments, Blob immutability, media capture, exports,
@@ -908,8 +974,9 @@ documented before maintainers decide whether to close them.
   media.
 - Every critical authoritative mutation commits with its audit evidence or does
   not commit.
-- Every event type has an explicit producer, evidence class, criticality,
-  durability point, and schema; unknown types are rejected.
+- Every event type has an explicit emission path, producer, evidence class,
+  criticality, durability point, and schema; unknown or lane-unassigned types
+  are rejected.
 - Successful submission acknowledgement returns a stable `submissionId` and
   Hatchet event ID. Processing records server acceptance plus exactly one
   rejection, duplicate, or persistence outcome; persisted responses and scores
@@ -917,6 +984,11 @@ documented before maintainers decide whether to close them.
 - Lane 2 publishes no duplicate audit-specific Hatchet command. The existing
   submission command is its durable source, and processing cannot complete
   without the terminal outcome in the shared outbox.
+- Lane 2 evidence preserves separate response receipt, Hatchet acknowledgement,
+  and canonical materialization times. Exports never present the response API's
+  post-acknowledgement timestamp as an internal Hatchet server timestamp.
+- The provider-neutral contract contains no Azure or Hatchet SDK/command types;
+  provider and transport mappings remain in their adapters.
 - Client events capture every meaningful discrete answer state and submit attempt
   without recording keystrokes or blocking interaction.
 - Client timestamps and server timestamps remain distinct; late events cannot
@@ -943,7 +1015,8 @@ documented before maintainers decide whether to close them.
 ## Implementation-plan parameters
 
 The implementation plan fixes the concrete idle debounce, batch limits, browser
-queue capacity, Table partition/shard counts, polling intervals, alert thresholds,
-and exact file-level work packages. These parameters may change without reopening
-the product design as long as the guarantees and acceptance criteria above remain
-true.
+queue capacity, exact per-event idempotency-key formulas, Hatchet task retry and
+permanent-invalid-command criteria, Table partition/shard counts, polling
+intervals, alert thresholds, and exact file-level work packages. These parameters
+may change without reopening the product design as long as the guarantees and
+acceptance criteria above remain true.
