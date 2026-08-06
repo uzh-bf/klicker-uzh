@@ -299,5 +299,7 @@ draft PR.
 - 2026-08-06: foundation verification passed package check/build, Syncpack,
   repository formatting, and Opengrep (213 rules, 0 findings). No application
   imports the package in layer 1.
+- 2026-08-06: foundation review added a separate test TypeScript config so the
+  package `check` command covers both declarations and Vitest sources.
 - 2026-08-06: wiki files pass Prettier. The validator referenced by
   `klicker-wiki-maintenance` was unavailable at its documented local path.
