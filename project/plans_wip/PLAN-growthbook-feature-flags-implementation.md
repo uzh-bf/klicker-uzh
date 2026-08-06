@@ -545,7 +545,7 @@ git commit -m "feat(feature-flags): add React adapter"
 contract, browser/public and Node/internal connectivity, cache/fallback model,
 and adoption checklist.
 
-- [ ] **Step 1: Write the wiki and ADR**
+- [x] **Step 1: Write the wiki and ADR**
 
 The wiki must include these exact adoption examples:
 
@@ -568,7 +568,7 @@ ADR 0005 records direct browser evaluation as the default for UI-only flags,
 process-level `GrowthBookClient` plus request attributes for Node, incremental
 migration from preview booleans, and remote evaluation as the privacy upgrade.
 
-- [ ] **Step 2: Run foundation verification**
+- [x] **Step 2: Run foundation verification**
 
 ```bash
 pnpm --filter @klicker-uzh/feature-flags test
@@ -582,7 +582,7 @@ pnpm exec opengrep scan --config auto packages/feature-flags
 Expected: all package/repo checks pass and Opengrep reports no blocking
 finding. Record the exact evidence in the design plan progress log.
 
-- [ ] **Step 3: Review the foundation diff and commit docs**
+- [x] **Step 3: Review the foundation diff and commit docs**
 
 Inspect `git diff v3...HEAD`, verify no app imports the package, then:
 
@@ -959,6 +959,8 @@ deployment.
 - [x] 2026-08-06: approved design committed as `0046b8118` on
   `feat/growthbook-foundation`.
 - [x] 2026-08-06: native stack support verified with `gh stack`.
-- [ ] Layer 1 foundation implemented and verified.
+- [x] Layer 1 foundation implemented and verified: 11 tests, package check and
+      build, Syncpack, formatting, and Opengrep (0 findings) passed. The wiki
+      validator named by the maintenance skill was not installed locally.
 - [ ] Layer 2 learning-analytics example implemented and browser-verified.
 - [ ] Two draft PRs published and linked as a native stack.
