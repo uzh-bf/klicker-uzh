@@ -26,9 +26,8 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - Never expose a GrowthBook management/admin key to a browser.
 - Use Klicker `User.id`/`Participant.id`, never email, for per-user targeting.
 - Feature flags control rollout, never authentication or authorization.
-- Missing configuration, an invalid non-empty deployment environment, or an
-  unusable feature payload evaluates boolean flags to their application
-  fallback (`false` for learning analytics).
+- Missing configuration or an unusable feature payload evaluates boolean flags
+  to their application fallback (`false` for learning analytics).
 - Do not initialize GrowthBook in an app until that app consumes a flag.
 - Do not remove the Prisma or public GraphQL `publicPreview` field in this
   stack; only remove it from `QUserProfile` after its last frontend consumer is
@@ -51,7 +50,7 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
   Vitest configuration.
 - `packages/feature-flags/vitest.config.ts` — isolated Node test runner.
 - `packages/feature-flags/src/contracts.ts` — flag registry, strict keys,
-  actor-attribute values and environment normalization.
+  attribute values, actor types, and environment normalization.
 - `packages/feature-flags/src/index.ts` — core public entry point.
 - `packages/feature-flags/src/browserClient.ts` — internal GrowthBook browser
   instance factory used by the React adapter and unit tests.
@@ -65,7 +64,7 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - `packages/feature-flags/test/node.test.ts` — Node SDK fallback, targeting, and
   request-isolation tests.
 - `docs/feature-flags.md` — adoption and operations guide.
-- `docs/adr/0008-use-growthbook-for-feature-flags.md` — architecture decision.
+- `docs/adr/0005-use-growthbook-for-feature-flags.md` — architecture decision.
 - `docs/adr/README.md`, `docs/index.md` — wiki navigation.
 - `docs/log/2026-08-06-growthbook-foundation.md` — wiki change record.
 - `pnpm-lock.yaml` — pinned dependency resolution.
@@ -76,8 +75,8 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
   `learning-analytics: boolean` with fallback `false`.
 - `packages/feature-flags/test/contracts.test.ts` — registry regression test.
 - `apps/frontend-manage/src/components/featureFlags/ManageFeatureFlagProvider.tsx`
-  — map the authenticated lecturer profile into shared attributes and the
-  deployment environment into client configuration.
+  — map the authenticated lecturer profile and environment into shared
+  attributes.
 - `apps/frontend-manage/src/components/Layout.tsx` — activate the provider only
   after `UserProfileDocument` succeeds.
 - `apps/frontend-manage/src/components/common/Header.tsx` — always render the
@@ -145,17 +144,10 @@ describe('feature flag contracts', () => {
     ['test', 'test'],
     ['development', 'development'],
     [undefined, 'development'],
-    ['', 'development'],
+    ['unexpected', 'development'],
   ] as const)('normalizes %s to %s', (input, expected) => {
     expect(normalizeFeatureFlagEnvironment(input)).toBe(expected)
   })
-
-  it.each(['unexpected', 'prod', 'Production', 'stg'])(
-    'refuses to map the unrecognized environment %s onto a real one',
-    (input) => {
-      expect(normalizeFeatureFlagEnvironment(input)).toBe('unknown')
-    }
-  )
 })
 ```
 
@@ -236,7 +228,6 @@ export type FeatureFlagEnvironment =
   | 'test'
   | 'staging'
   | 'production'
-  | 'unknown'
 
 export type FeatureFlagAttributeValue =
   | string
@@ -254,6 +245,7 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
+  environment: FeatureFlagEnvironment
 }
 
 export function normalizeFeatureFlagEnvironment(
@@ -268,15 +260,7 @@ export function normalizeFeatureFlagEnvironment(
     return value
   }
 
-  if (value === undefined || value === '') {
-    return 'development'
-  }
-
-  console.error(
-    `[feature-flags] unrecognized environment "${value}"; disabling feature flag evaluation`
-  )
-
-  return 'unknown'
+  return 'development'
 }
 ```
 
@@ -341,7 +325,6 @@ The tests must assert:
 const client = new NodeFeatureFlagClient<TestFeatures>({
   apiHost: 'https://growthbook.test',
   clientKey: 'sdk-test',
-  environment: 'test',
 })
 
 expect(await client.initialize()).toBe(true)
@@ -350,10 +333,8 @@ expect(client.isEnabled('targeted-flag', disabledAttributes)).toBe(false)
 expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
 ```
 
-Also construct the client with `{ environment: 'test' }` and assert
-`initialize()` and every flag evaluation return `false` without calling
-`fetch`. With a complete host/key but `environment: 'prod'`, assert the same
-no-fetch, false result for both an id-targeted flag and a remote default-on flag.
+Also construct the client with `{}` and assert `initialize()` and every flag
+evaluation return `false` without calling `fetch`.
 
 - [x] **Step 2: Run the Node tests and verify the red state**
 
@@ -367,7 +348,6 @@ Expected: failure because `NodeFeatureFlagClient` is not exported.
 export type NodeFeatureFlagClientConfig = {
   apiHost?: string
   clientKey?: string
-  environment: string | undefined
   timeoutMs?: number
 }
 
@@ -376,27 +356,17 @@ export class NodeFeatureFlagClient<
 > {
   private readonly configured: boolean
   private readonly client: GrowthBookClient<Features>
-  private readonly environment: FeatureFlagEnvironment
   private readonly timeoutMs: number
 
   constructor(config: NodeFeatureFlagClientConfig) {
-    this.environment = normalizeFeatureFlagEnvironment(config.environment)
-    this.configured = Boolean(
-      this.environment !== 'unknown' && config.apiHost && config.clientKey
-    )
+    this.configured = Boolean(config.apiHost && config.clientKey)
     this.timeoutMs = config.timeoutMs ?? 2000
-    this.client = new GrowthBookClient<Features>(
-      this.configured
-        ? {
-            apiHost: config.apiHost,
-            clientKey: config.clientKey,
-          }
-        : undefined
-    )
-
-    if (!this.configured) {
-      this.client.initSync({ payload: { features: {} } })
-    }
+    this.client = this.configured
+      ? new GrowthBookClient<Features>({
+          apiHost: config.apiHost!,
+          clientKey: config.clientKey!,
+        })
+      : new GrowthBookClient<Features>().initSync({ payload: { features: {} } })
   }
 
   async initialize(): Promise<boolean> {
@@ -409,9 +379,7 @@ export class NodeFeatureFlagClient<
     key: BooleanFeatureFlagKey<Features>,
     attributes: FeatureFlagAttributes
   ): boolean {
-    return this.client.isOn(key, {
-      attributes: { ...attributes, environment: this.environment },
-    })
+    return this.client.isOn(key, { attributes })
   }
 
   async refresh(): Promise<void> {
@@ -460,9 +428,7 @@ git commit -m "feat(feature-flags): add Node adapter"
 Mock the SDK endpoint with the same `targeted-flag` payload as Task 2. Assert
 that initialization succeeds, `setAttributes(enabledAttributes)` evaluates
 true, `setAttributes(disabledAttributes)` evaluates false, and missing config
-initializes an empty payload without a fetch. A complete host/key with an
-invalid environment must also avoid fetching and keep both an id-targeted flag
-and a remote default-on flag false.
+initializes an empty payload without a fetch.
 
 - [x] **Step 2: Run the browser test and verify the red state**
 
@@ -476,25 +442,19 @@ Expected: failure because the browser client does not exist.
 export type BrowserFeatureFlagConfig = {
   apiHost?: string
   clientKey?: string
-  environment: string | undefined
   timeoutMs?: number
 }
 
 export function createBrowserFeatureFlagClient<
   Features extends Record<string, unknown>,
 >(config: BrowserFeatureFlagConfig) {
-  const environment = normalizeFeatureFlagEnvironment(config.environment)
-  const configured = Boolean(
-    environment !== 'unknown' && config.apiHost && config.clientKey
-  )
-  const growthbook = new GrowthBook<Features>(
-    configured
-      ? {
-          apiHost: config.apiHost,
-          clientKey: config.clientKey,
-        }
-      : undefined
-  )
+  const configured = Boolean(config.apiHost && config.clientKey)
+  const growthbook = configured
+    ? new GrowthBook<Features>({
+        apiHost: config.apiHost!,
+        clientKey: config.clientKey!,
+      })
+    : new GrowthBook<Features>()
 
   const initialize = async (): Promise<boolean> => {
     if (!configured) {
@@ -506,7 +466,7 @@ export function createBrowserFeatureFlagClient<
     return result.success
   }
 
-  return { environment, growthbook, initialize }
+  return { growthbook, initialize }
 }
 ```
 
@@ -526,13 +486,13 @@ export function FeatureFlagProvider({
   config: BrowserFeatureFlagConfig
   children: ReactNode
 }) {
-  const [{ environment, growthbook, initialize }] = useState(() =>
+  const [{ growthbook, initialize }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
 
   useEffect(() => {
-    growthbook.setAttributes({ ...attributes, environment })
-  }, [attributes, environment, growthbook])
+    growthbook.setAttributes(attributes)
+  }, [attributes, growthbook])
 
   useEffect(() => {
     void initialize()
@@ -576,7 +536,7 @@ git commit -m "feat(feature-flags): add React adapter"
 **Files:**
 
 - Create: `docs/feature-flags.md`
-- Create: `docs/adr/0008-use-growthbook-for-feature-flags.md`
+- Create: `docs/adr/0005-use-growthbook-for-feature-flags.md`
 - Create: `docs/log/2026-08-06-growthbook-foundation.md`
 - Modify: `docs/adr/README.md`
 - Modify: `docs/index.md`
@@ -601,13 +561,12 @@ The wiki must include these exact adoption examples:
 const flags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
-  environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
 })
 await flags.initialize()
 flags.isEnabled(featureKey, requestAttributes)
 ```
 
-ADR 0008 records direct browser evaluation as the default for UI-only flags,
+ADR 0005 records direct browser evaluation as the default for UI-only flags,
 process-level `GrowthBookClient` plus request attributes for Node, incremental
 migration from preview booleans, and remote evaluation as the privacy upgrade.
 
@@ -653,17 +612,17 @@ git commit -m "docs: document GrowthBook feature flags"
 
 - Adds strict key `'learning-analytics'` with boolean fallback `false`.
 - `ManageFeatureFlagProvider` accepts the non-null result of
-  `UserProfileDocument`, supplies `id`, `actorType: 'user'`, and `role` as actor
-  attributes, and supplies the deployment environment as client configuration.
+  `UserProfileDocument` and supplies `id`, `actorType: 'user'`, `role`, and
+  normalized environment.
 
-- [ ] **Step 1: Create the top branch with native stack metadata**
+- [x] **Step 1: Create the top branch with native stack metadata**
 
 Run: `gh stack add feat/growthbook-learning-analytics`
 
 Expected: stack view is
 `v3 ← feat/growthbook-foundation ← feat/growthbook-learning-analytics`.
 
-- [ ] **Step 2: Change the contract test first**
+- [x] **Step 2: Change the contract test first**
 
 ```ts
 it('registers learning analytics as disabled by default', () => {
@@ -675,7 +634,7 @@ Run: `pnpm --filter @klicker-uzh/feature-flags test -- contracts.test.ts`
 
 Expected: fail because the registry is still empty.
 
-- [ ] **Step 3: Register the feature and make the test pass**
+- [x] **Step 3: Register the feature and make the test pass**
 
 ```ts
 export const FEATURE_FLAG_DEFAULTS = {
@@ -685,7 +644,7 @@ export const FEATURE_FLAG_DEFAULTS = {
 
 Run the contract test again; expected PASS.
 
-- [ ] **Step 4: Add deterministic build/test configuration**
+- [x] **Step 4: Add deterministic build/test configuration**
 
 Add `@klicker-uzh/feature-flags: "workspace:*"` to Manage. Add all four
 GrowthBook variable names to `turbo.json` `globalEnv`:
@@ -706,13 +665,12 @@ export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY="sdk-test"
 
 Run `pnpm install` to synchronize the lockfile.
 
-- [ ] **Step 5: Implement the Manage provider**
+- [x] **Step 5: Implement the Manage provider**
 
 ```tsx
 const config = {
   apiHost: process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
   clientKey: process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,
-  environment: process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV,
 }
 
 function ManageFeatureFlagProvider({ user, children }: Props) {
@@ -721,6 +679,9 @@ function ManageFeatureFlagProvider({ user, children }: Props) {
       id: user.id,
       actorType: 'user',
       role: user.role,
+      environment: normalizeFeatureFlagEnvironment(
+        process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV
+      ),
     }),
     [user.id, user.role]
   )
@@ -736,7 +697,7 @@ function ManageFeatureFlagProvider({ user, children }: Props) {
 Wrap the authenticated Layout content—not the login/loading/error states—with
 this provider.
 
-- [ ] **Step 6: Type-check and commit activation**
+- [x] **Step 6: Type-check and commit activation**
 
 Run: `pnpm --filter @klicker-uzh/frontend-manage check`
 
@@ -757,7 +718,7 @@ git commit -m "feat(manage): initialize GrowthBook flags"
 `useFeatureFlag('learning-analytics')`; the feature remains present in the DOM
 and `disabled` is the only behavior difference.
 
-- [ ] **Step 1: Add a failing Playwright expectation for the disabled state**
+- [x] **Step 1: Add a failing Playwright expectation for the disabled state**
 
 Before changing UI, mock a GrowthBook payload with default `false`, log in, and
 assert both existing hooks are visible and disabled:
@@ -774,7 +735,7 @@ await expect(
 Run the feature-access spec; expected failure because `publicPreview` still
 hides controls or leaves them enabled.
 
-- [ ] **Step 2: Convert header, course, and evaluation buttons**
+- [x] **Step 2: Convert header, course, and evaluation buttons**
 
 In each component, evaluate the hook at the top level:
 
@@ -786,7 +747,7 @@ Remove `publicPreview` from visibility conditions, keep existing auth/activity
 conditions, and add `disabled={!learningAnalyticsEnabled}` to the navigation or
 button props. Do not change `onClick` targets.
 
-- [ ] **Step 3: Convert practice and microlearning action menus**
+- [x] **Step 3: Convert practice and microlearning action menus**
 
 Always include `analyticsPracticeQuiz` and `analyticsMicroLearning` in their
 permission maps. In the action hooks, add:
@@ -797,7 +758,7 @@ disabled: !learningAnalyticsEnabled,
 
 and include the boolean in the `useMemo` dependency list.
 
-- [ ] **Step 4: Forward disabled dropdown items**
+- [x] **Step 4: Forward disabled dropdown items**
 
 In `ActivityActions.tsx`, preserve the field when mapping actions:
 
@@ -808,7 +769,7 @@ disabled: action.disabled,
 The design-system Dropdown already supports per-item `disabled`; do not add a
 custom click guard.
 
-- [ ] **Step 5: Run targeted type/lint checks**
+- [x] **Step 5: Run targeted type/lint checks**
 
 ```bash
 pnpm --filter @klicker-uzh/frontend-manage check
@@ -818,7 +779,7 @@ pnpm --filter @klicker-uzh/frontend-manage lint
 Expected: PASS and `rg -n "publicPreview" apps/frontend-manage/src` returns no
 matches. Private-preview management remains unchanged.
 
-- [ ] **Step 6: Commit the UI conversion**
+- [x] **Step 6: Commit the UI conversion**
 
 ```bash
 git add apps/frontend-manage/src/components
@@ -835,7 +796,7 @@ git commit -m "feat(manage): gate analytics with GrowthBook"
 `publicPreview`. The E2E helper owns an SDK payload interceptor rather than
 changing the database public flag.
 
-- [ ] **Step 1: Add the GrowthBook SDK response helper**
+- [x] **Step 1: Add the GrowthBook SDK response helper**
 
 ```ts
 export async function mockGrowthBookLearningAnalytics(
@@ -858,14 +819,14 @@ export async function mockGrowthBookLearningAnalytics(
 Install the route before login/navigation in both enabled and disabled tests.
 Keep the private-preview database helper, narrowed to `privatePreview` only.
 
-- [ ] **Step 2: Cover both feature states**
+- [x] **Step 2: Cover both feature states**
 
 The disabled test asserts all analytics controls are attached and disabled.
 The enabled test asserts they are attached and enabled, then opens one safe
 analytics entry point. Existing activity-sharing assertions continue to cover
 `privatePreview: true` and `false` independently.
 
-- [ ] **Step 3: Remove `publicPreview` from the user-profile operation**
+- [x] **Step 3: Remove `publicPreview` from the user-profile operation**
 
 Delete only this selection:
 
@@ -878,7 +839,7 @@ Run: `pnpm --filter @klicker-uzh/graphql generate`
 Expected: generated TypeScript, schema metadata, and persisted-operation maps
 change consistently; the public schema still exposes `User.publicPreview`.
 
-- [ ] **Step 4: Run GraphQL, Manage, and Playwright checks**
+- [x] **Step 4: Run GraphQL, Manage, and Playwright checks**
 
 ```bash
 pnpm --filter @klicker-uzh/graphql check
@@ -890,7 +851,7 @@ pnpm --filter @klicker-uzh/playwright test:run --grep "feature access"
 Expected: all pass; screenshots/traces show the flag states rather than DB
 public-preview states.
 
-- [ ] **Step 5: Commit codegen and E2E coverage**
+- [x] **Step 5: Commit codegen and E2E coverage**
 
 ```bash
 git add packages/graphql playwright
@@ -903,21 +864,21 @@ git commit -m "test(manage): cover GrowthBook analytics flag"
 
 **Files:** layer-2 docs/log/plan files plus browser screenshots outside git.
 
-- [ ] **Step 1: Update feature-flag and frontend documentation**
+- [x] **Step 1: Update feature-flag and frontend documentation**
 
 Document `learning-analytics`, default false, `User.id` targeting, disabled UI
 semantics, direct-route non-authorization, and the retained-but-unused
 `publicPreview` field. Replace the old statement that Klicker intentionally
 does not use GrowthBook.
 
-- [ ] **Step 2: Start the real local environment through devrouter**
+- [x] **Step 2: Start the real local environment through devrouter**
 
 Run: `devrouter ensure .`
 
 Run the app/test processes inside the resulting container using
 `devrouter exec . -- ...`; do not start host-side Next servers.
 
-- [ ] **Step 3: Verify in a browser**
+- [x] **Step 3: Verify in a browser**
 
 Use `npx agent-browser` against the branch-local Manage URL. Intercept only the
 external GrowthBook SDK payload; use the real local Klicker auth, API, and DB.
@@ -928,7 +889,7 @@ Capture desktop screenshots for:
 
 Also inspect one practice-quiz or microlearning action menu in both states.
 
-- [ ] **Step 4: Run final mechanical verification**
+- [x] **Step 4: Run final mechanical verification**
 
 ```bash
 pnpm --filter @klicker-uzh/feature-flags test
@@ -945,7 +906,7 @@ pnpm exec opengrep scan --config auto packages/feature-flags apps/frontend-manag
 Expected: all pass. Record any environmental limitation separately from code
 failures in the plan progress log.
 
-- [ ] **Step 5: Commit docs and verification record**
+- [x] **Step 5: Commit docs and verification record**
 
 ```bash
 git add docs project/plans_wip
@@ -1004,8 +965,18 @@ deployment.
       build, root production build, Syncpack, formatting, and Opengrep (0
       findings) passed. The wiki validator named by the maintenance skill was
       not installed locally.
-- [x] 2026-08-17: invalid non-empty deployment environments disable both
-      adapters before fetching; id-targeted and remote default-on regression
-      cases now fail closed.
-- [ ] Layer 2 learning-analytics example implemented and browser-verified.
+- [x] Layer 2 learning-analytics example implemented and browser-verified.
+      `agent-browser` confirmed disabled and enabled header, course, and
+      published-microlearning action states; enabled navigation reached the
+      performance dashboard. The fresh devrouter container initially exhausted
+      Docker disk while creating Postgres, so the same real local apps and
+      dependencies ran against a disposable Compose project after the failed
+      workspace was removed. Screenshots are retained outside git under
+      `/private/tmp/growthbook-*.png`.
+- [x] Layer 2 final verification passed: 11 feature-flag tests, targeted
+      GraphQL/Manage/Playwright checks, 7/7 feature-access browser tests,
+      Manage lint and production build, repository `check:all`, Syncpack,
+      formatting, Opengrep (213 rules, 0 findings), and the 23-task monorepo
+      production build. The first root build attempt was blocked only by
+      sandboxed Google Fonts access; the network-enabled rerun passed.
 - [ ] Two draft PRs published and linked as a native stack.

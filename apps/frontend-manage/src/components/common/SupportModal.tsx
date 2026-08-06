@@ -17,7 +17,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   QGetCatalystRequestAccessDocument,
-  User,
+  type User,
   UserLoginScope,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
@@ -33,7 +33,7 @@ function SupportModal({
   user,
 }: {
   onClose: () => void
-  user?: User | null
+  user?: Pick<User, 'catalyst'> | null
 }) {
   const t = useTranslations()
   const [showRequestPanel, setShowRequestPanel] = useState(false)

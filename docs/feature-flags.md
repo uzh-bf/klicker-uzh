@@ -18,9 +18,24 @@ cluster-internal service. The browser client key identifies an SDK connection
 and is not a GrowthBook management key.
 
 The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
-`packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`; the foundation
-PR intentionally contains no active product flags and no application imports.
-Applications initialize GrowthBook only when they adopt their first flag.
+`packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`. Applications
+initialize GrowthBook only when they adopt their first flag.
+
+## Active flags
+
+| Key                  | Consumer           | Fallback | Disabled behavior                                    |
+| -------------------- | ------------------ | -------- | ---------------------------------------------------- |
+| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
+
+Manage initializes the browser provider after `QUserProfile` resolves and
+targets the authenticated lecturer by stable `User.id`, role, actor type, and
+environment. The former `User.publicPreview` field is no longer selected by
+that operation and is not authoritative for learning analytics. The Prisma and
+public GraphQL fields remain available for other consumers and a later cleanup.
+
+Direct analytics routes remain reachable to authenticated lecturers. The flag
+controls product affordances, not authorization; routes and APIs continue to
+enforce their own access rules.
 
 ## Package contract
 
@@ -116,6 +131,11 @@ non-sensitive SDK connection values that Next.js embeds into public browser
 assets; GitHub documents variables as the store for non-sensitive configuration
 and warns that they are not masked. Missing variables still produce a valid
 image, but the browser adapter performs no SDK request and keeps flags off.
+
+Manage registers these variables in `turbo.json` and supplies the provider from
+its authenticated layout. Its Playwright fixture intercepts only the external
+SDK response so feature states remain deterministic while the real Klicker
+authentication, API, and database are exercised.
 
 ## Node.js adoption
 

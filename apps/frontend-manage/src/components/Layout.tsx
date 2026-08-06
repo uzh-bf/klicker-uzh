@@ -3,12 +3,14 @@ import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import React, { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
+import type React from 'react'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
+import ManageFeatureFlagProvider from './featureFlags/ManageFeatureFlagProvider'
 
 interface LayoutProps {
   displayName?: string
@@ -57,7 +59,7 @@ function Layout({
     )
   }
 
-  if (!dataUser || (!loadingUser && errorUser)) {
+  if (!dataUser?.userProfile || (!loadingUser && errorUser)) {
     return (
       <UserNotification type="error">
         {errorUser?.message || t('shared.generic.systemError')}
@@ -66,7 +68,7 @@ function Layout({
   }
 
   return (
-    <>
+    <ManageFeatureFlagProvider user={dataUser.userProfile}>
       <Head>
         <title>{displayName}</title>
         <meta name="description" content={displayName} charSet="utf-8"></meta>
@@ -87,7 +89,7 @@ function Layout({
         {children}
       </div>
       <Footer />
-    </>
+    </ManageFeatureFlagProvider>
   )
 }
 

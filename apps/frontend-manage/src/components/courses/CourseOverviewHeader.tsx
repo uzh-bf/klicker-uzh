@@ -11,6 +11,7 @@ import {
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type Course,
   CreateCourseDocument,
@@ -150,6 +151,7 @@ function CourseOverviewHeader({
   const t = useTranslations()
   const router = useRouter()
   const [createCourse] = useMutation(CreateCourseDocument)
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
@@ -334,6 +336,18 @@ function CourseOverviewHeader({
             data={{ cy: `course-join-qr-code` }}
           />
         )}
+        <Button
+          primary
+          disabled={!learningAnalyticsEnabled}
+          onClick={() => {
+            window.open(`/analytics/${course.id}/activity`, '_blank')
+          }}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-learning-analytics-link' }}
+        >
+          <Button.Icon icon={faChartPie} />
+          <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
+        </Button>
         {course.isAssessmentEnabled && course.isManager ? (
           <Button
             primary
