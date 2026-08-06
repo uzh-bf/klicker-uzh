@@ -495,42 +495,183 @@ Hatchet types remain inside the response and worker adapters.
 
 ### Data flow
 
-```text
-Lane 1 — outbox emission
-  critical lecturer/system mutation
-    -> business rows + audit outbox rows in one Prisma transaction
+#### Complete architecture
 
-Lane 2 — Hatchet command materialization
-  participant submission
-    -> response API -> existing Hatchet submission command + receipt
-    -> response processor
-       -> accepted + persisted/scored evidence in response transaction
-       -> or accepted + rejected/duplicate evidence in audit transaction
+```mermaid
+flowchart TB
+    subgraph ACTORS["Assessment actors"]
+        STUDENT["Participant using assessment PWA"]
+        LECTURER["Lecturer"]
+        SYSTEM["Klicker scheduled worker"]
+        OWNER["Trusted Azure Resource Group member"]
+    end
 
-Independent client capture
-  participant selection or submit attempt
-    -> commit event to IndexedDB client outbox
-       -> if offline/reloaded: retain, obtain a fresh scoped token, replay
-       -> if online: independent audit ingress + live/replay token
-          -> Azure Storage Queue -> per-event durable receipt
-             -> PWA deletes acknowledged local record
-             -> queue drainer -> audit outbox transaction
-  after seven days: local record is replay-ineligible and purged at next cleanup
-  after trusted lifecycle close + seven days: no replay-only token is issued
+    subgraph CLIENT["Client-observed evidence"]
+        INTERACTION["Answer selected, changed, or cleared"]
+        ATTEMPT["Submit clicked or auto-submit triggered"]
+        IDB["Bounded IndexedDB audit outbox"]
+        UPLOADER["Binding-aware batch uploader"]
+        TOKEN["Live or replay-only capture token"]
 
-Both server lanes and the client drainer -> PostgreSQL outbox
-  -> dispatcher -> provider-neutral append interface
-     -> Azure Table Storage
-     -> immutable per-assessment manifests
+        STUDENT --> INTERACTION
+        STUDENT --> ATTEMPT
+        INTERACTION -->|"Commit before transmission"| IDB
+        ATTEMPT -->|"Commit SUBMISSION_ATTEMPTED"| IDB
+        IDB --> UPLOADER
+        TOKEN --> UPLOADER
+    end
 
-Activation/content mutation
-  -> immutable content-addressed media blobs
-  -> media identities and hashes in Table evidence
+    subgraph INGRESS["Independent client-ingress path"]
+        ISSUER["Authenticated capture-token issuer"]
+        AUDIT_INGRESS["Independent audit ingress"]
+        AZ_QUEUE["Azure Storage Queue"]
+        DRAINER["Client queue drainer"]
+        VALIDATION["Database-backed scope and content validation"]
 
-Trusted Resource Group member
-  -> Entra-authenticated local CLI -> verified JSON/CSV export
-  -> direct-create annotation/hold records in Azure control table
+        ISSUER -->|"Short-lived scoped token"| TOKEN
+        UPLOADER -->|"Same event IDs on retries"| AUDIT_INGRESS
+        AUDIT_INGRESS -->|"Validated event or deterministic parts"| AZ_QUEUE
+        AZ_QUEUE -->|"Durable insertion result"| AUDIT_INGRESS
+        AUDIT_INGRESS -->|"Per-event acknowledgement; delete local record"| IDB
+        AZ_QUEUE --> DRAINER
+        DRAINER --> VALIDATION
+    end
+
+    subgraph LANE1["Lane 1 — PostgreSQL transactional outbox"]
+        GRAPHQL["Authenticated GraphQL or backend operation"]
+        PRISMA_TX["Prisma transaction"]
+        BUSINESS["Assessment business-state changes"]
+        STANDALONE["Standalone audit-only transaction"]
+
+        LECTURER --> GRAPHQL
+        SYSTEM --> GRAPHQL
+        GRAPHQL --> PRISMA_TX
+        PRISMA_TX -->|"Atomic commit or rollback"| BUSINESS
+        PRISMA_TX -->|"Atomic audit evidence"| OUTBOX
+        GRAPHQL -->|"Session event or authenticated rejection"| STANDALONE
+        STANDALONE --> OUTBOX
+    end
+
+    subgraph LANE2["Lane 2 — existing Hatchet submission workflow"]
+        RESPONSE_API["Response API"]
+        HATCHET["Existing Hatchet submission command"]
+        HATCHET_RECEIPT["Hatchet event receipt"]
+        PROCESSOR["Response processor"]
+        RESPONSE_TX["Response and scoring transaction"]
+        OUTCOME_TX["Audit-only rejection or duplicate transaction"]
+
+        IDB -->|"After local attempt commit"| RESPONSE_API
+        RESPONSE_API --> HATCHET
+        HATCHET --> HATCHET_RECEIPT
+        HATCHET_RECEIPT -->|"Returned to participant"| RESPONSE_API
+        HATCHET --> PROCESSOR
+        PROCESSOR -->|"Persisted or scored"| RESPONSE_TX
+        PROCESSOR -->|"Rejected, duplicate, or terminal failure"| OUTCOME_TX
+        RESPONSE_TX -->|"Response plus evidence atomically"| OUTBOX
+        OUTCOME_TX --> OUTBOX
+    end
+
+    subgraph CANONICAL["Canonical evidence and delivery"]
+        OUTBOX["PostgreSQL AuditOutboxEvent"]
+        DISPATCHER["Idempotent audit dispatcher"]
+        PORT["Provider-neutral append interface"]
+        TABLE["Append-only Azure Table Storage"]
+        MANIFEST["Immutable per-assessment manifests"]
+        MEDIA["Immutable content-addressed media"]
+        RETENTION["Retention worker and index"]
+
+        VALIDATION -->|"Canonical CLIENT_OBSERVED evidence"| OUTBOX
+        OUTBOX --> DISPATCHER
+        DISPATCHER --> PORT
+        PORT --> TABLE
+        PORT --> MANIFEST
+        BUSINESS -->|"Baseline and content references"| MEDIA
+        TABLE --> RETENTION
+        MANIFEST --> RETENTION
+        MEDIA --> RETENTION
+    end
+
+    subgraph EVIDENCE_ACCESS["Evidence access and administration"]
+        ENTRA["Azure Entra authentication"]
+        CLI["Owner-only local CLI"]
+        EXPORT["Verified JSON or CSV export"]
+        CONTROL["Append-only annotations and investigation holds"]
+
+        OWNER --> ENTRA
+        ENTRA --> CLI
+        CLI -->|"Read and verify"| TABLE
+        CLI -->|"Verify integrity"| MANIFEST
+        CLI -->|"Verify referenced content"| MEDIA
+        CLI --> EXPORT
+        CLI -->|"Direct Azure create"| CONTROL
+        CONTROL --> RETENTION
+    end
 ```
+
+#### Client event lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Captured: Meaningful answer change or submit attempt
+
+    Captured --> Pending: IndexedDB transaction commits
+    Captured --> LocalDegradation: IndexedDB write fails
+
+    LocalDegradation --> Warning: Show actionable participant warning
+    LocalDegradation --> GapEvidence: Record metadata-only gap later if possible
+
+    Pending --> Sending: Network and suitable token available
+    Pending --> Pending: Offline, reload, restart, or lost HTTP response
+    Pending --> Sending: Fresh live or replay-only token obtained
+    Sending --> Pending: Retryable transport or authentication failure
+    Sending --> Queued: Azure Queue durably accepts event
+    Sending --> Rejected: Permanent rejection metadata durably queued
+
+    Queued --> Deleted: Per-event acknowledgement received
+    Rejected --> Deleted: Durable rejection receipt received
+
+    Pending --> ReplayIneligible: Seven-day local replay window expires
+    ReplayIneligible --> Deleted: PWA next executes cleanup
+
+    Pending --> UnknownTail: Site data cleared, browser eviction, private session ends, or device lost
+
+    Deleted --> [*]
+    UnknownTail --> [*]
+```
+
+Replay-token issuance is capped independently at seven days after the trusted
+server-side lifecycle close. A browser timestamp or clock change cannot extend
+that cutoff. Exact physical deletion at the replay deadline is not claimed when
+the Klicker origin is not running; the next origin execution performs cleanup.
+
+#### Evidence meaning
+
+```mermaid
+flowchart LR
+    CLIENT_OBSERVED["CLIENT_OBSERVED<br/>The authenticated browser reported an interaction"]
+    SERVER_OBSERVED["SERVER_OBSERVED<br/>Klicker or Hatchet accepted, rejected, or processed something"]
+    AUTHORITATIVE["AUTHORITATIVE<br/>The represented state committed in PostgreSQL"]
+
+    CLIENT_OBSERVED -->|"Correlate using participant, assessment, event, and submission IDs"| SERVER_OBSERVED
+    SERVER_OBSERVED -->|"Successful persistence or mutation"| AUTHORITATIVE
+    CLIENT_OBSERVED -.->|"Does not by itself prove"| AUTHORITATIVE
+```
+
+The labels do not form an automatic promotion pipeline: a client observation
+remains `CLIENT_OBSERVED` after validation. Correlated later records establish
+separate server or authoritative facts. None proves who physically operated the
+device or their subjective intent.
+
+#### Storage, retention, and access overview
+
+| Storage | Contents | Removal | Human access |
+| --- | --- | --- | --- |
+| IndexedDB | Exact pending client answer state; opaque binding; event and submission IDs | Immediately after durable acknowledgement, or next cleanup after the seven-day replay window | Browser-origin storage on the participant's device |
+| Azure Storage Queue | Transient exact client events | After canonical outbox handoff and never beyond the central retention boundary | Managed ingress and drainer identities only |
+| PostgreSQL outbox | Canonical pending evidence | After Azure insertion and successful immutable-manifest coverage | Klicker audit services |
+| Azure Table Storage | Append-only canonical evidence | One year after the latest completion anchor unless held | Trusted Azure Resource Group members through Entra |
+| Azure Blob Storage | Immutable manifests and captured media | Same central retention boundary | Trusted Azure Resource Group members through Entra |
+| Local export | Verified JSON or CSV | Invoking operator's responsibility | Invoking Azure-authenticated operator |
 
 ## Canonical event model
 
