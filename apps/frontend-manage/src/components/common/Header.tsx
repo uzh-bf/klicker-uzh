@@ -9,7 +9,7 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  type User,
+  type UserProfileQuery,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -24,7 +24,9 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-function Header({ user }: { user?: User | null }): React.ReactElement {
+type UserProfile = NonNullable<UserProfileQuery['userProfile']>
+
+function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
