@@ -4,15 +4,10 @@ import type {
   FeatureFlagAttributes,
   KlickerFeatureFlags,
 } from './contracts.js'
-import {
-  normalizeFeatureFlagEnvironment,
-  sanitizeFeatureFlagAttributes,
-} from './contracts.js'
 
 export type NodeFeatureFlagClientConfig = {
   apiHost?: string
   clientKey?: string
-  environment: string | undefined
   timeoutMs?: number
 }
 
@@ -21,19 +16,10 @@ export class NodeFeatureFlagClient<
 > {
   private readonly client: GrowthBookClient<Features>
   private readonly configured: boolean
-  private readonly environment: ReturnType<
-    typeof normalizeFeatureFlagEnvironment
-  >
   private readonly timeoutMs: number
-  private initializationPromise: Promise<boolean> | undefined
-  private initialized = false
-  private healthy = false
 
   constructor(config: NodeFeatureFlagClientConfig) {
-    this.environment = normalizeFeatureFlagEnvironment(config.environment)
-    this.configured = Boolean(
-      this.environment !== 'unknown' && config.apiHost && config.clientKey
-    )
+    this.configured = Boolean(config.apiHost && config.clientKey)
     this.timeoutMs = config.timeoutMs ?? 2000
     this.client = new GrowthBookClient<Features>(
       this.configured
@@ -54,48 +40,15 @@ export class NodeFeatureFlagClient<
       return false
     }
 
-    if (!this.initializationPromise) {
-      this.initializationPromise = this.client
-        .init({ timeout: this.timeoutMs })
-        .then((result) => {
-          this.initialized = true
-          this.healthy = result.success
-          if (!result.success) {
-            console.warn(
-              '[feature-flags] Node initialization failed; using false fallbacks'
-            )
-          }
-          return result.success
-        })
-        .catch(() => {
-          this.initialized = true
-          this.healthy = false
-          console.warn(
-            '[feature-flags] Node initialization failed; using false fallbacks'
-          )
-          return false
-        })
-    }
-
-    return this.initializationPromise
+    const result = await this.client.init({ timeout: this.timeoutMs })
+    return result.success
   }
 
   isEnabled(
     key: BooleanFeatureFlagKey<Features>,
     attributes: FeatureFlagAttributes
   ): boolean {
-    return this.client.isOn(key, {
-      attributes: sanitizeFeatureFlagAttributes(attributes, this.environment),
-    })
-  }
-
-  getStatus() {
-    return {
-      configured: this.configured,
-      environment: this.environment,
-      initialized: this.initialized,
-      healthy: this.healthy,
-    }
+    return this.client.isOn(key, { attributes })
   }
 
   async refresh(): Promise<void> {
@@ -103,14 +56,6 @@ export class NodeFeatureFlagClient<
       return
     }
 
-    try {
-      await this.client.refreshFeatures({ timeout: this.timeoutMs })
-      this.healthy = true
-    } catch (error) {
-      console.warn(
-        '[feature-flags] Node refresh failed; retaining the last usable payload'
-      )
-      throw error
-    }
+    await this.client.refreshFeatures()
   }
 }
