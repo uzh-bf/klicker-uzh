@@ -15,14 +15,14 @@ React adapter only inside authenticated `frontend-manage` layouts and replaces
 the legacy `publicPreview` analytics checks.
 
 **Tech Stack:** TypeScript 6, React 19, Next.js 16 Pages Router, GrowthBook JS
-and React SDK 1.7.0, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`.
+and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`.
 
 ## Global Constraints
 
 - Stack bottom: `feat/growthbook-foundation` → `v3`.
 - Stack top: `feat/growthbook-learning-analytics` →
   `feat/growthbook-foundation`.
-- Pin `@growthbook/growthbook` and `@growthbook/growthbook-react` to `1.7.0`.
+- Pin `@growthbook/growthbook` and `@growthbook/growthbook-react` to `1.6.5`.
 - Never expose a GrowthBook management/admin key to a browser.
 - Use Klicker `User.id`/`Participant.id`, never email, for per-user targeting.
 - Feature flags control rollout, never authentication or authorization.
@@ -123,7 +123,7 @@ and React SDK 1.7.0, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - Layer 1 intentionally produces `FeatureFlagKey = never`; layer 2 adds the
   first product key.
 
-- [ ] **Step 1: Write the core contract test before the implementation**
+- [x] **Step 1: Write the core contract test before the implementation**
 
 ```ts
 import {
@@ -149,13 +149,13 @@ describe('feature flag contracts', () => {
 })
 ```
 
-- [ ] **Step 2: Run the package test and verify the red state**
+- [x] **Step 2: Run the package test and verify the red state**
 
 Run: `pnpm --filter @klicker-uzh/feature-flags test`
 
 Expected: failure because the package and exports do not exist.
 
-- [ ] **Step 3: Add the package manifest and TypeScript/Vitest configuration**
+- [x] **Step 3: Add the package manifest and TypeScript/Vitest configuration**
 
 Use exact GrowthBook versions and subpath exports:
 
@@ -174,8 +174,8 @@ Use exact GrowthBook versions and subpath exports:
     "./node": { "types": "./dist/node.d.ts", "default": "./dist/node.js" }
   },
   "dependencies": {
-    "@growthbook/growthbook": "1.7.0",
-    "@growthbook/growthbook-react": "1.7.0"
+    "@growthbook/growthbook": "1.6.5",
+    "@growthbook/growthbook-react": "1.6.5"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -202,7 +202,7 @@ declarations/source maps, strict mode, `jsx: "react-jsx"`, and
 `lib: ["es2022", "dom", "dom.iterable"]`. The Vitest config mirrors
 `packages/util/vitest.config.ts` with one Node fork.
 
-- [ ] **Step 4: Implement the core contract**
+- [x] **Step 4: Implement the core contract**
 
 ```ts
 export const FEATURE_FLAG_DEFAULTS = {} as const
@@ -264,7 +264,7 @@ export function normalizeFeatureFlagEnvironment(
 
 `src/index.ts` re-exports `./contracts.js` only.
 
-- [ ] **Step 5: Install and verify the green state**
+- [x] **Step 5: Install and verify the green state**
 
 Run: `pnpm install`
 
@@ -273,9 +273,9 @@ Run: `pnpm --filter @klicker-uzh/feature-flags test`
 Run: `pnpm --filter @klicker-uzh/feature-flags check`
 
 Expected: contract tests and type-check pass; `pnpm-lock.yaml` contains exact
-GrowthBook 1.7.0 resolutions.
+GrowthBook 1.6.5 resolutions.
 
-- [ ] **Step 6: Format and commit the core package**
+- [x] **Step 6: Format and commit the core package**
 
 ```bash
 pnpm exec biome check --write packages/feature-flags
@@ -387,7 +387,7 @@ export class NodeFeatureFlagClient<
 }
 ```
 
-Adjust only SDK result/property typings if the installed 1.7.0 declarations
+Adjust only SDK result/property typings if the installed 1.6.5 declarations
 require it; preserve this public interface and request-scoped user context.
 
 - [ ] **Step 4: Run the Node tests and package checks**
@@ -468,7 +468,7 @@ export function createBrowserFeatureFlagClient<
 }
 ```
 
-Use the actual 1.7.0 browser init result field (`status`) confirmed by its
+Use the actual 1.6.5 browser init result field (`status`) confirmed by its
 declarations; keep the returned wrapper stable.
 
 - [ ] **Step 4: Implement the React provider and typed hook**
