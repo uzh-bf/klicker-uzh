@@ -962,7 +962,8 @@ deployment.
   `feat/growthbook-foundation`.
 - [x] 2026-08-06: native stack support verified with `gh stack`.
 - [x] Layer 1 foundation implemented and verified: 11 tests, package check and
-      build, Syncpack, formatting, and Opengrep (0 findings) passed. The wiki
-      validator named by the maintenance skill was not installed locally.
+      build, root production build, Syncpack, formatting, and Opengrep (0
+      findings) passed. The wiki validator named by the maintenance skill was
+      not installed locally.
 - [ ] Layer 2 learning-analytics example implemented and browser-verified.
 - [ ] Two draft PRs published and linked as a native stack.
