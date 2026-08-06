@@ -311,7 +311,7 @@ export function createAssessmentReport({
       .product { padding-left: 8px; font-size: 12px; }
       h1 { font-size: 16px; }
       h2 { margin: 10px 0 5px; padding-bottom: 3px; font-size: 13px; }
-      h3 { margin: 8px 0 4px; font-size: 10px; }
+      h3 { margin: 8px 0 4px; font-size: 12px; }
       p { margin: 4px 0; }
       .issued { margin-top: 3px; font-size: 9px; }
       dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
@@ -327,6 +327,7 @@ export function createAssessmentReport({
       .verification img { width: 72px; height: 72px; }
       .verification h2 { margin: 0 0 3px; }
       .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
+      .privacy h3 { font-size: 10px; }
       .chart, .verification, .pdf-avoid { break-inside: avoid; }
     }
 

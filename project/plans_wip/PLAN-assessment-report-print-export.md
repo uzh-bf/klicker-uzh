@@ -9,10 +9,11 @@ stand. Branch `fix/assessment-report-polish`, [PR #5306](https://github.com/uzh-
 Implementation is complete in the working tree and the plan remains the
 execution contract. The mandatory read-only planning review returned
 `DONE_WITH_CONCERNS`; its findings are incorporated and closed below through
-main-session verification. Repository-native checks are passing, while the
-linked browser route and Playwright browser binary remain environment blockers;
-the final independent outcome review is complete and publication is still
-pending.
+main-session verification. Repository-native checks pass, the browser route and
+Playwright evidence are recorded below, and the final independent outcome review
+is complete. The only open verification items are the manual Chrome
+save-as-PDF filename contract and iOS Safari print behavior; both need a human
+and the latter has no device available.
 
 ## Goal
 
@@ -400,3 +401,24 @@ silently treating Chromium evidence as mobile evidence.
   and rendered report are now stored under `assets/assessment-report-polish/`.
   Remaining explicit gaps: manual Chrome save-as-PDF filename contract and iOS
   Safari print behavior (no device available).
+- **2026-08-06:** Addressed the four actionable CodeRabbit findings on commit
+  `fbdb05108`: the print flow now disarms its opener-side timers before calling
+  `print()` so the popup cannot be closed underneath an open print dialog;
+  `verificationActiveText` says "printed or on-screen" instead of "downloaded"
+  in both locales; the print `h3` is 12px rather than 10px, no longer smaller
+  than body text, with the privacy heading kept at 10px. The five remaining
+  findings were reviewed and skipped: none is an active defect, and the
+  `download`→`print` identifier rename would churn four files for no behavior
+  change. CodeRabbit's claim that the entry above is future-dated is wrong —
+  it was written on 2026-08-06, the date it carries.
+- **2026-08-06:** Re-measured the single-A4-page contract after the `h3` size
+  change, because that change adds height and the CI Playwright evidence above
+  predates it. Rendering `createAssessmentReport` with a ten-bin histogram and
+  printing through headless Chrome at `@page size: A4` yields exactly one page
+  in both locales, with and without browser headers and footers, and also with
+  a course name and student email long enough to wrap. Measured headroom: 11
+  bins still fit on one page and 12 spill to a second. The server caps the
+  histogram at `HISTOGRAM_BASE_BIN_COUNT = 10`
+  ([assessmentReports.ts](../../packages/graphql/src/services/assessmentReports.ts))
+  and only ever merges bins downward, so 10 is the true maximum and one row of
+  margin remains. Before the `h3` change that margin was two rows.

@@ -1398,7 +1398,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No assessment report exists for this verification link.',
       verificationActiveTitle: 'Active assessment record',
       verificationActiveText:
-        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the downloaded report.',
+        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the printed or on-screen report.',
       verificationRevokedTitle: 'Revoked assessment record',
       verificationRevokedText:
         'This report, issued on {date}, was revoked and must no longer be treated as active. Its claims are not disclosed.',

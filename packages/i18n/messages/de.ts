@@ -1403,7 +1403,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
       verificationActiveTitle: 'Aktiver Assessment-Datensatz',
       verificationActiveText:
-        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem heruntergeladenen Bericht.',
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem gedruckten oder angezeigten Bericht.',
       verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
       verificationRevokedText:
         'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',

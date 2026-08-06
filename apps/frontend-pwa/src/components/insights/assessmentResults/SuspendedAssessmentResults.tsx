@@ -215,10 +215,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
       reportWindow.removeEventListener('load', checkReadiness)
     }
 
-    function failPrint(error?: unknown) {
-      if (settled) return
-      settled = true
-      cleanup()
+    function reportPrintFailure(error?: unknown) {
       if (error) console.error('Failed to print assessment report', error)
       try {
         reportWindow.close()
@@ -226,6 +223,13 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
         // The popup may already be closed.
       }
       setExportError(t('pwa.assessment.exportReportPrintError'))
+    }
+
+    function failPrint(error?: unknown) {
+      if (settled) return
+      settled = true
+      cleanup()
+      reportPrintFailure(error)
     }
 
     function checkReadiness() {
@@ -251,10 +255,18 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           return
         }
 
-        reportWindow.focus()
-        reportWindow.print()
+        // Disarm the opener-side timers before handing control to the print
+        // dialog. The dialog can stay open for as long as the user needs it,
+        // and print() does not reliably block the opener, so a still-armed
+        // print timeout would close the popup underneath an open dialog.
         settled = true
         cleanup()
+        try {
+          reportWindow.focus()
+          reportWindow.print()
+        } catch (error) {
+          reportPrintFailure(error)
+        }
       } catch (error) {
         failPrint(error)
       }
