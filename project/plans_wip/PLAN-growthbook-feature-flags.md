@@ -301,5 +301,7 @@ draft PR.
   imports the package in layer 1.
 - 2026-08-06: foundation review added a separate test TypeScript config so the
   package `check` command covers both declarations and Vitest sources.
+- 2026-08-06: full `pnpm run build` passed at the foundation tip (23 tasks,
+  including a fresh feature-flags build; 22 existing tasks were cached).
 - 2026-08-06: wiki files pass Prettier. The validator referenced by
   `klicker-wiki-maintenance` was unavailable at its documented local path.
