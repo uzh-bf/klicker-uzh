@@ -1,0 +1,52 @@
+{
+  "name": "@klicker-uzh/feature-flags",
+  "version": "3.1.0",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@growthbook/growthbook": "1.6.5",
+    "@growthbook/growthbook-react": "1.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.17",
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^19.2.7"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:test": "pnpm run build",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    }
+  },
+  "type": "module"
+}
