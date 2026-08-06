@@ -1,6 +1,6 @@
 ---
 question: Are the formulas for ex-ante and ex-post alpha different under homogeneous and heterogeneous expectations? If yes, what is the formula under heterogeneous expectations?
-mode: explainer
+mode: tutor
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---
@@ -18,6 +18,8 @@ $$
 Here $\mu_k^i$ is investor $i$'s expected return for asset $k$, and $\bar{\mu}^M$ is the market expectation aggregated across investors.
 
 Under homogeneous expectations, everyone uses the same expected returns, so there is no investor-specific $\mu_k^i$. Under heterogeneous expectations, the alpha is investor-specific.
+
+Looking at the formula, which term makes the ex-ante alpha specific to investor $i$?
 
 ## Sources
 

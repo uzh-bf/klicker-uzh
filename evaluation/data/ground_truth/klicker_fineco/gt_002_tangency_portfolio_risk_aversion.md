@@ -1,6 +1,6 @@
 ---
 question: How can I calculate the shares in the risk-free asset and risky portfolio if risk aversion is 5.6 and I already calculated the optimal tangency portfolio without risk aversion?
-mode: explainer
+mode: tutor
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---
@@ -24,6 +24,8 @@ $$
 $$
 
 The relative weights inside the tangency portfolio stay the same as before. Risk aversion only scales the total risky position up or down.
+
+Which of $\mu(R_T)$, $R_f$, and $\sigma_T^2$ have you already calculated, so that you can substitute them into the formula for $\lambda^*$?
 
 ## Sources
 

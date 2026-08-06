@@ -1,6 +1,6 @@
 ---
 question: What is the formula where the weighted sum of alpha and a equals zero, and how should I interpret it?
-mode: explainer
+mode: tutor
 expected_tools_by_profile:
   catalog_expert_v1: [EXPERT_df_fineco_expert]
 ---
@@ -24,6 +24,8 @@ a^1\alpha^1 + a^2\alpha^2 = 0
 $$
 
 So the two weighted alpha contributions must cancel each other out.
+
+For two investors, how would you describe the relationship between their alphas when the first investor has the larger weight?
 
 ## Sources
 
