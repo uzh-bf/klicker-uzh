@@ -722,14 +722,14 @@ git commit -m "docs: document GrowthBook feature flags"
   `UserProfileDocument`, supplies `id`, `actorType: 'user'`, and `role` as actor
   attributes, and supplies the deployment environment as client configuration.
 
-- [ ] **Step 1: Create the top branch with native stack metadata**
+- [x] **Step 1: Create the top branch with native stack metadata**
 
 Run: `gh stack add feat/growthbook-learning-analytics-clean`
 
 Expected: stack view is
 `v3 ← feat/growthbook-foundation-clean ← feat/growthbook-learning-analytics-clean`.
 
-- [ ] **Step 2: Change the contract test first**
+- [x] **Step 2: Change the contract test first**
 
 ```ts
 it('registers learning analytics as disabled by default', () => {
@@ -741,7 +741,7 @@ Run: `pnpm --filter @klicker-uzh/feature-flags test -- contracts.test.ts`
 
 Expected: fail because the registry is still empty.
 
-- [ ] **Step 3: Register the feature and make the test pass**
+- [x] **Step 3: Register the feature and make the test pass**
 
 ```ts
 export const FEATURE_FLAG_DEFAULTS = {
@@ -751,7 +751,7 @@ export const FEATURE_FLAG_DEFAULTS = {
 
 Run the contract test again; expected PASS.
 
-- [ ] **Step 4: Add deterministic build/test configuration**
+- [x] **Step 4: Add deterministic build/test configuration**
 
 Add `@klicker-uzh/feature-flags: "workspace:*"` to Manage. Add all four
 GrowthBook variable names to `turbo.json` `globalEnv`:
@@ -772,7 +772,7 @@ export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY="sdk-test"
 
 Run `pnpm install` to synchronize the lockfile.
 
-- [ ] **Step 5: Implement the Manage provider**
+- [x] **Step 5: Implement the Manage provider**
 
 ```tsx
 const config = {
@@ -802,7 +802,7 @@ function ManageFeatureFlagProvider({ user, children }: Props) {
 Wrap the authenticated Layout content—not the login/loading/error states—with
 this provider.
 
-- [ ] **Step 6: Type-check and commit activation**
+- [x] **Step 6: Type-check and commit activation**
 
 Run: `pnpm --filter @klicker-uzh/frontend-manage check`
 
@@ -823,7 +823,7 @@ git commit -m "feat(manage): initialize GrowthBook flags"
 `useFeatureFlag('learning-analytics')`; the feature remains present in the DOM
 and `disabled` is the only behavior difference.
 
-- [ ] **Step 1: Add a failing Playwright expectation for the disabled state**
+- [x] **Step 1: Add a failing Playwright expectation for the disabled state**
 
 Before changing UI, mock a GrowthBook payload with default `false`, log in, and
 assert both existing hooks are visible and disabled:
@@ -840,7 +840,7 @@ await expect(
 Run the feature-access spec; expected failure because `publicPreview` still
 hides controls or leaves them enabled.
 
-- [ ] **Step 2: Convert header, course, and evaluation buttons**
+- [x] **Step 2: Convert header, course, and evaluation buttons**
 
 In each component, evaluate the hook at the top level:
 
@@ -852,7 +852,7 @@ Remove `publicPreview` from visibility conditions, keep existing auth/activity
 conditions, and add `disabled={!learningAnalyticsEnabled}` to the navigation or
 button props. Do not change `onClick` targets.
 
-- [ ] **Step 3: Convert practice and microlearning action menus**
+- [x] **Step 3: Convert practice and microlearning action menus**
 
 Always include `analyticsPracticeQuiz` and `analyticsMicroLearning` in their
 permission maps. In the action hooks, add:
@@ -863,7 +863,7 @@ disabled: !learningAnalyticsEnabled,
 
 and include the boolean in the `useMemo` dependency list.
 
-- [ ] **Step 4: Forward disabled dropdown items**
+- [x] **Step 4: Forward disabled dropdown items**
 
 In `ActivityActions.tsx`, preserve the field when mapping actions:
 
@@ -874,7 +874,7 @@ disabled: action.disabled,
 The design-system Dropdown already supports per-item `disabled`; do not add a
 custom click guard.
 
-- [ ] **Step 5: Run targeted type/lint checks**
+- [x] **Step 5: Run targeted type/lint checks**
 
 ```bash
 pnpm --filter @klicker-uzh/frontend-manage check
@@ -884,7 +884,7 @@ pnpm --filter @klicker-uzh/frontend-manage lint
 Expected: PASS and `rg -n "publicPreview" apps/frontend-manage/src` returns no
 matches. Private-preview management remains unchanged.
 
-- [ ] **Step 6: Commit the UI conversion**
+- [x] **Step 6: Commit the UI conversion**
 
 ```bash
 git add apps/frontend-manage/src/components
@@ -901,7 +901,7 @@ git commit -m "feat(manage): gate analytics with GrowthBook"
 `publicPreview`. The E2E helper owns an SDK payload interceptor rather than
 changing the database public flag.
 
-- [ ] **Step 1: Add the GrowthBook SDK response helper**
+- [x] **Step 1: Add the GrowthBook SDK response helper**
 
 ```ts
 export async function mockGrowthBookLearningAnalytics(
@@ -924,14 +924,14 @@ export async function mockGrowthBookLearningAnalytics(
 Install the route before login/navigation in both enabled and disabled tests.
 Keep the private-preview database helper, narrowed to `privatePreview` only.
 
-- [ ] **Step 2: Cover both feature states**
+- [x] **Step 2: Cover both feature states**
 
 The disabled test asserts all analytics controls are attached and disabled.
 The enabled test asserts they are attached and enabled, then opens one safe
 analytics entry point. Existing activity-sharing assertions continue to cover
 `privatePreview: true` and `false` independently.
 
-- [ ] **Step 3: Remove `publicPreview` from the user-profile operation**
+- [x] **Step 3: Remove `publicPreview` from the user-profile operation**
 
 Delete only this selection:
 
@@ -944,7 +944,7 @@ Run: `pnpm --filter @klicker-uzh/graphql generate`
 Expected: generated TypeScript, schema metadata, and persisted-operation maps
 change consistently; the public schema still exposes `User.publicPreview`.
 
-- [ ] **Step 4: Run GraphQL, Manage, and Playwright checks**
+- [x] **Step 4: Run GraphQL, Manage, and Playwright checks**
 
 ```bash
 pnpm --filter @klicker-uzh/graphql check
@@ -956,7 +956,7 @@ pnpm --filter @klicker-uzh/playwright test:run --grep "feature access"
 Expected: all pass; screenshots/traces show the flag states rather than DB
 public-preview states.
 
-- [ ] **Step 5: Commit codegen and E2E coverage**
+- [x] **Step 5: Commit codegen and E2E coverage**
 
 ```bash
 git add packages/graphql playwright
@@ -969,21 +969,21 @@ git commit -m "test(manage): cover GrowthBook analytics flag"
 
 **Files:** layer-2 docs/log/plan files plus browser screenshots outside git.
 
-- [ ] **Step 1: Update feature-flag and frontend documentation**
+- [x] **Step 1: Update feature-flag and frontend documentation**
 
 Document `learning-analytics`, default false, `User.id` targeting, disabled UI
 semantics, direct-route non-authorization, and the retained-but-unused
 `publicPreview` field. Replace the old statement that Klicker intentionally
 does not use GrowthBook.
 
-- [ ] **Step 2: Start the real local environment through devrouter**
+- [x] **Step 2: Start the real local environment through devrouter**
 
 Run: `devrouter ensure .`
 
 Run the app/test processes inside the resulting container using
 `devrouter exec . -- ...`; do not start host-side Next servers.
 
-- [ ] **Step 3: Verify in a browser**
+- [x] **Step 3: Verify in a browser**
 
 Use `npx agent-browser@0.32.2` against the branch-local Manage URL. Intercept only the
 external GrowthBook SDK payload; use the real local Klicker auth, API, and DB.
@@ -994,7 +994,7 @@ Capture desktop screenshots for:
 
 Also inspect one practice-quiz or microlearning action menu in both states.
 
-- [ ] **Step 4: Run final mechanical verification**
+- [x] **Step 4: Run final mechanical verification**
 
 ```bash
 pnpm --filter @klicker-uzh/feature-flags test
@@ -1011,7 +1011,7 @@ pnpm exec opengrep scan --config auto packages/feature-flags apps/frontend-manag
 Expected: all pass. Record any environmental limitation separately from code
 failures in the plan progress log.
 
-- [ ] **Step 5: Commit docs and verification record**
+- [x] **Step 5: Commit docs and verification record**
 
 ```bash
 git add docs project/PLAN-growthbook-feature-flags.md project/PLAN-growthbook-feature-flags-implementation.md
