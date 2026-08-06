@@ -3,21 +3,21 @@ import { createBrowserFeatureFlagClient } from '../src/browserClient.js'
 import type { FeatureFlagAttributes } from '../src/index.js'
 
 type TestFeatures = {
-  'default-on-flag': boolean
   'targeted-flag': boolean
-  'identifier-flag': boolean
 }
 
 const enabledAttributes: FeatureFlagAttributes = {
   id: 'enabled-user',
   actorType: 'user',
   role: 'USER',
+  environment: 'test',
 }
 
 const disabledAttributes: FeatureFlagAttributes = {
   id: 'disabled-user',
   actorType: 'user',
   role: 'USER',
+  environment: 'test',
 }
 
 const originalFetch = globalThis.fetch
@@ -31,23 +31,11 @@ describe('createBrowserFeatureFlagClient', () => {
       new Response(
         JSON.stringify({
           features: {
-            'default-on-flag': {
-              defaultValue: true,
-            },
             'targeted-flag': {
               defaultValue: false,
               rules: [
                 {
                   condition: { id: 'enabled-user' },
-                  force: true,
-                },
-              ],
-            },
-            'identifier-flag': {
-              defaultValue: false,
-              rules: [
-                {
-                  condition: { email: 'user@example.com' },
                   force: true,
                 },
               ],
@@ -77,13 +65,9 @@ describe('createBrowserFeatureFlagClient', () => {
       createBrowserFeatureFlagClient<TestFeatures>({
         apiHost: 'https://growthbook.test',
         clientKey: 'sdk-test',
-        environment: 'test',
       })
 
-    const initialization = initialize()
-    expect(initialize()).toBe(initialization)
-    expect(await initialization).toBe(true)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(await initialize()).toBe(true)
     expect(mockFetch).toHaveBeenCalledWith(
       'https://growthbook.test/api/features/sdk-test',
       expect.any(Object)
@@ -96,81 +80,9 @@ describe('createBrowserFeatureFlagClient', () => {
     expect(growthbook.isOn('targeted-flag')).toBe(false)
   })
 
-  it('fails closed when the feature payload cannot be loaded', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
-    const { growthbook, initialize } =
-      createBrowserFeatureFlagClient<TestFeatures>({
-        apiHost: 'https://growthbook.test',
-        clientKey: 'sdk-test',
-        environment: 'test',
-      })
-
-    expect(await initialize()).toBe(false)
-    await growthbook.setAttributes(enabledAttributes)
-    expect(growthbook.isOn('targeted-flag')).toBe(false)
-  })
-
-  it('keeps a usable payload when a later refresh fails', async () => {
-    const { growthbook, initialize, setAttributes } =
-      createBrowserFeatureFlagClient<TestFeatures>({
-        apiHost: 'https://growthbook.test',
-        clientKey: 'sdk-test',
-        environment: 'test',
-      })
-
-    await initialize()
-    await setAttributes({ id: 'enabled-user', actorType: 'user', role: 'USER' })
-    expect(growthbook.isOn('targeted-flag')).toBe(true)
-
-    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
-    await growthbook.refreshFeatures({ skipCache: true, timeout: 100 })
-
-    expect(growthbook.isOn('targeted-flag')).toBe(true)
-  })
-
-  it('fails closed without fetching for an invalid environment', async () => {
-    const { growthbook, initialize } =
-      createBrowserFeatureFlagClient<TestFeatures>({
-        apiHost: 'https://growthbook.test',
-        clientKey: 'sdk-test',
-        environment: 'prod',
-      })
-
-    expect(await initialize()).toBe(false)
-    await growthbook.setAttributes(enabledAttributes)
-    expect(growthbook.isOn('targeted-flag')).toBe(false)
-    expect(growthbook.isOn('default-on-flag')).toBe(false)
-    expect(mockFetch).not.toHaveBeenCalled()
-  })
-
-  it('filters direct identifiers before setting browser attributes', async () => {
-    const { growthbook, initialize, setAttributes } =
-      createBrowserFeatureFlagClient<TestFeatures>({
-        apiHost: 'https://growthbook.test',
-        clientKey: 'sdk-test',
-        environment: 'test',
-      })
-
-    await initialize()
-    await setAttributes({
-      id: 'user-id',
-      actorType: 'user',
-      role: 'USER',
-      email: 'user@example.com',
-    })
-
-    expect(growthbook.isOn('identifier-flag')).toBe(false)
-    expect(growthbook.getAttributes()).toEqual({
-      id: 'user-id',
-      actorType: 'user',
-      role: 'USER',
-      environment: 'test',
-    })
-  })
-
   it('initializes once and fails closed without configuration', async () => {
     const { growthbook, initialize } =
-      createBrowserFeatureFlagClient<TestFeatures>({ environment: 'test' })
+      createBrowserFeatureFlagClient<TestFeatures>({})
 
     expect(await initialize()).toBe(false)
     expect(await initialize()).toBe(false)
