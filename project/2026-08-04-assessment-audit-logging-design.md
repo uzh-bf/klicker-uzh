@@ -1,8 +1,8 @@
 # Assessment Audit Logging Design
 
-- **Status:** Approved decisions (revision 4.1), awaiting written-spec review
+- **Status:** Approved decisions (revision 5), awaiting written-spec review
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-06 (revision 4.1 with explicit lane guarantees)
+- **Last updated:** 2026-08-06 (revision 5 with independent client ingress)
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946)
 
@@ -21,22 +21,26 @@ authorization, independently of Klicker roles; the intended Resource Group
 members are the user and their supervisor. A local operator CLI produces a
 canonical JSON evidence bundle and a readable CSV projection.
 
-Application evidence uses two emission lanes that converge on one PostgreSQL
-outbox and one Azure delivery pipeline. Lane 1 writes canonical audit records
-directly to the outbox: critical assessment mutations do so in the same Prisma
-transaction and fail closed, while accepted client observations use a standalone
-outbox transaction. Lane 2 reuses an existing durable Hatchet assessment command
-as the source from which the response processor materializes canonical audit
-records into the outbox. In v1, Lane 2 is limited to participant submissions;
-there is no generic Hatchet audit emitter.
+Server evidence uses two emission lanes that converge on one PostgreSQL outbox
+and one Azure delivery pipeline. Lane 1 writes canonical audit records directly
+to the outbox; critical assessment mutations do so in the same Prisma
+transaction and fail closed. Lane 2 reuses an existing durable Hatchet assessment
+command as the source from which the response processor materializes canonical
+audit records into the outbox. In v1, Lane 2 is limited to participant
+submissions; there is no generic Hatchet audit emitter.
+
+Client-observed evidence uses an independent third capture path. The PWA sends
+memory-only batches to a separately deployable audit ingress using a short-lived,
+assessment-scoped capture token. The ingress validates the token and batch, then
+acknowledges only after Azure Storage Queue durably accepts the message. A worker
+drains the queue, performs database-backed scope validation, and materializes
+canonical records into the shared outbox. The browser never persists audit
+events in IndexedDB, localStorage, Cache Storage, or another durable client store.
 
 A dispatcher writes every canonical application record from the outbox to Azure
-Table Storage through a provider-neutral append interface. Client-observed events
-use the existing Klicker backend and remain non-blocking; IndexedDB retains
-unsent events while the backend is unavailable. Owner annotations and
-investigation holds are the sole exception: the Azure-authenticated CLI appends
-them directly to an Azure control table. An independent audit ingress is
-explicitly deferred.
+Table Storage through a provider-neutral append interface. Owner annotations and
+investigation holds are the sole direct-Azure exception: the
+Azure-authenticated CLI appends them to an Azure control table.
 
 Hatchet therefore remains Klicker's trusted submission transport and forms the
 narrow second emission lane without becoming a second Azure delivery pipeline.
@@ -57,9 +61,9 @@ completed on 2026-08-06.
 | # | Decision |
 | --- | --- |
 | 1 | The core contract and sink boundary are reusable, but v1 instruments only assessment-enabled LiveQuiz. PracticeQuiz, MicroLearning, GroupActivity, and unrelated authentication activity are excluded. |
-| 2 | The implementation retains two emission lanes that converge on one durable audit delivery path. Lane 1 writes canonical events to the PostgreSQL outbox. Lane 2 materializes evidence from an existing durable Hatchet assessment command into that outbox and is limited to submissions in v1. |
+| 2 | The implementation retains two server emission lanes that converge on one durable audit delivery path. Lane 1 writes canonical events to the PostgreSQL outbox. Lane 2 materializes evidence from an existing durable Hatchet assessment command into that outbox and is limited to submissions in v1. |
 | 3 | Critical authoritative assessment changes fail closed and commit their outbox evidence in the same Prisma transaction. |
-| 4 | Client-observed events use the existing authenticated Klicker backend. The PWA buffers them in IndexedDB; v1 does not include an independent ingress or outage-time external queue. |
+| 4 | Client-observed events use an independent audit ingress and durable Azure Storage Queue. The PWA uses a bounded memory-only buffer with retry while the page lives; no audit event is persisted in browser storage. |
 | 5 | Client evidence describes what an authenticated browser session reported. Server evidence describes what Klicker accepted or persisted. Neither claims to prove a person's subjective intent. |
 | 6 | Every submission uses one stable `submissionId`; separate events represent server acceptance, rejection, duplication, persistence, and scoring. The Hatchet event ID is retained for correlation. |
 | 7 | Audit coverage starts with a complete activation baseline and remains sticky. Existing nonterminal assessment-enabled LiveQuizzes receive a clearly incomplete rollout-current-state baseline. |
@@ -82,6 +86,9 @@ completed on 2026-08-06.
 - Keep the response API independent of PostgreSQL by deriving submission
   evidence from its existing durable Hatchet command, without emitting a
   duplicate audit message.
+- Keep client capture available during a main Klicker backend outage through an
+  independently deployable ingress and durable queue, without persisting answer
+  evidence in the browser.
 - Distinguish browser-observed assertions, server transport acceptance, and
   authoritative database persistence.
 - Keep Azure SDK types, keys, credentials, and error codes outside domain
@@ -97,8 +104,10 @@ completed on 2026-08-06.
 - Instrumenting assessment-enabled PracticeQuiz, MicroLearning, or GroupActivity
   in v1.
 - A platform-wide authentication or observability system.
-- An independent client audit ingress or evidence capture during a complete
-  Klicker backend outage.
+- Persistent browser-side audit storage, including IndexedDB, localStorage, or
+  Cache Storage.
+- Guaranteeing that an unacknowledged client event survives a browser crash,
+  refresh, page close, device loss, or network failure.
 - A generic Hatchet audit-emitter SDK for services without a concrete v1
   assessment command.
 - Auditing LTI, OLAT, LMS grade transfer, email delivery, or other external
@@ -157,8 +166,9 @@ mutation with exact before and after evidence.
 Audit events are technical evidence attributed to sessions and server
 components:
 
-- `CLIENT_OBSERVED` establishes that an authenticated browser session reported
-  an interaction. It does not establish who physically used the device or
+- `CLIENT_OBSERVED` establishes that a valid capture token issued to an
+  authenticated browser session reported an interaction. It does not establish
+  that the normal UI produced the claim, who physically used the device, or
   whether the interaction was intentional.
 - `SERVER_OBSERVED` establishes that a trusted Klicker component accepted or
   rejected a request or command.
@@ -176,10 +186,11 @@ local action.
 
 ### Emission lanes and persistence paths
 
-The lanes describe how assessment evidence first becomes durable. They do not
-create separate Azure pipelines: both lanes produce canonical records in the
-same PostgreSQL outbox, which remains the only durable application delivery
-source for Azure.
+The two server lanes describe how server evidence first becomes durable. They do
+not create separate Table pipelines: both produce canonical records in the same
+PostgreSQL outbox. Client observations use an independent ingress and Azure
+Storage Queue before joining that outbox. Owner administration remains the
+direct-Azure exception.
 
 1. **Lane 1 — outbox emission**
    - A domain mutation receives a Prisma transaction client plus server-derived
@@ -189,12 +200,8 @@ source for Azure.
    - This path covers activated LiveQuiz content/configuration, permissions,
      eligibility, lifecycle, responses, grading, corrections, reports, and
      retention anchors.
-   - It also covers events with no corresponding business mutation. The
-     participant-authenticated client batch and other accepted server
-     observations insert canonical events in standalone outbox transactions.
-   - The PWA writes meaningful client events to a bounded IndexedDB queue before
-     attempting delivery. It does not wait for the audit request; failed batches
-     replay through the normal Klicker GraphQL backend.
+   - It also covers accepted server observations with no corresponding business
+     mutation through standalone outbox transactions.
 
 2. **Lane 2 — Hatchet command materialization**
    - This lane is used only when an existing assessment operation already has a
@@ -211,7 +218,33 @@ source for Azure.
      Hatchet retries safe. An unmaterialized command remains pending or failed in
      Hatchet and is covered by oldest-submission monitoring.
 
-3. **Owner administrative records — direct Azure exception**
+3. **Independent client ingress**
+   - The authenticated assessment backend issues a short-lived capture token
+     containing the stable Participant UUID, LiveQuiz, session, lifecycle epoch,
+     permitted client event families, token ID, issue time, and expiry. The token
+     is audience-limited to the audit ingress and remains memory-only in the PWA.
+   - The PWA batches meaningful events in a bounded in-memory buffer. It retries
+     with backoff only while the page remains alive and makes one best-effort
+     keepalive flush when the page exits. It never blocks the assessment UI.
+   - The independently deployable ingress validates token signature, issuer,
+     audience, expiry, batch schema, limits, and rate policy. It derives actor and
+     assessment scope from token claims and never trusts identity or scope from
+     the event body.
+   - The ingress stamps `receivedAt`, writes the batch through a
+     provider-neutral capture-queue interface, and acknowledges only after the
+     Azure Storage Queue adapter confirms durable insertion. A lost response is
+     retried with the same client event IDs.
+   - A queue drainer validates event schema and database-backed assessment scope,
+     records whether referenced content matches the known assessment history,
+     and materializes canonical events into the outbox. Client claims remain
+     `CLIENT_OBSERVED` even when their references validate successfully.
+   - The Azure adapter explicitly configures queue messages not to expire
+     automatically; the default finite TTL is not accepted. Messages are
+     encrypted by the Azure service, accessible only to the ingress and drainer
+     identities, and deleted after durable outbox handoff. Poison messages move
+     to a restricted metadata-only quarantine path without logging raw answers.
+
+4. **Owner administrative records — direct Azure exception**
    - The Entra-authenticated owner CLI creates evidence annotations and
      investigation-hold records directly in a dedicated Azure control table.
    - The CLI has no update path. The retention worker reads the effective
@@ -220,38 +253,43 @@ source for Azure.
      retention-index registration exist. Partial writes are reconciled through
      idempotent retry before success is reported.
 
-All application outbox records converge on one dispatcher and one
-provider-neutral append interface.
+Both server lanes and the client-ingress drainer converge on one dispatcher and
+one provider-neutral append interface after canonical records reach the outbox.
 
-### Lane-specific capture guarantees and timestamps
+### Path-specific capture guarantees and timestamps
 
 `CRITICAL` means that the component responsible for an event's declared
 durability point may not acknowledge success until a durable recovery source for
-that evidence exists. The mechanism differs by lane and must remain visible in
+that evidence exists. The mechanism differs by path and must remain visible in
 the contract and export:
 
 | Path | Required guarantee | Trusted times |
 | --- | --- | --- |
 | Lane 1, authoritative mutation | Business state and canonical outbox records commit or roll back in one PostgreSQL transaction. | `receivedAt` is when the trusted API/worker received or initiated the action; `recordedAt` is when the canonical event was constructed in the transaction. |
 | Lane 1, standalone observation | The ingestion endpoint acknowledges acceptance only after the standalone outbox transaction commits. The browser interaction itself remains non-blocking. | `receivedAt` is when the trusted endpoint accepted the observation; `recordedAt` is when it constructed the canonical outbox event. |
-| Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAcceptedAt` is stamped immediately after the successful Hatchet acknowledgement; `recordedAt` is when the response processor materialized the canonical event. |
+| Lane 2, submission transport | The response API acknowledges only after Hatchet accepts the existing submission command and returns an event ID. The response processor does not complete the Hatchet task until terminal outcome evidence is committed to the outbox. | `receivedAt` is when the response API received the submission; `transportAttemptedAt` is stamped immediately before the Hatchet push; the returned `hatchetEventId` proves acknowledgement; `recordedAt` is when the response processor materialized the canonical event. |
+| Independent client ingress | The ingress acknowledges only after Azure Storage Queue durably accepts the batch. The PWA does not block interaction and retries unacknowledged events only while its page remains alive. | `clientOccurredAt` is untrusted browser context; `receivedAt` is ingress receipt; `transportAcceptedAt` is the Queue service's returned insertion time; `recordedAt` is queue-drainer materialization time. |
 | Owner CLI exception | The CLI reports success only after the control record, locator, and retention-index registration exist. | `receivedAt` and `recordedAt` are trusted CLI times associated with the authenticated Azure principal. |
 
-`transportAcceptedAt` is a response-API timestamp taken after Hatchet returns
-success; it is not represented as an internal Hatchet server timestamp. The
-Hatchet event ID is stored alongside it. Exports preserve all applicable times
-instead of collapsing transport acceptance and later evidence materialization
-into one timestamp.
+`transportAcceptedAt` is populated only when the durable transport returns an
+accepted-time value that can travel with the durable record. The Azure Queue
+adapter normalizes its returned insertion time; provider SDK types do not enter
+the canonical contract. Hatchet currently returns an event ID but no server-side
+acceptance time, so the contract preserves the pre-push `transportAttemptedAt`
+and `hatchetEventId` rather than inventing a post-acknowledgement timestamp that
+the response processor cannot recover. Exports preserve all applicable times
+instead of collapsing transport attempt, acceptance, and later materialization.
 
-### Why retain two narrowed emission lanes
+### Why use narrowed server lanes plus independent client ingress
 
 | Design choice | Argument | Difference from revision 2 |
 | --- | --- | --- |
-| Retain an outbox lane and a Hatchet-materialized lane | Klicker has two real durability boundaries: PostgreSQL transactions for authoritative state and Hatchet acceptance for submissions. Modeling both makes the evidence claim and acknowledgement point explicit. | Revision 2 classified every non-PostgreSQL producer into a generic Hatchet audit lane. Revision 4 models only the existing assessment workflow. |
+| Retain an outbox lane and a Hatchet-materialized lane | Klicker has two real server durability boundaries: PostgreSQL transactions for authoritative state and Hatchet acceptance for submissions. Modeling both makes the evidence claim and acknowledgement point explicit. | Revision 2 classified every non-PostgreSQL producer into a generic Hatchet audit lane. Revision 5 models only the existing assessment server workflow. |
 | Converge both lanes on one PostgreSQL outbox | One dispatcher, retry model, quarantine path, provider adapter, and Azure delivery source are easier to verify and operate. | This convergence is retained from revision 2. |
-| Reuse the existing submission command | The response API stays independent of PostgreSQL, and the Hatchet receipt is meaningful evidence of server acceptance. Reusing the command avoids ordering races between a submission and a duplicate audit message. | Revision 2 proposed a reusable typed audit emitter and append task for stateless services. Revision 4 needs no additional audit message for the response API. |
-| Keep critical authoritative effects in database transactions | Hatchet acceptance proves transport, but only the response transaction can prove persistence and scoring. Those events therefore remain atomic with their PostgreSQL effects. | Revision 2 allowed only Lane 1 to be critical. Revision 4 instead ties each critical event to its actual durability point: Hatchet receipt for accepted transport, PostgreSQL transaction for authoritative effects. |
-| Route client observations through the existing backend | Existing participant authentication and database-backed scope validation are reused. IndexedDB handles temporary unavailability without introducing another service or queue. | Revision 2 added an independent audit-ingress service and Azure Storage Queue. Both remain deferred. |
+| Reuse the existing submission command | The response API stays independent of PostgreSQL, and the Hatchet receipt is meaningful evidence of server acceptance. Reusing the command avoids ordering races between a submission and a duplicate audit message. | Revision 2 proposed a reusable typed audit emitter and append task for stateless services. Revision 5 needs no additional audit message for the response API. |
+| Keep critical authoritative effects in database transactions | Hatchet acceptance proves transport, but only the response transaction can prove persistence and scoring. Those events therefore remain atomic with their PostgreSQL effects. | Revision 2 allowed only Lane 1 to be critical. Revision 5 instead ties each critical event to its actual durability point: Hatchet receipt for accepted transport, PostgreSQL transaction for authoritative effects. |
+| Use an independent client ingress and durable queue | Client observations can be accepted while the main Klicker backend, PostgreSQL, or Hatchet workers are temporarily unavailable. The scoped token preserves trusted participant and assessment attribution until database validation resumes. | This restores revision 2's independent-ingress benefit while adding explicit assessment scoping and delayed database validation. |
+| Keep the browser buffer memory-only | Exact answers are not left in persistent browser storage, and there is no client-side retention cleanup obligation. | Unlike revision 2, revision 5 accepts that a crash, refresh, close, or network loss before ingress acknowledgement may lose the unacknowledged tail. Sequence gaps and exports disclose what can and cannot be established. |
 | Do not implement a generic Lane 2 yet | No other in-scope v1 assessment producer requires it. Avoiding an unused emitter SDK, bounded process buffers, producer heartbeats, and synthetic gap records reduces failure modes and review surface. | These mechanisms were required by revision 2 because its generic lane covered auth, stateless workers, and future services. Those producers are outside the current scope or can use Lane 1. |
 
 Lane 2 may be expanded later only for a concrete Klicker or Hatchet assessment
@@ -272,13 +310,14 @@ durability boundary:
    metadata into provider-neutral canonical audit events. Hatchet SDK and command
    types do not cross into the audit contract package.
 3. **Audit worker runtime:** `hatchet-worker-general` may schedule or execute the
-   dispatcher, manifest, media, and retention jobs. For delivery, PostgreSQL
-   outbox rows—not Hatchet task state—remain the durable work source. Losing or
-   retrying a dispatcher task cannot lose an outbox record.
+   client-queue drainer, dispatcher, manifest, media, and retention jobs. Azure
+   Queue messages remain the durable source before client-event materialization;
+   PostgreSQL outbox rows remain the durable source afterward. Losing or retrying
+   a worker task cannot lose either durable record.
 
-The provider-neutral boundary starts at the canonical event and append-sink
-interfaces. Azure types remain inside the storage adapter, and Hatchet types
-remain inside the response and worker adapters.
+The provider-neutral boundary includes the client-capture queue and canonical
+append-sink interfaces. Azure types remain inside the queue/storage adapters, and
+Hatchet types remain inside the response and worker adapters.
 
 ### Components
 
@@ -303,14 +342,37 @@ remain inside the response and worker adapters.
    - Rejects evidence that cannot be validated or normalized, causing critical
      business mutations to roll back.
 
-4. **Client-event ingestion mutation**
-   - Uses `asParticipant`.
-   - Verifies active `Participation`, the covered LiveQuiz and ElementInstance,
-     event type, content version, sequence, and batch limits.
-   - Derives identity and assessment scope on the server; client identity fields
-     are never trusted.
+4. **Assessment capture-token issuer**
+   - Uses the existing authenticated `asParticipant` assessment boundary.
+   - Verifies active `Participation`, sticky LiveQuiz coverage, lifecycle epoch,
+     and assessment session before issuing a signed, audience-scoped token.
+   - Uses an asymmetric signing key so the ingress receives verification
+     capability only. Token duration covers the bounded assessment session plus
+     a configured outage grace period; it cannot authorize evidence reads.
 
-5. **Hatchet submission evidence materializer**
+5. **Independent client audit ingress** (`apps/audit-ingress`)
+   - Runs independently of the main Klicker backend and worker deployment.
+   - Validates the capture token and client batch, enforces size/rate limits,
+     derives trusted actor/scope, and never logs raw event payloads.
+   - Writes through the provider-neutral capture-queue interface. Its Azure
+     adapter uses create/send semantics with the least-privileged queue identity.
+   - Returns a non-secret ingress receipt ID and accepted time only after durable
+     queue acknowledgement. Azure deletion credentials remain inside the
+     adapter. Repeated `clientEventId` values are safe and do not create
+     duplicate canonical evidence.
+
+6. **Client queue drainer**
+   - Drains Azure Queue through a least-privileged managed identity whenever the
+     main stack is available.
+   - Performs database-backed coverage, lifecycle, Participation, ElementInstance,
+     and content-version checks and records a stable validation result without
+     upgrading client evidence to authoritative evidence.
+   - Inserts accepted client events and detected gaps into the outbox in an
+     idempotent transaction, then deletes the source message.
+   - Moves permanently malformed or unscoped messages to metadata-only
+     quarantine; raw answers never enter logs or alerts.
+
+7. **Hatchet submission evidence materializer**
    - Consumes the existing typed response command; no audit-only Hatchet command
      is published alongside it.
    - Preserves `submissionId`, the Hatchet event ID, original response-API receipt
@@ -321,7 +383,7 @@ remain inside the response and worker adapters.
    - Does not complete the Hatchet task until the terminal outcome evidence has
      committed. Retries reproduce the same idempotency identities.
 
-6. **Outbox dispatcher**
+8. **Outbox dispatcher**
    - Leases committed rows safely across replicas.
    - Retries transient failures with backoff and jitter.
    - Retains invalid, conflicting, or oversized records in durable quarantine.
@@ -331,7 +393,7 @@ remain inside the response and worker adapters.
      keyed by a deterministic shard of `eventId` and maps it to assessment,
      delivery partition, and row identity.
 
-7. **Azure evidence adapter**
+9. **Azure evidence adapter**
    - Maps canonical events to Azure Table entities and uses create operations,
      never update or upsert.
    - On conflict, reads the addressed entity and compares `eventHash`: identical
@@ -342,7 +404,7 @@ remain inside the response and worker adapters.
      the initial conservative maximum is 48 KiB per binary chunk and is verified
      against real Azure.
 
-8. **Manifest sealer**
+10. **Manifest sealer**
    - Writes immutable manifests per assessment and delivery day.
    - Enumerates evidence, locator, control, and retention-index partitions
      directly so it covers dispatcher writes and direct owner-CLI writes alike.
@@ -351,7 +413,7 @@ remain inside the response and worker adapters.
      time separately.
    - Catches up missed sealing intervals and alerts on manifest age.
 
-9. **Immutable media store**
+11. **Immutable media store**
    - Parses assessment content and explanations for referenced media.
    - Streams Klicker-owned media into a content-addressed immutable Blob while
      computing SHA-256; it does not buffer complete files in memory.
@@ -364,7 +426,7 @@ remain inside the response and worker adapters.
      removes only when no baseline or mutation references it.
    - External images and embeds must be imported before audited activation.
 
-10. **Evidence operator CLI**
+12. **Evidence operator CLI**
    - Runs locally with the invoking operator's Azure Entra credentials.
    - Has no Klicker login, evidence API, hosted UI, or shared export credential.
    - Supports one event ID, one participant UUID within one assessment, or one
@@ -378,7 +440,7 @@ remain inside the response and worker adapters.
      their authorized source is the local Entra-authenticated tool.
    - Does not create a separate audit trail for reads.
 
-11. **Retention worker**
+13. **Retention worker**
     - Uses assessment lifecycle anchors and a retention index to find eligible
       evidence.
     - Runs a dry calculation, respects investigation holds, refuses early
@@ -393,9 +455,6 @@ Lane 1 — outbox emission
   critical lecturer/system mutation
     -> business rows + audit outbox rows in one Prisma transaction
 
-  participant selection or submit attempt
-    -> IndexedDB queue -> existing GraphQL API -> audit outbox transaction
-
 Lane 2 — Hatchet command materialization
   participant submission
     -> response API -> existing Hatchet submission command + receipt
@@ -403,7 +462,13 @@ Lane 2 — Hatchet command materialization
        -> accepted + persisted/scored evidence in response transaction
        -> or accepted + rejected/duplicate evidence in audit transaction
 
-Both lanes -> PostgreSQL outbox
+Independent client capture
+  existing backend -> short-lived assessment capture token
+  participant selection or submit attempt
+    -> memory-only PWA batch -> independent audit ingress
+    -> Azure Storage Queue receipt -> queue drainer -> audit outbox transaction
+
+Both server lanes and the client drainer -> PostgreSQL outbox
   -> dispatcher -> provider-neutral append interface
      -> Azure Table Storage
      -> immutable per-assessment manifests
@@ -426,9 +491,10 @@ Trusted Resource Group member
 | `eventType` | Stable, exhaustively classified event name. |
 | `criticality` | `CRITICAL` or `STANDARD`; defined explicitly per event type. |
 | `evidenceClass` | `AUTHORITATIVE`, `SERVER_OBSERVED`, `CLIENT_OBSERVED`, or `ADMINISTRATIVE`. |
-| `recordedVia` | `TRANSACTIONAL_OUTBOX`, `CLIENT_BATCH`, `HATCHET_PROCESSOR`, `OWNER_CLI`, or `AUDIT_SERVICE`. |
+| `recordedVia` | `TRANSACTIONAL_OUTBOX`, `CLIENT_QUEUE_DRAINER`, `HATCHET_PROCESSOR`, `OWNER_CLI`, or `AUDIT_SERVICE`. |
 | `receivedAt` | Trusted UTC time when the first Klicker component received or initiated the represented action. |
-| `transportAcceptedAt` | Optional trusted UTC time stamped by the response API immediately after Hatchet acknowledges a Lane 2 submission command. |
+| `transportAttemptedAt` | Optional trusted UTC time immediately before a durable transport call. |
+| `transportAcceptedAt` | Optional trusted UTC time returned by a durable transport as part of its receipt metadata. |
 | `recordedAt` | Trusted UTC time when the canonical evidence record was constructed for its durable sink. |
 | `clientOccurredAt` | Optional untrusted browser timestamp. |
 | `actor` | Trusted `User`, `Participant`, `SYSTEM`, service, or Azure principal reference. |
@@ -439,6 +505,9 @@ Trusted Resource Group member
 | `causationId` | Optional preceding event that caused this event. |
 | `submissionId` | Stable client-created submission idempotency key where applicable. |
 | `hatchetEventId` | Hatchet receipt identifier where applicable. |
+| `ingressReceiptId` | Non-secret independent-ingress receipt identifier where applicable; Azure deletion credentials are never canonical evidence. |
+| `captureTokenId` | Non-secret identifier of the scoped capture token used by the ingress. |
+| `scopeValidation` | Queue-drainer result for assessment/content references: matched, mismatched, or unavailable, with a stable reason. |
 | `clientEventId` | Stable browser-generated UUID preserved across retries of one client event. |
 | `clientStreamId` | Stable identifier for one browser event stream; a new stream receives a new ID. |
 | `clientSequence` | Monotonic sequence for browser-observed events. |
@@ -462,8 +531,8 @@ are retained because hashes alone cannot reconstruct a dispute.
 
 Every event has exactly one emission path, producer, evidence class, criticality,
 and durability point. The contract contains the individual stable names within
-each family. The lane classifies canonical event capture, not the worker runtime;
-a Hatchet-scheduled worker can still produce a Lane 1 transaction.
+each family. The emission path classifies canonical event capture, not the worker
+runtime; a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 
 | Event family | Events included in v1 | Emission path | Producer | Class / criticality | Durability and acknowledgement |
 | --- | --- | --- | --- | --- | --- |
@@ -475,8 +544,8 @@ a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 | Source Elements and media | referenced source changed; effective content changed/unchanged; media captured/replaced | `LANE_1_OUTBOX` | GraphQL lecturer mutation and media readiness service | `AUTHORITATIVE` / `CRITICAL` | Source provenance and immutable media identity commit before the effective mutation succeeds. |
 | Eligibility and permissions | participant eligibility added/removed; assessment-relevant lecturer permission changed | `LANE_1_OUTBOX` | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Permission/Participation change and evidence commit atomically. |
 | Assessment session | session started, resumed, ended, forcibly terminated | `LANE_1_OUTBOX` | Existing authenticated assessment endpoints | `SERVER_OBSERVED` / `STANDARD` | A successful audit-only outbox transaction acknowledges recording; no passive page/focus events. |
-| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `LANE_1_OUTBOX` | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Server acknowledges the batch after outbox commit. PWA interaction never waits and queued events retry. |
-| Submission attempt | submit clicked; auto-submit triggered | `LANE_1_OUTBOX` | PWA through batched GraphQL ingestion | `CLIENT_OBSERVED` / `STANDARD` | Same client batch semantics; does not mean server acceptance. |
+| Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | Ingress acknowledges after durable queue insertion. The PWA never waits and retries unacknowledged events only while the page lives. |
+| Submission attempt | submit clicked; auto-submit triggered | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | Same ingress semantics; this evidence does not mean server acceptance. |
 | Submission validation and outcome | server accepted; validated; rejected; duplicate; processing failed/recovered | `LANE_2_HATCHET` | Response processor materializing the Hatchet command and result | `SERVER_OBSERVED`; accepted/validated/rejected/duplicate are `CRITICAL`, operational failure/recovery is `STANDARD` | Hatchet receipt exists first. Accepted plus validated/rejected/duplicate evidence commits in an audit-only or response transaction before task completion. |
 | Submission persistence and scoring | persisted; scored | `LANE_2_HATCHET` | Response processor | `AUTHORITATIVE` / `CRITICAL` | Persistence and scoring evidence commit atomically with the response and stored scoring result. |
 | Post-submission scoring and responses | score recomputed; response modified/deleted; points corrected; participant reset/removed | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new response or score, stable reason, actor, and algorithm/config version commit with the change. |
@@ -576,8 +645,9 @@ activation baseline, and unrelated personal data.
 
 ### Client answer state
 
-- SC, MC, and KPRIM contain selected option IDs and the option content/version
-  shown.
+- SC, MC, and KPRIM contain selected option IDs plus the effective
+  ElementInstance/content hashes needed to resolve the exact options shown from
+  the baseline and later content evidence.
 - Free-text and numerical answers are captured after a short idle interval,
   field blur, navigation, or submission—not per keystroke.
 - Numerical evidence includes normalized value, unit, and applicable restriction
@@ -585,15 +655,27 @@ activation baseline, and unrelated personal data.
 - Selection and case-study answers use normalized structured state.
 - Every event carries the full resulting answer state, ElementInstance version,
   stable client event and stream IDs, client sequence, untrusted
-  `clientOccurredAt`, and trusted `receivedAt`.
+  `clientOccurredAt`, and the non-secret capture-token ID. The ingress and
+  drainer add trusted receipt, transport-acceptance, materialization, actor, and
+  scope context.
+- The PWA keeps unacknowledged batches only in bounded process memory, removes
+  them after ingress acknowledgement, and retries with the same client event IDs
+  while the page remains alive. A best-effort keepalive flush on page exit does
+  not block navigation or claim guaranteed delivery.
+- Batches are size-aware and remain below the queue adapter's tested safe limit.
+  The implementation plan measures the largest valid Klicker answer envelope;
+  if one valid event cannot fit, deterministic multi-message parts are required
+  before client capture can be enabled. Oversized valid answers are never
+  silently dropped.
 - Late events remain evidence, are marked delayed, and never change an
   authoritative response or score.
-- Browser shutdown, IndexedDB clearing, capacity exhaustion, or loss before a
-  later sequence can leave an unknowable terminal gap. The design does not claim
-  otherwise.
-- Sequences are monotonic only within `clientStreamId`. Reload may continue the
-  persisted stream; a new tab, device, or cleared browser store creates a new
-  stream and starts at sequence one. The server deduplicates by
+- Buffer capacity exhaustion, browser crash, refresh, page close, device loss, or
+  network failure before ingress acknowledgement can lose client evidence. A
+  later sequence exposes an internal gap; an untransmitted terminal tail remains
+  unknowable. The design does not claim otherwise.
+- Sequences are monotonic only within the memory-resident `clientStreamId`. Every
+  page load, tab, or device creates a new stream starting at sequence one. The
+  drainer deduplicates by
   `(Participant, LiveQuiz, clientEventId)` and evaluates gaps per stream, so
   multiple tabs or devices cannot collide or create cross-stream gaps.
 
@@ -608,9 +690,10 @@ activation baseline, and unrelated personal data.
 - The response processor uses the database uniqueness constraint as the
   duplicate authority. Redis remains only a cache and may not create an
   evidence-free success response.
-- `SUBMISSION_SERVER_ACCEPTED` preserves the response API receipt time, the
-  response-API timestamp immediately after Hatchet acknowledgement, the Hatchet
-  event ID, and the later canonical materialization time.
+- `SUBMISSION_SERVER_ACCEPTED` preserves the response API receipt time, its
+  pre-push transport-attempt time, the returned Hatchet event ID, and the later
+  canonical materialization time. It does not invent a Hatchet acceptance time
+  that the current transport receipt does not provide.
 - `SUBMISSION_PERSISTED` commits with the response. Rejection and duplicate
   outcomes preserve stable reason codes and the last durable stage.
 - Raw submission payload logging is removed. Hatchet is treated as a temporary
@@ -647,18 +730,27 @@ payload. If trusted scope cannot be established, it writes a metadata-only
 quarantine record and alerts. The Hatchet task becomes terminal only after one of
 these outcomes is durable.
 
-### Standard and client-observed events
+### Standard server and client-ingress events
 
-Client-event ingestion acknowledges only after its standalone outbox transaction
-commits, but the PWA never blocks the assessment interaction on that request.
-Unacknowledged batches stay in IndexedDB. Server-observed events without a
-business mutation retry their audit-only transaction where practical. The design
-does not promise a durable gap marker when the database needed to store that
-marker is unavailable.
+The ingress acknowledges a client batch only after durable queue insertion, but
+the PWA never blocks assessment interaction on that request. A lost acknowledgement
+causes an idempotent retry while the page lives. If an already issued capture
+token remains valid, ingress and queue capture continue while the main Klicker
+backend, PostgreSQL, or Hatchet workers are unavailable; materialization resumes
+when the stack recovers.
 
-Sequence numbers detect bracketed client gaps. Missing heartbeats or abrupt
-session termination may indicate terminal loss, but cannot reconstruct the lost
-event count or content.
+An invalid or expired token is rejected before queue insertion. Because the
+token is memory-only, a page reload discards even an otherwise unexpired token;
+issuing a replacement requires the normal authenticated backend. A reload during
+a backend outage or an outage that outlasts token validity can therefore create
+an honest coverage gap. Server-observed events without a business mutation retry
+their standalone outbox transaction where practical.
+
+The drainer does not assume Azure Queue ordering. It applies an
+implementation-plan-defined reordering grace period before recording bracketed
+sequence gaps. Memory-buffer overflow or later received sequences can expose a
+gap, but abrupt termination may leave an unknowable tail and cannot reconstruct
+lost event content.
 
 ### Azure delivery
 
@@ -669,9 +761,10 @@ event count or content.
 - Outbox evidence is not deleted until Table insertion is confirmed and the row
   is included in a successfully sealed immutable manifest.
 - Operational metrics expose outbox depth, oldest pending age, delivery latency,
-  retries, conflicts, quarantine, client gaps, oldest unprocessed submission,
-  Hatchet-receipt-to-outbox materialization latency, permanently invalid command
-  outcomes, manifest age, and retention failures.
+  retries, conflicts, quarantine, ingress acceptance/error rates, client queue
+  depth and oldest-message age, client drain latency, client gaps, oldest
+  unprocessed submission, Hatchet-receipt-to-outbox materialization latency,
+  permanently invalid command outcomes, manifest age, and retention failures.
 - Metadata-only alerts may go to normal operations; evidence inspection remains
   limited to authorized Resource Group members.
 
@@ -719,15 +812,19 @@ members are outside v1.
 
 - Actor, authorization, scope, server time, event ID, and outcome are derived
   from trusted server context.
-- `receivedAt`, applicable `transportAcceptedAt`, and `recordedAt` are trusted
-  server times with distinct meanings. `clientOccurredAt` is contextual and
-  checked for unreasonable skew.
+- `receivedAt`, applicable `transportAttemptedAt`/`transportAcceptedAt`, and
+  `recordedAt` are trusted times with distinct meanings. `clientOccurredAt` is
+  contextual and checked for unreasonable skew.
 - Azure stores stable pseudonymous references, not names, emails, matriculation
   numbers, or a separate identity mapping.
 - Exact answers, solutions, and assessment content are retained because they are
   required for dispute reconstruction.
 - No event contains passwords, JWTs, cookies, magic links, PINs, headers,
   connection strings, Infisical values, or raw stack traces.
+- Capture tokens never enter queue payloads or evidence; only their non-secret
+  token IDs are retained. Queue messages contain exact client-observed answers
+  transiently, receive the same encryption/access/logging restrictions as
+  canonical evidence, and may never outlive its retention boundary.
 - Raw answers and submission objects are removed from ordinary application logs.
 - Human Table and manifest access is granted only through explicit Azure
   data-plane assignments to trusted Resource Group members. At design time, the
@@ -790,8 +887,12 @@ year after the anchor unless an investigation hold applies. Transient copies
 are removed as soon as their delivery purpose is fulfilled and may never outlive
 that boundary. The retention and cleanup processes cover:
 
-- IndexedDB removal immediately after batch acknowledgement, plus expiry and
-  server rejection of events received after the evidence boundary.
+- PWA memory-buffer removal immediately after ingress acknowledgement; page
+  termination naturally destroys any unacknowledged in-memory tail.
+- Azure client-queue deletion immediately after durable outbox handoff. The
+  drainer and retention process reject or purge messages that have crossed the
+  assessment evidence boundary; raw poison payloads are deleted after a
+  metadata-only quarantine record exists.
 - Hatchet submission-event cleanup after the correlated terminal audit outcome
   is durable, subject to the operational replay window.
 - PostgreSQL outbox cleanup only after immutable manifest inclusion; quarantine
@@ -811,9 +912,12 @@ must be deployed before the first evidence becomes eligible for deletion.
   object-specific `PermissionLevel` (`EXECUTE`, `WRITE`, or `ADMIN` as
   appropriate). Audit helpers receive and record the completed authorization
   decision; they do not replace authorization.
-- The new batched client-event mutation uses `asParticipant` and verifies active
-  `Participation`, LiveQuiz coverage, ElementInstance membership, and content
-  version.
+- The capture-token issuer uses `asParticipant` and verifies active
+  `Participation`, sticky LiveQuiz coverage, lifecycle epoch, and assessment
+  session. The ingress accepts only that audience-scoped token and exposes no
+  evidence-read operation.
+- The queue drainer performs delayed database-backed Participation, coverage,
+  ElementInstance, and content-version validation before outbox materialization.
 - The response API keeps its existing participant/session validation and adds
   stable submission identity and Hatchet receipt metadata.
 - Evidence reads use Azure Entra only.
@@ -824,13 +928,16 @@ Expected implementation areas:
   analytics schema sync where required. Azure control data—not Prisma—is
   canonical for locator, retention-index, annotation, and hold records.
 - `packages/audit`: contract, normalization, hashing, transaction helper,
-  provider-neutral sink, Azure adapter, manifest/media support, retention logic,
-  and operator CLI.
-- `packages/graphql`: activation/readiness, baseline capture, client-event batch
-  mutation, assessment mutations, permissions, eligibility, corrections, and
+  provider-neutral capture-queue and append-sink interfaces, Azure adapters,
+  manifest/media support, retention logic, and operator CLI.
+- `packages/graphql`: activation/readiness, baseline capture, scoped capture-token
+  issuance, assessment mutations, permissions, eligibility, corrections, and
   report events; generated GraphQL artifacts are committed.
 - `packages/hatchet` and `apps/hatchet-worker-general`: dispatcher, manifest,
-  media, retention, quarantine, and operational tasks.
+  client-queue drain, media, retention, quarantine, and operational tasks.
+- `apps/audit-ingress`: independently deployable token validation, batch
+  validation/rate limiting, trusted timestamps, Azure Queue insertion, receipts,
+  health checks, and metadata-only diagnostics.
 - `apps/response-api`: stable `submissionId`, Hatchet receipt metadata, bounded
   retry response contract, and removal of raw response logging. No new
   PostgreSQL connection is introduced.
@@ -838,13 +945,15 @@ Expected implementation areas:
   duplicate, persisted, scored, and recovery evidence. PostgreSQL response and
   critical evidence share a transaction; Redis and later Hatchet work remain
   outside it.
-- `apps/frontend-pwa`: meaningful interaction capture, IndexedDB queue, batching,
-  delayed-evidence semantics, stable submission retry, and privacy notice.
+- `apps/frontend-pwa`: capture-token acquisition, meaningful interaction capture,
+  bounded memory-only batching/retry, best-effort exit flush, delayed-evidence
+  semantics, stable submission retry, and privacy notice.
 - `packages/prisma-data` and Playwright fixtures: synthetic assessment evidence
   scenarios without real personal data.
-- Deployment configuration: Azure Table, immutable manifest/media Blob
-  containers, managed identities, environment configuration, dashboards, and
-  alerts. No new `apps/audit-ingress` or Azure Storage Queue is required.
+- Deployment configuration: independently routed ingress, exact PWA origin/CORS,
+  asymmetric capture-token keys, Azure Storage Queue, Azure Table, immutable
+  manifest/media Blob containers, managed identities, environment configuration,
+  dashboards, and alerts.
 - `docs/` and relevant skills: architecture, operation, privacy, verification,
   incident handling, and ADRs as implementation slices land.
 
@@ -868,7 +977,7 @@ Expected implementation areas:
 
 - Canonical serialization, normalization, redaction, hash, and binary chunk test
   vectors.
-- Exhaustive event classification: unknown, unclassified, and lane-unassigned
+- Exhaustive event classification: unknown, unclassified, and path-unassigned
   events fail tests.
 - Dependency-boundary checks prove the provider-neutral contract imports neither
   Azure nor Hatchet SDK/command types.
@@ -877,16 +986,23 @@ Expected implementation areas:
 - Immutable media capture, hashing, pinning, deduplication, missing-media, and
   external-media rejection tests.
 - Transaction rollback tests for every critical producer family.
-- Client batch auth, scope, content-version, idempotency, ordering, late-event,
-  expiry, and IndexedDB retry tests.
+- Capture-token tests cover issuer, audience, expiry, signature/key rotation,
+  participant and assessment scoping, and denial of evidence-read authority.
+- Ingress and queue-drainer tests cover schema/rate limits, durable
+  acknowledgement, lost acknowledgements, idempotency, out-of-order delivery,
+  delayed database validation, expiry, poison handling, and recovery while the
+  main Klicker stack is stopped.
+- PWA tests prove bounded memory-only batching, retry while the page lives,
+  best-effort exit flushing, overflow/gap behavior, and the absence of audit
+  payloads from persistent browser storage.
 - Submission tests for attempted, server-accepted, rejected, duplicate,
   persisted, scored, failed, recovered, and permanently invalid commands.
 - Lane 2 crash-window tests cover successful Hatchet acceptance followed by a
   lost HTTP response, worker failure before outbox materialization, failure after
   outbox/database commit but before Hatchet task acknowledgement, and every
   ambiguous retry boundary.
-- Provider conformance with an in-memory adapter, Azurite, and real-Azure binary
-  chunk/permission smoke tests.
+- Provider conformance with in-memory adapters, Azurite, and real-Azure
+  queue/binary-chunk/permission smoke tests.
 - Manifest completeness, late arrival, missed sealing, mutation, deletion, and
   chunk-corruption tests.
 - Retention anchor, reopening, cancellation, deletion, hold, dry-run, and
@@ -895,19 +1011,22 @@ Expected implementation areas:
   intended Azure principals have human data-plane access.
 - Playwright complaint scenarios for selection changes, submission retries,
   lecturer modifications/deletions, regrading, and incomplete rollout coverage.
-- Load tests proving client batching and critical outbox writes do not materially
-  degrade assessment submission performance.
+- Load tests proving ingress/queue throughput, client-drain catch-up, and critical
+  outbox writes do not materially degrade assessment submission performance.
 
 ### Operational gates
 
 - Dashboards expose outbox depth, oldest event, delivery latency, conflict,
-  quarantine, client sequence gaps, oldest unprocessed submission,
-  Hatchet-receipt-to-outbox materialization latency, permanently invalid command
-  outcomes, manifest age, media capture failures, and retention failures.
+  quarantine, ingress availability and rejection rate, client queue depth and
+  oldest message, drain latency, client sequence gaps, oldest unprocessed
+  submission, Hatchet-receipt-to-outbox materialization latency, permanently
+  invalid command outcomes, manifest age, media capture failures, and retention
+  failures.
 - Alerts contain metadata only and have an owner and runbook.
 - Schema readers remain compatible with every version retained for one year.
-- Staging proves Azure assignments, Blob immutability, media capture, exports,
-  holds, and retention dry runs.
+- Staging proves independent ingress routing, exact CORS, capture-token key
+  rotation, outage-time queue capture, Azure assignments, Blob immutability,
+  media capture, exports, holds, and retention dry runs.
 - A UZH privacy review is recorded before the production pilot.
 
 ### Rollout order
@@ -918,11 +1037,14 @@ Expected implementation areas:
    assessment-enabled LiveQuizzes.
 4. Verify transaction rollback, evidence completeness, media capture, retention
    calculation, and complaint reconstruction.
-5. Enable client-observed capture and privacy notice in staging.
-6. Run submission, browser retry, privacy, load, and coverage-gap scenarios.
-7. Enable one controlled fail-closed production assessment.
-8. Independently verify its export and operational metrics.
-9. Expand only after the trusted evidence owners and operations sign off.
+5. Deploy the independent ingress and queue path with PWA capture still disabled.
+6. Prove queue capture while the main stack is stopped, then enable memory-only
+   client capture and the privacy notice in staging.
+7. Run submission, browser retry/termination, privacy, load, and coverage-gap
+   scenarios.
+8. Enable one controlled fail-closed production assessment.
+9. Independently verify its export and operational metrics.
+10. Expand only after the trusted evidence owners and operations sign off.
 
 ## Stack topology for the implementation plan
 
@@ -933,8 +1055,8 @@ worktree and one topology owner are used per stack.
 ### Stack 1: authoritative assessment evidence
 
 1. **Contract and transactional core:** canonical envelope, exhaustive LiveQuiz
-   event matrix, two-lane provenance, Prisma outbox/scope/lifecycle schema,
-   transaction helper, and test vectors.
+   event matrix, server-lane/client-ingress provenance, Prisma
+   outbox/scope/lifecycle schema, transaction helper, and test vectors.
 2. **Evidence store and operator path:** dispatcher, Azure adapter, manifests,
    managed identities, synthetic delivery, verification/export CLI, monitoring,
    and runbooks.
@@ -951,12 +1073,17 @@ worktree and one topology owner are used per stack.
 
 ### Stack 2: client-observed assessment evidence
 
-1. **Authenticated client ingestion:** batched `asParticipant` mutation,
-   scope/version validation, standalone outbox transaction, idempotency, late
-   events, expiry, and session lifecycle observations.
-2. **PWA capture and rollout:** selection/submission-attempt capture, IndexedDB,
-   batching, bounded retries, privacy notice, browser tests, coverage reporting,
-   and controlled production enablement.
+1. **Capture identity and independent ingress:** scoped token issuance,
+   asymmetric verification, provider-neutral queue interface, independently
+   routed ingress, Azure Queue adapter, managed identities, rate limits, and
+   outage tests.
+2. **Queue materialization:** idempotent drainer, delayed database validation,
+   sequence-gap handling, outbox insertion, poison quarantine, expiry, cleanup,
+   dashboards, and runbooks.
+3. **Memory-only PWA capture and rollout:** selection/submission-attempt capture,
+   batching, bounded in-memory retry, best-effort exit flush, privacy notice,
+   browser persistence assertions, coverage reporting, and controlled production
+   enablement.
 
 PRs #4872 and #4946 remain unchanged until the union of the replacement stacks
 is compared against their complete diffs. Every deliberate omission is
@@ -975,7 +1102,7 @@ documented before maintainers decide whether to close them.
 - Every critical authoritative mutation commits with its audit evidence or does
   not commit.
 - Every event type has an explicit emission path, producer, evidence class,
-  criticality, durability point, and schema; unknown or lane-unassigned types
+  criticality, durability point, and schema; unknown or path-unassigned types
   are rejected.
 - Successful submission acknowledgement returns a stable `submissionId` and
   Hatchet event ID. Processing records server acceptance plus exactly one
@@ -984,19 +1111,33 @@ documented before maintainers decide whether to close them.
 - Lane 2 publishes no duplicate audit-specific Hatchet command. The existing
   submission command is its durable source, and processing cannot complete
   without the terminal outcome in the shared outbox.
-- Lane 2 evidence preserves separate response receipt, Hatchet acknowledgement,
-  and canonical materialization times. Exports never present the response API's
-  post-acknowledgement timestamp as an internal Hatchet server timestamp.
+- Lane 2 evidence preserves the response receipt time, pre-push transport time,
+  returned Hatchet event ID, and canonical materialization time. Exports do not
+  invent a Hatchet server-side acceptance timestamp that the receipt lacks.
 - The provider-neutral contract contains no Azure or Hatchet SDK/command types;
   provider and transport mappings remain in their adapters.
 - Client events capture every meaningful discrete answer state and submit attempt
   without recording keystrokes or blocking interaction.
+- Client capture uses an audience-scoped token and independent ingress. A valid
+  batch is acknowledged only after durable Azure Queue insertion, and repeated
+  client event IDs materialize at most one canonical event.
+- Every valid Klicker answer event fits the tested queue-safe envelope or uses a
+  verified deterministic multi-message representation; size limits never cause
+  silent loss of a valid answer.
+- No audit event or answer payload is written to persistent browser storage.
+  Unacknowledged memory-buffer contents may be lost when the page or network is
+  lost, and exports do not disguise an unknowable terminal tail as complete.
+- While the current page retains a still-valid capture token, the ingress
+  continues accepting client evidence during a main-stack outage and the drainer
+  materializes it after recovery with explicit database scope-validation
+  results. Reloading during that outage loses this capability.
 - Client timestamps and server timestamps remain distinct; late events cannot
   alter authoritative responses or scores.
 - Exports distinguish `CLIENT_OBSERVED`, `SERVER_OBSERVED`, and `AUTHORITATIVE`
   evidence and disclose gaps, delays, and rollout limitations.
-- Azure downtime accumulates an outbox backlog and later delivers it without
-  duplicate evidence.
+- Azure Table/Blob downtime accumulates an outbox backlog and later delivers it
+  without duplicate evidence. Azure Queue downtime prevents ingress
+  acknowledgement, so the PWA retries only while its page remains alive.
 - Identical conflicts are recognized as idempotent replay; differing conflicts,
   invalid records, and missing manifest coverage quarantine and alert.
 - Only explicitly authorized trusted Resource Group members have human Table and
@@ -1015,8 +1156,10 @@ documented before maintainers decide whether to close them.
 ## Implementation-plan parameters
 
 The implementation plan fixes the concrete idle debounce, batch limits, browser
-queue capacity, exact per-event idempotency-key formulas, Hatchet task retry and
-permanent-invalid-command criteria, Table partition/shard counts, polling
-intervals, alert thresholds, and exact file-level work packages. These parameters
-may change without reopening the product design as long as the guarantees and
-acceptance criteria above remain true.
+memory-buffer capacity, retry/backoff and exit-flush behavior, capture-token
+lifetime and outage grace, ingress rate limits, Azure Queue message size and
+retention settings, reordering grace, exact per-event idempotency-key formulas,
+Hatchet task retry and permanent-invalid-command criteria, Table partition/shard
+counts, polling intervals, alert thresholds, and exact file-level work packages.
+These parameters may change without reopening the product design as long as the
+guarantees and acceptance criteria above remain true.
