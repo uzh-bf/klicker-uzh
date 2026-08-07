@@ -47,15 +47,16 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
 
-The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. The
+The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
-`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-4.1`, MEDIUM =
-`gpt-5.4-low`, COMPLEX = `gpt-5.4-medium`, REASONING = `gpt-5.5-low`. The
-authoritative router configuration lives in the external AI deployment
-repository's `litellm/config.yaml` and **cannot be verified from this
-repository** — treat the values.yaml comment as the best available record and
-confirm against the deployment before making a routing claim. Neither
-deployment ships a GPT-5.6 model at all.
+`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-5.6-luna-medium`, MEDIUM
+= `gpt-5.6-luna-high`, COMPLEX = `gpt-5.6-luna-xhigh`, REASONING =
+`gpt-5.6-sol-medium` (match_threshold 0.55). The authoritative router
+configuration lives in the external AI deployment repository's
+`litellm/config.yaml` and **cannot be verified from this repository** — treat
+the values.yaml comment as the best available record and confirm against the
+deployment before making a routing claim. The deployed registry exposes no
+direct GPT-5.6 picker option; the router's tier targets are internal.
 
 The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
 **not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
@@ -63,7 +64,7 @@ its own tier assignment, and the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
 production Azure URLs or secret names. Local Auto Mode behaviour is therefore
 evidence about the wiring only, never about production routing. The local chat
-registry maps the user-facing `auto` model id to the `complexity-router`
+registry maps the user-facing `auto` model id to the `auto-router`
 LiteLLM deployment and exposes `gpt-5.6-luna` for a direct comparison. The
 seeded Benibot fixture allow-lists all three of `auto`, `gpt-5.6-luna` and
 `gpt-4.1-mini` explicitly, so it satisfies the fallback invariant below without
