@@ -59,7 +59,7 @@ function Layout({
     )
   }
 
-  if (!dataUser?.userProfile || (!loadingUser && errorUser)) {
+  if (!dataUser?.userProfile || errorUser) {
     return (
       <UserNotification type="error">
         {errorUser?.message || t('shared.generic.systemError')}

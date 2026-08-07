@@ -12,7 +12,11 @@ export type ValidateFeatureAvailabilityOptions = {
   privatePreview: boolean
 }
 
-const GROWTHBOOK_FEATURES_URL = 'https://growthbook.test/api/features/sdk-test*'
+const growthbookApiHost =
+  process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST ?? 'https://growthbook.test'
+const growthbookClientKey =
+  process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
+const GROWTHBOOK_FEATURES_URL = `${growthbookApiHost.replace(/\/$/, '')}/api/features/${growthbookClientKey}*`
 
 export async function mockGrowthBookLearningAnalytics(
   page: Page,
