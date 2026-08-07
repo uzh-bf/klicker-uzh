@@ -919,7 +919,7 @@ git commit -m "docs: document analytics GrowthBook rollout"
 
 **Files:** no source changes unless review finds an actionable defect.
 
-- [ ] **Step 1: Audit each layer independently**
+- [x] **Step 1: Audit each layer independently**
 
 ```bash
 git diff --check v3...feat/growthbook-foundation
@@ -930,27 +930,27 @@ gh stack view
 Verify layer 1 has no app behavior change and layer 2 contains all product/UI
 changes. Review every staged/data file for secrets and personal data.
 
-- [ ] **Step 2: Run the maintainability and standards review**
+- [x] **Step 2: Run the maintainability and standards review**
 
 Apply the repository's strict review criteria to both branch tips. Resolve
 blocking findings in the owning layer; record deliberately deferred items with
 rationale. Do not mark either PR ready or merge it.
 
-- [ ] **Step 3: Submit the native stack as drafts**
+- [x] **Step 3: Submit the native stack as drafts**
 
 Run: `gh stack submit --auto`
 
 Expected: two draft PRs, bottom targeting `v3`, top targeting
 `feat/growthbook-foundation`, linked as one GitHub stack.
 
-- [ ] **Step 4: Replace generated PR text with complete branch-aware bodies**
+- [x] **Step 4: Replace generated PR text with complete branch-aware bodies**
 
 The foundation PR body covers architecture, package API, configuration,
 privacy, tests, docs, and the fact that no app initializes it. The example PR
 body covers every UI gate, disabled semantics, GraphQL cleanup, E2E evidence,
 browser screenshots, retained DB field, and deployment inputs still required.
 
-- [ ] **Step 5: Verify remote state**
+- [x] **Step 5: Verify remote state**
 
 Run `gh stack view` and inspect both PR checks, bases, draft state, comments,
 and reviews. Report both URLs and any configuration still required before
@@ -961,7 +961,7 @@ deployment.
 - [x] 2026-08-06: approved design committed as `0046b8118` on
   `feat/growthbook-foundation`.
 - [x] 2026-08-06: native stack support verified with `gh stack`.
-- [x] Layer 1 foundation implemented and verified: 11 tests, package check and
+- [x] Layer 1 foundation implemented and verified: 13 tests, package check and
       build, root production build, Syncpack, formatting, and Opengrep (0
       findings) passed. The wiki validator named by the maintenance skill was
       not installed locally.
@@ -973,10 +973,18 @@ deployment.
       dependencies ran against a disposable Compose project after the failed
       workspace was removed. Screenshots are retained outside git under
       `/private/tmp/growthbook-*.png`.
-- [x] Layer 2 final verification passed: 11 feature-flag tests, targeted
+- [x] Layer 2 final verification passed: 13 feature-flag tests, targeted
       GraphQL/Manage/Playwright checks, 7/7 feature-access browser tests,
       Manage lint and production build, repository `check:all`, Syncpack,
       formatting, Opengrep (213 rules, 0 findings), and the 23-task monorepo
       production build. The first root build attempt was blocked only by
       sandboxed Google Fonts access; the network-enabled rerun passed.
-- [ ] Two draft PRs published and linked as a native stack.
+- [x] The strict maintainability review found two actionable improvements:
+      unavailable SDK payload coverage was added to both adapters, and activity
+      dropdowns now use stable action IDs plus the design system's canonical
+      disabled handling. No blocking findings remain.
+- [x] Two draft PRs published and linked as native stack #5324: foundation
+      [#5322](https://github.com/uzh-bf/klicker-uzh/pull/5322) targets `v3`;
+      learning analytics [#5323](https://github.com/uzh-bf/klicker-uzh/pull/5323)
+      targets `feat/growthbook-foundation`. Both descriptions cover the complete
+      branch diff, deployment inputs, verification, and browser screenshots.

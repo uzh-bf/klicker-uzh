@@ -4,33 +4,44 @@
 // Not.toBeAttached() mirrors cy.should('not.exist') — elements absent from DOM.
 
 import type { ElementType } from '@klicker-uzh/prisma/client'
-import { expect, Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
-import { openCourseActionMenu } from '../actions.js'
 import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
 
 export type ValidateFeatureAvailabilityOptions = {
-  publicPreview: boolean
+  learningAnalytics: boolean
   privatePreview: boolean
 }
 
-export async function updateLecturerPreviewFlags({
-  publicPreview,
-  privatePreview,
-}: {
-  publicPreview: boolean
-  privatePreview: boolean
-}) {
-  const prisma = await getPrisma()
-  try {
-    await prisma.user.update({
-      where: { shortname: LECTURER_SHORTNAME },
-      data: { publicPreview, privatePreview },
+const growthbookApiHost =
+  process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST ?? 'https://growthbook.test'
+const growthbookClientKey =
+  process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
+const GROWTHBOOK_FEATURES_URL = `${growthbookApiHost.replace(/\/$/, '')}/api/features/${growthbookClientKey}*`
+
+export async function mockGrowthBookLearningAnalytics(
+  page: Page,
+  enabled: boolean
+) {
+  await page.unroute(GROWTHBOOK_FEATURES_URL)
+  await page.route(GROWTHBOOK_FEATURES_URL, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        features: {
+          'learning-analytics': { defaultValue: enabled },
+        },
+      }),
     })
-    return true
-  } catch (error) {
-    throw error
-  }
+  )
+}
+
+export async function updateLecturerPrivatePreview(privatePreview: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { privatePreview },
+  })
 }
 
 export async function validateFeatureAvailabilityFixture(
@@ -38,29 +49,25 @@ export async function validateFeatureAvailabilityFixture(
   options: ValidateFeatureAvailabilityOptions
 ) {
   // analytics nav item
-  if (options.publicPreview) {
-    await expect(page.getByTestId('analytics')).toBeVisible()
+  await expect(page.getByTestId('analytics')).toBeVisible()
+  if (options.learningAnalytics) {
+    await expect(page.getByTestId('analytics')).toBeEnabled()
   } else {
-    await expect(page.getByTestId('analytics')).not.toBeAttached()
+    await expect(page.getByTestId('analytics')).toBeDisabled()
   }
 
   // course learning analytics link
   await page.getByTestId('courses').click()
   await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
-  await openCourseActionMenu(
-    page,
-    options.publicPreview ? 'course-learning-analytics-link' : undefined
+  const courseLearningAnalytics = page.getByTestId(
+    'course-learning-analytics-link'
   )
-  if (options.publicPreview) {
-    await expect(
-      page.getByTestId('course-learning-analytics-link')
-    ).toBeVisible()
+  await expect(courseLearningAnalytics).toBeVisible()
+  if (options.learningAnalytics) {
+    await expect(courseLearningAnalytics).toBeEnabled()
   } else {
-    await expect(
-      page.getByTestId('course-learning-analytics-link')
-    ).not.toBeAttached()
+    await expect(courseLearningAnalytics).toBeDisabled()
   }
-  await page.keyboard.press('Escape')
 
   // sharing buttons per activity type (private preview only)
   await page.getByTestId('courses').click()
