@@ -355,11 +355,10 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 frontendManage:
   priorityClassName: staging-workload
@@ -531,11 +530,10 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 olatApi:
   priorityClassName: staging-workload
@@ -751,11 +749,10 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   backendGraphql:
     priorityClassName: staging-workload
@@ -826,11 +823,10 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
