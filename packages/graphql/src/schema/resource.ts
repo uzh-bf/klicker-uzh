@@ -168,6 +168,23 @@ export interface IChatbot {
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
 }
 
+export interface IChatbotPublic {
+  id: string
+  name: string
+  description?: string | null
+  avatar?: string | null
+}
+export const ChatbotPublicRef =
+  builder.objectRef<IChatbotPublic>('ChatbotPublic')
+export const ChatbotPublic = ChatbotPublicRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+  }),
+})
+
 export interface IChatbotUsageSummary {
   threadCount: number
   messageCount: number

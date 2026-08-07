@@ -712,6 +712,13 @@ type ChatbotMcpConfigurationSummary {
   serverName: String!
 }
 
+type ChatbotPublic {
+  avatar: String
+  description: String
+  id: ID!
+  name: String!
+}
+
 type ChatbotReasoningConfig {
   efforts: [String!]!
   modelId: String!
@@ -2437,6 +2444,7 @@ type Query {
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
+  courseChatbots(courseId: String!): [ChatbotPublic!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
