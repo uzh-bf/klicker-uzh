@@ -148,7 +148,7 @@ function Header({
             </Link>
           ))}
 
-        {courseChatbot && (
+        {courseId && courseChatbot && (
           <Button
             primary
             onClick={() =>
