@@ -26,7 +26,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '47882a3418b0'
+        rollout.klicker.uzh.ch/release: '060b421535cb'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
@@ -48,7 +48,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '47882a3418b0'
+        rollout.klicker.uzh.ch/release: '060b421535cb'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -70,7 +70,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '47882a3418b0'
+        rollout.klicker.uzh.ch/release: '060b421535cb'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -104,7 +104,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -158,7 +158,7 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -310,7 +310,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -362,7 +362,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -415,7 +415,7 @@ frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -467,7 +467,7 @@ frontendControl:
 backendGraphql:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -535,7 +535,7 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -587,7 +587,7 @@ olatApi:
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
   replicaCount: 1
 
   affinity:
@@ -636,7 +636,7 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '47882a3418b0'
+    rollout.klicker.uzh.ch/release: '060b421535cb'
 
   replicaCount: 1
 
@@ -689,7 +689,7 @@ assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '47882a3418b0'
+      rollout.klicker.uzh.ch/release: '060b421535cb'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -752,7 +752,7 @@ assessment:
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '47882a3418b0'
+      rollout.klicker.uzh.ch/release: '060b421535cb'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -829,7 +829,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '47882a3418b0'
+      rollout.klicker.uzh.ch/release: '060b421535cb'
     replicaCount: 1
 
     autoscaling:
