@@ -152,7 +152,6 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 chat:
@@ -410,7 +409,6 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendControl:
@@ -464,7 +462,6 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
@@ -585,7 +582,6 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 lti:
@@ -687,7 +683,6 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 assessment:
@@ -893,7 +888,6 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
-        cpu: 200m
         memory: 200Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
