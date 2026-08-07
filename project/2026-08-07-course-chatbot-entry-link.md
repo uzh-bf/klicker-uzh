@@ -2,8 +2,8 @@
 
 - **Date:** 2026-08-07
 - **Branch:** `rs/course-chatbot-link` (from `origin/v3` @ `39897712b`)
-- **Status:** REVIEWED — planning-stage pass completed by agy (Antigravity CLI, trusted provider, read-only); verdict: complete & correct with 1 minor finding (PWA outer guard at `index.tsx:196`), verified and folded into step 5. Awaiting user approval of D1 before implementation.
-- **Scope:** minimal v3 PR: participant-facing chatbot link on the student course overview page, without pulling in v3-ai
+- **Status:** IMPLEMENTED — planning-stage pass completed by agy (Antigravity CLI, trusted provider, read-only); D1 superseded by user ruling (header button on all course pages, first chatbot, new tab) on 2026-08-07.
+- **Scope:** minimal v3 PR: participant-facing chatbot link in the shared PWA header on all course pages, without pulling in v3-ai
 - **Companion (already shipped):** Option 1 — chatbot link appended to the VK1 course description in prod (verified read-back). This plan covers Option 2.
 
 ## Goal
@@ -24,17 +24,15 @@ Give Vorkurs students a discoverable entry point to the "Vorkurs Rechenfertigkei
 
 ## Decisions
 
-### D1 — Entry UX: button(s) above the tabs (recommended)
+### D1 — Entry UX: shared header button on all course pages (user ruling 2026-08-07)
 
 Options:
 
-1. **(a) Button(s) above the tabs** — a row of chatbot buttons rendered below the page header and above the tab list when the course has chatbots. Always visible, most discoverable for a one-week course. Minimal diff: one query + a small render block.
-2. **(b) New tab "Kurs-Chatbot"** — fits the existing tab structure but hides the entry behind a click and adds tab-state handling.
+1. **(a, superseded) Button(s) above the tabs on the overview page** — original plan; replaced by the user ruling below.
+2. **(b, chosen) Header button on every course page** — the shared `Header` (`apps/frontend-pwa/src/components/common/Header.tsx`) already receives the `course` object (with `id`) from every course page, so one query + one button in the header surfaces the entry on the overview, practice quizzes, microlearnings, bookmarks, etc. Opens the first chatbot of the course in a new tab (`window.open(..., '_blank', 'noopener')`) so the student never loses their place mid-activity.
 3. **(c) v3-ai `CourseChatDrawer` (embedded iframe)** — explicitly out of scope per user.
 
-**Recommendation: (a).** Each button links to `/course/<courseId>/chatbot/<chatbotId>` (existing deep-link route, handles auth + participation + redirect). With one chatbot per course (the VK1 case), this renders a single prominent button. Multiple chatbots render one button each; no dropdown logic needed.
-
-**Ask:** OK to ship a visible button row above the tabs (opens chat in the same tab via the deep link)? Alternative is a new tab.
+**User ruling:** show the first chatbot of a course only (there will never be more than one per course in the VK1 use case); no dropdown. The button links to `/course/<courseId>/chatbot/<chatbotId>` (existing deep-link route, handles auth + participation + redirect) and opens in a new tab.
 
 ### D2 — Public type shape: match v3-ai `ChatbotPublic` exactly
 
@@ -50,11 +48,11 @@ Service returns `[]` when the participant is not enrolled (mirrors v3-ai), so th
 2. **Type** — `packages/graphql/src/schema/resource.ts`: `IChatbotPublic` interface + `ChatbotPublicRef`/`ChatbotPublic` object (copy shape from v3-ai).
 3. **Query field** — `packages/graphql/src/schema/query.ts`: `courseChatbots: t.withAuth(asParticipant).field({ type: [ChatbotPublic], args: { courseId: t.arg.string({ required: true }) }, resolve: one-liner → service })`. `asParticipant` is exact-role; no `withPermission` needed (participant-facing field, pattern at `query.ts:128`).
 4. **Client op** — `packages/graphql/src/graphql/ops/QGetCourseChatbots.graphql` (`query GetCourseChatbots($courseId: String!) { courseChatbots(courseId: $courseId) { id name description avatar } }`), then codegen `pnpm --filter @klicker-uzh/graphql generate` and commit all regenerated artifacts (`ops.ts`, `ops.schema.json`, `public/schema.graphql`, `public/client.json`, `public/server.json` — stale `server.json` breaks persisted queries in prod).
-5. **PWA course page** — `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`:
-   - `useQuery(GetCourseChatbotsDocument, { variables: { courseId } })`
-   - Render a button row above `<Tabs>` when `chatbots.length > 0`, each button `router.push('/course/' + courseId + '/chatbot/' + id)` (deep link; same tab).
-   - **Outer guard (agy finding 1, verified):** extend the layout conditional at `index.tsx:196` — `course.isGamificationEnabled || course.isAssessmentEnabled || course.description` — with `(chatbots?.length ?? 0) > 0`, so a course that has a chatbot but none of the other three features still renders the layout (and the button) instead of the `noGamificationOrDescription` notification.
+5. **PWA shared header** — `apps/frontend-pwa/src/components/common/Header.tsx`:
+   - `useQuery(GetCourseChatbotsDocument, { variables: { courseId: course?.id } })`, skipped unless `course.id` exists and the caller is a `Participant` (header also renders for anonymous visitors and lecturers on public course pages).
+   - Render a single "AI tutor" button next to the home/back button when `courseChatbots[0]` exists; `window.open('/course/' + courseId + '/chatbot/' + id, '_blank', 'noopener')` (deep link; new tab).
    - `data-cy="student-course-chatbot-link"` for e2e.
+   - The course overview page stays at its v3 baseline (no guard change needed; the overview's own layout handles chatbot-only courses via its existing content).
 6. **i18n** — `packages/i18n/messages/{de,en}.ts` under existing `pwa.chatbot` block: `openCourseChat: 'KI-Tutor' / 'AI tutor'`, `courseChat: 'Kurs-Chatbot' / 'Course chatbot'` (labels from v3-ai).
 7. **Wiki** — `docs/chat-platform.md` (or a short note in `docs/index.md`): participant chatbot entry on course page + deep-link route. Follow `klicker-wiki-maintenance` conventions; log entry under `docs/log/` if the change batch warrants one.
 8. **Tests** — optional vitest for the service (`pnpm --filter @klicker-uzh/graphql test:local`, heavy pattern in `38c92d035`); optional Playwright spec in `playwright/tests/N-course.spec.ts` asserting the button renders for an enrolled participant. Decide during implementation based on existing coverage.

@@ -130,21 +130,26 @@ key.
 
 ## Participant entry points (course page)
 
-Participants reach a chatbot from the student course overview page on v3
-(`apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`) without any v3-ai
-dependency. The page runs `GetCourseChatbots` (participant-authed
-`courseChatbots(courseId)` query backed by
-`getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`,
-which returns `[]` when the participant is not enrolled in the course) and
-renders a button row above the tabs when at least one chatbot is linked to the
-course (`data-cy="student-course-chatbot-link"`). Each button navigates to the
-existing PWA deep-link route `course/[courseId]/chatbot/[chatbotId]`, which
-redirects to login when needed, runs `ensureParticipation` server-side, and
-then 302-redirects to `chat.klicker.uzh.ch/<chatbotId>`. The outer layout guard
-includes `chatbots.length > 0`, so a chatbot-only course still renders the page
-instead of the `noGamificationOrDescription` notification. The public GraphQL
-shape is `ChatbotPublic` (`id`, `name`, `description`, `avatar`) and matches the
-v3-ai blueprint so a later v3-ai sync reconciles without a diff.
+Participants reach a chatbot from the shared PWA header (`apps/frontend-pwa/src/components/common/Header.tsx`)
+on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency.
+The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
+`getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
+and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
+to the home/back button when a chatbot is linked to the course and the caller is
+a participant; the button opens the first chatbot of the course in a new tab.
+The query is deliberately **not** `withAuth(asParticipant)`: course pages are
+publicly reachable, and a scope error would surface as the literal message
+`Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
+turns into a hard redirect to `/login?expired=true` for every anonymous visitor
+and every logged-in lecturer. Instead the resolver mirrors its page siblings
+`getCourseOverviewData` and `getStudentCourseLeaderboard` — a public field whose
+service returns `[]` unless the caller is a `PARTICIPANT` with a `Participation`
+record for the course. The button opens the existing PWA deep-link route
+`course/[courseId]/chatbot/[chatbotId]` in a new tab, which redirects to login
+when needed, runs `ensureParticipation` server-side, and then 302-redirects to
+`chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
+(`id`, `name`, `description`, `avatar`) and matches the v3-ai blueprint so a
+later v3-ai sync reconciles without a diff.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
