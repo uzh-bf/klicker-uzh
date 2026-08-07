@@ -2,7 +2,6 @@
 
 - **Date:** 2026-08-06
 - **Repository:** `uzh-bf/klicker-uzh`
-- **Worktree:** `/Users/paldov/.codex/worktrees/790e/klicker-uzh`
 - **Stack:**
   1. `feat/growthbook-foundation` → `v3`
   2. `feat/growthbook-learning-analytics` → `feat/growthbook-foundation`
