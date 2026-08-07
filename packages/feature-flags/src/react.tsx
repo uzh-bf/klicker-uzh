@@ -2,7 +2,7 @@ import {
   GrowthBookProvider,
   useFeatureIsOn,
 } from '@growthbook/growthbook-react'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
   type BrowserFeatureFlagConfig,
   createBrowserFeatureFlagClient,
@@ -29,14 +29,29 @@ export function FeatureFlagProvider({
   const [{ growthbook, initialize }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
+  const destroyTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     void growthbook.setAttributes(attributes)
   }, [attributes, growthbook])
 
   useEffect(() => {
+    if (destroyTimeout.current !== undefined) {
+      clearTimeout(destroyTimeout.current)
+      destroyTimeout.current = undefined
+    }
+
     void initialize()
-  }, [initialize])
+
+    return () => {
+      // React Strict Mode immediately repeats effect setup after cleanup in
+      // development. Delay destruction by one task so that setup can cancel it.
+      destroyTimeout.current = setTimeout(() => {
+        growthbook.destroy()
+        destroyTimeout.current = undefined
+      })
+    }
+  }, [growthbook, initialize])
 
   return (
     <GrowthBookProvider growthbook={growthbook}>{children}</GrowthBookProvider>
