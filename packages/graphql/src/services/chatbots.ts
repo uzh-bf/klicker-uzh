@@ -178,6 +178,43 @@ const toNumber = (value: unknown): number | null => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+export async function getParticipantCourseChatbots(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const participation = await ctx.prisma.participation.findUnique({
+    select: { id: true },
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    return []
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+    },
+    where: { courseId },
+  })
+
+  return chatbots.map(({ id, name, description, avatar }) => ({
+    id,
+    name,
+    description,
+    avatar,
+  }))
+}
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },

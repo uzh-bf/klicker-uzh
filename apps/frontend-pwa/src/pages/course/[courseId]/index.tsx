@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
+  GetCourseChatbotsDocument,
   GetStudentCourseLeaderboardDocument,
   JoinCourseLeaderboardDocument,
   LeaveCourseLeaderboardDocument,
@@ -75,6 +76,15 @@ function CourseOverview({
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
+
+  const { data: chatbotData, loading: loadingChatbots } = useQuery(
+    GetCourseChatbotsDocument,
+    {
+      variables: { courseId },
+    }
+  )
+
+  const chatbots = chatbotData?.courseChatbots ?? []
 
   const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
     GetStudentCourseLeaderboardDocument,
@@ -195,9 +205,31 @@ function CourseOverview({
     >
       {course.isGamificationEnabled ||
       course.isAssessmentEnabled ||
-      course.description ? (
+      course.description ||
+      chatbots.length > 0 ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl">
+            {!loadingChatbots && chatbots.length > 0 && (
+              <div className="mb-4 flex flex-row flex-wrap gap-2">
+                {chatbots.map((chatbot) => (
+                  <Button
+                    key={chatbot.id}
+                    primary
+                    onClick={() =>
+                      router.push(`/course/${courseId}/chatbot/${chatbot.id}`)
+                    }
+                    className={{ root: 'h-max py-1' }}
+                    data={{ cy: 'student-course-chatbot-link' }}
+                  >
+                    <Button.Label>
+                      {chatbots.length > 1
+                        ? chatbot.name
+                        : t('pwa.chatbot.openCourseChat')}
+                    </Button.Label>
+                  </Button>
+                ))}
+              </div>
+            )}
             <Tabs
               defaultValue={
                 course.isAssessmentEnabled

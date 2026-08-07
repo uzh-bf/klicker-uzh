@@ -764,6 +764,8 @@ Other participants will only see your public **participant profile**, including 
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
+      openCourseChat: 'AI tutor',
+      courseChat: 'Course chatbot',
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',

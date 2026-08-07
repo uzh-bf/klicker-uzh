@@ -98,6 +98,7 @@ import {
   AnswerCollectionPreviewEntry,
   ChatModelCapability,
   Chatbot,
+  ChatbotPublic,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -1421,6 +1422,16 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      courseChatbots: t.withAuth(asParticipant).field({
+        type: [ChatbotPublic],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.getParticipantCourseChatbots(args, ctx)
         },
       }),
 

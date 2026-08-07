@@ -128,6 +128,24 @@ votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai
 because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
 key.
 
+## Participant entry points (course page)
+
+Participants reach a chatbot from the student course overview page on v3
+(`apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`) without any v3-ai
+dependency. The page runs `GetCourseChatbots` (participant-authed
+`courseChatbots(courseId)` query backed by
+`getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`,
+which returns `[]` when the participant is not enrolled in the course) and
+renders a button row above the tabs when at least one chatbot is linked to the
+course (`data-cy="student-course-chatbot-link"`). Each button navigates to the
+existing PWA deep-link route `course/[courseId]/chatbot/[chatbotId]`, which
+redirects to login when needed, runs `ensureParticipation` server-side, and
+then 302-redirects to `chat.klicker.uzh.ch/<chatbotId>`. The outer layout guard
+includes `chatbots.length > 0`, so a chatbot-only course still renders the page
+instead of the `noGamificationOrDescription` notification. The public GraphQL
+shape is `ChatbotPublic` (`id`, `name`, `description`, `avatar`) and matches the
+v3-ai blueprint so a later v3-ai sync reconciles without a diff.
+
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
