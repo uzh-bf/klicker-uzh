@@ -152,7 +152,6 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 chat:
@@ -355,11 +354,10 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 frontendManage:
   priorityClassName: staging-workload
@@ -411,7 +409,6 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendControl:
@@ -465,7 +462,6 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
@@ -531,11 +527,10 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 olatApi:
   priorityClassName: staging-workload
@@ -587,7 +582,6 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 lti:
@@ -689,7 +683,6 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 assessment:
@@ -751,11 +744,10 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   backendGraphql:
     priorityClassName: staging-workload
@@ -826,11 +818,10 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
@@ -897,7 +888,6 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
-        cpu: 200m
         memory: 200Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
