@@ -1,4 +1,4 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
+  GetCourseChatbotsDocument,
   LocaleType,
   LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
@@ -54,6 +55,16 @@ function Header({
   )
   const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
     useMutation(LogoutTemporaryParticipantDocument)
+
+  const courseId = course?.id
+  const { data: chatbotData } = useQuery(GetCourseChatbotsDocument, {
+    variables: courseId ? { courseId } : undefined,
+    skip:
+      !courseId ||
+      participant?.role !== UserRole.Participant ||
+      process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+  })
+  const courseChatbot = chatbotData?.courseChatbots?.[0]
 
   const pageInFrame =
     global?.window &&
@@ -136,6 +147,25 @@ function Header({
               </Button>
             </Link>
           ))}
+
+        {courseChatbot && (
+          <Button
+            primary
+            onClick={() =>
+              window.open(
+                `/course/${courseId}/chatbot/${courseChatbot.id}`,
+                '_blank',
+                'noopener'
+              )
+            }
+            className={{
+              root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+            }}
+            data={{ cy: 'student-course-chatbot-link' }}
+          >
+            <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
+          </Button>
+        )}
 
         <Dropdown
           trigger={

@@ -1,6 +1,7 @@
+import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
-import type { ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 const chatModelSchema = z
   .object({
@@ -180,8 +181,14 @@ const toNumber = (value: unknown): number | null => {
 
 export async function getParticipantCourseChatbots(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  // the course overview page is publicly accessible, so anonymous visitors and
+  // logged-in lecturers must receive an empty list instead of an auth error
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return []
+  }
+
   const participation = await ctx.prisma.participation.findUnique({
     select: { id: true },
     where: {

@@ -1425,7 +1425,9 @@ export const Query = builder.queryType({
         },
       }),
 
-      courseChatbots: t.withAuth(asParticipant).field({
+      // public field like the sibling course overview queries: the resolver
+      // returns an empty list for anonymous visitors and non-participants
+      courseChatbots: t.field({
         type: [ChatbotPublic],
         args: {
           courseId: t.arg.string({ required: true }),
