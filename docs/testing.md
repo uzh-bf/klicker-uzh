@@ -45,7 +45,7 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 ## E2E environment dependencies
 
-- The local Chat model simulation includes LiteLLM's `complexity-router` and
+- The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
   LiteLLM liveness endpoint and the chat credits response before browser
   testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
