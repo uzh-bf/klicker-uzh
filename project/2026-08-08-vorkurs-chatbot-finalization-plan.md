@@ -88,7 +88,9 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 
 - Step 1: classified the staging stream-pipe failure; complete.
 - Step 2: clean implementation worktree created from the local `origin/v3`
-  ref; in progress.
+  ref; stream lifecycle, Android viewport metadata, and staging model-default
+  cleanup are implemented. Chat typecheck passes and all 223 chat unit tests
+  pass; browser verification is pending route repair.
 - Step 3: pending implementation and verification.
 - Step 4: pending staging rollout approval and real-upstream evidence.
 
