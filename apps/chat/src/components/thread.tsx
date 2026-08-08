@@ -425,7 +425,7 @@ const AttachmentErrorBanner: FC<{
         <button
           type="button"
           onClick={onDismiss}
-          className="hover:bg-destructive/20 rounded"
+          className="hover:bg-destructive/20 inline-flex size-11 items-center justify-center rounded touch-manipulation fine-pointer:size-6"
           aria-label={t('chat.composer.dismissError')}
         >
           <XIcon className="size-3" />
