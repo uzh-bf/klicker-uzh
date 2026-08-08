@@ -55,10 +55,10 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 - Keep user-facing errors generic, but offer a clear retry action through the
   existing reload path, which truncates the failed assistant branch before
   retrying and therefore avoids duplicate visible turns.
-- Keep the global staging automatic-model primary unchanged; the Vorkurs
-  chatbot's database allow-list and disabled model selection must provide the
-  Auto-only behavior without changing unrelated staging chatbots. Treat the
-  staging `gpt-5.5` registry warning as a separate deployment-parity gate.
+- Make `auto` the global automatic-model primary in both staging and production.
+  This intentionally changes the default for unrestricted chatbots; the Vorkurs
+  chatbot remains Auto-only through its database allow-list and disabled model
+  selection. Include an unrestricted-chatbot smoke check in the staging gate.
 
 ## Slices
 
@@ -90,8 +90,8 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 ## Progress
 
 - Step 1: classified the staging stream-pipe failure; complete.
-- Step 2: stream lifecycle, Android viewport metadata, staging model-default
-  investigation, pointer-aware mobile touch targets (including attachment
+- Step 2: stream lifecycle, Android viewport metadata, global Auto default,
+  pointer-aware mobile touch targets (including attachment
   removal), and labeled retry recovery are implemented with focused
   pure-logic coverage for error recognition and reload truncation. Chat
   typecheck passes and all 225 chat unit tests pass. Browser verification is

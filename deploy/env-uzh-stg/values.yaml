@@ -168,16 +168,16 @@ chat:
     enabled: false
 
   automaticModels:
-    primaryId: gpt-5.5
+    primaryId: auto
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
     # "Auto" routes through the LiteLLM auto-router, which self-selects the
     # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
     # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
-    # 0.55). It is a normal selectable model (fallback: false), so
-    # it does NOT change automatic selection for existing chatbots — they still
-    # default to gpt-5.5. A chatbot can be pinned to Auto-only via its DB columns
+    # 0.55). It is a normal selectable model (fallback: false) and is also the
+    # global automatic-model primary. Unrestricted chatbots therefore use Auto
+    # by default; a chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
     # cost mirrors the gpt-5.6-luna tier (the typical COMPLEX route); REASONING
     # (gpt-5.6-sol-medium) is rare. Tune if the routed mix shifts.

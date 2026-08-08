@@ -66,6 +66,8 @@ configuration lives in the external AI deployment repository's
 the values.yaml comment as the best available record and confirm against the
 deployment before making a routing claim. The deployed registry exposes no
 direct GPT-5.6 picker option; the router's tier targets are internal.
+Both staging and production now use `auto` as the global automatic-model
+primary, so chatbots without a model-specific restriction use Auto by default.
 
 The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
 **not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
