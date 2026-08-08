@@ -269,9 +269,10 @@ export const Assistant = ({
               // darken (brightness-90), not alpha-lighten like the app's
               // hover:bg-primary/90 pattern, which would drop below AA here.
               <button
+                type="button"
                 data-cy="chat-show-disclaimer-again"
                 onClick={() => setShowDisclaimerModal(true)}
-                className="bg-destructive mt-4 rounded px-4 py-2 text-white transition-[filter] hover:brightness-90"
+                className="bg-destructive mt-4 min-h-11 rounded px-4 py-2 text-white transition-[filter] touch-manipulation hover:brightness-90 fine-pointer:min-h-8"
               >
                 {t('chat.assistant.showDisclaimerAgain')}
               </button>
