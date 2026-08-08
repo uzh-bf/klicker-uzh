@@ -64,7 +64,9 @@ function Header({
       participant?.role !== UserRole.Participant ||
       process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
   })
-  const courseChatbots = chatbotData?.courseChatbots ?? []
+  // courses are limited to a single chatbot for now, so the header links the
+  // first one and does not build a multi-chatbot affordance
+  const courseChatbot = chatbotData?.courseChatbots?.[0]
 
   const pageInFrame =
     global?.window &&
@@ -148,36 +150,23 @@ function Header({
             </Link>
           ))}
 
-        {courseId &&
-          courseChatbots.map((chatbot) => (
-            <Link
-              key={chatbot.id}
-              href={`/course/${courseId}/chatbot/${chatbot.id}`}
-              target="_blank"
-              rel="noopener"
-              title={chatbot.name}
-              className="min-w-0"
+        {courseId && courseChatbot && (
+          <Link
+            href={`/course/${courseId}/chatbot/${courseChatbot.id}`}
+            target="_blank"
+            rel="noopener"
+          >
+            <Button
+              primary
+              className={{
+                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+              }}
+              data={{ cy: 'student-course-chatbot-link' }}
             >
-              <Button
-                primary
-                className={{
-                  // shrink overrides the design-system shrink-0, so several chatbots
-                  // cannot push the avatar dropdown off a narrow header
-                  root: 'h-8 min-w-0 shrink bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
-                }}
-                data={{ cy: `student-course-chatbot-link-${chatbot.id}` }}
-              >
-                <Button.Label
-                  className={{ root: 'line-clamp-1 max-w-32 break-all' }}
-                >
-                  {/* a single chatbot keeps the generic label, multiple ones need their names to be distinguishable */}
-                  {courseChatbots.length > 1
-                    ? chatbot.name
-                    : t('pwa.chatbot.openCourseChat')}
-                </Button.Label>
-              </Button>
-            </Link>
-          ))}
+              <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
+            </Button>
+          </Link>
+        )}
 
         <Dropdown
           trigger={

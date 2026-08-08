@@ -134,14 +134,16 @@ Participants reach a chatbot from the shared PWA header (`apps/frontend-pwa/src/
 on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency.
 The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
 `getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
-and renders one link-wrapped button per chatbot
-(`data-cy="student-course-chatbot-link-<chatbotId>"`) next to the home/back
-button when the caller is a participant of the course. A single chatbot keeps the
-generic "AI tutor" label; with several chatbots each button carries the chatbot
-name, since `Chatbot` has no ordering or visibility field that would let a
-lecturer designate a primary one. The buttons are real anchors
-(`<Link target="_blank" rel="noopener">`), so middle-click and copy-link behave
-as expected.
+and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
+to the home/back button when the caller is a participant of the course. The
+button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
+design-system `Button`, the same pattern as the sibling home button), so
+middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
+courses are deliberately limited to a single chatbot for now, which is also why
+`Chatbot` carries no ordering or visibility field. Lifting that limit means
+deciding the multi-chatbot affordance first — the header row does not wrap and
+the design-system button is `shrink-0`, so several buttons would squeeze the
+course title on a narrow viewport.
 The query is deliberately **not** `withAuth(asParticipant)`: course pages are
 publicly reachable, and a scope error would surface as the literal message
 `Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
