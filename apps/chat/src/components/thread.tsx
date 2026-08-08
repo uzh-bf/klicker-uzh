@@ -67,6 +67,7 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { hasChatError } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
@@ -114,11 +115,6 @@ type MessageWithCustomMetadata = {
       | null
   } | null
 }
-
-const hasChatError = (message: MessageWithCustomMetadata): boolean =>
-  message.content?.some(
-    (part) => part.type === 'data' && part.name === 'chat-error'
-  ) ?? false
 
 const extractMessageText = (message: {
   content?: readonly { type: string; text?: string }[]
@@ -307,7 +303,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none sm:h-9 sm:w-9">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -816,7 +812,9 @@ const ComposerAttachButton: FC<{
         onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
-          embedded ? 'size-11 sm:size-8' : 'size-11 sm:size-9'
+          embedded
+            ? 'size-11 fine-pointer:size-8'
+            : 'size-11 fine-pointer:size-9'
         )}
         aria-label={t('chat.composer.attachImage')}
       >
@@ -851,7 +849,9 @@ const ComposerAction: FC = () => {
     <div
       className={twMerge(
         'relative shrink-0',
-        embedded ? 'm-1 size-11 sm:size-8' : 'm-2 size-11 sm:size-9'
+        embedded
+          ? 'm-1 size-11 fine-pointer:size-8'
+          : 'm-2 size-11 fine-pointer:size-9'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1312,7 +1312,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-11 sm:min-h-8',
+        'row-start-2 min-h-11 fine-pointer:min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >

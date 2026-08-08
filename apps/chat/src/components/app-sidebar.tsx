@@ -55,7 +55,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}
-                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 sm:size-8"
+                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8"
                   >
                     <Plus className="size-4" />
                     <span className="sr-only">{t('chat.sidebar.newChat')}</span>
@@ -69,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       "Toggle Sidebar" sr-only label; an explicit aria-label
                       wins over it so screen readers follow the UI locale. */}
                   <SidebarTrigger
-                    className="mr-2 size-11 shrink-0 touch-manipulation sm:size-8"
+                    className="mr-2 size-11 shrink-0 touch-manipulation fine-pointer:size-8"
                     aria-label={t('chat.sidebar.closeSidebar')}
                   />
                 </TooltipTrigger>

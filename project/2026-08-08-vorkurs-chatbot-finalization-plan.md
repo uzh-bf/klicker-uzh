@@ -49,8 +49,9 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 - Use `interactiveWidget: 'resizes-content'` so Android keyboard resizing is
   reflected in the layout viewport while the thread viewport remains the sole
   conversation scroller.
-- Use at least 44px mobile hit areas for primary controls; keep desktop controls
-  compact where that does not reduce accessibility.
+- Use at least 44px mobile hit areas for primary controls; compact sizing is
+  limited to fine, hover-capable pointers rather than inferred from viewport
+  width.
 - Keep user-facing errors generic, but offer a clear retry action through the
   existing reload path, which truncates the failed assistant branch before
   retrying and therefore avoids duplicate visible turns.
@@ -88,11 +89,13 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 
 - Step 1: classified the staging stream-pipe failure; complete.
 - Step 2: stream lifecycle, Android viewport metadata, staging model-default
-  cleanup, mobile touch targets, and labeled retry recovery are implemented.
-  Chat typecheck passes and all 223 chat unit tests pass. Browser verification
-  is blocked by the shared DevRouter canonical route metadata mismatch: the
-  direct chat app is reachable, but the PWA's namespaced API route returns 404,
-  so an authenticated end-to-end flow cannot yet be exercised locally.
+  cleanup, pointer-aware mobile touch targets, and labeled retry recovery are
+  implemented with focused pure-logic coverage for error recognition and reload
+  truncation. Chat typecheck passes and all 225 chat unit tests pass. Browser
+  verification is blocked by the shared DevRouter canonical route metadata
+  mismatch: the direct chat app is reachable, but the PWA's namespaced API
+  route returns 404, so an authenticated end-to-end flow cannot yet be
+  exercised locally.
 - Step 3: pending staging rollout approval and real-upstream evidence.
 
 ## Review and finish gates

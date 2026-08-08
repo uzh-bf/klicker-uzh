@@ -82,7 +82,7 @@ export function ModeSwitcher() {
                 data-cy={`chat-mode-option-${mode}`}
                 onClick={() => setSelectedMode(mode)}
                 className={twMerge(
-                  'relative z-10 inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors touch-manipulation sm:min-h-8',
+                  'relative z-10 inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors touch-manipulation fine-pointer:min-h-8',
                   isActive
                     ? 'text-primary-foreground'
                     : // Full foreground rather than muted-foreground: the inactive

@@ -364,13 +364,13 @@ Chrome and check the focused composer, the visible conversation tail, and every
 primary icon control with the keyboard both closed and open. A desktop screenshot
 does not prove the `dvh`/keyboard behavior.
 
-Primary mobile controls use at least 44px touch targets and shrink only at the
-desktop breakpoint; this includes the composer, sidebar/header actions, mode
-options, message actions, and scroll-to-bottom control. A stream failure is a
-message callout with a localized, labeled retry action that uses the existing
-assistant-ui reload path, so retrying truncates the failed branch instead of
-adding a duplicate user turn. Keep the retry and duplicate-turn behavior in the
-mobile smoke matrix.
+Primary mobile controls use at least 44px touch targets and shrink only when the
+primary pointer is a fine, hover-capable pointer; this includes the composer,
+sidebar/header actions, mode options, message actions, and scroll-to-bottom
+control. A stream failure is a message callout with a localized, labeled retry
+action that uses the existing assistant-ui reload path, so retrying truncates
+the failed branch instead of adding a duplicate user turn. Keep the retry and
+duplicate-turn behavior in the mobile smoke matrix.
 
 The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
 filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).

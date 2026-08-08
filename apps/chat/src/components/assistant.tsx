@@ -377,7 +377,7 @@ function SidebarMain({
               system's hardcoded English sr-only label). */}
           <SidebarTrigger
             className={twMerge(
-              'size-11 touch-manipulation sm:size-8',
+              'size-11 touch-manipulation fine-pointer:size-8',
               open && 'md:hidden'
             )}
             aria-label={t('chat.sidebar.openSidebar')}
@@ -406,7 +406,7 @@ function SidebarMain({
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(
-                'text-muted-foreground hover:text-foreground inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 sm:size-8',
+                'text-muted-foreground hover:text-foreground inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
                 open && 'md:hidden'
               )}
             >

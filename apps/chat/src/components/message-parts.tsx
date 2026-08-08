@@ -56,7 +56,7 @@ const GroupedDisclosure: FC<
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-1 text-xs touch-manipulation sm:min-h-8"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-1 text-xs touch-manipulation fine-pointer:min-h-8"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />
@@ -171,7 +171,7 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
         <button
           type="button"
           data-cy="chat-retry-message-button"
-          className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 sm:min-h-8"
+          className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
         >
           <RefreshCwIcon className="size-4" aria-hidden />
           {t('chat.message.retry')}
