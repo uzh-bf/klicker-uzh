@@ -64,7 +64,7 @@ function Header({
       participant?.role !== UserRole.Participant ||
       process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
   })
-  const courseChatbot = chatbotData?.courseChatbots?.[0]
+  const courseChatbots = chatbotData?.courseChatbots ?? []
 
   const pageInFrame =
     global?.window &&
@@ -148,24 +148,32 @@ function Header({
             </Link>
           ))}
 
-        {courseId && courseChatbot && (
-          <Button
-            primary
-            onClick={() =>
-              window.open(
-                `/course/${courseId}/chatbot/${courseChatbot.id}`,
-                '_blank',
-                'noopener'
-              )
-            }
-            className={{
-              root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
-            }}
-            data={{ cy: 'student-course-chatbot-link' }}
-          >
-            <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
-          </Button>
-        )}
+        {courseId &&
+          courseChatbots.map((chatbot) => (
+            <Link
+              key={chatbot.id}
+              href={`/course/${courseId}/chatbot/${chatbot.id}`}
+              target="_blank"
+              rel="noopener"
+            >
+              <Button
+                primary
+                className={{
+                  root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+                }}
+                data={{ cy: `student-course-chatbot-link-${chatbot.id}` }}
+              >
+                <Button.Label
+                  className={{ root: 'line-clamp-1 max-w-32 break-all' }}
+                >
+                  {/* a single chatbot keeps the generic label, multiple ones need their names to be distinguishable */}
+                  {courseChatbots.length > 1
+                    ? chatbot.name
+                    : t('pwa.chatbot.openCourseChat')}
+                </Button.Label>
+              </Button>
+            </Link>
+          ))}
 
         <Dropdown
           trigger={

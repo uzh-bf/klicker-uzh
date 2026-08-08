@@ -134,9 +134,14 @@ Participants reach a chatbot from the shared PWA header (`apps/frontend-pwa/src/
 on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency.
 The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
 `getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
-and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
-to the home/back button when a chatbot is linked to the course and the caller is
-a participant; the button opens the first chatbot of the course in a new tab.
+and renders one link-wrapped button per chatbot
+(`data-cy="student-course-chatbot-link-<chatbotId>"`) next to the home/back
+button when the caller is a participant of the course. A single chatbot keeps the
+generic "AI tutor" label; with several chatbots each button carries the chatbot
+name, since `Chatbot` has no ordering or visibility field that would let a
+lecturer designate a primary one. The buttons are real anchors
+(`<Link target="_blank" rel="noopener">`), so middle-click and copy-link behave
+as expected.
 The query is deliberately **not** `withAuth(asParticipant)`: course pages are
 publicly reachable, and a scope error would surface as the literal message
 `Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
@@ -144,7 +149,7 @@ turns into a hard redirect to `/login?expired=true` for every anonymous visitor
 and every logged-in lecturer. Instead the resolver mirrors its page siblings
 `getCourseOverviewData` and `getStudentCourseLeaderboard` — a public field whose
 service returns `[]` unless the caller is a `PARTICIPANT` with a `Participation`
-record for the course. The button opens the existing PWA deep-link route
+record for the course. Each button opens the existing PWA deep-link route
 `course/[courseId]/chatbot/[chatbotId]` in a new tab, which redirects to login
 when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 `chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
