@@ -46,9 +46,12 @@ Service returns `[]` when the participant is not enrolled (mirrors v3-ai), so th
 
 1. **Service** — `packages/graphql/src/services/chatbots.ts`: `getParticipantCourseChatbots({ courseId }, ctx: ContextWithUser)` — participation lookup (`courseId_participantId`), return `[]` if absent, else `chatbot.findMany({ where: { courseId }, orderBy: [{ name: 'asc' }, { createdAt: 'asc' }], select: { id, name, description, avatar } })`.
 2. **Type** — `packages/graphql/src/schema/resource.ts`: `IChatbotPublic` interface + `ChatbotPublicRef`/`ChatbotPublic` object (copy shape from v3-ai).
-3. **Query field** — `packages/graphql/src/schema/query.ts`: `courseChatbots: t.withAuth(asParticipant).field({ type: [ChatbotPublic], args: { courseId: t.arg.string({ required: true }) }, resolve: one-liner → service })`. `asParticipant` is exact-role; no `withPermission` needed (participant-facing field, pattern at `query.ts:128`).
+3. **Query field** — `packages/graphql/src/schema/query.ts`: `courseChatbots: t.withAuth(asParticipant).field({ type: [ChatbotPublic], args: { courseId: t.arg.string({ required: true }) }, resolve: one-liner → service })`. `asParticipant` is exact-role; no `withPermission` needed (participant-facing field, pattern at `query.ts:128`). **Superseded during implementation:** the field ships as a public `t.field` whose service returns `[]` for non-participants — `withAuth(asParticipant)` throws a literal `Unauthorized`, which the PWA `errorLink` turns into a hard `/login?expired=true` redirect for anonymous visitors and lecturers. See `docs/chat-platform.md`.
 4. **Client op** — `packages/graphql/src/graphql/ops/QGetCourseChatbots.graphql` (`query GetCourseChatbots($courseId: String!) { courseChatbots(courseId: $courseId) { id name description avatar } }`), then codegen `pnpm --filter @klicker-uzh/graphql generate` and commit all regenerated artifacts (`ops.ts`, `ops.schema.json`, `public/schema.graphql`, `public/client.json`, `public/server.json` — stale `server.json` breaks persisted queries in prod).
-5. **PWA shared header** — `apps/frontend-pwa/src/components/common/Header.tsx`:
+5. **PWA shared header** — `apps/frontend-pwa/src/components/common/Header.tsx`
+   (steps below superseded by the follow-up fix: one button per chatbot rather
+   than `courseChatbots[0]`, `data-cy="student-course-chatbot-link-<chatbotId>"`,
+   and a `<Link target="_blank">` anchor instead of `window.open`):
    - `useQuery(GetCourseChatbotsDocument, { variables: { courseId: course?.id } })`, skipped unless `course.id` exists and the caller is a `Participant` (header also renders for anonymous visitors and lecturers on public course pages).
    - Render a single "AI tutor" button next to the home/back button when `courseChatbots[0]` exists; `window.open('/course/' + courseId + '/chatbot/' + id, '_blank', 'noopener')` (deep link; new tab).
    - `data-cy="student-course-chatbot-link"` for e2e.

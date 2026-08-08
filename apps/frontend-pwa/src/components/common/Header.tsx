@@ -155,11 +155,15 @@ function Header({
               href={`/course/${courseId}/chatbot/${chatbot.id}`}
               target="_blank"
               rel="noopener"
+              title={chatbot.name}
+              className="min-w-0"
             >
               <Button
                 primary
                 className={{
-                  root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+                  // shrink overrides the design-system shrink-0, so several chatbots
+                  // cannot push the avatar dropdown off a narrow header
+                  root: 'h-8 min-w-0 shrink bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
                 }}
                 data={{ cy: `student-course-chatbot-link-${chatbot.id}` }}
               >
