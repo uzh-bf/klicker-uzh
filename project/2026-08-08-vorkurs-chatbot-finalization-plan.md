@@ -56,9 +56,12 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
   existing reload path, which truncates the failed assistant branch before
   retrying and therefore avoids duplicate visible turns.
 - Make `auto` the global automatic-model primary in both staging and production.
-  This intentionally changes the default for unrestricted chatbots; the Vorkurs
-  chatbot remains Auto-only through its database allow-list and disabled model
-  selection. Include an unrestricted-chatbot smoke check in the staging gate.
+  This intentionally changes the automatic-selection default; explicit model
+  selections remain respected. Vorkurs has model selection disabled and `auto`
+  as its only allowed model for normal-credit requests, while the existing
+  `gpt-4.1-mini` zero-credit fallback remains a separate runtime path. Include
+  both unrestricted-chatbot selection states and both Vorkurs credit states in
+  the staging gate.
 
 ## Slices
 
@@ -81,6 +84,9 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 
 - Run a real-upstream first-turn smoke test, a retry test, and a mobile keyboard
   matrix against the rolled staging image.
+- Verify the rendered `primaryId: auto`, an unrestricted chatbot using automatic
+  selection, an unrestricted chatbot with an explicit selection, and Vorkurs
+  with positive and exhausted credits.
 - Capture immutable image digests, request/response timings, stream completion,
   tool completion, persisted message state, and pod errors.
 - Add or update the chat-platform wiki with the verified failure mode and

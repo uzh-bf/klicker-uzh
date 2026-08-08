@@ -41,9 +41,10 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
-explicit when changing the transport: it lets the server consume the upstream
-stream after a client abort instead of leaving the response lifecycle dependent
-on the browser connection. The root layout also declares
+explicit when changing the transport: it keeps the UI stream's abort lifecycle
+consumed so abort callbacks and partial-response handling can run. It does not
+detach upstream generation from `req.signal` or guarantee completion after a
+client abort. The root layout also declares
 `interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
 is required for Android keyboard resizing because the thread viewport is the
 only conversation scroller and the composer is positioned over it.
@@ -67,7 +68,8 @@ the values.yaml comment as the best available record and confirm against the
 deployment before making a routing claim. The deployed registry exposes no
 direct GPT-5.6 picker option; the router's tier targets are internal.
 Both staging and production now use `auto` as the global automatic-model
-primary, so chatbots without a model-specific restriction use Auto by default.
+primary, so chatbots using automatic model selection use Auto by default.
+Chatbots with an explicit model selection can continue using that selection.
 
 The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
 **not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
