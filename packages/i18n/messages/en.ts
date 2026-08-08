@@ -134,6 +134,7 @@ export default {
         'Cannot edit: selected model does not support images',
       copy: 'Copy',
       refresh: 'Refresh',
+      retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
       toolCallsGroupLabel:

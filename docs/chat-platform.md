@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-03'
+timestamp: '2026-08-08'
 tags:
   - frontend
   - chat
@@ -39,6 +39,16 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 
+The chat route returns an AI SDK UI message stream and passes
+`consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
+explicit when changing the transport: it keeps the UI stream's abort lifecycle
+consumed so abort callbacks and partial-response handling can run. It does not
+detach upstream generation from `req.signal` or guarantee completion after a
+client abort. The root layout also declares
+`interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
+is required for Android keyboard resizing because the thread viewport is the
+only conversation scroller and the composer is positioned over it.
+
 ## Auth guard pattern (route handlers)
 
 Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
@@ -57,6 +67,9 @@ configuration lives in the external AI deployment repository's
 the values.yaml comment as the best available record and confirm against the
 deployment before making a routing claim. The deployed registry exposes no
 direct GPT-5.6 picker option; the router's tier targets are internal.
+Both staging and production now use `auto` as the global automatic-model
+primary, so chatbots using automatic model selection use Auto by default.
+Chatbots with an explicit model selection can continue using that selection.
 
 The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
 **not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
@@ -334,6 +347,7 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 - **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
+- **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
@@ -348,6 +362,19 @@ the package Vitest suite (`pnpm --filter @klicker-uzh/chat test:run` — the pac
 plain `test` script), and the package production build in the worktree's devcontainer.
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
+
+For mobile UI verification, use a real Chromium mobile emulation or Android
+Chrome and check the focused composer, the visible conversation tail, and every
+primary icon control with the keyboard both closed and open. A desktop screenshot
+does not prove the `dvh`/keyboard behavior.
+
+Primary mobile controls use at least 44px touch targets and shrink only when the
+primary pointer is a fine, hover-capable pointer; this includes the composer,
+sidebar/header actions, mode options, message actions, and scroll-to-bottom
+control. A stream failure is a message callout with a localized, labeled retry
+action that uses the existing assistant-ui reload path, so retrying truncates
+the failed branch instead of adding a duplicate user turn. Keep the retry and
+duplicate-turn behavior in the mobile smoke matrix.
 
 The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
 filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).

@@ -137,6 +137,7 @@ export default {
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
       refresh: 'Aktualisieren',
+      retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
       toolCallsGroupLabel:

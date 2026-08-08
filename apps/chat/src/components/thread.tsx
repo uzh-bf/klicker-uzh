@@ -67,6 +67,7 @@ import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { hasChatError } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
@@ -103,7 +104,7 @@ type ImageAttachment = {
 type MessageWithCustomMetadata = {
   id: string
   parentId?: string | null
-  content?: readonly { type: string; text?: string }[]
+  content?: readonly { type: string; name?: string; text?: string }[]
   attachmentSourceMessageId?: string | null
   imageAttachments?: ImageAttachment[]
   metadata?: {
@@ -259,8 +260,8 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
         className={twMerge(
           'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
           embedded
-            ? 'scrollbar-none overflow-y-auto px-2 pb-24 pt-2'
-            : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
+            : 'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
         <ThreadWelcome chatbotAvatar={chatbotAvatar} />
@@ -302,7 +303,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -424,7 +425,7 @@ const AttachmentErrorBanner: FC<{
         <button
           type="button"
           onClick={onDismiss}
-          className="hover:bg-destructive/20 rounded"
+          className="hover:bg-destructive/20 inline-flex size-11 items-center justify-center rounded touch-manipulation fine-pointer:size-6"
           aria-label={t('chat.composer.dismissError')}
         >
           <XIcon className="size-3" />
@@ -700,7 +701,7 @@ const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => {
       type="button"
       data-cy="chat-attachment-remove"
       onClick={onClick}
-      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full border"
+      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-11 items-center justify-center rounded-full border touch-manipulation fine-pointer:size-6"
       aria-label={t('chat.composer.removeAttachment')}
     >
       ×
@@ -810,8 +811,10 @@ const ComposerAttachButton: FC<{
         data-cy={dataCy ? `${dataCy}-attach-button` : 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
-          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
-          embedded ? 'size-7' : 'size-9'
+          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
+          embedded
+            ? 'size-11 fine-pointer:size-8'
+            : 'size-11 fine-pointer:size-9'
         )}
         aria-label={t('chat.composer.attachImage')}
       >
@@ -846,7 +849,9 @@ const ComposerAction: FC = () => {
     <div
       className={twMerge(
         'relative shrink-0',
-        embedded ? 'm-1 size-7' : 'm-2 size-9'
+        embedded
+          ? 'm-1 size-11 fine-pointer:size-8'
+          : 'm-2 size-11 fine-pointer:size-9'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1301,12 +1306,13 @@ const AssistantMessage: FC<{
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
+  const message = useMessage() as MessageWithCustomMetadata
   if (!showMessageActions) return null
 
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-8',
+        'row-start-2 min-h-11 fine-pointer:min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
@@ -1333,20 +1339,22 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ActionBarPrimitive.Reload asChild>
-              <button
-                data-cy="chat-reload-message-button"
-                className={actionBarButtonClassName}
-              >
-                <RefreshCwIcon />
-                <span className="sr-only">{t('chat.message.refresh')}</span>
-              </button>
-            </ActionBarPrimitive.Reload>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
-        </Tooltip>
+        {!hasChatError(message) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.Reload asChild>
+                <button
+                  data-cy="chat-reload-message-button"
+                  className={actionBarButtonClassName}
+                >
+                  <RefreshCwIcon />
+                  <span className="sr-only">{t('chat.message.refresh')}</span>
+                </button>
+              </ActionBarPrimitive.Reload>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
+          </Tooltip>
+        )}
 
         <MessageRatingButtons />
 

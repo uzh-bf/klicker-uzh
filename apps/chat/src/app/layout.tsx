@@ -20,6 +20,9 @@ export const metadata: Metadata = {
 // iOS notch/home-indicator so `env(safe-area-inset-*)` resolves to the real
 // inset instead of 0 — required for the composer's safe-area bottom padding.
 export const viewport: Viewport = {
+  // Keep the layout viewport in sync with the Android keyboard so the
+  // composer does not move the conversation viewport when it opens.
+  interactiveWidget: 'resizes-content',
   viewportFit: 'cover',
 }
 

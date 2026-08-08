@@ -33,6 +33,7 @@ import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
+  consumeStream,
   generateText,
   isStepCount,
   streamText,
@@ -1680,6 +1681,7 @@ export async function POST(
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
+    consumeSseStream: consumeStream,
     onError: (error) => {
       const serializedError = serializeStreamError(error)
       const classification = classifyStreamError(serializedError)
