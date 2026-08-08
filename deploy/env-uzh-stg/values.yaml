@@ -168,7 +168,7 @@ chat:
     enabled: false
 
   automaticModels:
-    primaryId: auto
+    primaryId: gpt-5.5
     fallbackId: gpt-4.1-mini
 
   modelRegistry:

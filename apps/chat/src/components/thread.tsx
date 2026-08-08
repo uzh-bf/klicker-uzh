@@ -701,7 +701,7 @@ const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => {
       type="button"
       data-cy="chat-attachment-remove"
       onClick={onClick}
-      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full border"
+      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-11 items-center justify-center rounded-full border touch-manipulation fine-pointer:size-6"
       aria-label={t('chat.composer.removeAttachment')}
     >
       ×

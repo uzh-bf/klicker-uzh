@@ -55,8 +55,10 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 - Keep user-facing errors generic, but offer a clear retry action through the
   existing reload path, which truncates the failed assistant branch before
   retrying and therefore avoids duplicate visible turns.
-- Clean the staging automatic-model setting to the valid registry id `auto` in
-  the deployment values; do not change production values in this branch.
+- Keep the global staging automatic-model primary unchanged; the Vorkurs
+  chatbot's database allow-list and disabled model selection must provide the
+  Auto-only behavior without changing unrelated staging chatbots. Treat the
+  staging `gpt-5.5` registry warning as a separate deployment-parity gate.
 
 ## Slices
 
@@ -89,13 +91,13 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 
 - Step 1: classified the staging stream-pipe failure; complete.
 - Step 2: stream lifecycle, Android viewport metadata, staging model-default
-  cleanup, pointer-aware mobile touch targets, and labeled retry recovery are
-  implemented with focused pure-logic coverage for error recognition and reload
-  truncation. Chat typecheck passes and all 225 chat unit tests pass. Browser
-  verification is blocked by the shared DevRouter canonical route metadata
-  mismatch: the direct chat app is reachable, but the PWA's namespaced API
-  route returns 404, so an authenticated end-to-end flow cannot yet be
-  exercised locally.
+  investigation, pointer-aware mobile touch targets (including attachment
+  removal), and labeled retry recovery are implemented with focused
+  pure-logic coverage for error recognition and reload truncation. Chat
+  typecheck passes and all 225 chat unit tests pass. Browser verification is
+  blocked by the shared DevRouter canonical route metadata mismatch: the direct
+  chat app is reachable, but the PWA's namespaced API route returns 404, so an
+  authenticated end-to-end flow cannot yet be exercised locally.
 - Step 3: pending staging rollout approval and real-upstream evidence.
 
 ## Review and finish gates
