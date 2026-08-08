@@ -376,7 +376,10 @@ function SidebarMain({
               toggle on screen at any given time (Overrides the design
               system's hardcoded English sr-only label). */}
           <SidebarTrigger
-            className={twMerge('size-6', open && 'md:hidden')}
+            className={twMerge(
+              'size-11 touch-manipulation sm:size-8',
+              open && 'md:hidden'
+            )}
             aria-label={t('chat.sidebar.openSidebar')}
           />
           {/* Persistent header identity (V3): name (+ avatar) stays visible
@@ -403,7 +406,7 @@ function SidebarMain({
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(
-                'text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50',
+                'text-muted-foreground hover:text-foreground inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 sm:size-8',
                 open && 'md:hidden'
               )}
             >

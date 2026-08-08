@@ -87,12 +87,13 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 ## Progress
 
 - Step 1: classified the staging stream-pipe failure; complete.
-- Step 2: clean implementation worktree created from the local `origin/v3`
-  ref; stream lifecycle, Android viewport metadata, and staging model-default
-  cleanup are implemented. Chat typecheck passes and all 223 chat unit tests
-  pass; browser verification is pending route repair.
-- Step 3: pending implementation and verification.
-- Step 4: pending staging rollout approval and real-upstream evidence.
+- Step 2: stream lifecycle, Android viewport metadata, staging model-default
+  cleanup, mobile touch targets, and labeled retry recovery are implemented.
+  Chat typecheck passes and all 223 chat unit tests pass. Browser verification
+  is blocked by the shared DevRouter canonical route metadata mismatch: the
+  direct chat app is reachable, but the PWA's namespaced API route returns 404,
+  so an authenticated end-to-end flow cannot yet be exercised locally.
+- Step 3: pending staging rollout approval and real-upstream evidence.
 
 ## Review and finish gates
 
@@ -100,4 +101,7 @@ Android keyboard/layout behavior, mobile touch targets, and recovery messaging.
 - Main-session verification: inspect every diff and rerun repo-native checks.
 - Final outcome: one separate read-only reviewer on the exact integrated commit
   range before presenting the package as complete.
+- Browser route repair is an explicit infrastructure action because the current
+  DevRouter state is shared across worktrees; do not repair or overwrite the
+  global route registry as part of this branch without separate approval.
 - Publication, merge, and deployment require separate explicit authorization.

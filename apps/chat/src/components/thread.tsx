@@ -103,7 +103,7 @@ type ImageAttachment = {
 type MessageWithCustomMetadata = {
   id: string
   parentId?: string | null
-  content?: readonly { type: string; text?: string }[]
+  content?: readonly { type: string; name?: string; text?: string }[]
   attachmentSourceMessageId?: string | null
   imageAttachments?: ImageAttachment[]
   metadata?: {
@@ -114,6 +114,11 @@ type MessageWithCustomMetadata = {
       | null
   } | null
 }
+
+const hasChatError = (message: MessageWithCustomMetadata): boolean =>
+  message.content?.some(
+    (part) => part.type === 'data' && part.name === 'chat-error'
+  ) ?? false
 
 const extractMessageText = (message: {
   content?: readonly { type: string; text?: string }[]
@@ -259,8 +264,8 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
         className={twMerge(
           'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
           embedded
-            ? 'scrollbar-none overflow-y-auto px-2 pb-24 pt-2'
-            : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
+            : 'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
         <ThreadWelcome chatbotAvatar={chatbotAvatar} />
@@ -302,7 +307,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none sm:h-9 sm:w-9">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -810,8 +815,8 @@ const ComposerAttachButton: FC<{
         data-cy={dataCy ? `${dataCy}-attach-button` : 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
-          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
-          embedded ? 'size-7' : 'size-9'
+          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
+          embedded ? 'size-11 sm:size-8' : 'size-11 sm:size-9'
         )}
         aria-label={t('chat.composer.attachImage')}
       >
@@ -846,7 +851,7 @@ const ComposerAction: FC = () => {
     <div
       className={twMerge(
         'relative shrink-0',
-        embedded ? 'm-1 size-7' : 'm-2 size-9'
+        embedded ? 'm-1 size-11 sm:size-8' : 'm-2 size-11 sm:size-9'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1301,12 +1306,13 @@ const AssistantMessage: FC<{
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
+  const message = useMessage() as MessageWithCustomMetadata
   if (!showMessageActions) return null
 
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-8',
+        'row-start-2 min-h-11 sm:min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
@@ -1333,20 +1339,22 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ActionBarPrimitive.Reload asChild>
-              <button
-                data-cy="chat-reload-message-button"
-                className={actionBarButtonClassName}
-              >
-                <RefreshCwIcon />
-                <span className="sr-only">{t('chat.message.refresh')}</span>
-              </button>
-            </ActionBarPrimitive.Reload>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
-        </Tooltip>
+        {!hasChatError(message) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.Reload asChild>
+                <button
+                  data-cy="chat-reload-message-button"
+                  className={actionBarButtonClassName}
+                >
+                  <RefreshCwIcon />
+                  <span className="sr-only">{t('chat.message.refresh')}</span>
+                </button>
+              </ActionBarPrimitive.Reload>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
+          </Tooltip>
+        )}
 
         <MessageRatingButtons />
 

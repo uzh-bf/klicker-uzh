@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-03'
+timestamp: '2026-08-08'
 tags:
   - frontend
   - chat
@@ -363,6 +363,14 @@ For mobile UI verification, use a real Chromium mobile emulation or Android
 Chrome and check the focused composer, the visible conversation tail, and every
 primary icon control with the keyboard both closed and open. A desktop screenshot
 does not prove the `dvh`/keyboard behavior.
+
+Primary mobile controls use at least 44px touch targets and shrink only at the
+desktop breakpoint; this includes the composer, sidebar/header actions, mode
+options, message actions, and scroll-to-bottom control. A stream failure is a
+message callout with a localized, labeled retry action that uses the existing
+assistant-ui reload path, so retrying truncates the failed branch instead of
+adding a duplicate user turn. Keep the retry and duplicate-turn behavior in the
+mobile smoke matrix.
 
 The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
 filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).
