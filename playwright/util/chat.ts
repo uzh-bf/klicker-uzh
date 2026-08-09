@@ -365,6 +365,8 @@ export type StreamOptions = {
   textChunks?: string[]
   /** Delays each streamed SSE line by this many milliseconds. */
   chunkDelayMs?: number
+  /** Pauses after this many text deltas until the test releases the stream. */
+  pauseAfterTextChunk?: number
   /** Payload of the `finish` part; omitted entirely when not given. */
   metadata?: StreamFinishMetadata
   /** Tool calls emitted before the answer text. */
@@ -441,8 +443,18 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
     const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
 
     await page.addInitScript(
-      ({ chatbotPath, lines: streamLines, delayMs }) => {
+      ({ chatbotPath, lines: streamLines, delayMs, pauseAfterTextChunk }) => {
         const originalFetch = window.fetch.bind(window)
+        let releasePausedStream: (() => void) | undefined
+        ;(
+          window as typeof window & {
+            __releaseMockChatStream?: () => void
+          }
+        ).__releaseMockChatStream = () => {
+          releasePausedStream?.()
+          releasePausedStream = undefined
+        }
+
         window.fetch = async (input, init) => {
           const requestUrl =
             typeof input === 'string'
@@ -459,6 +471,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
           }
 
           let lineIndex = 0
+          let textChunkCount = 0
           const encoder = new TextEncoder()
           const stream = new ReadableStream<Uint8Array>({
             async pull(controller) {
@@ -471,8 +484,25 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
                 await new Promise((resolve) => setTimeout(resolve, delayMs))
               }
 
-              controller.enqueue(encoder.encode(`${streamLines[lineIndex]}\n`))
+              const line = streamLines[lineIndex]
+              controller.enqueue(encoder.encode(`${line}\n`))
               lineIndex += 1
+
+              let eventType: string | undefined
+              try {
+                eventType = JSON.parse(line.slice('data: '.length)).type
+              } catch {
+                // The trailing [DONE] marker is not JSON.
+              }
+
+              if (eventType === 'text-delta') {
+                textChunkCount += 1
+                if (textChunkCount === pauseAfterTextChunk) {
+                  await new Promise<void>((resolve) => {
+                    releasePausedStream = resolve
+                  })
+                }
+              }
             },
           })
 
@@ -486,6 +516,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         chatbotPath: `/api/chatbots/${CHATBOT_ID}/chat`,
         lines,
         delayMs: options.chunkDelayMs,
+        pauseAfterTextChunk: options.pauseAfterTextChunk,
       }
     )
     return

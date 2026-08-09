@@ -29,10 +29,11 @@ replace a real-upstream staging smoke test.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
-`ReadableStream`. Use that seam to test the assistant row while it is still
-streaming, and capture DOM identity around feedback clicks when the bug concerns
-remounts or flicker. A passing final-text assertion alone does not prove that the
-conversation stayed mounted.
+`ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
+intermediate state until the test releases it. Use that seam to test the assistant
+row while it is still streaming, and capture DOM identity around feedback clicks
+when the bug concerns remounts or flicker. A passing final-text assertion alone
+does not prove that the conversation stayed mounted.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 

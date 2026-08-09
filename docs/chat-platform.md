@@ -394,7 +394,8 @@ The live reasoning/tool/credit matrix additionally needs a configured model key;
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
 
 The chat Playwright fixture can emit `textChunks` through a delayed browser
-`ReadableStream` with `chunkDelayMs`. The streaming stability regression in
+`ReadableStream` with `chunkDelayMs`, and can pause after a chosen text delta
+with `pauseAfterTextChunk` until the test explicitly releases it. The streaming stability regression in
 `playwright/tests/Y-chat.spec.ts` captures the assistant row before later deltas arrive and
 asserts that the same DOM node remains mounted; the rating regression performs the same identity
 check across an optimistic feedback update. These checks target remounts, which are the visible

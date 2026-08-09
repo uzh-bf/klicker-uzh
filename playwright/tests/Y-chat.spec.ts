@@ -440,15 +440,18 @@ test.describe('Chatbot Messaging Interface', () => {
     await mockChatStream(page, {
       textChunks: ['The first part', ' and the second part', ' and the end.'],
       chunkDelayMs: 80,
+      pauseAfterTextChunk: 1,
     })
     await visitChat(page)
 
     await sendMessage(page, 'Stream a stable answer')
 
     const assistant = page.getByTestId('chat-assistant-message')
-    await expect(assistant).toContainText('The first part', {
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The first part', {
       timeout: 15_000,
     })
+    await expect(assistantContent).not.toContainText('and the end.')
     await assistant.evaluate((node) => {
       const state = window as typeof window & {
         __assistantMessageBeforeStreamUpdate?: Element
@@ -456,9 +459,16 @@ test.describe('Chatbot Messaging Interface', () => {
       state.__assistantMessageBeforeStreamUpdate = node
     })
 
-    await expect(
-      page.getByTestId('chat-assistant-message-content')
-    ).toContainText('and the end.', { timeout: 15_000 })
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent).toContainText('and the end.', {
+      timeout: 15_000,
+    })
 
     const stayedMounted = await page.evaluate(() => {
       const state = window as typeof window & {
@@ -733,10 +743,9 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
   })
 
-  // A vote only counts if it survives leaving the page: the runtime's own
-  // optimistic patch lives in its message repository, so the pressed state
-  // after a reload can only come from the persisted rating being mapped back
-  // in (`convertMessage` in RuntimeProvider).
+  // A vote only counts if it survives leaving the page: the reloaded thread
+  // carries its persisted rating into chatStore, and MessageRatingButtons reads
+  // that store value directly rather than relying on assistant-ui metadata.
   test('A stored rating is restored after a page reload', async ({ page }) => {
     const assistantMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c41'
     await seedThread(participantId, {

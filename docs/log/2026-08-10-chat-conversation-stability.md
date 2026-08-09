@@ -16,7 +16,8 @@ tags:
   adapters, and direct store-owned rating buttons used to prevent conversation
   remounts during streaming and feedback.
 - **Update**: [testing](../testing.md) documents the delayed multi-delta
-  browser-stream fixture and DOM-identity assertion used for this regression.
+  browser-stream fixture, its deterministic intermediate pause, and the
+  DOM-identity assertion used for this regression.
 - **Update**: [klicker-testing-verification](../../.agents/skills/klicker-testing-verification/SKILL.md)
   routes future chat-rendering regressions through the same fixture instead of
   treating a final answer as evidence that the conversation stayed mounted.
