@@ -32,7 +32,7 @@ function RuntimeCounter({ startedAt }: { startedAt?: string }) {
       setRuntime(calculateRuntime({ startedAt }))
     }, 1000)
     return () => clearInterval(currentRuntime)
-  }, [runtime, startedAt])
+  }, [startedAt])
 
   return (
     <>

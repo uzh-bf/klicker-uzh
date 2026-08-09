@@ -13,7 +13,7 @@ function TouchMonitor({
     if (typeof touched !== 'undefined' && stateValue !== touched) {
       setState(touched)
     }
-  }, [touched])
+  }, [setState, stateValue, touched])
   return null
 }
 

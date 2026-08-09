@@ -78,7 +78,15 @@ function useEvaluationHistogramData({
     })
 
     return { data: dataArray, domain: { min: min, max: max } }
-  }, [type, responses, minValue, maxValue, binCount])
+  }, [
+    binCount,
+    exactSolutions,
+    maxValue,
+    minValue,
+    responses,
+    solutionRanges,
+    type,
+  ])
 
   return histogramData
 }

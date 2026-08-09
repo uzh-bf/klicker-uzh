@@ -70,7 +70,7 @@ function useEvaluationBarChartData({
     } else {
       return []
     }
-  }, [instance])
+  }, [instance, t])
 
   return labeledData
 }

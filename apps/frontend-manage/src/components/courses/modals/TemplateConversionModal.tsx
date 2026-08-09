@@ -68,10 +68,10 @@ function TemplateConversionModal({
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
     if (templateInfo?.noResourcesRequired) {
-      setConfirmations({
-        ...confirmations,
+      setConfirmations((prev) => ({
+        ...prev,
         resourceAccess: true,
-      })
+      }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateInfo])

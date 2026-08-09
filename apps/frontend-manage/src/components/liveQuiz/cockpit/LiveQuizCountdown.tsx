@@ -67,7 +67,7 @@ function LiveQuizCountdown({
       endTimestamp: expirationTime,
       cooldown: false,
     }
-  }, [block.expiresAt, block.status, block.timeLimit, inCooldown])
+  }, [block.expiresAt, block.status, block.timeLimit])
 
   // as soon as the endTimestamp changes, we should re-evaluate if the block is in cooldown
   useEffect(() => {
@@ -78,7 +78,7 @@ function LiveQuizCountdown({
       setInCooldown(cooldown)
       onExpiration()
     }
-  }, [endTimestamp, cooldown])
+  }, [cooldown, inCooldown, onExpiration, setInCooldown])
 
   const isStatic = !endTimestamp || block.status === ElementBlockStatus.Executed
   const isActiveCooldown = inCooldown && !isStatic

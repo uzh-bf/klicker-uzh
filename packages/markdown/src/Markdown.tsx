@@ -194,7 +194,14 @@ function Markdown({
       console.error(e)
       return 'Failed to parse content.'
     }
-  }, [content, singleDollarTextMath])
+  }, [
+    className?.img,
+    components,
+    content,
+    singleDollarTextMath,
+    withLinkButtons,
+    withModal,
+  ])
 
   if (withProse) {
     // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl

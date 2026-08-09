@@ -71,7 +71,7 @@ function RunningLiveQuiz() {
 
   useEffect(() => {
     setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
-  }, [quizData?.controlLiveQuiz?.id, quizData?.controlLiveQuiz?.activeBlock])
+  }, [quizData?.controlLiveQuiz?.activeBlock])
 
   useEffect(() => {
     if (!quizData?.controlLiveQuiz?.blocks) return

@@ -13,7 +13,7 @@ function ConversionTypeMonitor({
     } else if (conversionType === 'convert') {
       setConversionConfirmation(false)
     }
-  }, [conversionType])
+  }, [conversionType, setConversionConfirmation])
 
   return null
 }

@@ -46,7 +46,9 @@ function SelectionManualItemCreation({
       })) ?? [],
   })
 
-  // make sure that only valid elements are stored as correct answers (-> on item removal, the item should also be removed from the correct answers)
+  // Make sure that only valid elements are stored as correct answers (on item
+  // removal, the item should also be removed from the correct answers).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solution values are intentionally excluded to avoid a Formik update loop
   useEffect(() => {
     // if no items are available, reset the solution field
     if (!solutions.value || !items.value || items.value.length === 0) {
@@ -67,9 +69,6 @@ function SelectionManualItemCreation({
     ) {
       solutionHelpers.setValue(newFieldValues)
     }
-
-    // do not add value as a dependency --> rendering loop! - updates only on collection change desired
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.value])
 
   return (

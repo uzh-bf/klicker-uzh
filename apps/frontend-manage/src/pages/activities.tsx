@@ -151,6 +151,8 @@ function Activities() {
   }, [loadingActivities, numOfActivities, currentPage, pageSize])
 
   // reset pagination when filters, search, or sorting changes
+  // These values are trigger-only dependencies for pagination reset.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filter and sort changes intentionally reset pagination
   useEffect(() => {
     setCurrentPage(1)
   }, [filters, searchString, sort])

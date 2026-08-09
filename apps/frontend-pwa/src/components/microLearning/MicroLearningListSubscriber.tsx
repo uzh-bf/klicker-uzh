@@ -73,7 +73,7 @@ function MicroLearningListSubscriber({
         return { participations: updatedParticipations }
       },
     })
-  }, [activityId, subscribeToMore])
+  }, [activityId, subscribeToMore, t])
 
   return null
 }

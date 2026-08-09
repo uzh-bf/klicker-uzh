@@ -299,7 +299,14 @@ function MicroLearningWizard({
           }),
       })
     },
-    [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
+    [
+      createMicroLearning,
+      editMicroLearning,
+      editMode,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const activityId =

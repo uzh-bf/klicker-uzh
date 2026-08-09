@@ -65,7 +65,8 @@ function SelectionCollectionOptions({
     collectionAnswers,
   })
 
-  // udpate the selected correct answers if the answer collection changes
+  // update the selected correct answers if the answer collection changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solution values are intentionally excluded to avoid a Formik update loop
   useEffect(() => {
     // if no collection answers are available, reset the solutions field
     if (
@@ -90,9 +91,6 @@ function SelectionCollectionOptions({
     ) {
       solutionHelpers.setValue(newFieldValues)
     }
-
-    // do not add value as a dependency --> rendering loop! - updates only on collection change desired
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionAnswers])
 
   // locally store the selected answer collection

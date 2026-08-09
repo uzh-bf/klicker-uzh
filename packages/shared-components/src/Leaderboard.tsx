@@ -91,7 +91,7 @@ function Leaderboard({
         },
         { rankedEntriesAndSelf: [], inTopK: false, selfEntry: undefined }
       ),
-    [leaderboard, participant]
+    [leaderboard, participant, topKOnly]
   )
 
   const filteredEntries = useMemo(() => {

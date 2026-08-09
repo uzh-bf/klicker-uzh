@@ -16,7 +16,14 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useRef, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 const COLORS = {
   courseStart: 'hsl(142 60% 40%)', // Stronger, darker green
@@ -37,6 +44,16 @@ const TEXT_COLORS = {
   groupActivity: 'black',
 }
 
+function getStartEndDuration(totalDurationHours: number): number {
+  if (totalDurationHours <= 4) {
+    // for activities <= 4 hours, use 1.5 hour slots to avoid overlap
+    return 1.5
+  }
+
+  // for longer activities, use 2-3 hour slots
+  return 2
+}
+
 function CourseCalendarView({
   course,
   setActivityList,
@@ -53,160 +70,153 @@ function CourseCalendarView({
   const [currentView, setCurrentView] = useState('timeGridWeek')
   const [currentTitle, setCurrentTitle] = useState('')
 
-  // helper function to calculate start/end event duration
-  const getStartEndDuration = (totalDurationHours: number): number => {
-    if (totalDurationHours <= 4) {
-      // for activities <= 4 hours, use 1.5 hour slots to avoid overlap
-      return 1.5
-    } else {
-      // for longer activities, use 2-3 hour slots
-      return 2
-    }
-  }
-
   // helper function to add events for activities with duration
-  const addActivityEvents = (
-    activity: ActivityInfo,
-    color: string,
-    textColor: string,
-    calendarEvents: any[]
-  ) => {
-    const scheduledStart = activity.scheduledStartAt
-    const scheduledEnd = activity.scheduledEndAt
-    const publicationDate = activity.automaticPublicationAt
+  const addActivityEvents = useCallback(
+    (
+      activity: ActivityInfo,
+      color: string,
+      textColor: string,
+      calendarEvents: any[]
+    ) => {
+      const scheduledStart = activity.scheduledStartAt
+      const scheduledEnd = activity.scheduledEndAt
+      const publicationDate = activity.automaticPublicationAt
 
-    if (!scheduledStart && !scheduledEnd && !publicationDate) return
+      if (!scheduledStart && !scheduledEnd && !publicationDate) return
 
-    // for scheduled practice quizzes and live quizzes, show the start date and an all-day event on the start date
-    if (
-      publicationDate &&
-      (activity.type === ActivityType.PracticeQuiz ||
-        activity.type === ActivityType.LiveQuiz)
-    ) {
-      const startDate = new Date(publicationDate)
-      const isStartMidnight =
-        startDate.getHours() === 0 &&
-        startDate.getMinutes() === 0 &&
-        startDate.getSeconds() === 0 &&
-        startDate.getMilliseconds() === 0
+      // for scheduled practice quizzes and live quizzes, show the start date and an all-day event on the start date
+      if (
+        publicationDate &&
+        (activity.type === ActivityType.PracticeQuiz ||
+          activity.type === ActivityType.LiveQuiz)
+      ) {
+        const startDate = new Date(publicationDate)
+        const isStartMidnight =
+          startDate.getHours() === 0 &&
+          startDate.getMinutes() === 0 &&
+          startDate.getSeconds() === 0 &&
+          startDate.getMilliseconds() === 0
 
-      // if the start date is exactly at midnight, use the following day as the start
-      const allDayStart = isStartMidnight
-        ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
-        : startDate
+        // if the start date is exactly at midnight, use the following day as the start
+        const allDayStart = isStartMidnight
+          ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+          : startDate
 
-      calendarEvents.push({
-        id: `${activity.id}__${activity.type}__available`,
-        title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
-        start: allDayStart.toISOString().split('T')[0],
-        end: allDayStart.toISOString().split('T')[0],
-        backgroundColor: color,
-        borderColor: color,
-        textColor,
-      })
+        calendarEvents.push({
+          id: `${activity.id}__${activity.type}__available`,
+          title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
+          start: allDayStart.toISOString().split('T')[0],
+          end: allDayStart.toISOString().split('T')[0],
+          backgroundColor: color,
+          borderColor: color,
+          textColor,
+        })
 
-      // start event
-      const startTime = startDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })
+        // start event
+        const startTime = startDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
 
-      calendarEvents.push({
-        id: `${activity.id}__${activity.type}__start`,
-        title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
-        start: startDate.toISOString(),
-        end: new Date(startDate.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-        backgroundColor: color,
-        borderColor: color,
-        textColor,
-      })
-    }
-
-    // if both start and end date are defined, add an all-day event
-    // (= microlearnings and group activities)
-    if (scheduledStart && scheduledEnd) {
-      const startDate = new Date(scheduledStart)
-      const endDate = new Date(scheduledEnd)
-      const totalDurationHours =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
-
-      // all-day event spanning the entire period (available period)
-      // if the start date is exactly at midnight, use the following day as the start
-      const isStartMidnight =
-        startDate.getHours() === 0 &&
-        startDate.getMinutes() === 0 &&
-        startDate.getSeconds() === 0 &&
-        startDate.getMilliseconds() === 0
-      const allDayStart = isStartMidnight
-        ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
-        : startDate
-
-      // determine if endDate is at midnight
-      const isEndMidnight =
-        endDate.getHours() === 0 &&
-        endDate.getMinutes() === 0 &&
-        endDate.getSeconds() === 0 &&
-        endDate.getMilliseconds() === 0
-
-      // always shift by timezone offset, add a day only if not midnight
-      let adjustedEnd = endDate.getTime() - endDate.getTimezoneOffset() * 60000
-      if (!isEndMidnight) {
-        adjustedEnd += 24 * 60 * 60 * 1000
+        calendarEvents.push({
+          id: `${activity.id}__${activity.type}__start`,
+          title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
+          start: startDate.toISOString(),
+          end: new Date(startDate.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+          backgroundColor: color,
+          borderColor: color,
+          textColor,
+        })
       }
 
-      calendarEvents.push({
-        id: `${activity.id}__${activity.type}__available`,
-        title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
-        start: allDayStart.toISOString().split('T')[0],
-        end: new Date(adjustedEnd).toISOString().split('T')[0],
-        backgroundColor: color,
-        borderColor: color,
-        textColor,
-      })
+      // if both start and end date are defined, add an all-day event
+      // (= microlearnings and group activities)
+      if (scheduledStart && scheduledEnd) {
+        const startDate = new Date(scheduledStart)
+        const endDate = new Date(scheduledEnd)
+        const totalDurationHours =
+          (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)
 
-      // start event
-      const slotDuration = getStartEndDuration(totalDurationHours)
-      const startEndTime = new Date(
-        startDate.getTime() + slotDuration * 60 * 60 * 1000
-      )
-      const startTime = startDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })
+        // all-day event spanning the entire period (available period)
+        // if the start date is exactly at midnight, use the following day as the start
+        const isStartMidnight =
+          startDate.getHours() === 0 &&
+          startDate.getMinutes() === 0 &&
+          startDate.getSeconds() === 0 &&
+          startDate.getMilliseconds() === 0
+        const allDayStart = isStartMidnight
+          ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+          : startDate
 
-      calendarEvents.push({
-        id: `${activity.id}__${activity.type}__start`,
-        title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
-        start: startDate.toISOString(),
-        end: startEndTime.toISOString(),
-        backgroundColor: color,
-        borderColor: color,
-        textColor,
-      })
+        // determine if endDate is at midnight
+        const isEndMidnight =
+          endDate.getHours() === 0 &&
+          endDate.getMinutes() === 0 &&
+          endDate.getSeconds() === 0 &&
+          endDate.getMilliseconds() === 0
 
-      // end event
-      const endStartTime = new Date(
-        endDate.getTime() - slotDuration * 60 * 60 * 1000
-      )
-      const endTime = endDate.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })
+        // always shift by timezone offset, add a day only if not midnight
+        let adjustedEnd =
+          endDate.getTime() - endDate.getTimezoneOffset() * 60000
+        if (!isEndMidnight) {
+          adjustedEnd += 24 * 60 * 60 * 1000
+        }
 
-      calendarEvents.push({
-        id: `${activity.id}__${activity.type}__end`,
-        title: `${t('shared.generic.end')} ${activity.name}: ${endTime}`,
-        start: endStartTime.toISOString(),
-        end: endDate.toISOString(),
-        backgroundColor: color,
-        borderColor: color,
-        textColor,
-      })
-    }
-  }
+        calendarEvents.push({
+          id: `${activity.id}__${activity.type}__available`,
+          title: `(${t(`shared.short.${activity.type}`)}) ${activity.name}`,
+          start: allDayStart.toISOString().split('T')[0],
+          end: new Date(adjustedEnd).toISOString().split('T')[0],
+          backgroundColor: color,
+          borderColor: color,
+          textColor,
+        })
+
+        // start event
+        const slotDuration = getStartEndDuration(totalDurationHours)
+        const startEndTime = new Date(
+          startDate.getTime() + slotDuration * 60 * 60 * 1000
+        )
+        const startTime = startDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+
+        calendarEvents.push({
+          id: `${activity.id}__${activity.type}__start`,
+          title: `${t('shared.generic.startNoun')} ${activity.name}: ${startTime}`,
+          start: startDate.toISOString(),
+          end: startEndTime.toISOString(),
+          backgroundColor: color,
+          borderColor: color,
+          textColor,
+        })
+
+        // end event
+        const endStartTime = new Date(
+          endDate.getTime() - slotDuration * 60 * 60 * 1000
+        )
+        const endTime = endDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+
+        calendarEvents.push({
+          id: `${activity.id}__${activity.type}__end`,
+          title: `${t('shared.generic.end')} ${activity.name}: ${endTime}`,
+          start: endStartTime.toISOString(),
+          end: endDate.toISOString(),
+          backgroundColor: color,
+          borderColor: color,
+          textColor,
+        })
+      }
+    },
+    [t]
+  )
 
   // generate calendar events from course data
   const events = useMemo(() => {
@@ -305,7 +315,7 @@ function CourseCalendarView({
     }
 
     return calendarEvents
-  }, [course, t])
+  }, [addActivityEvents, course, t])
 
   // handler functions for custom toolbar
   const handlePrev = () => {

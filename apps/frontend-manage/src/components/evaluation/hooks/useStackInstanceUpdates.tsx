@@ -21,8 +21,7 @@ function useStackInstanceUpdates({
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInstance])
+  }, [activeInstance, setActiveStack, stackInstanceMap])
 }
 
 export default useStackInstanceUpdates

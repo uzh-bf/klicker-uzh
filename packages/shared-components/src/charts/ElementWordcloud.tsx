@@ -167,12 +167,12 @@ function ElementWordCloud({
     if (minTextSize > maxTextSize) {
       setMaxTextSize(minTextSize)
     }
-  }, [minTextSize, setMaxTextSize])
+  }, [maxTextSize, minTextSize])
   useEffect(() => {
     if (maxTextSize < minTextSize) {
       setMinTextSize(maxTextSize)
     }
-  }, [maxTextSize, setMinTextSize])
+  }, [maxTextSize, minTextSize])
 
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
 

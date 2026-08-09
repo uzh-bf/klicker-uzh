@@ -14,7 +14,7 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
-import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
+import { usePregeneratedHashes as getPregeneratedHash } from 'graphql-codegen-persisted-query-ids/lib/apollo'
 import { createClient } from 'graphql-ws'
 import { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
@@ -40,7 +40,7 @@ function createIsomorphLink() {
           createPersistedQueryLink({
             useGETForHashedQueries: true, // Optional but allows better caching
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            generateHash: usePregeneratedHashes(hashes),
+            generateHash: getPregeneratedHash(hashes),
           }),
         ]
 

@@ -11,6 +11,7 @@ export function ModeSwitcher() {
   const t = useTranslations()
   const { modeOptions, selectedMode, setSelectedMode } = useSettingsStore()
   const modeKeys = Object.keys(modeOptions)
+  const modeKeySignature = modeKeys.join('|')
 
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>())
@@ -21,6 +22,8 @@ export function ModeSwitcher() {
   )
 
   useLayoutEffect(() => {
+    if (!modeKeySignature) return
+
     const measure = () => {
       const activeButton = buttonRefs.current.get(selectedMode)
       if (!activeButton) return
@@ -41,7 +44,7 @@ export function ModeSwitcher() {
       observer.observe(button)
     })
     return () => observer.disconnect()
-  }, [selectedMode, modeKeys.join('|')])
+  }, [modeKeySignature, selectedMode])
 
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null

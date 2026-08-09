@@ -49,8 +49,13 @@ function CourseSelectionMonitorMicrolearning({
         true
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.courseId])
+  }, [
+    gamifiedCourses,
+    setCourseGamified,
+    setTouched,
+    setValues,
+    values.courseId,
+  ])
 
   return null
 }

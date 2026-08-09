@@ -336,7 +336,14 @@ function GroupActivityWizard({
           }),
       })
     },
-    [createGroupActivity, editGroupActivity, initialValues?.id]
+    [
+      createGroupActivity,
+      editGroupActivity,
+      editMode,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const selectedCourseId =

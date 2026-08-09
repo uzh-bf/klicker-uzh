@@ -31,8 +31,15 @@ function useEvaluationInitialization({
         setActiveStack('leaderboard')
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, results, questionIx, showLeaderboard, missingInstanceResults])
+  }, [
+    missingInstanceResults,
+    questionIx,
+    results,
+    setActiveInstance,
+    setActiveStack,
+    showLeaderboard,
+    type,
+  ])
 
   return null
 }

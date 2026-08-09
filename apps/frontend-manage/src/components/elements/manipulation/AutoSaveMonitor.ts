@@ -37,7 +37,7 @@ function AutoSaveMonitor({
         clearTimeout(savingTimeout.current as NodeJS.Timeout)
       }
     }
-  }, [values])
+  }, [autoSaveContent, values])
 
   return null
 }

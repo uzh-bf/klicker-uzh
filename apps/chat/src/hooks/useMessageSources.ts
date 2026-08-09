@@ -50,6 +50,10 @@ export function useMessageSources(): MessageSources {
     fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
   }
 
+  // The fingerprint intentionally replaces `parts` as the dependency: the
+  // message store recreates the parts array during streaming, while tool-call
+  // values are the only inputs that can change this normalization result.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fingerprint is the stable semantic dependency for streamed tool parts
   const sources = useMemo(
     () => normalizeSourcesFromParts(parts),
     // Deliberately keyed on the fingerprint: `parts` is referentially

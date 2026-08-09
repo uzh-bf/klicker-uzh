@@ -104,6 +104,10 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     liveQuiz,
   })
 
+  // `liveQuiz` is the lifecycle trigger for this one-time initialization. The
+  // other values are read at that point; including persisted `quizData` would
+  // replay the recovery toast and reset collapsible state on every edit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initialization intentionally runs only when the live quiz arrives
   useEffect(() => {
     // if live quiz template has not been loaded yet, return early
     if (liveQuiz === null || typeof liveQuiz === 'undefined') {
@@ -129,7 +133,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         setQuizData(initialTemplateFormData)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveQuiz])
 
   if (!liveQuiz) {

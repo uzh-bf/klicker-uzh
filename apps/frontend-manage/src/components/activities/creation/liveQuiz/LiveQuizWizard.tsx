@@ -311,7 +311,14 @@ function LiveQuizWizard({
           }),
       })
     },
-    [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
+    [
+      createLiveQuiz,
+      editMode,
+      editLiveQuiz,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const isActivityReviewer =

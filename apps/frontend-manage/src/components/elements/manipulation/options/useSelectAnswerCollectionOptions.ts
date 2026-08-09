@@ -37,8 +37,7 @@ function useSelectAnswerCollectionOptions({
       value: entry.id,
       data: { cy: `select-answer-${entry.value}` },
     }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collections, collectionId])
+  }, [collections, collectionId, setAnswerCollectionEntries])
 }
 
 export default useSelectAnswerCollectionOptions

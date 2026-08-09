@@ -71,10 +71,13 @@ function CaseStudyCollectionSelection({
     setSelectedItems,
   })
 
+  const caseValues = casesField.value
+  const selectedItemIds = itemsField.value
+
   // update the solutions stored on the cases to be consistent with the selected items
   useEffect(() => {
     // map over the cases and remove any solutions that do not belong to one of the selected items
-    const newCases = casesField.value?.map((caseItem) => {
+    const newCases = caseValues?.map((caseItem) => {
       // if no solutions are set, skip this case
       if (!('solutions' in caseItem) || !caseItem.solutions) {
         return caseItem
@@ -83,9 +86,7 @@ function CaseStudyCollectionSelection({
       // filter out all solution entries that do not belong to one of the selected items
       const newSolutions = Object.fromEntries(
         Object.entries(caseItem.solutions).filter(([itemIdString]) =>
-          (itemsField.value ?? []).includes(
-            parseInt(itemIdString.split('-')[1])
-          )
+          (selectedItemIds ?? []).includes(parseInt(itemIdString.split('-')[1]))
         )
       )
 
@@ -97,9 +98,7 @@ function CaseStudyCollectionSelection({
 
     // update the cases field with the new cases
     casesHelpers.setValue(newCases)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsField.value, casesHelpers])
+  }, [caseValues, casesHelpers, selectedItemIds])
 
   // locally store the selected answer collection
   const selectedCollection = useMemo(() => {

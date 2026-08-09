@@ -43,5 +43,12 @@ export default function useParticipantToken({
         }
       }
     }
-  }, [participantToken, cookiesAvailable])
+  }, [
+    callback,
+    cookiesAvailable,
+    participantToken,
+    redirectTo,
+    router.push,
+    router.query,
+  ])
 }

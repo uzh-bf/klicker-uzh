@@ -56,8 +56,14 @@ function useRemainingInstances({
       }
     }
     exec()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, instances, execution, isBlockCompleted])
+  }, [
+    execution,
+    instances,
+    isBlockCompleted,
+    quizId,
+    setActiveInstance,
+    setRemainingQuestions,
+  ])
 }
 
 export default useRemainingInstances

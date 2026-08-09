@@ -114,12 +114,15 @@ function ElementEditModal({
 
   // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
   // (otherwise, saving the question will directly trigger another save)
+  // `isOpen` and `initialValues` control when the form is initialized. The
+  // autosaved value is read at that point but must not reset the form after an
+  // autosave update while the editor is open.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: autosaved form data is intentionally read only during form initialization
   const formikInitialValues = useMemo(() => {
     if (!initialValues) {
       return undefined
     }
     return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isDuplication, initialValues])
 
   return (

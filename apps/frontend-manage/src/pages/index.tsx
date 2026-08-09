@@ -114,7 +114,12 @@ function Index() {
 
     // reset the filters and sorting
     handleReset()
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [
+    handleReset,
+    router.push,
+    router.query.filterByCourse,
+    router.query.filterByActivity,
+  ])
 
   const {
     loading: loadingElements,
@@ -163,6 +168,8 @@ function Index() {
   }, [loadingElements, numOfElements, currentPage, pageSize])
 
   // reset pagination when filters, sorting or search changes
+  // These values are trigger-only dependencies for pagination reset.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filter and sort changes intentionally reset pagination
   useEffect(() => {
     setCurrentPage(1)
   }, [filters, sort, searchString])
@@ -258,7 +265,13 @@ function Index() {
         activityId: router.query.filterByActivity as string,
       })
     }
-  }, [router.query.filterByCourse, router.query.filterByActivity])
+  }, [
+    handleReset,
+    router.query.filterByActivity,
+    router.query.filterByCourse,
+    toggleActivityIdFilter,
+    toggleCourseIdFilter,
+  ])
 
   // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
   const filtersActiveExceptCourse = !!(

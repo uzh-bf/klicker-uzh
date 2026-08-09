@@ -90,7 +90,7 @@ function GroupActivityListSubscriber({
         return { groupActivities: updatedQueryContent }
       },
     })
-  }, [courseId, subscribeToMore])
+  }, [courseId, subscribeToMore, t])
 
   return null
 }

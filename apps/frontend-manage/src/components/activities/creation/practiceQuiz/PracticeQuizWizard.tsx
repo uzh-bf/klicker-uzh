@@ -281,7 +281,14 @@ function PracticeQuizWizard({
           }),
       })
     },
-    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+    [
+      createPracticeQuiz,
+      editMode,
+      editPracticeQuiz,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const activityId =

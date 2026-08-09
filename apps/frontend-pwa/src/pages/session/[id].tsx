@@ -188,7 +188,7 @@ function Index({ id }: { id: string }) {
         setSelectedBlock(-1)
       }
     }
-  }, [data])
+  }, [data, selectedBlock])
 
   // keep right-side tab valid when availability changes, without overriding user choice
   useEffect(() => {

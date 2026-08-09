@@ -14,15 +14,21 @@ function CourseDateChangeMonitor({
   ) => Promise<void | FormikErrors<CourseManipulationFormData>>
   validateField: (field: string) => Promise<void> | Promise<string | undefined>
 }) {
+  // Date values are trigger-only dependencies for this Formik monitor.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: date values intentionally trigger validation and touch updates
   useEffect(() => {
     setTouched({ startDate: true, endDate: true, groupCreationDeadline: true })
 
     validateFieldSync('startDate', validateField)
     validateFieldSync('endDate', validateField)
     validateFieldSync('groupCreationDeadline', validateField)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.startDate, values.endDate, values.groupCreationDeadline])
+  }, [
+    setTouched,
+    validateField,
+    values.startDate,
+    values.endDate,
+    values.groupCreationDeadline,
+  ])
 
   return null
 }

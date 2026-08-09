@@ -209,7 +209,7 @@ function ActivityBatchOperationsModal({
     })
 
     setAffectedActivities(updatedAffectedActivities)
-  }, [selectedActivities, selectedActions])
+  }, [selectedActivities, selectedActions, t])
 
   // if the course changes to a non-gamified non-assessment course, no points are awarded
   // -> multiplier and live quiz points settings need to be blocked

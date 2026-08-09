@@ -123,7 +123,7 @@ export function RuntimeProvider({
       await loadModeOptions(chatbotId)
       await loadCredits(chatbotId)
     })()
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads])
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
 
   // sync active thread with URL params
   useEffect(() => {
@@ -211,7 +211,6 @@ export function RuntimeProvider({
     resyncModeFromThread,
     router,
     switchToThread,
-    syncRetryTrigger,
     threadId,
     threads,
     threadsLoaded,

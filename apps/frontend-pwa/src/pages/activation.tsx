@@ -57,7 +57,7 @@ function Activation() {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
     }
-  }, [router.query.token])
+  }, [activateAccount, fetchSelf, router.push, t, token])
 
   return (
     <div className="m-auto">

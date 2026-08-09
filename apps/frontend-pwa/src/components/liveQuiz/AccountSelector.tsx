@@ -107,8 +107,7 @@ function AccountSelector({
     if (data.self.role === UserRole.TemporaryParticipant) {
       setLoginState('temporary')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, loading])
+  }, [data, loading, loginState, quizId, setLoginState])
 
   return (
     <Modal

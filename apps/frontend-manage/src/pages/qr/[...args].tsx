@@ -42,7 +42,7 @@ export function QR({
     }
 
     ref.current?.download('png', `klickeruzh-${path}.png`)
-  }, [ref, path])
+  }, [path])
 
   const link = `${assessmentMode ? process.env.NEXT_PUBLIC_ASSESSMENT_URL : process.env.NEXT_PUBLIC_PWA_URL}${path}`
 

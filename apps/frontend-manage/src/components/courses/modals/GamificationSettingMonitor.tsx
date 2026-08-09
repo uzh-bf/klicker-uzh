@@ -12,7 +12,10 @@ function GamificationSettingMonitor({
     shouldValidate?: boolean
   ) => Promise<void | any>
 }) {
-  // if the gamification or group creation are disabled, reset the group setting to their default values
+  // If gamification or group creation are disabled, reset the group setting to
+  // their default values. The size fields remain trigger-only dependencies so
+  // edits made while disabled are restored immediately.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: size values intentionally trigger restoration while settings are disabled
   useEffect(() => {
     if (!values.isGamificationEnabled || !values.isGroupCreationEnabled) {
       setFieldValue('isGroupCreationEnabled', false)
@@ -20,8 +23,9 @@ function GamificationSettingMonitor({
       setFieldValue('maxGroupSize', 5)
       setFieldValue('preferredGroupSize', 3)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    setFieldValue,
+    values.endDate,
     values.isGamificationEnabled,
     values.isGroupCreationEnabled,
     values.maxGroupSize,

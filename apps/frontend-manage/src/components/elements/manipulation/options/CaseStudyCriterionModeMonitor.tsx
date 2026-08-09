@@ -14,10 +14,13 @@ function CaseStudyCriterionModeMonitor({
   criteriaHelpers: FieldHelperProps<ElementFormTypesCaseStudyCriterion[]>
 }) {
   // if the mode of a criterion is unset, default to "range"
+  const criteria = criteriaField.value
+  const setCriteria = criteriaHelpers.setValue
+
   useEffect(() => {
     if (typeof criterion.mode === 'undefined') {
-      const newCriteria: ElementFormTypesCaseStudyCriterion[] =
-        criteriaField.value.map((criterion, ix) => {
+      const newCriteria: ElementFormTypesCaseStudyCriterion[] = criteria.map(
+        (criterion, ix) => {
           if (ix === index) {
             return {
               ...criterion,
@@ -25,11 +28,12 @@ function CaseStudyCriterionModeMonitor({
             }
           }
           return criterion
-        })
+        }
+      )
 
-      criteriaHelpers.setValue(newCriteria)
+      setCriteria(newCriteria)
     }
-  }, [criterion.mode])
+  }, [criteria, criterion.mode, index, setCriteria])
 
   return null
 }
