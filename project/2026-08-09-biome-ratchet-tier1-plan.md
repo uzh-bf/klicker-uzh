@@ -272,6 +272,28 @@ ci(quality): enforce Biome lint
   pinned DevPod route readiness fails with `curl: (60) SSL certificate problem:
   out of memory`, and the linked workspace routes return 404/blank responses;
   no application behavior conclusion is drawn from that run.
+- 2026-08-10: The integrated final review of
+  `338763a41393eb1e773bdb43efcfac3ef4e43334...e8efdc093ba5c3ee9a3749f8e9970154b3429c89`
+  found six high-confidence issues: two lifecycle-trigger regressions, two
+  nested-control/accessibility issues, one non-unique analytics key, and the
+  unresolved browser-evidence gap. The findings are persisted under
+  `project/_local/reviews/` and are being addressed in this same PR.
+- 2026-08-10: Review fixes restore chart-selection and chat-retry behavior,
+  guard catalog row keyboard activation, label leaderboard pagination buttons,
+  and add `activityId` to analytics `ActivityProgress` through the GraphQL
+  schema, service, operation, and generated artifacts.
+- 2026-08-10: After the review fixes, `pnpm run lint:biome`, the affected
+  GraphQL/manage/PWA checks, the 29-file/226-test chat suite, and
+  `pnpm run check:all` pass. A fresh GraphQL Rollup build remains blocked in
+  this host checkout by `RollupError: src/index.ts (1:12): Expected ',', got '{'`;
+  the repository's declaration-only generated type surface was sufficient to
+  verify the dependent manage check, and CI must provide the clean-install
+  bundle proof.
+- 2026-08-10: The prescribed GraphQL local suite was attempted under pinned
+  Node 24 with Docker available. Its isolated compose stack stopped before
+  tests because `docker-reverse_proxy_macos-1` could not bind host port 80:
+  `Bind for 0.0.0.0:80 failed: port is already allocated`. The cleanup trap
+  removed the test stack; unrelated existing containers were left untouched.
 
 ## Finish state
 

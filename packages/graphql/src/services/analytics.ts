@@ -317,6 +317,7 @@ function computeActivityInstancePerformance({
     ...course.microLearnings,
   ].reduce<{
     activityProgresses: {
+      activityId: string
       activityName: string
       activityType: ActivityType
       startedCount: number
@@ -341,6 +342,7 @@ function computeActivityInstancePerformance({
 
       // update the activity progress entries
       acc.activityProgresses.push({
+        activityId: activity.id,
         activityName: activity.name,
         activityType,
         startedCount: progress.startedCount,

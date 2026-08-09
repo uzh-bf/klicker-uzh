@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-08-10'
 tags:
   - backend
   - graphql
@@ -44,6 +44,8 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
+
+The analytics `ActivityProgress` object includes `activityId` alongside its display name and counters. Consumers should use that stable source activity identity for list reconciliation; names are display data and are not unique within a course.
 
 ## Subscriptions
 

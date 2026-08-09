@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProfileData from './ProfileData'
@@ -16,6 +17,7 @@ function ParticipantProfileModal({
   participantId,
   top10Participants,
 }: ParticipantProfileModalProps) {
+  const t = useTranslations()
   const [selectedParticipant, setSelectedParticipant] =
     useState<string>(participantId)
   const [currentIndex, setCurrentIndex] = useState<number>(
@@ -76,6 +78,10 @@ function ParticipantProfileModal({
                   'h-2 w-2 rounded-full border-0 p-0 hover:cursor-pointer',
                   index === currentIndex ? 'bg-black' : 'bg-gray-300'
                 )}
+                aria-label={t('pwa.general.selectLeaderboardParticipant', {
+                  number: index + 1,
+                })}
+                aria-pressed={index === currentIndex}
                 onClick={() => {
                   setCurrentIndex(index)
                   setSelectedParticipant(p)

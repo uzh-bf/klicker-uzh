@@ -1892,6 +1892,22 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "activityId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "activityName",
             "description": null,
             "args": [],

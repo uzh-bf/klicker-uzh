@@ -78,7 +78,7 @@ function ActivityProgressPlot({
               </div>
               {pqProgresses.map((progress, idx) => (
                 <StackedProgress
-                  key={`activity-progress-pq-${progress.activityType}-${progress.activityName}`}
+                  key={`activity-progress-pq-${progress.activityId}`}
                   progress={progress}
                   participants={participants}
                   colors={chartColors}
@@ -95,7 +95,7 @@ function ActivityProgressPlot({
               </div>
               {mlProgresses.map((progress, idx) => (
                 <StackedProgress
-                  key={`activity-progress-ml-${progress.activityType}-${progress.activityName}`}
+                  key={`activity-progress-ml-${progress.activityId}`}
                   progress={progress}
                   participants={participants}
                   colors={chartColors}

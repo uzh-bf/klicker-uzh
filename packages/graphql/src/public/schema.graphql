@@ -167,6 +167,7 @@ type ActivityPerformance {
 }
 
 type ActivityProgress {
+  activityId: String!
   activityName: String!
   activityType: ActivityType!
   completedCount: Int!
