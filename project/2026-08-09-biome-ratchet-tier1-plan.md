@@ -1,6 +1,6 @@
 # Biome Tier 1 ratchet — noBlankTarget
 
-Status: EXECUTION IN PROGRESS — implementation and browser checks complete; review pending
+Status: INTERMEDIATE REVIEW COMPLETE — final review gates pending
 Date: 2026-08-09
 Branch: `rs/biome-ratchet-tier1` → target `v3`
 Base: `6a400c75e` (`origin/v3`; includes merged Gitleaks hardening and the
@@ -64,9 +64,10 @@ ESLint as part of this slice.
 ## Packaging
 
 This is full-path work because it changes a security boundary. The substantive
-implementation is expected to be below the 50-line floor, but it is a complete
-standalone rule-family package: all current `noBlankTarget` findings are fixed,
-and no related changes are needed to make the result independently reviewable.
+implementation diff is 65 changed lines (58 additions and 7 deletions), so it
+clears the 50-line packaging floor. It is a complete standalone rule-family
+package: all current `noBlankTarget` findings are fixed, and no related changes
+are needed to make the result independently reviewable.
 
 ## Slice 1 — close `noBlankTarget` baseline
 
@@ -140,14 +141,27 @@ and no related changes are needed to make the result independently reviewable.
 - 2026-08-09: Browser verification passed on the isolated manage route for
   live quiz, microlearning, practice quiz, and group activity creation flows,
   and on the generated docs `/`, `/catalyst/`, and `/development/` pages.
-  Affected rendered anchors retained their destinations and expose
+  Follow-up coverage also passed on `/use_cases/live_quiz/`,
+  `/use_cases/flipped_classroom/`, `/use_cases/group_activity/`,
+  `/use_cases/learning_analytics/`, `/use_cases/ai_formative_feedback/`,
+  `/use_cases/ai_practice_content/`, and `/use_cases/chatbot_tutoring/`.
+  All affected rendered anchors retained their destinations and expose
   `rel="noopener"`; screenshots are in temporary storage. The existing
   Docusaurus config announcement-bar HTML string remains outside this JSX
   rule-family slice and was not changed.
 - 2026-08-09: A current-tree Gitleaks scan found four ignored local/generated
   files created by the dev environment or docs build. No finding is in the
-  tracked diff; the introduced commit-range scan remains to run after the
-  implementation commit.
+  tracked diff. The subsequent introduced commit-range scan passed with no
+  leaks.
+- 2026-08-09: Implementation committed as `47c0ea387`
+  (`fix(quality): ratchet noBlankTarget diagnostics`). The full pre-commit
+  `check:all` gate passed, and the CI-equivalent `origin/v3..HEAD` Gitleaks
+  scan covered two introduced commits with no leaks.
+- 2026-08-09: The intermediate bounded security review of
+  `2e6015bf3..47c0ea387` returned one low-priority evidence finding: nine
+  changed links in `apps/docs/src/constants.tsx` lacked browser coverage.
+  The seven affected use-case routes were then verified and the finding is
+  closed. Full report: `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-intermediate-security.md`.
 
 ## Finish state
 
