@@ -53,7 +53,7 @@ When a new lecturer submits first-login settings with `seedDemoElements: true`, 
 - [x] Extract the relational builder into `demoQuestions.ts`.
 - [x] Replace source-copy plan sections with this behavioral plan.
 - [x] Update the wiki and dated log.
-- [ ] Complete the final review gates and record their exact range.
+- [x] Complete the integrated, maintainability, and security review gates; persist their reports under `project/_local/reviews/`.
 - [ ] Read back GitHub CI and Sonar for the published head after explicit push authorization.
 
 ## Verification record
@@ -98,7 +98,8 @@ Evidence files:
 - Live base incorporated by merge commit: `014ac216a`
 - Implementation commits: `508a3dccd`, `8aa0942d2`, and `a445253e2`.
 - Exact integrated review range: `30df9e9d67c0bc8f2067960478f821f4944d94d8..40b3e0de6`, persisted in `project/_local/reviews/2026-08-09-pr5261-integrated-final.md`.
-- Current worktree state: clean after the refactor commit; do not push without explicit authorization.
+- Exact maintainability and security review range: `30df9e9d67c0bc8f2067960478f821f4944d94d8..219800d91`, persisted in `project/_local/reviews/2026-08-09-pr5261-maintainability-final.md` and `project/_local/reviews/2026-08-09-pr5261-security-final.md`.
+- Current worktree state: clean after the final review-record commit; do not push without explicit authorization.
 
 ## Publication boundary
 
