@@ -72,6 +72,7 @@ function LiveQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -90,6 +91,7 @@ function LiveQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/tutorials/live_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -108,6 +110,7 @@ function LiveQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/student_tutorials/live_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}

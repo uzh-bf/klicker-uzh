@@ -76,7 +76,11 @@ function Catalyst() {
             <p>
               To get access and for other inquiries please fill out the
               following{' '}
-              <a href="https://forms.office.com/e/4AsWW1uck2" target="_blank">
+              <a
+                href="https://forms.office.com/e/4AsWW1uck2"
+                target="_blank"
+                rel="noopener"
+              >
                 form
               </a>
               .
@@ -176,6 +180,7 @@ function Catalyst() {
                   <a
                     href="https://forms.office.com/e/4AsWW1uck2"
                     target="_blank"
+                    rel="noopener"
                   >
                     form
                   </a>

@@ -16,6 +16,7 @@ export default function AnnouncementBanner() {
           <a
             href="https://community.klicker.uzh.ch/t/klickeruzh-v3-0-release-announcement-26-08-2023/79"
             target="_blank"
+            rel="noopener"
           >
             community post
           </a>{' '}

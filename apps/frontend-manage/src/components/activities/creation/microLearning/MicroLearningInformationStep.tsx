@@ -84,6 +84,7 @@ function MicroLearningInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/use_cases/microlearning/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -102,6 +103,7 @@ function MicroLearningInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/tutorials/microlearning/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -120,6 +122,7 @@ function MicroLearningInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/student_tutorials/microlearning/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}

@@ -191,6 +191,7 @@ export const USE_CASES = {
               'https://teachingtools.uzh.ch/en/tools/classroom-response-systeme'
             }
             target="_blank"
+            rel="noopener"
           >
             UZH Teaching Tools
           </a>
@@ -442,6 +443,7 @@ export const USE_CASES = {
               'https://teachingtools.uzh.ch/en/tools/constructive-alignment'
             }
             target="_blank"
+            rel="noopener"
           >
             alignment between lecturers and students
           </a>{' '}
@@ -449,6 +451,7 @@ export const USE_CASES = {
           <a
             href={'https://teachingtools.uzh.ch/en/tools/flipped-classroom'}
             target="_blank"
+            rel="noopener"
           >
             Flippeed Classroom
           </a>{' '}
@@ -1002,6 +1005,7 @@ export const USE_CASES = {
           <a
             href="https://teachingtools.uzh.ch/en/tools/gruppenarbeiten"
             target="_blank"
+            rel="noopener"
           >
             group work
           </a>{' '}
@@ -1009,6 +1013,7 @@ export const USE_CASES = {
           <a
             href="https://teachingtools.uzh.ch/en/tools/methoden-zur-gruppenbildung"
             target="_blank"
+            rel="noopener"
           >
             methods to make group formation a success
           </a>
@@ -1869,7 +1874,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2141,7 +2150,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2430,7 +2443,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2765,7 +2782,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be

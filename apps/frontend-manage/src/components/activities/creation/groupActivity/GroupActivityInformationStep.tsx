@@ -81,6 +81,7 @@ function GroupActivityInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/use_cases/group_activity/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -99,6 +100,7 @@ function GroupActivityInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/tutorials/group_activity/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -117,6 +119,7 @@ function GroupActivityInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/student_tutorials/groups_activities/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}

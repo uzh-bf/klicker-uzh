@@ -1,9 +1,10 @@
 # Biome Tier 1 ratchet — noBlankTarget
 
-Status: READY FOR EXECUTION — Sol planning review integrated
+Status: EXECUTION IN PROGRESS — implementation and browser checks complete; review pending
 Date: 2026-08-09
 Branch: `rs/biome-ratchet-tier1` → target `v3`
-Base: `dbfe71bda` (merged Gitleaks branch-creation hardening)
+Base: `6a400c75e` (`origin/v3`; includes merged Gitleaks hardening and the
+staging-promotion commit)
 Worktree: `trees/biome-ratchet-tier1`
 Related history: `project/2026-07-19-biome-knip-repo-quality.md`
 
@@ -125,6 +126,28 @@ and no related changes are needed to make the result independently reviewable.
   gates with concrete docs/manage paths, executable package checks, the
   `rel="noopener"` decision, standalone packaging disposition, and exact
   committed-range review artifacts.
+- 2026-08-09: `origin/v3` advanced from `dbfe71bda` to `6a400c75e` with a
+  deployment-only staging-promotion commit. Merged that commit into the
+  isolated branch; it does not overlap the selected source files.
+- 2026-08-09: Added `rel="noopener"` to all 30 selected anchors in the 11
+  baseline files. The targeted Biome rule now reports zero errors, with only
+  the existing `biome.json` recommended-field deprecation info remaining.
+  Root `pnpm run format:check` and `git diff --check` pass.
+- 2026-08-09: The docs build, frontend-manage typecheck, and frontend-manage
+  ESLint pass. The docs build retains existing broken-link, broken-anchor,
+  CSS-selector, and Browserslist warnings; ESLint retains 27 existing React
+  Hooks warnings and no errors.
+- 2026-08-09: Browser verification passed on the isolated manage route for
+  live quiz, microlearning, practice quiz, and group activity creation flows,
+  and on the generated docs `/`, `/catalyst/`, and `/development/` pages.
+  Affected rendered anchors retained their destinations and expose
+  `rel="noopener"`; screenshots are in temporary storage. The existing
+  Docusaurus config announcement-bar HTML string remains outside this JSX
+  rule-family slice and was not changed.
+- 2026-08-09: A current-tree Gitleaks scan found four ignored local/generated
+  files created by the dev environment or docs build. No finding is in the
+  tracked diff; the introduced commit-range scan remains to run after the
+  implementation commit.
 
 ## Finish state
 

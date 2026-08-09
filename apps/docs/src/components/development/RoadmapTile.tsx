@@ -42,6 +42,7 @@ const RoadmapTile = ({
               return (
                 <a
                   target="_blank"
+                  rel="noopener"
                   className={twMerge(
                     'border- border-border flex flex-1 flex-row items-center gap-4 rounded-md border bg-gray-100 px-3 py-2 text-sm hover:shadow',
                     isDarkTheme && 'border-gray-500 bg-gray-500'
