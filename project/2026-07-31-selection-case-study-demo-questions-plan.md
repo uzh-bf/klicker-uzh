@@ -31,7 +31,7 @@
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/graphql/src/services/accounts.ts` | Create the shared answer collection and both relational elements, then include them in the existing demo live quiz.                                               |
 | `packages/graphql/test/accounts.test.ts`    | Verify opt-in/opt-out behavior, relational integrity, exact case-study options, derived permissions, quiz snapshots, and initial results against a real database. |
-| `docs/data-and-migrations.md`               | Document first-login demo seeding as a fourth, request-driven seed path and explain the shared answer-collection relationship.                                    |
+| `docs/data-and-migrations.md`               | Document first-login demo seeding as a third, request-driven seed path and explain the shared answer-collection relationship.                                    |
 | `docs/log/2026-08-04-...-seeding.md`        | Record the behavior and wiki update as a new dated log file (one file per change batch).                                                                          |
 
 ## Finalization research and decisions
@@ -59,13 +59,13 @@
 - Consumes: `changeInitialSettings(args, ctx)`, `ContextWithUser`, `PrismaTransactionContextWithUser`, `recomputeDerivedPermissions(args, prisma)`, the existing `Demo Tag` created by the SC demo, and Prisma's transaction client inferred from `ctx.prisma.$transaction`.
 - Produces: private `seedDemoSelectionAndCaseStudyElements(ctx)` returning `{ questionSE, questionCS }`, where both elements include `answerCollection.entries` and `answerCollectionItems` for later consumption by `processElementData`.
 
-- [ ] **Step 1: Confirm the installed Prisma APIs before editing**
+- [x] **Step 1: Confirm the installed Prisma APIs before editing**
 
 Use Context7's `resolve-library-id` for Prisma ORM, then query documentation for Prisma 7.8 interactive transactions, nested relation creation, `connect`, and `include`. If Context7 is unavailable, use the official Prisma transactions documentation recorded in the research section. Confirm that the repository's existing calls remain valid; do not change dependency versions.
 
 Expected: documentation supports `prisma.$transaction(async (tx) => ...)`, nested `entries.create`, relation `connect`, and nested relation `include` in create results.
 
-- [ ] **Step 2: Add the database-backed account-service test**
+- [x] **Step 2: Add the database-backed account-service test**
 
 Create `packages/graphql/test/accounts.test.ts` with this setup and database-backed cases covering opt-in seeding, opt-out, repeated first-login calls, a shortname conflict, a deliberate late Prisma validation failure with retry, and concurrent identical first-login calls:
 
@@ -400,7 +400,7 @@ describe('Account demo element seeding', () => {
 })
 ```
 
-- [ ] **Step 3: Run the focused test and confirm the opt-in case fails**
+- [x] **Step 3: Run the focused test and confirm the opt-in case fails**
 
 Run:
 
@@ -410,7 +410,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.
 
 Expected: the initial opt-in assertion fails before the seeder implementation exists; after implementation, the suite proves that a shortname conflict leaves `firstLogin` and demo resources unchanged, a failed transaction rolls back all newly-created demo resources and can be retried, and concurrent requests create one complete demo bundle.
 
-- [ ] **Step 4: Add the private transaction-backed helper**
+- [x] **Step 4: Add the private transaction-backed helper**
 
 Insert this helper immediately before `seedDemoQuestions` in `packages/graphql/src/services/accounts.ts`:
 
@@ -656,7 +656,7 @@ Call it after the content element and its permissions are created, while the `De
   const blockData = [
 ```
 
-- [ ] **Step 5: Format and run the focused test**
+- [x] **Step 5: Format and run the focused test**
 
 The final implementation may use local builders for repeated relation and case-solution data to keep the helper below the Sonar duplication threshold, but every Prisma write and permission recomputation must use `ctx.prisma`.
 
@@ -669,7 +669,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.
 
 Expected: both account-seeding tests pass. The opt-in test proves the exact collection, relations, JSON options, and owner permissions; the opt-out test proves no resources are created.
 
-- [ ] **Step 6: Run the package typecheck**
+- [x] **Step 6: Run the package typecheck**
 
 Run:
 
@@ -679,7 +679,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql check
 
 Expected: TypeScript exits with code 0.
 
-- [ ] **Step 7: Commit the relational bundle**
+- [x] **Step 7: Commit the relational bundle**
 
 Review only the intended files, then commit:
 
@@ -704,7 +704,7 @@ Expected: the commit contains the helper, its call, and the two database-backed 
 - Consumes: `seedDemoSelectionAndCaseStudyElements(ctx)` from Task 1 and its relation-enriched `{ questionSE, questionCS }` result.
 - Produces: a sixth `blockData` entry with `timeLimit: null`, `randomSelection: null`, and `[questionSE, questionCS]`; complete `SelectionElementData` and `CaseStudyElementData` snapshots created by the existing `processElementData` path.
 
-- [ ] **Step 1: Extend the opt-in test with failing live-quiz assertions**
+- [x] **Step 1: Extend the opt-in test with failing live-quiz assertions**
 
 Add these type imports from `@klicker-uzh/types`:
 
@@ -837,7 +837,7 @@ for (const caseId of ['demo-large-lecture', 'demo-small-seminar']) {
 expect(caseStudyInstance.anonymousResults).toEqual(caseStudyResults)
 ```
 
-- [ ] **Step 2: Run the focused test and confirm the quiz assertion fails**
+- [x] **Step 2: Run the focused test and confirm the quiz assertion fails**
 
 Run:
 
@@ -847,7 +847,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.
 
 Expected: the opt-in test fails because the current Demo Live Quiz has five blocks instead of six.
 
-- [ ] **Step 3: Feed both elements into the existing live-quiz builder**
+- [x] **Step 3: Feed both elements into the existing live-quiz builder**
 
 Replace the Task 1 helper call with:
 
@@ -868,7 +868,7 @@ Append this object after the existing KPRIM-only block in `blockData`:
 
 Do not change `processElementData`, `getInitialInstanceResults`, block ordering logic, existing block contents, or quiz metadata.
 
-- [ ] **Step 4: Format and run the focused test again**
+- [x] **Step 4: Format and run the focused test again**
 
 Run:
 
@@ -879,7 +879,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.
 
 Expected: both tests pass, including the complete live-quiz snapshot and initial-results assertions.
 
-- [ ] **Step 5: Run GraphQL package checks**
+- [x] **Step 5: Run GraphQL package checks**
 
 Run:
 
@@ -890,7 +890,7 @@ devrouter exec . -- pnpm --filter @klicker-uzh/graphql build
 
 Expected: both commands exit with code 0.
 
-- [ ] **Step 6: Commit the live-quiz integration**
+- [x] **Step 6: Commit the live-quiz integration**
 
 ```bash
 git diff -- packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts
@@ -913,19 +913,19 @@ Expected: the commit contains only the new block wiring and its instance-level a
 - Consumes: the behavior implemented in Tasks 1 and 2.
 - Produces: durable engineering-wiki guidance distinguishing request-driven onboarding seeding from the three environment fixture seed paths.
 
-- [ ] **Step 1: Add the first-login seed-path documentation**
+- [x] **Step 1: Add the first-login seed-path documentation**
 
 Insert this subsection after the existing Prisma 7 reset paragraph in `docs/data-and-migrations.md`:
 
 ```md
 ### First-login demo content
 
-First-login demo content is a fourth, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. The transaction-backed relational collection-plus-elements bundle is then snapshotted into the final untimed live-quiz block through `processElementData`.
+First-login demo content is a third, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. The transaction-backed relational collection-plus-elements bundle is then snapshotted into the final untimed live-quiz block through `processElementData`.
 
 This path does not run for users who opt out, does not backfill existing accounts, and is independent of the dev and Playwright fixture seeds above.
 ```
 
-- [ ] **Step 2: Add the wiki log entry**
+- [x] **Step 2: Add the wiki log entry**
 
 Create `docs/log/2026-08-04-demo-selection-case-study-seeding.md`. The wiki
 uses one log file per change batch — never append to `docs/log.md`, which
@@ -937,7 +937,7 @@ exists only to explain that convention:
 - **Update**: [data-and-migrations](./data-and-migrations.md) documents request-driven first-login demo seeding, including the shared answer collection used by the selection and case-study demos and their final Demo Live Quiz block.
 ```
 
-- [ ] **Step 3: Format and inspect the documentation diff**
+- [x] **Step 3: Format and inspect the documentation diff**
 
 Run:
 
@@ -949,7 +949,7 @@ git diff -- docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-
 
 Expected: Markdown is formatted, the diff is limited to the new subsection and dated log entry, and no public docs file changed.
 
-- [ ] **Step 4: Commit the wiki update**
+- [x] **Step 4: Commit the wiki update**
 
 ```bash
 git add docs/data-and-migrations.md docs/log/2026-08-04-demo-selection-case-study-seeding.md
@@ -1037,7 +1037,7 @@ Open `Demo Live Quiz` in Manage and inspect its final block:
 
 Expected: the new elements render through the existing UI with no frontend code changes.
 
-Evidence: `/private/tmp/pr5261-library-after.png`, `/private/tmp/pr5261-selection-editor.png`, and `/private/tmp/pr5261-case-study-editor.png` show the generated resources and editor previews. The activity-details screenshot `/private/tmp/pr5261-demo-live-quiz.png` shows the untimed sixth block with Selection before Case Study. After clearing the diagnostics, the final browser readback produced no new console or page errors; existing development warnings were not attributed to this change.
+Evidence: `/private/tmp/pr5261-library-after.png`, `/private/tmp/pr5261-selection-editor.png`, and `/private/tmp/pr5261-case-study-editor.png` show the generated resources and editor previews. The corrected activity-details screenshot `/private/tmp/pr5261-demo-live-quiz-block6.png` shows the untimed sixth block with Selection before Case Study. After clearing the diagnostics, the final browser readback produced no new console or page errors; existing development warnings were not attributed to this change.
 
 - [x] **Step 6: Restore the disposable local environment**
 
