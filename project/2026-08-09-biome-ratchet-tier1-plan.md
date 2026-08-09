@@ -21,6 +21,10 @@ opening another rule-sized PR.
 - Biome version: 2.5.2, selected by the repository lockfile.
 - Current post-noBlankTarget baseline: 491 errors, 2,461 warnings, and 425
   infos across 1,651 checked files.
+- After the core correctness and suspicious slice, 366 error-severity
+  diagnostics remain: 189 useExhaustiveDependencies, five
+  useHookAtTopLevel, 111 accessibility diagnostics, and 61 noArrayIndexKey
+  diagnostics. The filtered core gate now exits successfully.
 - The 491 errors span 32 rules and 200 files: 236 correctness diagnostics,
   144 suspicious diagnostics, and 111 accessibility diagnostics.
 - Largest error families are correctness/useExhaustiveDependencies (189),
@@ -33,7 +37,8 @@ opening another rule-sized PR.
   configuration findings. It is not ready for blocking enforcement in this
   package.
 - The current origin/v3 SHA is b3058549622534a23dd0ee274e1432709a4d3323.
-  The branch is seven commits ahead and has no base divergence.
+  The branch is currently nine commits ahead of origin/v3 and two commits
+  ahead of the published PR branch; it has no base divergence.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
   remains the Next.js safety net.
@@ -238,10 +243,17 @@ ci(quality): enforce Biome lint
 - 2026-08-09: Planning review recommended all current error-severity
   diagnostics as the one-PR package, with warnings, infos, Knip, Prettier, and
   ESLint remaining outside enforcement changes.
-- 2026-08-09: Host Biome and Knip commands run, but devrouter ensure/exec is
-  currently blocked by a workspace lifecycle-lock process-identity error. The
-  pinned DevPod path must be restored before runtime-dependent verification;
-  no lock or runtime state was deleted.
+- 2026-08-10: The pinned DevPod was restored through devrouter. Its full
+  check:all path passed, and the chat suite passed with 29 files and 226
+  tests. The GraphQL local suite remains blocked because the DevPod image does
+  not contain the Docker CLI required by its local runner; this is an
+  environment gap, not a code failure.
+- 2026-08-10: Core correctness and suspicious diagnostics were resolved in
+  commit 241b7459d. The host pre-commit gate passed all typecheck, format,
+  lint, syncpack, agent-doc, and Prisma-sync checks. Five nullable type issues
+  found by that gate were fixed before the commit landed.
+- 2026-08-10: A fresh full Biome error gate reports exactly 366 remaining
+  errors, all in the planned hook, accessibility, and stable-key slices.
 
 ## Finish state
 
