@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-04'
+timestamp: '2026-08-09'
 tags:
   - testing
   - ci
@@ -23,6 +23,13 @@ tags:
 | Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
+
+For OpenAI-compatible chat stream changes, run
+`apps/chat/test/openai-chat-streaming.test.ts` first. It injects an
+OpenAI-compatible SSE response whose first tool call uses a sparse provider
+index, so it proves provider conversion without a database, MCP server, or
+model key. It is a local regression gate, not evidence that a real upstream
+first turn works in staging.
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 
