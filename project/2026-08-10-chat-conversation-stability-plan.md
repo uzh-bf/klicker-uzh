@@ -177,11 +177,19 @@ Check:
 - [x] Reproduced stale pre-#5349 starter labels in a fresh authenticated STG
   chat after cache-busting navigation.
 - [x] Received Sol planning-stage review and accepted the scope boundaries.
-- [ ] Commit this plan before implementation.
+- [x] Commit this plan before implementation (`487f891c7`).
 - [ ] Establish and red-test the local/browser flicker repro.
 - [ ] Implement and verify Slice 2.
 - [ ] Decide whether Slice 3 is needed from measurement.
 - [ ] Run full verification, Sol final review, and open the ready PR.
+
+### Execution note
+
+The local app container is healthy and chat's direct health endpoint returns
+200, but the host route is currently blocked by devrouter's workspace lifecycle
+lock/readiness path and no usable Chromium binary is installed in the container.
+The focused browser assertions remain CI-gated until a real browser run succeeds;
+the repository and unit checks do not substitute for that evidence.
 
 ## Hardest decision and rejected alternatives
 

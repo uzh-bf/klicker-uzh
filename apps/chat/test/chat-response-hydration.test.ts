@@ -33,9 +33,10 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
-  useSettingsStore: () => ({
-    loadCredits: loadCreditsMock,
-  }),
+  useSettingsStore: (selector?: (state: any) => unknown) => {
+    const state = { loadCredits: loadCreditsMock }
+    return selector ? selector(state) : state
+  },
 }))
 
 vi.mock('../src/stores/chatStore', () => ({

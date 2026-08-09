@@ -361,6 +361,10 @@ export type StreamToolCall = {
 export type StreamOptions = {
   /** Replaces the default `assistant reply #N` answer text. */
   text?: string
+  /** Emits the answer as separate text deltas, in order. */
+  textChunks?: string[]
+  /** Delays each streamed SSE line by this many milliseconds. */
+  chunkDelayMs?: number
   /** Payload of the `finish` part; omitted entirely when not given. */
   metadata?: StreamFinishMetadata
   /** Tool calls emitted before the answer text. */
@@ -370,7 +374,7 @@ export type StreamOptions = {
   errorText?: string
 }
 
-function makeStreamBody(text: string, options: StreamOptions = {}) {
+function makeStreamLines(text: string, options: StreamOptions = {}) {
   const { metadata, toolCalls = [], errorText } = options
 
   const lines = [
@@ -399,11 +403,11 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
     )
   }
 
-  lines.push(
-    `data: ${JSON.stringify({ type: 'text-start' })}`,
-    `data: ${JSON.stringify({ type: 'text-delta', delta: text })}`,
-    `data: ${JSON.stringify({ type: 'text-end' })}`
-  )
+  lines.push(`data: ${JSON.stringify({ type: 'text-start' })}`)
+  for (const delta of options.textChunks ?? [text]) {
+    lines.push(`data: ${JSON.stringify({ type: 'text-delta', delta })}`)
+  }
+  lines.push(`data: ${JSON.stringify({ type: 'text-end' })}`)
 
   if (errorText) {
     lines.push(`data: ${JSON.stringify({ type: 'error', errorText })}`)
@@ -420,7 +424,11 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
     'data: [DONE]'
   )
 
-  return lines.join('\n')
+  return lines
+}
+
+function makeStreamBody(text: string, options: StreamOptions = {}) {
+  return makeStreamLines(text, options).join('\n')
 }
 
 /**
@@ -429,6 +437,60 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
  * unless `options.text` overrides the answer text.
  */
 export async function mockChatStream(page: Page, options: StreamOptions = {}) {
+  if (options.chunkDelayMs !== undefined) {
+    const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
+
+    await page.addInitScript(
+      ({ chatbotPath, lines: streamLines, delayMs }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          const requestUrl =
+            typeof input === 'string'
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : input.url
+          const requestMethod = (
+            init?.method ?? (input instanceof Request ? input.method : 'GET')
+          ).toUpperCase()
+
+          if (requestMethod !== 'POST' || !requestUrl.includes(chatbotPath)) {
+            return originalFetch(input, init)
+          }
+
+          let lineIndex = 0
+          const encoder = new TextEncoder()
+          const stream = new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              if (lineIndex >= streamLines.length) {
+                controller.close()
+                return
+              }
+
+              if (lineIndex > 0) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs))
+              }
+
+              controller.enqueue(encoder.encode(`${streamLines[lineIndex]}\n`))
+              lineIndex += 1
+            },
+          })
+
+          return new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/event-stream' },
+          })
+        }
+      },
+      {
+        chatbotPath: `/api/chatbots/${CHATBOT_ID}/chat`,
+        lines,
+        delayMs: options.chunkDelayMs,
+      }
+    )
+    return
+  }
+
   let counter = 0
   await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()

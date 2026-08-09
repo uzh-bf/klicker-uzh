@@ -434,6 +434,45 @@ test.describe('Chatbot Messaging Interface', () => {
     ).toBeVisible()
   })
 
+  test('Streaming keeps the assistant message mounted as text arrives', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: ['The first part', ' and the second part', ' and the end.'],
+      chunkDelayMs: 80,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a stable answer')
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    await expect(assistant).toContainText('The first part', {
+      timeout: 15_000,
+    })
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeStreamUpdate?: Element
+      }
+      state.__assistantMessageBeforeStreamUpdate = node
+    })
+
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).toContainText('and the end.', { timeout: 15_000 })
+
+    const stayedMounted = await page.evaluate(() => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeStreamUpdate?: Element
+      }
+      const current = document.querySelector(
+        '[data-cy="chat-assistant-message"]'
+      )
+      return state.__assistantMessageBeforeStreamUpdate === current
+    })
+
+    expect(stayedMounted).toBe(true)
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {
@@ -658,9 +697,29 @@ test.describe('Chatbot Message Actions & Branching', () => {
     const up = page.getByTestId('chat-rate-up-button')
     const down = page.getByTestId('chat-rate-down-button')
 
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeFeedback?: Element
+      }
+      state.__assistantMessageBeforeFeedback = node
+    })
+
     await up.click()
     await expect(up).toHaveAttribute('aria-pressed', 'true')
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = window as typeof window & {
+            __assistantMessageBeforeFeedback?: Element
+          }
+          return (
+            state.__assistantMessageBeforeFeedback ===
+            document.querySelector('[data-cy="chat-assistant-message"]')
+          )
+        })
+      )
+      .toBe(true)
 
     // Changing one's mind replaces the vote rather than stacking a second one.
     await down.click()
