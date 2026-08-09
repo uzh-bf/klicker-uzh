@@ -26,9 +26,10 @@ evidence remain a later explicitly approved operation.
 - Target branch: `v3`
 - Base checked: `origin/v3` at `092d99efff387b7cf4b6b874492d0228c819fc31`
 - Related history: `project/2026-08-08-vorkurs-chatbot-finalization-plan.md`
-- Current state: the branch has no implementation changes. The pre-existing
-  untracked `project/2026-08-07-vorkurs-chatbot-production-adjustments.md`
-  remains outside this plan and must not be staged.
+- Current state: the implementation is committed as `e491436e5` on this branch.
+  The pre-existing untracked
+  `project/2026-08-07-vorkurs-chatbot-production-adjustments.md` remains outside
+  this plan and must not be staged.
 
 ## Research Summary
 
@@ -181,8 +182,8 @@ Commit:
   lockfile verification now passes with the repository's 14-day policy.
 - [x] Updated the chat/testing wiki pages, dated log, and testing skill with
   the fixture and real-upstream evidence boundary.
-- [x] Run the full verification matrix; the integrated final review remains
-  pending.
+- [x] Run the full verification matrix and complete the first integrated final
+  review; no blocking findings were reported.
 - [x] Update dependencies, the package maturity selectors, and the regression
   fixture.
 - [x] Update the chat/testing wiki and skill evidence.
@@ -195,7 +196,10 @@ Commit:
 - [x] Record the OKF validator baseline: it reports pre-existing conformance
   errors in existing ADR/log/solution files and existing hygiene warnings; the
   new log follows the repository's established log format.
-- [ ] Obtain the integrated final review before any PR or staging action.
+- [x] Correct the stale implementation status identified by the integrated
+  review and persist that review under `_local/reviews/`.
+- [ ] Complete the bounded security and maintainability gates before any PR or
+  staging action.
 
 ## Open Questions
 
@@ -205,7 +209,8 @@ Commit:
 
 ## Next Steps
 
-1. Commit the verified implementation slice after staged-content review.
-2. Obtain the integrated final review on the exact committed range.
+1. Complete the bounded security and maintainability gates on the committed
+   range.
+2. Request explicit approval before pushing or opening a PR.
 3. Keep staging rollout and real-upstream smoke testing behind explicit later
    approval.
