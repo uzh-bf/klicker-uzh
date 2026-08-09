@@ -203,8 +203,9 @@ Commit:
   a separate maintenance baseline.
 - [x] Complete the maintainability review; no structural regression or required
   decomposition was identified.
-- [x] Complete the final integrated review on `origin/v3..HEAD`; it passed with
-  no findings. The final report is under `_local/reviews/`.
+- [x] Complete the final integrated review on `origin/v3..28d0a5b6a`; it passed
+  with no findings. The final report is under `_local/reviews/`; the later
+  plan-status commit contains no behavior changes.
 
 ## Open Questions
 
