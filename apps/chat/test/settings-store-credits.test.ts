@@ -29,6 +29,8 @@ describe('settingsStore credits loading', () => {
       credits: { current: 0, total: 0, nextResetAt: null },
       creditsLoaded: false,
       modelOptions: [],
+      modeOptions: {},
+      modeOptionsChatbotId: null,
     })
   })
 

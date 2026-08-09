@@ -195,10 +195,17 @@ partial text from being re-pushed alongside the error part. Truncated responses 
 localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
 typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error
 rather than a stringified `ProgressEvent`. A cached thread list intentionally remains visible if only its background refresh fails.
-The welcome view contains localized starter suggestions, and message action bars remain mounted
-for touch users rather than relying on hover. An unavailable image edit uses `aria-disabled`
-instead of native `disabled`, so its explanatory Radix tooltip remains focusable. Each thread
-row shows the thread's last chat mode as an icon plus localized label under the title
+The welcome view contains localized, mode-aware starter suggestions: Tutor offers interactive
+practice prompts for a specific topic or pasted problem, while Explainer offers source-oriented
+explanations of a specific concept or comparisons between two concepts. The prompts are inserted
+into the composer without sending, so students can replace the bracketed placeholders before
+retrieval. Broad whole-course summaries and study plans are intentionally not offered here; a
+reliable planner needs a separate structured planning flow and tool/result budget. Starters remain
+hidden until the current chatbot's mode options have loaded, because the selected mode is
+persisted across chatbots. Message action bars
+remain mounted for touch users rather than relying on hover. An unavailable image edit uses
+`aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
+Each thread row shows the thread's last chat mode as an icon plus localized label under the title
 (`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
 amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant
 messages render through — user text never gets the callout styling). A reply to an

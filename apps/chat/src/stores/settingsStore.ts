@@ -13,6 +13,7 @@ export interface ModeOption {
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
+let modeOptionsRequestGeneration = 0
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -66,6 +67,7 @@ interface SettingsState {
   // Available options
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
+  modeOptionsChatbotId: string | null
 
   // Actions
   setSelectedModel: (model: ModelID) => void
@@ -92,6 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
       creditsLoaded: false,
       modelSelectionEnabled: false,
       modeOptions: {},
+      modeOptionsChatbotId: null,
 
       // available options
       modelOptions: [],
@@ -126,9 +129,18 @@ export const useSettingsStore = create<SettingsState>()(
         }),
 
       loadModeOptions: async (chatbotId: string) => {
+        const requestGeneration = ++modeOptionsRequestGeneration
+        set({
+          modeOptions: {},
+          modeOptionsChatbotId: null,
+          modelSelectionEnabled: false,
+        })
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
           if (!response.ok) {
             console.warn(
               'No valid mode options found, falling back to defaults.'
@@ -140,6 +152,7 @@ export const useSettingsStore = create<SettingsState>()(
                   (value as { description: string }).description,
                 ])
               ),
+              modeOptionsChatbotId: chatbotId,
               selectedMode:
                 Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
               modelSelectionEnabled: false,
@@ -178,12 +191,15 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               modeOptions: resolvedModeOptions,
+              modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
               selectedMode,
             }
           })
         } catch (error) {
           console.error('Error fetching mode options:', error)
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
           set((state) => ({
             modeOptions: Object.fromEntries(
               Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
@@ -191,6 +207,7 @@ export const useSettingsStore = create<SettingsState>()(
                 (value as { description: string }).description,
               ])
             ),
+            modeOptionsChatbotId: chatbotId,
             selectedMode: Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
             modelSelectionEnabled: false,
           }))
