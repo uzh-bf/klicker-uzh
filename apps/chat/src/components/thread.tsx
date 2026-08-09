@@ -389,7 +389,20 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC = () => {
   const t = useTranslations()
-  const suggestions = getThreadSuggestions()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const { modeOptions, modeOptionsChatbotId, selectedMode } = useSettingsStore()
+
+  // `selectedMode` is persisted globally, while mode options arrive after the
+  // current chatbot mounts. Hide auto-send starters until the current
+  // chatbot's options have replaced that persisted value.
+  if (
+    modeOptionsChatbotId !== chatbotId ||
+    Object.keys(modeOptions).length === 0
+  ) {
+    return null
+  }
+
+  const suggestions = getThreadSuggestions(selectedMode)
 
   return (
     <div className="mt-4 grid w-full grid-cols-1 gap-3 px-8 sm:grid-cols-2">

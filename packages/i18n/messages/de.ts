@@ -120,12 +120,18 @@ export default {
       welcomeSubtitle: 'Wie kann ich Dir helfen?',
     },
     suggestions: {
-      explainConcept: 'Erkläre mir ein zufälliges Konzept aus dem Skript',
+      practiceTopic: 'Ein Thema üben',
+      practiceTopicPrompt:
+        'Ich möchte für die Prüfung üben. Frag mich zuerst, welches einzelne Thema aus den Kursunterlagen ich üben möchte. Stelle mir danach eine Frage nach der anderen und gib mir Hinweise statt direkt die Antwort zu zeigen.',
+      workThroughProblem: 'Eine Aufgabe bearbeiten',
+      workThroughProblemPrompt:
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+      explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Nimm ein zufälliges Konzept aus dem Kursskript und erkläre es mir in einfachen Worten.',
-      examPrep: 'Hilf mir bei der Prüfungsvorbereitung',
-      examPrepPrompt:
-        'Erstelle einen Lernplan für die bevorstehende Prüfung, der alle wichtigen Themen aus den Vorlesungsunterlagen abdeckt.',
+        'Erkläre mir ein einzelnes Konzept aus dem Kursskript in einfachen Worten, mit einem Beispiel und Quellenangaben.',
+      summarizeTopic: 'Ein Thema zusammenfassen',
+      summarizeTopicPrompt:
+        'Fasse ein einzelnes Thema aus dem Kursskript zusammen, inklusive der wichtigsten Ideen, Formeln und eines Beispiels.',
     },
     message: {
       creditsUsed:
