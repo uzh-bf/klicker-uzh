@@ -1,9 +1,8 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import { getInitialElementResults } from '@klicker-uzh/util'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // ! PART 2: Update all group activity instances
   const groupActivityInstances = await prisma.elementInstance.findMany({
     where: {

@@ -1,8 +1,8 @@
 ---
 type: Data Layer
 title: Data & Migrations
-description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-07'
+description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
+timestamp: '2026-08-03'
 tags:
   - backend
   - prisma
@@ -10,36 +10,110 @@ tags:
 
 # Data & Migrations
 
-**The ritual: every schema edit is three steps, not one.**
+**The ritual: every schema edit is four steps, not one.**
 
 ```bash
 # 1. edit packages/prisma/src/prisma/schema/<area>.prisma
 pnpm run prisma:migrate   # 2. create + apply migration (Infisical env dev)
-pnpm run prisma:sync      # 3. mirror schema into apps/analytics (Python client)
+pnpm run prisma:sync      # 3. mirror model files into apps/analytics
+pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-Forgetting step 3 silently desynchronizes the Python analytics service — `util/sync-schema.sh` copies every `.prisma` file **except `js.prisma`** into `apps/analytics/prisma/schema/`, where a separate `py.prisma` defines the Python generator. Then regenerate the client (`pnpm --filter @klicker-uzh/prisma generate`, or `pnpm run build`) and update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+
+## Prisma 7 client and datasource ownership
+
+JavaScript owns its runtime URL in `packages/prisma/prisma.config.ts`; the shared `datasource.prisma` declares only PostgreSQL. `packages/prisma/src/index.ts:createPrismaClient` is the single owner of `PrismaPg` construction and the development singleton. Apps, workers, seeds, and maintenance scripts import that shared client instead of constructing adapter-less clients. The Analytics Docker build likewise removes the shared JavaScript generator and datasource before restoring the two Analytics-owned files (`apps/analytics/Dockerfile`).
+
+Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations that compile directly under TypeScript 6. The former namespace patch, its invariant test, and the generator peer override are gone. Run generation through `pnpm --filter @klicker-uzh/prisma generate`; the package `check` regenerates before compiling. `prisma:migrate` and `prisma:push` wrappers also generate explicitly because Prisma 7 removed implicit post-command generation.
 
 ## Split schema
 
-The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 14 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `other`, plus `datasource.prisma` (shared datasource, `DATABASE_URL` + shadow DB) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`).
+The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`. Where `migrate deploy` runs in deployment is **not documented in-repo** (open question — verify before making deploy claims).
+- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
-## Seeding
+### Deployment migrations
 
-Three independent seed paths — changing one does NOT update the others:
+`prisma migrate deploy` runs **automatically** on every stg rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook ships **disabled** until the pinned tags reach a migrator-bearing release (see Bootstrap and rollback below), so prd migrations remain manual for now. Mechanics:
 
-1. **Dev seed**: `pnpm run prisma:setup` → reset + push + `packages/prisma-data/src/data/seedTEST.ts` (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
-2. **Cypress**: its own `seedDatabase()` task in `cypress/cypress.config.ts`.
-3. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
+- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
+- The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
+- A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
+- **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
+- **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
+- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its floating `v3` tag is rebuilt on every merge.
 
-`prisma:setup` is destructive — run only against demonstrably test-seeded databases.
+Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
+
+### Recovering a failed migration hook
+
+A failed hook blocks **every** sync to that environment, by design. Recovery order:
+
+Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+
+1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
+2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
+3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
+4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
+5. **Need to ship an app-only hotfix while the DB is wedged?** Set `migrator.enabled: false`, sync, then re-enable it — track the re-enable, since a silently disabled hook is the failure mode this whole feature exists to prevent.
+6. **A migration that applied but shouldn't have** has no automatic undo: rolling the app image back leaves the schema ahead. That is why migrations must be expand-contract — roll _forward_ with a compensating migration. This repo documents no point-in-time restore procedure and the hook creates no restore point; whatever backup the managed Postgres provides is the only fallback, and recovering through it is a database-team operation, not a deploy step.
+
+Long DDL runs unattended against the live database with no `lock_timeout`: a statement waiting on an `ACCESS EXCLUSIVE` lock queues application queries behind it until the deadline. Review lock-heavy migrations before release.
+
+**Verify the image after any Prisma major** (ADR-0001 requires running it, not just building it):
+
+```bash
+docker build -f packages/prisma/Dockerfile -t migrator-check .   # repo root
+docker network create mcheck && docker run -d --name mcheck-pg --network mcheck \
+  -e POSTGRES_PASSWORD=test -e POSTGRES_DB=klicker docker.io/library/postgres:15
+until docker exec mcheck-pg pg_isready -U postgres; do sleep 1; done   # Postgres needs a few seconds
+export MURL='postgresql://postgres:test@mcheck-pg:5432/klicker'
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # all migrations applied, exit 0
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # idempotent: no pending migrations
+docker run --rm --network mcheck migrator-check                          # no DATABASE_URL: must fail, exit 1
+docker rm -f mcheck-pg && docker network rm mcheck && docker image rm migrator-check
+```
+
+The third run proves `prisma.config.ts` is actually consulted — a migrator that cannot see `DATABASE_URL` must fail loudly rather than no-op.
+
+Fresh-install caveat: the Job references a PriorityClass that the chart creates in the **Sync** phase, so a first-ever install into an empty namespace must have the PriorityClasses applied before the PreSync hook runs (or `migrator.priorityClassName` left unset). Both existing environments already have them.
+
+Two independent seed paths — changing one does NOT update the other:
+
+1. **Dev seed**: `pnpm run prisma:setup` → seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
+2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
+
+Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+
+## Auth adapter compatibility
+
+Auth passes the shared client to `@auth/prisma-adapter` 2.11.2; its peer comparator already admits Prisma 7, so there is no package extension to maintain. `pnpm --filter @klicker-uzh/auth test:prisma-adapter` performs a disposable create/get/link/get/unlink/delete round-trip (`apps/auth/scripts/testPrismaAdapter.mjs`). It refuses remote databases and permits the DevPod `postgres` alias only when DevRouter identifies the workspace outside production mode. Run it only against a disposable local database.
+
+### Production batch seeds
+
+Externally-earned points and badges (Summer School games, offline activities) are seeded by **one** script, `seedCourseAwards.ts`, parameterized by a _round_. Rounds are declared in `courseAwardRounds.ts`; every artefact a round produces is namespaced by its key inside the gitignored `packages/prisma-data/src/data/_local/`, so no round can replay another round's payload and no payload can be committed by picking an unignored filename.
+
+```bash
+ROUND=<key> pnpm --filter @klicker-uzh/prisma-data seed:prod:course-awards:prepare  # optional, derives an award from the DB
+ROUND=<key> pnpm --filter @klicker-uzh/prisma-data seed:prod:course-awards          # dry run
+ROUND=<key> DRY_RUN=false pnpm --filter @klicker-uzh/prisma-data seed:prod:course-awards
+```
+
+A new round is one entry in `ROUNDS` (course ID plus the achievement IDs it may grant) and a `_local/<round>_data.json` payload of `{ username, points?, awards? }` rows. Achievement IDs are asserted against `nameEN` before any write, so ID drift across environments fails loudly.
+
+The dry run validates references, resolves usernames case-insensitively, writes a comparison CSV and a payload-bound before-state dump, and reports the intended point/XP and achievement changes. A write requires a separate `DRY_RUN=false` execution and refuses to start if production state or the payload no longer matches that dump. An after-state dump blocks accidental replay. Writes run atomically under `Serializable` and are verified inside the transaction before commit.
+
+Points and badges are independent per row: `points` defaults to 0 and `awards` to none, but a row must grant one of the two. That makes a badge-only round ordinary rather than a special case — it skips the `leaderboardEntry`/`Participant.xp` writes, and the post-write check (score and XP must move by exactly the payload delta) then asserts they did not move at all. **A late addition to an already-seeded round is a new round, never a rerun:** the original is replay-locked, and recipients who already received points must not be paid twice.
+
+Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the leaderboard and are never part of these payloads — only externally-run activities are seeded. Awards that depend on in-platform behaviour are derived from the database rather than the workbook: `prepareMicrolearningAwards.ts` grants a round's `derivedAward` (Busy Bee, for Summer School) when the participant has a `QuestionResponse` for every `ElementInstance` of every non-deleted `MicroLearning` in the course. The derivation is frozen into the payload rather than recomputed at write time, so the payload hash still pins exactly what gets written.
+
+**Do not derive microlearning completion from `ParticipantActivityPerformance.completion`, `MicroLearning.completedCount`, or `startedCount`.** All three are empty for the Summer School 2026 course (zero rows, zero counters) even though responses exist, so they silently yield zero for every participant instead of failing. `QuestionResponse` is the reliable signal; cross-check the derived count against the workbook before seeding.
 
 ## Typed Json fields
 

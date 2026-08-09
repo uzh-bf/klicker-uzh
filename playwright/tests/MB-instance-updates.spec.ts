@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test'
-import dmQuestionsData from '../../cypress/cypress/fixtures/DM-questions.json' with { type: 'json' }
-import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
+import dmQuestionsData from '../fixtures/DM-questions.json' with { type: 'json' }
+import questionsData from '../fixtures/questions.json' with { type: 'json' }
 import { cleanupTest } from '../util/cleanup.js'
 import { LECTURER_ID } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -275,6 +275,11 @@ async function expectUpdateButtons(
   }
 }
 
+async function submitActivityUpdate(page: Page) {
+  await page.getByTestId('next-or-submit').click()
+  await expect(page.getByTestId('open-activity-overview')).toBeVisible()
+}
+
 async function expectNoUpdateHints(
   page: Page,
   {
@@ -462,7 +467,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-2-block-1',
       ],
     })
-    await page.getByTestId('next-or-submit').click()
+    await submitActivityUpdate(page)
 
     await page.getByTestId('activities').click()
     await expectActivityDetails(page, {
@@ -505,7 +510,7 @@ test.describe('Create different types of elements (with and without sample solut
           'update-element-2-stack-1',
         ],
       })
-      await page.getByTestId('next-or-submit').click()
+      await submitActivityUpdate(page)
 
       await page.getByTestId('activities').click()
       await expectActivityDetails(page, {
@@ -549,8 +554,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-5-stack-0',
       ],
     })
-    await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(1000)
+    await submitActivityUpdate(page)
 
     await page.getByTestId('activities').click()
     await expectActivityDetails(page, {
@@ -711,7 +715,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-2-block-1',
       ],
     })
-    await page.getByTestId('next-or-submit').click()
+    await submitActivityUpdate(page)
 
     await page.getByTestId('activities').click()
     await expectActivityDetails(page, {
@@ -763,7 +767,7 @@ test.describe('Create different types of elements (with and without sample solut
           'update-element-2-stack-1',
         ],
       })
-      await page.getByTestId('next-or-submit').click()
+      await submitActivityUpdate(page)
 
       await page.getByTestId('activities').click()
       await expectActivityDetails(page, {
@@ -816,7 +820,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-5-stack-0',
       ],
     })
-    await page.getByTestId('next-or-submit').click()
+    await submitActivityUpdate(page)
 
     await page.getByTestId('activities').click()
     await expectActivityDetails(page, {

@@ -19,10 +19,9 @@
     "redis_cache",
     "mailhog",
     "hatchet",
-    "hatchet_token"
+    "litellm"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "postStartCommand": "bash .devcontainer/post-start.sh",
   "customizations": {
     "vscode": {
       "extensions": [

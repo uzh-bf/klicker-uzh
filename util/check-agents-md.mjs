@@ -10,10 +10,9 @@ const ROOT_DIR = path.resolve(
   '..'
 )
 
-// Mirrors pnpm-workspace.yaml: apps/*, packages/*, cypress, playwright
+// Mirrors pnpm-workspace.yaml: apps/*, packages/*, playwright
 const workspaceDirs = [
   '.',
-  'cypress',
   'playwright',
   ...['apps', 'packages'].flatMap((parent) =>
     fs

@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - cypress
   - playwright
 
 # Delay automated dependency resolution for newly published packages by 14 days
@@ -10,7 +9,28 @@ packages:
 minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
-minimumReleaseAgeExclude: []
+minimumReleaseAgeExclude:
+  # U1 (student-chat-v3-production-readiness-plan): reviewed assistant-ui 0.14
+  # bump, apps/chat/package.json. Transitive assistant-ui deps pulled in below.
+  - '@assistant-ui/react@0.14.27'
+  - '@assistant-ui/react-markdown@0.14.6'
+  - '@assistant-ui/core@0.2.21'
+  - '@assistant-ui/tap@0.9.4'
+  - 'assistant-cloud@0.1.35'
+  - 'assistant-stream@0.3.26'
+  - 'nanoid@6.0.0'
+  - 'safe-content-frame@0.0.23'
+  # U2 (student-chat-v3-production-readiness-plan): reviewed Vercel AI SDK 7
+  # bump, apps/chat/package.json (ai, @ai-sdk/openai, @ai-sdk/mcp). Transitive
+  # @ai-sdk deps pulled in below.
+  # U3 (vorkurs-chatbot-sdk-fix): the exact reviewed patch train is unioned
+  # with the prior U2 versions because the first package-name rule wins.
+  - 'ai@7.0.37||7.0.52'
+  - '@ai-sdk/openai@4.0.20||4.0.30'
+  - '@ai-sdk/mcp@2.0.16||2.0.25'
+  - '@ai-sdk/gateway@4.0.28||4.0.41'
+  - '@ai-sdk/provider-utils@5.0.12||5.0.21'
+  - '@ai-sdk/provider@4.0.5'
 
 overrides:
   'axios@<=0.31.1': 0.32.0
@@ -19,6 +39,11 @@ overrides:
   'mysql2@<3.9.8': 3.9.8
   'next@>=15.0.0 <15.5.16': 15.5.18
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
+
+packageExtensions:
+  'recharts@2.15.3':
+    peerDependencies:
+      '@types/react': '*'
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
@@ -34,7 +59,6 @@ onlyBuiltDependencies:
   - azure-functions-core-tools
   - core-js
   - core-js-pure
-  - cypress
   - esbuild
   - prisma
   - protobufjs
@@ -52,7 +76,6 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
-  cypress: true
   esbuild: true
   keytar: false
   prisma: true

@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-07-07'
+timestamp: '2026-08-03'
 tags:
   - environment
   - onboarding
@@ -16,35 +16,56 @@ tags:
 
 Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
 
+The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
+
+Code-quality tooling (config-derived) runs on the host and in CI, never baked into the devcontainer image. **Biome** (`biome.json`) is the formatter and general linter for code (TS/JS/JSON/CSS) with the house style (no semicolons, single quotes, `es5` trailing commas, 2-space indent, line width 80) and import organization via its assist; it **excludes** `playwright/` (Biome mangles Playwright `test.describe.serial()` chains), which **Prettier** formats along with all Markdown/YAML. **ESLint** stays only as the Next.js safety net (`pnpm run lint` via Turbo, per-app `eslint .`). **Knip** (`knip.json`) reports unused files/deps/exports; **Gitleaks** (`.gitleaks.toml`) scans for secrets. In CI, formatting, types, syncpack, and Gitleaks are **blocking**; Biome lint and Knip are **advisory** during the migration.
+
+Compiler settings follow the code's runtime and build owner:
+
+| Role                                       | Compiler contract                                                                                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js application                        | `target: ES2017`, `module: ESNext`, `moduleResolution: Bundler`, `jsx: react-jsx`, and the Next TypeScript plugin                                                                   |
+| Emitted Node application or library        | `module: NodeNext`; use incremental build info only when the build owner preserves outputs and matching state atomically, and emit declarations only for packages that publish them |
+| Browser or bundler-owned source            | Bundler resolution; source-only packages use `module: preserve` and `noEmit`                                                                                                        |
+| Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
+| Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
+
+The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
+
 ## Onboarding Paths
 
 You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs all core apps via `turbo dev` and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet).
 
-1. **Start the container:**
+1. **Start and prove the checkout:**
    ```bash
-   devpod up .            # builds image, starts services, installs, builds, seeds, runs dev
-   devpod ssh klicker-uzh # shell inside the container
+   devrouter ensure .
    ```
+   The same command owns primary and linked checkout startup. It prints the exact DevPod ID when an interactive shell is needed.
 2. **Accessing the apps:**
-   - **Mode 1 (Plain localhost fallback):** Exposed directly on host ports after starting devcontainer (`devpod up .` or via VS Code) without devrouter: Student PWA at `http://localhost:3001`, Lecturer UI at `http://localhost:3002` (login: `lecturer`/`abcd`).
-   - **Mode 2 (devrouter overlay):** Routes local traffic over HTTPS: `https://manage.klicker.localhost` (or `https://manage.klicker.<workspace>.localhost` for parallel workspaces). Requires:
-     1. Start devrouter on host (`devrouter up && devrouter tls install`).
-     2. Start the devcontainer via devrouter command line for automatic overlay injection and token plumbing:
+   - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
+   - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
+     1. Install devrouter ≥ 0.0.35 and run `devrouter setup --yes` once.
+     2. From an existing linked worktree, start and prove the environment with:
         ```bash
-        dev workspace up <branch-name>
+        devrouter ensure .
         ```
-        _(Or for manual startup: `WORKSPACE=<slug> DEVCONTAINER_COMPOSE_OVERLAY=docker-compose.devrouter.yml devpod up .`)_.
-     3. Register the application routes:
-        ```bash
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a"; done
-        # linked worktree variant:
-        for a in api auth pwa manage control olat-api response-api lti chat db; do devrouter app run "$a" --workspace <slug>; done
-        ```
-3. **Logs:** The dev servers auto-start inside the container. View logs via `tail -f /tmp/dev.log`.
+        Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
+     3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
+3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+
+Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
+
+The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
+
+`devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
 ### Path B: Host-based Setup (Legacy)
 
@@ -53,11 +74,11 @@ Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse p
 ```bash
 pnpm --version        # must print 11.x
 pnpm install          # ~20s cold; peer warnings are pre-existing
-pnpm run build        # 21 turbo tasks, ~1.5min; needs NO secrets
+pnpm run build        # 21 production-mode turbo tasks, ~1.5min; needs NO secrets
 pnpm run check        # typecheck — only passes AFTER build (generated artifacts)
 ```
 
-Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. Git hooks depend on the same state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and a prior build.
+Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
 
 ## Failure signatures (fresh clone / wrong state)
 
@@ -93,7 +114,7 @@ Two traps:
 
 Two paths, depending on whether you have Infisical access:
 
-1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-cypress`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
+1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
 
 Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
@@ -103,4 +124,4 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 - **Never start dev servers unprompted** ([AGENTS.md](../AGENTS.md) rule). Skills that need a running app say so explicitly and own the cleanup (`./_down.sh`).
 - **Browser verification**: always `npx agent-browser`, never bare `agent-browser` — a global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **Turbo persistent dev tasks must set `"cache": false`** in [turbo.json](../turbo.json); otherwise Turbo can replay stale `EADDRINUSE` logs from a previous failed `dev:test` run while nothing is actually listening.
-- **New Infisical-managed env vars must also be listed in `turbo.json` `globalEnv`**, or task runs and cache invalidation won't see them.
+- **Any non-`NEXT_PUBLIC_` env var an app must see when started through a turbo task (`dev`, `build`, `test`) has to be listed in `turbo.json` `globalEnv`**, or task runs and cache invalidation won't see it. This is not limited to Infisical-managed secrets: Turborepo runs in strict env mode here (no `envMode` or `globalPassThroughEnv` key), so an unlisted var is stripped from the task environment even when the container shell exports it — including vars set in `.devcontainer/devcontainer.env`. Symptom: `process.env.YOUR_VAR` is `undefined` inside the app while `echo $YOUR_VAR` in the same container prints a value. Two things legitimately bypass this rule: `NEXT_PUBLIC_*` vars are picked up by turbo's Next.js framework inference, and Next loads `.env`/`.env.local` itself. The production image is **not** a bypass — only its runtime entrypoint (`node apps/chat/server.js`) is turbo-free, while its build stage runs `pnpm run build` → `turbo run build`, so anything inlined at build time (`next.config.ts` reads, values baked into the standalone bundle) still needs a `globalEnv` entry even when the Dockerfile declares a matching `ARG`. Confirm a var is listed with `pnpm exec turbo run dev --filter=<pkg> --dry=json | jq '.globalCacheInputs.environmentVariables.specified.env'`. In the per-task `environmentVariables` block, `specified.env` and `configured` are empty because this repo declares no per-task `env`; framework-inferred `NEXT_PUBLIC_*` vars show up under `inferred`.

@@ -38,12 +38,12 @@ New non-obvious patterns discovered during a task go to the matching page above 
 
 ## On every wiki edit
 
-1. Add a `log.md` entry under today's date (`**Creation**`/`**Update**`/`**Deprecation**`), bump the page `timestamp`.
+1. Log the change as a **new file** `docs/log/YYYY-MM-DD-<slug>.md` (`## date` heading + `**Creation**`/`**Update**`/`**Deprecation**` bullets, links relative to `docs/`, i.e. `../page.md`), bump the page `timestamp`. Never append to `docs/log.md`, the archive, or another batch's file — one file per batch is what keeps concurrent branches conflict-free.
 2. On add/remove/rename: update `index.md`; grep the whole repo for inbound links (other pages, skills, README, AGENTS.md). Renames break concept IDs — avoid them.
 3. Validate + format:
 
    ```bash
-   bash ~/.claude/skills/llm-wiki-okf/scripts/validate.sh docs   # if the validator is available; no trailing slash
+   bash ~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh docs   # no trailing slash
    pnpm exec prettier --write docs/
    ```
 

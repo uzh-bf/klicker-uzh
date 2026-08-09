@@ -1,6 +1,7 @@
+import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
-import type { ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 const chatModelSchema = z
   .object({
@@ -45,7 +46,29 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
-const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+  {
+    id: 'auto',
+    deploymentId: 'auto-router',
+    name: 'Auto Mode',
+    description: 'Automatic model selection through the LiteLLM auto router',
+    fallback: false,
+    supportsReasoning: false,
+    supportedReasoningEfforts: [],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-5.6-luna',
+    deploymentId: 'gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
   {
     id: 'gpt-4.1',
     deploymentId: 'gpt-4.1',
@@ -154,6 +177,49 @@ const toNumber = (value: unknown): number | null => {
   }
   const parsed = Number(value)
   return Number.isNaN(parsed) ? null : parsed
+}
+
+export async function getParticipantCourseChatbots(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  // the course overview page is publicly accessible, so anonymous visitors and
+  // logged-in lecturers must receive an empty list instead of an auth error
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return []
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    select: { id: true },
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    return []
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+    },
+    where: { courseId },
+  })
+
+  return chatbots.map(({ id, name, description, avatar }) => ({
+    id,
+    name,
+    description,
+    avatar,
+  }))
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {

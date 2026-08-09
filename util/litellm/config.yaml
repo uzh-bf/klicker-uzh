@@ -1,6 +1,20 @@
 # LiteLLM Proxy Configuration
 
 model_list:
+  # Production's Auto model is a LiteLLM auto-router endpoint. The
+  # local names intentionally omit the production Azure/product prefix; the
+  # chat registry maps its `auto` model id to `auto-router` below.
+  - model_name: 'auto-router'
+    litellm_params:
+      model: 'auto_router/complexity_router'
+      complexity_router_config:
+        tiers:
+          SIMPLE: 'gpt-5.6-luna-medium'
+          MEDIUM: 'gpt-5.6-luna-xhigh'
+          COMPLEX: 'gpt-5.6-luna-xhigh'
+          REASONING: 'gpt-5.6-sol-low'
+      complexity_router_default_model: 'gpt-5.6-luna-medium'
+
   - model_name: 'gpt-4.1'
     litellm_params:
       model: 'openai/gpt-4.1'
@@ -13,8 +27,49 @@ model_list:
       api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
 
+  # Direct GPT-5.6 Luna selection for comparison with Auto Mode. The fixed
+  # effort aliases are internal router targets and are not exposed as chat
+  # picker options.
+  - model_name: 'gpt-5.6-luna'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-medium'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'medium'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-xhigh'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'xhigh'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-sol-low'
+    litellm_params:
+      model: 'openai/gpt-5.6-sol'
+      reasoning_effort: 'low'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
   - model_name: 'gpt-4.1-mini'
     litellm_params:
       model: 'openai/gpt-4.1-mini'
       api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+
+request_timeout: 600
+
+router_settings:
+  routing_strategy: 'simple-shuffle'
+  fallbacks:
+    - 'gpt-5.6-sol-low': ['gpt-5.1']

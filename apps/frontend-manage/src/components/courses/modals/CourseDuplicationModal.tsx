@@ -16,7 +16,7 @@ import {
 import dayjs from 'dayjs'
 import { Form, Formik, FormikProps, useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useId, useRef } from 'react'
+import { useId, useRef, useState } from 'react'
 import * as yup from 'yup'
 import CourseInformationFields from './CourseInformationFields'
 
@@ -599,7 +599,7 @@ function CourseDuplicationModal({
     groupDeadlineDate: groupDeadlineDateDefault,
   } = getCourseDuplicationDateDefaults(initialValues)
 
-  const groupDeadlineDateInit = useRef(groupDeadlineDateDefault).current
+  const [groupDeadlineDateInit] = useState(() => groupDeadlineDateDefault)
 
   const deltaCourseDates = dayjs(endDateInit).diff(dayjs(startDateInit), 'day')
   const courseDuration = getCourseDuplicationDurationParts(

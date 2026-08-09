@@ -1,4 +1,214 @@
 export default {
+  chat: {
+    modes: {
+      switcherLabel: 'Chat-Modus',
+      tutor: 'Tutor',
+      explainer: 'Erklärer',
+    },
+    settingsPanel: {
+      title: 'Einstellungen',
+      aiModelLabel: 'KI-Modell',
+      selectAiModel: 'KI-Modell auswählen',
+      autoSelectionInfo:
+        'Automatische Auswahl basierend auf verfügbaren Credits.',
+      usingPrimaryModel:
+        'Primäres Modell wird mit verfügbaren Credits verwendet.',
+      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+      reasoningEffortLabel: 'Denkaufwand',
+      selectReasoningEffort: 'Denkaufwand auswählen',
+      reasoningEffortHint:
+        'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
+      reasoningEfforts: {
+        none: 'Aus',
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+        xhigh: 'Sehr hoch',
+      },
+    },
+    credits: {
+      title: 'Verfügbare Credits',
+      costHint:
+        'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
+      resetAt: 'Werden am {date} wieder aufgefüllt.',
+      resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
+      exhausted:
+        'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+    },
+    sidebar: {
+      newChat: 'Neuer Chat',
+      closeSidebar: 'Seitenleiste schliessen',
+      openSidebar: 'Seitenleiste öffnen',
+      toggleSidebar: 'Seitenleiste umschalten',
+      conversationsLabel: 'Konversationen',
+      logoAlt: 'Klicker-Logo',
+    },
+    assistant: {
+      participationRequiredTitle: 'Kurszugang erforderlich',
+      participationRequiredDefaultMessage:
+        'Du musst dem entsprechenden KlickerUZH-Kurs beitreten, bevor Du diesen Chatbot verwenden kannst. Bitte tritt dem Kurs bei oder wende Dich für den Zugang an Deine Dozierenden.',
+      openKlickerUzh: 'KlickerUZH öffnen',
+      loading: 'Chatbot wird geladen...',
+      disclaimerDeclinedTitle: 'Chatbot nicht verfügbar',
+      disclaimerDeclinedMessage:
+        'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
+      showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+    },
+    branchPicker: {
+      previous: 'Vorherige Variante',
+      next: 'Nächste Variante',
+    },
+    disclaimer: {
+      mediaTitle: 'Haftungsausschluss-Medien',
+      introAlt: 'Chatbot-Einführung',
+      studentResponsibilityTitle: 'Verantwortung der Studierenden',
+      studentResponsibilityText:
+        'Antworten des Chatbots können mehr oder weniger Informationen enthalten, als zum Bestehen des Kurses erforderlich sind, und sind daher für sich genommen nicht prüfungsrelevant (nur das zugrunde liegende Kursmaterial ist es). Wir sind zwar bestrebt, über den Chatbot korrekte Informationen bereitzustellen, übernehmen jedoch keine Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der Antworten. Bitte überprüfe wichtige Informationen anhand der offiziellen Kursmaterialien und Quellen.',
+      dataProtectionTitle: 'Datenschutz',
+      dataProtectionText:
+        'Teile keine persönlichen Informationen mit dem Chatbot. Deine Eingaben werden ausschliesslich über Azure-OpenAI-Instanzen verarbeitet, die in der EU oder in der Schweiz gehostet werden. Unterhaltungen können in anonymisierter Form vom KlickerUZH-Team oder Deinen Dozierenden überprüft werden, um die Qualität des Chatbots und die Kursinhalte zu verbessern.',
+      consentText:
+        'Durch die Nutzung des Chatbots erkennst Du diese Bedingungen an und akzeptierst sie. Bei Feedback oder Bedenken wende Dich bitte an Deine Dozierenden.',
+      decline: 'Ablehnen',
+      saving: 'Wird gespeichert...',
+      acceptAndContinue: 'Akzeptieren und fortfahren',
+      consequenceTitle: 'Was nach Deiner Wahl geschieht:',
+      consequenceAccept:
+        'Akzeptieren: Du kannst den Chatbot nutzen und auf alle Funktionen zugreifen.',
+      consequenceDecline:
+        'Ablehnen: Der Chatbot bleibt gesperrt und Du kannst keine Nachrichten senden.',
+      actionError:
+        'Es ist leider ein Fehler aufgetreten. Bitte versuche es erneut.',
+    },
+    markdown: {
+      copyCode: 'Kopieren',
+    },
+    attachments: {
+      hydrationError:
+        'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
+      attachedImageAlt: 'Angehängtes Bild {index}',
+    },
+    imageViewer: {
+      previewUnavailable: 'Vorschau nicht verfügbar',
+      title: 'Bildanhang',
+      loading: 'Vollständiges Bild wird geladen...',
+      retry: 'Erneut versuchen',
+    },
+    threadList: {
+      groupToday: 'Heute',
+      groupYesterday: 'Gestern',
+      groupThisWeek: 'Diese Woche',
+      groupEarlier: 'Früher',
+      newChatTitle: 'Neuer Chat',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      editName: 'Namen bearbeiten',
+      deleteChat: 'Chat löschen',
+      deleteConfirm: 'Löschen?',
+      deleteConfirmAria: 'Löschen dieses Chats bestätigen',
+      emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
+      loadError: 'Deine Chats konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
+      loading: 'Deine Chats werden geladen...',
+    },
+    thread: {
+      scrollToBottom: 'Nach unten scrollen',
+      loading: 'Die Konversation wird geladen...',
+      thinking: 'Antwort wird vorbereitet …',
+      welcomeTitle: 'Hallo!',
+      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+    },
+    suggestions: {
+      explainConcept: 'Erkläre mir ein zufälliges Konzept aus dem Skript',
+      explainConceptPrompt:
+        'Nimm ein zufälliges Konzept aus dem Kursskript und erkläre es mir in einfachen Worten.',
+      examPrep: 'Hilf mir bei der Prüfungsvorbereitung',
+      examPrepPrompt:
+        'Erstelle einen Lernplan für die bevorstehende Prüfung, der alle wichtigen Themen aus den Vorlesungsunterlagen abdeckt.',
+    },
+    message: {
+      creditsUsed:
+        '{count, plural, one {{credits} Credit} other {{credits} Credits}}',
+      reasoningToggle: 'Denkprozess',
+      editUnavailable: 'Bearbeiten nicht verfügbar',
+      edit: 'Bearbeiten',
+      editDisabledTooltip:
+        'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
+      copy: 'Kopieren',
+      refresh: 'Aktualisieren',
+      retry: 'Erneut versuchen',
+      rateUp: 'Hilfreiche Antwort',
+      rateDown: 'Keine hilfreiche Antwort',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
+    },
+    composer: {
+      placeholder: 'Nachricht schreiben...',
+      send: 'Nachricht senden',
+      stop: 'Antwort stoppen',
+      disclaimerHint:
+        'Antworten des Chatbots können falsch sein — bitte anhand Deiner Kursmaterialien prüfen.',
+      attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
+      attachmentReadError:
+        'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      dismissError: 'Fehler schliessen',
+      dropImages: 'Bilder zum Anhängen hier ablegen',
+      attachmentPreviewAlt: 'Anhang-Vorschau',
+      removeAttachment: 'Anhang entfernen',
+      attachImage: 'Bild anhängen',
+      attachmentFallbackLabel: 'Anhang',
+      editCancel: 'Abbrechen',
+      editSend: 'Senden',
+    },
+    toolFallback: {
+      running: '{tool} wird verwendet...',
+      done: '{tool} verwendet',
+      failed: '{tool} fehlgeschlagen',
+      showLess: 'Weniger anzeigen',
+      showMore:
+        '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
+      docQueryQueryLabel: 'Suchanfrage',
+      docQuerySourcesHint:
+        'Die Treffer erscheinen als Quellen unter der Antwort.',
+    },
+    tools: {
+      searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
+      searchedCourseMaterial: 'Kursmaterialien durchsucht',
+      searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
+      searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+      imageAnalyzed: 'Bild analysiert',
+    },
+    sources: {
+      title: 'Quellen',
+      page: 'S. {page}',
+      video: 'Video',
+      image: 'Bild',
+    },
+    citations: {
+      label: 'Quelle {index}: {title}',
+      goToSource: 'Zur Quelle springen',
+    },
+    noLogin: {
+      title: 'Anmeldung erforderlich',
+      message:
+        'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
+      redirectNotice:
+        'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
+      loginButton: 'Zur KlickerUZH-Anmeldung',
+    },
+    response: {
+      errorLabel: 'Fehler',
+      networkError:
+        'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
+      genericError:
+        'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      connectionInterrupted:
+        'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
+      truncated:
+        'Antwort gekürzt — schreibe «weiter» oder bitte um eine kürzere Antwort.',
+    },
+  },
   shared: {
     table: {
       download: 'Als CSV herunterladen',
@@ -561,6 +771,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
+      openCourseChat: 'KI-Tutor',
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
@@ -1120,6 +1331,92 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
       nonZeroPointCorrection:
         '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
+      reportTitle: 'Assessment-Leistungsbericht',
+      issuedAt: 'Ausgestellt am',
+      reportTimeZone: 'Europe/Zurich',
+      courseReferenceLabel: 'Interne Kursreferenz',
+      identitySourceLabel: 'Verifizierte Identitätsquelle',
+      identitySourceCourseInvitation:
+        'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      achievedPointsLabel: 'Erreicht',
+      availablePointsLabel: 'Verfügbar',
+      performanceInsightsTitle: 'Peer-Vergleich',
+      percentileText: 'Perzentilrang: {percentile}.',
+      percentileExplanation:
+        'Das Perzentil gibt an, wie viel Prozent der Teilnehmenden eine tiefere oder gleiche Punktzahl als du erreicht haben. Ein Perzentil von 75% bedeutet beispielsweise, dass deine Leistung gleich gut oder besser als 75% der Peer-Gruppe war.',
+      histogramTitle: 'Punkteverteilung im Kurs',
+      histogramDescription:
+        'Das Diagramm zeigt die aggregierte Verteilung der Gesamtpunktzahlen aktiver Teilnehmender. Dein Punktebereich ist hervorgehoben.',
+      histogramUserRange: 'Dein Punktebereich: {range}.',
+      notEnoughDataForComparison:
+        'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
+      exportReportButton: 'Performance-Bericht exportieren',
+      exportReportExplanation:
+        'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+      exportReportReady:
+        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder öffne über «Als PDF speichern» den Druckdialog des Browsers.',
+      viewReportButton: 'Bericht öffnen',
+      downloadReportButton: 'Als PDF speichern',
+      refreshReportButton: 'Bericht aktualisieren',
+      exportReportNotEligibleError:
+        'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
+      exportReportIdentityUnverifiedError:
+        'Es konnte keine E-Mail aus einer angenommenen Assessment-Kurseinladung bestätigt werden. Bitte kontaktiere die Kursadministration oder den Support.',
+      exportReportRevokedError:
+        'Dieser unveränderte Assessment-Bericht wurde widerrufen und kann nicht erneut ausgestellt werden. Kontaktiere deine Dozierenden, falls die verlässlichen Berichtsdaten korrigiert werden müssen.',
+      exportReportInvalidDataError:
+        'Die Assessment-Daten konnten für den Bericht nicht validiert werden. Bitte versuche es später erneut oder kontaktiere deine Dozierenden.',
+      exportReportIssuanceError:
+        'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
+      exportReportGenerationError:
+        'Der Bericht wurde ausgestellt, aber das Browser-Dokument konnte nicht erstellt werden. Bitte versuche es erneut.',
+      exportReportViewError:
+        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
+      exportReportPrintError:
+        'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
+      privacyAndTransparencyNotice:
+        'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
+      courseNameLabel: 'Kurs',
+      studentEmailLabel: 'Studierende/r',
+      pointsSummaryLabel: 'Punkteübersicht',
+      yourScoreLabel: 'Du',
+      countLabel: 'Anzahl',
+      binLabel: 'Punktebereich',
+      privacyNoticeTitle: 'Datenschutz & Transparenz',
+      verificationTitle: 'Assessment-Datensatz prüfen',
+      verificationText:
+        'KlickerUZH speichert den Assessment-Snapshot, der in diesem Bericht dargestellt wird. Öffne die Verifizierungsseite, um den Status des Datensatzes zu prüfen und seine aktuellen Angaben mit dieser Datei zu vergleichen.',
+      verificationLink: 'Verifizierungsseite öffnen',
+      verificationQrAlt: 'QR-Code zur KlickerUZH-Verifizierungsseite',
+      verificationPageTitle: 'Assessment-Bericht prüfen | KlickerUZH',
+      verificationHeading: 'Assessment-Bericht verifizieren',
+      verificationIntro:
+        'Prüfe den aktuellen Status und die serverseitig gespeicherten Angaben eines KlickerUZH-Assessment-Berichts.',
+      verificationLoading: 'Assessment-Datensatz wird geladen',
+      verificationInvalidLinkTitle: 'Ungültiger Verifizierungslink',
+      verificationMissingToken:
+        'Dieser Link enthält keinen Verifizierungsschlüssel.',
+      verificationInvalidToken:
+        'Der Verifizierungsschlüssel in diesem Link hat ein ungültiges Format.',
+      verificationLoadError:
+        'Der Assessment-Datensatz konnte nicht geladen werden. Bitte versuche es später erneut.',
+      verificationNotFoundTitle: 'Assessment-Datensatz nicht gefunden',
+      verificationNotFoundText:
+        'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
+      verificationActiveTitle: 'Aktiver Assessment-Datensatz',
+      verificationActiveText:
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem gedruckten oder angezeigten Bericht.',
+      verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
+      verificationRevokedText:
+        'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',
+      verificationSupersededTitle: 'Ersetzter Assessment-Datensatz',
+      verificationSupersededText:
+        'Später wurde ein geänderter Assessment-Snapshot ausgestellt. Dieser ältere Bericht ist nicht mehr aktiv; seine Angaben werden nicht offengelegt.',
+      verificationDataUnavailableTitle: 'Assessment-Daten nicht verfügbar',
+      verificationDataUnavailableText:
+        'Der Datensatz existiert, aber seine gespeicherten Angaben können nicht sicher validiert werden. Es werden keine Angaben offengelegt.',
+      verificationIdentityTitle: 'Berichtsidentität',
+      cohortSizeLabel: 'Vergleichsgruppe: {count} aktive Teilnehmende',
     },
   },
   manage: {
@@ -1334,6 +1631,42 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       responseBy: 'Antwort von {email}',
       noSampleSolution: 'Keine Musterlösung',
       detailedResultsLiveQuiz: 'Detailierte Resultate für dieses Live Quiz',
+      reportRecordsButton: 'Assessment-Berichte ({count})',
+      reportRecordsTitle: 'Ausgestellte Assessment-Berichte',
+      reportRecordsLoadError:
+        'Die Assessment-Berichte konnten nicht geladen werden. Bitte prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      reportRecordsEmpty:
+        'Es wurden keine passenden Assessment-Berichte gefunden.',
+      reportSearchPlaceholder: 'Empfänger-E-Mail suchen',
+      reportStatusAll: 'Alle Status',
+      reportStatusActive: 'Aktiv',
+      reportStatusRevoked: 'Widerrufen',
+      reportStatusSuperseded: 'Ersetzt',
+      reportRecipient: 'Empfänger:in',
+      reportToken: 'Verifizierungsschlüssel',
+      reportIssuedAt: 'Ausgestellt',
+      reportStatus: 'Status',
+      reportStatusChangedAt: 'Status geändert',
+      reportActions: 'Aktionen',
+      reportCopyLinkTooltip: 'Verifizierungslink kopieren',
+      reportLinkCopied: 'Der Verifizierungslink wurde kopiert.',
+      reportLinkCopyError:
+        'Der Verifizierungslink konnte nicht kopiert werden.',
+      reportRevoke: 'Widerrufen',
+      reportRevokeTitle: 'Assessment-Bericht widerrufen',
+      reportRevokeConfirm: 'Bericht widerrufen',
+      reportRevokeMessage:
+        'Den aktiven Assessment-Bericht für {email} widerrufen? Der bestehende Verifizierungslink zeigt den Datensatz sofort als widerrufen an.',
+      reportRevokePolicy:
+        'Derselbe unveränderte Assessment-Snapshot kann nicht erneut ausgestellt werden. Wenn sich verlässliche Angaben zu Identität, Kurs oder Punkten später ändern, kann die studierende Person einen neuen aktiven Bericht ausstellen.',
+      reportRevocationSuccess: 'Der Assessment-Bericht wurde widerrufen.',
+      reportAlreadyInactive:
+        'Der Assessment-Bericht wurde inaktiv, bevor er widerrufen werden konnte. Sein aktueller Status wird in der Liste angezeigt.',
+      reportRevocationError:
+        'Der Assessment-Bericht konnte nicht widerrufen werden. Der lokale Status wurde nicht geändert.',
+      reportRecordsRefreshError:
+        'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
+      reportTimeZone: 'Europe/Zurich',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

@@ -12,6 +12,8 @@
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
     "ASSESSMENT_MODE",
+    "AUTH_LECTURER_ALLOWED_HOSTS",
+    "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
@@ -96,11 +98,16 @@
     "OPENAI_BASE_URL",
     "CHAT_OPENAI_STORE_RESPONSES",
     "CHAT_ENABLE_AI_TELEMETRY",
+    "CHAT_PRIMARY_MODEL_ID",
+    "CHAT_FALLBACK_MODEL_ID",
+    "CHAT_MODEL_REGISTRY_JSON",
+    "ALLOWED_FRAME_ANCESTORS",
+    "BLOB_STORAGE_ACCOUNT_URL",
     "UPSTREAM_OPENAI_API_KEY",
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_HOST"
+    "LANGFUSE_BASE_URL"
   ],
   "tasks": {
     "lint": {
@@ -110,9 +117,6 @@
       "cache": false,
       "outputLogs": "new-only",
       "dependsOn": ["^build"]
-    },
-    "@klicker-uzh/prisma#check": {
-      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],

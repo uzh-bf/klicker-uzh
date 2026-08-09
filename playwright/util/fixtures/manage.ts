@@ -175,12 +175,14 @@ export async function createLiveQuizFixture(
 export async function createLiveQuiz({
   name,
   displayName,
+  description,
   courseId,
   ownerId,
   elementNames,
 }: {
   name: string
   displayName: string
+  description?: string
   courseId?: string
   ownerId: string
   elementNames: string[]
@@ -219,6 +221,7 @@ export async function createLiveQuiz({
       data: {
         name,
         displayName,
+        description,
         courseId: courseId ?? null,
         ownerId,
         blocks: {
@@ -272,6 +275,19 @@ export async function createLiveQuiz({
   } catch (error) {
     throw error
   }
+}
+
+export async function publishLiveQuiz(id: string) {
+  const prisma = await getPrisma()
+  await prisma.liveQuiz.update({
+    where: { id },
+    data: { status: 'PUBLISHED' },
+  })
+}
+
+export async function deleteLiveQuiz(id: string) {
+  const prisma = await getPrisma()
+  await prisma.liveQuiz.delete({ where: { id } })
 }
 
 export async function removeSoftDeletedLiveQuiz({

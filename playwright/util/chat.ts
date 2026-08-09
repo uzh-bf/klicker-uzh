@@ -27,6 +27,10 @@ export const DISCLAIMER_ID = '1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 // participant enrolled in COURSE_ID_TEST by Playwright seed
 export const PARTICIPANT_ID = PARTICIPANT_IDS[0]
 
+// A second seeded participant, used to prove that per-participant scoping in
+// the chat API routes actually holds (a message id alone must not grant access).
+export const OTHER_PARTICIPANT_ID = PARTICIPANT_IDS[1]
+
 export const chatUrl = () => process.env.URL_CHAT ?? URL_CHAT
 
 function chatSecret() {
@@ -226,9 +230,24 @@ export type SeedAttachment = {
 export type SeedMessage = {
   id?: string
   role: 'user' | 'assistant'
-  content: { type: string; text: string }[]
+  content: Array<
+    | { type: 'text' | 'reasoning'; text: string }
+    | {
+        type: 'tool-call'
+        toolCallId: string
+        toolName: string
+        args?: Record<string, unknown>
+        result?: {
+          content?: Array<{ type: string; text: string }>
+          isError?: boolean
+        }
+      }
+  >
   parentId?: string | null
   attachments?: SeedAttachment[]
+  // Mode the message was sent/answered in ('tutor' | 'explainer' | ...). The
+  // most recent message's chatMode becomes the thread's `lastChatMode` (D6).
+  chatMode?: string | null
 }
 
 // 1x1 PNG as a test image
@@ -276,6 +295,7 @@ export async function seedThread(
         role: m.role,
         content: m.content,
         parentId: m.parentId !== undefined ? m.parentId : previousId,
+        chatMode: m.chatMode ?? null,
       },
     })
     if (m.attachments?.length) {
@@ -296,27 +316,119 @@ export async function seedThread(
   return thread
 }
 
+/** Persisted thumbs rating of a message, as the feedback route stored it. */
+export async function getMessageRating(messageId: string) {
+  const prisma = await getPrisma()
+  const message = await prisma.chatMessage.findUnique({
+    where: { id: messageId },
+    select: { rating: true },
+  })
+
+  return message?.rating ?? null
+}
+
 // ---------------------------------------------------------------------------
 // Mocked LLM endpoint
 // ---------------------------------------------------------------------------
-function makeStreamBody(text: string) {
-  return [
+/**
+ * Metadata the real route attaches to its `finish` part — see the
+ * `messageMetadata` callback in
+ * `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts`. The client reads
+ * it back in `hooks/useChatResponse.ts` and stores it on the assistant message,
+ * where the caption under the answer renders it.
+ */
+export type StreamFinishMetadata = {
+  finishReason?: string
+  chatMode?: string
+  modelId?: string
+  reasoningEffort?: string
+  reasoningContent?: string
+  creditsUsed?: number
+}
+
+/**
+ * A tool call streamed alongside the answer. `output` is the raw MCP
+ * `CallToolResult` envelope the live parser keeps as the tool result (see
+ * `normalizeLiveToolOutput`), i.e. exactly what `parseDocQueryPayload` accepts.
+ */
+export type StreamToolCall = {
+  toolCallId: string
+  toolName: string
+  input?: Record<string, unknown>
+  output?: unknown
+}
+
+export type StreamOptions = {
+  /** Replaces the default `assistant reply #N` answer text. */
+  text?: string
+  /** Payload of the `finish` part; omitted entirely when not given. */
+  metadata?: StreamFinishMetadata
+  /** Tool calls emitted before the answer text. */
+  toolCalls?: StreamToolCall[]
+  /** Emits an SSE `error` part after the text. The client stops reading there
+   * and renders its error callout instead of finishing normally. */
+  errorText?: string
+}
+
+function makeStreamBody(text: string, options: StreamOptions = {}) {
+  const { metadata, toolCalls = [], errorText } = options
+
+  const lines = [
     `data: ${JSON.stringify({ type: 'start' })}`,
     `data: ${JSON.stringify({ type: 'start-step' })}`,
+  ]
+
+  for (const call of toolCalls) {
+    lines.push(
+      `data: ${JSON.stringify({
+        type: 'tool-input-start',
+        toolCallId: call.toolCallId,
+        toolName: call.toolName,
+      })}`,
+      `data: ${JSON.stringify({
+        type: 'tool-input-available',
+        toolCallId: call.toolCallId,
+        toolName: call.toolName,
+        input: call.input ?? {},
+      })}`,
+      `data: ${JSON.stringify({
+        type: 'tool-output-available',
+        toolCallId: call.toolCallId,
+        output: call.output ?? null,
+      })}`
+    )
+  }
+
+  lines.push(
     `data: ${JSON.stringify({ type: 'text-start' })}`,
     `data: ${JSON.stringify({ type: 'text-delta', delta: text })}`,
-    `data: ${JSON.stringify({ type: 'text-end' })}`,
+    `data: ${JSON.stringify({ type: 'text-end' })}`
+  )
+
+  if (errorText) {
+    lines.push(`data: ${JSON.stringify({ type: 'error', errorText })}`)
+  }
+
+  lines.push(
     `data: ${JSON.stringify({ type: 'finish-step' })}`,
-    `data: ${JSON.stringify({ type: 'finish' })}`,
-    'data: [DONE]',
-  ].join('\n')
+    `data: ${JSON.stringify({
+      type: 'finish',
+      ...(metadata ? { messageMetadata: metadata } : {}),
+    })}`,
+    // Trailing line: the client keeps the last (possibly incomplete) line
+    // buffered, so nothing after this point is parsed anyway.
+    'data: [DONE]'
+  )
+
+  return lines.join('\n')
 }
 
 /**
  * Mock LLM endpoint (POST /chat)
  * Returns distinguishable streamed reply per call (`assistant reply #1`, `#2`, …)
+ * unless `options.text` overrides the answer text.
  */
-export async function mockChatStream(page: Page) {
+export async function mockChatStream(page: Page, options: StreamOptions = {}) {
   let counter = 0
   await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
@@ -324,7 +436,10 @@ export async function mockChatStream(page: Page) {
     return route.fulfill({
       status: 200,
       headers: { 'content-type': 'text/event-stream' },
-      body: makeStreamBody(`assistant reply #${counter}`),
+      body: makeStreamBody(
+        options.text ?? `assistant reply #${counter}`,
+        options
+      ),
     })
   })
 }

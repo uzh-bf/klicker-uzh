@@ -57,4 +57,4 @@ ARG NODE_ENV="production"
 
 EXPOSE 4000
 
-CMD ["node", "--experimental-default-type=module", "apps/lti/dist/index.js"]
+CMD ["node", "apps/lti/dist/index.js"]

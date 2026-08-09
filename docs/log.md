@@ -1,19 +1,13 @@
 # Log
 
-## 2026-07-09
+The wiki change log lives in [log/](./log/) — **one file per change batch**,
+named `YYYY-MM-DD-<slug>.md` (date of the newest entry, short kebab-case
+topic). Sort filenames descending to read the log newest-first.
 
-- **Update**: [domain-model](./domain-model.md) gained a "Course duplication" section (permission contract, atomic transaction, shared-element semantics, what is/isn't copied, rounded date shifting) — restores the contract that was recorded in the retired `project/CODEBASE_NOTES.md` and never migrated when the course-duplication branch merged v3.
+A new change always gets a **new file**; never append to this file, another
+batch's file, or the frozen [archive](./log/archive.md). Per-file format is
+unchanged: `## YYYY-MM-DD` headings with `**Creation**`/`**Update**`/
+`**Deprecation**` bullets linking the touched pages.
 
-## 2026-07-07
-
-- **Update**: migration-in-flight banners added to [graphql-api-layer](./graphql-api-layer.md), [architecture-overview](./architecture-overview.md) (GraphQL→tRPC, PR #5132), and [chat-platform](./chat-platform.md) (AI-SDK→Mastra, PRs #5126/#5129) — pages stay authoritative until those PRs merge.
-
-- **Update**: [testing](./testing.md) and [index](./index.md) reframed for the Cypress→Playwright switch — Playwright is the primary suite for new specs, Cypress is a frozen legacy suite pending removal (both still run in CI). Matching routing updates in the `klicker-testing-verification` and `klicker-cypress-e2e` skills. Migration roadmap: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
-
-- **Update**: [index](./index.md) skill-routing section expanded with the seven new `klicker-*` skills.
-
-- **Creation**: frontend + ops pages — [frontend-conventions](./frontend-conventions.md), [chat-platform](./chat-platform.md), [testing](./testing.md), [ci-and-deployment](./ci-and-deployment.md), [developing-a-feature](./developing-a-feature.md). Absorbed the remaining `project/CODEBASE_NOTES.md` sections; Playwright authoring/CI gotchas moved to the `klicker-playwright-e2e` skill.
-
-- **Creation**: backend pages — [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), [data-and-migrations](./data-and-migrations.md), [async-and-workers](./async-and-workers.md), [auth-model](./auth-model.md). Absorbed the GraphQL/data, export-package, and LTI entries from `project/CODEBASE_NOTES.md`.
-
-- **Creation**: initial bundle — [index](./index.md), [getting-started](./getting-started.md), [architecture-overview](./architecture-overview.md). Evidence base: `project/docs/WIKI_BOOTSTRAP_BRINGUP.md` (executed bring-up) and `project/docs/WIKI_BOOTSTRAP_INVENTORY.md` (repo archaeology).
+This file exists only to explain the convention — single-file append logs
+conflict on every concurrently open branch.
