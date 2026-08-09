@@ -54,8 +54,7 @@ jobs:
         shell: bash
         run: pnpm run check:syncpack
 
-      - name: Check linting (Biome, advisory)
-        continue-on-error: true
+      - name: Check linting (Biome, blocking error tier)
         shell: bash
         run: pnpm run lint:biome
 

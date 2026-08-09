@@ -254,6 +254,20 @@ ci(quality): enforce Biome lint
   found by that gate were fixed before the commit landed.
 - 2026-08-10: A fresh full Biome error gate reports exactly 366 remaining
   errors, all in the planned hook, accessibility, and stable-key slices.
+- 2026-08-10: The full Biome error gate is now clean in commit 39bf45021:
+  `pnpm run lint:biome` checks 1,651 files with zero error-tier diagnostics.
+- 2026-08-10: Biome error-tier lint is now included in the blocking local
+  `pnpm run check:all` aggregate and is blocking in both `.github/workflows/check.yml`
+  and `.github/workflows/check-lint.yml`. Knip remains advisory; Prettier and
+  ESLint retain their documented parallel ownership.
+- 2026-08-10: The post-enforcement `pnpm run check:all` passed all 24 package
+  checks and seven package lint tasks, plus formatting, syncpack, AGENTS.md,
+  Prisma-sync, and Biome. Host Node 26.7.0 printed the repository's existing
+  Node 24 engine warning; no check failed.
+- 2026-08-10: Browser verification remains an environment-only gap. The
+  pinned DevPod route readiness fails with `curl: (60) SSL certificate problem:
+  out of memory`, and the linked workspace routes return 404/blank responses;
+  no application behavior conclusion is drawn from that run.
 
 ## Finish state
 
