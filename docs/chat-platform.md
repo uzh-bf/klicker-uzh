@@ -158,8 +158,15 @@ on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency
 The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
 `getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
 and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
-to the home/back button when a chatbot is linked to the course and the caller is
-a participant; the button opens the first chatbot of the course in a new tab.
+to the home/back button when the caller is a participant of the course. The
+button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
+design-system `Button`, the same pattern as the sibling home button), so
+middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
+courses are deliberately limited to a single chatbot for now, which is also why
+`Chatbot` carries no ordering or visibility field. Lifting that limit means
+deciding the multi-chatbot affordance first — the header row does not wrap and
+the design-system button is `shrink-0`, so several buttons would squeeze the
+course title on a narrow viewport.
 The query is deliberately **not** `withAuth(asParticipant)`: course pages are
 publicly reachable, and a scope error would surface as the literal message
 `Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
@@ -167,7 +174,7 @@ turns into a hard redirect to `/login?expired=true` for every anonymous visitor
 and every logged-in lecturer. Instead the resolver mirrors its page siblings
 `getCourseOverviewData` and `getStudentCourseLeaderboard` — a public field whose
 service returns `[]` unless the caller is a `PARTICIPANT` with a `Participation`
-record for the course. The button opens the existing PWA deep-link route
+record for the course. Each button opens the existing PWA deep-link route
 `course/[courseId]/chatbot/[chatbotId]` in a new tab, which redirects to login
 when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 `chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`

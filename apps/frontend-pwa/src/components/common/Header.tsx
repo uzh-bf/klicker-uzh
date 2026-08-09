@@ -64,6 +64,8 @@ function Header({
       participant?.role !== UserRole.Participant ||
       process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
   })
+  // courses are limited to a single chatbot for now, so the header links the
+  // first one and does not build a multi-chatbot affordance
   const courseChatbot = chatbotData?.courseChatbots?.[0]
 
   const pageInFrame =
@@ -149,22 +151,21 @@ function Header({
           ))}
 
         {courseId && courseChatbot && (
-          <Button
-            primary
-            onClick={() =>
-              window.open(
-                `/course/${courseId}/chatbot/${courseChatbot.id}`,
-                '_blank',
-                'noopener'
-              )
-            }
-            className={{
-              root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
-            }}
-            data={{ cy: 'student-course-chatbot-link' }}
+          <Link
+            href={`/course/${courseId}/chatbot/${courseChatbot.id}`}
+            target="_blank"
+            rel="noopener"
           >
-            <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
-          </Button>
+            <Button
+              primary
+              className={{
+                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+              }}
+              data={{ cy: 'student-course-chatbot-link' }}
+            >
+              <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
+            </Button>
+          </Link>
         )}
 
         <Dropdown
