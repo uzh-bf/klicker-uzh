@@ -44,12 +44,22 @@ function Flashcard({
   return (
     <div>
       <div className={twMerge('w-full flex-1 md:mx-auto md:mb-4 md:max-w-xl')}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: The card renders arbitrary markdown and response controls when flipped, so a native button would be invalid. */}
+        {/* biome-ignore lint/a11y/useSemanticElements: The card renders arbitrary markdown and response controls when flipped, so a native button would be invalid. */}
         <div
+          role={!isFlipped ? 'button' : undefined}
+          tabIndex={!isFlipped ? 0 : -1}
           className={twMerge(
             'transform-3d flex flex-col rounded-lg border border-gray-300 p-4 shadow [transition:transform_0.6s]',
             isFlipped ? 'rotate-y-180' : 'cursor-pointer hover:shadow-xl'
           )}
-          onClick={!isFlipped ? handleFlip : () => null}
+          onClick={!isFlipped ? handleFlip : undefined}
+          onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+            if (!isFlipped && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault()
+              handleFlip()
+            }
+          }}
         >
           <FlashcardFront
             isFlipped={isFlipped}

@@ -148,15 +148,16 @@ function LiveQuizLeaderboard({
             ? t('shared.leaderboard.liveQuizGamifiedAssessment')
             : t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
                 logout: (text) => (
-                  <span
+                  <button
+                    type="button"
                     onClick={async () => {
                       await logoutParticipant()
                       router.reload()
                     }}
-                    className="cursor-pointer underline"
+                    className="cursor-pointer border-0 bg-transparent p-0 underline"
                   >
                     {text}
-                  </span>
+                  </button>
                 ),
               })}
         </UserNotification>
@@ -182,15 +183,16 @@ function LiveQuizLeaderboard({
                 'shared.leaderboard.liveQuizGamifiedCourseNoParticipation',
                 {
                   logout: (text) => (
-                    <span
+                    <button
+                      type="button"
                       onClick={async () => {
                         await logoutParticipant()
                         router.reload()
                       }}
-                      className="cursor-pointer underline"
+                      className="cursor-pointer border-0 bg-transparent p-0 underline"
                     >
                       {text}
-                    </span>
+                    </button>
                   ),
                 }
               )}

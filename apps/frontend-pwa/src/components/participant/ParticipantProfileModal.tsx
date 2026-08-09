@@ -69,10 +69,11 @@ function ParticipantProfileModal({
           />
           <div className="grid w-full grid-cols-10 justify-items-center pt-5">
             {top10Participants.slice(0, 10).map((p, index) => (
-              <div
-                key={index}
+              <button
+                type="button"
+                key={p}
                 className={twMerge(
-                  'h-2 w-2 rounded-full hover:cursor-pointer',
+                  'h-2 w-2 rounded-full border-0 p-0 hover:cursor-pointer',
                   index === currentIndex ? 'bg-black' : 'bg-gray-300'
                 )}
                 onClick={() => {

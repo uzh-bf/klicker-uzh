@@ -113,6 +113,7 @@ function Join({
                     <span
                       className="flex items-center"
                       title={t('shared.generic.gamified')}
+                      role="img"
                       aria-label={t('shared.generic.gamified')}
                     >
                       <FontAwesomeIcon
@@ -125,6 +126,7 @@ function Join({
                     <span
                       className="flex items-center"
                       title={t('shared.generic.assessment')}
+                      role="img"
                       aria-label={t('shared.generic.assessment')}
                     >
                       <FontAwesomeIcon
@@ -137,6 +139,7 @@ function Join({
                     <span
                       className="flex items-center"
                       title={t('shared.generic.pinProtected')}
+                      role="img"
                       aria-label={t('shared.generic.pinProtected')}
                     >
                       <FontAwesomeIcon

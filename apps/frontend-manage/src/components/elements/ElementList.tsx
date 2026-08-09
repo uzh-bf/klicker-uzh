@@ -53,12 +53,13 @@ function ElementList({
           <span>
             {t.rich('manage.questionPool.activeFiltersWarning', {
               reset: (text) => (
-                <span
-                  className="cursor-pointer font-bold underline"
+                <button
+                  type="button"
+                  className="cursor-pointer border-0 bg-transparent p-0 font-bold underline"
                   onClick={handleFilterReset}
                 >
                   {text}
-                </span>
+                </button>
               ),
             })}
           </span>
@@ -73,12 +74,13 @@ function ElementList({
         <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
           {t.rich('manage.questionPool.activeFiltersWarning', {
             reset: (text) => (
-              <span
-                className="cursor-pointer font-bold underline"
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 font-bold underline"
                 onClick={handleFilterReset}
               >
                 {text}
-              </span>
+              </button>
             ),
           })}
         </UserNotification>

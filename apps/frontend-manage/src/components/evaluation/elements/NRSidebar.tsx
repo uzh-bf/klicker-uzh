@@ -114,8 +114,8 @@ function NRSidebar({
             <div className="mt-4 font-bold">
               {t('manage.evaluation.correctSolutionRanges')}:
             </div>
-            {instance.results.solutionRanges.map((range, innerIndex) => (
-              <div key={`solution-range-${innerIndex}`}>
+            {instance.results.solutionRanges.map((range) => (
+              <div key={`solution-range-${range?.min}-${range?.max}`}>
                 [{range?.min ?? '-∞'},{range?.max ?? '+∞'}]
               </div>
             ))}
@@ -127,8 +127,8 @@ function NRSidebar({
               {t('manage.evaluation.correctExactSolutions')}:
             </div>
             <ul>
-              {instance.results.exactSolutions.map((solution, innerIndex) => (
-                <li key={`innerIndex-${innerIndex}`}>{solution}</li>
+              {instance.results.exactSolutions.map((solution) => (
+                <li key={`solution-${solution}`}>{solution}</li>
               ))}
             </ul>
           </div>

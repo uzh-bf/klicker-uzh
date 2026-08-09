@@ -70,18 +70,18 @@ function TotalStudentActivityPlot({
                 }}
               />
               <Bar dataKey="count">
-                {activityData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {activityData.map((entry) => (
+                  <Cell key={`cell-${entry.week}`} fill={entry.color} />
                 ))}
               </Bar>
               {activityData.map(
-                (entry, index) =>
+                (entry) =>
                   (entry.isQ1 ||
                     entry.isQ3 ||
                     entry.isMedian ||
                     entry.isMean) && (
                     <ReferenceLine
-                      key={`line-${index}`}
+                      key={`line-${entry.week}`}
                       x={entry.week}
                       stroke={
                         entry.isMean ? 'red' : entry.isMedian ? 'blue' : '#666'

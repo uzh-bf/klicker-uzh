@@ -111,8 +111,13 @@ const Development = () => {
             <img
               src="/img/logos/logo_swissuniversities.png"
               className="mr-8 h-full"
+              alt="swissuniversities logo"
             />
-            <img src="/img/logos/logo_uzh.jpeg" className="h-full" />
+            <img
+              src="/img/logos/logo_uzh.jpeg"
+              className="h-full"
+              alt="University of Zurich logo"
+            />
           </div>
         </div>
 
@@ -136,8 +141,13 @@ const Development = () => {
             <img
               src="/img/logos/logo_swissuniversities.png"
               className="mr-2 h-12"
+              alt="swissuniversities logo"
             />
-            <img src="/img/logos/logo_uzh.jpeg" className="h-12" />
+            <img
+              src="/img/logos/logo_uzh.jpeg"
+              className="h-12"
+              alt="University of Zurich logo"
+            />
           </div>
         </div>
         <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-2 lg:gap-4 xl:grid-cols-4">
@@ -159,6 +169,7 @@ const Development = () => {
             src="https://klicker-uzh.feedbear.com/roadmap?embed=true"
             width="100%"
             height="900px"
+            title="KlickerUZH public roadmap"
           ></iframe>
         </div>
       </div>

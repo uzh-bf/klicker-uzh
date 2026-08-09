@@ -109,6 +109,8 @@ function StackCreationStep({
                     {values.stacks.map(
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
+                          // Formik field-array entries have no persisted identity; their index is also the move/remove identity.
+                          // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
                           key={`stack-${index}`}
                           highlightFTNoSL
                           stackIx={index}

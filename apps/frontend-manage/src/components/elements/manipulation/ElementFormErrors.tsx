@@ -54,9 +54,9 @@ function ElementFormErrors({
           ).map(
             (choiceError, ix) =>
               choiceError && (
-                <li key={`choice-${ix}`}>{`${t(
-                  'manage.elements.answerOption'
-                )} ${ix + 1}: ${
+                <li
+                  key={`choice-${choiceError.value ?? ''}-${choiceError.feedback ?? ''}`}
+                >{`${t('manage.elements.answerOption')} ${ix + 1}: ${
                   choiceError.value && choiceError.feedback
                     ? `${choiceError.value} ${choiceError.feedback}`
                     : choiceError.value || choiceError.feedback
@@ -108,7 +108,7 @@ function ElementFormErrors({
             (errors.options.solutionRanges as string[]).map(
               (rangeError, ix) => (
                 <li
-                  key={`solution-range-error-${ix}`}
+                  key={`solution-range-error-${rangeError}`}
                 >{`${t('manage.elements.solutionRanges')} ${ix + 1}: ${
                   rangeError
                 }`}</li>
@@ -165,7 +165,7 @@ function ElementFormErrors({
           (errors.options.solutions as any[]).map(
             (solutionError: any, ix: number) =>
               solutionError && (
-                <li key={`solution-${ix}`}>{`${t(
+                <li key={`solution-${String(solutionError)}`}>{`${t(
                   'manage.elements.possibleSolutionN',
                   { number: String(ix + 1) }
                 )}: ${solutionError}`}</li>
@@ -238,7 +238,7 @@ function ElementFormErrors({
           ).flatMap((criterionError, ix) => {
             if (typeof criterionError === 'string') {
               return [
-                <li key={`criterion-${ix}-${criterionError}`}>
+                <li key={`criterion-${criterionError}`}>
                   {`${t('shared.generic.criterion')} ${ix + 1}: ${criterionError}`}
                 </li>,
               ]
@@ -249,7 +249,9 @@ function ElementFormErrors({
               Object.values(criterionError)
                 .filter((error) => typeof error !== 'undefined')
                 .map((error) => (
-                  <li key={`criterion-${ix}-${error}`}>
+                  <li
+                    key={`criterion-${JSON.stringify(criterionError)}-${error}`}
+                  >
                     {`${t('shared.generic.criterion')} ${ix + 1}: ${error}`}
                   </li>
                 ))
@@ -282,7 +284,7 @@ function ElementFormErrors({
               Object.values(caseError)
                 .filter((error) => typeof error !== 'undefined')
                 .map((error) => (
-                  <li key={`case-${ix}-${error}`}>
+                  <li key={`case-${JSON.stringify(caseError)}-${error}`}>
                     {`${t('shared.generic.case')} ${ix + 1}: ${error}`}
                   </li>
                 ))

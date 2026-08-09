@@ -234,12 +234,9 @@ function ElementHistogram({
 
           {showSolutionRanges &&
             solutionRanges.map(
-              (
-                solutionRange: { min?: number | null; max?: number | null },
-                index: number
-              ) => (
+              (solutionRange: { min?: number | null; max?: number | null }) => (
                 <ReferenceArea
-                  key={index}
+                  key={`range-${solutionRange.min}-${solutionRange.max}`}
                   x1={solutionRange.min ?? undefined}
                   x2={solutionRange.max ?? undefined}
                   stroke={CHART_SOLUTION_COLORS.correct}
@@ -261,9 +258,9 @@ function ElementHistogram({
             )}
 
           {showExactSolutions &&
-            exactSolutions.map((solution, idx) => (
+            exactSolutions.map((solution) => (
               <ReferenceLine
-                key={`exact-solution-${idx}`}
+                key={`exact-solution-${solution}`}
                 x={parseFloat(String(solution))}
                 stroke={CHART_SOLUTION_COLORS.correct}
                 label={{

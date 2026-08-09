@@ -187,7 +187,12 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         </SectionCollapsible>
 
         {quizData?.blocks?.map((block, blockIx) => (
-          <div key={`live-quiz-template-block-${blockIx}`} className="mt-4">
+          <div
+            // Formik template blocks have no persisted identity; the field index is their controlled identity.
+            // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
+            key={`live-quiz-template-block-${blockIx}`}
+            className="mt-4"
+          >
             <div className="flex flex-row items-center justify-between">
               <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
               <Button
@@ -207,7 +212,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             </div>
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
-                key={`live-quiz-template-element-${blockIx}-${elementIx}`}
+                key={`live-quiz-template-element-${element.instance.id}`}
                 title={
                   element.useTemplateInstance ||
                   element.useExistingElement ||

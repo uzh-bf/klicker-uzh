@@ -76,7 +76,7 @@ function PointCorrectionsAdjustmentsStep() {
               {item.label}
             </div>
             <div className="flex flex-col gap-2 text-sm text-gray-700">
-              <label className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Checkbox
                   checked={Boolean(item.awardField.value)}
                   onCheck={() =>
@@ -87,12 +87,10 @@ function PointCorrectionsAdjustmentsStep() {
                     )
                   }
                   data={{ cy: `point-corrections-${item.id}-award-checkbox` }}
+                  label={t('manage.pointCorrections.adjustmentsAwardLabel')}
                 />
-                <span>
-                  {t('manage.pointCorrections.adjustmentsAwardLabel')}
-                </span>
-              </label>
-              <label className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
                 <Checkbox
                   checked={Boolean(item.deductField.value)}
                   onCheck={() =>
@@ -103,11 +101,9 @@ function PointCorrectionsAdjustmentsStep() {
                     )
                   }
                   data={{ cy: `point-corrections-${item.id}-deduct-checkbox` }}
+                  label={t('manage.pointCorrections.adjustmentsDeductLabel')}
                 />
-                <span>
-                  {t('manage.pointCorrections.adjustmentsDeductLabel')}
-                </span>
-              </label>
+              </div>
             </div>
           </div>
         ))}

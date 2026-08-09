@@ -177,9 +177,10 @@ function AddStackButton({
         </div>
       )}
       {drop(
-        <div
+        <button
+          type="button"
           className={twMerge(
-            'hover:bg-accent flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
+            'hover:bg-accent flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid bg-transparent p-2 text-center md:w-16',
             isOver && 'bg-primary-20'
           )}
           onClick={() => {
@@ -204,7 +205,7 @@ function AddStackButton({
               ? t('manage.activityWizard.newBlock')
               : t('manage.activityWizard.newStack')}
           </div>
-        </div>
+        </button>
       )}
     </div>
   )

@@ -49,11 +49,11 @@ const ThreadListItems: FC = () => {
           className="flex flex-col gap-1.5 p-1"
         >
           <span className="sr-only">{t('chat.threadList.loading')}</span>
-          {[...Array(5)].map((_, index) => (
+          {[85, 77, 69, 61, 53].map((width) => (
             <div
-              key={index}
+              key={`skeleton-${width}`}
               aria-hidden="true"
-              style={{ width: `${85 - index * 8}%` }}
+              style={{ width: `${width}%` }}
               className="bg-muted h-8 animate-pulse rounded motion-reduce:animate-none"
             />
           ))}
@@ -326,132 +326,135 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   }
 
   return (
-    <div
-      data-cy="chat-thread-item"
-      // The row itself is never focused (its buttons/input are), so
-      // focus-visible: here would be dead CSS. focus-within: highlights the
-      // row when a child (select/edit/delete button, title input) has focus.
-      className={`group/thread focus-within:bg-muted focus-within:ring-ring flex items-center rounded-lg py-1 transition-all focus-within:outline-none focus-within:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
-      // A pending delete confirm reverts as soon as the pointer or focus
-      // leaves the row (T2.3) — covers both moving the mouse away and
-      // tabbing/tapping to a different row.
-      onMouseLeave={handleRowMouseLeave}
-      onBlur={handleRowBlur}
-    >
-      {isEditing ? (
-        <>
-          <TextField
-            data-cy="chat-thread-title-input"
-            // The field carries no visible label, so without this it has no
-            // accessible name at all and screen-reader users hear only the
-            // current title read as a value.
-            aria-label={t('chat.threadList.editName')}
-            value={editTitle}
-            onChange={setEditTitle}
-            onKeyDown={handleKeyDown}
-            className={{ input: 'bg-background mx-2 h-8 flex-grow text-sm' }}
-            autoFocus
-          />
-          <button
-            type="button"
-            data-cy="chat-thread-title-save"
-            onClick={handleEditSave}
-            aria-label={t('chat.threadList.save')}
-            // TODO success token: no semantic "success" color exists in the
-            // token system yet; hover:text-green-600 stays hardcoded until one
-            // is added (D1/S6 — do not invent a token here).
-            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
-          >
-            <CheckIcon />
-            <span className="sr-only">{t('chat.threadList.save')}</span>
-          </button>
-          <button
-            type="button"
-            data-cy="chat-thread-title-cancel"
-            onClick={handleEditCancel}
-            aria-label={t('chat.threadList.cancel')}
-            className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
-          >
-            <XIcon />
-            <span className="sr-only">{t('chat.threadList.cancel')}</span>
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            data-cy="chat-thread-select"
-            onClick={onSelect}
-            aria-current={isActive ? 'page' : undefined}
-            className="flex min-w-0 flex-grow flex-col gap-0.5 px-3 py-1 text-start"
-          >
-            <p className="truncate text-sm">{getThreadTitle()}</p>
-            {/* Second line: the icon + name of the mode the thread was last
+    <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: These handlers manage row hover/focus lifecycle only; the row itself is not an activation target. */}
+      <div
+        data-cy="chat-thread-item"
+        // The row itself is never focused (its buttons/input are), so
+        // focus-visible: here would be dead CSS. focus-within: highlights the
+        // row when a child (select/edit/delete button, title input) has focus.
+        className={`group/thread focus-within:bg-muted focus-within:ring-ring flex items-center rounded-lg py-1 transition-all focus-within:outline-none focus-within:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
+        // A pending delete confirm reverts as soon as the pointer or focus
+        // leaves the row (T2.3) — covers both moving the mouse away and
+        // tabbing/tapping to a different row.
+        onMouseLeave={handleRowMouseLeave}
+        onBlur={handleRowBlur}
+      >
+        {isEditing ? (
+          <>
+            <TextField
+              data-cy="chat-thread-title-input"
+              // The field carries no visible label, so without this it has no
+              // accessible name at all and screen-reader users hear only the
+              // current title read as a value.
+              aria-label={t('chat.threadList.editName')}
+              value={editTitle}
+              onChange={setEditTitle}
+              onKeyDown={handleKeyDown}
+              className={{ input: 'bg-background mx-2 h-8 flex-grow text-sm' }}
+              autoFocus
+            />
+            <button
+              type="button"
+              data-cy="chat-thread-title-save"
+              onClick={handleEditSave}
+              aria-label={t('chat.threadList.save')}
+              // TODO success token: no semantic "success" color exists in the
+              // token system yet; hover:text-green-600 stays hardcoded until one
+              // is added (D1/S6 — do not invent a token here).
+              className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            >
+              <CheckIcon />
+              <span className="sr-only">{t('chat.threadList.save')}</span>
+            </button>
+            <button
+              type="button"
+              data-cy="chat-thread-title-cancel"
+              onClick={handleEditCancel}
+              aria-label={t('chat.threadList.cancel')}
+              className="text-foreground focus-visible:ring-ring hover:text-destructive mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            >
+              <XIcon />
+              <span className="sr-only">{t('chat.threadList.cancel')}</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              data-cy="chat-thread-select"
+              onClick={onSelect}
+              aria-current={isActive ? 'page' : undefined}
+              className="flex min-w-0 flex-grow flex-col gap-0.5 px-3 py-1 text-start"
+            >
+              <p className="truncate text-sm">{getThreadTitle()}</p>
+              {/* Second line: the icon + name of the mode the thread was last
                 used in (D6). Rendered via createElement rather than bound to a
                 capitalized local: assigning the looked-up icon in the render
                 body reads to the React Compiler lint as defining a new
                 component on every render. Omitted entirely (no empty line)
                 when the thread has no stored mode, e.g. threads created
                 before mode tracking shipped. */}
-            {thread.lastChatMode && (
-              <p
-                data-cy="chat-thread-mode"
-                className="text-muted-foreground flex items-center gap-1 text-xs"
-              >
-                {createElement(getModeIcon(thread.lastChatMode), {
-                  className: 'size-3 shrink-0',
-                })}
-                <span className="truncate">
-                  {formatModeLabel(t, thread.lastChatMode)}
-                </span>
-              </p>
-            )}
-          </button>
-          <button
-            type="button"
-            data-cy="chat-thread-edit-button"
-            onClick={handleEditStart}
-            aria-label={t('chat.threadList.editName')}
-            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
-          >
-            <EditIcon />
-            <span className="sr-only">{t('chat.threadList.editName')}</span>
-          </button>
-          <button
-            type="button"
-            data-cy="chat-thread-delete-button"
-            onClick={handleDeleteClick}
-            onKeyDown={handleDeleteKeyDown}
-            // Confirm state gets the deleteConfirmAria name ("Confirm
-            // deleting this chat") rather than the plain "Delete chat" —
-            // the visible "Delete?"/"Löschen?" label alone doesn't convey
-            // that a second click is destructive.
-            aria-label={
-              deletePhase === 'confirming'
-                ? t('chat.threadList.deleteConfirmAria')
-                : t('chat.threadList.deleteChat')
-            }
-            className={`focus-visible:ring-ring mr-2 shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 ${
-              deletePhase === 'confirming'
-                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-6 gap-1 px-2 text-xs font-semibold'
-                : 'text-foreground hover:text-destructive size-6 p-1 [&>svg]:size-4'
-            } ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
-          >
-            {deletePhase === 'confirming' ? (
-              // aria-label above already carries the accessible name here, so
-              // this visible label doesn't need an sr-only mirror alongside it.
-              <span>{t('chat.threadList.deleteConfirm')}</span>
-            ) : (
-              <>
-                <Trash2 />
-                <span className="sr-only">
-                  {t('chat.threadList.deleteChat')}
-                </span>
-              </>
-            )}
-          </button>
-        </>
-      )}
-    </div>
+              {thread.lastChatMode && (
+                <p
+                  data-cy="chat-thread-mode"
+                  className="text-muted-foreground flex items-center gap-1 text-xs"
+                >
+                  {createElement(getModeIcon(thread.lastChatMode), {
+                    className: 'size-3 shrink-0',
+                  })}
+                  <span className="truncate">
+                    {formatModeLabel(t, thread.lastChatMode)}
+                  </span>
+                </p>
+              )}
+            </button>
+            <button
+              type="button"
+              data-cy="chat-thread-edit-button"
+              onClick={handleEditStart}
+              aria-label={t('chat.threadList.editName')}
+              className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+            >
+              <EditIcon />
+              <span className="sr-only">{t('chat.threadList.editName')}</span>
+            </button>
+            <button
+              type="button"
+              data-cy="chat-thread-delete-button"
+              onClick={handleDeleteClick}
+              onKeyDown={handleDeleteKeyDown}
+              // Confirm state gets the deleteConfirmAria name ("Confirm
+              // deleting this chat") rather than the plain "Delete chat" —
+              // the visible "Delete?"/"Löschen?" label alone doesn't convey
+              // that a second click is destructive.
+              aria-label={
+                deletePhase === 'confirming'
+                  ? t('chat.threadList.deleteConfirmAria')
+                  : t('chat.threadList.deleteChat')
+              }
+              className={`focus-visible:ring-ring mr-2 shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 ${
+                deletePhase === 'confirming'
+                  ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 h-6 gap-1 px-2 text-xs font-semibold'
+                  : 'text-foreground hover:text-destructive size-6 p-1 [&>svg]:size-4'
+              } ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
+            >
+              {deletePhase === 'confirming' ? (
+                // aria-label above already carries the accessible name here, so
+                // this visible label doesn't need an sr-only mirror alongside it.
+                <span>{t('chat.threadList.deleteConfirm')}</span>
+              ) : (
+                <>
+                  <Trash2 />
+                  <span className="sr-only">
+                    {t('chat.threadList.deleteChat')}
+                  </span>
+                </>
+              )}
+            </button>
+          </>
+        )}
+      </div>
+    </>
   )
 }

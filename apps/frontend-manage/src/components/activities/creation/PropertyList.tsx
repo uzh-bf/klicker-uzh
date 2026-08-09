@@ -14,10 +14,10 @@ interface PropertyListProps {
 function PropertyList({ elements }: PropertyListProps) {
   return (
     <>
-      {elements.map((element, ix) => (
+      {elements.map((element) => (
         <div
           className="flex flex-row items-center text-[0.95rem]"
-          key={`property-list-element-${ix}`}
+          key={`property-list-element-${element.icon.iconName}-${typeof element.richText === 'string' ? element.richText : 'rich-text'}`}
         >
           <div className="w-fit">
             <FontAwesomeIcon

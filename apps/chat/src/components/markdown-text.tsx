@@ -55,6 +55,7 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={onCopy}
             className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
           >

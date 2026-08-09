@@ -73,18 +73,18 @@ function TotalStudentPerformancePlot({
                 }}
               />
               <Bar dataKey="count">
-                {performanceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {performanceData.map((entry) => (
+                  <Cell key={`cell-${entry.errorRate}`} fill={entry.color} />
                 ))}
               </Bar>
               {performanceData.map(
-                (entry, index) =>
+                (entry) =>
                   (entry.isQ1 ||
                     entry.isQ3 ||
                     entry.isMedian ||
                     entry.isMean) && (
                     <ReferenceLine
-                      key={`line-${index}`}
+                      key={`line-${entry.errorRate}`}
                       x={entry.errorRate}
                       stroke={
                         entry.isMean ? 'red' : entry.isMedian ? 'blue' : '#666'

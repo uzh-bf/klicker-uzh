@@ -23,15 +23,14 @@ function HMACLink({
 
   return (
     <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
-      <Link href={link} legacyBehavior passHref>
-        <a
-          data-cy={`open-embedding-link-${identifier}`}
-          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {link}
-        </a>
+      <Link
+        href={link}
+        data-cy={`open-embedding-link-${identifier}`}
+        className="max-w-[calc(100%-3.5rem)] break-words text-sm"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {link}
       </Link>
       <Button
         onClick={() => {

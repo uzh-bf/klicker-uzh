@@ -49,19 +49,18 @@ export function QR({
   return (
     <div className={twMerge('flex flex-col items-center', className?.root)}>
       {showLink && (
-        <Link passHref legacyBehavior href={link}>
-          <a
-            className={twMerge(
-              'text-primary-100 mt-4 text-6xl',
-              className?.title
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-cy={data?.cy}
-            data-test={data?.test}
-          >
-            {link}
-          </a>
+        <Link
+          href={link}
+          className={twMerge(
+            'text-primary-100 mt-4 text-6xl',
+            className?.title
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-cy={data?.cy}
+          data-test={data?.test}
+        >
+          {link}
         </Link>
       )}
       <div className={className?.canvas}>

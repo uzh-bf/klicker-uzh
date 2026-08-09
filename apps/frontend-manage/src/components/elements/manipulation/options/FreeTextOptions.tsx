@@ -39,6 +39,8 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
                 ? values.options.solutions.map((_solution, index) => (
                     <div
                       className="flex flex-row items-end gap-2"
+                      // Formik solution arrays contain plain strings without a persisted identity; the field index is their controlled identity.
+                      // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
                       key={`${index}-${values.options.solutions!.length}`}
                     >
                       <FormikTextField

@@ -109,7 +109,7 @@ function Ellipsis({
                   .filter((line) => line.trim() !== '')
                   .slice(0, maxLines) // only include the first maxLines lines
                   .map((line, i, arr) => (
-                    <React.Fragment key={i}>
+                    <React.Fragment key={line}>
                       {line}
                       {i < arr.length - 1 && <br />}
                     </React.Fragment>
@@ -172,7 +172,7 @@ function Ellipsis({
         .filter((line) => line.trim() !== '')
         .slice(0, 3) // Limit to 3 lines for shortened content
         .map((line, i, arr) => (
-          <React.Fragment key={i}>
+          <React.Fragment key={line}>
             {line}
             {i < arr.length - 1 && <br />}
           </React.Fragment>
@@ -200,7 +200,7 @@ function Ellipsis({
               .filter((line) => line.trim() !== '')
               .slice(0, maxLines || 3) // Use maxLines if available, otherwise default to 3
               .map((line, i, arr) => (
-                <React.Fragment key={i}>
+                <React.Fragment key={line}>
                   {line}
                   {i < arr.length - 1 && <br />}
                 </React.Fragment>
@@ -239,7 +239,7 @@ function Ellipsis({
                       : 3
                   ) // limit lines based on context
                   .map((line, i, arr) => (
-                    <React.Fragment key={i}>
+                    <React.Fragment key={line}>
                       {line}
                       {i < arr.length - 1 && <br />}
                     </React.Fragment>

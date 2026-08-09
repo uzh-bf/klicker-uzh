@@ -41,9 +41,8 @@ function CaseStudyManualItemCreation({
         {t.rich('manage.elements.enterItemsManuallyExplanation', {
           b: (text) => <b>{text}</b>,
           button: (text) => (
-            <span
-              role="button"
-              tabIndex={0}
+            <button
+              type="button"
               onClick={() => {
                 // reset the selected items tracked outside the form state
                 setAnswerCollectionEntries([])
@@ -62,10 +61,10 @@ function CaseStudyManualItemCreation({
                 // switch to the selection mode for existing answer collections
                 setItemSelectionMode('existing')
               }}
-              className="text-primary-100 cursor-pointer underline"
+              className="text-primary-100 cursor-pointer border-0 bg-transparent p-0 underline"
             >
               {text}
-            </span>
+            </button>
           ),
         })}
       </UserNotification>

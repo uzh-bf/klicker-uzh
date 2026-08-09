@@ -38,9 +38,14 @@ function CircularPerformancePlot({
               onMouseEnter={(_, index) => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(undefined)}
             >
-              {data.map((_, index) => {
+              {data.map((entry) => {
                 const colorValues = Object.values(colors)
-                return <Cell key={`cell-${index}`} fill={colorValues[index]} />
+                return (
+                  <Cell
+                    key={entry.name}
+                    fill={colorValues[data.indexOf(entry)]}
+                  />
+                )
               })}
             </Pie>
             {/* {activeIndex !== undefined && (

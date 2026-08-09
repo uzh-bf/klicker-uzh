@@ -28,6 +28,8 @@ function NumericalExactSolutionsInput({
             {exactSolutions?.map((_, index: number) => (
               <div
                 className="flex flex-row items-end gap-2"
+                // Formik solution arrays contain plain values without a persisted identity; the field index is their controlled identity.
+                // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
                 key={`exact-solution-${index}`}
               >
                 <FormikNumberField

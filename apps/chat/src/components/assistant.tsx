@@ -404,6 +404,7 @@ function SidebarMain({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(

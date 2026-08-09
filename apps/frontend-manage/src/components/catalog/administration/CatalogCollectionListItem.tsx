@@ -13,7 +13,7 @@ import {
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { type KeyboardEvent, type MouseEvent, useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessLabel from '../ObjectAccessLabel'
@@ -56,33 +56,44 @@ function CatalogCollectionListItem({
     setRequestModal,
   })
 
+  const handlePrimaryAction = (event: MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation()
+    if (
+      (event.target as HTMLElement).closest('[data-catalog-collection-actions]')
+    ) {
+      return
+    }
+
+    if (
+      collection.access === ObjectAccess.Public ||
+      collection.isShared ||
+      collection.isManager
+    ) {
+      router.push(`/resources/catalog/${collection.id}`)
+    } else if (
+      collection.access === ObjectAccess.Restricted ||
+      !collection.isRequested
+    ) {
+      setRequestModal(true)
+    }
+  }
+
+  const handlePrimaryActionKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      event.currentTarget.click()
+    }
+  }
+
   return (
     <>
+      {/* biome-ignore lint/a11y/useSemanticElements: The row contains nested access and menu controls, so a native button would be invalid. */}
       <div
+        role="button"
+        tabIndex={0}
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
-        onClick={(e) => {
-          e?.stopPropagation()
-          if (
-            (e.target as HTMLElement).closest(
-              '[data-catalog-collection-actions]'
-            )
-          ) {
-            return
-          }
-
-          if (
-            collection.access === ObjectAccess.Public ||
-            collection.isShared ||
-            collection.isManager
-          ) {
-            router.push(`/resources/catalog/${collection.id}`)
-          } else if (
-            collection.access === ObjectAccess.Restricted ||
-            !collection.isRequested
-          ) {
-            setRequestModal(true)
-          }
-        }}
+        onClick={handlePrimaryAction}
+        onKeyDown={handlePrimaryActionKeyDown}
         data-cy={`catalog-object-${collection.name}`}
       >
         <div className="flex flex-row items-center gap-2">

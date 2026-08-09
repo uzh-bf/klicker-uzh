@@ -81,9 +81,9 @@ function CSEvaluation({
                             ],
                           }}
                         />
-                        {evaluationValue.answers.map((answer, ix) => (
+                        {evaluationValue.answers.map((answer) => (
                           <div
-                            key={`answer-${ix}`}
+                            key={`answer-${answer}`}
                             className="absolute top-0 h-full w-0.5 bg-red-500 bg-opacity-70"
                             style={{
                               left: `${((answer - shift) / length) * 100}%`,

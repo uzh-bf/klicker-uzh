@@ -158,14 +158,12 @@ function Element({
           <div className="flex flex-1 flex-row">
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex flex-none flex-row items-center gap-2 text-lg">
-                <a
+                <button
+                  type="button"
                   className={twMerge(
-                    'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center text-lg font-bold',
+                    'hover:text-uzh-blue-100 inline-flex flex-1 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-lg font-bold',
                     disabled && 'hover:cursor-not-allowed hover:text-black'
                   )}
-                  role="button"
-                  tabIndex={0}
-                  type="button"
                   onClick={() => {
                     if (!disabled) {
                       const value = localStorage.getItem(
@@ -189,7 +187,7 @@ function Element({
                       className="ml-3"
                     />
                   )}
-                </a>
+                </button>
               </div>
 
               <div className="flex-1 text-sm">
@@ -245,8 +243,9 @@ function Element({
           <SharingTypeBadge sharingType={element.sharingType} />
 
           {element.numSharedUsers && element.isManager ? (
-            <div
-              className="hover:text-primary-100 mr-3 flex h-max cursor-pointer flex-row items-center gap-2 py-1 text-gray-600"
+            <button
+              type="button"
+              className="hover:text-primary-100 mr-3 flex h-max cursor-pointer flex-row items-center gap-2 border-0 bg-transparent py-1 text-gray-600"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -255,7 +254,7 @@ function Element({
             >
               <div>{element.numSharedUsers}</div>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
-            </div>
+            </button>
           ) : null}
           <div className="flex flex-row gap-1.5 md:flex-col">
             {availableActions

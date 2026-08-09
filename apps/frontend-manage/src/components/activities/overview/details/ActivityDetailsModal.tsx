@@ -136,20 +136,14 @@ function ActivityDetailsModal({
                 <div className="flex flex-row items-center justify-center gap-5">
                   <Link
                     href={`/instances/${selected.instance.id}`}
-                    className="ml-auto text-sm hover:text-slate-700"
                     key={selected.instance.id}
-                    legacyBehavior
-                    passHref
+                    data-cy={`open-instance-${selected.instance.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-100 ml-auto flex flex-row items-center gap-2 text-sm font-normal hover:underline"
                   >
-                    <a
-                      data-cy={`open-instance-${selected.instance.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-100 flex flex-row items-center gap-2 text-sm font-normal hover:underline"
-                    >
-                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                      {t('manage.general.elementPreviewRedirect')}
-                    </a>
+                    <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                    {t('manage.general.elementPreviewRedirect')}
                   </Link>
                 </div>
               </>

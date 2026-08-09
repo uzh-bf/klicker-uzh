@@ -21,8 +21,8 @@ function LiveQuizBlocksError({ errors }: LiveQuizBlocksErrorProps) {
 
   return (
     <ul className="list-inside list-disc">
-      {uniqueErrors.filter(Boolean).map((error, ix) => (
-        <li key={`error-${ix}`}>{error}</li>
+      {uniqueErrors.filter(Boolean).map((error) => (
+        <li key={`error-${String(error)}`}>{error}</li>
       ))}
     </ul>
   )

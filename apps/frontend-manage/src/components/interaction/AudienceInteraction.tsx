@@ -282,18 +282,12 @@ function AudienceInteraction({
             <Link
               href={`/quizzes/${quizId}/lecturer`}
               target="_blank"
-              passHref
-              legacyBehavior
+              className="mr-3 inline-flex items-center gap-1.5 text-base hover:underline"
+              data-cy={`open-lecturer-overview-live-quiz-${liveQuizName}`}
+              rel="noopener noreferrer"
             >
-              <a
-                className="mr-3 inline-flex items-center gap-1.5 text-base hover:underline"
-                data-cy={`open-lecturer-overview-live-quiz-${liveQuizName}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FontAwesomeIcon icon={faUpRightFromSquare} />
-                {t('manage.cockpit.lecturerView')}
-              </a>
+              <FontAwesomeIcon icon={faUpRightFromSquare} />
+              {t('manage.cockpit.lecturerView')}
             </Link>
             <Switch
               data={{ cy: 'toggle-qa' }}

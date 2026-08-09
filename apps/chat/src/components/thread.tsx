@@ -303,7 +303,10 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
+          <button
+            type="button"
+            className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9"
+          >
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -332,9 +335,9 @@ const ThinkingDots: FC = () => {
       role="status"
       className="flex min-h-7 items-center gap-1 py-2"
     >
-      {THINKING_DOT_DELAYS.map((delayClassName, index) => (
+      {THINKING_DOT_DELAYS.map((delayClassName) => (
         <span
-          key={index}
+          key={delayClassName}
           className={twMerge(
             'bg-muted-foreground/40 size-1.5 animate-[pulse_1s_ease-in-out_infinite] rounded-full motion-reduce:animate-none',
             delayClassName
@@ -976,6 +979,7 @@ const UserActionBar: FC = () => {
           ) : (
             <ActionBarPrimitive.Edit asChild>
               <button
+                type="button"
                 data-cy="chat-edit-message-button"
                 className={actionBarButtonClassName}
               >
@@ -995,7 +999,7 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
-            <button className={actionBarButtonClassName}>
+            <button type="button" className={actionBarButtonClassName}>
               <MessagePrimitive.If copied>
                 <CheckIcon />
               </MessagePrimitive.If>
@@ -1324,6 +1328,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           <TooltipTrigger asChild>
             <ActionBarPrimitive.Copy asChild>
               <button
+                type="button"
                 data-cy="chat-copy-message-button"
                 className={actionBarButtonClassName}
               >
@@ -1344,6 +1349,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
                 <button
+                  type="button"
                   data-cy="chat-reload-message-button"
                   className={actionBarButtonClassName}
                 >
@@ -1416,6 +1422,7 @@ const MessageRatingButtons: FC = () => {
                   }}
                 >
                   <button
+                    type="button"
                     data-cy={`chat-rate-${value.toLowerCase()}-button`}
                     aria-pressed={isActive}
                     className={twMerge(

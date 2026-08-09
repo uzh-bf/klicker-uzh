@@ -20,9 +20,9 @@ export function CTA() {
     <div className="space-y-4 py-16 text-center sm:py-24 md:space-y-8">
       <H2 className={{ root: 'text-3xl font-bold' }}>Be Part of the Journey</H2>
       <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
-        {buttons.map((button, index) => (
+        {buttons.map((button) => (
           <a
-            key={index}
+            key={button.title}
             href={button.href}
             rel="noreferrer noopener"
             target="_blank"

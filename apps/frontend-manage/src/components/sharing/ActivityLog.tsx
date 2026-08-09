@@ -81,6 +81,7 @@ function ActivityLog({
           <p className="text-sm text-red-600">{t('shared.generic.error')}</p>
           {
             <button
+              type="button"
               className="mt-2 text-xs text-blue-600 hover:underline"
               onClick={() => {
                 refetch?.()

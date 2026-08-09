@@ -116,7 +116,8 @@ function CaseStudyCollectionSelection({
       <UserNotification type="warning" className={{ root: 'text-sm' }}>
         {t.rich('manage.elements.CSAnswerCollectionRequired', {
           link: (text) => (
-            <span
+            <button
+              type="button"
               className="cursor-pointer font-bold underline"
               onClick={() => {
                 // switch to the creation mode for new answer collection options
@@ -128,7 +129,7 @@ function CaseStudyCollectionSelection({
               data-cy="create-inline-answer-collection"
             >
               {text}
-            </span>
+            </button>
           ),
           link2: (text) => (
             <Link

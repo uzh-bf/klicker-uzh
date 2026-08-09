@@ -33,7 +33,11 @@ export function TitleImage() {
                   </div>
                 </div>
 
-                <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
+                <img
+                  className="-ml-2 w-80"
+                  src="/img/logos/KlickerLogo.png"
+                  alt="KlickerUZH logo"
+                />
                 <p className="mt-1 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>

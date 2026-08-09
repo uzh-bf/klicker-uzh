@@ -96,14 +96,14 @@ const About = () => {
             between lecturers and their audience in various ways. The platform
             is being developed by the Teaching Center of the Department of
             Finance at the University of Zurich, Switzerland. The development is{' '}
-            <span
-              onClick={() =>
-                window.open('https://github.com/uzh-bf/klicker-uzh', '_blank')
-              }
-              className="cursor-pointer text-blue-800 hover:underline"
+            <a
+              href="https://github.com/uzh-bf/klicker-uzh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-800 hover:underline"
             >
               entirely open-source
-            </span>
+            </a>
             , allowing for further extensibility and collaboration.
           </p>
         </div>
@@ -123,39 +123,30 @@ const About = () => {
           The following people are actively involved in the KlickerUZH project
           and its continued development. If you have any questions or feedback,
           feel free to reach out to us via e-mail at{' '}
-          <span
-            onClick={() =>
-              (window.location.href =
-                'mailto:klicker@df.uzh.ch?subject=[KlickerUZH]: Website Request')
-            }
-            className="cursor-pointer text-blue-800 hover:underline"
+          <a
+            href="mailto:klicker@df.uzh.ch?subject=[KlickerUZH]: Website Request"
+            className="text-blue-800 hover:underline"
           >
             klicker@df.uzh.ch
-          </span>
+          </a>
           . Former contributors can be found in our{' '}
-          <span
-            onClick={() =>
-              window.open(
-                'https://github.com/uzh-bf/klicker-uzh/graphs/contributors',
-                '_blank'
-              )
-            }
-            className="cursor-pointer text-blue-800 hover:underline"
+          <a
+            href="https://github.com/uzh-bf/klicker-uzh/graphs/contributors"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-800 hover:underline"
           >
             <FontAwesomeIcon icon={faGithub} className="mx-1" />
             open-source GitHub repository
-          </span>
+          </a>
           .
         </p>
-        <ul
-          role="list"
-          className="mb-14 grid list-none grid-cols-1 gap-x-8 gap-y-10 pl-0 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2"
-        >
+        <ul className="mb-14 grid list-none grid-cols-1 gap-x-8 gap-y-10 pl-0 sm:grid-cols-2 sm:gap-y-12 md:grid-cols-3 lg:grid-cols-4 xl:col-span-2">
           {PEOPLE.map((person) => (
             <li key={person.name}>
               <div className="flex items-start gap-x-6">
                 <img
-                  alt={`Profile photo of ${person.name}`}
+                  alt={`Profile of ${person.name}`}
                   src={person.imageUrl ?? '/img/app/anonymous-user.svg'}
                   className="aspect-ratio w-14 rounded-full"
                 />
@@ -197,8 +188,13 @@ const About = () => {
           <img
             src="/img/logos/logo_swissuniversities.png"
             className="mr-8 h-full"
+            alt="swissuniversities logo"
           />
-          <img src="/img/logos/logo_uzh.jpeg" className="h-full" />
+          <img
+            src="/img/logos/logo_uzh.jpeg"
+            className="h-full"
+            alt="University of Zurich logo"
+          />
         </div>
       </div>
     </Layout>

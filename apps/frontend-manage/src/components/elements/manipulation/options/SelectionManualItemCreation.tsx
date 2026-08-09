@@ -77,7 +77,8 @@ function SelectionManualItemCreation({
         {t.rich('manage.elements.enterSelectionItemsManuallyExplanation', {
           b: (text) => <b>{text}</b>,
           button: (text) => (
-            <span
+            <button
+              type="button"
               onClick={() => {
                 // reset the selected items
                 setAnswerCollectionEntries([])
@@ -85,11 +86,11 @@ function SelectionManualItemCreation({
                 // switch to the selection mode for existing answer collections
                 setItemSelectionMode('existing')
               }}
-              className="cursor-pointer hover:underline"
+              className="cursor-pointer border-0 bg-transparent p-0 hover:underline"
               data-cy="switch-to-existing-collection-selection"
             >
               {text}
-            </span>
+            </button>
           ),
         })}
       </UserNotification>

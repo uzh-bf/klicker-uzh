@@ -16,7 +16,7 @@ import { Button, FormikTextareaField } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { type KeyboardEvent, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FeedbackDeletionModal from './FeedbackDeletionModal'
 
@@ -60,9 +60,22 @@ function Feedback({
 
   return (
     <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      {/* biome-ignore lint/a11y/useSemanticElements: The header contains nested action buttons, so a native button would be invalid. */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isEditingActive}
         className="cursor-pointer p-4 pb-2.5 transition-colors hover:bg-gray-50"
         onClick={() => setIsEditingActive((prev) => !prev)}
+        onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+          if (
+            event.target === event.currentTarget &&
+            (event.key === 'Enter' || event.key === ' ')
+          ) {
+            event.preventDefault()
+            setIsEditingActive((prev) => !prev)
+          }
+        }}
         data-cy={`open-feedback-${content}`}
       >
         <div className="flex w-full flex-row items-start justify-between">

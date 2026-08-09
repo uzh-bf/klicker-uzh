@@ -36,7 +36,7 @@ function CaseStudyCriteriaFields({ disabled }: { disabled: boolean }) {
             <>
               {criteriaField.value?.map((criterion, index) => (
                 <div
-                  key={index}
+                  key={criterion.id}
                   className="rounded-lg border bg-gray-50 p-3 shadow-sm"
                 >
                   {/* // TODO: remove this component, which is only required to migrate old local storage content */}

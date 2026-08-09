@@ -59,8 +59,8 @@ function CaseStudyCasesFields({
       <FieldArray name="options.cases">
         {({ push, remove }) => (
           <div className="flex flex-col gap-4">
-            {casesField.value?.map((_, ix) => (
-              <div key={ix} className="flex flex-col">
+            {casesField.value?.map((caseItem, ix) => (
+              <div key={caseItem.id} className="flex flex-col">
                 <div className="-mb-1 flex items-center justify-between">
                   <H3>
                     {t('shared.generic.case')} {ix + 1}

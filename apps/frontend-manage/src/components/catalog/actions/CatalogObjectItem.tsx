@@ -19,7 +19,7 @@ import {
 import { Dropdown, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { type KeyboardEvent, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
@@ -78,49 +78,56 @@ function CatalogObjectItem({
     setRemovalModal,
   })
 
+  const handlePrimaryAction = () => {
+    if (actionsDisabled) {
+      // primary action for users with access: go to corresponding list view and highlight object
+      if (object.objectType === ObjectType.LiveQuiz && !!object.templateId) {
+        router.push({
+          pathname: '/activities',
+          query: { highlight: object.objectUuid },
+        })
+      } else if (object.objectType === ObjectType.AnswerCollection) {
+        router.push({
+          pathname: '/resources/answerCollections',
+          query: { highlight: object.objectId },
+        })
+      }
+    } else if (
+      object.isRequested &&
+      object.access === ObjectAccess.Restricted
+    ) {
+      // primary action for restricted objects with pending request: open request withdrawal modal
+      setRequestCancellationModal(true)
+    } else if (object.access === ObjectAccess.Public) {
+      if (object.objectType === ObjectType.LiveQuiz && !!object.templateId) {
+        // primary action for public templates: create activity with template
+        router.push(`/templates/${object.templateId}`)
+      } else {
+        // primary action for public objects: import the object to the user's account
+        setImportModal(true)
+      }
+    } else {
+      // primary action for restricted objects: request access
+      setRequestModal(true)
+    }
+  }
+
+  const handlePrimaryActionKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handlePrimaryAction()
+    }
+  }
+
   return (
     <>
+      {/* biome-ignore lint/a11y/useSemanticElements: The row contains nested access and menu controls, so a native button would be invalid. */}
       <div
+        role="button"
+        tabIndex={0}
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
-        onClick={() => {
-          if (actionsDisabled) {
-            // primary action for users with access: go to corresponding list view and highlight object
-            if (
-              object.objectType === ObjectType.LiveQuiz &&
-              !!object.templateId
-            ) {
-              router.push({
-                pathname: '/activities',
-                query: { highlight: object.objectUuid },
-              })
-            } else if (object.objectType === ObjectType.AnswerCollection) {
-              router.push({
-                pathname: '/resources/answerCollections',
-                query: { highlight: object.objectId },
-              })
-            }
-          } else if (
-            object.isRequested &&
-            object.access === ObjectAccess.Restricted
-          ) {
-            // primary action for restricted objects with pending request: open request withdrawal modal
-            setRequestCancellationModal(true)
-          } else if (object.access === ObjectAccess.Public) {
-            if (
-              object.objectType === ObjectType.LiveQuiz &&
-              !!object.templateId
-            ) {
-              // primary action for public templates: create activity with template
-              router.push(`/templates/${object.templateId}`)
-            } else {
-              // primary action for public objects: import the object to the user's account
-              setImportModal(true)
-            }
-          } else {
-            // primary action for restricted objects: request access
-            setRequestModal(true)
-          }
-        }}
+        onClick={handlePrimaryAction}
+        onKeyDown={handlePrimaryActionKeyDown}
         data-cy={`catalog-object-${object.name}`}
       >
         <div className="flex flex-row items-center gap-2">

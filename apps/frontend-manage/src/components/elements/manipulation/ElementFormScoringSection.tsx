@@ -39,17 +39,12 @@ function ElementformScoringSection({
           />
           <Link
             href={'https://www.klicker.uzh.ch/gamification/grading_logic/'}
-            passHref
-            legacyBehavior
+            className="text-primary-100 flex flex-row items-center gap-2 text-sm hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <a
-              className="text-primary-100 flex flex-row items-center gap-2 text-sm hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FontAwesomeIcon icon={faBookOpen} />
-              {t('manage.elements.scoringDocumentation')}
-            </a>
+            <FontAwesomeIcon icon={faBookOpen} />
+            {t('manage.elements.scoringDocumentation')}
           </Link>
         </div>
 

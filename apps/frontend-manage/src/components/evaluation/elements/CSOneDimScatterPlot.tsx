@@ -224,6 +224,7 @@ function CSOneDimScatterPlot({
                       style={{ pointerEvents: 'none' }}
                     />
                     {/* invisible hover area */}
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: Pointer hover only drives the chart tooltip; the point is not an activation target. */}
                     <circle
                       cx={props.cx}
                       cy={props.cy}

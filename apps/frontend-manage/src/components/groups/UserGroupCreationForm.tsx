@@ -122,7 +122,12 @@ function UserGroupCreationForm({
               render={({ push, remove }) => (
                 <div className="space-y-2">
                   {values.members.map((_, index) => (
-                    <div key={index} className="flex space-x-2">
+                    <div
+                      // Formik member entries have no persisted identity; the field index is their controlled identity.
+                      // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
+                      key={index}
+                      className="flex space-x-2"
+                    >
                       <div className="grow">
                         <FormikTextField
                           required={index === 0}

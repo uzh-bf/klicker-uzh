@@ -143,12 +143,11 @@ function GroupActivityStackClues({
                                   {errors.clues.flatMap(
                                     (error, ix) =>
                                       error && (
-                                        <li key={`error-clue-${ix}`}>{`${t(
-                                          'shared.generic.clueN',
-                                          {
-                                            number: ix + 1,
-                                          }
-                                        )}: ${
+                                        <li
+                                          key={`error-clue-${typeof error === 'string' ? error : error.name}`}
+                                        >{`${t('shared.generic.clueN', {
+                                          number: ix + 1,
+                                        })}: ${
                                           typeof error === 'string'
                                             ? error
                                             : error.name
@@ -176,7 +175,7 @@ function GroupActivityStackClues({
                       <div className="mt-3 grid max-h-32 w-full grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
                         {values.clues.map((clue, ix) => (
                           <div
-                            key={`${clue.name}-position-${ix}`}
+                            key={`${clue.name}-${clue.type}-${clue.value}`}
                             className={twMerge(
                               'flex w-full flex-row justify-between rounded border text-sm',
                               Array.isArray(errors.clues) &&

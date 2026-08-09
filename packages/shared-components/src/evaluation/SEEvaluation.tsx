@@ -85,8 +85,8 @@ function SEEValuation({
           {t('pwa.practiceQuiz.correctAnswerOptions')}
         </div>
         <ul className="list-disc pl-4">
-          {correctOptions.map((option, index) => (
-            <li key={`correct-answer-${index}`}>{option}</li>
+          {correctOptions.map((option) => (
+            <li key={`correct-answer-${option}`}>{option}</li>
           ))}
         </ul>
       </div>

@@ -29,14 +29,14 @@ function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
           label: <QuizDashboardLabel />,
           cy: `quiz-dashboard-button-${course.name}`,
         },
-      ].map((button, ix) => (
+      ].map((button) => (
         <Button
           className={{
             root: 'h-8 py-0',
           }}
           onClick={() => router.push(button.href)}
           data={{ cy: button.cy }}
-          key={`dashboard-button-${ix}-course-${course.id}`}
+          key={`dashboard-button-${button.href}`}
         >
           {button.label}
         </Button>

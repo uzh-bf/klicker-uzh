@@ -144,15 +144,16 @@ function ActivityListEntry({
           <div className="flex-1">
             <div className="flex flex-row items-center gap-2.5">
               {publicationStatusMap[activity.status]}
-              <div
-                className="hover:text-uzh-blue-100 font-bold hover:cursor-pointer"
+              <button
+                type="button"
+                className="hover:text-uzh-blue-100 border-0 bg-transparent p-0 text-left font-bold hover:cursor-pointer"
                 onClick={() => setShowDetails(true)}
                 data-cy={`activity-name-${activity.name}`}
               >
                 {hideType
                   ? activity.name
                   : `${t(`shared.types.${activity.type}`)}: ${activity.name}`}
-              </div>
+              </button>
 
               {activity.status !== PublicationStatus.Template &&
                 activity.status !== PublicationStatus.Ended &&
@@ -251,8 +252,9 @@ function ActivityListEntry({
               <ActivityReviewStatus reviewStatus={activity.reviewStatus} />
 
               {activity.numSharedUsers && activity.isManager ? (
-                <div
-                  className="hover:text-primary-100 ml-2 mr-3 flex h-max flex-row items-center gap-1.5 py-1 text-gray-600 hover:cursor-pointer"
+                <button
+                  type="button"
+                  className="hover:text-primary-100 ml-2 mr-3 flex h-max flex-row items-center gap-1.5 border-0 bg-transparent py-1 text-gray-600 hover:cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -261,7 +263,7 @@ function ActivityListEntry({
                 >
                   <div>{activity.numSharedUsers}</div>
                   <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
-                </div>
+                </button>
               ) : null}
 
               {activity.type === ActivityType.LiveQuiz ? (

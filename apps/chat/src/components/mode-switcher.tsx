@@ -13,7 +13,7 @@ export function ModeSwitcher() {
   const modeKeys = Object.keys(modeOptions)
   const modeKeySignature = modeKeys.join('|')
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLFieldSetElement>(null)
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>())
   // M7: sliding thumb behind the active segment. `null` until the first
   // measurement lands, so the thumb never flashes at the wrong size/position.
@@ -50,13 +50,12 @@ export function ModeSwitcher() {
   if (modeKeys.length <= 1) return null
 
   return (
-    <div
+    <fieldset
       ref={containerRef}
-      role="group"
-      aria-label={t('chat.modes.switcherLabel')}
       data-cy="chat-mode-switcher"
       className="bg-muted scrollbar-none relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5"
     >
+      <legend className="sr-only">{t('chat.modes.switcherLabel')}</legend>
       {thumb && (
         <div
           aria-hidden="true"
@@ -106,6 +105,6 @@ export function ModeSwitcher() {
           </Tooltip>
         )
       })}
-    </div>
+    </fieldset>
   )
 }
