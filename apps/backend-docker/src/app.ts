@@ -13,9 +13,6 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
-declare namespace global {
-  let __coverage__: any
-}
 
 function prepareApp({
   prisma,
@@ -38,15 +35,6 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
-
-  /* istanbul ignore next */
-  if (global.__coverage__) {
-    try {
-      require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   app.use(
     cors({

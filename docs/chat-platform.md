@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-03'
+timestamp: '2026-08-09'
 tags:
   - frontend
   - chat
@@ -39,6 +39,26 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 
+The chat route returns an AI SDK UI message stream and passes
+`consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
+explicit when changing the transport: it keeps the UI stream's abort lifecycle
+consumed so abort callbacks and partial-response handling can run. It does not
+detach upstream generation from `req.signal` or guarantee completion after a
+client abort. The root layout also declares
+`interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
+is required for Android keyboard resizing because the thread viewport is the
+only conversation scroller and the composer is positioned over it.
+
+The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
+train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
+resolve `@ai-sdk/provider-utils@5.0.21`. The earlier provider-utils `5.0.12`
+tracker stored streamed tool calls in an index-addressed array; a first tool
+call at provider index `1` left a sparse entry that crashed during stream flush
+with `hasFinished` read from `undefined`. The deterministic public-provider
+fixture in `apps/chat/test/openai-chat-streaming.test.ts` covers this boundary
+with injected SSE. A green fixture proves the local provider conversion path;
+it does not replace a real-upstream first-turn staging smoke test.
+
 ## Auth guard pattern (route handlers)
 
 Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
@@ -47,15 +67,19 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
 
-The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. The
+The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
-`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-4.1`, MEDIUM =
-`gpt-5.4-low`, COMPLEX = `gpt-5.4-medium`, REASONING = `gpt-5.5-low`. The
-authoritative router configuration lives in the external AI deployment
-repository's `litellm/config.yaml` and **cannot be verified from this
-repository** — treat the values.yaml comment as the best available record and
-confirm against the deployment before making a routing claim. Neither
-deployment ships a GPT-5.6 model at all.
+`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-5.6-luna-medium`, MEDIUM
+= `gpt-5.6-luna-high`, COMPLEX = `gpt-5.6-luna-xhigh`, REASONING =
+`gpt-5.6-sol-medium` (match_threshold 0.55). The authoritative router
+configuration lives in the external AI deployment repository's
+`litellm/config.yaml` and **cannot be verified from this repository** — treat
+the values.yaml comment as the best available record and confirm against the
+deployment before making a routing claim. The deployed registry exposes no
+direct GPT-5.6 picker option; the router's tier targets are internal.
+Both staging and production now use `auto` as the global automatic-model
+primary, so chatbots using automatic model selection use Auto by default.
+Chatbots with an explicit model selection can continue using that selection.
 
 The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
 **not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
@@ -63,7 +87,7 @@ its own tier assignment, and the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
 production Azure URLs or secret names. Local Auto Mode behaviour is therefore
 evidence about the wiring only, never about production routing. The local chat
-registry maps the user-facing `auto` model id to the `complexity-router`
+registry maps the user-facing `auto` model id to the `auto-router`
 LiteLLM deployment and exposes `gpt-5.6-luna` for a direct comparison. The
 seeded Benibot fixture allow-lists all three of `auto`, `gpt-5.6-luna` and
 `gpt-4.1-mini` explicitly, so it satisfies the fallback invariant below without
@@ -126,6 +150,36 @@ votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai
 `@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport
 because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
 key.
+
+## Participant entry points (course page)
+
+Participants reach a chatbot from the shared PWA header (`apps/frontend-pwa/src/components/common/Header.tsx`)
+on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency.
+The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
+`getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
+and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
+to the home/back button when the caller is a participant of the course. The
+button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
+design-system `Button`, the same pattern as the sibling home button), so
+middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
+courses are deliberately limited to a single chatbot for now, which is also why
+`Chatbot` carries no ordering or visibility field. Lifting that limit means
+deciding the multi-chatbot affordance first — the header row does not wrap and
+the design-system button is `shrink-0`, so several buttons would squeeze the
+course title on a narrow viewport.
+The query is deliberately **not** `withAuth(asParticipant)`: course pages are
+publicly reachable, and a scope error would surface as the literal message
+`Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
+turns into a hard redirect to `/login?expired=true` for every anonymous visitor
+and every logged-in lecturer. Instead the resolver mirrors its page siblings
+`getCourseOverviewData` and `getStudentCourseLeaderboard` — a public field whose
+service returns `[]` unless the caller is a `PARTICIPANT` with a `Participation`
+record for the course. Each button opens the existing PWA deep-link route
+`course/[courseId]/chatbot/[chatbotId]` in a new tab, which redirects to login
+when needed, runs `ensureParticipation` server-side, and then 302-redirects to
+`chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
+(`id`, `name`, `description`, `avatar`) and matches the v3-ai blueprint so a
+later v3-ai sync reconciles without a diff.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
@@ -310,11 +364,12 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 - **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
+- **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
 
-Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
 The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
@@ -324,6 +379,19 @@ the package Vitest suite (`pnpm --filter @klicker-uzh/chat test:run` — the pac
 plain `test` script), and the package production build in the worktree's devcontainer.
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
+
+For mobile UI verification, use a real Chromium mobile emulation or Android
+Chrome and check the focused composer, the visible conversation tail, and every
+primary icon control with the keyboard both closed and open. A desktop screenshot
+does not prove the `dvh`/keyboard behavior.
+
+Primary mobile controls use at least 44px touch targets and shrink only when the
+primary pointer is a fine, hover-capable pointer; this includes the composer,
+sidebar/header actions, mode options, message actions, and scroll-to-bottom
+control. A stream failure is a message callout with a localized, labeled retry
+action that uses the existing assistant-ui reload path, so retrying truncates
+the failed branch instead of adding a duplicate user turn. Keep the retry and
+duplicate-turn behavior in the mobile smoke matrix.
 
 The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
 filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).

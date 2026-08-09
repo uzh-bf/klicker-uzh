@@ -38,8 +38,8 @@ export interface ExportReportTexts {
 }
 
 export interface AssessmentReportArtifact {
-  filename: string
   url: string
+  html: string
 }
 
 const REPORT_TIME_ZONE = 'Europe/Zurich'
@@ -276,9 +276,9 @@ export function createAssessmentReport({
     .brand { display: flex; align-items: center; gap: 20px; }
     .brand img { display: block; width: 184px; height: auto; }
     .product { border-left: 1px solid #b3b3b3; padding-left: 20px; font-size: 18px; font-weight: 700; }
-    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 20px; }
-    h3 { margin: 24px 0 8px; font-size: 17px; }
+    h1 { margin: 0; font-size: 22px; line-height: 1.15; }
+    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 18px; }
+    h3 { margin: 24px 0 8px; font-size: 15px; }
     p { margin: 8px 0; }
     .issued { margin-top: 6px; color: #555; text-align: right; }
     dl { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; margin: 20px 0 0; border-top: 1px solid #d6d6d6; }
@@ -301,7 +301,36 @@ export function createAssessmentReport({
     .verification a { color: #0028a5; overflow-wrap: anywhere; }
     .privacy { margin-top: 28px; border-left: 4px solid #007a92; padding-left: 14px; color: #444; }
     @media (max-width: 680px) { main { padding: 24px; } header { align-items: flex-start; flex-direction: column; } .issued { text-align: left; } dl { grid-template-columns: 1fr; } dt { border-bottom: 0; } .verification { grid-template-columns: 1fr; } }
-    @media print { main { max-width: none; padding: 0; } .chart, .verification { break-inside: avoid; } }
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { font-size: 12px; line-height: 1.3; }
+      main { max-width: none; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }
+      header { gap: 12px; border-bottom-width: 2px; padding-bottom: 8px; }
+      .brand { gap: 8px; }
+      .brand img { width: 130px; }
+      .product { padding-left: 8px; font-size: 12px; }
+      h1 { font-size: 16px; }
+      h2 { margin: 10px 0 5px; padding-bottom: 3px; font-size: 13px; }
+      h3 { margin: 8px 0 4px; font-size: 12px; }
+      p { margin: 4px 0; }
+      .issued { margin-top: 3px; font-size: 9px; }
+      dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
+      dt, dd { padding: 4px 7px; }
+      table { margin-top: 5px; }
+      th, td { padding: 3px 7px; }
+      .percentile { padding: 5px 8px; font-size: 12px; }
+      .chart { overflow: visible; }
+      .chart svg { min-width: 0; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+      .histogram-table { margin-top: 4px; font-size: 8px; }
+      .histogram-table th, .histogram-table td { padding: 2px 5px; }
+      .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
+      .verification img { width: 72px; height: 72px; }
+      .verification h2 { margin: 0 0 3px; }
+      .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
+      .privacy h3 { font-size: 10px; }
+      .chart, .verification, .pdf-avoid { break-inside: avoid; }
+    }
+
   </style>
 </head>
 <body>
@@ -324,7 +353,7 @@ export function createAssessmentReport({
     <dt>${escapeHtml(texts.identitySource)}</dt><dd>${escapeHtml(identitySourceLabel)}</dd>
   </dl>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.pointsSummary)}</h2>
     <table class="results-table">
       <thead><tr><th></th><th>${escapeHtml(texts.achieved)}</th><th>${escapeHtml(texts.available)}</th></tr></thead>
@@ -332,12 +361,12 @@ export function createAssessmentReport({
     </table>
   </section>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.comparisonTitle)}</h2>
     ${comparison}
   </section>
 
-  <section class="verification">
+    <section class="verification pdf-avoid">
     <img src="${escapeHtml(qrCodeDataUrl)}" alt="${escapeHtml(texts.verificationQrAlt)}" />
     <div>
       <h2>${escapeHtml(texts.verificationTitle)}</h2>
@@ -355,13 +384,9 @@ export function createAssessmentReport({
 </html>`
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const filename = snapshot.course.displayName
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/gi, '_')
-    .replace(/^_+|_+$/g, '')
 
   return {
-    filename: `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`,
     url: URL.createObjectURL(blob),
+    html,
   }
 }

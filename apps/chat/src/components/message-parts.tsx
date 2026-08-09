@@ -1,4 +1,5 @@
 import {
+  ActionBarPrimitive,
   groupPartByType,
   MessagePrimitive,
   type ReasoningMessagePartProps,
@@ -10,6 +11,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
+  RefreshCwIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { type FC, type PropsWithChildren, useState } from 'react'
@@ -54,7 +56,7 @@ const GroupedDisclosure: FC<
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center gap-1 text-xs touch-manipulation fine-pointer:min-h-8"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />
@@ -146,21 +148,38 @@ type ChatErrorPartData = {
  * so it can't be confused with model output). Reuses the failed-tool-chip
  * treatment (`bg-destructive/10 text-foreground`) from `tool-fallback.tsx`.
  */
-const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => (
-  <div
-    data-cy="chat-message-error"
-    className="bg-destructive/10 text-foreground mt-2 flex items-start gap-2 rounded-md px-3 py-2 text-sm"
-  >
-    <AlertCircleIcon
-      className="text-destructive mt-0.5 size-4 shrink-0"
-      aria-hidden
-    />
-    <p>
-      <span className="font-medium">{data.errorLabel}</span>
-      {`: ${data.message}`}
-    </p>
-  </div>
-)
+const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
+  const t = useTranslations()
+
+  return (
+    <div
+      data-cy="chat-message-error"
+      role="alert"
+      className="bg-destructive/10 text-foreground mt-2 flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm"
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <AlertCircleIcon
+          className="text-destructive mt-0.5 size-4 shrink-0"
+          aria-hidden
+        />
+        <p>
+          <span className="font-medium">{data.errorLabel}</span>
+          {`: ${data.message}`}
+        </p>
+      </div>
+      <ActionBarPrimitive.Reload asChild>
+        <button
+          type="button"
+          data-cy="chat-retry-message-button"
+          className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+        >
+          <RefreshCwIcon className="size-4" aria-hidden />
+          {t('chat.message.retry')}
+        </button>
+      </ActionBarPrimitive.Reload>
+    </div>
+  )
+}
 
 export const AssistantMessageParts: FC = () => (
   <MessagePrimitive.GroupedParts

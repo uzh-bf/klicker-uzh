@@ -20,7 +20,7 @@ Non-trivial work gets a plan in `project/plans_wip/PLAN-<slug>.md` (existing fil
 5. **Async impact** — does it publish/schedule/aggregate anything? Then Hatchet workers are in scope, including local verification needs ([docs/async-and-workers.md](../../../docs/async-and-workers.md)).
 6. **UI surface** — which app(s)? pages-router conventions vs chat island? New user-visible strings (de+en) and new `data-cy` hooks?
 7. **Test level + evidence** — per `klicker-testing-verification`: what will you run, what will CI cover, what browser evidence will you capture?
-8. **Seeds/fixtures** — do e2e tests need new fixtures? Then all relevant seed paths (dev/Cypress/Playwright) are in scope.
+8. **Seeds/fixtures** — do e2e tests need new fixtures? Then all relevant seed paths (dev/Playwright) are in scope.
 
 ## Discipline
 

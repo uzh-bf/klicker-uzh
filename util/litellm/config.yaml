@@ -1,10 +1,10 @@
 # LiteLLM Proxy Configuration
 
 model_list:
-  # Production's Auto model is a LiteLLM complexity-router endpoint. The
+  # Production's Auto model is a LiteLLM auto-router endpoint. The
   # local names intentionally omit the production Azure/product prefix; the
-  # chat registry maps its `auto` model id to `complexity-router` below.
-  - model_name: 'complexity-router'
+  # chat registry maps its `auto` model id to `auto-router` below.
+  - model_name: 'auto-router'
     litellm_params:
       model: 'auto_router/complexity_router'
       complexity_router_config:

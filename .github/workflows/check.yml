@@ -1,0 +1,93 @@
+name: Check codebase
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - name: Set up Node.js with pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check file formatting
+        shell: bash
+        run: pnpm run format:check
+
+      - name: Check syncpack conformity
+        shell: bash
+        run: pnpm run check:syncpack
+
+      - name: Check linting (Biome, advisory)
+        continue-on-error: true
+        shell: bash
+        run: pnpm run lint:biome
+
+      - name: Check linting
+        shell: bash
+        run: pnpm run lint
+
+      - name: Check Prisma schema sync drift
+        run: pnpm run check:prisma-sync
+
+      - name: Check AGENTS.md command smoke
+        run: pnpm run check:agents-md
+
+      - name: Build packages for typecheck (turbo)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            pnpm exec turbo run build --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]"
+          fi
+
+      - name: Check typescript types
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            pnpm exec turbo run check --filter="...[origin/${{ github.base_ref }}...HEAD]"
+          else
+            pnpm exec turbo run check --filter="...[HEAD~1...HEAD]"
+          fi
+
+      - name: Check unused code and dependencies (knip, advisory)
+        continue-on-error: true
+        shell: bash
+        run: pnpm run knip

@@ -21,6 +21,7 @@ import {
   ASSESSMENT_REPORT_COURSE_REFERENCE,
   ASSESSMENT_REPORT_PARTICIPANT_IDS,
   ASSESSMENT_REPORT_SUBJECT_EMAIL,
+  ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS,
   COURSE_ID_ASSESSMENT_REPORT,
   LIVE_QUIZ_ID_ASSESSMENT_REPORT,
   USER_ID_TEST,
@@ -204,8 +205,113 @@ export async function seedAssessmentReportFixture() {
   })
 }
 
+async function cleanupAssessmentReportTenBinFixture() {
+  const prisma = await getPrisma()
+  await prisma.liveQuizResponse.deleteMany({
+    where: {
+      participantId: { in: ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS },
+      instance: {
+        elementBlock: { liveQuizId: LIVE_QUIZ_ID_ASSESSMENT_REPORT },
+      },
+    },
+  })
+  await prisma.participantInvitation.deleteMany({
+    where: {
+      courseId: COURSE_ID_ASSESSMENT_REPORT,
+      participantId: { in: ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS },
+    },
+  })
+  await prisma.participation.deleteMany({
+    where: {
+      courseId: COURSE_ID_ASSESSMENT_REPORT,
+      participantId: { in: ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS },
+    },
+  })
+  await prisma.participant.deleteMany({
+    where: { id: { in: ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS } },
+  })
+}
+
+export async function seedAssessmentReportTenBinFixture() {
+  await cleanupAssessmentReportTenBinFixture()
+  const prisma = await getPrisma()
+  const participantPassword = await bcrypt.hash('abcdabcd', 12)
+  const participantFixtures = ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS.map(
+    (participantId, index) => {
+      const username = `assessment-report-ten-bin-${index + 1}`
+      return {
+        participantId,
+        username,
+        email: `${username}@example.org`,
+      }
+    }
+  )
+
+  await prisma.participant.createMany({
+    data: participantFixtures.map(({ participantId, username, email }) => ({
+      id: participantId,
+      username,
+      email,
+      password: participantPassword,
+    })),
+  })
+  await prisma.participation.createMany({
+    data: participantFixtures.map(({ participantId }) => ({
+      courseId: COURSE_ID_ASSESSMENT_REPORT,
+      participantId,
+      isActive: true,
+    })),
+  })
+  await prisma.participantInvitation.createMany({
+    data: participantFixtures.map(({ participantId, email }) => ({
+      courseId: COURSE_ID_ASSESSMENT_REPORT,
+      participantId,
+      email,
+      status: InvitationStatus.ACCEPTED,
+      acceptedAt: new Date(),
+    })),
+  })
+
+  const reportInstance = await prisma.elementInstance.findFirst({
+    where: {
+      elementBlock: { liveQuizId: LIVE_QUIZ_ID_ASSESSMENT_REPORT },
+    },
+    select: { id: true },
+  })
+  if (!reportInstance) {
+    throw new Error('ASSESSMENT_REPORT_FIXTURE_INSTANCE_NOT_FOUND')
+  }
+
+  await prisma.liveQuizResponse.createMany({
+    data: ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS.map(
+      (participantId, index) => {
+        const bin = Math.floor(index / 3)
+        const totalPoints = bin * 2 + 0.5 + (index % 3) * 0.5
+        return {
+          submittedAt: new Date(),
+          response: {
+            choices: [
+              { ix: 0, selected: false },
+              { ix: 1, selected: true },
+            ],
+          },
+          timeSpent: 30,
+          correctness: ResponseCorrectness.PARTIAL,
+          basePoints: Math.min(totalPoints, 10),
+          correctnessPoints: Math.max(totalPoints - 10, 0),
+          bonusPoints: 0,
+          instanceId: reportInstance.id,
+          elementBlockExecution: 0,
+          participantId,
+        }
+      }
+    ),
+  })
+}
+
 export async function resetAssessmentReportFixture() {
   const prisma = await getPrisma()
+  await cleanupAssessmentReportTenBinFixture()
   await prisma.verifiableCredential.deleteMany({
     where: { courseId: COURSE_ID_ASSESSMENT_REPORT },
   })

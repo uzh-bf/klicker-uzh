@@ -246,6 +246,12 @@ jobs:
     steps:
       - name: Check result
         run: |
+          # A run cancelled by concurrency (duplicate push, quick re-push) must not
+          # leave a red required check behind: the surviving run is the real signal.
+          if [ "${{ needs.filter.result }}" = "cancelled" ] || [ "${{ needs.test-graphql.result }}" = "cancelled" ]; then
+            echo "Superseded by a newer run; jobs were cancelled by concurrency."
+            exit 0
+          fi
           if [ "${{ needs.filter.result }}" != "success" ]; then
             echo "Filter job failed: ${{ needs.filter.result }}"
             exit 1

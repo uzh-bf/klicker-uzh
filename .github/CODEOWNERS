@@ -4,5 +4,4 @@
 # Component-specific ownership.
 /apps/ @rschlaefli
 /packages/ @rschlaefli
-/cypress/ @rschlaefli
 /playwright/ @rschlaefli

@@ -27,7 +27,7 @@ jobs:
         id: filter
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|cypress/|playwright/|util/|AGENTS\.md|CLAUDE\.md|package\.json|pnpm-lock\.yaml|\.eslintrc|biome\.json|\.github/workflows/check-lint\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(apps/|packages/|playwright/|util/|AGENTS\.md|CLAUDE\.md|package\.json|pnpm-lock\.yaml|\.eslintrc|biome\.json|\.github/workflows/check-lint\.yml|\.github/actions/changed-paths/)'
 
       - name: Define node version
         if: steps.filter.outputs.should_run == 'true'

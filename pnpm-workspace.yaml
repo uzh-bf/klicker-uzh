@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - cypress
   - playwright
 
 # Delay automated dependency resolution for newly published packages by 14 days
@@ -24,11 +23,14 @@ minimumReleaseAgeExclude:
   # U2 (student-chat-v3-production-readiness-plan): reviewed Vercel AI SDK 7
   # bump, apps/chat/package.json (ai, @ai-sdk/openai, @ai-sdk/mcp). Transitive
   # @ai-sdk deps pulled in below.
-  - 'ai@7.0.37'
-  - '@ai-sdk/openai@4.0.20'
-  - '@ai-sdk/mcp@2.0.16'
-  - '@ai-sdk/gateway@4.0.28'
-  - '@ai-sdk/provider-utils@5.0.12'
+  # U3 (vorkurs-chatbot-sdk-fix): the exact reviewed patch train is unioned
+  # with the prior U2 versions because the first package-name rule wins.
+  - 'ai@7.0.37||7.0.52'
+  - '@ai-sdk/openai@4.0.20||4.0.30'
+  - '@ai-sdk/mcp@2.0.16||2.0.25'
+  - '@ai-sdk/gateway@4.0.28||4.0.41'
+  - '@ai-sdk/provider-utils@5.0.12||5.0.21'
+  - '@ai-sdk/provider@4.0.5'
 
 overrides:
   'axios@<=0.31.1': 0.32.0
@@ -57,7 +59,6 @@ onlyBuiltDependencies:
   - azure-functions-core-tools
   - core-js
   - core-js-pure
-  - cypress
   - esbuild
   - prisma
   - protobufjs
@@ -75,7 +76,6 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
-  cypress: true
   esbuild: true
   keytar: false
   prisma: true
