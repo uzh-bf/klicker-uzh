@@ -1,10 +1,10 @@
 # Biome Tier 1 ratchet — noBlankTarget
 
-Status: COMPLETE — final review gates passed; clean unpushed branch
+Status: COMPLETE — current base refreshed; final review gates remain valid
 Date: 2026-08-09
 Branch: `rs/biome-ratchet-tier1` → target `v3`
-Base: `6a400c75e` (`origin/v3`; includes merged Gitleaks hardening and the
-staging-promotion commit)
+Base: `b30585496` (`origin/v3`; includes merged Gitleaks hardening, the
+staging-promotion commit, and the non-overlapping demo-question changes)
 Worktree: `trees/biome-ratchet-tier1`
 Related history: `project/2026-07-19-biome-knip-repo-quality.md`
 
@@ -171,6 +171,16 @@ are needed to make the result independently reviewable.
 - 2026-08-09: Final `$thermo-nuclear-code-quality-review` passed for
   `6a400c75e..3b0b9bc07` with no maintainability findings. Report:
   `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-final-maintainability.md`.
+- 2026-08-09: After the final audit, `origin/v3` advanced from `6a400c75e`
+  to `b30585496` through the non-overlapping GraphQL demo-question feature
+  and its staging-promotion commit. The branch incorporated both in merge
+  commit `a3744e668`; no selected source file changed. Focused verification
+  against the current base passed: targeted Biome still reports zero errors,
+  format checks pass, the docs build exits successfully, frontend-manage
+  typecheck and ESLint pass, and the current-base introduced-range Gitleaks
+  scan reports no leaks. The existing browser evidence and final review gates
+  remain valid because the upstream merge changed neither the selected source
+  files nor the package behavior under review.
 
 ## Finish state
 
