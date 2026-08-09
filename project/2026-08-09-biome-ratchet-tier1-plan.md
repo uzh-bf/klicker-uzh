@@ -1,191 +1,254 @@
-# Biome Tier 1 ratchet — noBlankTarget
+# PR #5348 — Biome Tier 1 ratchet
 
-Status: COMPLETE — current base refreshed; final review gates remain valid
+Status: IN PROGRESS — widened from the noBlankTarget slice
 Date: 2026-08-09
-Branch: `rs/biome-ratchet-tier1` → target `v3`
-Base: `b30585496` (`origin/v3`; includes merged Gitleaks hardening, the
-staging-promotion commit, and the non-overlapping demo-question changes)
-Worktree: `trees/biome-ratchet-tier1`
-Related history: `project/2026-07-19-biome-knip-repo-quality.md`
-
-## Research
-
-- Baseline source: Biome 2.5.2 via the repository's installed dependency and
-  current `biome.json`.
-- Current baseline: 521 errors, 2,459 warnings, and 424 infos across 1,649
-  checked files.
-- Selected rule: `lint/security/noBlankTarget`, with 30 errors across 11
-  source files in `apps/docs` and `apps/frontend-manage`.
-- Existing convention: nearby links use `rel="noopener noreferrer"`,
-  `rel="noreferrer"`, or `rel="noopener"`; the selected findings are external
-  anchors with `target="_blank"` and no relationship attribute.
-- Browser path: frontend changes require `agent-browser`. Manage is validated
-  through the exact route reported by `devrouter ensure . --json`. Docs is
-  outside the routed stack, so build it with `pnpm --filter
-  @klicker-uzh/docs build:docs`, serve `apps/docs/build` on port 5500, and
-  validate its `/`, `/catalyst`, and `/development` pages.
-
-## Goal
-
-Remove all current `lint/security/noBlankTarget` diagnostics by adding
-`rel="noopener"` to the affected external links, without changing link
-destinations, visible text, referrer behavior, routing, or formatter/linter
-ownership.
+Branch: rs/biome-ratchet-tier1 → target v3
+PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
+Base: b30585496 (origin/v3)
+Worktree: trees/biome-ratchet-tier1
+Related history: project/2026-07-19-biome-knip-repo-quality.md
 
 ## Problem
 
-Biome lint is advisory and currently reports 30 security diagnostics for links
-that open a new browsing context without an explicit opener-protection
-relationship. Leaving this rule at a nonzero baseline keeps a concrete security
-signal hidden in the general ratchet backlog.
+PR #5186 already merged the Biome + Knip + Gitleaks migration. PR #5348
+initially closed only the 30 noBlankTarget findings, which is a complete
+rule-sized slice but not the full Tier 1 repo-quality package requested by the
+user. The existing draft PR remains the delivery path; widen it rather than
+opening another rule-sized PR.
+
+## Research
+
+- Biome version: 2.5.2, selected by the repository lockfile.
+- Current post-noBlankTarget baseline: 491 errors, 2,461 warnings, and 425
+  infos across 1,651 checked files.
+- The 491 errors span 32 rules and 200 files: 236 correctness diagnostics,
+  144 suspicious diagnostics, and 111 accessibility diagnostics.
+- Largest error families are correctness/useExhaustiveDependencies (189),
+  suspicious/noArrayIndexKey (61), a11y/noStaticElementInteractions (30),
+  a11y/useKeyWithClickEvents (29), correctness/noSwitchDeclarations (21),
+  suspicious/noThenProperty (32), suspicious/noDoubleEquals (19), and the
+  already-closed security/noBlankTarget family (30).
+- Knip remains noise-heavy: 112 unused files, 139 dependency findings, about
+  2,000 export/type findings, and additional enum, duplicate-export, and
+  configuration findings. It is not ready for blocking enforcement in this
+  package.
+- The current origin/v3 SHA is b3058549622534a23dd0ee274e1432709a4d3323.
+  The branch is seven commits ahead and has no base divergence.
+- The original migration remains the source of truth for formatter ownership:
+  Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
+  remains the Next.js safety net.
+
+## Goal
+
+Reach a zero error-severity Biome baseline for the current configured scope,
+then make that error gate blocking locally and in CI. Every current error gets
+one of:
+
+1. a small, behavior-preserving fix;
+2. a verified semantic fix with package, test, and browser checks where needed;
+3. a narrow, documented configuration decision for a demonstrated false
+   positive or non-runtime template surface.
+
+Warnings and infos remain visible but advisory. Knip remains advisory until its
+per-workspace entry model is trustworthy. Prettier and ESLint stay in parallel;
+this package does not remove, replace, or broaden either tool's ownership.
 
 ## Decision
 
-1. Fix all 30 current `noBlankTarget` findings in one rule-sized slice.
-2. Add `rel="noopener"` to each affected anchor. This is the narrower safe fix
-   recommended by the diagnostic and avoids changing referrer attribution.
-3. Keep `lint/security/noBlankTarget` enabled and record a zero post-fix count.
-4. Leave Prettier, ESLint, Knip, Biome configuration, dependency versions, and
-   all unrelated Biome findings unchanged.
+- Package the complete current Biome Tier 1 error baseline in PR #5348.
+- Preserve the completed noBlankTarget changes as the first slice.
+- Keep rule-family commits separate inside the one PR so the large branch is
+  reviewable without splitting delivery.
+- Remove continue-on-error from the Biome CI steps only after the error count is
+  zero.
+- Add Biome lint to the local check:all gate at the same point. The default
+  Biome command may continue to print warnings; error-level diagnostics must
+  make the command fail.
+- Do not use broad suppressions, broad autofixes, or a global severity
+  downgrade to manufacture a zero.
 
-Do not apply broad Biome autofixes or suppressions. Do not remove Prettier or
-ESLint as part of this slice.
+## Risks and stop conditions
 
-## Risk
-
-- The change is security-positive and should not alter navigation destinations
-  or visible UI, but it touches links in two frontend applications.
-- Browser validation is mandatory. If the manage runtime, docs build, static
-  server, or browser path cannot be made available, pause the slice rather
-  than substituting source-level checks.
-- `noBlankTarget` is a security boundary, so an independent intermediate
-  review is required before the integrated final review.
+- This is broad: 491 errors across 200 files. The one-PR requirement is
+  satisfied by coherent rule-family commits, exact per-family checks, and one
+  integrated final review.
+- Hook dependency changes can alter render, request, subscription, and
+  mutation behavior. Triage them manually; do not apply a broad unsafe fix.
+- Accessibility and key changes can alter interaction semantics. Use stable
+  domain identifiers and verify changed routes in a real browser.
+- A rule that cannot reach zero without changing a public contract, weakening
+  tests, or lowering severity globally requires a user ruling. Keep the
+  exception narrow and documented if approved.
+- The existing noBlankTarget review reports cover only that earlier slice.
+  They are evidence for that slice, not the final review of the widened range.
 
 ## Packaging
 
-This is full-path work because it changes a security boundary. The substantive
-implementation diff is 65 changed lines (58 additions and 7 deletions), so it
-clears the 50-line packaging floor. It is a complete standalone rule-family
-package: all current `noBlankTarget` findings are fixed, and no related changes
-are needed to make the result independently reviewable.
+This is full-path work. The final substantive size must be computed from
+v3...HEAD excluding lockfiles, generated output, and project-artifact docs.
+The PR description must state the result and name the package as the complete
+Biome Tier 1 ratchet, not as a noBlankTarget follow-up.
 
-## Slice 1 — close `noBlankTarget` baseline
+No new PR or stack is created. All implementation, plan updates, review
+reports, and verification remain on PR #5348.
+
+## Slice 1 — preserve and recontract the existing work
 
 ### Do
 
-- Update only the 11 affected TSX files identified by the baseline.
-- Add `rel="noopener"` to all 30 flagged anchors.
-- Keep the plan's Progress section current with baseline, implementation, and
-  verification evidence.
+- Keep the 30 noBlankTarget fixes and their completed browser evidence.
+- Replace the previous noBlankTarget-only contract with this full milestone.
+- Update project/2026-07-19-biome-knip-repo-quality.md to record the user's
+  one-PR packaging ruling and the new enforcement target.
 
 ### Check
 
-- Run `biome lint --only lint/security/noBlankTarget .` before and after the
-  change; the post-fix result must report zero diagnostics.
-- Run root `pnpm run format:check`, `git diff --check`, and Gitleaks on the
-  current tree and introduced commit range.
-- Run `pnpm --filter @klicker-uzh/docs build:docs`.
-- Run `pnpm --filter @klicker-uzh/frontend-manage check` and
-  `pnpm --filter @klicker-uzh/frontend-manage lint`. Neither affected package
-  defines a relevant repository-native test script.
-- Use `devrouter ensure . --json` and `agent-browser` against the reported
-  manage route. Validate the `/activities` creation flow and the
-  group-activity, live-quiz, microlearning, and practice-quiz information
-  links; confirm each affected anchor retains its destination and has
-  `rel="noopener"`.
-- Serve the built docs output on port 5500 and use `agent-browser` against `/`,
-  `/catalyst`, and `/development`; confirm affected anchors retain their
-  destinations and `rel="noopener"`, and capture screenshots for the changed
-  frontend routes.
-- Review the final diff for unrelated Biome fixes, destination changes,
-  secrets, personal data, and formatter/linter churn.
+- Confirm the current base remains b30585496.
+- Record the 491-error baseline from the current tree.
+- Review the plan and PR text for stale “next slice” and “standalone rule”
+  language.
 
 ### Commit
 
-`fix(quality): ratchet noBlankTarget diagnostics`
+docs(project): expand PR 5348 to Biome Tier 1
+
+## Slice 2 — resolve core correctness and suspicious errors
+
+### Do
+
+- Address baseline-flagged non-hook correctness and suspicious errors in
+  .github/scripts, apps, packages, email templates, and util.
+- Keep hook dependency findings, accessibility findings, and noArrayIndexKey
+  findings for the later slices.
+- Inspect every diagnostic before editing. Prefer the smallest fix that
+  preserves the public behavior.
+- For HTML/email/demo templates, either make the markup valid and accessible or
+  document a narrow scope/configuration decision with the exact path and reason.
+
+### Check
+
+- Run the selected rule families with biome lint --only before and after.
+- Run affected workspace checks, lint, and focused tests.
+- Run git diff --check and inspect the semantic diff separately from formatting.
+
+### Commit
+
+fix(quality): resolve core Biome errors
+
+## Slice 3 — resolve React hook diagnostics
+
+### Do
+
+- Triage all 189 useExhaustiveDependencies errors and five
+  useHookAtTopLevel errors manually.
+- Add missing dependencies only when the closure contract requires them.
+- Remove unnecessary dependencies only after checking callback identity,
+  request/subscription behavior, and component lifecycle.
+- Keep intentionally stable values documented in the local code pattern rather
+  than weakening the rule globally.
+
+### Check
+
+- Run the hook rules with biome lint --only and require zero errors.
+- Run affected app/package checks, focused tests, and the relevant browser
+  flows for changed UI behavior.
+- Check for request loops, stale closures, and changed loading/error states.
+
+### Commit
+
+fix(quality): resolve React hook diagnostics
+
+## Slice 4 — resolve accessibility and list-identity diagnostics
+
+### Do
+
+- Address the 111 accessibility errors, including static-element interaction,
+  keyboard interaction, button type, anchor content, alt text, semantic-role,
+  iframe-title, lang, and related findings.
+- Address all 61 noArrayIndexKey errors with stable domain identifiers. Do not
+  invent unstable keys or use array position as a substitute.
+- Keep existing visual design and user-facing text unless the diagnostic
+  requires a real accessible name or semantic element.
+
+### Check
+
+- Run the a11y and key rules with biome lint --only and require zero errors.
+- Run affected app/package checks and focused tests.
+- Use the repository agent-browser path for changed frontend routes and states;
+  capture before/after screenshots where the UI or interaction semantics
+  changed.
+
+### Commit
+
+fix(quality): resolve accessibility and key diagnostics
+
+## Slice 5 — enforce the zero-error baseline
+
+### Do
+
+- Remove Biome continue-on-error from .github/workflows/check.yml and
+  .github/workflows/check-lint.yml.
+- Add lint:biome to the root check:all script so the local pre-commit gate
+  enforces the same error baseline.
+- Keep Knip continue-on-error and keep the existing ESLint step blocking.
+- Update docs/getting-started.md, docs/ci-and-deployment.md,
+  .agents/skills/klicker-testing-verification/SKILL.md, and add a dated
+  docs/log entry describing the enforced-vs-advisory boundary.
+
+### Check
+
+- biome lint . reports zero errors; warnings and infos may remain.
+- pnpm run check:all passes.
+- pnpm run format:check, pnpm run lint, pnpm run check, syncpack, Prisma-sync,
+  AGENTS validation, tests, and the full build pass in the pinned runtime.
+- Gitleaks and opengrep run on the final range; classify new findings.
+- CI passes on the widened PR.
+
+### Commit
+
+ci(quality): enforce Biome lint
 
 ## Review routing
 
-- Planning stage: configured Codex Sol reviewer, read-only, exact draft plan.
-- Intermediate gate: one bounded security review on the committed slice range;
-  persist its report under `project/_local/reviews/`.
-- Final gates: configured Sol integrated review, bounded security review, and
-  `thermo-nuclear-code-quality-review` on the exact final range; persist each
-  report under `project/_local/reviews/`. Rerun any affected gate if
-  remediation changes reviewed behavior.
-- Browser verification: repository `agent-browser` skill for frontend routes.
+- Planning stage: Codex Sol planner review completed for the widened package;
+  concerns and sequencing are incorporated above.
+- Intermediate review: use one bounded review if a hook, accessibility, or
+  public-contract change creates a risk that needs independent judgment.
+- Final gates: rerun the configured integrated Sol review, code-level security
+  review, and thermo maintainability review on the exact widened range. Persist
+  reports under project/_local/reviews/. Existing noBlankTarget reports do not
+  close these final gates.
+- Browser verification: use .agents/skills/agent-browser/SKILL.md for every
+  frontend-facing slice.
 
 ## Progress
 
-- 2026-08-09: PR #5345 merged as `dbfe71bda`; new isolated branch created from
-  current `origin/v3`. Primary checkout and merged Gitleaks worktree remain
-  untouched.
-- 2026-08-09: Fresh Biome baseline recorded as 521 errors, 2,459 warnings,
-  and 424 infos. `noBlankTarget` selected as the first bounded Tier 1 slice:
-  30 errors across 11 files.
-- 2026-08-09: Sol planning review completed. Integrated mandatory browser
-  gates with concrete docs/manage paths, executable package checks, the
-  `rel="noopener"` decision, standalone packaging disposition, and exact
-  committed-range review artifacts.
-- 2026-08-09: `origin/v3` advanced from `dbfe71bda` to `6a400c75e` with a
-  deployment-only staging-promotion commit. Merged that commit into the
-  isolated branch; it does not overlap the selected source files.
-- 2026-08-09: Added `rel="noopener"` to all 30 selected anchors in the 11
-  baseline files. The targeted Biome rule now reports zero errors, with only
-  the existing `biome.json` recommended-field deprecation info remaining.
-  Root `pnpm run format:check` and `git diff --check` pass.
-- 2026-08-09: The docs build, frontend-manage typecheck, and frontend-manage
-  ESLint pass. The docs build retains existing broken-link, broken-anchor,
-  CSS-selector, and Browserslist warnings; ESLint retains 27 existing React
-  Hooks warnings and no errors.
-- 2026-08-09: Browser verification passed on the isolated manage route for
-  live quiz, microlearning, practice quiz, and group activity creation flows,
-  and on the generated docs `/`, `/catalyst/`, and `/development/` pages.
-  Follow-up coverage also passed on `/use_cases/live_quiz/`,
-  `/use_cases/flipped_classroom/`, `/use_cases/group_activity/`,
-  `/use_cases/learning_analytics/`, `/use_cases/ai_formative_feedback/`,
-  `/use_cases/ai_practice_content/`, and `/use_cases/chatbot_tutoring/`.
-  All affected rendered anchors retained their destinations and expose
-  `rel="noopener"`; screenshots are in temporary storage. The existing
-  Docusaurus config announcement-bar HTML string remains outside this JSX
-  rule-family slice and was not changed.
-- 2026-08-09: A current-tree Gitleaks scan found four ignored local/generated
-  files created by the dev environment or docs build. No finding is in the
-  tracked diff. The subsequent introduced commit-range scan passed with no
-  leaks.
-- 2026-08-09: Implementation committed as `47c0ea387`
-  (`fix(quality): ratchet noBlankTarget diagnostics`). The full pre-commit
-  `check:all` gate passed, and the CI-equivalent `origin/v3..HEAD` Gitleaks
-  scan covered two introduced commits with no leaks.
-- 2026-08-09: The intermediate bounded security review of
-  `2e6015bf3..47c0ea387` returned one low-priority evidence finding: nine
-  changed links in `apps/docs/src/constants.tsx` lacked browser coverage.
-  The seven affected use-case routes were then verified and the finding is
-  closed. Full report: `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-intermediate-security.md`.
-- 2026-08-09: Integrated final Sol review passed for
-  `6a400c75e..3b0b9bc07` with no findings. Report:
-  `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-integrated-final.md`.
-- 2026-08-09: Final `$security-review` passed for
-  `6a400c75e..3b0b9bc07`; no high-confidence vulnerabilities were identified.
-  Report: `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-final-security.md`.
-- 2026-08-09: Final `$thermo-nuclear-code-quality-review` passed for
-  `6a400c75e..3b0b9bc07` with no maintainability findings. Report:
-  `project/_local/reviews/2026-08-09-biome-ratchet-no-blank-target-final-maintainability.md`.
-- 2026-08-09: After the final audit, `origin/v3` advanced from `6a400c75e`
-  to `b30585496` through the non-overlapping GraphQL demo-question feature
-  and its staging-promotion commit. The branch incorporated both in merge
-  commit `a3744e668`; no selected source file changed. Focused verification
-  against the current base passed: targeted Biome still reports zero errors,
-  format checks pass, the docs build exits successfully, frontend-manage
-  typecheck and ESLint pass, and the current-base introduced-range Gitleaks
-  scan reports no leaks. The existing browser evidence and final review gates
-  remain valid because the upstream merge changed neither the selected source
-  files nor the package behavior under review.
+- 2026-08-09: PR #5186's six-phase Biome + Knip + Gitleaks migration is already
+  merged into v3. This branch is follow-up ratchet work, not a replay of that
+  migration.
+- 2026-08-09: The original plan selected noBlankTarget as a standalone slice.
+  User corrected the package boundary: finish the complete Tier 1 error
+  milestone in PR #5348.
+- 2026-08-09: The noBlankTarget slice closed all 30 diagnostics across 11 files.
+  Its targeted checks, browser evidence, security review, maintainability
+  review, and integrated review are recorded in the existing gitignored
+  project/_local/reviews/ reports.
+- 2026-08-09: Current post-slice Biome baseline is 491 errors, 2,461 warnings,
+  and 425 infos across 1,651 files. Errors cover 200 files.
+- 2026-08-09: Planning review recommended all current error-severity
+  diagnostics as the one-PR package, with warnings, infos, Knip, Prettier, and
+  ESLint remaining outside enforcement changes.
+- 2026-08-09: Host Biome and Knip commands run, but devrouter ensure/exec is
+  currently blocked by a workspace lifecycle-lock process-identity error. The
+  pinned DevPod path must be restored before runtime-dependent verification;
+  no lock or runtime state was deleted.
 
 ## Finish state
 
-The slice is complete when the reviewed plan is the first branch commit, all
-30 `noBlankTarget` diagnostics are gone, the executable package checks pass,
-the mandatory docs and manage browser evidence is captured, review reports
-exist for the exact committed ranges, the branch is clean and committed, and
-no PR is published from this goal.
+The goal is complete only when the widened plan and implementation are on the
+same clean branch, the current configured Biome scope reports zero errors, the
+local and CI Biome gates are blocking, warnings/infos and Knip remain explicitly
+advisory, affected checks and browser evidence pass, final review reports cover
+the exact integrated range, the PR body reports the complete package and
+computed substantive size, and PR #5348 is updated without creating a second
+delivery path.
