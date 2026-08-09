@@ -4,7 +4,7 @@ Status: IN PROGRESS — widened from the noBlankTarget slice
 Date: 2026-08-09
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
-Base: b30585496 (origin/v3)
+Base: 338763a41 (origin/v3; verified 2026-08-10)
 Worktree: trees/biome-ratchet-tier1
 Related history: project/2026-07-19-biome-knip-repo-quality.md
 
@@ -36,9 +36,13 @@ opening another rule-sized PR.
   2,000 export/type findings, and additional enum, duplicate-export, and
   configuration findings. It is not ready for blocking enforcement in this
   package.
-- The current origin/v3 SHA is b3058549622534a23dd0ee274e1432709a4d3323.
-  The branch is currently nine commits ahead of origin/v3 and two commits
-  ahead of the published PR branch; it has no base divergence.
+- The previous base verification recorded origin/v3 at
+  b3058549622534a23dd0ee274e1432709a4d3323. Current origin/v3 is
+  338763a41393eb1e773bdb43efcfac3ef4e43334 after two unrelated commits
+  (chat welcome starters and a staging-promotion log). Neither touches the
+  Biome package, workflow, remediation, or plan surfaces. The graph is two
+  commits behind and 13 commits ahead; no scoped conflict requires a base
+  refresh before review.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
   remains the Next.js safety net.
