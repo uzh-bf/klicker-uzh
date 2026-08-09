@@ -122,16 +122,16 @@ export default {
     suggestions: {
       practiceTopic: 'Ein Thema üben',
       practiceTopicPrompt:
-        'Ich möchte für die Prüfung üben. Frag mich zuerst, welches einzelne Thema aus den Kursunterlagen ich üben möchte. Stelle mir danach eine Frage nach der anderen und gib mir Hinweise statt direkt die Antwort zu zeigen.',
+        'Ich möchte [ein bestimmtes Thema] aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
       workThroughProblem: 'Eine Aufgabe bearbeiten',
       workThroughProblemPrompt:
-        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+        'Hilf mir, diese Aufgabe Schritt für Schritt zu bearbeiten: [füge eine Aufgabe aus den Kursunterlagen ein]. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
       explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Erkläre mir ein einzelnes Konzept aus dem Kursskript in einfachen Worten, mit einem Beispiel und Quellenangaben.',
-      summarizeTopic: 'Ein Thema zusammenfassen',
-      summarizeTopicPrompt:
-        'Fasse ein einzelnes Thema aus dem Kursskript zusammen, inklusive der wichtigsten Ideen, Formeln und eines Beispiels.',
+        'Erkläre [ein bestimmtes Konzept] aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+      compareConcepts: 'Zwei Konzepte vergleichen',
+      compareConceptsPrompt:
+        'Vergleiche [Konzept A] und [Konzept B] anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
     },
     message: {
       creditsUsed:

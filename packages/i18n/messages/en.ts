@@ -119,16 +119,16 @@ export default {
     suggestions: {
       practiceTopic: 'Practise a topic',
       practiceTopicPrompt:
-        'I want to practise for the exam. Ask me which single topic from the course materials I want to practise, then ask me one question at a time and give hints instead of revealing the answer immediately.',
+        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
       workThroughProblem: 'Work through a problem',
       workThroughProblemPrompt:
-        'Help me work through one problem from the course materials step by step. Ask me questions and give hints before revealing the solution.',
+        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
       explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Explain one concept from the course script in simple terms, with a worked example and citations.',
-      summarizeTopic: 'Summarize a topic',
-      summarizeTopicPrompt:
-        'Summarize one topic from the course script, including the key ideas, formulas, and one example.',
+        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+      compareConcepts: 'Compare two concepts',
+      compareConceptsPrompt:
+        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:

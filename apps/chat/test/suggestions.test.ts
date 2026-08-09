@@ -9,7 +9,7 @@ describe('thread suggestions', () => {
     ])
     expect(getThreadSuggestions('explainer')).toEqual([
       { id: 'explainConcept' },
-      { id: 'summarizeTopic' },
+      { id: 'compareConcepts' },
     ])
   })
 

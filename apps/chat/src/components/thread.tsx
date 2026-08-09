@@ -393,8 +393,8 @@ const ThreadWelcomeSuggestions: FC = () => {
   const { modeOptions, modeOptionsChatbotId, selectedMode } = useSettingsStore()
 
   // `selectedMode` is persisted globally, while mode options arrive after the
-  // current chatbot mounts. Hide auto-send starters until the current
-  // chatbot's options have replaced that persisted value.
+  // current chatbot mounts. Hide starters until the current chatbot's
+  // options have replaced that persisted value.
   if (
     modeOptionsChatbotId !== chatbotId ||
     Object.keys(modeOptions).length === 0
@@ -415,7 +415,8 @@ const ThreadWelcomeSuggestions: FC = () => {
             SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
           )}
           prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
-          autoSend
+          send={false}
+          clearComposer
         >
           {t(`chat.suggestions.${suggestion.id}`)}
         </ThreadPrimitive.Suggestion>
