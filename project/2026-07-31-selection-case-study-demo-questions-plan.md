@@ -97,7 +97,7 @@ Evidence files:
 - Target: `v3`
 - Live base incorporated by merge commit: `014ac216a`
 - Implementation commits: `508a3dccd`, `8aa0942d2`, and `a445253e2`.
-- Exact integrated review range: `30df9e9d67c0bc8f2067960478f821f4944d94d8..a445253e2`.
+- Exact integrated review range: `30df9e9d67c0bc8f2067960478f821f4944d94d8..40b3e0de6`, persisted in `project/_local/reviews/2026-08-09-pr5261-integrated-final.md`.
 - Current worktree state: clean after the refactor commit; do not push without explicit authorization.
 
 ## Publication boundary
