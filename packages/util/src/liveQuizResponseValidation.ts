@@ -94,6 +94,8 @@ export function validateStudentResponse({
       !response.choices.every(
         (choice) =>
           isRecord(choice) &&
+          (hasExactKeys(choice, ['ix']) ||
+            hasExactKeys(choice, ['ix', 'selected'])) &&
           Number.isInteger(choice.ix) &&
           (choiceCount === null ||
             (Number(choice.ix) >= 0 && Number(choice.ix) < choiceCount)) &&

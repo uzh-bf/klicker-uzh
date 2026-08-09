@@ -119,6 +119,24 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     )
   })
 
+  it('does not serialize unexpected choice fields', () => {
+    const result = createCorrelatedLiveQuizResponseCsv({
+      quizName: 'Quiz',
+      questions,
+      responses: [
+        {
+          ...responses[1]!,
+          response: {
+            choices: [{ ix: 0, selected: true, note: 'private-marker' }],
+          },
+        },
+      ],
+    })
+
+    expect(result.csv).toContain('"[{""ix"":0,""selected"":true}]"')
+    expect(result.csv).not.toContain('private-marker')
+  })
+
   it('does not expose source identifiers, hashes, types, or timestamps', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',

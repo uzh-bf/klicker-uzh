@@ -48,7 +48,23 @@ function encodeResponse(response: unknown): string {
     return String(response.viewed)
   }
   if ('choices' in response) {
-    return JSON.stringify(canonicalize(response.choices))
+    const choices = Array.isArray(response.choices)
+      ? response.choices.map((choice) => {
+          if (!choice || typeof choice !== 'object' || Array.isArray(choice)) {
+            return null
+          }
+
+          const { ix, selected } = choice as {
+            ix?: unknown
+            selected?: unknown
+          }
+          return {
+            ix,
+            ...(typeof selected === 'undefined' ? {} : { selected }),
+          }
+        })
+      : []
+    return JSON.stringify(canonicalize(choices))
   }
   if ('selection' in response) {
     return JSON.stringify(canonicalize(response.selection))
