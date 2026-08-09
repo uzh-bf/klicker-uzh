@@ -206,9 +206,9 @@ function generateReport(results: ComparisonResult[]): void {
 
       if (keyComparison.lqOnly.length > 0) {
         console.log('\n  Keys only in lq:')
-        keyComparison.lqOnly
-          .slice(0, 5)
-          .forEach((k) => console.log(`    - ${k}`))
+        keyComparison.lqOnly.slice(0, 5).forEach((k) => {
+          console.log(`    - ${k}`)
+        })
         if (keyComparison.lqOnly.length > 5) {
           console.log(`    ... and ${keyComparison.lqOnly.length - 5} more`)
         }
@@ -216,9 +216,9 @@ function generateReport(results: ComparisonResult[]): void {
 
       if (keyComparison.lqV2Only.length > 0) {
         console.log('\n  Keys only in lqV2:')
-        keyComparison.lqV2Only
-          .slice(0, 5)
-          .forEach((k) => console.log(`    - ${k}`))
+        keyComparison.lqV2Only.slice(0, 5).forEach((k) => {
+          console.log(`    - ${k}`)
+        })
         if (keyComparison.lqV2Only.length > 5) {
           console.log(`    ... and ${keyComparison.lqV2Only.length - 5} more`)
         }

@@ -113,7 +113,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active: router.pathname === '/',
       data: { cy: 'library' },
     },
     {
@@ -121,7 +121,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -129,7 +129,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
 
@@ -139,7 +139,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
-        router.pathname == '/resources/answerCollections' ||
+        router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||

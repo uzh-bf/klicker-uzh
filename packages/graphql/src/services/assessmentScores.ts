@@ -169,13 +169,16 @@ export async function calculateAssessmentCourseScores(
           for (const response of instance.liveQuizResponses) {
             if (response.elementBlockExecution !== block.execution) continue
 
-            const result = (courseAcc.studentResults[response.participantId] ??=
-              {
+            let result = courseAcc.studentResults[response.participantId]
+            if (typeof result === 'undefined') {
+              result = {
                 participantId: response.participantId,
                 basePoints: 0,
                 correctnessPoints: 0,
                 bonusPoints: 0,
-              })
+              }
+              courseAcc.studentResults[response.participantId] = result
+            }
             result.basePoints += response.basePoints
             result.correctnessPoints += response.correctnessPoints
             result.bonusPoints += response.bonusPoints

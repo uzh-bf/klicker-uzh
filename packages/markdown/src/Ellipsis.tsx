@@ -125,7 +125,7 @@ function Ellipsis({
     return <div>No content</div>
   }
 
-  const formulaRegex = RegExp(/(\${2})[^]*?[^\\]\1/gm)
+  const formulaRegex = RegExp(/(\${2})[\s\S]*?[^\\]\1/gm)
   let endIndex = null
 
   // match first formula in an answer option

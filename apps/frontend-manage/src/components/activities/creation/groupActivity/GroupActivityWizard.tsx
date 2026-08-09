@@ -252,6 +252,8 @@ function GroupActivityWizard({
     },
   ]
 
+  const initialStack = initialValues?.stacks?.[0]
+
   const [formData, setFormData] = useState<GroupActivityFormValues>({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
@@ -266,22 +268,23 @@ function GroupActivityWizard({
           unit: clue.unit ?? undefined,
         }
       }) ?? formDefaultValues.clues,
-    stack: initialValues?.stacks
+    stack: initialStack
       ? {
-          displayName: initialValues?.stacks[0].displayName ?? '',
-          description: initialValues?.stacks[0].description ?? '',
-          elements: initialValues?.stacks[0].elements!.map((instance) => {
-            const [elementId, _] = instance.elementData.id.split('-v')
+          displayName: initialStack.displayName ?? '',
+          description: initialStack.description ?? '',
+          elements:
+            initialStack.elements?.map((instance) => {
+              const [elementId, _] = instance.elementData.id.split('-v')
 
-            return {
-              id: parseInt(elementId),
-              title: instance.elementData.name,
-              type: instance.elementData.type,
-              hasSampleSolution: false,
-              existingInstanceId: instance.id,
-              duplicateInstance: duplicationMode,
-            }
-          }),
+              return {
+                id: parseInt(elementId),
+                title: instance.elementData.name,
+                type: instance.elementData.type,
+                hasSampleSolution: false,
+                existingInstanceId: instance.id,
+                duplicateInstance: duplicationMode,
+              }
+            }) ?? [],
         }
       : formDefaultValues.stack,
 

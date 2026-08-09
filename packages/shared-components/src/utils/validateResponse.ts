@@ -86,7 +86,7 @@ export function validateFreeTextResponse({
   response?: string
   options: FreeTextElementOptions
 }) {
-  if (!response || response.length == 0) {
+  if (!response || response.length === 0) {
     return false
   }
 

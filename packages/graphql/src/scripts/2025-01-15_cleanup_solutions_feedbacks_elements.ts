@@ -78,8 +78,6 @@ async function run() {
             //     },
             //   },
             // })
-
-            missingChoicesSampleSolution++
           } else if (
             element.options.hasAnswerFeedbacks &&
             !everyHasFeedbacksDefined
@@ -101,8 +99,6 @@ async function run() {
             //     },
             //   },
             // })
-
-            missingChoicesAnswerFeedbacks++
           } else if (
             !element.options.hasAnswerFeedbacks &&
             someHasFeedbackDefined

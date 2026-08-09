@@ -143,6 +143,7 @@ const Development = () => {
         <div className="mb-16 grid w-full grid-cols-1 justify-between gap-4 md:grid-cols-2 lg:gap-4 xl:grid-cols-4">
           {tileContent.map((tile: any) => (
             <RoadmapTile
+              key={tile.title}
               title={tile.title}
               content={tile.content}
               useCases={tile.useCases}

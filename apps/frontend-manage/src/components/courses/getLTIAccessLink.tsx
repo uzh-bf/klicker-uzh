@@ -20,7 +20,7 @@ function getLTIAccessLink({
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
         <div>
           {t('manage.course.copyLTIAccessLink')}
-          {typeof label == 'string' && ` (${label})`}
+          {typeof label === 'string' && ` (${label})`}
         </div>
       </div>
     ),

@@ -109,7 +109,7 @@ function RunningLiveQuiz() {
     )
   }
 
-  const { id, name, course, blocks } = quizData?.controlLiveQuiz
+  const { id, name, course, blocks } = quizData.controlLiveQuiz
 
   if (!blocks) {
     return (
@@ -247,7 +247,7 @@ function RunningLiveQuiz() {
           </div>
         )}
 
-        {typeof currentBlockOrder !== 'undefined' && nextBlockOrder == -1 && (
+        {typeof currentBlockOrder !== 'undefined' && nextBlockOrder === -1 && (
           <UserNotification
             message={t('control.liveQuiz.hintLastBlock')}
             className={{ root: 'mt-14' }}

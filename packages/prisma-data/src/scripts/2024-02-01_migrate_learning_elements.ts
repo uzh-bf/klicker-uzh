@@ -82,6 +82,7 @@ function preparePracticeQuizInstanceResults(
 async function migrate() {
   throw new Error('already applied to PROD')
 
+  // biome-ignore lint/correctness/noUnreachable: this migration is permanently disabled after production application.
   const initialElementInstances = await prisma.elementInstance.findMany({
     where: {
       id: {

@@ -265,7 +265,7 @@ function ActivityCreation({
           />
         )}
         {(creationMode === ActivityType.PracticeQuiz ||
-          conversionMode == 'microLearningToPracticeQuiz') && (
+          conversionMode === 'microLearningToPracticeQuiz') && (
           <PracticeQuizWizard
             title={t('shared.generic.practiceQuiz')}
             closeWizard={closeWizard}

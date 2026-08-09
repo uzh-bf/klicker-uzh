@@ -20,11 +20,11 @@ function SCEvaluation({ evaluation }: Props) {
           className={{
             root: twMerge(
               'h-8',
-              choice.ix == correctIx && 'font-bold text-green-700'
+              choice.ix === correctIx && 'font-bold text-green-700'
             ),
             indicator: twMerge(
               'h-8',
-              choice.ix == correctIx ? 'bg-green-600' : 'bg-gray-400'
+              choice.ix === correctIx ? 'bg-green-600' : 'bg-gray-400'
             ),
           }}
           key={`choice-statistic-${choice.ix}-${choice.count}`}

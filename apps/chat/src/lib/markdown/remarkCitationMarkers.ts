@@ -84,7 +84,9 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
   CITATION_MARKER_EXEC_RE.lastIndex = 0
 
   let match: RegExpExecArray | null
-  while ((match = CITATION_MARKER_EXEC_RE.exec(value))) {
+  while (true) {
+    match = CITATION_MARKER_EXEC_RE.exec(value)
+    if (!match) break
     const [full, digits] = match
     const start = match.index
     if (start > lastIndex) {

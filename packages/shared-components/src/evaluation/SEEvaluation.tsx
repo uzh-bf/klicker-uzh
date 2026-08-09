@@ -66,7 +66,9 @@ function SEEValuation({
     }
 
     return options.answerCollection.entries
-      .filter((entry) => evaluation?.answerSolutionIds!.includes(entry.id))
+      .filter(
+        (entry) => evaluation?.answerSolutionIds?.includes(entry.id) ?? false
+      )
       .map((entry) => entry.value)
   }, [options.answerCollection])
 

@@ -37,7 +37,9 @@ export function ModeSwitcher() {
     // re-renders the same mode with a wider/narrower label) without
     // `selectedMode` itself changing.
     const observer = new ResizeObserver(measure)
-    buttonRefs.current.forEach((button) => observer.observe(button))
+    buttonRefs.current.forEach((button) => {
+      observer.observe(button)
+    })
     return () => observer.disconnect()
   }, [selectedMode, modeKeys.join('|')])
 

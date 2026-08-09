@@ -32,7 +32,9 @@ function StudentSignIn() {
         <>
           <UserNotification
             type="info"
-            message={t('auth.signedInAs', { username: session?.user?.email! })}
+            message={t('auth.signedInAs', {
+              username: session.user?.email ?? '',
+            })}
           />
           <Button
             primary

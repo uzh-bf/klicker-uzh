@@ -323,7 +323,7 @@ export function useChatResponse(
 
               try {
                 // standard SSE format: "data: {json}" or raw JSON
-                let jsonData
+                let jsonData: any
                 if (line.startsWith('data: ')) {
                   const jsonString = line.substring(6) // Remove "data: " prefix
                   jsonData = JSON.parse(jsonString)

@@ -5,7 +5,7 @@ export default function CaseSummary({ goals, tags, children }) {
         <div className="font-bold">Goals</div>
         <ul className="mt-2 pl-4 text-sm">
           {goals.map((goal) => (
-            <li>{goal}</li>
+            <li key={goal}>{goal}</li>
           ))}
         </ul>
       </div>
@@ -14,7 +14,10 @@ export default function CaseSummary({ goals, tags, children }) {
 
         <div className="mt-2 flex flex-row flex-wrap gap-1">
           {tags.map((tag) => (
-            <div className="rounded border border-solid border-gray-300 px-2 py-1 text-xs shadow-sm">
+            <div
+              key={tag}
+              className="rounded border border-solid border-gray-300 px-2 py-1 text-xs shadow-sm"
+            >
               {tag}
             </div>
           ))}

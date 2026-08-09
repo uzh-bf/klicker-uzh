@@ -53,16 +53,16 @@ export async function hydrateTemplate(
   },
   prisma: DB.PrismaClient
 ) {
-  let template
+  let template: string | null = null
 
   try {
-    template = await prisma.emailTemplate.findUnique({
+    const templateRecord = await prisma.emailTemplate.findUnique({
       where: { name: templateName },
     })
 
-    if (!template) return null
+    if (!templateRecord) return null
 
-    template = template.html
+    template = templateRecord.html
   } catch (e) {
     console.error('Error reading email template: ', e)
     return null

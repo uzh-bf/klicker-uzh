@@ -526,7 +526,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const startedAtLiveQuiz = new Date()
   const endedAtLiveQuiz = new Date(startedAtLiveQuiz.getTime() + 60 * 60 * 1000)
   for (const data of DATA_TEST.LIVE_QUIZZES) {
-    const isEnded = data.status == Prisma.PublicationStatus.ENDED
+    const isEnded = data.status === Prisma.PublicationStatus.ENDED
 
     const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: data.id },
@@ -1517,6 +1517,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const selectionResponse =
     selectionQuestion?.answerCollectionItems?.map((sol) => sol.id) ?? []
 
+  // biome-ignore lint/suspicious/useIterableCallbackReturn: ElementType branches are exhaustive and return a decision for every runtime case.
   const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
     (element) => {
       const baseDecisions = {
@@ -1580,6 +1581,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   const groupActivityDecisions2 =
+    // biome-ignore lint/suspicious/useIterableCallbackReturn: ElementType branches are exhaustive and return a decision for every runtime case.
     groupActivityCompleted.stacks[0]!.elements.map((element) => {
       const baseDecisions = {
         instanceId: element.id,
@@ -1643,6 +1645,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     })
 
   const groupActivityDecisionsGraded =
+    // biome-ignore lint/suspicious/useIterableCallbackReturn: ElementType branches are exhaustive and return a decision for every runtime case.
     groupActivityGraded.stacks[0]!.elements.map((element) => {
       const baseDecisions = {
         instanceId: element.id,

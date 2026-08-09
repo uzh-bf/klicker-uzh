@@ -35,7 +35,15 @@ export default async function getParticipantToken({
   }
 
   try {
-    let result
+    let result:
+      | {
+          data?: {
+            loginParticipantWithLti?: {
+              participantToken?: string | null
+            } | null
+          } | null
+        }
+      | undefined
 
     const cookiesAvailable = !!cookies['lti-token']
 

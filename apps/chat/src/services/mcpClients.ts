@@ -110,7 +110,7 @@ function createAuthHeaders(
   const decryptedSecret = safeDecrypt(server.authSecret)
 
   switch (server.authType.toLowerCase()) {
-    case 'custom':
+    case 'custom': {
       // Parse and apply custom headers from JSON
       try {
         const { headers } = JSON.parse(decryptedSecret)
@@ -122,14 +122,16 @@ function createAuthHeaders(
         )
       }
       break
+    }
     case 'bearer':
       baseHeaders.Authorization = `Bearer ${decryptedSecret}`
       break
-    case 'basic':
+    case 'basic': {
       // Assume authSecret is in format "username:password"
       const encoded = Buffer.from(decryptedSecret).toString('base64')
       baseHeaders.Authorization = `Basic ${encoded}`
       break
+    }
     case 'none':
     default:
       // No additional auth headers

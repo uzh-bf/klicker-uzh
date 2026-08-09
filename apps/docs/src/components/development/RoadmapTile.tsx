@@ -41,6 +41,7 @@ const RoadmapTile = ({
             if (useCase.href) {
               return (
                 <a
+                  key={`${useCase.href ?? useCase.content}-${useCase.status ?? ''}`}
                   target="_blank"
                   rel="noopener"
                   className={twMerge(
@@ -60,6 +61,7 @@ const RoadmapTile = ({
 
             return (
               <div
+                key={`${useCase.content}-${useCase.status ?? ''}`}
                 className={twMerge(
                   'border-border flex-1 rounded-md border border-solid bg-gray-100 px-3 py-2 text-sm',
                   isDarkTheme && 'border-gray-500 bg-gray-500'
@@ -77,12 +79,13 @@ const RoadmapTile = ({
       <div className="flex flex-row flex-wrap gap-2">
         {tags.map((tag: any) => (
           <div
+            key={`${tag.text}-${tag.color}`}
             className={twMerge(
               'rounded-md px-3 py-2 text-sm font-bold',
-              tag.color == 'gray' && 'bg-gray-500 text-white',
-              tag.color == 'lightgray' && 'bg-gray-200 text-gray-600',
-              tag.color == 'green' && 'bg-[#bbd023] text-white',
-              tag.color == 'orange' && 'bg-uzh-red-100 text-white'
+              tag.color === 'gray' && 'bg-gray-500 text-white',
+              tag.color === 'lightgray' && 'bg-gray-200 text-gray-600',
+              tag.color === 'green' && 'bg-[#bbd023] text-white',
+              tag.color === 'orange' && 'bg-uzh-red-100 text-white'
             )}
           >
             {tag.text}

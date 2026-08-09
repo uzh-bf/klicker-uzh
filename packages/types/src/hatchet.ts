@@ -26,27 +26,27 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<unknown> | void
   handleUpdateGroupAverageScores: (
-    {},
+    _args: {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleRunningRandomGroupAssignments: (
-    {},
+    _args: {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleFinalRandomGroupAssignments: (
-    {},
+    _args: {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleUpdateWeeklyTimelineEntries: (
-    {},
+    _args: {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleSendPushNotifications: (
-    {},
+    _args: {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>

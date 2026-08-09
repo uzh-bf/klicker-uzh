@@ -141,6 +141,22 @@ export async function validateTemplateAccessible(
 
 // ! Template management functions
 // #region
+type ConvertibleActivity =
+  | (DB.LiveQuiz & {
+      blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+    })
+  | (DB.PracticeQuiz & {
+      stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+    })
+  | (DB.MicroLearning & {
+      stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+    })
+  | (DB.GroupActivity & {
+      stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
+      parameters: DB.GroupActivityParameter[]
+      clues: DB.GroupActivityClue[]
+    })
+
 export async function getActivityAnswerCollectionIds(
   {
     activityId,
@@ -149,22 +165,7 @@ export async function getActivityAnswerCollectionIds(
   prisma: PrismaTransactionClient
 ): Promise<{
   error: boolean
-  activity:
-    | (DB.LiveQuiz & {
-        blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
-      })
-    | (DB.PracticeQuiz & {
-        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
-      })
-    | (DB.MicroLearning & {
-        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
-      })
-    | (DB.GroupActivity & {
-        stacks: (DB.ElementStack & { elements: DB.ElementInstance[] })[]
-        parameters: DB.GroupActivityParameter[]
-        clues: DB.GroupActivityClue[]
-      })
-    | null
+  activity: ConvertibleActivity | null
   noInstances: boolean
   answerCollectionIds: number[]
   answerCollectionEntryIds: number[]
@@ -172,7 +173,7 @@ export async function getActivityAnswerCollectionIds(
   // helper function that finds the ids of all answer collections linked to elements in an activity
   // fetch all element instances included in the activity that should be converted
   let instances: DB.ElementInstance[] = []
-  let activity
+  let activity: ConvertibleActivity | null = null
   if (activityType === ActivityType.LIVE_QUIZ) {
     const liveQuiz = await prisma.liveQuiz.findUnique({
       where: {
