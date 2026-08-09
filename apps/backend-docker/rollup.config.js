@@ -23,6 +23,11 @@ const config = defineConfig([
         tsconfig: './tsconfig.json',
         rootDir: '.',
         filterRoot: '.',
+        // Keep Rollup independent from stale TypeScript incremental metadata.
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
         include: [
           'src/**/*.cts',
           'src/**/*.mts',
