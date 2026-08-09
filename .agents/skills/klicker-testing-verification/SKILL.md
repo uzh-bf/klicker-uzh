@@ -21,6 +21,12 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
+For OpenAI-compatible chat stream changes, run
+`apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
+fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
+and proves public tool-call/finish conversion without a model key; it does not
+replace a real-upstream staging smoke test.
+
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.

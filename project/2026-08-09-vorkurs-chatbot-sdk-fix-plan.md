@@ -57,8 +57,12 @@ evidence remain a later explicitly approved operation.
 
 - Runtime: Node `24.17.0` in the current shell; the repository pins Node 24
   and pnpm 11.x.
-- Surfaces: `apps/chat/package.json` and the root `pnpm-lock.yaml`.
-- No Node, pnpm, Docker, CI, or deployment pin changes are required.
+- Surfaces: `apps/chat/package.json`, `pnpm-lock.yaml`, and the exact-version
+  `minimumReleaseAgeExclude` entries in `pnpm-workspace.yaml`.
+- No Node, pnpm runtime, Docker, CI, or deployment pin changes are required.
+  The repository's 14-day package maturity policy must retain six exact,
+  reviewed exceptions for this fresh patch train; the policy itself remains
+  unchanged.
 - Lockfile and direct dependency changes must land together.
 
 ## Deployment / Migration Findings
@@ -125,22 +129,26 @@ Files:
 
 - `apps/chat/package.json`
 - `pnpm-lock.yaml`
+- `pnpm-workspace.yaml`
 - `apps/chat/test/openai-chat-streaming.test.ts`
 - `docs/chat-platform.md`
+- `docs/testing.md`
 - `docs/log/2026-08-09-vorkurs-chatbot-sdk-fix.md`
-- `.agents/skills/klicker-testing-verification/SKILL.md` if the focused test
-  procedure needs a factual update
+- `.agents/skills/klicker-testing-verification/SKILL.md`
 
 Do:
 
 - Update only the three direct AI SDK pins and regenerate the lockfile.
+- Add exact maturity-policy exceptions for the three direct packages and their
+  three newly resolved `@ai-sdk` transitive packages; do not relax the global
+  release-age policy.
 - Add the public-provider SSE fixture. Assert one completed public `tool-call`
   with the expected parsed input and a terminal `finish` with unified reason
   `tool-calls`; do not assert internal implementation fields.
 - Keep `consumeSseStream: consumeStream` in the route.
 - Document the sparse-index failure and the local/staging evidence boundary in
-  the chat wiki and its required dated log entry. Update the testing skill only
-  for durable verification procedure facts.
+  the chat/testing wiki pages, the required dated log entry, and the testing
+  skill's durable verification procedure.
 
 Check:
 
@@ -162,9 +170,31 @@ Commit:
 - [x] Completed the planning-stage read-only review and recorded its concern
   about newer out-of-scope registry patches.
 - [x] Created the implementation branch from verified `origin/v3`.
-- [ ] Commit this plan before implementation.
-- [ ] Update dependencies and add the regression fixture.
-- [ ] Update the chat wiki/skill evidence and run the verification matrix.
+- [x] Commit this plan before implementation (`db89ef798`).
+- [x] Slice 2: added and red-tested the public-provider sparse-index fixture
+  against provider-utils `5.0.12`, then re-ran it green on `5.0.21`.
+- [x] Confirmed the package maturity policy requires exact exceptions for the
+  reviewed fresh AI SDK train; because pnpm uses the first package-name rule,
+  the prior and new versions are represented as exact-version unions. The
+  policy remains unchanged.
+- [x] Updated the direct pins, lockfile, and exact maturity-policy selectors;
+  lockfile verification now passes with the repository's 14-day policy.
+- [x] Updated the chat/testing wiki pages, dated log, and testing skill with
+  the fixture and real-upstream evidence boundary.
+- [x] Run the full verification matrix; the integrated final review remains
+  pending.
+- [x] Update dependencies, the package maturity selectors, and the regression
+  fixture.
+- [x] Update the chat/testing wiki and skill evidence.
+- [x] Full chat suite: 29 files and 226 tests passed, including the sparse-index
+  fixture.
+- [x] `CI=true pnpm run check:all`: all 24 Turbo check tasks passed after
+  granting Prisma's existing host-cache write boundary.
+- [x] `CI=true pnpm run build`: all 22 build tasks passed; existing warnings
+  remain in unrelated package/build surfaces.
+- [x] Record the OKF validator baseline: it reports pre-existing conformance
+  errors in existing ADR/log/solution files and existing hygiene warnings; the
+  new log follows the repository's established log format.
 - [ ] Obtain the integrated final review before any PR or staging action.
 
 ## Open Questions
@@ -175,7 +205,7 @@ Commit:
 
 ## Next Steps
 
-1. Commit this plan as the branch's first commit.
-2. Update the three direct chat dependencies and install the reviewed lockfile
-   train.
-3. Add and run the public-provider sparse-index regression fixture.
+1. Commit the verified implementation slice after staged-content review.
+2. Obtain the integrated final review on the exact committed range.
+3. Keep staging rollout and real-upstream smoke testing behind explicit later
+   approval.

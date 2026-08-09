@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-08'
+timestamp: '2026-08-09'
 tags:
   - frontend
   - chat
@@ -48,6 +48,16 @@ client abort. The root layout also declares
 `interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
 is required for Android keyboard resizing because the thread viewport is the
 only conversation scroller and the composer is positioned over it.
+
+The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
+train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
+resolve `@ai-sdk/provider-utils@5.0.21`. The earlier provider-utils `5.0.12`
+tracker stored streamed tool calls in an index-addressed array; a first tool
+call at provider index `1` left a sparse entry that crashed during stream flush
+with `hasFinished` read from `undefined`. The deterministic public-provider
+fixture in `apps/chat/test/openai-chat-streaming.test.ts` covers this boundary
+with injected SSE. A green fixture proves the local provider conversion path;
+it does not replace a real-upstream first-turn staging smoke test.
 
 ## Auth guard pattern (route handlers)
 
