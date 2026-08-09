@@ -198,8 +198,13 @@ Commit:
   new log follows the repository's established log format.
 - [x] Correct the stale implementation status identified by the integrated
   review and persist that review under `_local/reviews/`.
-- [ ] Complete the bounded security and maintainability gates before any PR or
-  staging action.
+- [x] Complete the bounded security review; no high-confidence vulnerability
+  was identified in the changed scope. Repository-wide audit advisories remain
+  a separate maintenance baseline.
+- [x] Complete the maintainability review; no structural regression or required
+  decomposition was identified.
+- [x] Complete the final integrated review on `origin/v3..HEAD`; it passed with
+  no findings. The final report is under `_local/reviews/`.
 
 ## Open Questions
 
@@ -209,8 +214,7 @@ Commit:
 
 ## Next Steps
 
-1. Complete the bounded security and maintainability gates on the committed
-   range.
+1. Keep the reviewed branch ready for explicit push or PR approval.
 2. Request explicit approval before pushing or opening a PR.
 3. Keep staging rollout and real-upstream smoke testing behind explicit later
    approval.
