@@ -17,7 +17,7 @@ import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { changeInitialSettings } from '../src/services/accounts.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
-import { userOne } from './userData.js'
+import { userOne, userTwo } from './userData.js'
 
 const COLLECTION_ENTRIES = [
   'Live poll',
@@ -479,5 +479,121 @@ describe('Account demo element seeding', () => {
     await expect(
       prisma.user.findUniqueOrThrow({ where: { id: userOne.id } })
     ).resolves.toMatchObject({ firstLogin: false })
+  })
+
+  it('keeps first login available when the requested shortname is taken', async () => {
+    const user = await changeInitialSettings(
+      {
+        shortname: userTwo.shortname,
+        locale: Locale.de,
+        sendUpdates: true,
+        seedDemoElements: true,
+      },
+      userOneCtx
+    )
+
+    expect(user).toMatchObject({
+      locale: Locale.de,
+      firstLogin: true,
+    })
+    await expect(
+      prisma.answerCollection.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.element.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+  })
+
+  it('rolls back failed demo seeding so the user can retry', async () => {
+    await expect(
+      changeInitialSettings(
+        {
+          shortname: userOne.shortname,
+          locale: 'invalid-locale' as Locale,
+          sendUpdates: false,
+          seedDemoElements: true,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow()
+
+    await expect(
+      prisma.user.findUniqueOrThrow({ where: { id: userOne.id } })
+    ).resolves.toMatchObject({ firstLogin: true })
+    await expect(
+      prisma.answerCollection.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.element.count({
+        where: { ownerId: userOne.id },
+      })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(0)
+
+    await expect(
+      changeInitialSettings(
+        {
+          shortname: userOne.shortname,
+          locale: Locale.en,
+          sendUpdates: false,
+          seedDemoElements: true,
+        },
+        userOneCtx
+      )
+    ).resolves.toMatchObject({ firstLogin: false })
+    await expect(
+      prisma.answerCollection.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(1)
+  })
+
+  it('seeds one demo bundle for concurrent first-login requests', async () => {
+    const settings = {
+      shortname: userOne.shortname,
+      locale: Locale.en,
+      sendUpdates: false,
+      seedDemoElements: true,
+    }
+
+    const users = await Promise.all([
+      changeInitialSettings(settings, userOneCtx),
+      changeInitialSettings(settings, userOneCtx),
+    ])
+
+    expect(users).toHaveLength(2)
+    expect(users).toEqual([
+      expect.objectContaining({ firstLogin: false }),
+      expect.objectContaining({ firstLogin: false }),
+    ])
+    await expect(
+      prisma.answerCollection.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.element.findMany({
+        where: { ownerId: userOne.id },
+        select: { name: true },
+        orderBy: { name: 'asc' },
+      })
+    ).resolves.toEqual([
+      { name: 'Demo Content Element' },
+      { name: 'Demo Flashcard' },
+      { name: 'Demoquestion CS' },
+      { name: 'Demoquestion FT' },
+      { name: 'Demoquestion KPRIM' },
+      { name: 'Demoquestion MC' },
+      { name: 'Demoquestion NR' },
+      { name: 'Demoquestion SC' },
+      { name: 'Demoquestion SE' },
+    ])
+    await expect(
+      prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(1)
   })
 })

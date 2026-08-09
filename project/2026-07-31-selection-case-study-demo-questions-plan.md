@@ -4,7 +4,7 @@
 
 **Goal:** Seed complete selection and case-study demo questions, their shared answer collection, and a new Demo Live Quiz block when a new lecturer opts into demo content.
 
-**Architecture:** Keep `changeInitialSettings` and `seedDemoQuestions` as the existing entry points. Guard `changeInitialSettings` with `User.firstLogin` so completed users cannot replay demo seeding. Add one private, transaction-backed helper in the account service for the relational answer-collection bundle, return relation-enriched elements to the existing `processElementData` live-quiz path, and cover the persisted resources and instance snapshots with a database-backed service test.
+**Architecture:** Keep `changeInitialSettings` and `seedDemoQuestions` as the existing entry points. Run the first-login claim, demo seeding, and final settings update in one bounded Prisma interactive transaction. Claim `User.firstLogin` with a conditional update so concurrent requests serialize; a request that loses the claim returns the fresh user without seeding, while a failed seed rolls the claim back for retry. Pass the transaction context through the existing seeder and the private relational helper, return relation-enriched elements to the existing `processElementData` live-quiz path, and cover the persisted resources, instance snapshots, and concurrent replay behavior with database-backed service tests.
 
 **Tech Stack:** TypeScript 6, Node.js 24, Prisma 7.8, PostgreSQL, Vitest, pnpm 11, Turborepo, devrouter, agent-browser.
 
@@ -17,10 +17,10 @@
 - Add one new untimed Demo Live Quiz block containing selection first and case study second; leave all existing blocks unchanged.
 - Keep content English, matching the existing onboarding demos.
 - Do not change Prisma schema, migrations, GraphQL schema/operations, frontend code, dependencies, or public documentation.
-- Keep the new collection-plus-elements bundle atomic without refactoring the legacy seeder; prevent sequential replay at `changeInitialSettings` while leaving broader concurrency and partial-failure idempotency outside scope.
-- Before editing Prisma calls, use Context7 to resolve Prisma ORM and confirm the installed Prisma 7 transaction, nested-create, relation-connect, and relation-include APIs.
+- Keep the complete first-login seed atomic without refactoring the legacy seeder's content: conditionally claim `User.firstLogin` before seeding, pass one transaction client through every seed write, and leave a failed claim retryable through rollback.
+- Before editing Prisma calls, use Context7 to resolve Prisma ORM and confirm the installed Prisma 7 transaction, nested-create, relation-connect, and relation-include APIs. If Context7 is unavailable, record the official Prisma documentation used as the fallback.
 - Run pnpm, Prisma, and tests inside the self-contained DevPod through `devrouter exec . -- ...`.
-- Use Prettier formatting, strict TypeScript, no semicolons, single quotes, and trailing commas.
+- Use Biome formatting for TypeScript and Prettier for Markdown, strict TypeScript, no semicolons, single quotes, and trailing commas.
 - Use the approved design as the source of truth: `project/2026-07-31-selection-case-study-demo-questions-design.md`.
 
 ---
@@ -34,6 +34,19 @@
 | `docs/data-and-migrations.md`               | Document first-login demo seeding as a fourth, request-driven seed path and explain the shared answer-collection relationship.                                    |
 | `docs/log/2026-08-04-...-seeding.md`        | Record the behavior and wiki update as a new dated log file (one file per change batch).                                                                          |
 
+## Finalization research and decisions
+
+- **Evidence:** Context7 was not available in this session. The repository already uses `PrismaTransactionClient` for transaction-safe helpers, and the official [Prisma transactions documentation](https://www.prisma.io/docs/orm/prisma-client/queries/transactions) confirms interactive transactions, nested relation writes, relation `connect`, relation `include`, and bounded `timeout`/`maxWait` options for the installed API family.
+- **Decision:** Use one root interactive transaction with a conditional `user.updateMany({ where: { id, firstLogin: true }, data: { firstLogin: false } })` claim. Pass its transaction client through all demo seeding writes, remove the helper's nested transaction, and return a fresh user when the claim count is zero.
+- **Risk:** This changes late first-login seed failures from partial persistence to all-or-nothing rollback. The explicit transaction timeout must be measured against the real seeder and concurrent replay test.
+- **Test:** Run identical first-login calls with `Promise.all`; both calls must resolve without error, while the user has exactly one answer collection, nine demo elements, and one Demo Live Quiz. A deliberate late Prisma validation failure must leave `firstLogin` true and no demo resources persisted so a later retry can claim it. The finalized six-test focused suite completed in 7.51 seconds, below the 30-second transaction timeout.
+
+## Progress
+
+- **2026-08-09 — takeover:** Reconciled the existing `review/pr5261` worktree with `origin/v3` by merging current `origin/v3` at `014ac216a`; the worktree was clean at the merge point and the PR's six-file scope is preserved relative to `origin/v3`.
+- **2026-08-09 — finalization:** Reworked first-login seeding around a conditional transaction claim, passed the transaction client through the full seeder, removed the helper's nested transaction, reduced the duplicated relation scaffolding, and added shortname-conflict, rollback-retry, and concurrent-replay coverage.
+- **Active:** Commit the verified finalization diff, complete the exact-range final review and required maintainability/security gates, then read back the post-push CI/Sonar state only if publication is explicitly authorized.
+
 ### Task 1: Seed the relational selection and case-study bundle
 
 **Files:**
@@ -43,18 +56,18 @@
 
 **Interfaces:**
 
-- Consumes: `changeInitialSettings(args, ctx)`, `ContextWithUser`, `recomputeDerivedPermissions(args, prisma)`, the existing `Demo Tag` created by the SC demo, and Prisma's transaction client inferred from `ctx.prisma.$transaction`.
+- Consumes: `changeInitialSettings(args, ctx)`, `ContextWithUser`, `PrismaTransactionContextWithUser`, `recomputeDerivedPermissions(args, prisma)`, the existing `Demo Tag` created by the SC demo, and Prisma's transaction client inferred from `ctx.prisma.$transaction`.
 - Produces: private `seedDemoSelectionAndCaseStudyElements(ctx)` returning `{ questionSE, questionCS }`, where both elements include `answerCollection.entries` and `answerCollectionItems` for later consumption by `processElementData`.
 
 - [ ] **Step 1: Confirm the installed Prisma APIs before editing**
 
-Use Context7's `resolve-library-id` for Prisma ORM, then query documentation for Prisma 7.8 interactive transactions, nested relation creation, `connect`, and `include`. Confirm that the repository's existing calls remain valid; do not change dependency versions.
+Use Context7's `resolve-library-id` for Prisma ORM, then query documentation for Prisma 7.8 interactive transactions, nested relation creation, `connect`, and `include`. If Context7 is unavailable, use the official Prisma transactions documentation recorded in the research section. Confirm that the repository's existing calls remain valid; do not change dependency versions.
 
 Expected: documentation supports `prisma.$transaction(async (tx) => ...)`, nested `entries.create`, relation `connect`, and nested relation `include` in create results.
 
 - [ ] **Step 2: Add the database-backed account-service test**
 
-Create `packages/graphql/test/accounts.test.ts` with this setup and the two initial cases:
+Create `packages/graphql/test/accounts.test.ts` with this setup and database-backed cases covering opt-in seeding, opt-out, repeated first-login calls, a shortname conflict, a deliberate late Prisma validation failure with retry, and concurrent identical first-login calls:
 
 ```ts
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
@@ -395,16 +408,19 @@ Run:
 devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.ts
 ```
 
-Expected: the opt-out case passes, while the opt-in case fails because `Demo Teaching Activities` does not exist.
+Expected: the initial opt-in assertion fails before the seeder implementation exists; after implementation, the suite proves that a shortname conflict leaves `firstLogin` and demo resources unchanged, a failed transaction rolls back all newly-created demo resources and can be retried, and concurrent requests create one complete demo bundle.
 
 - [ ] **Step 4: Add the private transaction-backed helper**
 
 Insert this helper immediately before `seedDemoQuestions` in `packages/graphql/src/services/accounts.ts`:
 
+The code shape below is the implementation contract; the finalized helper uses local builders for repeated relation scaffolding and case-study ranges, while retaining the same transaction-client flow.
+
 ```ts
-async function seedDemoSelectionAndCaseStudyElements(ctx: ContextWithUser) {
-  return ctx.prisma.$transaction(async (prisma) => {
-    const answerCollection = await prisma.answerCollection.create({
+async function seedDemoSelectionAndCaseStudyElements(
+  ctx: PrismaTransactionContextWithUser
+) {
+  const answerCollection = await ctx.prisma.answerCollection.create({
       data: {
         name: 'Demo Teaching Activities',
         description:
@@ -434,7 +450,7 @@ async function seedDemoSelectionAndCaseStudyElements(ctx: ContextWithUser) {
       return entry.id
     }
 
-    const questionSE = await prisma.element.create({
+  const questionSE = await ctx.prisma.element.create({
       data: {
         name: 'Demoquestion SE',
         type: DB.ElementType.SELECTION,
@@ -468,7 +484,7 @@ async function seedDemoSelectionAndCaseStudyElements(ctx: ContextWithUser) {
       },
     })
 
-    const questionCS = await prisma.element.create({
+const questionCS = await ctx.prisma.element.create({
       data: {
         name: 'Demoquestion CS',
         type: DB.ElementType.CASE_STUDY,
@@ -616,19 +632,19 @@ async function seedDemoSelectionAndCaseStudyElements(ctx: ContextWithUser) {
 
     await recomputeDerivedPermissions(
       { answerCollectionId: answerCollection.id, userId: ctx.user.sub },
-      prisma
+      ctx.prisma
     )
     await recomputeDerivedPermissions(
       { elementId: questionSE.id, userId: ctx.user.sub },
-      prisma
+      ctx.prisma
     )
     await recomputeDerivedPermissions(
       { elementId: questionCS.id, userId: ctx.user.sub },
-      prisma
+      ctx.prisma
     )
 
     return { questionSE, questionCS }
-  })
+  }
 }
 ```
 
@@ -642,10 +658,12 @@ Call it after the content element and its permissions are created, while the `De
 
 - [ ] **Step 5: Format and run the focused test**
 
+The final implementation may use local builders for repeated relation and case-solution data to keep the helper below the Sonar duplication threshold, but every Prisma write and permission recomputation must use `ctx.prisma`.
+
 Run:
 
 ```bash
-devrouter exec . -- pnpm exec prettier --write packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts
+devrouter exec . -- pnpm exec biome format --write packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts
 devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.ts
 ```
 
@@ -855,7 +873,7 @@ Do not change `processElementData`, `getInitialInstanceResults`, block ordering 
 Run:
 
 ```bash
-devrouter exec . -- pnpm exec prettier --write packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts
+devrouter exec . -- pnpm exec biome format --write packages/graphql/src/services/accounts.ts packages/graphql/test/accounts.test.ts
 devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.ts
 ```
 
@@ -902,9 +920,9 @@ Insert this subsection after the existing Prisma 7 reset paragraph in `docs/data
 ```md
 ### First-login demo content
 
-First-login demo content is a fourth, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. The relational collection-plus-elements bundle is created in a local transaction and then snapshotted into the final untimed live-quiz block through `processElementData`.
+First-login demo content is a fourth, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. The transaction-backed relational collection-plus-elements bundle is then snapshotted into the final untimed live-quiz block through `processElementData`.
 
-This path does not run for users who opt out, does not backfill existing accounts, and is independent of the dev, Cypress, and Playwright fixture seeds above.
+This path does not run for users who opt out, does not backfill existing accounts, and is independent of the dev and Playwright fixture seeds above.
 ```
 
 - [ ] **Step 2: Add the wiki log entry**
@@ -956,15 +974,15 @@ Expected: one documentation-only commit.
 - Consumes: all implementation and documentation commits.
 - Produces: test, static-analysis, browser, screenshot, and clean-worktree evidence suitable for handoff or PR preparation.
 
-- [ ] **Step 1: Run the isolated database-backed test one final time**
+- [x] **Step 1: Run the isolated database-backed test one final time**
 
 ```bash
-devrouter exec . -- pnpm --filter @klicker-uzh/graphql test:local accounts.test.ts
+devrouter exec . -- sh -lc 'export HATCHET_CLIENT_TOKEN="$(tr -d "[:space:]" < /config/authdisabled-token)" HATCHET_CLIENT_HOST_PORT=hatchet:7077 HATCHET_CLIENT_TLS_STRATEGY=none NODE_ENV=test; pnpm --filter @klicker-uzh/graphql exec vitest run test/accounts.test.ts'
 ```
 
-Expected: two tests pass; the script tears down its disposable Postgres, Redis, and Hatchet resources.
+Expected: six tests pass; the command uses the disposable DevPod database path and the focused run completes well below the 30-second transaction timeout. The package's `test:local` wrapper is not usable in this DevPod because it expects Docker inside the container.
 
-- [ ] **Step 2: Run package and repository quality gates**
+- [x] **Step 2: Run package and repository quality gates**
 
 ```bash
 devrouter exec . -- pnpm --filter @klicker-uzh/graphql check
@@ -975,7 +993,9 @@ opengrep scan --config auto packages/graphql/src/services/accounts.ts packages/g
 
 Expected: every command exits with code 0 and opengrep reports no blocking findings in the changed implementation.
 
-- [ ] **Step 3: Prepare a disposable local onboarding state**
+Read back the `SonarCloud Code Analysis` check for the exact published head. The quality gate must be green, and the duplication measure for new code must be at or below the repository threshold; the prior PR head failed because `accounts.ts` reported 72 duplicated lines. Do not report the PR as ready while that check remains red.
+
+- [x] **Step 3: Prepare a disposable local onboarding state**
 
 Run `devrouter ensure .` and confirm the reported checkout and routes match this worktree. Only against the self-contained local DevPod database, reset and reseed using the repository's documented destructive local sequence:
 
@@ -986,15 +1006,15 @@ devrouter exec . -- pnpm --filter @klicker-uzh/prisma run prisma:push:raw
 devrouter exec . -- pnpm --filter @klicker-uzh/prisma-data run seed:raw
 ```
 
-Then set only the seeded local lecturer's first-login flag:
+Then set only the seeded local lecturer's first-login flag. The current container does not include `psql`, so use the generated Prisma client from a workspace package (holding no secret values in output) and report only the affected row count:
 
 ```bash
-devrouter exec . -- sh -lc 'psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "UPDATE \"User\" SET \"firstLogin\" = true WHERE shortname = '\''lecturer'\'';"'
+devrouter exec . -- pnpm --filter @klicker-uzh/prisma-data exec tsx -e 'import { prisma } from "@klicker-uzh/prisma"; void (async () => { const result = await prisma.user.updateMany({ where: { shortname: "lecturer" }, data: { firstLogin: true } }); console.log(JSON.stringify({ updatedUsers: result.count })); await prisma.$disconnect() })()'
 ```
 
 Expected: exactly one row is updated. Stop immediately if the database is not the disposable DevPod database.
 
-- [ ] **Step 4: Verify onboarding and element-library behavior in a real browser**
+- [x] **Step 4: Verify onboarding and element-library behavior in a real browser**
 
 Use the repository's `agent-browser` workflow and the Manage URL printed by `devrouter app ls --repo .`:
 
@@ -1006,7 +1026,7 @@ Use the repository's `agent-browser` workflow and the Manage URL printed by `dev
 
 Expected: no console errors, generic error notification, or missing answer-collection entries.
 
-- [ ] **Step 5: Verify the Demo Live Quiz block in the browser**
+- [x] **Step 5: Verify the Demo Live Quiz block in the browser**
 
 Open `Demo Live Quiz` in Manage and inspect its final block:
 
@@ -1017,7 +1037,9 @@ Open `Demo Live Quiz` in Manage and inspect its final block:
 
 Expected: the new elements render through the existing UI with no frontend code changes.
 
-- [ ] **Step 6: Restore the disposable local environment**
+Evidence: `/private/tmp/pr5261-library-after.png`, `/private/tmp/pr5261-selection-editor.png`, and `/private/tmp/pr5261-case-study-editor.png` show the generated resources and editor previews. The activity-details screenshot `/private/tmp/pr5261-demo-live-quiz.png` shows the untimed sixth block with Selection before Case Study. After clearing the diagnostics, the final browser readback produced no new console or page errors; existing development warnings were not attributed to this change.
+
+- [x] **Step 6: Restore the disposable local environment**
 
 After screenshots are captured, reset and reseed the same verified local DevPod database with the commands from Step 3 so the lecturer account and demo resources return to the repository baseline.
 
@@ -1032,3 +1054,7 @@ git status --short --branch
 ```
 
 Check every acceptance criterion in the approved design against the test assertions and browser evidence. Expected: only the spec, plan, account service, account test, and two wiki files differ from `origin/v3`; the worktree is clean.
+
+- [ ] **Step 8: Complete the required review gates**
+
+After committing the final changes, run one read-only integrated reviewer against the exact final commit range, with no edits or publication authority. Run the repository-required maintainability and bounded code-security gates for this full-path change, persist their reports under the ignored local review directory, verify every finding against the live diff, and rerun any gate whose addressed finding changes behavior. The final report must name the exact commit range and distinguish local evidence from GitHub CI, Sonar, browser, and post-push evidence.

@@ -32,9 +32,9 @@ Both elements must include complete sample solutions and demonstrate how reusabl
 
 ## Architecture
 
-Keep `changeInitialSettings` and `seedDemoQuestions` as the entry points. `changeInitialSettings` returns the current user unchanged when first login is already complete, preventing completed users from replaying demo seeding. Add a private helper focused on the relational bundle, conceptually named `seedDemoSelectionAndCaseStudyElements`. The helper creates the answer collection and both elements, recomputes their derived permissions, and returns both elements with the relations required by `processElementData`.
+Keep `changeInitialSettings` and `seedDemoQuestions` as the entry points. Run the first-login claim, demo seeding, and final settings update in one bounded Prisma interactive transaction. Claim `User.firstLogin` with a conditional update so concurrent requests serialize; a request that loses the claim returns the fresh user unchanged, while a failed seed rolls the claim back for retry. Add a private helper focused on the relational bundle, conceptually named `seedDemoSelectionAndCaseStudyElements`. The helper creates the answer collection and both elements, recomputes their derived permissions, and returns both elements with the relations required by `processElementData`.
 
-The helper uses a local Prisma transaction for only these three resources. This prevents an answer collection or one of the two elements from being left behind if creation of the relational bundle fails, without expanding the work into an all-demo seeder refactor.
+The first-login transaction covers the legacy demos, the relational bundle, the Demo Live Quiz, and the final user update without refactoring the legacy seeder's content. The helper receives the transaction context rather than opening a nested transaction. This prevents partial demo resources and makes concurrent first-login replays produce one complete bundle.
 
 No new public service, API, or UI abstraction is introduced.
 
@@ -137,7 +137,7 @@ Case-study solution objects embed the generated answer-collection entry IDs as `
 
 ## Creation and instance data flow
 
-Within the local transaction, the helper:
+Within the first-login transaction, the helper:
 
 1. Creates the answer collection with all six entries and includes the entries in the result.
 2. Resolves the IDs needed by the selection and case study.
@@ -158,10 +158,9 @@ The existing live-quiz creation path calls `processElementData` for each returne
 ## Error handling
 
 - A missing expected answer-collection entry is an internal invariant violation and throws a descriptive error; it must not silently produce an incomplete element.
-- Failure while creating the collection, either element, or their derived permissions rolls back the new relational bundle.
+- Failure while creating the collection, either element, their derived permissions, or the later Demo Live Quiz rolls back the complete first-login seed and leaves `User.firstLogin` true so a later request can retry.
 - The error continues through the existing first-login mutation. No new frontend error state is introduced.
-- Failure during later Demo Live Quiz creation retains already-created standalone demo elements, matching the current seeder behavior.
-- Sequential replays after first login are blocked at `changeInitialSettings`; broader concurrency and partial-seeder idempotency changes remain outside this feature's scope.
+- A concurrent request that loses the atomic first-login claim returns the committed user without creating demo resources.
 
 ## Acceptance criteria
 
@@ -178,6 +177,7 @@ When a new user submits first-login settings with `seedDemoElements: true`:
 9. The two new quiz instances contain complete collection snapshots, sample solutions, and valid empty initial results.
 10. Existing demo elements and quiz blocks remain unchanged.
 11. After first login is complete, a repeated `changeInitialSettings` call creates no additional demo resources.
+12. Two concurrent first-login requests create one complete demo bundle, and a failed seed leaves the user retryable rather than creating partial or duplicate resources.
 
 When a new user submits first-login settings with `seedDemoElements: false`, none of the new collection, elements, or quiz block is created.
 
@@ -191,6 +191,7 @@ Run:
 - the GraphQL package typecheck;
 - formatting and lint checks for changed files; and
 - `opengrep scan --config auto` for the changed implementation scope.
+- a concurrent `Promise.all` replay test that proves one bundle per user and leaves a failed transaction retryable.
 
 Perform a browser smoke test in the real local environment with a disposable fresh lecturer account:
 
