@@ -1,5 +1,5 @@
 export const CORRELATED_LIVE_QUIZ_EXPORT_WARNING =
-  'Export uses random respondent labels and does not include names, emails, account ids, usernames, or temporary pseudonyms. Free-text answers may still contain personal data entered by participants.'
+  'Respondent labels in this export are randomly assigned; names, account identifiers, usernames, temporary pseudonyms, timestamps, and free-text answers are not included.'
 
 export const DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES = 5 * 1024 * 1024
 

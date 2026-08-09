@@ -1,5 +1,6 @@
 import {
   ElementBlockStatus,
+  ElementType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
   ResponseCorrectness,
@@ -30,7 +31,7 @@ const defaultBlocks = [
     execution: 0,
     order: 0,
     status: ElementBlockStatus.EXECUTED,
-    elements: [{ id: 10, order: 0 }],
+    elements: [{ id: 10, order: 0, elementType: ElementType.SC }],
   },
 ]
 
@@ -133,7 +134,8 @@ function createContext({
 
 describe('getCorrelatedLiveQuizResponseExport', () => {
   it('returns a respondent-row CSV without source identities', async () => {
-    const { ctx, blockFindMany, labelCreateMany } = createContext()
+    const { ctx, blockFindMany, labelCreateMany, responseFindMany } =
+      createContext()
 
     const result = await getCorrelatedLiveQuizResponseExport(
       { id: 'quiz-id' },
@@ -160,8 +162,51 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
             in: [ElementBlockStatus.EXECUTED, ElementBlockStatus.ACTIVE],
           },
         }),
+        select: expect.objectContaining({
+          elements: expect.objectContaining({
+            where: { elementType: { not: ElementType.FREE_TEXT } },
+          }),
+        }),
       })
     )
+    expect(responseFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          instance: expect.objectContaining({
+            elementType: { not: ElementType.FREE_TEXT },
+          }),
+        }),
+      })
+    )
+  })
+
+  it('excludes free-text questions and answers from the CSV', async () => {
+    const freeTextResponse = {
+      ...defaultResponses[0]!,
+      instanceId: 11,
+      response: { value: 'private free-text answer' },
+    }
+    const { ctx } = createContext({
+      blocks: [
+        {
+          ...defaultBlocks[0],
+          elements: [
+            { id: 10, order: 0, elementType: ElementType.SC },
+            { id: 11, order: 1, elementType: ElementType.FREE_TEXT },
+          ],
+        },
+      ],
+      responses: [...defaultResponses, freeTextResponse],
+    })
+
+    const result = await getCorrelatedLiveQuizResponseExport(
+      { id: 'quiz-id' },
+      ctx
+    )
+
+    expect(result.content).toContain('block_01_question_01_execution_01')
+    expect(result.content).not.toContain('block_01_question_02_execution_01')
+    expect(result.content).not.toContain('private free-text answer')
   })
 
   it('keeps existing labels when a late response is added', async () => {

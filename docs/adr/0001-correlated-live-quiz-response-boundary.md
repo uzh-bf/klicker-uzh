@@ -16,4 +16,4 @@ Correlated publication is disabled by default during the first deployment phase.
 
 ## Consequences
 
-Aggregate and correlated live quizzes cannot share one persistence path, and correlated mode remains incompatible with gamification because leaderboard state can reidentify response rows. Assessment continues to require identifiable tracing. Differential privacy and automatic PII removal are future research-export controls; free-text teaching exports currently retain participant-entered content and show a warning.
+Aggregate and correlated live quizzes cannot share one persistence path, and correlated mode remains incompatible with gamification because leaderboard state can reidentify response rows. Assessment continues to require identifiable tracing. The v3.5 correlated teaching export excludes free-text answers; differential privacy and broader PII controls remain future research-export work.

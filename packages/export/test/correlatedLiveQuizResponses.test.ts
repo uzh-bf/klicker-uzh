@@ -26,7 +26,7 @@ const responses = [
     respondentLabel: 2,
     instanceId: 10,
     blockExecution: 0,
-    response: { value: '=identifying free text\nsecond line' },
+    response: { value: '=formula-leading value\nsecond line' },
     correctness: 'PARTIAL',
     basePoints: 10,
     correctnessPoints: 3.5,
@@ -94,7 +94,7 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     )
   })
 
-  it('preserves free-text newlines, protects formulas, and escapes RFC 4180 CSV', () => {
+  it('protects formula-leading values and escapes RFC 4180 CSV', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',
       questions,
@@ -102,7 +102,7 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     })
 
     expect(result.csv).toContain(
-      '"\'=identifying free text\nsecond line",PARTIAL,15'
+      '"\'=formula-leading value\nsecond line",PARTIAL,15'
     )
     expect(result.csv).toContain('\r\n')
   })

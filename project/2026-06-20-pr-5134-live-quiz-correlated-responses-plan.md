@@ -15,7 +15,7 @@ Authority: [ADR 0001](../docs/adr/0001-correlated-live-quiz-response-boundary.md
 - No assessment behavior change. Assessment remains identifiable and auditable by design.
 - No backfill for old standard live quizzes. Future quizzes only.
 - No research / DP export in this slice. Later admin workflow.
-- No PII removal from free-text responses yet.
+- No broader PII controls for future research exports; v3.5 correlated teaching exports exclude free-text answers.
 - No per-respondent live UI. Live/evaluation UI stays aggregate-only.
 
 ## Code Quality Review Improvement Plan - 2026-07-30
@@ -59,7 +59,7 @@ Exact-commit thermo-nuclear, security, simplification, and branch crosscheck rev
 - Decision: labels are stable across re-exports after the quiz ends. Order internal identities by `HMAC(exportSalt, internalId)` before assigning labels; raw ids, response time, and join order are never exposed.
 - Decision: logged-in users may still use account internally for scoring/leaderboard, but export strips account identity.
 - Decision: temporary pseudonym remains visible on leaderboard, but export strips pseudonym.
-- Decision: free text included verbatim in teaching export for now; warn that free text can contain personal data.
+- Decision: v3.5 correlated teaching exports exclude free-text questions and answers; future research exports need separate PII controls.
 - Decision: duplicate submissions follow assessment semantics: first response counts; duplicate returns recorded-before.
 - Decision: anonymous correlated id persists per quiz if possible, survives reload/browser close; no cross-quiz reuse.
 - Decision: normal quiz editors can enable mode. No special permission.
@@ -88,7 +88,7 @@ German:
 
 Export warning:
 
-> Export uses random respondent labels and does not include names, emails, account ids, usernames, or temporary pseudonyms. Free-text answers may still contain personal data entered by participants.
+> Respondent labels in this export are randomly assigned; names, account identifiers, usernames, temporary pseudonyms, timestamps, and free-text answers are not included.
 
 ## Target Architecture
 
@@ -190,7 +190,7 @@ Output shape:
 - no email, participant id, username, temporary pseudonym, account type.
 - no submission or join timestamps.
 - unanswered cells are empty; scalar answers are plain text; structured answers use canonical compact JSON in one cell.
-- free text remains verbatim as data, but CSV formula-leading values are neutralized before download so spreadsheet software cannot execute participant input.
+- free-text questions are excluded before response-size preflight and CSV materialization; formula-leading values in included response types are neutralized before download so spreadsheet software cannot execute input.
 - RFC 4180-compatible quoting, CRLF rows, and UTF-8 with BOM so commas, quotes, line breaks, and German text open cleanly in spreadsheet tools.
 - response includes a safe filename, CSV content, and the privacy warning shown by the UI.
 
@@ -381,9 +381,9 @@ Do:
 - Use HMAC-sorted stable `respondent_N` labels.
 - Strip all identifiers and respondent type.
 - Use clean, deterministic headers, canonical structured values, formula-injection protection, and RFC 4180-compatible escaping.
-- Include free-text verbatim.
-- Give this export an explicit teaching-matrix privacy mode; do not overload the existing pseudonymized export mode that redacts free text.
-- Show the free-text privacy warning next to the download action and include it in export metadata where applicable.
+- Exclude free-text questions before response-size preflight and CSV materialization.
+- Keep this export as a pseudonymized teaching matrix, not a differential-privacy or research export.
+- Show the export warning next to the download action and include it in export metadata where applicable.
 - Export unavailable/empty for old or aggregate-only quizzes with clear message.
 - Apply a documented response-size guard and return a clear error rather than truncating.
 
@@ -401,7 +401,7 @@ Files:
 
 Check:
 
-- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text inclusion, authorization, status/mode gating, and size-limit failure.
+- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps/free-text values, authorization, status/mode gating, and size-limit failure.
 - DB-backed export with fixture data across logged-in, temporary, anonymous respondents.
 - Agent-browser download check: correct filename, headers, row shape, warning, and unavailable states.
 
@@ -439,7 +439,7 @@ Commit:
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
 - Public anonymous participation has no Sybil resistance. Clearing or rejecting the quiz cookie can create another respondent row; document this limitation and rely on deployment-level abuse controls rather than a spoofable application IP heuristic.
 - Quiz-scoped respondent cookies are bearer credentials. Keep them `HttpOnly`, signed, quiz-scoped, and verified server-side before writing correlated responses.
-- Free text can identify participants despite export pseudonyms. Warning required.
+- Free text is stored for response processing but excluded from the v3.5 correlated teaching export; future research use needs separate PII controls.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
 - Live worker has Redis-first design; DB writes must not slow response path enough to harm live quiz UX.
 - Returning CSV through GraphQL is intentionally simple for v1 but needs an explicit size limit; large-export streaming remains a later option.
@@ -650,7 +650,7 @@ Later research:
 - Abort cleanup applies only to correlated-export quizzes and deliberately removes their temporary research-response dataset. Assessment remains completely separate and always identifiable.
 - The legacy identifiable export continues to exclude quizzes currently in correlated mode. Transactional abort cleanup is the invariant that prevents correlated rows from surviving a later mode transition.
 - Public anonymous participation remains intentionally susceptible to cookie clearing and identity farming. This PR does not add application-level Sybil detection.
-- The export remains pseudonymized, not anonymous or differentially private. Differential-privacy and free-text PII treatment remain research follow-ups.
+- The export remains pseudonymized, not anonymous or differentially private. The v3.5 teaching export excludes free-text answers; broader PII treatment remains a research follow-up.
 - APP_SECRET key rotation still requires draining unsettled outbox rows because this slice does not add key versioning.
 
 ### Implementation Slices
@@ -719,8 +719,8 @@ final-remediation pass.
   an explicit product decision, and the table also supports future controlled
   export evolution without changing historical labels.
 - Export authorization remains `WRITE`. This matches the existing lecturer
-  evaluation/download authorization model; the UI continues to warn that
-  free-text responses may contain participant-entered personal data.
+  evaluation/download authorization model; the UI states that free-text
+  answers are excluded from the v3.5 teaching export.
 - Public anonymous participation remains intentionally vulnerable to cookie
   resets. Rate limiting and Sybil controls are deployment follow-ups, not a
   substitute for the accepted mutation and shape bounds.
@@ -766,6 +766,8 @@ final-remediation pass.
      comments and CI.
 
 ### Progress
+
+- 2026-08-09: Product ruling resolved the v3.5 privacy conflict in favour of excluding `FREE_TEXT` questions and answers from the correlated teaching CSV. The GraphQL export now filters them before response-size preflight and CSV materialization; bilingual warning copy, user tutorials, wiki/ADR text, the verification procedure, and focused tests are aligned. Focused export and GraphQL tests pass 7/7 and 9/9; affected builds and typechecks pass; and the real namespaced manage route was verified in English and German with screenshots. A seeded local fixture and authenticated GraphQL request produced a 169-byte CSV with the free-text answer and column absent. Branch reconciliation and exact-head verification remain.
 
 - 2026-07-30: Exact-commit remediation slices 1-4 are implemented. Structured
   responses are bounded by authored metadata and a hard mutation ceiling;

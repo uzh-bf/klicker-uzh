@@ -86,8 +86,11 @@ export async function getCorrelatedLiveQuizResponseExport(
             execution: true,
             order: true,
             elements: {
+              where: {
+                elementType: { not: DB.ElementType.FREE_TEXT },
+              },
               orderBy: { order: 'asc' },
-              select: { id: true, order: true },
+              select: { id: true, order: true, elementType: true },
             },
           },
         })
@@ -105,6 +108,7 @@ export async function getCorrelatedLiveQuizResponseExport(
           WHERE
             block."liveQuizId" = ${id}::uuid
             AND response."correctionOnly" = false
+            AND instance."elementType" <> 'FREE_TEXT'
         `
         if (
           !responseSize ||
@@ -118,7 +122,10 @@ export async function getCorrelatedLiveQuizResponseExport(
         const responses = await prisma.liveQuizResponse.findMany({
           where: {
             correctionOnly: false,
-            instance: { elementBlock: { liveQuizId: id } },
+            instance: {
+              elementBlock: { liveQuizId: id },
+              elementType: { not: DB.ElementType.FREE_TEXT },
+            },
           },
           select: {
             basePoints: true,
@@ -245,15 +252,19 @@ export async function getCorrelatedLiveQuizResponseExport(
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: exportData.displayName,
       questions: exportData.blocks.flatMap((block) =>
-        block.elements.map((instance) => ({
-          blockOrder: block.order,
-          questionOrder: instance.order,
-          instanceId: instance.id,
-          executions: Array.from(
-            { length: block.execution + 1 },
-            (_, index) => index
-          ),
-        }))
+        block.elements
+          .filter(
+            (instance) => instance.elementType !== DB.ElementType.FREE_TEXT
+          )
+          .map((instance) => ({
+            blockOrder: block.order,
+            questionOrder: instance.order,
+            instanceId: instance.id,
+            executions: Array.from(
+              { length: block.execution + 1 },
+              (_, index) => index
+            ),
+          }))
       ),
       responses: exportData.responses,
     })

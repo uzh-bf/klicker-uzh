@@ -2888,7 +2888,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     evaluation: {
       downloadCorrelatedResponses: 'Antworten als CSV herunterladen',
       responseExportPrivacyWarning:
-        'Die Personenbezeichnungen sind zufällig. Freitextantworten können weiterhin von Teilnehmenden eingegebene Personendaten enthalten.',
+        'Die Bezeichnungen in diesem Export werden zufällig vergeben; Namen, Konto-IDs, Benutzernamen, temporäre Pseudonyme, Zeitstempel und Freitextantworten werden nicht aufgenommen.',
       responseExportFailed:
         'Der Antwortexport konnte nicht heruntergeladen werden.',
       responseExportEmpty:

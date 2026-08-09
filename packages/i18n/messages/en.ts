@@ -2844,7 +2844,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     evaluation: {
       downloadCorrelatedResponses: 'Download response CSV',
       responseExportPrivacyWarning:
-        'Respondent labels are random. Free-text answers may still contain personal data entered by participants.',
+        'Respondent labels in this export are randomly assigned; names, account identifiers, usernames, temporary pseudonyms, timestamps, and free-text answers are not included.',
       responseExportFailed: 'The response export could not be downloaded.',
       responseExportEmpty: 'No correlated responses are available to export.',
       responseExportNotReady:
