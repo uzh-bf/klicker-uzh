@@ -96,9 +96,9 @@ Evidence files:
 - Existing delivery path: PR #5261, `https://github.com/uzh-bf/klicker-uzh/pull/5261`
 - Target: `v3`
 - Live base incorporated by merge commit: `014ac216a`
-- Implementation commits: `508a3dccd`, `8aa0942d2`, plus the pending maintainability refactor commit.
-- Exact final review range: to be recorded after the pending refactor and final review commits.
-- Current worktree state: maintainability refactor staged next; do not push without explicit authorization.
+- Implementation commits: `508a3dccd`, `8aa0942d2`, and `a445253e2`.
+- Exact integrated review range: `30df9e9d67c0bc8f2067960478f821f4944d94d8..a445253e2`.
+- Current worktree state: clean after the refactor commit; do not push without explicit authorization.
 
 ## Publication boundary
 
