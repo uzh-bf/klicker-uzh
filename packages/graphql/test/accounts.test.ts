@@ -306,6 +306,53 @@ describe('Account demo element seeding', () => {
         },
       ],
     })
+  })
+
+  it('snapshots the relational demos in the Demo Live Quiz', async () => {
+    await changeInitialSettings(
+      {
+        shortname: userOne.shortname,
+        locale: Locale.en,
+        sendUpdates: false,
+        seedDemoElements: true,
+      },
+      userOneCtx
+    )
+
+    const collection = await prisma.answerCollection.findFirstOrThrow({
+      where: {
+        ownerId: userOne.id,
+        name: 'Demo Teaching Activities',
+      },
+      include: { entries: true },
+    })
+    const entryId = (value: string) => {
+      const entry = collection.entries.find(
+        (candidate) => candidate.value === value
+      )
+      if (!entry)
+        throw new Error(`Missing test answer collection entry: ${value}`)
+      return entry.id
+    }
+    const elements = await prisma.element.findMany({
+      where: {
+        ownerId: userOne.id,
+        name: { in: ['Demoquestion SE', 'Demoquestion CS'] },
+      },
+      include: {
+        answerCollection: { include: { entries: true } },
+        answerCollectionItems: true,
+      },
+    })
+    const selection = elements.find(
+      (element) => element.type === ElementType.SELECTION
+    )
+    const caseStudy = elements.find(
+      (element) => element.type === ElementType.CASE_STUDY
+    )
+    expect(selection).toBeDefined()
+    expect(caseStudy).toBeDefined()
+    const caseStudyOptions = caseStudy!.options as ElementOptionsCaseStudy
 
     const liveQuiz = await prisma.liveQuiz.findFirstOrThrow({
       where: { ownerId: userOne.id, name: 'Demo Live Quiz' },
