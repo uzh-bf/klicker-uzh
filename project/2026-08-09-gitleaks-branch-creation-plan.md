@@ -1,6 +1,6 @@
 # Gitleaks branch-creation scan hardening
 
-Status: READY FOR EXECUTION — Sol planning review integrated
+Status: IN PROGRESS — local implementation checks pass; final gates pending
 Date: 2026-08-09
 Branch: rs/gitleaks-branch-creation → target v3
 Owner: Roland Schlaefli
@@ -98,6 +98,13 @@ ci(security): scan full branch-creation commit ranges
   fixtures, the maintainability gate, the affected wiki update, and
   trigger-accurate acceptance language; retained the default-branch merge-base
   decision and rejected tip-only and full-history fallbacks.
+- 2026-08-09: Plan committed as 33c0bf37d. Workflow YAML and shell syntax
+  parsed successfully; Prettier passed for the workflow, wiki, and plan.
+- 2026-08-09: Disposable fixture passed: the all-zero fallback detected a
+  finding in an earlier commit across two commits while the tip-only control
+  passed; unavailable default branch and missing merge base both failed closed.
+- 2026-08-09: Gitleaks passed on the current tree and the normal introduced
+  range from origin/v3 to the plan commit. Final review gates remain pending.
 
 ## Finish state
 
