@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-03'
+timestamp: '2026-08-04'
 tags:
   - backend
   - prisma
@@ -90,6 +90,12 @@ Two independent seed paths — changing one does NOT update the other:
 2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
 Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+
+### First-login demo content
+
+First-login demo content is a third, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. `packages/graphql/src/services/demoQuestions.ts:seedDemoSelectionAndCaseStudyElements` receives the same transaction context for the relational collection-plus-elements bundle, and `packages/util/src/elements.ts:processElementData` snapshots it into the final untimed live-quiz block.
+
+This path does not run for users who opt out, does not backfill existing accounts, and is independent of the dev and Playwright fixture seeds above.
 
 ## Auth adapter compatibility
 
