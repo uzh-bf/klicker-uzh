@@ -283,7 +283,7 @@ function CourseOverviewHeader({
           })}
         </div>
       </div>
-      <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 lg:flex-initial lg:basis-auto">
+      <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 sm:flex-initial sm:basis-auto">
         {course.isEditor ? (
           <Button
             basic
