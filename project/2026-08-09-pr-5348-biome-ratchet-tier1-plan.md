@@ -377,6 +377,11 @@ ci(quality): enforce Biome lint
   for numerical solution ranges and exact solutions in the evaluation sidebar
   and shared histogram. Both views now use occurrence-aware keys, preserving
   repeated valid values without using array positions.
+- 2026-08-10: The final integrated review found that the username validation
+  effect depended on inline Formik callback identities. `DebouncedUsernameField`
+  now reads the latest callback through a ref and triggers validation only when
+  the availability result changes; the shared-components package has no test
+  harness, so its package check is the focused verification boundary.
 
 ## Finish state
 

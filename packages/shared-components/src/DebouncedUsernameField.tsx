@@ -40,12 +40,19 @@ function DebouncedUsernameField({
 }: DebouncedUsernameFieldProps) {
   const t = useTranslations()
   const [field, meta, helpers] = useField<string>(name)
+  const validateFieldRef = useRef(validateField)
 
-  // validate field when valid value changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: valid intentionally triggers revalidation even though it is not read by the callback
+  // Keep the latest Formik callback without making validation depend on its
+  // inline caller identity.
   useEffect(() => {
-    validateField()
-  }, [validateField, valid])
+    validateFieldRef.current = validateField
+  }, [validateField])
+
+  // Validate the field when the availability result changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: valid is an intentional trigger; the latest callback is read through the ref
+  useEffect(() => {
+    validateFieldRef.current()
+  }, [valid])
 
   // check if initial username is valid
   // biome-ignore lint/correctness/useExhaustiveDependencies: the initial availability check intentionally runs once for the initial field value
