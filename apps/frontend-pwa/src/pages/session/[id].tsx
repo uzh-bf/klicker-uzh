@@ -163,32 +163,34 @@ function Index({ id }: { id: string }) {
     variables: { liveQuizId: id },
   })
 
+  const quizBlocks = data?.studentLiveQuiz?.blocks
+  const activeBlockIndex =
+    quizBlocks?.findIndex(
+      (block) => block.id === data?.studentLiveQuiz?.activeBlock?.id
+    ) ?? -1
+  const lastCompletedBlockIndex =
+    quizBlocks?.findLastIndex(
+      (block) => block.status === ElementBlockStatus.Executed
+    ) ?? -1
+
   // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
   useEffect(() => {
-    if (data?.studentLiveQuiz?.activeBlock) {
-      const activeBlockIndex = data.studentLiveQuiz.blocks?.findIndex(
-        (b) => b.id === data.studentLiveQuiz?.activeBlock?.id
-      )
-
-      if (activeBlockIndex !== -1 && typeof activeBlockIndex === 'number') {
-        setSelectedBlock(activeBlockIndex)
-      }
-    } else if (selectedBlock === null || selectedBlock === -1) {
-      const lastCompletedBlockIndex =
-        data?.studentLiveQuiz?.blocks?.findLastIndex(
-          (b) => b.status === ElementBlockStatus.Executed
-        )
-
-      if (
-        lastCompletedBlockIndex !== -1 &&
-        typeof lastCompletedBlockIndex === 'number'
-      ) {
-        setSelectedBlock(lastCompletedBlockIndex)
-      } else {
-        setSelectedBlock(-1)
-      }
+    if (activeBlockIndex !== -1) {
+      setSelectedBlock(activeBlockIndex)
     }
-  }, [data, selectedBlock])
+  }, [activeBlockIndex])
+
+  useEffect(() => {
+    if (activeBlockIndex !== -1) return
+
+    setSelectedBlock((currentBlock) => {
+      if (currentBlock !== null && currentBlock !== -1) {
+        return currentBlock
+      }
+
+      return lastCompletedBlockIndex !== -1 ? lastCompletedBlockIndex : -1
+    })
+  }, [activeBlockIndex, lastCompletedBlockIndex])
 
   // keep right-side tab valid when availability changes, without overriding user choice
   useEffect(() => {

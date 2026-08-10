@@ -20,6 +20,7 @@ import CreationFormValidator from '../CreationFormValidator'
 import InstanceUpdateOption from '../InstanceUpdateOption'
 import StackBlockCreation from '../StackBlockCreation'
 import WizardNavigation from '../WizardNavigation'
+import { createGroupActivityClueClientId } from '../WizardLayout'
 import GroupActivityClueModal from './GroupActivityClueModal'
 import { GroupActivityWizardStepProps } from './GroupActivityWizard'
 
@@ -27,6 +28,17 @@ interface GroupActivityStackCluesProps extends GroupActivityWizardStepProps {
   acceptedTypes: ElementType[]
   selection: Record<number, Element>
   resetSelection: () => void
+}
+
+function createOccurrenceKeyFactory() {
+  const occurrences = new Map<string, number>()
+
+  return (value: unknown) => {
+    const signature = JSON.stringify(value)
+    const occurrence = occurrences.get(signature) ?? 0
+    occurrences.set(signature, occurrence + 1)
+    return `${signature}-${occurrence}`
+  }
 }
 
 function GroupActivityStackClues({
@@ -48,6 +60,7 @@ function GroupActivityStackClues({
   const t = useTranslations()
   const [clueIx, setClueIx] = useState<number | undefined>(undefined)
   const [clueModal, setClueModal] = useState(false)
+  const clueErrorKey = createOccurrenceKeyFactory()
 
   // get all instances of elements alongside with the included element version
   const instanceVersionMap = useMemo(
@@ -144,7 +157,7 @@ function GroupActivityStackClues({
                                     (error, ix) =>
                                       error && (
                                         <li
-                                          key={`error-clue-${typeof error === 'string' ? error : error.name}`}
+                                          key={`error-clue-${clueErrorKey(error)}`}
                                         >{`${t('shared.generic.clueN', {
                                           number: ix + 1,
                                         })}: ${
@@ -175,7 +188,7 @@ function GroupActivityStackClues({
                       <div className="mt-3 grid max-h-32 w-full grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2 lg:grid-cols-3">
                         {values.clues.map((clue, ix) => (
                           <div
-                            key={`${clue.name}-${clue.type}-${clue.value}`}
+                            key={clue.clientId}
                             className={twMerge(
                               'flex w-full flex-row justify-between rounded border text-sm',
                               Array.isArray(errors.clues) &&
@@ -224,11 +237,20 @@ function GroupActivityStackClues({
                           open={clueModal}
                           setOpen={setClueModal}
                           pushClue={(values) => {
-                            push(values)
+                            push({
+                              ...values,
+                              clientId: createGroupActivityClueClientId(),
+                            })
                             setClueIx(undefined)
                           }}
-                          replaceClue={(values) => {
-                            replace(clueIx ?? -1, values)
+                          replaceClue={(clueValues) => {
+                            const currentClue = values.clues[clueIx ?? -1]
+                            replace(clueIx ?? -1, {
+                              ...clueValues,
+                              clientId:
+                                currentClue?.clientId ??
+                                createGroupActivityClueClientId(),
+                            })
                             setClueIx(undefined)
                           }}
                           initialValues={

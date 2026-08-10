@@ -20,6 +20,7 @@ import CompletionStep from '../CompletionStep'
 import WizardLayout, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
+  createGroupActivityClueClientId,
 } from '../WizardLayout'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
 import GroupActivityInformationStep from './GroupActivityInformationStep'
@@ -261,6 +262,7 @@ function GroupActivityWizard({
     clues:
       initialValues?.clues?.map((clue) => {
         return {
+          clientId: createGroupActivityClueClientId(),
           name: clue.name,
           displayName: clue.displayName,
           type: clue.type,

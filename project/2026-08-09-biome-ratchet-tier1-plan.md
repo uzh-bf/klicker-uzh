@@ -40,11 +40,11 @@ opening another rule-sized PR.
   b3058549622534a23dd0ee274e1432709a4d3323. Current origin/v3 is
   338763a41393eb1e773bdb43efcfac3ef4e43334 after two unrelated commits
   (chat welcome starters and a staging-promotion log). Neither touches the
-  Biome package, workflow, remediation, or plan surfaces. For reviewed head
-  `3f6b2ede5e3bc0d89aee2e2c72d1c1baab3cb1a2`, the graph is two commits behind
-  and 19 commits ahead of origin/v3, with 17 non-merge commits ahead; the
-  merge-base is `b3058549622534a23dd0ee274e1432709a4d3323`. No scoped conflict
-  requires a base refresh before review.
+  Biome package, workflow, remediation, or plan surfaces. The merge-base is
+  `b3058549622534a23dd0ee274e1432709a4d3323`; exact ahead/behind counts and
+  reviewed heads are recorded in the immutable-range review reports rather
+  than copied into this plan, where they become stale after each review-fix
+  commit. No scoped conflict requires a base refresh before review.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
   remains the Next.js safety net.
@@ -338,7 +338,14 @@ ci(quality): enforce Biome lint
   that still accepted arbitrary non-nullish values, content-derived Formik
   error keys that could collide for repeated messages, and stale ahead/behind
   topology counts. The branch now uses a strict `EmptyElementOptions` contract,
-  an occurrence-aware validation-key factory, and exact reviewed-range counts.
+  an occurrence-aware validation-key factory, and immutable base/merge-base
+  topology references.
+- 2026-08-10: The follow-up maintainability review found that the PWA session
+  effect could overwrite a participant's historical block selection on data
+  refresh and that group-activity clues still used mutable content keys. The
+  branch now derives primitive effect triggers with a functional fallback,
+  gives clues client-only occurrence IDs, uses occurrence-aware clue errors,
+  and strips the IDs before GraphQL submission.
 
 ## Finish state
 

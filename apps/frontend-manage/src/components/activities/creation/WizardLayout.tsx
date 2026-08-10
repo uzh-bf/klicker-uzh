@@ -7,6 +7,7 @@ import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 export type GroupActivityClueFormValues = {
+  clientId: string
   name: string
   displayName: string
   type: ParameterType.String | ParameterType.Number
@@ -36,9 +37,14 @@ export interface ElementInstanceFormInput {
 }
 
 let nextElementInstanceClientId = 0
+let nextGroupActivityClueClientId = 0
 
 export function createElementInstanceClientId(): string {
   return `new-${nextElementInstanceClientId++}`
+}
+
+export function createGroupActivityClueClientId(): string {
+  return `clue-${nextGroupActivityClueClientId++}`
 }
 
 export interface ElementBlockFormValues {

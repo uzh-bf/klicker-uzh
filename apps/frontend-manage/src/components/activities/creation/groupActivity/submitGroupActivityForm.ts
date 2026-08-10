@@ -51,6 +51,8 @@ async function submitGroupActivityForm({
   setIsWizardCompleted,
   onError,
 }: GroupActivityFormSubmissionProps) {
+  const clues = values.clues.map(({ clientId: _clientId, ...clue }) => clue)
+
   try {
     let success = false
     if (id) {
@@ -64,7 +66,7 @@ async function submitGroupActivityForm({
           endDate: dayjs(values.endDate).utc().format(),
           multiplier: parseInt(values.multiplier),
           courseId: values.courseId!,
-          clues: values.clues,
+          clues,
           stack: {
             elements: values.stack.elements.map((element, ix) => ({
               elementId: element.id,
@@ -139,7 +141,7 @@ async function submitGroupActivityForm({
           endDate: dayjs(values.endDate).utc().format(),
           multiplier: parseInt(values.multiplier),
           courseId: values.courseId!,
-          clues: values.clues,
+          clues,
           stack: {
             elements: values.stack.elements.map((element, ix) => ({
               elementId: element.id,
