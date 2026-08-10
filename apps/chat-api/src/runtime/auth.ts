@@ -21,11 +21,16 @@ export async function authenticateParticipant(
     return { error: 'No authentication token found', status: 401 }
   }
 
+  const appSecret = process.env.APP_SECRET?.trim()
+  if (!appSecret) {
+    return { error: 'Authentication is not configured', status: 500 }
+  }
+
   let participantId: string
   try {
     const payload = await jwtVerify(
       participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET ?? '')
+      new TextEncoder().encode(appSecret)
     )
     participantId =
       typeof payload.payload.sub === 'string' ? payload.payload.sub : ''

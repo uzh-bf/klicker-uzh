@@ -182,4 +182,42 @@ describe('validated engine stream', () => {
     expect(text).toContain('Tool execution failed')
     expect(text).toContain('The chat engine could not complete the request.')
   })
+
+  test('closes after finish and rejects late upstream parts', async () => {
+    const finalize = vi.fn(async () => ({
+      creditsUsed: 0.000001,
+      finalPersistenceStatus: 'persisted' as const,
+    }))
+    const stream = createValidatedPlatformStream(
+      responseFor([
+        { type: 'text-start', id: 'text-1' },
+        { type: 'text-delta', id: 'text-1', delta: 'complete' },
+        { type: 'text-end', id: 'text-1' },
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: metadata(),
+        },
+        { type: 'text-start', id: 'late-text' },
+      ]),
+      {
+        metadata: () => ({
+          chatMode: 'tutor',
+          modelId: 'gpt-4.1-mini',
+          reasoningEffort: null,
+          userMessageId: 'user-1',
+          assistantMessageId: 'assistant-1',
+          creditsUsed: null,
+          finalPersistenceStatus: 'not-persisted',
+        }),
+        finalize,
+      }
+    )
+
+    const text = await read(stream)
+    expect(text).toContain('complete')
+    expect(text).not.toContain('late-text')
+    expect(text).toContain('data: [DONE]')
+    expect(finalize).toHaveBeenCalledTimes(1)
+  })
 })

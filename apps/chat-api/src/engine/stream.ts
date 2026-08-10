@@ -268,6 +268,7 @@ export function createValidatedPlatformStream(
   const activeTextIds = new Set<string>()
   const activeReasoningIds = new Set<string>()
   const startedTools = new Set<string>()
+  let abortMetadataPending = false
 
   const finalizeOnce = async (): Promise<PlatformMetadata> => {
     if (!finalized) {
@@ -291,6 +292,18 @@ export function createValidatedPlatformStream(
       ? trimmed.slice('data: '.length)
       : trimmed
     const parsed = parseEngineStreamPart(JSON.parse(payload))
+    if (
+      state.status !== 'streaming' &&
+      !(
+        state.status === 'aborted' &&
+        abortMetadataPending &&
+        parsed.type === 'abort'
+      )
+    ) {
+      throw new InvalidEngineStreamError(
+        'Engine stream emitted a part after its terminal event.'
+      )
+    }
     validateIdentity(parsed, options.expected)
 
     if (parsed.type === 'text-start') {
@@ -313,7 +326,11 @@ export function createValidatedPlatformStream(
           'Reasoning end arrived before its start.'
         )
     }
-    if (parsed.type === 'tool-input-start') startedTools.add(parsed.toolCallId)
+    if (parsed.type === 'tool-input-start') {
+      if (startedTools.has(parsed.toolCallId))
+        throw new InvalidEngineStreamError('Duplicate tool input start.')
+      startedTools.add(parsed.toolCallId)
+    }
     if (
       (parsed.type === 'text-delta' && !activeTextIds.has(parsed.id)) ||
       (parsed.type === 'reasoning-delta' &&
@@ -348,17 +365,24 @@ export function createValidatedPlatformStream(
             )
           )
         )
+        controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+        await reader.cancel()
+        controller.close()
         return
       }
       state.status = 'finished'
       const metadata = await finalizeOnce()
       controller.enqueue(encodeSse(platformFinishPart(parsed, metadata)))
+      controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+      await reader.cancel()
+      controller.close()
       return
     }
 
     consumePart(state, parsed)
     if (parsed.type === 'message-metadata' && parsed.messageMetadata.aborted) {
       state.status = 'aborted'
+      abortMetadataPending = true
       const metadata = await finalizeOnce()
       controller.enqueue(encodeSse(platformMetadataPart(parsed, metadata)))
       return
@@ -373,6 +397,10 @@ export function createValidatedPlatformStream(
         )
       }
       controller.enqueue(encodeSse(parsed))
+      abortMetadataPending = false
+      controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+      await reader.cancel()
+      controller.close()
       return
     }
 
@@ -385,6 +413,9 @@ export function createValidatedPlatformStream(
         )
       }
       controller.enqueue(encodeSse(adaptPlatformPart(parsed)))
+      controller.enqueue(textEncoder.encode('data: [DONE]\n\n'))
+      await reader.cancel()
+      controller.close()
       return
     }
 
@@ -423,7 +454,12 @@ export function createValidatedPlatformStream(
         buffer = lines.pop() ?? ''
         for (const line of lines) {
           await consumeLine(line, controller)
-          if (state.status === 'error' || state.status === 'finished') break
+          if (
+            state.status === 'error' ||
+            state.status === 'finished' ||
+            (state.status === 'aborted' && !abortMetadataPending)
+          )
+            break
         }
       } catch (error) {
         if (state.status === 'streaming') {

@@ -368,26 +368,21 @@ export async function finalizeAssistantTurn(
     if (input.creditsUsed === null || input.creditsUsed <= 0) {
       return { persisted: true, creditsCharged: false }
     }
-    const credits = await tx.chatUsageCredits.findUnique({
-      where: {
-        participantId_chatbotId: {
-          participantId: input.participantId,
-          chatbotId: input.chatbotId,
-        },
-      },
+    const creditKey = {
+      participantId: input.participantId,
+      chatbotId: input.chatbotId,
+    }
+    const decremented = await tx.chatUsageCredits.updateMany({
+      where: { ...creditKey, current: { gte: input.creditsUsed } },
+      data: { current: { decrement: input.creditsUsed } },
     })
-    if (!credits) throw new Error('Credits record not found')
-    await tx.chatUsageCredits.update({
-      where: {
-        participantId_chatbotId: {
-          participantId: input.participantId,
-          chatbotId: input.chatbotId,
-        },
-      },
-      data: {
-        current: Math.max(0, credits.current.toNumber() - input.creditsUsed),
-      },
-    })
+    if (decremented.count === 0) {
+      const clamped = await tx.chatUsageCredits.updateMany({
+        where: creditKey,
+        data: { current: 0 },
+      })
+      if (clamped.count === 0) throw new Error('Credits record not found')
+    }
     return { persisted: true, creditsCharged: true }
   })
 }
