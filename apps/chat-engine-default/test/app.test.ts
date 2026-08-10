@@ -157,6 +157,20 @@ describe('default chat engine', () => {
             },
           ],
         },
+        {
+          id: 'assistant-tool-error-1',
+          role: 'assistant' as const,
+          parts: [
+            {
+              type: 'tool-call' as const,
+              toolCallId: 'call-history-error-1',
+              toolName: 'doc_query',
+              input: { query: 'missing' },
+              output: { error: 'unavailable' },
+              isError: true,
+            },
+          ],
+        },
       ],
       tools: [
         {
@@ -173,9 +187,11 @@ describe('default chat engine', () => {
     }
     const executed: Array<Record<string, unknown>> = []
     let streamCallCount = 0
+    let observedPrompt: unknown
     const model = new MockLanguageModelV3({
-      doStream: async ({ abortSignal }) => {
+      doStream: async ({ abortSignal, prompt }) => {
         streamCallCount += 1
+        if (streamCallCount === 1) observedPrompt = prompt
         return {
           stream:
             streamCallCount === 1
@@ -261,6 +277,17 @@ describe('default chat engine', () => {
         token: 'mcp-secret',
       },
     ])
+    const toolResults = (
+      observedPrompt as Array<{ role: string; content: unknown[] }>
+    )
+      .filter((message) => message.role === 'tool')
+      .flatMap((message) => message.content)
+    expect(toolResults).toContainEqual({
+      type: 'tool-result',
+      toolCallId: 'call-history-error-1',
+      toolName: 'doc_query',
+      output: { type: 'error-json', value: { error: 'unavailable' } },
+    })
     expect(model.doStreamCalls).toHaveLength(2)
   })
 
