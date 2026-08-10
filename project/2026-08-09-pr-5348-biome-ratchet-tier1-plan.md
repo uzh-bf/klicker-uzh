@@ -261,7 +261,7 @@ is unavailable.
 | Accessibility interactions and button semantics | Full `check:all`; chat typecheck and 31 existing chat test files / 231 tests | Browser verification remains blocked by the recorded DevPod TLS/routing failure. |
 | GraphQL-facing activity and identity changes | Workspace typechecks, codegen-related checks, and security review | Clean GraphQL bundle and isolated integration suite remain blocked by the recorded Rollup and port-80 environment failures; current-head CI must prove them. |
 | Seed decision serialization | `prisma-data` check; flashcards are filtered and unsupported types fail fast | Seed execution is not run locally; CI or a working self-contained database environment must exercise the seed path. |
-| Biome enforcement and advisory boundary | Zero error-tier diagnostics, full `check:all`, pre-commit, Gitleaks, and CI configuration review | Warnings, infos, Knip, browser, pinned Node 24, GraphQL integration, and exact-head CI remain explicitly tracked as advisory or blocked evidence until proven. |
+| Biome enforcement and advisory boundary | Zero error-tier diagnostics, full `check:all`, pre-commit, Gitleaks, CI configuration review, and full production builds in host Node 24 and the pinned DevPod | Warnings, infos, Knip, browser, clean GraphQL integration, seed execution, and exact-head CI remain explicitly tracked as advisory or blocked evidence. |
 
 ## Progress
 
@@ -429,6 +429,25 @@ is unavailable.
   resolving the earlier 29-file/226-test evidence gap. The remaining browser,
   pinned-Node-24, GraphQL integration, seed-execution, and exact-head CI gaps
   are environment or publication evidence gaps recorded above.
+- 2026-08-10: Investigation of the host pre-push build failure confirmed that
+  Rollup's TypeScript incremental state was not portable between the host and
+  DevPod workspaces; the sandbox also cannot provide DevRouter's `ps`-based
+  process identity check. Rollup's TypeScript plugin is now explicitly
+  non-incremental in every Rollup config, including both Export targets, while
+  Turbo remains the package-output cache. The host Node 24 build passed 22/22
+  tasks in about 1m33s, and `devrouter exec . -- pnpm run build` passed 22/22
+  tasks in the pinned DevPod in about 2m26s. The known compiler, Next.js, and
+  missing-message warnings remain non-blocking and unchanged.
+- 2026-08-10: The normal pre-commit hook then exposed type errors from the
+  strict `EmptyElementOptions` contract added earlier in this branch. The
+  validator now returns normalized stored `ElementOptions`, content and
+  flashcard responses keep empty options, selection and case-study responses
+  add only their relevant derived metadata, and GraphQL's shared element
+  props no longer inherit Prisma's raw JSON options field. The focused
+  GraphQL check and host-level `pnpm run check:all` now pass; the full DevPod
+  GraphQL suite remains an environment gap because its Redis endpoints are
+  unavailable and its seeded point-correction fixture is not at the expected
+  state.
 
 ## Finish state
 
