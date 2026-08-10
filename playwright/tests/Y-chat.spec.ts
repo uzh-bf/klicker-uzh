@@ -126,6 +126,27 @@ test.describe('Chatbot Disclaimer Flow', () => {
     await expect(content).toContainText('What happens after your choice')
   })
 
+  test('Disclaimer explains consequences before the explicit actions', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    const content = page.getByTestId('chat-disclaimer-content')
+    const consequences = page.getByTestId('chat-disclaimer-consequences')
+    const actions = page.getByTestId('chat-disclaimer-actions')
+
+    await expect(consequences).toBeVisible()
+    await expect(actions).toBeVisible()
+    await expect(content.getByRole('button', { name: /^close$/i })).toHaveCount(
+      0
+    )
+    await expect(
+      consequences.locator(
+        'xpath=following-sibling::*[@data-cy="chat-disclaimer-actions"]'
+      )
+    ).toHaveCount(1)
+  })
+
   test('Accepting disclaimer closes modal and enables chat', async ({
     page,
   }) => {
