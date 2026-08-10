@@ -76,24 +76,30 @@ export const imageAttachmentSchema = z
     }
   })
 
-const textPartSchema = z.object({
-  type: z.literal('text'),
-  text: z.string().max(200_000),
-})
+const textPartSchema = z
+  .object({
+    type: z.literal('text'),
+    text: z.string().max(200_000),
+  })
+  .strict()
 
-const reasoningPartSchema = z.object({
-  type: z.literal('reasoning'),
-  text: z.string().max(200_000),
-})
+const reasoningPartSchema = z
+  .object({
+    type: z.literal('reasoning'),
+    text: z.string().max(200_000),
+  })
+  .strict()
 
-const toolCallPartSchema = z.object({
-  type: z.literal('tool-call'),
-  toolCallId: boundedString(128),
-  toolName: boundedString(256),
-  input: z.unknown().optional(),
-  output: z.unknown().optional(),
-  isError: z.boolean().optional(),
-})
+const toolCallPartSchema = z
+  .object({
+    type: z.literal('tool-call'),
+    toolCallId: boundedString(128),
+    toolName: boundedString(256),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    isError: z.boolean().optional(),
+  })
+  .strict()
 
 const messagePartSchema = z.union([
   textPartSchema,
@@ -119,7 +125,7 @@ export const approvedToolSchema = z
       .regex(/^[A-Za-z0-9_.-]+$/),
     description: z.string().max(2_000).optional(),
     inputSchema: z.record(z.unknown()),
-    serverId: boundedString(128).optional(),
+    serverId: boundedString(128),
   })
   .strict()
 
@@ -199,6 +205,19 @@ export const engineChatRequestSchema = z
     traceContext: traceContextSchema.optional(),
   })
   .strict()
+  .superRefine((request, ctx) => {
+    const seenNames = new Set<string>()
+    request.tools.forEach((tool, index) => {
+      if (seenNames.has(tool.name)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['tools', index, 'name'],
+          message: 'Tool names must be unique within a request.',
+        })
+      }
+      seenNames.add(tool.name)
+    })
+  })
 
 const tokenSchema = z.number().int().nonnegative().nullable()
 

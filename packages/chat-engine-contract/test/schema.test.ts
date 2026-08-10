@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  conformanceAbortStream,
   conformanceRequest,
   conformanceStream,
   engineChatRequestSchema,
@@ -17,6 +18,9 @@ describe('chat engine contract', () => {
     expect(
       conformanceStream.map((part) => parseEngineStreamPart(part))
     ).toEqual(conformanceStream)
+    expect(
+      conformanceAbortStream.map((part) => parseEngineStreamPart(part))
+    ).toEqual(conformanceAbortStream)
   })
 
   test('requires exactly one explicit provider credential mode', () => {
@@ -79,6 +83,34 @@ describe('chat engine contract', () => {
         type: 'tool-input-available',
         toolCallId: 'call-1',
         toolName: 'doc_query',
+      }).success
+    ).toBe(false)
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        messages: [
+          {
+            ...conformanceRequest.messages[0],
+            parts: [{ type: 'text', text: 'question', extra: true }],
+          },
+        ],
+      }).success
+    ).toBe(false)
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        tools: [
+          {
+            name: 'doc_query',
+            inputSchema: { type: 'object' },
+            serverId: 'server-1',
+          },
+          {
+            name: 'doc_query',
+            inputSchema: { type: 'object' },
+            serverId: 'server-2',
+          },
+        ],
       }).success
     ).toBe(false)
   })
