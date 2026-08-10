@@ -1,0 +1,46 @@
+{
+  "name": "@klicker-uzh/chat-api",
+  "version": "3.4.0-alpha.67",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@hono/node-server": "1.19.11",
+    "@klicker-uzh/chat-engine-contract": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
+    "hono": "4.12.30",
+    "jose": "5.9.4",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/node": "^24.10.1",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.9",
+    "tsx": "~4.19.4",
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
+  },
+  "scripts": {
+    "build": "run-s build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "rollup -c",
+    "check": "tsc --noEmit",
+    "dev": "tsx --watch src/index.ts",
+    "start:test": "node dist/index.js",
+    "test:run": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}
