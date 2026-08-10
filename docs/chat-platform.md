@@ -11,14 +11,15 @@ tags:
 
 # Chat Platform (`apps/chat`)
 
-> **Framework status (2026-08-03):** the AI-SDK route-handler layer described
-> here **is** the current production path — the AI SDK 7 / assistant-ui 0.14
-> upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
-> A Mastra-based `apps/chat-api` service split remains an open exploration in the
-> draft PRs #5126 / #5129 (tutor architecture in #5129) with no landing date, so
-> build on this layer as normal production work; the earlier "don't invest here"
-> framing is obsolete. Staged doc/skill changes for that exploration:
-> `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
+> **Framework status (2026-08-10):** the AI-SDK route-handler layer described
+> here **is** still the current production path — the AI SDK 7 / assistant-ui
+> 0.14 upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
+> Slice 2 of the public chat split now adds an unconnected Hono tracer at
+> `apps/chat-api`: it authenticates the participant cookie, requires an existing
+> owned thread, validates the versioned engine manifest and stream, and keeps
+> Prisma persistence and credit charging on the public side. The frontend still
+> calls the Next route until the later conversation-surface and frontend-cutover
+> slices are complete; do not treat the tracer as a production cutover.
 
 **This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
@@ -27,6 +28,8 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
+- `apps/chat-api/src/` — the Slice 2 Hono tracer and engine adapter; generation is
+  degraded when `CHAT_ENGINE_URL` is unavailable or its manifest is incompatible.
 - `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.
