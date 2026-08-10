@@ -1,8 +1,9 @@
 # Assessment Audit Logging Design
 
-- **Status:** Approved decisions (revision 6), awaiting written-spec review
+- **Status:** Approved for implementation (revision 7)
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-06 (revision 6 with durable client outbox)
+- **Last updated:** 2026-08-10 (revision 7 with delivery, retention, and
+  rollout rulings)
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946)
 
@@ -18,8 +19,8 @@ or "I did not delete that question."
 The production evidence store is Azure Table Storage. Application code treats
 it as append-only. Human evidence access is controlled through Azure data-plane
 authorization, independently of Klicker roles; the intended Resource Group
-members are the user and their supervisor. A local operator CLI produces a
-canonical JSON evidence bundle and a readable CSV projection.
+members are the platform owner and the platform engineer. A local operator CLI
+produces a canonical JSON evidence bundle and a readable CSV projection.
 
 Server evidence uses two emission lanes that converge on one PostgreSQL outbox
 and one Azure delivery pipeline. Lane 1 writes canonical audit records directly
@@ -58,8 +59,10 @@ the blobs preserve media and detect later evidence mutation or deletion.
 
 ## Decision log
 
-These decisions were confirmed through the design review and grilling session
-completed on 2026-08-06.
+Decisions 1–16 were confirmed through the design review and grilling session
+completed on 2026-08-06. Decisions 17–26 were confirmed through the
+finalization grilling session on 2026-08-10; where they refine an earlier
+decision, the later decision governs.
 
 | # | Decision |
 | --- | --- |
@@ -79,6 +82,16 @@ completed on 2026-08-06.
 | 14 | The rollout requires a UZH privacy review before the pilot. Formal approval is required only if the applicable UZH process demands it. |
 | 15 | Delivery is organized as two sequential native stacks: authoritative evidence first, then client-observed evidence. |
 | 16 | The browser-survival guarantee begins only after the IndexedDB transaction commits and covers ordinary reloads, browser restarts, and temporary offline periods for a seven-day replay window. Expired records are purged the next time the origin runs; IndexedDB cannot execute deletion while Klicker is not running. Replay-only token issuance is also capped from trusted server-side lifecycle time, so an altered browser clock cannot extend replay. Manual storage clearing, browser eviction, private-session termination, device loss, and failure before the commit remain explicit limitations. |
+| 17 | Stack 1 must be production-ready for the first assessment quiz of the semester in mid-September 2026. Stack 1 is the committed September deliverable; Stack 2 is best-effort for the same date. |
+| 18 | Teaching never blocks on audit availability. If rollout slips, early quizzes run without coverage; the resulting gap is permanent and is documented honestly in exports. |
+| 19 | Stack 1 is delivered in two tiers. Launch-gating for mid-September: contract package, outbox and transaction helper, dispatcher and Table delivery, activation and rollout baselines with immutable media capture, lecturer and system producers, Hatchet submission materialization, fail-closed semantics, and basic monitoring. Fast-follow after launch: the manifest sealer first (target within about four weeks), then operator-CLI export polish, quarantine tooling, full dashboards, and the retention worker last. Until the manifest sealer lands, outbox rows accumulate and tamper evidence is weaker; this is accepted. |
+| 20 | Stack 2 ships in September only if the launch-gating tier of Stack 1 is staging-proven by about September 1 and the privacy review has explicitly cleared plaintext IndexedDB storage. Otherwise Stack 2 defers until before the first high-stakes assessment. |
+| 21 | The privacy gate is split per stack: the central storage, retention, and access review gates the Stack 1 pilot; the browser-storage ruling additionally gates Stack 2 client capture. The security concept (SIKO) receives a delta chapter near the end of Stack 1. |
+| 22 | Audit infrastructure is provisioned through the existing df-cloud Pulumi infrastructure in a dedicated resource group during week 1. The audit ingress runs in the same AKS cluster as a separate deployment with its own route; cluster-level shared fate is an accepted, documented limitation. |
+| 23 | The two human evidence owners are the platform owner and the platform engineer, granted through Azure RBAC. The engineer who implements the pipeline is accepted as an evidence owner inside the trusted-operator boundary. |
+| 24 | Retention uses semester-batch deletion with fixed calendar semesters (HS: September 1 – January 31; FS: February 1 – August 31). A batch runs one month after each semester start and deletes only evidence whose completion anchor is at least twelve months old, yielding at least twelve and at most about nineteen months of effective retention (one inter-batch interval beyond the floor). Investigation holds still pause deletion per assessment. This replaces the rolling per-assessment deletion of decision 10; the one-year floor stands. |
+| 25 | PRs #4872 and #4946 are quarry: mining them for reusable pieces plus a coverage mapping is the first work item of the Stack 1 implementation plan. The closure decision follows Stack 1 plan approval. |
+| 26 | The design merges with implementation, not as a documentation-only PR: this document travels with the first stack layer. The platform engineer writes the Stack 1 implementation plan (one planning-gate review), the layer-1 contract package receives a full review, and subsequent layers proceed independently with standard per-layer PR review under a single topology owner. |
 
 ## Goals
 
@@ -101,8 +114,9 @@ completed on 2026-08-06.
   producers.
 - Provide verified event, participant-within-assessment, and complete-assessment
   exports through an Azure-authenticated owner CLI.
-- Retain evidence for one year after the assessment's final completion while
-  supporting explicit investigation holds.
+- Retain evidence for at least one year after the assessment's final
+  completion, deleted in semester batches, while supporting explicit
+  investigation holds.
 - Roll out progressively and report coverage gaps honestly.
 
 ## Non-goals
@@ -110,6 +124,9 @@ completed on 2026-08-06.
 - Instrumenting assessment-enabled PracticeQuiz, MicroLearning, or GroupActivity
   in v1.
 - A platform-wide authentication or observability system.
+- Client-capture availability during a cluster-level outage; the audit ingress
+  runs in the shared AKS cluster and is independent of application-level
+  failures only.
 - Replaying browser-side audit records after durable ingress acknowledgement or
   beyond seven days.
 - Persisting audit payloads in localStorage, sessionStorage, Cache Storage,
@@ -392,7 +409,10 @@ Hatchet types remain inside the response and worker adapters.
      a configured outage grace period; it cannot authorize evidence reads.
 
 5. **Independent client audit ingress** (`apps/audit-ingress`)
-   - Runs independently of the main Klicker backend and worker deployment.
+   - Runs in the shared AKS cluster as a separate deployment with its own
+     route, independently of the main Klicker backend and worker deployments.
+     It survives application-level outages such as backend, PostgreSQL, or
+     Hatchet failures; a cluster-level outage is accepted shared fate.
    - Validates the capture token and client batch, enforces size/rate limits,
      derives trusted actor/scope, and never logs raw event payloads.
    - Writes through the provider-neutral capture-queue interface. Its Azure
@@ -669,7 +689,7 @@ device or their subjective intent.
 | IndexedDB | Exact pending client answer state; opaque binding; event and submission IDs | Immediately after durable acknowledgement, or next cleanup after the seven-day replay window | Browser-origin storage on the participant's device |
 | Azure Storage Queue | Transient exact client events | After canonical outbox handoff and never beyond the central retention boundary | Managed ingress and drainer identities only |
 | PostgreSQL outbox | Canonical pending evidence | After Azure insertion and successful immutable-manifest coverage | Klicker audit services |
-| Azure Table Storage | Append-only canonical evidence | One year after the latest completion anchor unless held | Trusted Azure Resource Group members through Entra |
+| Azure Table Storage | Append-only canonical evidence | Semester-batch deletion once the completion anchor is at least one year old, unless held | Trusted Azure Resource Group members through Entra |
 | Azure Blob Storage | Immutable manifests and captured media | Same central retention boundary | Trusted Azure Resource Group members through Entra |
 | Local export | Verified JSON or CSV | Invoking operator's responsibility | Invoking Azure-authenticated operator |
 
@@ -1060,13 +1080,16 @@ members are outside v1.
   and are purged when the origin next runs cleanup. They contain neither
   credentials nor direct participant identifiers. V1 does not invent a custom
   browser cryptographic envelope; the UZH privacy review may require a reviewed
-  encryption design before permitting the pilot.
+  encryption design before permitting Stack 2 client capture.
 - No audit payload is persisted in localStorage, sessionStorage, Cache Storage,
   or cookies.
 - Raw answers and submission objects are removed from ordinary application logs.
 - Human Table and manifest access is granted only through explicit Azure
-  data-plane assignments to trusted Resource Group members. At design time, the
-  intended human readers are the user and their supervisor.
+  data-plane assignments to trusted Resource Group members. The intended human
+  readers are the platform owner and the platform engineer. The engineer who
+  implements the pipeline is accepted as an evidence owner inside the
+  trusted-operator boundary; independent oversight, if later required, changes
+  only the Entra group membership.
 - No Klicker role, Course permission, participant token, API, or frontend route
   grants evidence-read access.
 - Managed identities may process evidence with narrowly scoped permissions;
@@ -1077,12 +1100,14 @@ members are outside v1.
 
 Participants are informed that assessment answer changes and submission
 attempts may be stored temporarily on their device for reliable delivery and are
-then retained centrally for integrity and dispute handling. Before the pilot,
-the responsible UZH data-protection contact reviews proportionality, lawful
-basis, notice wording, the seven-day local replay window and next-execution
-deletion constraint, one-year central retention, investigation holds, access,
-account deletion, browser-storage protection, and whether a formal
-data-protection impact assessment or approval is required.
+then retained centrally for integrity and dispute handling. The privacy gate is
+split per stack. Before the Stack 1 pilot, the responsible UZH data-protection
+contact reviews proportionality, lawful basis, the semester-batch central
+retention of twelve to about nineteen months, investigation holds, access, and
+account deletion, and states whether a formal data-protection impact assessment
+or approval is required. Before Stack 2 client capture is enabled, the same
+contact additionally rules on notice wording, the seven-day local replay window
+and next-execution deletion constraint, and browser-storage protection.
 
 Participant account deletion does not rewrite evidence. The stable Participant
 UUID remains for the approved retention period; identity resolution, if still
@@ -1122,10 +1147,16 @@ If no later completion exists, cancellation or deletion is the anchor. Active
 assessments remain retained and alert after an implementation-plan-defined stale
 activity threshold.
 
-Canonical evidence, immutable media, and manifests remain available until one
-year after the anchor unless an investigation hold applies. Transient copies
-are removed as soon as their delivery purpose is fulfilled and may never outlive
-that boundary. The retention and cleanup processes cover:
+Canonical evidence, immutable media, and manifests remain available until at
+least one year after the anchor unless an investigation hold applies. Deletion
+runs as a semester batch: semesters are fixed calendar intervals (HS: September
+1 – January 31; FS: February 1 – August 31), and one month after each semester
+start the retention worker deletes evidence whose completion anchor is at least
+twelve months old. Evidence with a younger anchor rolls to the next batch, so
+effective retention is at least twelve and at most about nineteen months (one
+inter-batch interval beyond the floor). Transient copies are removed as soon
+as their delivery purpose is fulfilled and may never outlive the retention
+boundary. The retention and cleanup processes cover:
 
 - IndexedDB client-outbox deletion immediately after ingress acknowledgement.
   Unacknowledged records become ineligible for replay seven days after capture
@@ -1133,7 +1164,7 @@ that boundary. The retention and cleanup processes cover:
   origin is not executed, it cannot physically delete its IndexedDB at the exact
   deadline; the privacy review must accept this browser constraint. Manual
   clearing or browser eviction may remove records earlier. No browser copy
-  participates in the one-year central-evidence retention period.
+  participates in the central-evidence retention period.
 - Azure client-queue deletion immediately after durable outbox handoff. The
   drainer and retention process reject or purge messages that have crossed the
   assessment evidence boundary; raw poison payloads are deleted after a
@@ -1279,35 +1310,59 @@ Expected implementation areas:
   Hatchet-receipt-to-outbox materialization latency, permanently invalid command
   outcomes, manifest age, media capture failures, and retention failures.
 - Alerts contain metadata only and have an owner and runbook.
-- Schema readers remain compatible with every version retained for one year.
+- Schema readers remain compatible with every version retained for the full
+  retention period.
 - Staging proves independent ingress routing, exact CORS, capture-token key
   rotation, outage-time queue capture, browser reload/offline recovery,
   seven-day replay expiry and next-execution cleanup, Azure assignments, Blob
   immutability, media capture, exports, holds, and retention dry runs.
-- A UZH privacy review is recorded before the production pilot.
+- The central UZH privacy review is recorded before the Stack 1 production
+  pilot; the browser-storage ruling is recorded before Stack 2 client capture
+  is enabled.
 
 ### Rollout order
 
-1. Deploy dormant contract, schema, outbox, dispatcher, manifests, and monitoring.
-2. Generate synthetic evidence and verify the owner CLI.
+The order follows the two-tier split of decision 19: the Stack 1 pilot precedes
+the fast-follow tier and all client-capture work.
+
+1. Deploy the dormant launch-gating tier: contract, schema, outbox, dispatcher,
+   and monitoring.
+2. Generate synthetic evidence and verify delivery and exports with the owner
+   CLI; manifest-backed verification follows once the sealer lands.
 3. Enable activation baselines and server-authoritative producers for internal
    assessment-enabled LiveQuizzes.
-4. Verify transaction rollback, evidence completeness, media capture, retention
-   calculation, and complaint reconstruction.
-5. Deploy the independent ingress and queue path with PWA capture still disabled.
-6. Prove queue capture while the main stack is stopped, then enable the durable
+4. Verify transaction rollback, evidence completeness, media capture, and
+   complaint reconstruction.
+5. Enable fail-closed production capture for the first assessment quiz of the
+   semester as the controlled Stack 1 pilot (requires the central privacy
+   review), independently verify its export and operational metrics, and only
+   then expand to the remaining semester quizzes.
+6. Land the fast-follow tier: manifest sealer first, then CLI export polish,
+   quarantine tooling, full dashboards, and the retention worker with its dry
+   runs.
+7. Deploy the independent ingress and queue path with PWA capture still
+   disabled (Stack 2, gated by decision 20).
+8. Prove queue capture while the main stack is stopped, then enable the durable
    IndexedDB client outbox and privacy notice in staging.
-7. Run submission, reload, restart, offline replay, account-switching, quota,
+9. Run submission, reload, restart, offline replay, account-switching, quota,
    privacy, load, and coverage-gap scenarios.
-8. Enable one controlled fail-closed production assessment.
-9. Independently verify its export and operational metrics.
-10. Expand only after the trusted evidence owners and operations sign off.
+10. Enable client capture in production only after the browser-storage privacy
+    ruling and sign-off by the trusted evidence owners and operations.
 
 ## Stack topology for the implementation plan
 
 The feature is split into two sequential native GitHub stacks. Each layer is an
 independently reviewable and green work package, not one commit per PR. One
-worktree and one topology owner are used per stack.
+worktree and one topology owner are used per stack. This design document
+travels with the first stack layer rather than merging as a documentation-only
+PR (decision 26).
+
+The first work item of the Stack 1 implementation plan is mining PRs #4872 and
+#4946 for reusable pieces together with a coverage mapping (decision 25). The
+launch-gating versus fast-follow tiering of decision 19 governs sequencing
+within the layers below: the manifest sealer, CLI export polish, quarantine
+tooling, full dashboards, and the retention worker may land as fast-follow work
+packages after the September launch tier.
 
 ### Stack 1: authoritative assessment evidence
 
@@ -1343,9 +1398,11 @@ worktree and one topology owner are used per stack.
    and degradation handling, privacy notice, browser durability assertions,
    coverage reporting, and controlled production enablement.
 
-PRs #4872 and #4946 remain unchanged until the union of the replacement stacks
-is compared against their complete diffs. Every deliberate omission is
-documented before maintainers decide whether to close them.
+PRs #4872 and #4946 are quarry for the replacement stacks: mining them for
+reusable pieces, together with a coverage mapping against their complete diffs,
+is the first work item of the Stack 1 implementation plan. Every deliberate
+omission is documented before the maintainers decide whether to close them;
+that closure decision follows Stack 1 plan approval.
 
 ## Acceptance criteria
 
@@ -1422,12 +1479,15 @@ documented before maintainers decide whether to close them.
   manifest read access; no Klicker identity can read evidence.
 - Event, participant-within-assessment, and complete-assessment JSON/CSV exports
   pass independent hash, baseline, chunk, and manifest verification.
-- Canonical evidence remains available until one year after final completion,
-  cancellation, or deletion unless held. Temporary copies are cleaned after
-  durable handoff and never retained beyond the boundary; automated deletion
-  refuses early or held canonical records.
-- Raw assessment answers are absent from ordinary logs, and the UZH privacy
-  review is complete before the production pilot.
+- Canonical evidence remains available until at least one year after final
+  completion, cancellation, or deletion unless held, and is deleted by the
+  first semester-batch run at which its anchor age reaches twelve months.
+  Temporary copies are cleaned after durable handoff and never retained beyond
+  the retention boundary; automated deletion refuses early or held canonical
+  records.
+- Raw assessment answers are absent from ordinary logs. The central UZH
+  privacy review is complete before the Stack 1 production pilot, and the
+  browser-storage ruling before Stack 2 client capture is enabled.
 - Every intermediate stack layer remains independently testable and production
   capture stays gated until the controlled rollout layer.
 
@@ -1443,6 +1503,7 @@ formulas, Hatchet task retry and
 permanent-invalid-command criteria, Table partition/shard counts, polling
 intervals, alert thresholds, and exact file-level work packages. The seven-day
 local replay window and next-execution cleanup rule are product guarantees, not
-adjustable implementation parameters. Other parameters may change without
-reopening the product design as long as the guarantees and acceptance criteria
-above remain true.
+adjustable implementation parameters; so is the semester-batch retention
+schedule with its twelve-month floor (decision 24). Other parameters may
+change without reopening the product design as long as the guarantees and
+acceptance criteria above remain true.
