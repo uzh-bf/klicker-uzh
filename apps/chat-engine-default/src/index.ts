@@ -9,6 +9,7 @@ import {
   type JSONValue,
   type LanguageModel,
   type ModelMessage,
+  type UIMessage,
   type ToolResultPart,
   type UIMessageStreamWriter,
 } from 'ai'
@@ -437,10 +438,26 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
     })
 
     const stream = createUIMessageStream({
+      originalMessages: [
+        {
+          id: request.assistantMessageId,
+          role: 'assistant',
+          parts: [],
+        },
+      ] satisfies UIMessage[],
+      generateId: () => request.assistantMessageId,
       execute: ({ writer: streamWriter }) => {
         writer = streamWriter
         streamWriter.merge(
           result.toUIMessageStream({
+            originalMessages: [
+              {
+                id: request.assistantMessageId,
+                role: 'assistant',
+                parts: [],
+              },
+            ] satisfies UIMessage[],
+            generateMessageId: () => request.assistantMessageId,
             sendReasoning: true,
             messageMetadata: ({ part }) =>
               part.type === 'finish'
