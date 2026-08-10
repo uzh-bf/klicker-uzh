@@ -350,6 +350,7 @@ function FormikNativeDateInput({
 }>) {
   const [field, meta, helpers] = useField<Date | undefined>(name)
   const inputId = useId()
+  const errorId = `${inputId}-error`
   const showError = Boolean(meta.error && meta.touched)
 
   return (
@@ -363,6 +364,8 @@ function FormikNativeDateInput({
       />
       <input
         id={inputId}
+        aria-describedby={showError ? errorId : undefined}
+        aria-invalid={showError}
         className="border-input focus:border-primary-80 w-36 rounded-md border px-3 py-2 text-base"
         data-cy={data?.cy}
         data-test={data?.test}
@@ -374,11 +377,14 @@ function FormikNativeDateInput({
           await helpers.setTouched(true)
           await onDateChange?.(date)
         }}
+        required={required}
         type="date"
         value={getNativeDateInputValue(field.value)}
       />
       {showError && (
-        <div className="mt-1 text-sm text-red-700">{meta.error}</div>
+        <div id={errorId} className="mt-1 text-sm text-red-700">
+          {meta.error}
+        </div>
       )}
     </div>
   )
