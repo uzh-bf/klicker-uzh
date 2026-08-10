@@ -146,7 +146,7 @@ function ElementBarChart({
                           : CHART_SOLUTION_COLORS.incorrect
                         : CHART_COLORS[index % 12]
                     }
-                    key={choice.value}
+                    key={choice.ix}
                   />
                 ))}
               {instance.__typename === 'FlashcardActivityEvaluationData' && (

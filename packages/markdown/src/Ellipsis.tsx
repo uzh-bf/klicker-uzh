@@ -10,6 +10,26 @@ function decodeHtmlEntities(text: string): string {
   return textarea.value
 }
 
+function renderPlainLines(text: string, maxLines: number) {
+  const occurrences = new Map<string, number>()
+
+  return decodeHtmlEntities(text)
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .slice(0, maxLines)
+    .map((line, i, arr) => {
+      const occurrence = occurrences.get(line) ?? 0
+      occurrences.set(line, occurrence + 1)
+
+      return (
+        <React.Fragment key={`${line}-${occurrence}`}>
+          {line}
+          {i < arr.length - 1 && <br />}
+        </React.Fragment>
+      )
+    })
+}
+
 export interface EllipsisBaseProps {
   children: string
   maxLength?: number
@@ -104,16 +124,7 @@ function Ellipsis({
             )}
           >
             {typeof children === 'string'
-              ? decodeHtmlEntities(children)
-                  .split('\n')
-                  .filter((line) => line.trim() !== '')
-                  .slice(0, maxLines) // only include the first maxLines lines
-                  .map((line, i, arr) => (
-                    <React.Fragment key={line}>
-                      {line}
-                      {i < arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))
+              ? renderPlainLines(children, maxLines)
               : children}
           </div>
         )}
@@ -166,17 +177,10 @@ function Ellipsis({
     </Prose>
   ) : (
     <div className={className?.content}>
-      {decodeHtmlEntities(children.toString())
-        .substr(0, endIndex || maxLength)
-        .split('\n')
-        .filter((line) => line.trim() !== '')
-        .slice(0, 3) // Limit to 3 lines for shortened content
-        .map((line, i, arr) => (
-          <React.Fragment key={line}>
-            {line}
-            {i < arr.length - 1 && <br />}
-          </React.Fragment>
-        ))}
+      {renderPlainLines(
+        children.toString().substr(0, endIndex || maxLength),
+        3
+      )}
     </div>
   )
 
@@ -195,16 +199,7 @@ function Ellipsis({
     ) : (
       <div className={className?.content}>
         {typeof children === 'string'
-          ? decodeHtmlEntities(children)
-              .split('\n')
-              .filter((line) => line.trim() !== '')
-              .slice(0, maxLines || 3) // Use maxLines if available, otherwise default to 3
-              .map((line, i, arr) => (
-                <React.Fragment key={line}>
-                  {line}
-                  {i < arr.length - 1 && <br />}
-                </React.Fragment>
-              ))
+          ? renderPlainLines(children, maxLines || 3)
           : children}
       </div>
     )
@@ -229,21 +224,12 @@ function Ellipsis({
               />
             ) : typeof children === 'string' ? (
               <div>
-                {decodeHtmlEntities(children)
-                  .split('\n')
-                  .filter((line) => line.trim() !== '')
-                  .slice(
-                    0,
-                    maxLines || maxLength
-                      ? Math.min(3, Math.ceil(maxLength / 50))
-                      : 3
-                  ) // limit lines based on context
-                  .map((line, i, arr) => (
-                    <React.Fragment key={line}>
-                      {line}
-                      {i < arr.length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
+                {renderPlainLines(
+                  children,
+                  maxLines || maxLength
+                    ? Math.min(3, Math.ceil(maxLength / 50))
+                    : 3
+                )}
               </div>
             ) : (
               children

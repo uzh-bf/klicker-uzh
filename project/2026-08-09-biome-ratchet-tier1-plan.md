@@ -320,6 +320,12 @@ ci(quality): enforce Biome lint
   lint pass. The ignored local GraphQL declaration output was refreshed only
   to let this host's dependent package check consume the generated `ix` type;
   the source and tracked generated artifacts are the delivery surface.
+- 2026-08-10: The next exact-range integrated review found one remaining
+  duplicate-choice key in the shared evaluation bar chart and repeated
+  content-only keys in the plain-text Ellipsis renderer. The branch now uses
+  `choice.ix` for chart cells and occurrence-aware line keys in all four
+  plain-text rendering paths. Browser and clean GraphQL integration checks
+  remain documented environment blockers, not code findings.
 
 ## Finish state
 
