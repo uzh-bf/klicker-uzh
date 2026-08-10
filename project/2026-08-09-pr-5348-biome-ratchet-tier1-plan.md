@@ -79,6 +79,19 @@ this package does not remove, replace, or broaden either tool's ownership.
 - Do not use broad suppressions, broad autofixes, or a global severity
   downgrade to manufacture a zero.
 
+## Narrow diagnostic configuration decisions
+
+- `suspicious/noThenProperty` remains warning-level only in the eight exact
+  Yup form-schema files listed in `biome.json`. Yup's `.when()` API requires a
+  `then` branch in its configuration object; these objects are schema rules,
+  not promise-like values, so the diagnostic is a false positive for this
+  narrow path set. New occurrences outside those files remain error-level.
+- `correctness/noUnknownProperty` remains warning-level only for
+  `email/23FS Beta Notification.html`. Its embedded CSS intentionally uses
+  Outlook-specific `mso-style-priority` and `mso-hide` properties; those
+  legacy email-client directives are not standard CSS but are part of the
+  delivered email markup. New occurrences elsewhere remain error-level.
+
 ## Risks and stop conditions
 
 - This is broad: 491 errors across 200 files. The one-PR requirement is
@@ -353,6 +366,10 @@ ci(quality): enforce Biome lint
   receive stable client-only occurrence IDs; submission mappers keep those
   IDs out of GraphQL variables. The plan artifact was renamed to include PR
   #5348 so the execution contract and delivery path remain unambiguous.
+- 2026-08-10: The integrated review also required rationale for the two
+  narrow Biome severity overrides. The plan now records the exact Yup
+  `then`-branch paths and the Outlook-specific email CSS path; both remain
+  warning-only only within their documented scopes.
 
 ## Finish state
 
