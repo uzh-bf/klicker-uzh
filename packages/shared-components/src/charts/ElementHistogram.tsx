@@ -41,6 +41,16 @@ interface ElementHistogramProps {
   className?: { root?: string }
 }
 
+function createOccurrenceKeyFactory() {
+  const occurrences = new Map<string, number>()
+
+  return (signature: string) => {
+    const occurrence = occurrences.get(signature) ?? 0
+    occurrences.set(signature, occurrence + 1)
+    return `${signature}-${occurrence}`
+  }
+}
+
 function ElementHistogram({
   type,
   responses,
@@ -62,6 +72,8 @@ function ElementHistogram({
   const [numBins, setNumBins] = useState('20')
   const [lowerLimit, setLowerLimit] = useState<number | null>(minValue ?? null)
   const [upperLimit, setUpperLimit] = useState<number | null>(maxValue ?? null)
+  const solutionRangeKey = createOccurrenceKeyFactory()
+  const exactSolutionKey = createOccurrenceKeyFactory()
 
   const showSolutionRanges = showSolution && solutionRanges
   const showExactSolutions =
@@ -236,7 +248,9 @@ function ElementHistogram({
             solutionRanges.map(
               (solutionRange: { min?: number | null; max?: number | null }) => (
                 <ReferenceArea
-                  key={`range-${solutionRange.min}-${solutionRange.max}`}
+                  key={solutionRangeKey(
+                    `range-${solutionRange.min}-${solutionRange.max}`
+                  )}
                   x1={solutionRange.min ?? undefined}
                   x2={solutionRange.max ?? undefined}
                   stroke={CHART_SOLUTION_COLORS.correct}
@@ -260,7 +274,7 @@ function ElementHistogram({
           {showExactSolutions &&
             exactSolutions.map((solution) => (
               <ReferenceLine
-                key={`exact-solution-${solution}`}
+                key={exactSolutionKey(`exact-solution-${solution}`)}
                 x={parseFloat(String(solution))}
                 stroke={CHART_SOLUTION_COLORS.correct}
                 label={{

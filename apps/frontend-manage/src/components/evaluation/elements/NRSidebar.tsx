@@ -30,6 +30,16 @@ interface NRSidebarProps {
   type: ActivityEvaluationType
 }
 
+function createOccurrenceKeyFactory() {
+  const occurrences = new Map<string, number>()
+
+  return (signature: string) => {
+    const occurrence = occurrences.get(signature) ?? 0
+    occurrences.set(signature, occurrence + 1)
+    return `${signature}-${occurrence}`
+  }
+}
+
 function NRSidebar({
   instance,
   courseLanguage,
@@ -44,6 +54,8 @@ function NRSidebar({
 }: NRSidebarProps) {
   const t = useTranslations()
   const router = useRouter()
+  const solutionRangeKey = createOccurrenceKeyFactory()
+  const exactSolutionKey = createOccurrenceKeyFactory()
 
   return (
     <div
@@ -115,7 +127,11 @@ function NRSidebar({
               {t('manage.evaluation.correctSolutionRanges')}:
             </div>
             {instance.results.solutionRanges.map((range) => (
-              <div key={`solution-range-${range?.min}-${range?.max}`}>
+              <div
+                key={solutionRangeKey(
+                  `solution-range-${range?.min}-${range?.max}`
+                )}
+              >
                 [{range?.min ?? '-∞'},{range?.max ?? '+∞'}]
               </div>
             ))}
@@ -128,7 +144,9 @@ function NRSidebar({
             </div>
             <ul>
               {instance.results.exactSolutions.map((solution) => (
-                <li key={`solution-${solution}`}>{solution}</li>
+                <li key={exactSolutionKey(`solution-${solution}`)}>
+                  {solution}
+                </li>
               ))}
             </ul>
           </div>

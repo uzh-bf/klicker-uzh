@@ -373,6 +373,10 @@ ci(quality): enforce Biome lint
 - 2026-08-10: The maintainability review corrected the plan's formatter
   boundary to match the live repository: Prettier owns Markdown/YAML and
   `playwright/`; ESLint remains the Next.js safety net.
+- 2026-08-10: The final maintainability pass found duplicate-prone value keys
+  for numerical solution ranges and exact solutions in the evaluation sidebar
+  and shared histogram. Both views now use occurrence-aware keys, preserving
+  repeated valid values without using array positions.
 
 ## Finish state
 
