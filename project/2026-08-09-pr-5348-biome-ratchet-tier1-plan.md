@@ -5,7 +5,7 @@ Date: 2026-08-09
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
 Plan artifact: project/2026-08-09-pr-5348-biome-ratchet-tier1-plan.md
-Base: 338763a41 (origin/v3; verified 2026-08-10)
+Base: 7dee0d369 (origin/v3; verified 2026-08-10)
 Worktree: trees/biome-ratchet-tier1
 Related history: project/2026-07-19-biome-knip-repo-quality.md
 
@@ -386,6 +386,10 @@ ci(quality): enforce Biome lint
   study evaluation markers still keyed repeated answers by value alone.
   `CSEvaluation` now uses an occurrence-aware key factory, preserving repeated
   participant answers without array-index keys.
+- 2026-08-10: The final integrated review found that paired word-cloud font
+  size effects could undo a boundary change using stale state from the same
+  render. `ElementWordCloud` now clamps the paired minimum and maximum through
+  directional update callbacks, preserving the user's requested boundary.
 
 ## Finish state
 
