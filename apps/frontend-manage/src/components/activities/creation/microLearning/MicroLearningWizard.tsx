@@ -239,6 +239,7 @@ function MicroLearningWizard({
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
+              clientId: `existing-${instance.id}`,
               id: parseInt(elementId),
               title: instance.elementData.name,
               type: instance.elementData.type,

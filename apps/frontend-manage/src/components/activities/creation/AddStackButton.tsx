@@ -8,7 +8,11 @@ import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../elements/Element'
-import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
+import {
+  createElementInstanceClientId,
+  ElementBlockFormValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface AddStackButtonProps {
   type: 'stack'
@@ -40,6 +44,7 @@ function AddStackButton({
       drop: (item: ElementDragDropTypes) => {
         const initialElements = [
           {
+            clientId: createElementInstanceClientId(),
             id: item.id,
             title: item.title,
             type: item.questionType,
@@ -80,6 +85,7 @@ function AddStackButton({
             }}
             onClick={() => {
               const elements = Object.values(selection).map((question) => ({
+                clientId: createElementInstanceClientId(),
                 id: question.id,
                 title: question.name,
                 type: question.type,
@@ -128,6 +134,7 @@ function AddStackButton({
               Object.values(selection).forEach((question) => {
                 const elements = [
                   {
+                    clientId: createElementInstanceClientId(),
                     id: question.id,
                     title: question.name,
                     type: question.type,

@@ -84,20 +84,26 @@ function CaseStudyCollectionSelection({
       }
 
       // filter out all solution entries that do not belong to one of the selected items
-      const newSolutions = Object.fromEntries(
-        Object.entries(caseItem.solutions).filter(([itemIdString]) =>
-          (selectedItemIds ?? []).includes(parseInt(itemIdString.split('-')[1]))
-        )
+      const solutionEntries = Object.entries(caseItem.solutions)
+      const filteredSolutionEntries = solutionEntries.filter(([itemIdString]) =>
+        (selectedItemIds ?? []).includes(parseInt(itemIdString.split('-')[1]))
       )
+
+      // keep the existing object when no solution was removed to avoid a Formik update loop
+      if (filteredSolutionEntries.length === solutionEntries.length) {
+        return caseItem
+      }
 
       return {
         ...caseItem,
-        solutions: newSolutions,
+        solutions: Object.fromEntries(filteredSolutionEntries),
       }
     })
 
-    // update the cases field with the new cases
-    casesHelpers.setValue(newCases)
+    // update the cases field only when at least one solution was removed
+    if (newCases?.some((caseItem, index) => caseItem !== caseValues?.[index])) {
+      casesHelpers.setValue(newCases)
+    }
   }, [caseValues, casesHelpers, selectedItemIds])
 
   // locally store the selected answer collection

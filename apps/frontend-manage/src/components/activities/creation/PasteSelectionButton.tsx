@@ -2,7 +2,11 @@ import { faBars } from '@fortawesome/free-solid-svg-icons'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
+import {
+  createElementInstanceClientId,
+  ElementBlockFormValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface BaseProps {
   index: number
@@ -37,6 +41,7 @@ function PasteSelectionButton({
       }}
       onClick={() => {
         const newElements = Object.values(selection).map((question) => ({
+          clientId: createElementInstanceClientId(),
           id: question.id,
           title: question.name,
           type: question.type,

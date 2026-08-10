@@ -66,7 +66,7 @@
     "format:check": "biome format . && prettier --check \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "knip": "knip",
     "lint": "turbo run lint --parallel --continue",
-    "lint:biome": "biome lint . --diagnostic-level=error",
+    "lint:biome": "biome lint .",
     "prepare": "husky",
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",

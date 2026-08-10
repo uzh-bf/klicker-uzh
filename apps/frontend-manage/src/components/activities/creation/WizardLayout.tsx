@@ -26,12 +26,19 @@ interface CommonFormValues {
 }
 
 export interface ElementInstanceFormInput {
+  clientId: string
   id: number
   title: string
   type: ElementType
   hasSampleSolution: boolean
   existingInstanceId: number | null
   duplicateInstance: boolean
+}
+
+let nextElementInstanceClientId = 0
+
+export function createElementInstanceClientId(): string {
+  return `new-${nextElementInstanceClientId++}`
 }
 
 export interface ElementBlockFormValues {

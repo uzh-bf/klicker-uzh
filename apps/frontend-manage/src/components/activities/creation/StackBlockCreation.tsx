@@ -25,7 +25,11 @@ import PasteSelectionButton from './PasteSelectionButton'
 import StackCreationErrors from './StackCreationErrors'
 import StackDescriptionModal from './StackDescriptionModal'
 import WizardElementList from './WizardElementList'
-import { ElementStackErrorValues, ElementStackFormValues } from './WizardLayout'
+import {
+  createElementInstanceClientId,
+  ElementStackErrorValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface StackBlockCreationProps {
   stackIx: number
@@ -87,6 +91,7 @@ function StackBlockCreation({
           elements: [
             ...stack.elements,
             {
+              clientId: createElementInstanceClientId(),
               id: item.id,
               title: item.title,
               type: item.questionType,

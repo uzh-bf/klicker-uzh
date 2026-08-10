@@ -294,6 +294,21 @@ ci(quality): enforce Biome lint
   tests because `docker-reverse_proxy_macos-1` could not bind host port 80:
   `Bind for 0.0.0.0:80 failed: port is already allocated`. The cleanup trap
   removed the test stack; unrelated existing containers were left untouched.
+- 2026-08-10: The maintainability review found two Formik/render-loop risks,
+  one repeated-wizard-element key collision, and an enforcement command that
+  hid advisory diagnostics. The branch now updates Formik only when normalized
+  references change, stabilizes route-filter callbacks, gives every wizard
+  element occurrence a client-only ID, and runs the default Biome diagnostics
+  so warnings and infos remain visible while errors still block.
+- 2026-08-10: The affected `frontend-manage` package check and targeted Biome
+  lint pass after the maintainability fixes. Browser verification remains
+  blocked by the pinned DevPod TLS readiness failure; the clean-install
+  GraphQL bundle and isolated local suite remain CI/environment blockers
+  recorded above.
+- 2026-08-10: The full Opengrep scan reported 634 findings across the existing
+  repository. A targeted scan of the 13 files changed by this maintainability
+  pass reported zero findings; no new Opengrep finding was identified in the
+  changed surface.
 
 ## Finish state
 

@@ -87,7 +87,7 @@ function WizardElementList({
 
         return (
           <div
-            key={`${type}-${element.id}-${element.existingInstanceId ?? 'new'}-${element.title}`}
+            key={element.clientId}
             className={twMerge(
               'flex flex-row items-center justify-between border-b border-solid border-slate-200 pl-1 text-xs last:border-b-0',
               instanceOutdated && 'bg-uzh-red-20'

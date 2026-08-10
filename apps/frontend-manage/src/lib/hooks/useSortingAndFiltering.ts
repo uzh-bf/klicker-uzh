@@ -4,7 +4,7 @@ import {
   SharingType,
   SortByType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useReducer } from 'react'
+import { useCallback, useReducer } from 'react'
 
 export type LibraryFilters = {
   archive: boolean
@@ -263,11 +263,30 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
 
 function useSortingAndFiltering(initialValue: FilterSortType) {
   const [state, dispatch] = useReducer(reducer, initialValue)
+  const handleReset = useCallback(
+    (): void => dispatch({ type: QuestionPoolReducerActionType.RESET }),
+    []
+  )
+  const toggleCourseIdFilter = useCallback(
+    ({ courseId }: { courseId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_COURSE_ID,
+        valueOrId: courseId,
+      }),
+    []
+  )
+  const toggleActivityIdFilter = useCallback(
+    ({ activityId }: { activityId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_ACTIVITY_ID,
+        valueOrId: activityId,
+      }),
+    []
+  )
 
   return {
     ...state,
-    handleReset: (): void =>
-      dispatch({ type: QuestionPoolReducerActionType.RESET }),
+    handleReset,
     handleSortByChange: (by: SortByType): void =>
       dispatch({ type: QuestionPoolReducerActionType.SORT_BY, by }),
     handleSortOrderToggle: (): void =>
@@ -298,16 +317,8 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
         isSharingTypeTag,
         isUntagged,
       }),
-    toggleCourseIdFilter: ({ courseId }: { courseId?: string }): void =>
-      dispatch({
-        type: QuestionPoolReducerActionType.SET_COURSE_ID,
-        valueOrId: courseId,
-      }),
-    toggleActivityIdFilter: ({ activityId }: { activityId?: string }): void =>
-      dispatch({
-        type: QuestionPoolReducerActionType.SET_ACTIVITY_ID,
-        valueOrId: activityId,
-      }),
+    toggleCourseIdFilter,
+    toggleActivityIdFilter,
     toggleMultiplierFilter: ({ multiplier }: { multiplier?: number }): void =>
       dispatch({
         type: QuestionPoolReducerActionType.SET_MULTIPLIER,

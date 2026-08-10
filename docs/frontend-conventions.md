@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-04'
+timestamp: '2026-08-10'
 tags:
   - frontend
 ---
@@ -62,6 +62,9 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 ## Forms
 
 **Formik + Yup** (not react-hook-form). Design-system `Formik*` field components bind by `name`. Existing modals (e.g. `apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx`) are the template.
+
+- Dynamic activity-wizard element rows carry a client-only occurrence ID in addition to the domain element ID. Preserve that ID through edits and reordering, and use it for React keys; do not derive keys from titles or array positions.
+- Effects that reconcile Formik arrays should call `setValue` only when normalization changes an item reference. Rewriting an equivalent array on every render can create an update loop.
 
 ## Gotchas absorbed from experience
 
