@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.66...v3.4.0-alpha.67) (2026-08-10)
+
+
+### Bug Fixes
+
+* **chat:** handle sparse streamed tool-call indices ([#5342](https://github.com/uzh-bf/klicker-uzh/issues/5342)) ([5863ab8](https://github.com/uzh-bf/klicker-uzh/commit/5863ab8e6d335a2437942411a9e10afa35af4396))
+* **chat:** stabilize streamed conversations and feedback ([#5351](https://github.com/uzh-bf/klicker-uzh/issues/5351)) ([cba6736](https://github.com/uzh-bf/klicker-uzh/commit/cba673628982835bdf9b7834ea5f551e8326b8d3))
+* **chat:** stabilize Vorkurs chatbot for staging ([aaa4d09](https://github.com/uzh-bf/klicker-uzh/commit/aaa4d09c4fd9d3a6bf6d65ec68d7b9f2fd5d4a30))
+* **pwa:** expose every course chatbot from the header as a real link ([#5339](https://github.com/uzh-bf/klicker-uzh/issues/5339)) ([30df9e9](https://github.com/uzh-bf/klicker-uzh/commit/30df9e9d67c0bc8f2067960478f821f4944d94d8))
+
+
+### Build and CI
+
+* **security:** scan full branch-creation commit ranges ([dbfe71b](https://github.com/uzh-bf/klicker-uzh/commit/dbfe71bda59390cddd71b603eabdd4c4303c3bc7))
+
+
+### Enhancements
+
+* **chat:** tailor welcome starters by mode ([#5349](https://github.com/uzh-bf/klicker-uzh/issues/5349)) ([8565b04](https://github.com/uzh-bf/klicker-uzh/commit/8565b047cc9bf9d4216432486105533051ef37bb))
+* **graphql:** add selection and case study demo questions ([#5261](https://github.com/uzh-bf/klicker-uzh/issues/5261)) ([8134e3f](https://github.com/uzh-bf/klicker-uzh/commit/8134e3f27526c0d0e0cb2ea0c8a104269c2eaec9))
+
 ## [3.4.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.65...v3.4.0-alpha.66) (2026-08-07)
 
 
