@@ -4,14 +4,18 @@
   conversation, threads, settings, credits, attachments, errors, embedded,
   mobile, DE/EN).
 - Method: code analysis of `apps/chat/src` + hands-on visual investigation of
-  the running stack (worktree `trees/rs-chat-ux-audit`, base `v3` @ 7dee0d369,
-  live model via litellm→OpenRouter, agent-browser at 1440×900 and 390×844,
-  EN + DE, testuser1/testuser2).
+  the running stack (worktree `trees/rs-chat-ux-audit`, audit base `v3` @
+  7dee0d369; current PR target `v3` @ 0d7b4e461 is two deployment-promotion
+  commits ahead, with no source change in this audit scope; live model via
+  litellm→OpenRouter, agent-browser at 1440×900 and 390×844, EN + DE,
+  testuser1/testuser2).
 - Frameworks: `ux-heuristics` (Nielsen 10 + Krug, severity 0–4 per issue,
   score from the 10-row Quick Diagnostic) and `refactoring-ui`
   (score = satisfied rows of its 8-row diagnostic ÷ 8 × 10).
-- Evidence: 42 screenshots in `project/_local/2026-08-10-chat-ux-audit/shots/`
-  (gitignored — never commit; referenced below by number).
+- Evidence: 42 screenshots from the audit run in
+  `project/_local/2026-08-10-chat-ux-audit/shots/` (gitignored — never commit;
+  referenced below by number). They are historical evidence for the audit
+  base, not proof of a later source revision.
 - Prior work integrated, not duplicated:
   [2026-07-27 follow-up roadmap](./2026-07-27-student-chat-v3-follow-up-roadmap.md)
   (W1–W7) and the ruled design decisions D1–D7 from the 2026-07-26 plan.
@@ -28,16 +32,20 @@
   example chatbot configurations (KB/tutor, KB/explainer — ids in the seed
   log) and students `testuser1`–`testuser50` / `abcdabcd`.
 - Live model: disclaimer, error-route, copy, and mobile-layout items verify
-  without a model key. Items that need real answers (F24, F14r, all of R4)
-  need `UPSTREAM_OPENAI_API_KEY` injected at `devrouter ensure` time — ask
-  the maintainer for a dev key; never commit it (public repo).
+  without a model key. The F24 branch-picker state is covered by the existing
+  mocked-stream Playwright fixture and does not need a model key. Only
+  model-behavior claims in F14r and R4 need `UPSTREAM_OPENAI_API_KEY` injected
+  at `devrouter ensure` time — ask the maintainer for a dev key; never commit
+  it (public repo).
 - Verification: `agent-browser` is mandatory for every item (repo
   convention). Viewports used in this audit: 1440×900 and 390×844. Switch
   locale for DE/EN checks with the `NEXT_LOCALE` cookie (`de`/`en`), not DB
   edits.
 - Gotcha: never run typegen/`pnpm check` while browsing the running app — it
-  de-registers dynamic API routes (404 with the file present); recover by
-  touching the route file in-container.
+  de-registers dynamic API routes (404 with the file present). Run typecheck
+  before the browser pass, then restart the exact stack from the host with
+  `devrouter ensure .` if recovery is needed; do not rely on touching a route
+  file in-container.
 - Evidence screenshots are local to the audit machine (gitignored
   `project/_local/2026-08-10-chat-ux-audit/shots/`); reproduce any state
   from the finding's surface + viewport instead of hunting for the files.
@@ -55,6 +63,12 @@
   retry recovery all verified live (shots 09–33). Still open from W1: the
   citation `[n]` contract (doc_query producer is not connected in any env)
   and the German orthography contract (spot-checked OK; no systematic pass).
+- F24 is not an open finding on the current source head: root edits preserve
+  the original user message's parent, update both the current path and
+  `allMessages`, and the existing Playwright root-edit regression guard expects
+  an immediate picker with two branches. Recheck the original screenshot sequence
+  (15–18) against the exact current action row before reopening it; any
+  assistant-row parent relationship is a separate, scoped hypothesis.
 - Ruled decisions not reopened: segmented mode switcher, header identity,
   KlickerLogo footer, client-side sources, `[n]` markers, activity chips,
   composer hint (D1–D7); W6 parks logo/header/switcher identity questions.
@@ -71,7 +85,6 @@ unless marked (code).
 | --- | ------- | -------- |
 | F3  | Mobile disclaimer is broken: `flex flex-row` never stacks, so at 390px the intro text renders in a ~110px column beside the video, and the video is clipped outside the dialog. This is the consent gate every student passes on first use. (`disclaimer-modal.tsx:97`) | 38, 39 |
 | F21 | Unknown/expired chatbot link → bare default Next 404 (black page, no branding, no guidance, no link out). Students reach this via mistyped or stale course links; the app has no custom `not-found`/`error`/`global-error` routes at all. | 34 |
-| F24 | After editing a message, the branch picker (`1 / 2`) does not appear until a full page reload — the alternative answer silently vanishes from view. Works immediately for regenerate. Root cause: the store's `allMessages` branch structure is not updated on edit, so `getBranches` sees one branch (`branch-picker.tsx:76` gate; `chatStore` edit path). | 15–18 |
 
 ### Minor (severity 2)
 
@@ -143,16 +156,16 @@ worst triggered severity):
 | "Can users undo or go back?" | F11 no undo after delete, F23 dead X (sev 2) | −1 |
 | "Does anything make me stop and think 'huh?'" | Comprehension cluster: F12 modes unexplained, F27 jargon, F6 placeholder, F15 (worst sev 2) | −1 |
 
-Score 10 − 4 = **6**. Band check agrees: no catastrophic issue, but three
-severity-3 majors (F3, F21, F24) put it in the 6–8 band at the bottom. The
+Score 10 − 4 = **6**. Band check agrees: no catastrophic issue, but two
+severity-3 majors (F3, F21) put it in the 6–8 band at the bottom. The
 "system status" row passes overall (streaming/skeletons are a strength) but
-carries F24 and F14r as itemized gaps; F3 is a responsive-layout defect on
-the consent gate rather than a diagnostic-row failure and is the single
-biggest severity driver.
+carries F14r as an itemized gap; F3 is a responsive-layout defect on the
+consent gate rather than a diagnostic-row failure and is the single biggest
+severity driver.
 
-Gap to 10 (in order of leverage): fix the three majors F3/F21/F24 (removes
-all sev-3 issues → 9–10 band eligibility), add delete undo + wire or remove
-the X (clears the undo row), explain modes + de-jargon settings/branch copy +
+Gap to 10 (in order of leverage): fix the two majors F3/F21 (removes all
+sev-3 issues → 9–10 band eligibility), add delete undo + wire or remove the X
+(clears the undo row), explain modes + de-jargon settings/branch copy +
 placeholder affordance (clears the comprehension row), then F14r inline
 fallback notice (clears the last status gap).
 
@@ -162,7 +175,7 @@ Ordered by leverage; each phase is independently shippable as one small PR
 with before/after screenshots (per `agent-browser` verification convention).
 Estimates assume the worktree stack recipe from this audit.
 
-### R0 — Majors (fix soon, ~2–3 d)
+### R0 — Majors (fix soon, ~1 d)
 
 1. **F3 responsive disclaimer** (~0.5 d): stack intro/media with
    `flex-col md:flex-row` in `disclaimer-modal.tsx`; keep the video inside
@@ -174,12 +187,6 @@ Estimates assume the worktree stack recipe from this audit.
    a plain-language explanation ("this chatbot link is invalid or expired"),
    and a pointer to the course/LMS. Check: unknown chatbotId, forced render
    error.
-3. **F24 branch structure after edit** (~1 d): update the active thread's
-   `allMessages` parent/branch links in `chatStore` on edit-send (parity with
-   the regenerate path) so `getBranches` sees both branches without reload.
-   Check: edit a root message → picker shows `2 / 2` immediately; switching
-   works; survives reload.
-
 ### R1 — Consent & trust surface (~1–1.5 d)
 
 1. **F1** button hierarchy: primary (filled) "Accept and continue",
@@ -249,5 +256,6 @@ parked pending a design ruling; R2.6 touches copy only.
   curl shim; fix belongs in devrouter, not this repo.
 - Reconfirmed: running typegen/`check` while the dev stack is up de-registers
   dynamic API routes (feedback POST 404s with the route file present);
-  remedy is touching the route file in-container. Cost this audit an hour —
-  worth the `klicker-environment-doctor` entry it already has.
+  restart with host-side `devrouter ensure .` from the exact checkout after
+  typecheck, as documented in `docs/chat-platform.md`. This is an environment
+  gotcha, not an app defect.
