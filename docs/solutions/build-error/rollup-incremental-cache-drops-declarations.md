@@ -38,7 +38,7 @@ The downstream compiler reported missing exports such as `AppliedPointCorrection
 
 Keep Prisma's declaration-emitting config non-incremental: remove both `incremental` and `tsBuildInfoFile` from `packages/prisma/tsconfig.json`. The Rollup build still emits declarations, but each invocation computes them from the generated source instead of consulting state stored in the directory it cleans.
 
-The relevant cleanup is `packages/prisma/rollup.config.js:20-29`, and the declaration settings remain in `packages/prisma/tsconfig.json:23-25`. [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) contains the sequential production and all-Turbopack build evidence.
+The relevant cleanup is `packages/prisma/rollup.config.js:16-18`, and the TypeScript plugin mitigation is at `packages/prisma/rollup.config.js:20-29`. The declaration settings remain in `packages/prisma/tsconfig.json:23-25`. [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) contains the sequential production and all-Turbopack build evidence.
 
 ## Why This Works
 
