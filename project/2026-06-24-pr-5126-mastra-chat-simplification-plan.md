@@ -8,11 +8,11 @@
 - Target: `v3`
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
 - Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- Status: Slice 1 is committed and reviewed; Slice 2 is implemented locally and awaits its exact-range intermediate review; no remote publication has been authorized.
+- Status: Slice 1 is committed and reviewed; Slice 2 is committed and reviewed locally; no remote publication has been authorized.
 
 Current branch state:
 
-- The local branch was reconstructed from fetched `origin/v3` and now contains the approved plan, ADR 0005, Slice 1 contract/default-engine commits, and the uncommitted Slice 2 tracer.
+- The local branch was reconstructed from fetched `origin/v3` and now contains the approved plan, ADR 0005, Slice 1 contract/default-engine commits, and the committed Slice 2 tracer.
 - The old public implementation head is preserved locally as `backup/mastra-chat-openrouter-smoke-pre-reconstruct-20260810` at `349cded017` and privately as `archive/klicker-uzh-pr-5126`.
 - The remote pull request still points to the old prototype head `7717572aba` and remains conflicting. Replacing it requires a separate, explicitly approved force-with-lease push after this plan is accepted.
 - Do not merge, close, or delete the old pull request or branch until the reconstructed branch has been pushed and verified on GitHub.
@@ -584,9 +584,9 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Slice 1 corrective commits `b451f38ec` and `b335bacfa` passed the final exact-scope intermediate review; real OpenRouter smoke remains conditional on approved credentials and a running engine.
 - [x] Slice 2 tracer implemented locally: authenticated existing-thread Hono route, engine manifest/readiness probe, strict request/stream adaptation, explicit credential modes, current credit-aware model selection, canonical IDs and trace context, transactional final/partial persistence, and exactly-once finalization tests.
 - [x] Slice 2 focused typecheck, tests, build, and the local HTTP abort propagation spike passed on Node 22; the repository declares Node 24.
-- [ ] Slice 2 architecture/data-integrity intermediate review and exact committed-range verification remain.
+- [x] Slice 2 architecture/data-integrity intermediate review completed cleanly on `2a276b1d18..ba6599b8d`; readiness timeout, separate-chunk terminal cancellation, and canonical assistant-ID fixes are covered. Live concurrent Prisma debit integration remains deferred to Slice 3.
 - [ ] Slices 3-6 implemented and verified.
 
 ## Next Action
 
-Commit the local Slice 2 tracer, run the required read-only architecture/data-integrity review on that exact range, resolve any findings, and rerun focused verification. Keep the Next route as the production path; do not push, force-push, change either pull request, or begin Slice 3/deployment work without a separate approval gate.
+Slice 2 is committed and reviewed locally. Keep the Next route as the production path; do not push, force-push, change either pull request, or begin Slice 3/deployment work without a separate approval gate.
