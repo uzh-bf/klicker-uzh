@@ -415,6 +415,11 @@ is unavailable.
   links inside an unflipped flashcard bubbled to the card handler and was
   cancelled. The handler now flips only when the card itself is the event
   target, preserving native link activation.
+- 2026-08-10: The integrated review found that adding `components` to the
+  Markdown parser memo dependencies exposed its inline `{}` default, causing
+  unchanged content to reparse on every parent render. `Markdown` now uses a
+  module-level typed empty-components constant while still invalidating for
+  supplied custom components.
 
 ## Finish state
 

@@ -48,10 +48,12 @@ export interface MarkdownProps {
   }
 }
 
+const EMPTY_COMPONENTS: NonNullable<MarkdownProps['components']> = {}
+
 function Markdown({
   className,
   content = '<br>',
-  components = {},
+  components = EMPTY_COMPONENTS,
   withModal = true,
   withLinkButtons = true,
   withProse = false,
