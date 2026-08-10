@@ -581,9 +581,9 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Public ADR 0005 accepted for the versioned chat-engine boundary.
 - [x] Slice 1 implementation complete locally: strict v1 contract schemas, conformance fixtures, public default-engine manifest/chat tracer, explicit credential modes, bounded images, tool capability forwarding, zero retries, normalized usage, cancellation metadata, and direct OpenRouter smoke script.
 - [x] Slice 1 intermediate review completed; persisted tool-result reconstruction, MCP tool identity/uniqueness, cancellation coverage, and nested strictness findings were resolved locally.
-- [ ] Slice 1 review of the corrective commit and exact-scope commit evidence pending; real OpenRouter smoke remains conditional on approved credentials and a running engine.
+- [x] Slice 1 corrective commits `b451f38ec` and `b335bacfa` passed the final exact-scope intermediate review; real OpenRouter smoke remains conditional on approved credentials and a running engine.
 - [ ] Slices 2-6 implemented and verified.
 
 ## Next Action
 
-Commit and independently review the Slice 1 implementation, then continue to Slice 2 only after the review findings are resolved. Do not force-push the reconstructed branch, change either pull request, or begin deployment work without the corresponding explicit approval.
+Begin Slice 2 only under a new approved goal after the reviewed Slice 1 commits are intentionally published or otherwise made available to the next implementation stage. Do not force-push the reconstructed branch, change either pull request, or begin deployment work without the corresponding explicit approval.
