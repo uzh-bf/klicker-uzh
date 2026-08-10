@@ -17,6 +17,10 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
@@ -39,7 +43,10 @@ const config = defineConfig([
         outDir: 'dist/scripts',
         declaration: false,
         declarationMap: false,
-        tsBuildInfoFile: 'dist/scripts/tsconfig.tsbuildinfo',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
