@@ -420,6 +420,10 @@ is unavailable.
   unchanged content to reparse on every parent render. `Markdown` now uses a
   module-level typed empty-components constant while still invalidating for
   supplied custom components.
+- 2026-08-10: The maintainability review found that the native participant
+  button no longer included the visible score after nested controls were
+  removed. The score now remains inside the primary profile button, while
+  join/leave controls stay as sibling buttons.
 
 ## Finish state
 

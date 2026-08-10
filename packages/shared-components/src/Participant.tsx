@@ -75,11 +75,18 @@ function Participant({
       {onClick ? (
         <button
           type="button"
-          className="flex min-w-0 flex-1 flex-row items-center gap-2 text-left hover:cursor-pointer"
+          className="flex min-w-0 flex-1 flex-row items-stretch text-left hover:cursor-pointer"
           onClick={onClick}
           data-cy={participantDataCy}
         >
-          {participantInfo}
+          <span className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            {participantInfo}
+          </span>
+          {typeof points === 'number' && (
+            <span className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r-lg bg-slate-700 px-3 py-1 font-bold text-white">
+              {points}
+            </span>
+          )}
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
@@ -89,7 +96,7 @@ function Participant({
       {children ? (
         <div className="flex flex-row items-center text-right">{children}</div>
       ) : null}
-      {typeof points === 'number' && (
+      {!onClick && typeof points === 'number' && (
         <div className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r-lg bg-slate-700 px-3 py-1 font-bold text-white">
           {points}
         </div>
