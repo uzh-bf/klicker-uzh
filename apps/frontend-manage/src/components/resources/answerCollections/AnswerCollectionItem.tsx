@@ -122,6 +122,7 @@ function AnswerCollectionItem({
           {collection.isManager && (collection.numSharedUsers ?? 0) > 0 && (
             <button
               type="button"
+              aria-label={`${t(`manage.sharing.share${ObjectType.AnswerCollection}`)} (${collection.numSharedUsers} ${t('shared.generic.users')})`}
               className="hover:text-primary-100 flex cursor-pointer items-center border-0 bg-transparent p-0 text-sm text-gray-600"
               onClick={(e) => {
                 e.preventDefault()

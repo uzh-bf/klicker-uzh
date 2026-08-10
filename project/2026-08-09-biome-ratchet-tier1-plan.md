@@ -326,6 +326,12 @@ ci(quality): enforce Biome lint
   `choice.ix` for chart cells and occurrence-aware line keys in all four
   plain-text rendering paths. Browser and clean GraphQL integration checks
   remain documented environment blockers, not code findings.
+- 2026-08-10: The following exact-range integrated review found three sharing
+  controls whose accessible names exposed only the user count and one new
+  native stack button containing a block-level label. The branch now adds
+  translated action-and-count labels, uses spans for the counts, and keeps the
+  stack button's label phrasing-only. Browser and clean GraphQL integration
+  checks remain environment blockers recorded above.
 
 ## Finish state
 

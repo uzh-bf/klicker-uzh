@@ -245,6 +245,7 @@ function Element({
           {element.numSharedUsers && element.isManager ? (
             <button
               type="button"
+              aria-label={`${t(`manage.sharing.share${ObjectType.Element}`)} (${element.numSharedUsers} ${t('shared.generic.users')})`}
               className="hover:text-primary-100 mr-3 flex h-max cursor-pointer flex-row items-center gap-2 border-0 bg-transparent py-1 text-gray-600"
               onClick={(e) => {
                 e.preventDefault()
@@ -252,7 +253,7 @@ function Element({
                 setSharingModalOpen(true)
               }}
             >
-              <div>{element.numSharedUsers}</div>
+              <span>{element.numSharedUsers}</span>
               <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
             </button>
           ) : null}

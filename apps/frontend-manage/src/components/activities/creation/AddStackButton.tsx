@@ -207,11 +207,11 @@ function AddStackButton({
           data-cy={`drop-elements-add-${type}`}
         >
           <FontAwesomeIcon icon={faPlus} size="lg" />
-          <div>
+          <span className="max-w-full whitespace-normal">
             {type === 'block'
               ? t('manage.activityWizard.newBlock')
               : t('manage.activityWizard.newStack')}
-          </div>
+          </span>
         </button>
       )}
     </div>

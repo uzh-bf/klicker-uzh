@@ -17,3 +17,4 @@ tags:
 - Replaced nested `role="button"` rows with neutral containers and sibling primary/action controls in catalog, feedback, and leaderboard components.
 - Exposed the existing choice index through evaluation GraphQL results and used it for stable evaluation-row keys when answer text is duplicated.
 - Used the same choice index for shared evaluation chart cells and made plain-text Ellipsis line keys occurrence-aware when content repeats.
+- Added translated accessible names and phrasing-only content to the sharing controls and the new activity-wizard stack button.

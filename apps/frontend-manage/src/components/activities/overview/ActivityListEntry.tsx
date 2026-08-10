@@ -254,6 +254,7 @@ function ActivityListEntry({
               {activity.numSharedUsers && activity.isManager ? (
                 <button
                   type="button"
+                  aria-label={`${t(`manage.sharing.share${activity.type}`)} (${activity.numSharedUsers} ${t('shared.generic.users')})`}
                   className="hover:text-primary-100 ml-2 mr-3 flex h-max flex-row items-center gap-1.5 border-0 bg-transparent py-1 text-gray-600 hover:cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault()
@@ -261,7 +262,7 @@ function ActivityListEntry({
                     setSharingModal(true)
                   }}
                 >
-                  <div>{activity.numSharedUsers}</div>
+                  <span>{activity.numSharedUsers}</span>
                   <FontAwesomeIcon icon={faUserGroup} className="h-4 w-4" />
                 </button>
               ) : null}
