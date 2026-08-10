@@ -578,8 +578,10 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Current `v3` chat surface, versions, citations, feedback, credits, sparse tool calls, cancellation semantics, and image limits remapped on 2026-08-10.
 - [x] V1 thread lifecycle locked to explicit `POST /threads` before the first send; no draft-adoption state machine.
 - [x] 2026-08-10 plan refresh independently reviewed; accepted corrections integrated and validated.
-- [ ] Slices 1-6 implemented and verified.
+- [x] Public ADR 0005 accepted for the versioned chat-engine boundary.
+- [ ] Slice 1 active: contract schemas, conformance fixtures, and the public default-engine tracer.
+- [ ] Slices 2-6 implemented and verified.
 
 ## Next Action
 
-Present this refreshed plan for Slice 1 approval. Do not force-push the reconstructed branch, change either pull request, or begin deployment work without the corresponding explicit approval.
+Implement and verify Slice 1 in this worktree. Do not force-push the reconstructed branch, change either pull request, or begin deployment work without the corresponding explicit approval.
