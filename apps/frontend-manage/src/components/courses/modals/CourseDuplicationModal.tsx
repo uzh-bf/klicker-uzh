@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
-  Course,
+  type Course,
   LocaleType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -14,7 +14,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { Form, Formik, FormikProps, useField } from 'formik'
+import { Form, Formik, type FormikProps, useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useId, useRef } from 'react'
 import * as yup from 'yup'
@@ -825,35 +825,21 @@ function CourseDuplicationModal({
                     {values.isGamificationEnabled &&
                       values.isGroupCreationEnabled && (
                         <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
-                          <div className="flex w-[280px] flex-col">
-                            <FormLabel
-                              id="course-duplication-group-deadline"
-                              required
-                              label={t(
-                                'manage.courseList.groupCreationDeadline'
-                              )}
-                              labelType="small"
-                              tooltip={
-                                t(
-                                  'manage.courseList.groupCreationDeadlineTooltip'
-                                ) +
-                                ' ' +
-                                t(
-                                  'manage.courseList.groupCreationDeadlineForCourseDuplicationTooltip'
-                                )
-                              }
-                            />
-                            <output
-                              id="course-duplication-group-deadline"
-                              aria-readonly="true"
-                              className="border-input bg-uzh-grey-20 w-36 rounded-md border px-3 py-2 text-base text-gray-600"
-                              data-cy="group-creation-deadline"
-                            >
-                              {dayjs(values.groupCreationDeadline).format(
-                                'DD.MM.YYYY'
-                              )}
-                            </output>
-                          </div>
+                          <FormikNativeDateInput
+                            required
+                            name="groupCreationDeadline"
+                            label={t('manage.courseList.groupCreationDeadline')}
+                            tooltip={
+                              t(
+                                'manage.courseList.groupCreationDeadlineTooltip'
+                              ) +
+                              ' ' +
+                              t(
+                                'manage.courseList.groupCreationDeadlineForCourseDuplicationTooltip'
+                              )
+                            }
+                            data={{ cy: 'group-creation-deadline' }}
+                          />
                           <FormikNumberField
                             name="maxGroupSize"
                             label={t('manage.courseList.maxGroupSize')}

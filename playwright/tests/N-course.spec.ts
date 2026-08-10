@@ -288,6 +288,14 @@ const SHARING_COURSE_GROUP_DEADLINE = new Date(
   12
 )
 
+function getNativeDateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
 const permissionTestIds: Record<string, string> = {
   [PERM_READ]: 'READ',
   [PERM_EXECUTE]: 'EXECUTE',
@@ -1116,6 +1124,16 @@ async function verifyCourseDuplicationModalUi(page: Page) {
   )
   await expect(page.getByTestId('course-gamification')).not.toBeVisible()
 
+  const adjustedGroupDeadline = new Date(SHARING_COURSE_GROUP_DEADLINE)
+  adjustedGroupDeadline.setDate(adjustedGroupDeadline.getDate() + 1)
+  const adjustedGroupDeadlineValue = getNativeDateInputValue(
+    adjustedGroupDeadline
+  )
+  const groupDeadlineInput = page.getByTestId('group-creation-deadline')
+  await expect(groupDeadlineInput).toHaveAttribute('type', 'date')
+  await groupDeadlineInput.fill(adjustedGroupDeadlineValue)
+  await expect(groupDeadlineInput).toHaveValue(adjustedGroupDeadlineValue)
+
   for (const testId of [
     'course-live-quizzes',
     'course-practice-quizzes',
@@ -1137,6 +1155,8 @@ async function verifyCourseDuplicationModalUi(page: Page) {
       'checked'
     )
   }
+
+  return adjustedGroupDeadlineValue
 }
 
 async function verifyCopiedCourseActivities(page: Page) {
@@ -2469,7 +2489,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await openCourseInManage(page, SHARING.course)
     await chooseCourseAction(page, 'course-duplicate-button')
-    await verifyCourseDuplicationModalUi(page)
+    const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page)
     await submitCourseFormAndWaitForCreateCourse(page)
 
     await expect(
@@ -2507,6 +2527,9 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     expect(sourceSummary).not.toBeNull()
     expect(copiedSummary.isGamificationEnabled).toEqual(
       sourceSummary!.isGamificationEnabled
+    )
+    expect(getNativeDateInputValue(copiedSummary.groupDeadlineDate)).toEqual(
+      adjustedGroupDeadline
     )
     expect(sourceSummary!.competencyTreeName).toEqual(competencyTreeName)
     expect(copiedSummary.competencyTreeId).toEqual(

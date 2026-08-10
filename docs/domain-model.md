@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-09'
+timestamp: '2026-08-10'
 tags:
   - backend
   - prisma
@@ -57,7 +57,7 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 - **Copied:** selected activities (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. If a non-owner ADMIN duplicates, the source owner is granted ADMIN on the copy (`courses.ts:grantDuplicatedCourseAccessToSourceOwner`); the duplicator becomes OWNER.
 - **Not copied:** participants/participations, groups, results, leaderboards, responses. Copies land in DRAFT with zeroed `results`/`anonymousResults` and fresh `instanceStatistics` (`packages/util/src/elements.ts:getActivityInstanceConnectOrCreate`, duplication branch). Live-quiz PINs are regenerated, never reused; a SSO course's `pinCode` is nulled.
 - **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
-- **Date shifting:** MicroLearning/GroupActivity schedules shift by the day delta between old and new course start, computed with `courses.ts:getCourseStartDayDelta` — **rounded, not truncated**, so DST transitions and legacy non-midnight start timestamps don't shift activities a day early.
+- **Date shifting:** MicroLearning/GroupActivity schedules shift by the day delta between old and new course start, computed with `courses.ts:getCourseStartDayDelta` — **rounded, not truncated**, so DST transitions and legacy non-midnight start timestamps don't shift activities a day early. The duplication dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).
 
 ## Gamification details
 

@@ -2957,7 +2957,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       fixedDateInterval:
         'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
-        'Due to technical reasons, the group creation deadline is fixed based on the course start date. You can adjust this deadline in the course settings.',
+        'Changing the course dates recalculates this deadline based on its original offset. You can adjust it afterwards.',
       copyLiveQuizzesTooltip:
         'If you activate this setting, all live quizzes in the course will be copied to the new course.',
       copyPracticeQuizzesTooltip:
