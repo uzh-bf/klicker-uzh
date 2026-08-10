@@ -270,85 +270,83 @@ function CourseOverviewHeader({
 
   return (
     <div className="flex flex-row flex-wrap items-center gap-x-4">
-      <H1
-        data={{ cy: 'course-name-with-pin' }}
-        className={{ root: 'min-w-0 flex-1 break-words' }}
-      >
-        {course.name}
-      </H1>
-      <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 md:flex-1 md:basis-0">
+      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-between gap-x-4">
+        <H1
+          data={{ cy: 'course-name-with-pin' }}
+          className={{ root: 'min-w-0 flex-1 break-words' }}
+        >
+          {course.name}
+        </H1>
         <div className="shrink-0 italic">
           {t('manage.course.nParticipants', {
             number: course.numOfParticipants ?? 0,
           })}
         </div>
-        <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2">
-          {course.isEditor ? (
-            <Button
-              onClick={() => setCourseSettingsModal(true)}
-              className={{ root: 'h-8' }}
-              data={{ cy: 'course-settings-button' }}
-            >
-              <Button.Icon icon={faPencil} />
-              <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
-            </Button>
-          ) : null}
+      </div>
+      <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 lg:flex-initial lg:basis-auto">
+        {course.isEditor ? (
           <Button
-            onClick={() => setIsActivityLogOpen(true)}
+            onClick={() => setCourseSettingsModal(true)}
             className={{ root: 'h-8' }}
-            data={{ cy: 'course-activity-log-button' }}
+            data={{ cy: 'course-settings-button' }}
           >
-            <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
+            <Button.Icon icon={faPencil} />
+            <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
           </Button>
-          {!course.isAssessmentEnabled && course.pinCode && (
-            <QRCodePopover
-              triggerStyle="primary"
-              triggerText={t('manage.course.joinCourse')}
-              infoComponent={
-                <UserNotification
-                  message={t('manage.course.courseQRDescription')}
-                  className={{ root: 'mb-3 w-80' }}
-                />
-              }
-              relHref={`/${course.language}/course/${course.id}/join?pin=${course.pinCode}`}
-              data={{ cy: `course-join-qr-code` }}
-            />
-          )}
-          {course.isAssessmentEnabled && course.isManager ? (
-            <Button
-              primary
-              className={{ root: 'h-8' }}
-              onClick={() => {
-                router.push(`/courses/${course.id}/assessment/results`)
-              }}
-              data={{ cy: 'assessment-course-results' }}
-            >
-              <Button.Icon icon={faFilePen} />
-              <Button.Label>
-                {t('manage.course.assessmentResults')}
-              </Button.Label>
-            </Button>
-          ) : null}
-          <Dropdown
-            data={{ cy: 'course-actions-menu' }}
-            className={{
-              item: 'py-0.5 text-sm',
-              viewport: 'z-20 bg-white',
-              trigger: 'h-8 w-8 border-none bg-transparent p-0 text-sm',
-            }}
-            align="end"
-            trigger={
-              <>
-                <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
-                <span className="sr-only">
-                  {t('manage.course.moreCourseActions')}
-                </span>
-              </>
+        ) : null}
+        <Button
+          onClick={() => setIsActivityLogOpen(true)}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-activity-log-button' }}
+        >
+          <Button.Icon icon={faMessage} />
+          <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
+        </Button>
+        {!course.isAssessmentEnabled && course.pinCode && (
+          <QRCodePopover
+            triggerStyle="primary"
+            triggerText={t('manage.course.joinCourse')}
+            infoComponent={
+              <UserNotification
+                message={t('manage.course.courseQRDescription')}
+                className={{ root: 'mb-3 w-80' }}
+              />
             }
-            items={courseActionMenuItems}
+            relHref={`/${course.language}/course/${course.id}/join?pin=${course.pinCode}`}
+            data={{ cy: `course-join-qr-code` }}
           />
-        </div>
+        )}
+        {course.isAssessmentEnabled && course.isManager ? (
+          <Button
+            primary
+            className={{ root: 'h-8' }}
+            onClick={() => {
+              router.push(`/courses/${course.id}/assessment/results`)
+            }}
+            data={{ cy: 'assessment-course-results' }}
+          >
+            <Button.Icon icon={faFilePen} />
+            <Button.Label>{t('manage.course.assessmentResults')}</Button.Label>
+          </Button>
+        ) : null}
+        <Dropdown
+          data={{ cy: 'course-actions-menu' }}
+          className={{
+            item: 'py-0.5 text-sm',
+            viewport: 'z-20 bg-white',
+            trigger: 'h-8 w-8 border-none bg-transparent p-0 text-sm',
+          }}
+          align="end"
+          trigger={
+            <>
+              <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
+              <span className="sr-only">
+                {t('manage.course.moreCourseActions')}
+              </span>
+            </>
+          }
+          items={courseActionMenuItems}
+        />
       </div>
       {duplicationModal && (
         <CourseDuplicationModal

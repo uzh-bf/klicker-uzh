@@ -365,7 +365,14 @@ mobile actions, new dependencies, automated layout tests, and unrelated PR
 - [x] User approved the Sol-reviewed responsive layout plan.
 - [x] Sol planning-stage review completed; no findings.
 - [x] Plan extension recorded before implementation.
-- [ ] Commit Slice A plan checkpoint.
-- [ ] Implement and verify Slice A responsive grouping.
+- [x] Commit Slice A plan checkpoint.
+- [x] Implement and verify Slice A responsive grouping.
 - [ ] Implement and verify Slice B secondary-action hierarchy.
 - [ ] Complete Slice C final verification and exact-head review.
+
+Slice A evidence: at 390px, 594px, 1024px, and 1280px the course-header
+controls remain inside the content width. At 594px and 1024px all four current
+actions share one row; at 390px Modify plus Comments share the first action row
+and Join plus the ellipsis share the second. The document-level 678px scroll
+width at 390px comes from the existing global navigation, not the course-header
+action cluster and remains outside this slice.
