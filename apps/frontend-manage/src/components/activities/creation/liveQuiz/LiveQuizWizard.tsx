@@ -26,7 +26,10 @@ import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
-import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
+import WizardLayout, {
+  createElementBlockClientId,
+  LiveQuizFormValues,
+} from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
 import LiveQuizInformationStep from './LiveQuizInformationStep'
 import LiveQuizQuestionsStep from './LiveQuizQuestionsStep'
@@ -182,7 +185,13 @@ function LiveQuizWizard({
     name: '',
     displayName: '',
     description: '',
-    blocks: [{ timeLimit: undefined, elements: [] }],
+    blocks: [
+      {
+        clientId: createElementBlockClientId(),
+        timeLimit: undefined,
+        elements: [],
+      },
+    ],
     courseId: 'no-course-selected',
     multiplier: '1',
     defaultPoints: LQ_DEFAULT_POINTS,
@@ -229,6 +238,7 @@ function LiveQuizWizard({
     description: initialValues?.description || formDefaultValues.description,
     blocks: initialValues?.blocks
       ? initialValues.blocks.map((block) => ({
+          clientId: createElementBlockClientId(),
           timeLimit: block.timeLimit ?? undefined,
           elements: block.elements!.map((instance) => {
             const [elementId, _] = instance.elementData.id.split('-v')

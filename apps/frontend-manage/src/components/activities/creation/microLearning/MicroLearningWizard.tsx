@@ -17,7 +17,10 @@ import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, { MicroLearningFormValues } from '../WizardLayout'
+import WizardLayout, {
+  createElementStackClientId,
+  MicroLearningFormValues,
+} from '../WizardLayout'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
 import MicroLearningSettingsStep from './MicroLearningSettingsStep'
@@ -179,6 +182,7 @@ function MicroLearningWizard({
     description: '',
     stacks: [
       {
+        clientId: createElementStackClientId(),
         displayName: '',
         description: '',
         elements: [],
@@ -233,6 +237,7 @@ function MicroLearningWizard({
     description: initialValues?.description || formDefaultValues.description,
     stacks: initialValues?.stacks
       ? initialValues.stacks.map((stack) => ({
+          clientId: createElementStackClientId(),
           displayName: stack.displayName ?? '',
           description: stack.description ?? '',
           elements: stack.elements!.map((instance) => {

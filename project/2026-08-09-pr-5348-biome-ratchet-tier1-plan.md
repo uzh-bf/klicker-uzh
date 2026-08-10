@@ -4,6 +4,7 @@ Status: IN PROGRESS — widened from the noBlankTarget slice
 Date: 2026-08-09
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
+Plan artifact: project/2026-08-09-pr-5348-biome-ratchet-tier1-plan.md
 Base: 338763a41 (origin/v3; verified 2026-08-10)
 Worktree: trees/biome-ratchet-tier1
 Related history: project/2026-07-19-biome-knip-repo-quality.md
@@ -346,6 +347,12 @@ ci(quality): enforce Biome lint
   branch now derives primitive effect triggers with a functional fallback,
   gives clues client-only occurrence IDs, uses occurrence-aware clue errors,
   and strips the IDs before GraphQL submission.
+- 2026-08-10: The exact integrated final review found eight remaining mutable
+  Formik array-key suppressions. Activity blocks/stacks, template blocks,
+  group members, answer entries, and numerical/free-text solution rows now
+  receive stable client-only occurrence IDs; submission mappers keep those
+  IDs out of GraphQL variables. The plan artifact was renamed to include PR
+  #5348 so the execution contract and delivery path remain unambiguous.
 
 ## Finish state
 

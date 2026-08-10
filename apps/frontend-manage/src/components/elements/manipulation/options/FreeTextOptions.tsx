@@ -5,6 +5,7 @@ import {
 } from '@uzh-bf/design-system'
 import { FieldArray, FieldArrayRenderProps } from 'formik'
 import { useTranslations } from 'next-intl'
+import { useRef } from 'react'
 import { ElementFormTypesFreeText } from '../types'
 
 interface FreeTextOptionsProps {
@@ -12,8 +13,21 @@ interface FreeTextOptionsProps {
   values: ElementFormTypesFreeText
 }
 
+let nextFreeTextSolutionClientId = 0
+
+function createFreeTextSolutionClientId(): string {
+  return `solution-${nextFreeTextSolutionClientId++}`
+}
+
 function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
   const t = useTranslations()
+  const solutionClientIds = useRef<string[]>([])
+  const getSolutionClientIds = (length: number) => {
+    while (solutionClientIds.current.length < length) {
+      solutionClientIds.current.push(createFreeTextSolutionClientId())
+    }
+    return solutionClientIds.current
+  }
 
   return (
     <div className="flex flex-col">
@@ -33,58 +47,70 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
       </div>
       {values.options.hasSampleSolution && (
         <FieldArray name="options.solutions">
-          {({ push, remove }: FieldArrayRenderProps) => (
-            <div className="flex w-max flex-col gap-1">
-              {values.options.solutions
-                ? values.options.solutions.map((_solution, index) => (
-                    <div
-                      className="flex flex-row items-end gap-2"
-                      // Formik solution arrays contain plain strings without a persisted identity; the field index is their controlled identity.
-                      // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
-                      key={`${index}-${values.options.solutions!.length}`}
-                    >
-                      <FormikTextField
-                        required
-                        disabled={inputsDisabled}
-                        name={`options.solutions.${index}`}
-                        label={t('manage.elements.possibleSolutionN', {
-                          number: String(index + 1),
-                        })}
-                        type="text"
-                        placeholder={t('shared.generic.solution')}
-                        data={{ cy: `set-solution-ix-${index}` }}
-                      />
-                      {!inputsDisabled ? (
-                        <Button
-                          destructive
-                          onClick={() => remove(index)}
-                          className={{
-                            root: 'h-9',
-                          }}
-                          data={{
-                            cy: `delete-solution-ix-${index}`,
-                          }}
-                        >
-                          {t('shared.generic.delete')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  ))
-                : null}
-              {!inputsDisabled ? (
-                <Button
-                  fluid
-                  className={{
-                    root: 'mt-1 h-8 border-gray-300 font-bold',
-                  }}
-                  onClick={() => push('')}
-                  data={{ cy: 'add-solution-value' }}
-                >
-                  {t('manage.elements.addSolution')}
-                </Button>
-              ) : null}
-            </div>
-          )}
+          {({ push, remove }: FieldArrayRenderProps) => {
+            const clientIds = getSolutionClientIds(
+              values.options.solutions?.length ?? 0
+            )
+
+            return (
+              <div className="flex w-max flex-col gap-1">
+                {values.options.solutions
+                  ? values.options.solutions.map((_solution, index) => (
+                      <div
+                        className="flex flex-row items-end gap-2"
+                        key={clientIds[index]}
+                      >
+                        <FormikTextField
+                          required
+                          disabled={inputsDisabled}
+                          name={`options.solutions.${index}`}
+                          label={t('manage.elements.possibleSolutionN', {
+                            number: String(index + 1),
+                          })}
+                          type="text"
+                          placeholder={t('shared.generic.solution')}
+                          data={{ cy: `set-solution-ix-${index}` }}
+                        />
+                        {!inputsDisabled ? (
+                          <Button
+                            destructive
+                            onClick={() => {
+                              solutionClientIds.current.splice(index, 1)
+                              remove(index)
+                            }}
+                            className={{
+                              root: 'h-9',
+                            }}
+                            data={{
+                              cy: `delete-solution-ix-${index}`,
+                            }}
+                          >
+                            {t('shared.generic.delete')}
+                          </Button>
+                        ) : null}
+                      </div>
+                    ))
+                  : null}
+                {!inputsDisabled ? (
+                  <Button
+                    fluid
+                    className={{
+                      root: 'mt-1 h-8 border-gray-300 font-bold',
+                    }}
+                    onClick={() => {
+                      solutionClientIds.current.push(
+                        createFreeTextSolutionClientId()
+                      )
+                      push('')
+                    }}
+                    data={{ cy: 'add-solution-value' }}
+                  >
+                    {t('manage.elements.addSolution')}
+                  </Button>
+                ) : null}
+              </div>
+            )
+          }}
         </FieldArray>
       )}
     </div>

@@ -9,7 +9,9 @@ import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../elements/Element'
 import {
+  createElementBlockClientId,
   createElementInstanceClientId,
+  createElementStackClientId,
   ElementBlockFormValues,
   ElementStackFormValues,
 } from './WizardLayout'
@@ -56,11 +58,13 @@ function AddStackButton({
 
         if (type === 'block') {
           push({
+            clientId: createElementBlockClientId(),
             timeLimit: undefined,
             elements: initialElements,
           })
         } else {
           push({
+            clientId: createElementStackClientId(),
             displayName: '',
             description: '',
             elements: initialElements,
@@ -99,11 +103,13 @@ function AddStackButton({
 
               if (type === 'block') {
                 push({
+                  clientId: createElementBlockClientId(),
                   timeLimit: undefined,
                   elements,
                 })
               } else {
                 push({
+                  clientId: createElementStackClientId(),
                   displayName: '',
                   description: '',
                   elements,
@@ -149,11 +155,13 @@ function AddStackButton({
 
                 if (type === 'block') {
                   push({
+                    clientId: createElementBlockClientId(),
                     timeLimit: undefined,
                     elements,
                   })
                 } else {
                   push({
+                    clientId: createElementStackClientId(),
                     displayName: '',
                     description: '',
                     elements,
@@ -193,11 +201,13 @@ function AddStackButton({
           onClick={() => {
             if (type === 'block') {
               push({
+                clientId: createElementBlockClientId(),
                 timeLimit: undefined,
                 elements: [],
               })
             } else {
               push({
+                clientId: createElementStackClientId(),
                 displayName: '',
                 description: '',
                 elements: [],

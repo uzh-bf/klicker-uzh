@@ -24,7 +24,13 @@ import EditorField from '../../activities/creation/EditorField'
 type AnswerCollectionFormValues = {
   name?: string
   description?: string
-  entries: { value?: string }[]
+  entries: { clientId: string; value?: string }[]
+}
+
+let nextAnswerCollectionEntryClientId = 0
+
+function createAnswerCollectionEntryClientId(): string {
+  return `entry-${nextAnswerCollectionEntryClientId++}`
 }
 
 function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
@@ -62,7 +68,16 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
         initialValues={{
           name: undefined,
           description: undefined,
-          entries: [{ value: undefined }, { value: undefined }],
+          entries: [
+            {
+              clientId: createAnswerCollectionEntryClientId(),
+              value: undefined,
+            },
+            {
+              clientId: createAnswerCollectionEntryClientId(),
+              value: undefined,
+            },
+          ],
         }}
         onSubmit={async (values: AnswerCollectionFormValues) => {
           const { data } = await createAnswerCollection({
@@ -132,13 +147,8 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               name="entries"
               render={({ push, remove }) => (
                 <div className="space-y-2">
-                  {values.entries.map((_, index) => (
-                    <div
-                      // Formik answer entries have no persisted identity; the field index is their controlled identity.
-                      // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
-                      key={index}
-                      className="flex space-x-2"
-                    >
+                  {values.entries.map((entry, index) => (
+                    <div key={entry.clientId} className="flex space-x-2">
                       <FormikTextField
                         name={`entries.${index}.value`}
                         label={t('manage.resources.answerEntry', {
@@ -158,7 +168,12 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
                     </div>
                   ))}
                   <Button
-                    onClick={() => push({ value: undefined })}
+                    onClick={() =>
+                      push({
+                        clientId: createAnswerCollectionEntryClientId(),
+                        value: undefined,
+                      })
+                    }
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-response-entry' }}
                   >

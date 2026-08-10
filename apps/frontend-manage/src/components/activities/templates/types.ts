@@ -34,6 +34,8 @@ export type LiveQuizTemplateFormValues = {
 
   // blocks with optionally identical or modified elements
   blocks: {
+    // Optional for compatibility with local-storage data written before this identity was added.
+    clientId?: string
     timeLimit?: string // optional time limit to be set through custom dialog
     elements: ActivityTemplateElementFormValues[]
   }[]

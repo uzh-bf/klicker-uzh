@@ -14,6 +14,7 @@ import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { createElementBlockClientId } from '../creation/WizardLayout'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
@@ -98,6 +99,26 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     `live-quiz-template-inputs-${template.id}`,
     undefined
   )
+
+  // Older local-storage data may not have a client id. Keep its fallback id
+  // stable while the legacy object is being edited, then persist it on update.
+  const [legacyBlockClientIds] = useState(() => new WeakMap<object, string>())
+  const getBlockClientId = (
+    block: LiveQuizTemplateFormValues['blocks'][number]
+  ) => {
+    if (block.clientId) {
+      return block.clientId
+    }
+
+    const existingClientId = legacyBlockClientIds.get(block)
+    if (existingClientId) {
+      return existingClientId
+    }
+
+    const clientId = createElementBlockClientId()
+    legacyBlockClientIds.set(block, clientId)
+    return clientId
+  }
 
   // helper function to initialize quiz data from template
   const initialTemplateFormData = useInitialLiveQuizTemplateFormData({
@@ -187,12 +208,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         </SectionCollapsible>
 
         {quizData?.blocks?.map((block, blockIx) => (
-          <div
-            // Formik template blocks have no persisted identity; the field index is their controlled identity.
-            // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
-            key={`live-quiz-template-block-${blockIx}`}
-            className="mt-4"
-          >
+          <div key={getBlockClientId(block)} className="mt-4">
             <div className="flex flex-row items-center justify-between">
               <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
               <Button
@@ -264,6 +280,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -302,6 +319,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -339,6 +357,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -382,6 +401,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     const blocks = [...prev.blocks]
                     blocks[blockIx] = {
                       ...blocks[blockIx],
+                      clientId: getBlockClientId(blocks[blockIx]),
                       timeLimit: newValue,
                     }
 

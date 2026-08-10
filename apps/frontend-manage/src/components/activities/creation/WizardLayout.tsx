@@ -37,10 +37,20 @@ export interface ElementInstanceFormInput {
 }
 
 let nextElementInstanceClientId = 0
+let nextElementBlockClientId = 0
+let nextElementStackClientId = 0
 let nextGroupActivityClueClientId = 0
 
 export function createElementInstanceClientId(): string {
   return `new-${nextElementInstanceClientId++}`
+}
+
+export function createElementBlockClientId(): string {
+  return `block-${nextElementBlockClientId++}`
+}
+
+export function createElementStackClientId(): string {
+  return `stack-${nextElementStackClientId++}`
 }
 
 export function createGroupActivityClueClientId(): string {
@@ -48,11 +58,13 @@ export function createGroupActivityClueClientId(): string {
 }
 
 export interface ElementBlockFormValues {
+  clientId: string
   timeLimit?: number
   elements: ElementInstanceFormInput[]
 }
 
 export interface ElementStackFormValues {
+  clientId: string
   displayName?: string
   description?: string
   elements: ElementInstanceFormInput[]

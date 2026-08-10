@@ -20,6 +20,7 @@ import CompletionStep from '../CompletionStep'
 import WizardLayout, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
+  createElementStackClientId,
   createGroupActivityClueClientId,
 } from '../WizardLayout'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
@@ -206,6 +207,7 @@ function GroupActivityWizard({
     description: '',
     clues: [],
     stack: {
+      clientId: createElementStackClientId(),
       displayName: '',
       description: '',
       elements: [],
@@ -272,6 +274,7 @@ function GroupActivityWizard({
       }) ?? formDefaultValues.clues,
     stack: initialStack
       ? {
+          clientId: createElementStackClientId(),
           displayName: initialStack.displayName ?? '',
           description: initialStack.description ?? '',
           elements:

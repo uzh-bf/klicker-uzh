@@ -21,7 +21,17 @@ import * as Yup from 'yup'
 
 type UserGroupCreationFormValues = {
   name?: string
-  members: { shortnameOrEmail: string; isAdmin: boolean }[]
+  members: {
+    clientId: string
+    shortnameOrEmail: string
+    isAdmin: boolean
+  }[]
+}
+
+let nextUserGroupMemberClientId = 0
+
+function createUserGroupMemberClientId(): string {
+  return `member-${nextUserGroupMemberClientId++}`
 }
 
 function UserGroupCreationForm({
@@ -65,14 +75,22 @@ function UserGroupCreationForm({
       <Formik
         initialValues={{
           name: undefined,
-          members: [{ shortnameOrEmail: '', isAdmin: false }],
+          members: [
+            {
+              clientId: createUserGroupMemberClientId(),
+              shortnameOrEmail: '',
+              isAdmin: false,
+            },
+          ],
         }}
         onSubmit={async (values: UserGroupCreationFormValues) => {
           try {
             const { data } = await createUserGroup({
               variables: {
                 name: values.name!,
-                members: values.members!,
+                members: values.members.map(
+                  ({ clientId: _clientId, ...member }) => member
+                ),
               },
               update: (cache, { data }) => {
                 // check if the creation was successful
@@ -121,13 +139,8 @@ function UserGroupCreationForm({
               name="members"
               render={({ push, remove }) => (
                 <div className="space-y-2">
-                  {values.members.map((_, index) => (
-                    <div
-                      // Formik member entries have no persisted identity; the field index is their controlled identity.
-                      // biome-ignore lint/suspicious/noArrayIndexKey: index is the only stable identity available for this controlled Formik array
-                      key={index}
-                      className="flex space-x-2"
-                    >
+                  {values.members.map((member, index) => (
+                    <div key={member.clientId} className="flex space-x-2">
                       <div className="grow">
                         <FormikTextField
                           required={index === 0}
@@ -158,7 +171,11 @@ function UserGroupCreationForm({
                   ))}
                   <Button
                     onClick={() =>
-                      push({ shortnameOrEmail: '', isAdmin: false })
+                      push({
+                        clientId: createUserGroupMemberClientId(),
+                        shortnameOrEmail: '',
+                        isAdmin: false,
+                      })
                     }
                     className={{ root: 'w-full' }}
                     data={{ cy: 'add-member' }}
