@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalDependencies": ["packages/util/rollup-typescript-options.cjs"],
+  "globalDependencies": ["packages/build-config/**"],
   "globalEnv": [
     "API_DOMAIN",
     "APP_CONTROL_DOMAIN",

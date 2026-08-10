@@ -6,7 +6,7 @@ import { defineConfig } from 'rollup'
 import serve from 'rollup-plugin-serve'
 
 const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
-  '../../packages/util/rollup-typescript-options.cjs'
+  '@klicker-uzh/build-config'
 )
 
 const isDev = process.env.NODE_ENV === 'development'

@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/build-config",
+  "files": [
+    "rollup-typescript-options.cjs"
+  ],
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "exports": "./rollup-typescript-options.cjs",
+  "type": "commonjs"
+}

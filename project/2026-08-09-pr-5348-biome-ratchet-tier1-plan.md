@@ -469,6 +469,29 @@ is unavailable.
   GraphQL, and backend Rollup with 7/7 tasks successful; fresh final review
   gates are required for this changed range.
 
+- 2026-08-10: The follow-up maintainability review and a fresh 15-scope prune
+  matrix showed that the package-local helper was still omitted for seven
+  standalone Rollup consumers (`office-addin`, `export`, `grading`, `hatchet`,
+  `markdown`, `prisma`, and `word-cloud`); the six service scopes passed only
+  through incidental dependency reachability. The helper is being moved into
+  the private, dependency-free `packages/build-config` workspace, all 15
+  Rollup consumers are declaring it as a direct `workspace:*` devDependency,
+  and every config loads its package-root CommonJS export. `turbo.json` now
+  hashes `packages/build-config/**`, covering both the helper and its export
+  metadata. The complete prune matrix, lockfile update, representative Docker
+  build, and fresh exact-range review gates remain pending.
+- 2026-08-10: The explicit dependency correction is committed. Pnpm 11.5
+  validates the lockfile, Node 24 loads the package
+  export from all 15 consumers, all 15 Docker-prune outputs retain the helper,
+  manifest, and lockfile link, Office Add-in builds successfully, and the
+  backend Docker builder completes frozen install and 7/7 build tasks. The
+  normal commit hooks pass 24/24 checks; only the fresh exact-range review
+  gates and PR publication remain outstanding.
+- 2026-08-10: The exact-range maintainability, security, and integrated final
+  reviews all returned PASS with no P0-P3 findings. The package is locally
+  ready for publication; the finish state remains IN PROGRESS only because
+  PR #5348 has not been updated or pushed and current-head CI has not run.
+
 ## Finish state
 
 The goal is complete only when the widened plan and implementation are on the

@@ -15,6 +15,7 @@
     "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
+    "@klicker-uzh/build-config": "workspace:*",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/ltijs": "^4.0.12",

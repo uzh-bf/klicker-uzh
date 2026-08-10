@@ -4,7 +4,7 @@ import { defineConfig } from 'rollup'
 import { createRequire } from 'node:module'
 
 const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
-  './rollup-typescript-options.cjs'
+  '@klicker-uzh/build-config'
 )
 
 const config = defineConfig([

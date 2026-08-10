@@ -287,6 +287,9 @@ importers:
         specifier: 8.18.0
         version: 8.18.0
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@istanbuljs/nyc-config-typescript':
         specifier: ~1.0.2
         version: 1.0.2(nyc@17.1.0)
@@ -1303,6 +1306,9 @@ importers:
         specifier: 13.1.3
         version: 13.1.3
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -1346,6 +1352,9 @@ importers:
         specifier: 5.4.1
         version: 5.4.1
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -1383,6 +1392,9 @@ importers:
         specifier: 2.4.4
         version: 2.4.4(@types/node@24.12.4)
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -1413,6 +1425,9 @@ importers:
 
   apps/office-addin:
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@rollup/plugin-terser':
         specifier: ~0.4.4
         version: 0.4.4(rollup@4.62.2)
@@ -1480,6 +1495,9 @@ importers:
         specifier: 10.0.0
         version: 10.0.0
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -1544,6 +1562,9 @@ importers:
         specifier: 5.4.1
         version: 5.4.1
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../../packages/build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -1563,6 +1584,8 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
+  packages/build-config: {}
+
   packages/export:
     dependencies:
       '@klicker-uzh/prisma':
@@ -1572,6 +1595,9 @@ importers:
         specifier: 4.4.0
         version: 4.4.0
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types
@@ -1609,6 +1635,9 @@ importers:
         specifier: 2.15.0
         version: 2.15.0
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types
@@ -1733,6 +1762,9 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@graphql-codegen/cli':
         specifier: ~5.0.3
         version: 5.0.7(@parcel/watcher@2.4.1)(@types/node@24.12.4)(enquirer@2.4.1)(graphql@16.11.0)(typescript@6.0.3)
@@ -1863,6 +1895,9 @@ importers:
         specifier: workspace:*
         version: link:../types
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@parcel/watcher':
         specifier: ~2.4.1
         version: 2.4.1
@@ -1976,6 +2011,9 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -2037,6 +2075,9 @@ importers:
         specifier: 8.16.3
         version: 8.16.3
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@pothos/plugin-prisma':
         specifier: ~4.10.0
         version: 4.10.0(@pothos/core@4.3.0(graphql@16.11.0))(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3))(graphql@16.11.0)(typescript@6.0.3)
@@ -2385,6 +2426,9 @@ importers:
         specifier: 10.0.0
         version: 10.0.0
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
@@ -2425,6 +2469,9 @@ importers:
         specifier: 3.0.1
         version: 3.0.1(d3-selection@3.0.0)
     devDependencies:
+      '@klicker-uzh/build-config':
+        specifier: workspace:*
+        version: link:../build-config
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
