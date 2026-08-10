@@ -8,7 +8,11 @@
 
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActivityAction,
+  chooseCourseAction,
+  openCourseActionMenu,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_EMAIL,
@@ -673,8 +677,10 @@ async function verifyCourseReadPermissions(page: Page) {
   await page.getByTestId('courses').click()
   await expectCourseCardPermission(page, SHARING.course, 'READ')
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await openCourseActionMenu(page)
   await expect(page.getByTestId('course-share-button')).not.toBeVisible()
   await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await page.keyboard.press('Escape')
   await expectCourseActivityPermissionTabs(page, {
     liveQuiz: 'READ',
     practiceQuiz: 'READ',
@@ -723,8 +729,10 @@ async function verifyCourseExecutePermissions(page: Page) {
   await page.getByTestId('courses').click()
   await expectCourseCardPermission(page, SHARING.course, 'EXECUTE')
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await openCourseActionMenu(page)
   await expect(page.getByTestId('course-share-button')).not.toBeVisible()
   await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await page.keyboard.press('Escape')
   await expectCourseActivityPermissionTabs(page, {
     liveQuiz: 'EXECUTE',
     practiceQuiz: 'EXECUTE',
@@ -769,8 +777,10 @@ async function verifyCourseWritePermissions(page: Page, propagation: boolean) {
   await page.getByTestId('courses').click()
   await expectCourseCardPermission(page, SHARING.course, 'WRITE')
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await openCourseActionMenu(page)
   await expect(page.getByTestId('course-share-button')).not.toBeVisible()
   await expect(page.getByTestId('course-duplicate-button')).not.toBeVisible()
+  await page.keyboard.press('Escape')
   await expectCourseActivityPermissionTabs(page, {
     liveQuiz: activityBadge,
     practiceQuiz: activityBadge,
@@ -813,8 +823,10 @@ async function verifyCourseAdminPermissions(page: Page, checkBadge: boolean) {
     await expectCourseCardPermission(page, SHARING.course, 'ADMIN')
   }
   await page.getByTestId(`course-list-button-${SHARING.course}`).click()
+  await openCourseActionMenu(page, 'course-share-button')
   await expect(page.getByTestId('course-share-button')).toBeVisible()
   await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
+  await page.keyboard.press('Escape')
   await expectCourseActivityPermissionTabs(page, {
     liveQuiz: 'ADMIN',
     practiceQuiz: 'ADMIN',
@@ -922,8 +934,7 @@ async function openCourseInManage(page: Page, courseName: string) {
 }
 
 async function submitCourseDuplication(page: Page, copyName?: string) {
-  await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
-  await page.getByTestId('course-duplicate-button').click()
+  await chooseCourseAction(page, 'course-duplicate-button')
 
   if (copyName) {
     await page.getByTestId('course-name').fill(copyName)
@@ -1541,7 +1552,7 @@ async function revokeCopiedPermissionAndVerifySourceUnaffected({
   shortname: string
 }) {
   await openCourseInManage(page, copiedCourseName)
-  await page.getByTestId('course-share-button').click()
+  await chooseCourseAction(page, 'course-share-button')
   await expect(page.getByTestId(`permission-${shortname}`)).toBeVisible()
   await page.getByTestId(`revoke-permission-${shortname}`).click()
   await page.getByTestId('confirm-revocation').click()
@@ -1549,7 +1560,7 @@ async function revokeCopiedPermissionAndVerifySourceUnaffected({
   await page.getByTestId('close-share-object').click()
 
   await openCourseInManage(page, SHARING.course)
-  await page.getByTestId('course-share-button').click()
+  await chooseCourseAction(page, 'course-share-button')
   await expect(page.getByTestId(`permission-${shortname}`)).toBeVisible()
   await page.getByTestId('close-share-object').click()
 }
@@ -1884,6 +1895,28 @@ test.describe('Part 2: Randomized group creation', () => {
 test.describe('Part 3: Course overview, editing, and archiving', () => {
   test.beforeEach(async ({ loginLecturer }) => {
     await loginLecturer()
+  })
+
+  test('Uses a contextual primary action and an overflow menu for course actions', async ({
+    page,
+  }) => {
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${RUNNING_COURSE.name}`).click()
+
+    await expect(page.getByTestId('course-join-qr-code')).toHaveClass(
+      /bg-primary-100/
+    )
+    await expect(page.getByTestId('course-actions-menu')).toHaveAccessibleName(
+      messages.manage.course.moreCourseActions
+    )
+    await expect(
+      page.getByTestId('course-learning-analytics-link')
+    ).not.toBeAttached()
+
+    await openCourseActionMenu(page)
+    await expect(page.getByTestId('course-lti-links')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('course-actions-menu')).toBeFocused()
   })
 
   test('Check the content of the course overview and edit course properties', async ({
@@ -2435,8 +2468,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
     await loginLecturer()
     await openCourseInManage(page, SHARING.course)
-    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
-    await page.getByTestId('course-duplicate-button').click()
+    await chooseCourseAction(page, 'course-duplicate-button')
     await verifyCourseDuplicationModalUi(page)
     await submitCourseFormAndWaitForCreateCourse(page)
 
@@ -2574,8 +2606,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
     await loginLecturer()
     await openCourseInManage(page, SHARING.course)
-    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
-    await page.getByTestId('course-duplicate-button').click()
+    await chooseCourseAction(page, 'course-duplicate-button')
     await page.getByTestId('course-name').fill(copyName)
     await page.getByTestId('course-display-name').fill(copyName)
     await expect(page.getByTestId('course-group-creation')).toHaveAttribute(
@@ -2627,7 +2658,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     try {
       await loginLecturer()
       await openCourseInManage(page, sourceName)
-      await page.getByTestId('course-duplicate-button').click()
+      await chooseCourseAction(page, 'course-duplicate-button')
       await page.getByTestId('course-name').fill(copyName)
       await page.getByTestId('course-display-name').fill(copyName)
       const errorMessages = [
@@ -2703,6 +2734,17 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
     await loginLecturer()
     await openCourseInManage(page, assessmentCourseName)
+    await expect(page.getByTestId('assessment-course-results')).toHaveClass(
+      /bg-primary-100/
+    )
+    await expect(
+      page.getByTestId('course-learning-analytics-link')
+    ).not.toBeAttached()
+    await openCourseActionMenu(page, 'assessment-course-point-corrections')
+    await expect(
+      page.getByTestId('assessment-course-point-corrections')
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
     await submitCourseDuplication(page)
     await page.getByTestId('courses').click()
     await expect(
@@ -2740,7 +2782,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     // READ for pro1
     await grantCoursePermission(page, LECTURER_IND_SHORTNAME, PERM_READ, false)
@@ -3002,8 +3044,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
     await loginInstitutionalCatalyst4()
     await openCourseInManage(page, SHARING.course)
-    await expect(page.getByTestId('course-duplicate-button')).toBeVisible()
-    await page.getByTestId('course-duplicate-button').click()
+    await chooseCourseAction(page, 'course-duplicate-button')
     await page.getByTestId('course-name').fill(copyName)
     await page.getByTestId('course-display-name').fill(copyName)
     for (const testId of [
@@ -3060,7 +3101,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     await expect(
       page.getByTestId(`permission-${LECTURER_INST4_SHORTNAME}`)
@@ -3093,7 +3134,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     await expect(
       page.getByTestId(`permission-propagation-${LECTURER_INST4_SHORTNAME}`)
@@ -3128,7 +3169,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     for (const shortname of [
       LECTURER_IND_SHORTNAME,
@@ -3235,7 +3276,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     // READ to group1
     await grantGroupPermission(page, SHARING.group1, PERM_READ, false)
@@ -3371,7 +3412,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     await expect(
       page.getByTestId(`permission-${SHARING.group5}`)
@@ -3402,7 +3443,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     await expect(
       page.getByTestId(`permission-propagation-${SHARING.group5}`)
@@ -3435,7 +3476,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     for (const group of [
       SHARING.group1,
@@ -3484,7 +3525,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     // Grant ADMIN to pro1 first
     await grantCoursePermission(page, LECTURER_IND_SHORTNAME, PERM_ADMIN, false)
@@ -3530,7 +3571,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     ).not.toBeVisible()
 
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
 
     await page.getByTestId('transfer-ownership').click()
     await page
@@ -3568,7 +3609,7 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     await loginLecturer()
     await page.getByTestId('courses').click()
     await page.getByTestId(`course-list-button-${SHARING.course}`).click()
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
     await expect(
       page.getByTestId(`permission-${LECTURER_IND_SHORTNAME}`)
     ).not.toBeVisible()

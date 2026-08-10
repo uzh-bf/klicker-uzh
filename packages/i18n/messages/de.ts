@@ -3158,6 +3158,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',

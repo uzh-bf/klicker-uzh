@@ -62,6 +62,21 @@ export async function chooseActivityAction(
   await chooseActionByTestId(page, `actions-${type}-${name}`, actionTestId)
 }
 
+export async function openCourseActionMenu(
+  page: Page,
+  expectedActionTestId?: string
+) {
+  await openActionMenuByTestId(
+    page,
+    'course-actions-menu',
+    expectedActionTestId
+  )
+}
+
+export async function chooseCourseAction(page: Page, actionTestId: string) {
+  await chooseActionByTestId(page, 'course-actions-menu', actionTestId)
+}
+
 export async function openActionMenuByTestId(
   page: Page,
   triggerTestId: string,

@@ -3104,6 +3104,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareCourse: 'Share course',
       duplicateCourse: 'Duplicate course',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',

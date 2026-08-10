@@ -2,12 +2,14 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faEllipsis,
   faFilePen,
   faLink,
   faMessage,
   faPencil,
   faShare,
 } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
   CreateCourseDocument,
@@ -127,6 +129,15 @@ function getCourseDuplicationErrorType(
   return 'generic'
 }
 
+function courseActionMenuLabel(icon: React.ReactNode, label: string) {
+  return (
+    <span className="flex items-center gap-2">
+      {icon}
+      <span>{label}</span>
+    </span>
+  )
+}
+
 function CourseOverviewHeader({
   course,
   earliestGroupDeadline,
@@ -190,16 +201,83 @@ function CourseOverviewHeader({
     }),
   ]
 
+  const courseActionMenuItems = [
+    ...(course.isManager && user?.privatePreview
+      ? [
+          {
+            id: 'course-share',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faShare} className="h-4 w-4" />,
+              t('manage.course.shareCourse')
+            ),
+            onClick: () => setSharingModal(true),
+            data: { cy: 'course-share-button' },
+          },
+        ]
+      : []),
+    ...(course.isManager
+      ? [
+          {
+            id: 'course-duplicate',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faCopy} className="h-4 w-4" />,
+              t('manage.course.duplicateCourse')
+            ),
+            onClick: () => setDuplicationModal(true),
+            data: { cy: 'course-duplicate-button' },
+          },
+        ]
+      : []),
+    ...(user?.publicPreview
+      ? [
+          {
+            id: 'course-learning-analytics',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
+              t('manage.course.learningAnalytics')
+            ),
+            onClick: () => {
+              window.open(`/analytics/${course.id}/activity`, '_blank')
+            },
+            data: { cy: 'course-learning-analytics-link' },
+          },
+        ]
+      : []),
+    ...(course.isAssessmentEnabled && course.isManager
+      ? [
+          {
+            id: 'assessment-course-point-corrections',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faPenToSquare} className="h-4 w-4" />,
+              t('manage.course.pointCorrections')
+            ),
+            onClick: () => setCorrectionsModal(true),
+            data: { cy: 'assessment-course-point-corrections' },
+          },
+        ]
+      : []),
+    {
+      id: 'course-lti-links',
+      type: 'submenu' as const,
+      label: courseActionMenuLabel(
+        <FontAwesomeIcon icon={faLink} className="h-4 w-4" />,
+        t('manage.course.ltiLinks')
+      ),
+      data: { cy: 'course-lti-links' },
+      items: ltiDropdownItems,
+    },
+  ]
+
   return (
-    <div className="flex flex-row flex-wrap items-center justify-between">
+    <div className="flex flex-row flex-wrap items-center gap-x-4">
       <H1
         data={{ cy: 'course-name-with-pin' }}
-        className={{ root: 'flex-1 whitespace-nowrap' }}
+        className={{ root: 'min-w-0 flex-1 break-words' }}
       >
         {course.name}
       </H1>
-      <div className="mb-2 flex flex-row items-center gap-3">
-        <div className="italic">
+      <div className="mb-2 flex min-w-0 flex-1 flex-row flex-wrap items-center justify-end gap-2">
+        <div className="shrink-0 italic">
           {t('manage.course.nParticipants', {
             number: course.numOfParticipants ?? 0,
           })}
@@ -214,16 +292,6 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.modifyCourse')}</Button.Label>
           </Button>
         ) : null}
-        {course.isManager && user?.privatePreview ? (
-          <Button
-            onClick={() => setSharingModal(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-share-button' }}
-          >
-            <Button.Icon icon={faShare} />
-            <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
-          </Button>
-        ) : null}
         <Button
           onClick={() => setIsActivityLogOpen(true)}
           className={{ root: 'h-8' }}
@@ -232,19 +300,9 @@ function CourseOverviewHeader({
           <Button.Icon icon={faMessage} />
           <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
         </Button>
-        {course.isManager ? (
-          <Button
-            onClick={() => setDuplicationModal(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-duplicate-button' }}
-          >
-            <Button.Icon icon={faCopy} />
-            <Button.Label>{t('manage.course.duplicateCourse')}</Button.Label>
-          </Button>
-        ) : null}
         {!course.isAssessmentEnabled && course.pinCode && (
           <QRCodePopover
-            triggerStyle="button"
+            triggerStyle="primary"
             triggerText={t('manage.course.joinCourse')}
             infoComponent={
               <UserNotification
@@ -256,55 +314,36 @@ function CourseOverviewHeader({
             data={{ cy: `course-join-qr-code` }}
           />
         )}
-        {user?.publicPreview ? (
-          <Button
-            primary
-            onClick={() => {
-              window.open(`/analytics/${course.id}/activity`, '_blank')
-            }}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-learning-analytics-link' }}
-          >
-            <Button.Icon icon={faChartPie} />
-            <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
-          </Button>
-        ) : null}
         {course.isAssessmentEnabled && course.isManager ? (
           <Button
+            primary
             className={{ root: 'h-8' }}
             onClick={() => {
               router.push(`/courses/${course.id}/assessment/results`)
             }}
+            data={{ cy: 'assessment-course-results' }}
           >
             <Button.Icon icon={faFilePen} />
             <Button.Label>{t('manage.course.assessmentResults')}</Button.Label>
           </Button>
         ) : null}
-        {course.isAssessmentEnabled && course.isManager ? (
-          <Button
-            onClick={() => setCorrectionsModal(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'assessment-course-point-corrections' }}
-          >
-            <Button.Icon icon={faPenToSquare} />
-            <Button.Label>{t('manage.course.pointCorrections')}</Button.Label>
-          </Button>
-        ) : null}
         <Dropdown
-          data={{ cy: `course-lti-links` }}
+          data={{ cy: 'course-actions-menu' }}
           className={{
-            item: 'p-1 hover:bg-gray-200',
-            viewport: 'z-10 bg-white',
-            trigger: 'h-8',
+            item: 'py-0.5 text-sm',
+            viewport: 'z-20 bg-white',
+            trigger: 'h-8 w-8 border-none bg-transparent p-0 text-sm',
           }}
           align="end"
           trigger={
             <>
-              <Button.Icon icon={faLink} />
-              <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+              <FontAwesomeIcon icon={faEllipsis} aria-hidden="true" />
+              <span className="sr-only">
+                {t('manage.course.moreCourseActions')}
+              </span>
             </>
           }
-          items={ltiDropdownItems}
+          items={courseActionMenuItems}
         />
       </div>
       {duplicationModal && (

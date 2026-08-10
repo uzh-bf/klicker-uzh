@@ -222,8 +222,31 @@ with its exact cause and boundary.
 - [x] Sol planning-stage review completed.
 - [x] Option A approved by the user.
 - [x] Branch synchronization approved by the user.
-- [ ] Commit the reviewed plan.
-- [ ] Synchronize with current `origin/v3`.
-- [ ] Implement header, i18n, docs, and tests.
-- [ ] Run repository, e2e, and browser verification.
-- [ ] Complete integrated final review.
+- [x] Commit the reviewed plan.
+- [x] Synchronize with current `origin/v3`.
+- [x] Implement header, i18n, docs, and tests.
+- [x] Run repository, e2e, and browser verification.
+- [x] Complete integrated final review.
+
+## Verification notes
+
+- The manage typecheck, changed-component ESLint run, Playwright typecheck, and
+  isolated `@klicker-uzh/util` Rollup build pass. The util build emits only its
+  existing circular-dependency and unused-import warnings.
+- The focused ordinary-course and assessment-course Playwright tests pass
+  through the linked HTTPS route. The ordinary-course test covers the primary
+  Join-course trigger, labelled overflow menu, LTI submenu, Escape dismissal,
+  and focus return; the assessment test covers primary Assessment Results,
+  secondary Point Corrections, and duplication continuity.
+- `pnpm run check:all` remains red outside this change: analytics cannot build
+  `pandas==2.2.2` because the image has no C compiler, and the existing
+  `CourseDuplicationModal.tsx` `react-hooks/refs` rule reports three errors.
+  `pnpm run build` reaches and passes `@klicker-uzh/util`, then stops at the
+  unrelated existing `@klicker-uzh/olat-api` Rollup parse error at
+  `apps/olat-api/src/index.ts:24` (`'const' declarations must be initialized`).
+- Browser verification with `agent-browser` passes in English and German at
+  desktop and narrow viewports. The exact linked DevPod remains running for
+  manual verification.
+- Sol’s integrated read-only review approved the scope with one low-severity
+  concern about duplicated ordinary-course assertions. The redundant block was
+  removed, the dedicated test remains, and the Playwright typecheck passes.

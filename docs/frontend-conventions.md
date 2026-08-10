@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-04'
+timestamp: '2026-08-10'
 tags:
   - frontend
 ---
@@ -12,6 +12,8 @@ tags:
 **Every user-visible string is TWO edits, and every interactive element gets a `data-cy`.** New text goes into BOTH `packages/i18n/messages/de.ts` and `en.ts` under the matching namespace, or one locale silently falls back. New buttons/inputs get a `data-cy` attribute — it is the single test hook consumed by Playwright (`playwright.config.ts` sets `testIdAttribute: 'data-cy'`, so `page.getByTestId(...)` reads it). There is no `data-testid` anywhere; don't introduce one.
 
 Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Next.js **pages router**. `apps/chat` is the app-router exception with its own conventions: [Chat Platform](./chat-platform.md).
+
+Course overview headers keep the contextual action primary and place low-frequency actions in one labelled overflow menu. Keep the same action grouping across viewports so responsive layouts wrap the row instead of duplicating controls (`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`).
 
 Assessment report exports intentionally keep one browser-side artifact:
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
