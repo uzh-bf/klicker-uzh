@@ -6,8 +6,10 @@ import {
   isStepCount,
   jsonSchema,
   streamText,
+  type JSONValue,
   type LanguageModel,
   type ModelMessage,
+  type ToolResultPart,
   type UIMessageStreamWriter,
 } from 'ai'
 import { Hono } from 'hono'
@@ -175,7 +177,7 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
     }
 
     const assistantContent: unknown[] = []
-    const toolResults: unknown[] = []
+    const toolResults: ToolResultPart[] = []
     for (const part of message.parts) {
       if (part.type === 'text') {
         assistantContent.push({ type: 'text', text: part.text })
@@ -193,7 +195,7 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
             type: 'tool-result',
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            result: part.output,
+            output: { type: 'json', value: part.output as JSONValue },
           })
         }
       }
@@ -205,7 +207,7 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
       })
     }
     if (toolResults.length > 0) {
-      modelMessages.push({ role: 'tool', content: toolResults as never })
+      modelMessages.push({ role: 'tool', content: toolResults })
     }
   }
 

@@ -84,3 +84,30 @@ export const conformanceStream: EngineStreamPart[] = [
     },
   },
 ]
+
+export const conformanceAbortStream: EngineStreamPart[] = [
+  { type: 'start', messageId: 'assistant-1' },
+  { type: 'text-start', id: 'text-1' },
+  { type: 'text-delta', id: 'text-1', delta: 'A bond is' },
+  {
+    type: 'message-metadata',
+    messageMetadata: {
+      contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+      engineId: 'public-ai-sdk',
+      runId: 'run-1',
+      modelId: 'gpt-4.1-mini',
+      deploymentId: 'gpt-4.1-mini',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 4,
+        reasoningTokens: null,
+        cacheReadTokens: null,
+        cacheWriteTokens: null,
+        totalTokens: 16,
+      },
+      reasoningContent: null,
+      aborted: true,
+    },
+  },
+  { type: 'abort', reason: 'client cancelled' },
+]
