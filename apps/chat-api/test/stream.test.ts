@@ -9,6 +9,27 @@ function responseFor(parts: unknown[]) {
   })
 }
 
+function chunkedResponse(chunks: string[]) {
+  let index = 0
+  let cancelled = false
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      const chunk = chunks[index++]
+      if (chunk === undefined) controller.close()
+      else controller.enqueue(new TextEncoder().encode(chunk))
+    },
+    cancel() {
+      cancelled = true
+    },
+  })
+  return {
+    response: new Response(body, {
+      headers: { 'content-type': 'text/event-stream' },
+    }),
+    wasCancelled: () => cancelled,
+  }
+}
+
 function metadata(aborted = false) {
   return {
     contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
@@ -188,8 +209,8 @@ describe('validated engine stream', () => {
       creditsUsed: 0.000001,
       finalPersistenceStatus: 'persisted' as const,
     }))
-    const stream = createValidatedPlatformStream(
-      responseFor([
+    const chunks = chunkedResponse([
+      [
         { type: 'text-start', id: 'text-1' },
         { type: 'text-delta', id: 'text-1', delta: 'complete' },
         { type: 'text-end', id: 'text-1' },
@@ -198,26 +219,29 @@ describe('validated engine stream', () => {
           finishReason: 'stop',
           messageMetadata: metadata(),
         },
-        { type: 'text-start', id: 'late-text' },
-      ]),
-      {
-        metadata: () => ({
-          chatMode: 'tutor',
-          modelId: 'gpt-4.1-mini',
-          reasoningEffort: null,
-          userMessageId: 'user-1',
-          assistantMessageId: 'assistant-1',
-          creditsUsed: null,
-          finalPersistenceStatus: 'not-persisted',
-        }),
-        finalize,
-      }
-    )
+      ]
+        .map((part) => `data: ${JSON.stringify(part)}\n`)
+        .join(''),
+      `data: ${JSON.stringify({ type: 'text-start', id: 'late-text' })}\n`,
+    ])
+    const stream = createValidatedPlatformStream(chunks.response, {
+      metadata: () => ({
+        chatMode: 'tutor',
+        modelId: 'gpt-4.1-mini',
+        reasoningEffort: null,
+        userMessageId: 'user-1',
+        assistantMessageId: 'assistant-1',
+        creditsUsed: null,
+        finalPersistenceStatus: 'not-persisted',
+      }),
+      finalize,
+    })
 
     const text = await read(stream)
     expect(text).toContain('complete')
     expect(text).not.toContain('late-text')
     expect(text).toContain('data: [DONE]')
     expect(finalize).toHaveBeenCalledTimes(1)
+    expect(chunks.wasCancelled()).toBe(true)
   })
 })
