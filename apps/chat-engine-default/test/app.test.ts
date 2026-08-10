@@ -70,6 +70,9 @@ describe('default chat engine', () => {
     expect(response.status).toBe(200)
 
     const parts = await readParts(response)
+    expect(parts.find((part) => part.type === 'start')?.messageId).toBe(
+      conformanceRequest.assistantMessageId
+    )
     const finish = parts.find((part) => part.type === 'finish')
     expect(parts.some((part) => part.type === 'text-delta')).toBe(true)
     expect(
