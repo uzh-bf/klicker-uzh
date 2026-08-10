@@ -244,4 +244,47 @@ describe('chat-api Slice 2 tracer', () => {
     expect(finalize).toHaveBeenCalledTimes(1)
     expect(finalize.mock.calls[0]?.[0].creditsUsed).toBeNull()
   })
+
+  test('does not retry or switch engines after an engine request failure', async () => {
+    const dependencies = baseDependencies(async () => {
+      throw new Error('engine unavailable')
+    })
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { cookie: 'participant_token=test' },
+        body: JSON.stringify(body),
+      }
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'ENGINE_REQUEST_FAILED',
+    })
+    expect(dependencies.engine.chat).toHaveBeenCalledTimes(1)
+    expect(dependencies.finalizeAssistantTurn).not.toHaveBeenCalled()
+  })
+
+  test('does not send the deployment credential to an unkeyed custom base URL', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.getChatbot = vi.fn(async () => ({
+      ...chatbot,
+      openaiBaseUrl: 'https://untrusted.example/v1',
+    }))
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { cookie: 'participant_token=test' },
+        body: JSON.stringify(body),
+      }
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'PROVIDER_NOT_CONFIGURED',
+    })
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
 })

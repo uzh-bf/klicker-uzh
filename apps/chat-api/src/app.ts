@@ -188,6 +188,11 @@ function resolveCredentialMode(
 } {
   const hasCustomKey = Boolean(chatbot.openaiApiKey)
   const hasCustomBase = Boolean(chatbot.openaiBaseUrl)
+  if (hasCustomBase && !hasCustomKey) {
+    throw new Error(
+      'A custom provider base URL requires a chatbot-specific provider credential.'
+    )
+  }
   const custom = hasCustomKey || hasCustomBase
   if (!custom) {
     return {
