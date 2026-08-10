@@ -1,6 +1,11 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
+import { createRequire } from 'node:module'
+
+const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
+  '../../util/rollup-typescript-options.cjs'
+)
 
 const config = defineConfig([
   {
@@ -14,14 +19,12 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-        compilerOptions: {
-          incremental: false,
-          tsBuildInfoFile: undefined,
-        },
-      }),
+      typescript(
+        withNonIncrementalTypescriptOptions({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+        })
+      ),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
   },
@@ -37,17 +40,15 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-        outDir: 'dist/scripts',
-        declaration: false,
-        declarationMap: false,
-        compilerOptions: {
-          incremental: false,
-          tsBuildInfoFile: undefined,
-        },
-      }),
+      typescript(
+        withNonIncrementalTypescriptOptions({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+          outDir: 'dist/scripts',
+          declaration: false,
+          declarationMap: false,
+        })
+      ),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
   },

@@ -1,6 +1,11 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
+import { createRequire } from 'node:module'
+
+const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
+  '../../util/rollup-typescript-options.cjs'
+)
 
 const config = defineConfig([
   {
@@ -19,14 +24,12 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
-        compilerOptions: {
-          incremental: false,
-          tsBuildInfoFile: undefined,
-        },
-      }),
+      typescript(
+        withNonIncrementalTypescriptOptions({
+          tsconfig: './tsconfig.json',
+          rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+        })
+      ),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
   },

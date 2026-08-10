@@ -10,9 +10,6 @@ import {
   ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
-  type ElementOptions,
-  type ElementOptionsCaseStudy,
-  type ElementOptionsSelection,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -30,45 +27,19 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import {
+  getElementOptions,
+  validateAndProcessElementOptions,
+} from '../lib/elementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
 
-type ElementWithTagsAndAnswerCollectionItems = DB.Prisma.ElementGetPayload<{
-  include: {
-    tags: true
-    answerCollectionItems: true
-  }
-}>
-
-function getElementOptions(
-  type: DB.ElementType,
-  options: DB.Element['options'],
-  answerCollectionId: number | null,
-  answerCollectionItemIds: number[]
-): ElementOptions {
-  switch (type) {
-    case DB.ElementType.SELECTION:
-      return {
-        ...(options as ElementOptionsSelection),
-        answerCollection: { id: answerCollectionId!, entries: [] },
-        answerCollectionSolutionIds: answerCollectionItemIds,
-      }
-    case DB.ElementType.CASE_STUDY:
-      return {
-        ...(options as ElementOptionsCaseStudy),
-        answerCollectionId: answerCollectionId ?? undefined,
-        collectionItemIds: answerCollectionItemIds,
-      }
-    case DB.ElementType.CONTENT:
-    case DB.ElementType.FLASHCARD:
-      return {}
-    default:
-      return options as ElementOptions
-  }
-}
+const elementInclude = {
+  tags: { orderBy: { order: 'asc' } },
+  answerCollectionItems: true,
+} satisfies DB.Prisma.ElementInclude
 
 export async function getUserElements(
   {
@@ -560,7 +531,7 @@ export async function manipulateElement(
     )
   }
 
-  const element = (await ctx.prisma.element.upsert({
+  const element = await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
@@ -644,15 +615,8 @@ export async function manipulateElement(
             }
           : undefined,
     },
-    include: {
-      tags: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-      answerCollectionItems: true,
-    },
-  })) as ElementWithTagsAndAnswerCollectionItems
+    include: elementInclude,
+  })
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(

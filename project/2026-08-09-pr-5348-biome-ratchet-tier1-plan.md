@@ -448,6 +448,16 @@ is unavailable.
   GraphQL suite remains an environment gap because its Redis endpoints are
   unavailable and its seeded point-correction fixture is not at the expected
   state.
+- 2026-08-10: The maintainability review's two P2 findings are addressed.
+  Rollup configs now share a dependency-free CommonJS option helper loaded
+  through `createRequire`, so every TypeScript plugin invocation forces
+  `incremental: false` without adding a package dependency or TypeScript
+  rootDir violation. GraphQL option hydration moved into a focused parser
+  module with runtime checks for Prisma JSON, and the element upsert now uses a
+  `satisfies`-checked include object instead of a payload cast. The isolated
+  GraphQL build passed in 6.3s, the host build passed 22/22 tasks in 1m6s, and
+  `pnpm run check:all` passed 24/24 checks; the fresh review gates and PR
+  publication remain outstanding.
 
 ## Finish state
 
