@@ -38,12 +38,14 @@ opening another rule-sized PR.
   configuration findings. It is not ready for blocking enforcement in this
   package.
 - The branch is refreshed against current `origin/v3`
-  (`c6e1b9870f7bce46838b30e8cfa34a327ae31e35`). The final integrated review
-  found the prior head four target commits behind and identified an overlap in
-  `apps/chat/src/components/thread.tsx`; merge commit `28426f3ae` retains the
-  upstream chat stabilization and feedback behavior while restoring this
-  package's `type="button"` corrections. The current merge-base is the live
-  target, so subsequent review and verification cover the actual landing base.
+  (`7dee0d369aef765cd75d89c1deb81f1c7fbb0d82`). The final integrated review
+  first found the prior head four target commits behind and identified an
+  overlap in `apps/chat/src/components/thread.tsx`; merge commit `28426f3ae`
+  retains the upstream chat stabilization and feedback behavior while
+  restoring this package's `type="button"` corrections. The subsequent
+  `3.4.0-alpha.67` release commit was integrated without conflict. The current
+  merge-base is the live target, so subsequent review and verification cover
+  the actual landing base.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright; ESLint
   remains the Next.js safety net.
