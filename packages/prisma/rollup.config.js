@@ -5,7 +5,7 @@ import del from 'rollup-plugin-delete'
 import { createRequire } from 'node:module'
 
 const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
-  '../../util/rollup-typescript-options.cjs'
+  '../../packages/util/rollup-typescript-options.cjs'
 )
 
 const config = defineConfig([

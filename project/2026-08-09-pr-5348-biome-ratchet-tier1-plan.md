@@ -458,6 +458,16 @@ is unavailable.
   GraphQL build passed in 6.3s, the host build passed 22/22 tasks in 1m6s, and
   `pnpm run check:all` passed 24/24 checks; the fresh review gates and PR
   publication remain outstanding.
+- 2026-08-10: The integrated final review found that a root-level helper is
+  omitted by Turbo's Docker prune output even though the pruned Rollup config
+  loads it. The helper now lives at
+  `packages/util/rollup-typescript-options.cjs`, an already-pruned workspace
+  dependency for every affected Docker service, and `turbo.json` tracks it as
+  a global cache dependency. All six affected Docker scopes retained and
+  executed the helper contract in their pruned trees. The representative
+  backend Docker builder passed Turbo prune, dependency installation, Prisma,
+  GraphQL, and backend Rollup with 7/7 tasks successful; fresh final review
+  gates are required for this changed range.
 
 ## Finish state
 

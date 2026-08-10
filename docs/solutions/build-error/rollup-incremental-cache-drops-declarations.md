@@ -36,7 +36,7 @@ The downstream compiler reported missing exports such as `AppliedPointCorrection
 
 ## Solution
 
-Keep Prisma's declaration-emitting Rollup build non-incremental. The shared `withNonIncrementalTypescriptOptions` helper in `util/rollup-typescript-options.cjs` forces `incremental: false` and clears `tsBuildInfoFile` for every Rollup TypeScript plugin invocation, including both targets in `packages/export/rollup.config.js`. The Rollup build still emits declarations, but each invocation computes them from the generated source instead of consulting state stored in the directory it cleans. The declaration settings remain in `packages/prisma/tsconfig.json`.
+Keep Prisma's declaration-emitting Rollup build non-incremental. The shared `withNonIncrementalTypescriptOptions` helper in `packages/util/rollup-typescript-options.cjs` forces `incremental: false` and clears `tsBuildInfoFile` for every Rollup TypeScript plugin invocation, including both targets in `packages/export/rollup.config.js`. The Rollup build still emits declarations, but each invocation computes them from the generated source instead of consulting state stored in the directory it cleans. The declaration settings remain in `packages/prisma/tsconfig.json`.
 
 The relevant cleanup is the `del({ targets: ['dist'] })` plugin in `packages/prisma/rollup.config.js`; the TypeScript mitigation is applied through the shared helper loaded by that config. [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) contains the sequential production and all-Turbopack build evidence.
 
