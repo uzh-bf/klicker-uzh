@@ -40,9 +40,11 @@ opening another rule-sized PR.
   b3058549622534a23dd0ee274e1432709a4d3323. Current origin/v3 is
   338763a41393eb1e773bdb43efcfac3ef4e43334 after two unrelated commits
   (chat welcome starters and a staging-promotion log). Neither touches the
-  Biome package, workflow, remediation, or plan surfaces. The graph is two
-  commits behind and 13 commits ahead; no scoped conflict requires a base
-  refresh before review.
+  Biome package, workflow, remediation, or plan surfaces. For reviewed head
+  `3f6b2ede5e3bc0d89aee2e2c72d1c1baab3cb1a2`, the graph is two commits behind
+  and 19 commits ahead of origin/v3, with 17 non-merge commits ahead; the
+  merge-base is `b3058549622534a23dd0ee274e1432709a4d3323`. No scoped conflict
+  requires a base refresh before review.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
   remains the Next.js safety net.
@@ -112,7 +114,7 @@ reports, and verification remain on PR #5348.
 
 ### Check
 
-- Confirm the current base remains b30585496.
+- Confirm the current base remains 338763a41.
 - Record the 491-error baseline from the current tree.
 - Review the plan and PR text for stale “next slice” and “standalone rule”
   language.
@@ -332,6 +334,11 @@ ci(quality): enforce Biome lint
   translated action-and-count labels, uses spans for the counts, and keeps the
   stack button's label phrasing-only. Browser and clean GraphQL integration
   checks remain environment blockers recorded above.
+- 2026-08-10: The final maintainability review found two empty option aliases
+  that still accepted arbitrary non-nullish values, content-derived Formik
+  error keys that could collide for repeated messages, and stale ahead/behind
+  topology counts. The branch now uses a strict `EmptyElementOptions` contract,
+  an occurrence-aware validation-key factory, and exact reviewed-range counts.
 
 ## Finish state
 

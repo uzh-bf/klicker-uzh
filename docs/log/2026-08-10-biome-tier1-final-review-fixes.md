@@ -18,3 +18,4 @@ tags:
 - Exposed the existing choice index through evaluation GraphQL results and used it for stable evaluation-row keys when answer text is duplicated.
 - Used the same choice index for shared evaluation chart cells and made plain-text Ellipsis line keys occurrence-aware when content repeats.
 - Added translated accessible names and phrasing-only content to the sharing controls and the new activity-wizard stack button.
+- Added a strict shared empty-options type and occurrence-aware keys for repeated Formik validation messages, and refreshed the branch topology recorded in the execution plan.

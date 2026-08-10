@@ -7,10 +7,22 @@ interface ElementFormErrorsProps {
   errors: FormikErrors<ElementFormTypes>
 }
 
+function createErrorKeyFactory() {
+  const occurrences = new Map<string, number>()
+
+  return (prefix: string, value: unknown) => {
+    const signature = `${prefix}-${JSON.stringify(value)}`
+    const occurrence = occurrences.get(signature) ?? 0
+    occurrences.set(signature, occurrence + 1)
+    return `${signature}-${occurrence}`
+  }
+}
+
 function ElementFormErrors({
   errors,
 }: ElementFormErrorsProps): React.ReactElement {
   const t = useTranslations()
+  const errorKey = createErrorKeyFactory()
 
   return (
     <UserNotification
@@ -55,7 +67,7 @@ function ElementFormErrors({
             (choiceError, ix) =>
               choiceError && (
                 <li
-                  key={`choice-${choiceError.value ?? ''}-${choiceError.feedback ?? ''}`}
+                  key={errorKey('choice', choiceError)}
                 >{`${t('manage.elements.answerOption')} ${ix + 1}: ${
                   choiceError.value && choiceError.feedback
                     ? `${choiceError.value} ${choiceError.feedback}`
@@ -108,7 +120,7 @@ function ElementFormErrors({
             (errors.options.solutionRanges as string[]).map(
               (rangeError, ix) => (
                 <li
-                  key={`solution-range-error-${rangeError}`}
+                  key={errorKey('solution-range-error', rangeError)}
                 >{`${t('manage.elements.solutionRanges')} ${ix + 1}: ${
                   rangeError
                 }`}</li>
@@ -165,7 +177,7 @@ function ElementFormErrors({
           (errors.options.solutions as any[]).map(
             (solutionError: any, ix: number) =>
               solutionError && (
-                <li key={`solution-${String(solutionError)}`}>{`${t(
+                <li key={errorKey('solution', solutionError)}>{`${t(
                   'manage.elements.possibleSolutionN',
                   { number: String(ix + 1) }
                 )}: ${solutionError}`}</li>
@@ -238,7 +250,7 @@ function ElementFormErrors({
           ).flatMap((criterionError, ix) => {
             if (typeof criterionError === 'string') {
               return [
-                <li key={`criterion-${criterionError}`}>
+                <li key={errorKey('criterion', criterionError)}>
                   {`${t('shared.generic.criterion')} ${ix + 1}: ${criterionError}`}
                 </li>,
               ]
@@ -249,9 +261,7 @@ function ElementFormErrors({
               Object.values(criterionError)
                 .filter((error) => typeof error !== 'undefined')
                 .map((error) => (
-                  <li
-                    key={`criterion-${JSON.stringify(criterionError)}-${error}`}
-                  >
+                  <li key={errorKey('criterion', [criterionError, error])}>
                     {`${t('shared.generic.criterion')} ${ix + 1}: ${error}`}
                   </li>
                 ))
@@ -284,7 +294,7 @@ function ElementFormErrors({
               Object.values(caseError)
                 .filter((error) => typeof error !== 'undefined')
                 .map((error) => (
-                  <li key={`case-${JSON.stringify(caseError)}-${error}`}>
+                  <li key={errorKey('case', [caseError, error])}>
                     {`${t('shared.generic.case')} ${ix + 1}: ${error}`}
                   </li>
                 ))
