@@ -195,7 +195,9 @@ function toModelMessages(messages: EngineMessage[]): ModelMessage[] {
             type: 'tool-result',
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            output: { type: 'json', value: part.output as JSONValue },
+            output: part.isError
+              ? { type: 'error-json', value: part.output as JSONValue }
+              : { type: 'json', value: part.output as JSONValue },
           })
         }
       }
