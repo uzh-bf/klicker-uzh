@@ -65,6 +65,7 @@ import {
   getCoursePin,
   grantLiveQuizDirectPermission,
   resetCourseLiveQuiz,
+  setCourseActivityStackMetadata,
   submitCourseLiveQuizStudentResponse,
   updateCourseGroupDeadlineDate,
   updateElementContentAndInstances,
@@ -129,6 +130,21 @@ const SHARING = {
   group3: 'Group 3',
   group4: 'Group 4',
   group5: 'Group 5',
+}
+
+const SHARING_STACK_METADATA = {
+  practiceQuiz: {
+    displayName: 'Practice stack title',
+    description: 'Practice stack instructions',
+  },
+  microLearning: {
+    displayName: 'Microlearning stack title',
+    description: 'Microlearning stack instructions',
+  },
+  groupActivity: {
+    displayName: 'Group activity stack title',
+    description: 'Group activity stack instructions',
+  },
 }
 
 // From cypress/fixtures/questions.json
@@ -1222,18 +1238,22 @@ function expectCopiedActivityReferences({
     {
       collection: 'liveQuizzes' as const,
       name: SHARING.liveQuiz,
+      stacks: [],
     },
     {
       collection: 'practiceQuizzes' as const,
       name: SHARING.practiceQuiz,
+      stacks: [SHARING_STACK_METADATA.practiceQuiz],
     },
     {
       collection: 'microLearnings' as const,
       name: SHARING.microLearning,
+      stacks: [SHARING_STACK_METADATA.microLearning],
     },
     {
       collection: 'groupActivities' as const,
       name: SHARING.groupActivity,
+      stacks: [SHARING_STACK_METADATA.groupActivity],
     },
   ]
 
@@ -1252,6 +1272,8 @@ function expectCopiedActivityReferences({
     expect(sourceActivity, `source ${activityRow.name}`).toBeTruthy()
     expect(copiedActivity, `copied ${activityRow.name}`).toBeTruthy()
     expect(copiedActivity!.id).not.toEqual(sourceActivity!.id)
+    expect(sourceActivity!.stacks).toEqual(activityRow.stacks)
+    expect(copiedActivity!.stacks).toEqual(sourceActivity!.stacks)
     expect(copiedActivity!.instances).toHaveLength(
       sourceActivity!.instances.length
     )
@@ -2434,6 +2456,21 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       ],
       stack: {
         elements: [CSML.title],
+      },
+    })
+    await setCourseActivityStackMetadata({
+      courseName: SHARING.course,
+      practiceQuiz: {
+        name: SHARING.practiceQuiz,
+        ...SHARING_STACK_METADATA.practiceQuiz,
+      },
+      microLearning: {
+        name: SHARING.microLearning,
+        ...SHARING_STACK_METADATA.microLearning,
+      },
+      groupActivity: {
+        name: SHARING.groupActivity,
+        ...SHARING_STACK_METADATA.groupActivity,
       },
     })
 

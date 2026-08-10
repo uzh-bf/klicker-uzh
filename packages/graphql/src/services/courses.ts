@@ -2962,6 +2962,8 @@ async function copyCoursePracticeQuizzes({
         description: oldPracticeQuiz.description,
         stacks: oldPracticeQuiz.stacks.map((stack) => ({
           order: stack.order,
+          displayName: stack.displayName,
+          description: stack.description,
           elements: getDuplicatedActivityElements(stack.elements),
         })),
         courseId: newCourseId,
@@ -3005,6 +3007,8 @@ async function copyCourseMicroLearnings({
         description: oldMicroLearning.description,
         stacks: oldMicroLearning.stacks.map((stack) => ({
           order: stack.order,
+          displayName: stack.displayName,
+          description: stack.description,
           elements: getDuplicatedActivityElements(stack.elements),
         })),
         courseId: newCourseId,
@@ -3062,6 +3066,8 @@ async function copyCourseGroupActivities({
         description: oldGroupActivity.description,
         stack: {
           order: stack.order,
+          displayName: stack.displayName,
+          description: stack.description,
           elements: getDuplicatedActivityElements(stack.elements),
         },
         courseId: newCourseId,

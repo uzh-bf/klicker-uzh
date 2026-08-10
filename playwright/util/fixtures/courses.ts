@@ -19,6 +19,10 @@ type CourseDuplicationActivityReference = {
   id: string
   name: string
   status: string
+  stacks: {
+    displayName: string | null
+    description: string | null
+  }[]
   instances: {
     instanceId: number
     elementId: number
@@ -264,6 +268,78 @@ export async function updateCourseGroupDeadlineDate({
     where: { name: courseName, ownerId },
     data: { groupDeadlineDate },
   })
+}
+
+export async function setCourseActivityStackMetadata({
+  courseName,
+  ownerId = USER_ID_TEST,
+  practiceQuiz,
+  microLearning,
+  groupActivity,
+}: {
+  courseName: string
+  ownerId?: string
+  practiceQuiz: { name: string; displayName: string; description: string }
+  microLearning: { name: string; displayName: string; description: string }
+  groupActivity: { name: string; displayName: string; description: string }
+}) {
+  const prisma = await getPrisma()
+  const course = await prisma.course.findFirst({
+    where: { name: courseName, ownerId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      practiceQuizzes: {
+        where: { name: practiceQuiz.name, isDeleted: false },
+        select: { id: true },
+        take: 1,
+      },
+      microLearnings: {
+        where: { name: microLearning.name, isDeleted: false },
+        select: { id: true },
+        take: 1,
+      },
+      groupActivities: {
+        where: { name: groupActivity.name, isDeleted: false },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  })
+  const practiceQuizId = course?.practiceQuizzes[0]?.id
+  const microLearningId = course?.microLearnings[0]?.id
+  const groupActivityId = course?.groupActivities[0]?.id
+
+  if (!practiceQuizId || !microLearningId || !groupActivityId) {
+    throw new Error(`Course activities for ${courseName} not found.`)
+  }
+
+  const updates = await Promise.all([
+    prisma.elementStack.updateMany({
+      where: { practiceQuizId },
+      data: {
+        displayName: practiceQuiz.displayName,
+        description: practiceQuiz.description,
+      },
+    }),
+    prisma.elementStack.updateMany({
+      where: { microLearningId },
+      data: {
+        displayName: microLearning.displayName,
+        description: microLearning.description,
+      },
+    }),
+    prisma.elementStack.updateMany({
+      where: { groupActivityId },
+      data: {
+        displayName: groupActivity.displayName,
+        description: groupActivity.description,
+      },
+    }),
+  ])
+
+  if (updates.some((update) => update.count !== 1)) {
+    throw new Error(`Expected one stack per course activity for ${courseName}.`)
+  }
 }
 
 export async function ensureCourseParticipation({
@@ -1239,6 +1315,7 @@ export async function getCourseDuplicationSummary({
     id: activity.id,
     name: activity.name,
     status: activity.status,
+    stacks: [],
     instances: activity.blocks.flatMap((block) =>
       block.elements.map(mapInstance)
     ),
@@ -1252,6 +1329,10 @@ export async function getCourseDuplicationSummary({
     id: activity.id,
     name: activity.name,
     status: activity.status,
+    stacks: activity.stacks.map((stack) => ({
+      displayName: stack.displayName,
+      description: stack.description,
+    })),
     instances: activity.stacks.flatMap((stack) =>
       stack.elements.map(mapInstance)
     ),
