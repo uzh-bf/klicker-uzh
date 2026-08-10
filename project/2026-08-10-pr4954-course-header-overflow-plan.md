@@ -250,3 +250,122 @@ with its exact cause and boundary.
 - Sol’s integrated read-only review approved the scope with one low-severity
   concern about duplicated ordinary-course assertions. The redundant block was
   removed, the dedicated test remains, and the Playwright typecheck passes.
+
+## Follow-up: responsive course-header action grouping
+
+### Problem
+
+The participant count currently shares the responsive flex item with the action
+cluster. That reserves roughly 100px before the four controls can lay out and
+causes the ellipsis trigger to become an orphaned second row.
+
+### Evidence
+
+- At effective CSS width 594px, the header content is 562px wide. Modify,
+  Comments, and Join fit on the first action row, while the 32px overflow
+  trigger moves to a second row.
+- At CSS width 1024px, the md-level equal-flex layout gives the action area
+  roughly half the header. Modify and Comments occupy the first row; Join and
+  the overflow trigger occupy the second.
+- At CSS width 390px, the current layout places the participant count beside
+  the action rows instead of beside the course title, producing a tall and
+  visually fragmented header.
+- The supplied screenshots are retained as evidence at:
+  `/var/folders/24/j7k2mlqn42l_dhq64jpqslxh0000gp/T/codex-clipboard-386f0bf5-8a23-419e-bfd6-356b50d7eb99.png`
+  and
+  `/var/folders/24/j7k2mlqn42l_dhq64jpqslxh0000gp/T/codex-clipboard-464c665f-09ae-4cd3-bd63-6dadc746cdd4.png`.
+
+### Planning review
+
+Sol’s read-only planning review approved the conservative layout approach with
+no findings. Accepted decisions:
+
+- Split the header into a flexible title/participant group and a direct action
+  cluster.
+- Keep Modify and Comments visible and labelled on mobile, using the lighter
+  basic secondary treatment used by `ActivityActions`.
+- Keep Join or Assessment Results as the only primary action.
+- Use a full-width wrapping action row below `lg`, and an intrinsic-width,
+  non-growing action cluster at `lg` and above.
+- Do not introduce icon-only mobile controls, responsive duplicate menu items,
+  grid layout, or arbitrary width caps.
+
+### Test portfolio
+
+| Risk | Test obligation | Primary seam | Evidence |
+| --- | --- | --- | --- |
+| Premature wrapping or an orphaned ellipsis | None | Browser geometry | Screenshots and bounding boxes at 390px, 594px, 1024px, and 1280px |
+| Ordinary/assessment action hierarchy | None | Existing browser interactions | Preserve selectors, conditions, menu contents, and primary styling in both variants |
+| Overflow accessibility | None | Existing menu interaction | Verify accessible name, keyboard open, Escape dismissal, focus return, and no horizontal overflow |
+
+### Approved follow-up slices
+
+#### Slice A — responsive grouping
+
+Problem: metadata and actions compete in the same flex item.
+
+Decision: Create sibling title/metadata and action groups. Below `lg`, give the
+action cluster the full row. At `lg` and above, let the title/metadata group
+remain flexible while the action cluster uses its intrinsic width.
+
+Do: Edit only the header structure and responsive classes in
+`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`.
+Preserve every action condition, callback, selector, menu item, label, and
+accessible trigger name.
+
+Check: Run formatter, manage typecheck, and changed-file lint. Verify that all
+four ordinary-course actions share one row at 594px and 1024px; at 390px,
+Modify plus Comments share the first action row and Join plus the ellipsis share
+the second. Capture desktop and narrow screenshots.
+
+Commit: `fix(manage): improve course header action wrapping`
+
+#### Slice B — secondary-action hierarchy
+
+Problem: the current bordered secondary buttons remain visually heavy after the
+layout is given enough room.
+
+Decision: Keep Modify and Comments visible and labelled, but use the basic
+secondary styling from `apps/frontend-manage/src/components/activities/overview/ActivityActions.tsx`.
+Keep Join or Assessment Results primary and the ellipsis as the overflow trigger.
+
+Do: Apply the minimal button-style change in the same header component. Do not
+change action membership or duplicate actions in the overflow menu.
+
+Check: Re-run formatter, manage typecheck, changed-file lint, and the browser
+checks at 390px, 594px, 1024px, and 1280px in English and German. Verify the
+ordinary and assessment variants where fixtures permit, including menu
+contents, focus behavior, and primary/secondary contrast.
+
+Commit: `enhance(manage): clarify course header action hierarchy`
+
+#### Slice C — final verification and review
+
+Do: Run fresh targeted checks and inspect the final diff for incidental layout
+complexity. Leave the linked DevPod running for manual verification.
+
+Check: Run the repository-native targeted checks, browser screenshots, and the
+required exact-head Sol final review. Record unrelated root-check blockers
+without broadening this UI-only scope.
+
+Commit: update the existing package only; no push, merge, or PR update.
+
+### Exact scope and non-goals
+
+Scope: `apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`
+only. Existing element/activity action components are read-only references.
+
+Non-goals: GraphQL, database, translations, QRCodePopover internals, action
+conditions, overflow-menu contents, responsive duplicate controls, icon-only
+mobile actions, new dependencies, automated layout tests, and unrelated PR
+[PR #4954](https://github.com/uzh-bf/klicker-uzh/pull/4954) behavior.
+
+### Follow-up progress
+
+- [x] User approved the Sol-reviewed responsive layout plan.
+- [x] Sol planning-stage review completed; no findings.
+- [x] Plan extension recorded before implementation.
+- [ ] Commit Slice A plan checkpoint.
+- [ ] Implement and verify Slice A responsive grouping.
+- [ ] Implement and verify Slice B secondary-action hierarchy.
+- [ ] Complete Slice C final verification and exact-head review.
