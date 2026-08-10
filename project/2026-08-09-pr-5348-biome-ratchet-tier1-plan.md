@@ -5,7 +5,7 @@ Date: 2026-08-09
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
 Plan artifact: project/2026-08-09-pr-5348-biome-ratchet-tier1-plan.md
-Base: 2eaf2be5e (origin/v3; verified 2026-08-10)
+Base: 0d7b4e461 (origin/v3; verified 2026-08-10)
 Worktree: trees/biome-ratchet-tier1
 Related history: project/2026-07-19-biome-knip-repo-quality.md
 
@@ -38,14 +38,15 @@ opening another rule-sized PR.
   configuration findings. It is not ready for blocking enforcement in this
   package.
 - The branch is refreshed against current `origin/v3`
-  (`2eaf2be5e5038e7fcff31725a06ce9ad39ed9cbe`). The final integrated review
+  (`0d7b4e461`). The final integrated review
   first found the prior head four target commits behind and identified an
   overlap in `apps/chat/src/components/thread.tsx`; merge commit `28426f3ae`
   retains the upstream chat stabilization and feedback behavior while
   restoring this package's `type="button"` corrections. The subsequent
   `3.4.0-alpha.67` release and staging-promotion commits were integrated
-  without conflict. The current merge-base is the live target, so subsequent
-  review and verification cover the actual landing base.
+  without conflict. The latest promotion commit has no tree delta; it is still
+  integrated so the current merge-base is the live target for subsequent review
+  and verification.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright; ESLint
   remains the Next.js safety net.
