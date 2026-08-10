@@ -11,7 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  Course,
+  type Course,
   CreateCourseDocument,
   GetSingleCourseDocument,
   GetUserCoursesDocument,
@@ -27,18 +27,18 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
-  CourseDuplicationErrorType,
-  CourseDuplicationFormData,
+  type CourseDuplicationErrorType,
+  type CourseDuplicationFormData,
 } from './modals/CourseDuplicationModal'
 import CourseManipulationModal, {
-  CourseManipulationFormData,
+  type CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
 import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
@@ -270,14 +270,14 @@ function CourseOverviewHeader({
 
   return (
     <div className="flex flex-row flex-wrap items-center gap-x-4">
-      <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-between gap-x-4">
+      <div className="min-w-0 flex-1">
         <H1
           data={{ cy: 'course-name-with-pin' }}
-          className={{ root: 'min-w-0 flex-1 break-words' }}
+          className={{ root: 'min-w-0 break-words' }}
         >
           {course.name}
         </H1>
-        <div className="shrink-0 italic">
+        <div className="italic">
           {t('manage.course.nParticipants', {
             number: course.numOfParticipants ?? 0,
           })}
