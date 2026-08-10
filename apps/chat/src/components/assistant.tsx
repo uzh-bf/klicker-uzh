@@ -48,7 +48,12 @@ export const Assistant = ({
 }) => {
   const t = useTranslations()
   const embedded = useEmbedded()
-  const { participationRequired, participationMessage } = useChatStore()
+  const participationRequired = useChatStore(
+    (state) => state.participationRequired
+  )
+  const participationMessage = useChatStore(
+    (state) => state.participationMessage
+  )
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
@@ -356,7 +361,11 @@ function SidebarMain({
   const { open } = useSidebar()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
-  const { createThread, participationRequired, isLoading } = useChatStore()
+  const createThread = useChatStore((state) => state.createThread)
+  const participationRequired = useChatStore(
+    (state) => state.participationRequired
+  )
+  const isLoading = useChatStore((state) => state.isLoading)
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -439,7 +448,7 @@ function AssistantLayout({
   chatbot: { id: string; name: string; avatar?: string }
 }) {
   const { showSidebar } = useChatUi()
-  const { isLoading } = useChatStore()
+  const isLoading = useChatStore((state) => state.isLoading)
 
   if (showSidebar) {
     return (

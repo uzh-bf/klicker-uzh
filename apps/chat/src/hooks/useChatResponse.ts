@@ -34,7 +34,7 @@ export function useChatResponse(
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const t = useTranslations()
 
-  const { loadCredits } = useSettingsStore()
+  const loadCredits = useSettingsStore((state) => state.loadCredits)
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)

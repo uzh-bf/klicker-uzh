@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-09'
+timestamp: '2026-08-10'
 tags:
   - frontend
   - chat
@@ -144,12 +144,18 @@ composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: a
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
-The runtime's feedback adapter delegates votes to `src/stores/chatStore.ts:rateMessage`, while
-the adapter maps the persisted `ChatMessage.rating` back into `metadata.submittedFeedback` so
-votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai`,
-`@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport
-because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
-key.
+The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
+thread's messages/running state and the actions it calls, while `Thread` keeps a memoized
+`ThreadPrimitive.Messages` component map and passes the chatbot avatar through context. Runtime
+attachment adapters are memoized as well, so a streamed message or a feedback update does not
+replace every message row's component type or adapter object. Ratings have one owner: the plain
+buttons in `thread.tsx` read the active `ChatMessage.rating` from `chatStore` and call
+`chatStore.rateMessage` for set, switch, and clear; assistant-ui's feedback adapter is not used.
+This preserves the store's optimistic persistence, per-message request serialization, and rollback
+without a second runtime-owned feedback state competing with it. AI SDK 7 powers the server route
+(`ai`, `@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client
+transport because the spike-gated `useAISDKRuntime` replacement could not be live-verified without
+an LLM key.
 
 ## Participant entry points (course page)
 
@@ -195,10 +201,17 @@ partial text from being re-pushed alongside the error part. Truncated responses 
 localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
 typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error
 rather than a stringified `ProgressEvent`. A cached thread list intentionally remains visible if only its background refresh fails.
-The welcome view contains localized starter suggestions, and message action bars remain mounted
-for touch users rather than relying on hover. An unavailable image edit uses `aria-disabled`
-instead of native `disabled`, so its explanatory Radix tooltip remains focusable. Each thread
-row shows the thread's last chat mode as an icon plus localized label under the title
+The welcome view contains localized, mode-aware starter suggestions: Tutor offers interactive
+practice prompts for a specific topic or pasted problem, while Explainer offers source-oriented
+explanations of a specific concept or comparisons between two concepts. The prompts are inserted
+into the composer without sending, so students can replace the bracketed placeholders before
+retrieval. Broad whole-course summaries and study plans are intentionally not offered here; a
+reliable planner needs a separate structured planning flow and tool/result budget. Starters remain
+hidden until the current chatbot's mode options have loaded, because the selected mode is
+persisted across chatbots. Message action bars
+remain mounted for touch users rather than relying on hover. An unavailable image edit uses
+`aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
+Each thread row shows the thread's last chat mode as an icon plus localized label under the title
 (`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
 amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant
 messages render through — user text never gets the callout styling). A reply to an
@@ -345,7 +358,7 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote; [ADR 0002](./adr/0002-message-feedback-as-a-rating-field.md) records why a field on the message beat a separate feedback entity). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating.
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating. The action-bar buttons intentionally bypass assistant-ui's feedback adapter so clicking the active vote can send `rating: null` and retract it without remounting the conversation.
 
 Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
@@ -379,6 +392,15 @@ the package Vitest suite (`pnpm --filter @klicker-uzh/chat test:run` — the pac
 plain `test` script), and the package production build in the worktree's devcontainer.
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
+
+The chat Playwright fixture can emit `textChunks` through a delayed browser
+`ReadableStream` with `chunkDelayMs`, and can pause after a chosen text delta
+with `pauseAfterTextChunk` until the test explicitly releases it. The streaming stability regression in
+`playwright/tests/Y-chat.spec.ts` captures the assistant row before later deltas arrive and
+asserts that the same DOM node remains mounted; the rating regression performs the same identity
+check across an optimistic feedback update. These checks target remounts, which are the visible
+flicker signal, rather than treating a successful final answer as proof that the conversation
+stayed stable.
 
 For mobile UI verification, use a real Chromium mobile emulation or Android
 Chrome and check the focused composer, the visible conversation tail, and every

@@ -361,6 +361,12 @@ export type StreamToolCall = {
 export type StreamOptions = {
   /** Replaces the default `assistant reply #N` answer text. */
   text?: string
+  /** Emits the answer as separate text deltas, in order. */
+  textChunks?: string[]
+  /** Delays each streamed SSE line by this many milliseconds. */
+  chunkDelayMs?: number
+  /** Pauses after this many text deltas until the test releases the stream. */
+  pauseAfterTextChunk?: number
   /** Payload of the `finish` part; omitted entirely when not given. */
   metadata?: StreamFinishMetadata
   /** Tool calls emitted before the answer text. */
@@ -370,7 +376,7 @@ export type StreamOptions = {
   errorText?: string
 }
 
-function makeStreamBody(text: string, options: StreamOptions = {}) {
+function makeStreamLines(text: string, options: StreamOptions = {}) {
   const { metadata, toolCalls = [], errorText } = options
 
   const lines = [
@@ -399,11 +405,11 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
     )
   }
 
-  lines.push(
-    `data: ${JSON.stringify({ type: 'text-start' })}`,
-    `data: ${JSON.stringify({ type: 'text-delta', delta: text })}`,
-    `data: ${JSON.stringify({ type: 'text-end' })}`
-  )
+  lines.push(`data: ${JSON.stringify({ type: 'text-start' })}`)
+  for (const delta of options.textChunks ?? [text]) {
+    lines.push(`data: ${JSON.stringify({ type: 'text-delta', delta })}`)
+  }
+  lines.push(`data: ${JSON.stringify({ type: 'text-end' })}`)
 
   if (errorText) {
     lines.push(`data: ${JSON.stringify({ type: 'error', errorText })}`)
@@ -420,7 +426,11 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
     'data: [DONE]'
   )
 
-  return lines.join('\n')
+  return lines
+}
+
+function makeStreamBody(text: string, options: StreamOptions = {}) {
+  return makeStreamLines(text, options).join('\n')
 }
 
 /**
@@ -429,6 +439,89 @@ function makeStreamBody(text: string, options: StreamOptions = {}) {
  * unless `options.text` overrides the answer text.
  */
 export async function mockChatStream(page: Page, options: StreamOptions = {}) {
+  if (options.chunkDelayMs !== undefined) {
+    const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
+
+    await page.addInitScript(
+      ({ chatbotPath, lines: streamLines, delayMs, pauseAfterTextChunk }) => {
+        const originalFetch = window.fetch.bind(window)
+        let releasePausedStream: (() => void) | undefined
+        ;(
+          window as typeof window & {
+            __releaseMockChatStream?: () => void
+          }
+        ).__releaseMockChatStream = () => {
+          releasePausedStream?.()
+          releasePausedStream = undefined
+        }
+
+        window.fetch = async (input, init) => {
+          const requestUrl =
+            typeof input === 'string'
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : input.url
+          const requestMethod = (
+            init?.method ?? (input instanceof Request ? input.method : 'GET')
+          ).toUpperCase()
+
+          if (requestMethod !== 'POST' || !requestUrl.includes(chatbotPath)) {
+            return originalFetch(input, init)
+          }
+
+          let lineIndex = 0
+          let textChunkCount = 0
+          const encoder = new TextEncoder()
+          const stream = new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              if (lineIndex >= streamLines.length) {
+                controller.close()
+                return
+              }
+
+              if (lineIndex > 0) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs))
+              }
+
+              const line = streamLines[lineIndex]
+              controller.enqueue(encoder.encode(`${line}\n`))
+              lineIndex += 1
+
+              let eventType: string | undefined
+              try {
+                eventType = JSON.parse(line.slice('data: '.length)).type
+              } catch {
+                // The trailing [DONE] marker is not JSON.
+              }
+
+              if (eventType === 'text-delta') {
+                textChunkCount += 1
+                if (textChunkCount === pauseAfterTextChunk) {
+                  await new Promise<void>((resolve) => {
+                    releasePausedStream = resolve
+                  })
+                }
+              }
+            },
+          })
+
+          return new Response(stream, {
+            status: 200,
+            headers: { 'content-type': 'text/event-stream' },
+          })
+        }
+      },
+      {
+        chatbotPath: `/api/chatbots/${CHATBOT_ID}/chat`,
+        lines,
+        delayMs: options.chunkDelayMs,
+        pauseAfterTextChunk: options.pauseAfterTextChunk,
+      }
+    )
+    return
+  }
+
   let counter = 0
   await page.route(`**/api/chatbots/${CHATBOT_ID}/chat`, (route) => {
     if (route.request().method() !== 'POST') return route.fallback()

@@ -117,12 +117,18 @@ export default {
       welcomeSubtitle: 'How can I help you?',
     },
     suggestions: {
-      explainConcept: 'Explain a random concept from the script',
+      practiceTopic: 'Practise a topic',
+      practiceTopicPrompt:
+        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+      workThroughProblem: 'Work through a problem',
+      workThroughProblemPrompt:
+        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+      explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Take a random concept from the course script and explain it in simple terms.',
-      examPrep: 'Help me prepare for the exam',
-      examPrepPrompt:
-        'Create a study plan for the upcoming exam covering all key topics based on the lecture materials.',
+        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+      compareConcepts: 'Compare two concepts',
+      compareConceptsPrompt:
+        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:

@@ -434,6 +434,55 @@ test.describe('Chatbot Messaging Interface', () => {
     ).toBeVisible()
   })
 
+  test('Streaming keeps the assistant message mounted as text arrives', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: ['The first part', ' and the second part', ' and the end.'],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 1,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a stable answer')
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The first part', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('and the end.')
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeStreamUpdate?: Element
+      }
+      state.__assistantMessageBeforeStreamUpdate = node
+    })
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent).toContainText('and the end.', {
+      timeout: 15_000,
+    })
+
+    const stayedMounted = await page.evaluate(() => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeStreamUpdate?: Element
+      }
+      const current = document.querySelector(
+        '[data-cy="chat-assistant-message"]'
+      )
+      return state.__assistantMessageBeforeStreamUpdate === current
+    })
+
+    expect(stayedMounted).toBe(true)
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {
@@ -658,9 +707,29 @@ test.describe('Chatbot Message Actions & Branching', () => {
     const up = page.getByTestId('chat-rate-up-button')
     const down = page.getByTestId('chat-rate-down-button')
 
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeFeedback?: Element
+      }
+      state.__assistantMessageBeforeFeedback = node
+    })
+
     await up.click()
     await expect(up).toHaveAttribute('aria-pressed', 'true')
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const state = window as typeof window & {
+            __assistantMessageBeforeFeedback?: Element
+          }
+          return (
+            state.__assistantMessageBeforeFeedback ===
+            document.querySelector('[data-cy="chat-assistant-message"]')
+          )
+        })
+      )
+      .toBe(true)
 
     // Changing one's mind replaces the vote rather than stacking a second one.
     await down.click()
@@ -674,10 +743,9 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
   })
 
-  // A vote only counts if it survives leaving the page: the runtime's own
-  // optimistic patch lives in its message repository, so the pressed state
-  // after a reload can only come from the persisted rating being mapped back
-  // in (`convertMessage` in RuntimeProvider).
+  // A vote only counts if it survives leaving the page: the reloaded thread
+  // carries its persisted rating into chatStore, and MessageRatingButtons reads
+  // that store value directly rather than relying on assistant-ui metadata.
   test('A stored rating is restored after a page reload', async ({ page }) => {
     const assistantMessageId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c41'
     await seedThread(participantId, {
