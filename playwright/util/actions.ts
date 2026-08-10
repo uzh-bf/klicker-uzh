@@ -82,18 +82,12 @@ export async function openActionMenuByTestId(
   triggerTestId: string,
   expectedActionTestId?: string
 ) {
-  if (
-    expectedActionTestId &&
-    (await page
-      .getByTestId(expectedActionTestId)
-      .first()
-      .isVisible()
-      .catch(() => false))
-  ) {
-    return
-  }
+  const trigger = await findVisibleByTestId(page, triggerTestId)
 
-  await clickVisibleByTestId(page, triggerTestId)
+  if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+    await trigger.scrollIntoViewIfNeeded().catch(() => undefined)
+    await trigger.click()
+  }
 
   if (expectedActionTestId) {
     await findVisibleByTestId(page, expectedActionTestId)
