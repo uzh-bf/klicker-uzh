@@ -390,6 +390,10 @@ ci(quality): enforce Biome lint
   size effects could undo a boundary change using stale state from the same
   render. `ElementWordCloud` now clamps the paired minimum and maximum through
   directional update callbacks, preserving the user's requested boundary.
+- 2026-08-10: The maintainability review found three seed decision maps that
+  suppressed missing callback returns even though group-activity decisions do
+  not support flashcards. The seed now filters flashcards explicitly and throws
+  on any future unsupported element type instead of storing undefined entries.
 
 ## Finish state
 
