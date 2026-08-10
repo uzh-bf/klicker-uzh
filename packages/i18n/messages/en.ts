@@ -1,4 +1,216 @@
 export default {
+  chat: {
+    modes: {
+      switcherLabel: 'Chat mode',
+      tutor: 'Tutor',
+      explainer: 'Explainer',
+    },
+    settingsPanel: {
+      title: 'Settings',
+      aiModelLabel: 'AI Model',
+      selectAiModel: 'Select AI Model',
+      autoSelectionInfo: 'Automatic selection based on credit availability.',
+      usingPrimaryModel: 'Using primary model with available credits.',
+      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      reasoningEffortLabel: 'Reasoning Effort',
+      selectReasoningEffort: 'Select reasoning effort',
+      reasoningEffortHint:
+        'Higher effort can improve difficult responses at the cost of additional latency.',
+      reasoningEfforts: {
+        none: 'None',
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        xhigh: 'Extra high',
+      },
+    },
+    credits: {
+      title: 'Available credits',
+      costHint:
+        'Every message uses credits — how many depends on the model and the length of the exchange.',
+      resetAt: 'Refills on {date}.',
+      resetNone: 'These credits do not refill automatically.',
+      exhausted:
+        'You have used up all your credits. However, you can still use the smaller model.',
+    },
+    sidebar: {
+      newChat: 'New Chat',
+      closeSidebar: 'Close sidebar',
+      openSidebar: 'Open sidebar',
+      toggleSidebar: 'Toggle sidebar',
+      conversationsLabel: 'Conversations',
+      logoAlt: 'Klicker Logo',
+    },
+    assistant: {
+      participationRequiredTitle: 'Course Access Required',
+      participationRequiredDefaultMessage:
+        'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.',
+      openKlickerUzh: 'Open KlickerUZH',
+      loading: 'Loading chatbot...',
+      disclaimerDeclinedTitle: 'Chatbot unavailable',
+      disclaimerDeclinedMessage:
+        'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
+      showDisclaimerAgain: 'Show disclaimer again',
+    },
+    branchPicker: {
+      previous: 'Previous branch',
+      next: 'Next branch',
+    },
+    disclaimer: {
+      mediaTitle: 'Disclaimer media',
+      introAlt: 'Chatbot Introduction',
+      studentResponsibilityTitle: 'Student Responsibility',
+      studentResponsibilityText:
+        'Chatbot answers may contain more or less information than what is required to pass the course and are therefore not exam relevant on their own (only the underlying course material is). While we aim to provide accurate information through the chatbot, we do not guarantee the correctness, completeness, or timeliness of the responses. Please verify important information against the official course materials and references.',
+      dataProtectionTitle: 'Data Protection',
+      dataProtectionText:
+        'Do not share any personal information with the chatbot. Your prompts are processed exclusively via Azure OpenAI instances hosted in the EU or Switzerland. Conversations may be reviewed in anonymised form by the KlickerUZH team or your lecturers to improve chatbot quality and course content.',
+      consentText:
+        'By using the chatbot you acknowledge and accept these conditions. If you have feedback or concerns, please contact your lecturers.',
+      decline: 'Decline',
+      saving: 'Saving...',
+      acceptAndContinue: 'Accept and continue',
+      consequenceTitle: 'What happens after your choice:',
+      consequenceAccept:
+        'Accept: You can use the chatbot and access all features.',
+      consequenceDecline:
+        'Decline: The chatbot remains blocked and you cannot send messages.',
+      actionError: 'Something went wrong. Please try again.',
+    },
+    markdown: {
+      copyCode: 'Copy',
+    },
+    attachments: {
+      hydrationError:
+        'Image attachments for this message could not be loaded. Please try again.',
+      attachedImageAlt: 'Attached image {index}',
+    },
+    imageViewer: {
+      previewUnavailable: 'Preview unavailable',
+      title: 'Image attachment',
+      loading: 'Loading full image...',
+      retry: 'Retry',
+    },
+    threadList: {
+      groupToday: 'Today',
+      groupYesterday: 'Yesterday',
+      groupThisWeek: 'This Week',
+      groupEarlier: 'Earlier',
+      newChatTitle: 'New Chat',
+      save: 'Save',
+      cancel: 'Cancel',
+      editName: 'Edit name',
+      deleteChat: 'Delete chat',
+      deleteConfirm: 'Delete?',
+      deleteConfirmAria: 'Confirm deleting this chat',
+      emptyState: 'Start your first conversation with a message.',
+      loadError: 'Your chats could not be loaded.',
+      retry: 'Retry',
+      loading: 'Loading conversations...',
+    },
+    thread: {
+      scrollToBottom: 'Scroll to bottom',
+      loading: 'Loading the conversation...',
+      thinking: 'Preparing an answer …',
+      welcomeTitle: 'Hello there!',
+      welcomeSubtitle: 'How can I help you?',
+    },
+    suggestions: {
+      practiceTopic: 'Practise a topic',
+      practiceTopicPrompt:
+        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+      workThroughProblem: 'Work through a problem',
+      workThroughProblemPrompt:
+        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+      explainConcept: 'Explain a concept',
+      explainConceptPrompt:
+        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+      compareConcepts: 'Compare two concepts',
+      compareConceptsPrompt:
+        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+    },
+    message: {
+      creditsUsed:
+        '{count, plural, one {{credits} credit} other {{credits} credits}}',
+      reasoningToggle: 'Reasoning',
+      editUnavailable: 'Edit unavailable',
+      edit: 'Edit',
+      editDisabledTooltip:
+        'Cannot edit: selected model does not support images',
+      copy: 'Copy',
+      refresh: 'Refresh',
+      retry: 'Try again',
+      rateUp: 'Helpful answer',
+      rateDown: 'Not a helpful answer',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 tool call} other {{count} tool calls}}',
+    },
+    composer: {
+      placeholder: 'Write a message...',
+      send: 'Send message',
+      stop: 'Stop response',
+      disclaimerHint:
+        'Chatbot answers can be wrong — verify against your course materials.',
+      attachmentLimitError: 'You can only attach up to {max} images.',
+      attachmentReadError:
+        'The image could not be read. Please try a different file.',
+      dismissError: 'Dismiss error',
+      dropImages: 'Drop images to attach',
+      attachmentPreviewAlt: 'Attachment preview',
+      removeAttachment: 'Remove attachment',
+      attachImage: 'Attach image',
+      attachmentFallbackLabel: 'Attachment',
+      editCancel: 'Cancel',
+      editSend: 'Send',
+    },
+    toolFallback: {
+      running: 'Using {tool}...',
+      done: 'Used {tool}',
+      failed: 'Failed to use {tool}',
+      showLess: 'Show less',
+      showMore:
+        '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
+      docQueryQueryLabel: 'Search query',
+      docQuerySourcesHint: 'The results appear as sources below the answer.',
+    },
+    tools: {
+      searchingCourseMaterial: 'Searching course materials...',
+      searchedCourseMaterial: 'Searched course materials',
+      searchedCourseMaterialEmpty: 'Searched course materials · no results',
+      searchCourseMaterialFailed: 'Course material search failed',
+      imageAnalyzed: 'Image analyzed',
+    },
+    sources: {
+      title: 'Sources',
+      page: 'p. {page}',
+      video: 'Video',
+      image: 'Image',
+    },
+    citations: {
+      label: 'Source {index}: {title}',
+      goToSource: 'Go to source',
+    },
+    noLogin: {
+      title: 'Login Required',
+      message:
+        'You need to create a KlickerUZH account or log in before you can access this chatbot.',
+      redirectNotice:
+        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      loginButton: 'Go to KlickerUZH Login',
+    },
+    response: {
+      errorLabel: 'Error',
+      networkError:
+        "I'm sorry, I couldn't reach the server. Please check your connection and try again.",
+      genericError:
+        "I'm sorry, something went wrong while processing your request. Please try again.",
+      connectionInterrupted:
+        'Connection interrupted — response may be incomplete.',
+      truncated:
+        'Response truncated — ask “continue” or request a shorter answer.',
+    },
+  },
   shared: {
     table: {
       download: 'Download as CSV',
@@ -559,6 +771,7 @@ Other participants will only see your public **participant profile**, including 
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
+      openCourseChat: 'AI tutor',
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
@@ -1138,13 +1351,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       histogramUserRange: 'Your score range: {range}.',
       notEnoughDataForComparison:
         'No peer comparison is available. It is only included for at least 10 active participants and a non-zero available score range.',
-      exportReportButton: 'Export Performance Report (HTML)',
+      exportReportButton: 'Export Performance Report',
       exportReportExplanation:
-        'Issue an HTML report from the current assessment record. Once it is ready, you can open it or download the file. The report includes a link for checking its current status and claims.',
+        'Issue a report from the current assessment record. Once it is ready, you can view it in your browser or use the browser print dialog to save a single-page A4 PDF. The report includes a link for checking its current status and claims.',
       exportReportReady:
-        'Your assessment report is ready. Open it in a new tab or download the HTML file.',
+        'Your assessment report is ready. View it in a new tab or use Save as PDF to open the browser print dialog.',
       viewReportButton: 'View report',
-      downloadReportButton: 'Download report',
+      downloadReportButton: 'Save as PDF',
       refreshReportButton: 'Refresh report',
       exportReportNotEligibleError:
         'No assessment report can be issued for this course. Confirm that you are enrolled and that assessed activities have ended, or contact your lecturers.',
@@ -1156,10 +1369,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The assessment data could not be validated for a report. Please try again later or contact your lecturers.',
       exportReportIssuanceError:
         'The assessment report could not be issued. Check your connection and try again.',
-      exportReportDownloadError:
-        'The report was issued, but the HTML file could not be created. Please try again.',
+      exportReportGenerationError:
+        'The report was issued, but its browser document could not be created. Please try again.',
       exportReportViewError:
-        'The report could not be opened in a new tab. Allow pop-ups for this page or download the HTML file instead.',
+        'The report could not be opened in a new tab. Allow pop-ups for this page and try again.',
+      exportReportPrintError:
+        'The report could not be opened for printing. Allow pop-ups for this page and try again.',
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
@@ -1191,7 +1406,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'No assessment report exists for this verification link.',
       verificationActiveTitle: 'Active assessment record',
       verificationActiveText:
-        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the downloaded report.',
+        'The claims below match the active snapshot stored by KlickerUZH. Compare them with the printed or on-screen report.',
       verificationRevokedTitle: 'Revoked assessment record',
       verificationRevokedText:
         'This report, issued on {date}, was revoked and must no longer be treated as active. Its claims are not disclosed.',

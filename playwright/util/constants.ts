@@ -22,6 +22,10 @@ export const ASSESSMENT_REPORT_PARTICIPANT_IDS = Array.from(
   { length: 10 },
   (_, index) => `a1000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
 )
+export const ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS = Array.from(
+  { length: 30 },
+  (_, index) => `a2000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+)
 
 export const PARTICIPANT_IDS = [
   '6f45065c-667f-4259-818c-c6f6b477eb48',

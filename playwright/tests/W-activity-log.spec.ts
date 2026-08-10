@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test'
-import questionsData from '../../cypress/cypress/fixtures/questions.json' with { type: 'json' }
-import activityLogData from '../../cypress/cypress/fixtures/W-activity-log.json' with { type: 'json' }
+import questionsData from '../fixtures/questions.json' with { type: 'json' }
+import activityLogData from '../fixtures/W-activity-log.json' with { type: 'json' }
 import { chooseActivityAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {

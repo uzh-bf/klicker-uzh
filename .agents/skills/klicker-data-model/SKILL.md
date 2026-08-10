@@ -26,19 +26,19 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 
 - **Pick the right area file** — don't create new `.prisma` files; `js.prisma` is generators-only and the shared `datasource.prisma` declares only the provider. JavaScript URLs live in `packages/prisma/prisma.config.ts`.
 - **Migrations may carry data backfills** (plain SQL in the migration file — `ROW_NUMBER()` example in `20260414223500_*`). Write the backfill in the same migration as the DDL.
+- **Every migration must be expand-contract (backward-compatible).** Deployments apply migrations as an ArgoCD PreSync hook _while the previous app version is still serving_, so a drop/rename/narrowing that the old code still depends on takes production down. Split it across releases: add and backfill first, switch the code, remove in a later release. There is no automatic undo — a wrong migration is recovered by rolling forward with a compensating one, and a failed one blocks every deploy to that environment ([runbook](../../../docs/data-and-migrations.md#recovering-a-failed-migration-hook)). Lock-heavy DDL runs unattended with no `lock_timeout`: an `ACCESS EXCLUSIVE` wait queues app queries behind it.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
-## Seeds — three independent paths
+## Seeds — two independent paths
 
 A fixture needed by tests must be added to EACH consumer:
 
 | Consumer             | Seed location                                                           |
 | -------------------- | ----------------------------------------------------------------------- |
 | Dev / manual testing | `packages/prisma-data/src/data/seedTEST.ts` (+ topic modules alongside) |
-| Cypress              | `seedDatabase()` task in `cypress/cypress.config.ts`                    |
 | Playwright           | `seedDatabase()` in `playwright/global-setup.ts`                        |
 
 Prisma 7 reset/migrate commands do not seed automatically. The legacy host uses `pnpm run prisma:setup`; the self-contained DevPod uses the raw reset/push/Prisma Data seed sequence in `.devcontainer/post-create.sh`. Both are explicit and **destructive** — apply `klicker-environment-doctor` check 8 first.

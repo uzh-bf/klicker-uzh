@@ -98,7 +98,29 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
     .map((model) => normalizeChatModelConfig(model))
 }
 
-const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+  {
+    id: 'auto',
+    deploymentId: 'auto-router',
+    name: 'Auto Mode',
+    description: 'Automatic model selection through the LiteLLM auto router',
+    fallback: false,
+    supportsReasoning: false,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: [],
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-5.6-luna',
+    deploymentId: 'gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    cost: { input: 1.25, output: 10.0 },
+  },
   {
     id: 'gpt-4.1',
     deploymentId: 'gpt-4.1',

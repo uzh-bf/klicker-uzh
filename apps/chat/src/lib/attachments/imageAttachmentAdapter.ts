@@ -9,11 +9,30 @@ const IMAGE_PREVIEW_MAX_DIMENSION = 256
 const HEIC_TYPES = new Set(['image/heic', 'image/heif'])
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
+export const ATTACHMENT_ERROR_CODE = {
+  readFailed: 'attachment-read-failed',
+} as const
+
+/**
+ * Rejecting with the raw FileReader `ProgressEvent` (as `reader.onerror =
+ * reject` used to) stringifies to "[object ProgressEvent]" wherever a caller
+ * falls back to `String(error)`. A typed error with a stable code lets the
+ * composer UI (thread.tsx) map it to a localized message instead — this
+ * module stays locale-free.
+ */
+export class AttachmentAdapterError extends Error {
+  constructor(public readonly code: string) {
+    super(code)
+    this.name = 'AttachmentAdapterError'
+  }
+}
+
 async function readBlobAsDataUrl(blob: Blob): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
+    reader.onerror = () =>
+      reject(new AttachmentAdapterError(ATTACHMENT_ERROR_CODE.readFailed))
     reader.readAsDataURL(blob)
   })
 }

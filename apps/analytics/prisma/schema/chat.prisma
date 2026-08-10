@@ -10,6 +10,11 @@ enum ChatAttachmentType {
   IMAGE
 }
 
+enum ChatMessageRating {
+  UP
+  DOWN
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -63,6 +68,8 @@ model ChatMessage {
   reasoningEffort  String?
   reasoningContent String?  @db.Text
   creditsUsed      Decimal? @db.Decimal(18, 6)
+  // Participant feedback on an assistant answer; null until they vote.
+  rating           ChatMessageRating?
 
   attachments ChatAttachment[]
 

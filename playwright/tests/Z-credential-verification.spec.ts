@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test'
-import { promises as fs } from 'node:fs'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   ASSESSMENT_REPORT_COURSE_NAME,
@@ -16,6 +15,7 @@ import {
   expectOneActiveAssessmentReport,
   getAssessmentReportRecords,
   resetAssessmentReportFixture,
+  seedAssessmentReportTenBinFixture,
   seedAssessmentReportFixture,
 } from '../util/credentialVerification.js'
 import { expect, test } from '../util/fixtures.js'
@@ -46,6 +46,13 @@ async function loginAssessmentStudent(loginFactory: LoginFactory) {
 }
 
 async function exportAssessmentReport(page: Page) {
+  await page.context().addInitScript(() => {
+    window.print = () => {
+      const root = document.documentElement
+      const printCalls = Number(root.dataset.assessmentReportPrintCalls ?? '0')
+      root.dataset.assessmentReportPrintCalls = String(printCalls + 1)
+    }
+  })
   await page.goto(
     `${assessmentStudentUrl}/course/${COURSE_ID_ASSESSMENT_REPORT}`
   )
@@ -60,16 +67,48 @@ async function exportAssessmentReport(page: Page) {
   await expect(downloadButton).toBeVisible()
   await expect(refreshButton).toBeVisible()
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
+  const printWindowPromise = page.waitForEvent('popup')
+  const [reportPage] = await Promise.all([
+    printWindowPromise,
     downloadButton.click(),
   ])
-  const path = await download.path()
-  if (!path) throw new Error('ASSESSMENT_REPORT_DOWNLOAD_PATH_MISSING')
-  const content = await fs.readFile(path, 'utf8')
+  await reportPage.waitForLoadState('load')
+  await expect(reportPage.locator('html')).toHaveAttribute(
+    'data-assessment-report-print-calls',
+    '1'
+  )
+  const content = await reportPage.content()
+  const pdf = await reportPage.pdf({
+    format: 'A4',
+    printBackground: true,
+    preferCSSPageSize: true,
+  })
+  const qrCodeSize = await reportPage
+    .getByRole('img', { name: 'QR code for the KlickerUZH verification page' })
+    .evaluate((image: HTMLImageElement) => ({
+      height: image.naturalHeight,
+      width: image.naturalWidth,
+    }))
+  const histogramBarCount = await reportPage.locator('.chart svg rect').count()
+  const histogramRowCount = await reportPage
+    .locator('.histogram-table tbody tr')
+    .count()
+  await reportPage.close()
   const match = content.match(/\/verify#([a-f0-9]{64})/)
   if (!match?.[1]) throw new Error('ASSESSMENT_REPORT_TOKEN_MISSING')
-  return { content, token: match[1] }
+  const reportWindowPromise = page.waitForEvent('popup')
+  await viewButton.click()
+  const viewPage = await reportWindowPromise
+  await viewPage.waitForLoadState('load')
+  await viewPage.close()
+  return {
+    content,
+    pdf,
+    qrCodeSize,
+    histogramBarCount,
+    histogramRowCount,
+    token: match[1],
+  }
 }
 
 async function revokeThroughLecturerUi({
@@ -110,14 +149,29 @@ test.describe('Assessment report credential lifecycle', () => {
     await resetAssessmentReportFixture()
   })
 
-  test('student downloads a self-contained report from the server snapshot', async ({
+  test('student saves a self-contained report from the server snapshot', async ({
     page,
     loginFactory,
   }) => {
     await loginAssessmentStudent(loginFactory)
-    const { content, token } = await exportAssessmentReport(page)
+    const {
+      content,
+      histogramBarCount,
+      histogramRowCount,
+      pdf,
+      qrCodeSize,
+      token,
+    } = await exportAssessmentReport(page)
 
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(pdf.toString().match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+    expect(histogramBarCount).toBe(3)
+    expect(histogramRowCount).toBe(3)
+    expect(qrCodeSize).toEqual({ height: 336, width: 336 })
     expect(content).toContain('Universität Zürich')
+    expect(content).toContain(
+      `<title>Assessment performance report - ${ASSESSMENT_REPORT_COURSE_NAME}</title>`
+    )
     expect(content).toContain(ASSESSMENT_REPORT_COURSE_NAME)
     expect(content).toContain(ASSESSMENT_REPORT_COURSE_REFERENCE)
     expect(content).toContain(ASSESSMENT_REPORT_SUBJECT_EMAIL)
@@ -150,13 +204,59 @@ test.describe('Assessment report credential lifecycle', () => {
       content.matchAll(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/g),
       (match) => Number(match[1])
     )
-    expect(histogramBarWidths).toHaveLength(3)
     expect(histogramBarWidths[0]).toBeGreaterThan(histogramBarWidths[1]!)
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.token).toBe(token)
     expect(record.subjectEmail).toBe(ASSESSMENT_REPORT_SUBJECT_EMAIL)
     expect(record.snapshotVersion).toBe(1)
+  })
+
+  test('student saves a ten-bin report on one A4 page', async ({
+    page,
+    loginFactory,
+  }) => {
+    try {
+      await seedAssessmentReportTenBinFixture()
+      await loginAssessmentStudent(loginFactory)
+      const { content, histogramBarCount, histogramRowCount, pdf } =
+        await exportAssessmentReport(page)
+
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+      expect(pdf.toString().match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+      expect(histogramBarCount).toBe(10)
+      expect(histogramRowCount).toBe(10)
+      expect(content).toContain(ASSESSMENT_REPORT_COURSE_NAME)
+    } finally {
+      await resetAssessmentReportFixture()
+    }
+  })
+
+  test('student gets a bounded error when the QR logo cannot decode', async ({
+    page,
+    loginFactory,
+  }) => {
+    await page.route('**/KlickerLogo.png', async (route) => {
+      await route.fulfill({
+        body: 'not a PNG image',
+        contentType: 'image/png',
+        status: 200,
+      })
+    })
+    await loginAssessmentStudent(loginFactory)
+    await page.goto(
+      `${assessmentStudentUrl}/course/${COURSE_ID_ASSESSMENT_REPORT}`
+    )
+    const exportButton = page.getByTestId('export-report-button')
+    await exportButton.click()
+
+    await expect(
+      page.getByRole('alert').filter({
+        hasText:
+          'The report was issued, but its browser document could not be created. Please try again.',
+      })
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(exportButton).toBeEnabled()
   })
 
   test('standalone report escapes course-controlled HTML', async ({

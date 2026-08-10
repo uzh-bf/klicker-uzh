@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-19'
+timestamp: '2026-08-04'
 tags:
   - backend
   - prisma
@@ -36,17 +36,66 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`. Where `migrate deploy` runs in deployment is **not documented in-repo** (open question — verify before making deploy claims).
+- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
-## Seeding
+### Deployment migrations
 
-Three independent seed paths — changing one does NOT update the others:
+`prisma migrate deploy` runs **automatically** on every stg rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook ships **disabled** until the pinned tags reach a migrator-bearing release (see Bootstrap and rollback below), so prd migrations remain manual for now. Mechanics:
+
+- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
+- The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
+- A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
+- **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
+- **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
+- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its floating `v3` tag is rebuilt on every merge.
+
+Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
+
+### Recovering a failed migration hook
+
+A failed hook blocks **every** sync to that environment, by design. Recovery order:
+
+Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+
+1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
+2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
+3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
+4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
+5. **Need to ship an app-only hotfix while the DB is wedged?** Set `migrator.enabled: false`, sync, then re-enable it — track the re-enable, since a silently disabled hook is the failure mode this whole feature exists to prevent.
+6. **A migration that applied but shouldn't have** has no automatic undo: rolling the app image back leaves the schema ahead. That is why migrations must be expand-contract — roll _forward_ with a compensating migration. This repo documents no point-in-time restore procedure and the hook creates no restore point; whatever backup the managed Postgres provides is the only fallback, and recovering through it is a database-team operation, not a deploy step.
+
+Long DDL runs unattended against the live database with no `lock_timeout`: a statement waiting on an `ACCESS EXCLUSIVE` lock queues application queries behind it until the deadline. Review lock-heavy migrations before release.
+
+**Verify the image after any Prisma major** (ADR-0001 requires running it, not just building it):
+
+```bash
+docker build -f packages/prisma/Dockerfile -t migrator-check .   # repo root
+docker network create mcheck && docker run -d --name mcheck-pg --network mcheck \
+  -e POSTGRES_PASSWORD=test -e POSTGRES_DB=klicker docker.io/library/postgres:15
+until docker exec mcheck-pg pg_isready -U postgres; do sleep 1; done   # Postgres needs a few seconds
+export MURL='postgresql://postgres:test@mcheck-pg:5432/klicker'
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # all migrations applied, exit 0
+docker run --rm --network mcheck -e DATABASE_URL="$MURL" migrator-check   # idempotent: no pending migrations
+docker run --rm --network mcheck migrator-check                          # no DATABASE_URL: must fail, exit 1
+docker rm -f mcheck-pg && docker network rm mcheck && docker image rm migrator-check
+```
+
+The third run proves `prisma.config.ts` is actually consulted — a migrator that cannot see `DATABASE_URL` must fail loudly rather than no-op.
+
+Fresh-install caveat: the Job references a PriorityClass that the chart creates in the **Sync** phase, so a first-ever install into an empty namespace must have the PriorityClasses applied before the PreSync hook runs (or `migrator.priorityClassName` left unset). Both existing environments already have them.
+
+Two independent seed paths — changing one does NOT update the other:
 
 1. **Dev seed**: `pnpm run prisma:setup` → seed-free reset + push/generate + an explicit `packages/prisma-data/src/data/seedTEST.ts` run (plus seedAccounts/Achievements/Levels/… modules). Creates the `testuser*` participants and seed courses (credentials: [AGENTS.md](../AGENTS.md) test-credentials section).
-2. **Cypress**: its own `seedDatabase()` task in `cypress/cypress.config.ts`.
-3. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
+2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
 Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+
+### First-login demo content
+
+First-login demo content is a third, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. `packages/graphql/src/services/demoQuestions.ts:seedDemoSelectionAndCaseStudyElements` receives the same transaction context for the relational collection-plus-elements bundle, and `packages/util/src/elements.ts:processElementData` snapshots it into the final untimed live-quiz block.
+
+This path does not run for users who opt out, does not backfill existing accounts, and is independent of the dev and Playwright fixture seeds above.
 
 ## Auth adapter compatibility
 

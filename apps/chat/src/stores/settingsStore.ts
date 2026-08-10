@@ -11,6 +11,9 @@ export interface ModeOption {
 }
 
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
+let creditsRequestGeneration = 0
+let creditsLoadedChatbotId: string | null = null
+let modeOptionsRequestGeneration = 0
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -52,12 +55,19 @@ interface SettingsState {
   credits: {
     current: number
     total: number
+    // ISO timestamp of the next refill; null when the chatbot never refills.
+    nextResetAt: string | null
   }
+  // False until a credits fetch has succeeded. The placeholder credits below
+  // would otherwise read as "0 left, never refills", which is a claim we
+  // cannot make before the server has answered.
+  creditsLoaded: boolean
   modelSelectionEnabled: boolean
 
   // Available options
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
+  modeOptionsChatbotId: string | null
 
   // Actions
   setSelectedModel: (model: ModelID) => void
@@ -79,9 +89,12 @@ export const useSettingsStore = create<SettingsState>()(
       credits: {
         current: 0.0,
         total: 0.0,
+        nextResetAt: null,
       },
+      creditsLoaded: false,
       modelSelectionEnabled: false,
       modeOptions: {},
+      modeOptionsChatbotId: null,
 
       // available options
       modelOptions: [],
@@ -116,9 +129,18 @@ export const useSettingsStore = create<SettingsState>()(
         }),
 
       loadModeOptions: async (chatbotId: string) => {
+        const requestGeneration = ++modeOptionsRequestGeneration
+        set({
+          modeOptions: {},
+          modeOptionsChatbotId: null,
+          modelSelectionEnabled: false,
+        })
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
           if (!response.ok) {
             console.warn(
               'No valid mode options found, falling back to defaults.'
@@ -130,6 +152,7 @@ export const useSettingsStore = create<SettingsState>()(
                   (value as { description: string }).description,
                 ])
               ),
+              modeOptionsChatbotId: chatbotId,
               selectedMode:
                 Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
               modelSelectionEnabled: false,
@@ -168,12 +191,15 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               modeOptions: resolvedModeOptions,
+              modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
               selectedMode,
             }
           })
         } catch (error) {
           console.error('Error fetching mode options:', error)
+          if (requestGeneration !== modeOptionsRequestGeneration) return
+
           set((state) => ({
             modeOptions: Object.fromEntries(
               Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
@@ -181,6 +207,7 @@ export const useSettingsStore = create<SettingsState>()(
                 (value as { description: string }).description,
               ])
             ),
+            modeOptionsChatbotId: chatbotId,
             selectedMode: Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
             modelSelectionEnabled: false,
           }))
@@ -188,8 +215,24 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       loadCredits: async (chatbotId: string) => {
+        // `creditsLoaded` is sticky once a load has succeeded FOR THIS
+        // chatbot: a refresh (or a failed one) keeps the last known balance
+        // visible instead of hiding the footer for the rest of the session.
+        // A different chatbot id must not inherit the stickiness, or a failed
+        // cross-chatbot load would pin the previous chatbot's balance.
+        const requestGeneration = ++creditsRequestGeneration
+        if (
+          creditsLoadedChatbotId !== null &&
+          creditsLoadedChatbotId !== chatbotId
+        ) {
+          creditsLoadedChatbotId = null
+          set({ creditsLoaded: false })
+        }
+
         try {
           const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          if (requestGeneration !== creditsRequestGeneration) return
+
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
             return
@@ -200,11 +243,15 @@ export const useSettingsStore = create<SettingsState>()(
           const creditsData = {
             current: data.current ?? 0,
             total: data.total ?? 0,
+            nextResetAt: data.nextResetAt ?? null,
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
 
           set((state) => {
+            if (requestGeneration !== creditsRequestGeneration) return state
+            creditsLoadedChatbotId = chatbotId
+
             let selectedModel = state.selectedModel
 
             if (!state.modelSelectionEnabled) {
@@ -229,6 +276,7 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               credits: creditsData,
+              creditsLoaded: true,
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,

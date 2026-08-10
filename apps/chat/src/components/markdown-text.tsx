@@ -11,16 +11,26 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
+import {
+  parseCitationHref,
+  remarkCitationMarkers,
+} from '../lib/markdown/remarkCitationMarkers'
 import { cn } from '../lib/utils/ui'
+import { CitationChip } from './citation-chip'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+
+// Stable module-scope reference: recreating this array on every render would
+// defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
+const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
 
 const MarkdownTextImpl = () => {
   return (
     <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm, remarkMath]}
+      remarkPlugins={remarkPlugins}
       rehypePlugins={[rehypeKatex]}
       preprocess={normalizeCustomMathTags}
       className="aui-md"
@@ -32,6 +42,7 @@ const MarkdownTextImpl = () => {
 export const MarkdownText = memo(MarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
+  const t = useTranslations()
   const { isCopied, copyToClipboard } = useCopyToClipboard()
   const onCopy = () => {
     if (!code || isCopied) return
@@ -49,10 +60,10 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
           >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
-            <span className="sr-only">Copy</span>
+            <span className="sr-only">{t('chat.markdown.copyCode')}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
+        <TooltipContent>{t('chat.markdown.copyCode')}</TooltipContent>
       </Tooltip>
     </div>
   )
@@ -78,8 +89,10 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  // Rendered as h2: the chatbot name is the page's single h1, so message
+  // headings must not compete at the same rank (visual size unchanged).
   h1: ({ className, ...props }) => (
-    <h1
+    <h2
       className={cn(
         'mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0',
         className
@@ -135,20 +148,33 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        'text-primary font-medium underline underline-offset-4',
-        className
-      )}
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    />
-  ),
+  a: ({ className, href, ...props }) => {
+    const citationIndex = parseCitationHref(href)
+    if (citationIndex !== null) return <CitationChip index={citationIndex} />
+
+    return (
+      <a
+        className={cn(
+          'text-primary font-medium underline underline-offset-4',
+          className
+        )}
+        target="_blank"
+        rel="noopener noreferrer"
+        href={href}
+        {...props}
+      />
+    )
+  },
+  // Styled as a soft amber info callout (e.g. a model-emitted "Hinweis" note),
+  // not a plain citation-style quote: rounded block, amber left accent, and
+  // `break-words` so long tokens (URLs) wrap instead of overflowing on
+  // mobile widths.
   blockquote: ({ className, ...props }) => (
     <blockquote
-      className={cn('border-l-2 pl-6 italic', className)}
+      className={cn(
+        'my-5 break-words rounded-md border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-amber-900',
+        className
+      )}
       {...props}
     />
   ),
@@ -168,13 +194,12 @@ const defaultComponents = memoizeMarkdownComponents({
     <hr className={cn('my-5 border-b', className)} {...props} />
   ),
   table: ({ className, ...props }) => (
-    <table
-      className={cn(
-        'my-5 w-full border-separate border-spacing-0 overflow-y-auto',
-        className
-      )}
-      {...props}
-    />
+    <div className="my-5 overflow-x-auto">
+      <table
+        className={cn('w-full border-separate border-spacing-0', className)}
+        {...props}
+      />
+    </div>
   ),
   th: ({ className, ...props }) => (
     <th

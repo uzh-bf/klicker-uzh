@@ -1,0 +1,132 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
+import { EventEmitter } from 'events'
+import type { Context, ContextWithUser } from '../src/lib/context.js'
+import { getParticipantCourseChatbots } from '../src/services/chatbots.js'
+import {
+  initializePrisma,
+  seedCourse,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
+
+describe('Integration tests for the public courseChatbots query', () => {
+  // shared resources used across tests
+  let prisma: PrismaClient
+  let hatchet: Hatchet
+  let emitter: EventEmitter
+  let userOneCtx: ContextWithUser
+
+  beforeAll(async () => {
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
+    prisma = newPrisma
+    hatchet = newHatchet
+    emitter = newEmitter
+  })
+
+  afterAll(async () => {
+    await testCleanup(prisma)
+    await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const { userOneCtx: ctx1 } = await testInitialization(
+      prisma,
+      hatchet,
+      emitter
+    )
+    userOneCtx = ctx1
+  })
+
+  afterEach(async () => await testCleanup(prisma))
+
+  async function seedCourseWithChatbot() {
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Course Tutor',
+        courseId: course.id,
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+
+    return { course, chatbot }
+  }
+
+  // participant tokens carry no scope (see createParticipantToken)
+  function participantContext(participantId: string): Context {
+    return {
+      ...userOneCtx,
+      user: {
+        sub: participantId,
+        role: UserRole.PARTICIPANT,
+      },
+    } as unknown as Context
+  }
+
+  it('returns an empty list for anonymous visitors instead of throwing', async () => {
+    const { course } = await seedCourseWithChatbot()
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      { ...userOneCtx, user: undefined } as unknown as Context
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns an empty list for a logged-in lecturer', async () => {
+    const { course } = await seedCourseWithChatbot()
+
+    // userOneCtx is the course owner, but has role USER (not PARTICIPANT)
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      userOneCtx as Context
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns an empty list for a participant that is not enrolled in the course', async () => {
+    const { course } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: { username: 'chatbotParticipantUnenrolled', password: 'abcdabcd' },
+    })
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns the course chatbots for an enrolled participant', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'chatbotParticipantEnrolled',
+        password: 'abcdabcd',
+        participations: { create: [{ courseId: course.id }] },
+      },
+    })
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(chatbots).toEqual([
+      {
+        id: chatbot.id,
+        name: 'Course Tutor',
+        description: null,
+        avatar: null,
+      },
+    ])
+  })
+})
