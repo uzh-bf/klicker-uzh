@@ -41,9 +41,14 @@ export function useThreadManagement(
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { createThread, addMessage, setIsRunning } = useChatStore()
-  const { selectedMode, selectedModel, selectedReasoningEffort } =
-    useSettingsStore()
+  const createThread = useChatStore((state) => state.createThread)
+  const addMessage = useChatStore((state) => state.addMessage)
+  const setIsRunning = useChatStore((state) => state.setIsRunning)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const selectedModel = useSettingsStore((state) => state.selectedModel)
+  const selectedReasoningEffort = useSettingsStore(
+    (state) => state.selectedReasoningEffort
+  )
 
   /**
    * Handles creation of new user messages and generates response

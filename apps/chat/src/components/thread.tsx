@@ -35,10 +35,12 @@ import {
 } from 'lucide-react'
 import {
   type FC,
-  type MouseEvent,
   type PropsWithChildren,
   type ReactNode,
+  createContext,
+  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -83,6 +85,7 @@ import { twMerge } from 'tailwind-merge'
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
+const ChatbotAvatarContext = createContext('')
 
 const formatTitleCase = (value: string) =>
   value
@@ -125,11 +128,11 @@ const extractMessageText = (message: {
     .join('')
 
 const useSupportsImageAttachments = () => {
-  const { selectedModel, modelOptions } = useSettingsStore()
-
-  return (
-    modelOptions.find((model) => model.id === selectedModel)
-      ?.supportsImageAttachments !== false
+  const selectedModel = useSettingsStore((state) => state.selectedModel)
+  return useSettingsStore(
+    (state) =>
+      state.modelOptions.find((model) => model.id === selectedModel)
+        ?.supportsImageAttachments !== false
   )
 }
 
@@ -144,7 +147,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     // `role`/`status` above.
     createdAt: Date
   }
-  const { modelOptions } = useSettingsStore()
+  const modelOptions = useSettingsStore((state) => state.modelOptions)
   const t = useTranslations()
   const format = useFormatter()
   // A ticking `now`, not `new Date()`: the caption is rendered once and its
@@ -247,6 +250,14 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
 
 export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
   const { embedded } = useChatUi()
+  const messageComponents = useMemo(
+    () => ({
+      UserMessage,
+      EditComposer,
+      AssistantMessage,
+    }),
+    []
+  )
 
   return (
     <ThreadPrimitive.Root
@@ -266,15 +277,9 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
       >
         <ThreadWelcome chatbotAvatar={chatbotAvatar} />
 
-        <ThreadPrimitive.Messages
-          components={{
-            UserMessage: UserMessage,
-            EditComposer: EditComposer,
-            AssistantMessage: (props) => (
-              <AssistantMessage {...props} chatbotAvatar={chatbotAvatar} />
-            ),
-          }}
-        />
+        <ChatbotAvatarContext.Provider value={chatbotAvatar}>
+          <ThreadPrimitive.Messages components={messageComponents} />
+        </ChatbotAvatarContext.Provider>
       </ThreadPrimitive.Viewport>
 
       <div
@@ -390,7 +395,11 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 const ThreadWelcomeSuggestions: FC = () => {
   const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { modeOptions, modeOptionsChatbotId, selectedMode } = useSettingsStore()
+  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const modeOptionsChatbotId = useSettingsStore(
+    (state) => state.modeOptionsChatbotId
+  )
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
 
   // `selectedMode` is persisted globally, while mode options arrive after the
   // current chatbot mounts. Hide starters until the current chatbot's
@@ -1235,9 +1244,8 @@ const ImageAnalyzedChip: FC = () => {
   )
 }
 
-const AssistantMessage: FC<{
-  chatbotAvatar: string
-}> = ({ chatbotAvatar }) => {
+const AssistantMessage: FC = () => {
+  const chatbotAvatar = useContext(ChatbotAvatarContext)
   const { embedded } = useChatUi()
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
@@ -1383,25 +1391,26 @@ const MessageRatingButtons: FC = () => {
   const message = useMessage()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const rateMessage = useChatStore((state) => state.rateMessage)
-  // The active vote comes from the feedback adapter's own metadata field
-  // (populated by `convertMessage` in RuntimeProvider from the store's
-  // persisted rating), not a separate zustand selector.
-  const submittedFeedbackType = message.metadata.submittedFeedback?.type ?? null
+  const submittedRating = useChatStore((state) => {
+    const activeThread = state.threads.find(
+      (thread) => thread.id === state.activeThreadId
+    )
+    return (
+      activeThread?.messages.find((candidate) => candidate.id === message.id)
+        ?.rating ?? null
+    )
+  })
 
   if (!chatbotId) return null
 
   const options = [
     {
       value: 'UP' as const,
-      feedbackType: 'positive' as const,
-      FeedbackPrimitive: ActionBarPrimitive.FeedbackPositive,
       Icon: ThumbsUpIcon,
       label: t('chat.message.rateUp'),
     },
     {
       value: 'DOWN' as const,
-      feedbackType: 'negative' as const,
-      FeedbackPrimitive: ActionBarPrimitive.FeedbackNegative,
       Icon: ThumbsDownIcon,
       label: t('chat.message.rateDown'),
     },
@@ -1409,48 +1418,39 @@ const MessageRatingButtons: FC = () => {
 
   return (
     <>
-      {options.map(
-        ({ value, feedbackType, FeedbackPrimitive, Icon, label }) => {
-          const isActive = submittedFeedbackType === feedbackType
-          return (
-            <Tooltip key={value}>
-              <TooltipTrigger asChild>
-                <FeedbackPrimitive
-                  asChild
-                  // The feedback adapter only models "submit a vote": clicking
-                  // the already-active vote here clears it instead, so a
-                  // misclick is undoable. That clear path bypasses the
-                  // adapter (there is no "retract" concept in assistant-ui)
-                  // and calls the same store action directly.
-                  onClick={(event: MouseEvent) => {
-                    if (isActive) {
-                      event.preventDefault()
-                      void rateMessage(chatbotId, message.id, null)
-                    }
-                  }}
-                >
-                  <button
-                    data-cy={`chat-rate-${value.toLowerCase()}-button`}
-                    aria-pressed={isActive}
-                    className={twMerge(
-                      actionBarButtonClassName,
-                      isActive && 'text-primary'
-                    )}
-                  >
-                    {/* The cast icon is filled, not merely recoloured: primary
-                      against muted-foreground is only ~2.4:1 (~2.0:1 in dark
-                      mode), so colour alone would leave the active vote
-                      indistinguishable under WCAG 1.4.1/1.4.11. */}
-                    <Icon className={isActive ? 'fill-current' : undefined} />
-                    <span className="sr-only">{label}</span>
-                  </button>
-                </FeedbackPrimitive>
-              </TooltipTrigger>
-              <TooltipContent>{label}</TooltipContent>
-            </Tooltip>
-          )
-        }
-      )}
+      {options.map(({ value, Icon, label }) => {
+        const isActive = submittedRating === value
+        return (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                aria-pressed={isActive}
+                onClick={() => {
+                  void rateMessage(
+                    chatbotId,
+                    message.id,
+                    isActive ? null : value
+                  )
+                }}
+                className={twMerge(
+                  actionBarButtonClassName,
+                  isActive && 'text-primary'
+                )}
+              >
+                {/* The cast icon is filled, not merely recoloured: primary
+                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                    mode), so colour alone would leave the active vote
+                    indistinguishable under WCAG 1.4.1/1.4.11. */}
+                <Icon className={isActive ? 'fill-current' : undefined} />
+                <span className="sr-only">{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        )
+      })}
     </>
   )
 }

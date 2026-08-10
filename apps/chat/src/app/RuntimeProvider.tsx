@@ -13,9 +13,11 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+
+const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 export function RuntimeProvider({
   chatbotId,
@@ -25,25 +27,35 @@ export function RuntimeProvider({
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
-  const {
-    activeThreadId,
-    threads,
-    setMessages: setMessagesInternal,
-    loadThreads,
-    switchToThread,
-    resyncModeFromThread,
-    resetSession,
-    rateMessage,
-  } = useChatStore()
-  const {
-    selectedModel,
-    selectedMode,
-    selectedReasoningEffort,
-    modelOptions,
-    loadCredits,
-    loadModeOptions,
-  } = useSettingsStore()
   const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
+  const activeThreadId = useChatStore((state) => state.activeThreadId)
+  const activeThread = useChatStore((state) =>
+    state.threads.find((thread) => thread.id === state.activeThreadId)
+  )
+  const existingThread = useChatStore((state) =>
+    threadId
+      ? (state.threads.find((thread) => thread.id === threadId) ?? null)
+      : null
+  )
+  const setMessagesInternal = useChatStore((state) => state.setMessages)
+  const loadThreads = useChatStore((state) => state.loadThreads)
+  const switchToThread = useChatStore((state) => state.switchToThread)
+  const resyncModeFromThread = useChatStore(
+    (state) => state.resyncModeFromThread
+  )
+  const resetSession = useChatStore((state) => state.resetSession)
+  const selectedModel = useSettingsStore((state) => state.selectedModel)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const selectedReasoningEffort = useSettingsStore(
+    (state) => state.selectedReasoningEffort
+  )
+  const supportsImageAttachments = useSettingsStore(
+    (state) =>
+      state.modelOptions.find((model) => model.id === selectedModel)
+        ?.supportsImageAttachments !== false
+  )
+  const loadCredits = useSettingsStore((state) => state.loadCredits)
+  const loadModeOptions = useSettingsStore((state) => state.loadModeOptions)
   const router = useRouter()
   const searchParams = useSearchParams()
   const queryString = searchParams.toString()
@@ -64,9 +76,8 @@ export function RuntimeProvider({
   } | null>(null)
 
   // get current thread state
-  const activeThread = threads.find((t) => t.id === activeThreadId)
-  const messages = activeThread?.messages || []
-  const isRunning = activeThread?.isRunning || false
+  const messages = activeThread?.messages ?? EMPTY_MESSAGES
+  const isRunning = activeThread?.isRunning ?? false
 
   // reset session for embedded mode without a thread
   useEffect(() => {
@@ -123,7 +134,7 @@ export function RuntimeProvider({
       await loadModeOptions(chatbotId)
       await loadCredits(chatbotId)
     })()
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads])
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
 
   // sync active thread with URL params
   useEffect(() => {
@@ -139,8 +150,6 @@ export function RuntimeProvider({
       syncRetryCount.current = 0
       return
     }
-
-    const existingThread = threads.find((thread) => thread.id === threadId)
 
     if (!existingThread) {
       router.replace(missingThreadRedirectPath)
@@ -213,7 +222,7 @@ export function RuntimeProvider({
     switchToThread,
     syncRetryTrigger,
     threadId,
-    threads,
+    existingThread,
     threadsLoaded,
   ])
 
@@ -238,10 +247,10 @@ export function RuntimeProvider({
         reasoningEffort,
         creditsUsed,
         imageAttachments,
-        rating,
         metadata,
         ...rest
       } = message
+      delete rest.rating
       const custom = {
         ...(metadata?.custom ?? {}),
         chatMode: chatMode ?? null,
@@ -251,28 +260,11 @@ export function RuntimeProvider({
         imageAttachments: imageAttachments ?? [],
       }
 
-      // The feedback adapter's active state (`ActionBarPrimitive.FeedbackPositive`
-      // / `FeedbackNegative`) reads `metadata.submittedFeedback` on every
-      // render. The zustand store is the source of truth for the vote
-      // (persisted via the feedback route and loaded back from the API), so
-      // it has to be mapped in here rather than relying on the runtime's own
-      // optimistic patch: that patch lives in the runtime's internal message
-      // repository and would be clobbered the next time this converter runs
-      // from a fresh store snapshot (thread switch, reload, or the next
-      // store update), leaving a stale/missing vote after reload.
-      const submittedFeedback =
-        rating === 'UP'
-          ? ({ type: 'positive' } as const)
-          : rating === 'DOWN'
-            ? ({ type: 'negative' } as const)
-            : undefined
-
       return {
         ...rest,
         metadata: {
           ...metadata,
           custom,
-          submittedFeedback,
         },
       }
     },
@@ -287,6 +279,12 @@ export function RuntimeProvider({
     [setMessagesInternal]
   )
 
+  const adapters = useMemo(
+    () =>
+      supportsImageAttachments ? { attachments: imageAttachmentAdapter } : {},
+    [supportsImageAttachments]
+  )
+
   // runtime config for assistant UI
   const runtime = useExternalStoreRuntime({
     messages,
@@ -297,25 +295,7 @@ export function RuntimeProvider({
     onReload,
     onCancel,
     convertMessage,
-    adapters: {
-      ...(modelOptions.find((m) => m.id === selectedModel)
-        ?.supportsImageAttachments !== false && {
-        attachments: imageAttachmentAdapter,
-      }),
-      // Only the "submit a vote" path goes through this adapter — assistant-ui's
-      // FeedbackAdapter has no concept of retracting a vote, so clearing an
-      // existing one (clicking the active vote again) is handled directly in
-      // `MessageRatingButtons` via the same store action.
-      feedback: {
-        submit: ({ message, type }) => {
-          void rateMessage(
-            chatbotId,
-            message.id,
-            type === 'positive' ? 'UP' : 'DOWN'
-          )
-        },
-      },
-    },
+    adapters,
   })
 
   return (

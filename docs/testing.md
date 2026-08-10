@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-09'
+timestamp: '2026-08-10'
 tags:
   - testing
   - ci
@@ -30,6 +30,14 @@ OpenAI-compatible SSE response whose first tool call uses a sparse provider
 index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
+
+For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
+`textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
+`ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
+intermediate state until the test releases it. Use that seam to test the assistant
+row while it is still streaming, and capture DOM identity around feedback clicks
+when the bug concerns remounts or flicker. A passing final-text assertion alone
+does not prove that the conversation stayed mounted.
 
 The Office Add-in has a separate host boundary. Its pure URL contract runs under Node, while `check`, `lint`, `build:docs`, `verify:docs`, and `validate` cover compilation, source quality, the production bundle, exact deployment parity, and manifest acceptance. A browser run with a stubbed Office API verifies UI states only. Persistence, multiple content-add-in instances, and embedded evaluation rendering require a real PowerPoint sideload before release.
 
