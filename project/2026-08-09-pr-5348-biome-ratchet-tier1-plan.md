@@ -47,7 +47,7 @@ opening another rule-sized PR.
   than copied into this plan, where they become stale after each review-fix
   commit. No scoped conflict requires a base refresh before review.
 - The original migration remains the source of truth for formatter ownership:
-  Biome owns code; Prettier owns Markdown/YAML and Playwright/Cypress; ESLint
+  Biome owns code; Prettier owns Markdown/YAML and Playwright; ESLint
   remains the Next.js safety net.
 
 ## Goal
@@ -370,6 +370,9 @@ ci(quality): enforce Biome lint
   narrow Biome severity overrides. The plan now records the exact Yup
   `then`-branch paths and the Outlook-specific email CSS path; both remain
   warning-only only within their documented scopes.
+- 2026-08-10: The maintainability review corrected the plan's formatter
+  boundary to match the live repository: Prettier owns Markdown/YAML and
+  `playwright/`; ESLint remains the Next.js safety net.
 
 ## Finish state
 
