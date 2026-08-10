@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import type { ElementOptions, ElementOptionsInput } from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
 import validateKPRIMOptions from './validateKPRIMOptions.js'
@@ -12,7 +12,7 @@ import validateSelectionOptions from './validateSelectionOptions.js'
 function validateAndProcessElementOptions(
   elementType: DB.ElementType,
   options?: ElementOptionsInput | null
-) {
+): ElementOptions | null {
   switch (elementType) {
     case DB.ElementType.SC:
     case DB.ElementType.MC:
@@ -30,16 +30,21 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        displayMode: options.displayMode,
-        hasSampleSolution: options.hasSampleSolution,
+        displayMode: options.displayMode!,
+        hasSampleSolution: options.hasSampleSolution ?? undefined,
         hasAnswerFeedbacks:
-          options.hasSampleSolution && options.hasAnswerFeedbacks,
+          options.hasSampleSolution === true &&
+          options.hasAnswerFeedbacks === true,
         choices: options.choices!.map((choice) => ({
           ...choice,
-          correct: options.hasSampleSolution ? choice.correct : undefined,
+          correct:
+            options.hasSampleSolution === true
+              ? (choice.correct ?? undefined)
+              : undefined,
           feedback:
-            options.hasSampleSolution && options.hasAnswerFeedbacks
-              ? choice.feedback
+            options.hasSampleSolution === true &&
+            options.hasAnswerFeedbacks === true
+              ? (choice.feedback ?? undefined)
               : undefined,
         })),
       }
@@ -51,7 +56,7 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options.hasSampleSolution,
+        hasSampleSolution: options.hasSampleSolution ?? undefined,
         unit: options.unit ?? undefined,
         accuracy: options.accuracy ?? undefined,
         placeholder: options.placeholder ?? undefined,
@@ -76,7 +81,7 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options.hasSampleSolution,
+        hasSampleSolution: options.hasSampleSolution ?? undefined,
         solutions: options.hasSampleSolution ? options.solutions : undefined,
         restrictions: {
           maxLength: options.restrictions?.maxLength ?? undefined,
@@ -90,8 +95,8 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options.hasSampleSolution,
-        numberOfInputs: options.numberOfInputs,
+        hasSampleSolution: options.hasSampleSolution ?? undefined,
+        numberOfInputs: options.numberOfInputs!,
       }
     }
 
@@ -101,7 +106,7 @@ function validateAndProcessElementOptions(
       if (!valid || !options) return null
 
       return {
-        hasSampleSolution: options.hasSampleSolution,
+        hasSampleSolution: options.hasSampleSolution ?? undefined,
         criteria: options.criteria!.map((criterion) => ({
           id: criterion.id,
           name: criterion.name,
@@ -122,9 +127,9 @@ function validateAndProcessElementOptions(
       }
     }
 
-    default: {
+    case DB.ElementType.CONTENT:
+    case DB.ElementType.FLASHCARD:
       return {}
-    }
   }
 }
 

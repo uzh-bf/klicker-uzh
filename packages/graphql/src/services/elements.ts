@@ -10,6 +10,9 @@ import {
   ActivityLogModificationFieldType,
   ActivityType,
   ElementManipulationInput,
+  type ElementOptions,
+  type ElementOptionsCaseStudy,
+  type ElementOptionsSelection,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -32,6 +35,40 @@ import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+
+type ElementWithTagsAndAnswerCollectionItems = DB.Prisma.ElementGetPayload<{
+  include: {
+    tags: true
+    answerCollectionItems: true
+  }
+}>
+
+function getElementOptions(
+  type: DB.ElementType,
+  options: DB.Element['options'],
+  answerCollectionId: number | null,
+  answerCollectionItemIds: number[]
+): ElementOptions {
+  switch (type) {
+    case DB.ElementType.SELECTION:
+      return {
+        ...(options as ElementOptionsSelection),
+        answerCollection: { id: answerCollectionId!, entries: [] },
+        answerCollectionSolutionIds: answerCollectionItemIds,
+      }
+    case DB.ElementType.CASE_STUDY:
+      return {
+        ...(options as ElementOptionsCaseStudy),
+        answerCollectionId: answerCollectionId ?? undefined,
+        collectionItemIds: answerCollectionItemIds,
+      }
+    case DB.ElementType.CONTENT:
+    case DB.ElementType.FLASHCARD:
+      return {}
+    default:
+      return options as ElementOptions
+  }
+}
 
 export async function getUserElements(
   {
@@ -312,17 +349,12 @@ export async function getSingleElement(
       permission!.permissionLevel === DB.PermissionLevel.OWNER ||
       permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
       permission!.permissionLevel === DB.PermissionLevel.WRITE,
-    options: {
-      ...element.options,
-      // SE elements
-      answerCollection: { id: element.answerCollectionId, entries: [] },
-      // SE elements
-      answerCollectionSolutionIds: selectedItemIds,
-      // CS elements
-      answerCollectionId: element.answerCollectionId,
-      // CS elements
-      collectionItemIds: selectedItemIds,
-    },
+    options: getElementOptions(
+      element.type,
+      element.options,
+      element.answerCollectionId,
+      selectedItemIds
+    ),
   }
 }
 
@@ -528,7 +560,7 @@ export async function manipulateElement(
     )
   }
 
-  const element = await ctx.prisma.element.upsert({
+  const element = (await ctx.prisma.element.upsert({
     where: { id: typeof id !== 'undefined' && id !== null ? id : -1 },
     create: {
       status: status!,
@@ -620,7 +652,7 @@ export async function manipulateElement(
       },
       answerCollectionItems: true,
     },
-  })
+  })) as ElementWithTagsAndAnswerCollectionItems
 
   // compute derived permissions as required for this question
   await recomputeDerivedPermissions(
@@ -692,19 +724,12 @@ export async function manipulateElement(
 
   return {
     ...element,
-    options: {
-      ...element.options,
-      // SE elements
-      answerCollection: { id: element.answerCollectionId, entries: [] },
-      // SE elements
-      answerCollectionSolutionIds: element.answerCollectionItems.map(
-        (sol) => sol.id
-      ),
-      // CS elements
-      answerCollectionId: element.answerCollectionId,
-      // CS elements
-      collectionItemIds: element.answerCollectionItems.map((item) => item.id),
-    },
+    options: getElementOptions(
+      element.type,
+      element.options,
+      element.answerCollectionId,
+      element.answerCollectionItems.map((item) => item.id)
+    ),
   }
 }
 

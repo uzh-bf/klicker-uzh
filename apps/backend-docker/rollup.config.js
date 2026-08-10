@@ -22,6 +22,10 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],
