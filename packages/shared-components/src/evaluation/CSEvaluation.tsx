@@ -7,6 +7,16 @@ import { Progress } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationCaseStudyResults from '../hooks/useEvaluationCaseStudyResults'
 
+function createOccurrenceKeyFactory() {
+  const occurrences = new Map<string, number>()
+
+  return (signature: string) => {
+    const occurrence = occurrences.get(signature) ?? 0
+    occurrences.set(signature, occurrence + 1)
+    return `${signature}-${occurrence}`
+  }
+}
+
 function CSEvaluation({
   evaluation,
   options,
@@ -46,6 +56,7 @@ function CSEvaluation({
                 const length = criterion.max - shift
                 const lowerSolution = evaluationValue.solutionMin - shift
                 const upperSolution = evaluationValue.solutionMax - shift
+                const answerKey = createOccurrenceKeyFactory()
 
                 return (
                   <div
@@ -81,15 +92,18 @@ function CSEvaluation({
                             ],
                           }}
                         />
-                        {evaluationValue.answers.map((answer) => (
-                          <div
-                            key={`answer-${answer}`}
-                            className="absolute top-0 h-full w-0.5 bg-red-500 bg-opacity-70"
-                            style={{
-                              left: `${((answer - shift) / length) * 100}%`,
-                            }}
-                          />
-                        ))}
+                        {evaluationValue.answers.map((answer) => {
+                          const key = answerKey(`answer-${answer}`)
+                          return (
+                            <div
+                              key={key}
+                              className="absolute top-0 h-full w-0.5 bg-red-500 bg-opacity-70"
+                              style={{
+                                left: `${((answer - shift) / length) * 100}%`,
+                              }}
+                            />
+                          )
+                        })}
                       </div>
                     </div>
                   </div>

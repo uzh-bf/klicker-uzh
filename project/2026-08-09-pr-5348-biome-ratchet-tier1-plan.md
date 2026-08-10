@@ -37,15 +37,13 @@ opening another rule-sized PR.
   2,000 export/type findings, and additional enum, duplicate-export, and
   configuration findings. It is not ready for blocking enforcement in this
   package.
-- The previous base verification recorded origin/v3 at
-  b3058549622534a23dd0ee274e1432709a4d3323. Current origin/v3 is
-  338763a41393eb1e773bdb43efcfac3ef4e43334 after two unrelated commits
-  (chat welcome starters and a staging-promotion log). Neither touches the
-  Biome package, workflow, remediation, or plan surfaces. The merge-base is
-  `b3058549622534a23dd0ee274e1432709a4d3323`; exact ahead/behind counts and
-  reviewed heads are recorded in the immutable-range review reports rather
-  than copied into this plan, where they become stale after each review-fix
-  commit. No scoped conflict requires a base refresh before review.
+- The branch is refreshed against current `origin/v3`
+  (`c6e1b9870f7bce46838b30e8cfa34a327ae31e35`). The final integrated review
+  found the prior head four target commits behind and identified an overlap in
+  `apps/chat/src/components/thread.tsx`; merge commit `28426f3ae` retains the
+  upstream chat stabilization and feedback behavior while restoring this
+  package's `type="button"` corrections. The current merge-base is the live
+  target, so subsequent review and verification cover the actual landing base.
 - The original migration remains the source of truth for formatter ownership:
   Biome owns code; Prettier owns Markdown/YAML and Playwright; ESLint
   remains the Next.js safety net.
@@ -382,6 +380,10 @@ ci(quality): enforce Biome lint
   now reads the latest callback through a ref and triggers validation only when
   the availability result changes; the shared-components package has no test
   harness, so its package check is the focused verification boundary.
+- 2026-08-10: After the target refresh, the integrated review found that case
+  study evaluation markers still keyed repeated answers by value alone.
+  `CSEvaluation` now uses an occurrence-aware key factory, preserving repeated
+  participant answers without array-index keys.
 
 ## Finish state
 
