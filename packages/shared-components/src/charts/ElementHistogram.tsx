@@ -17,6 +17,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { CHART_SOLUTION_COLORS } from '../constants'
 import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
+import createOccurrenceKeyFactory from '../utils/createOccurrenceKeyFactory'
 
 interface ElementHistogramProps {
   type: ElementType
@@ -39,16 +40,6 @@ interface ElementHistogramProps {
   hideOptions?: boolean
   basic?: boolean
   className?: { root?: string }
-}
-
-function createOccurrenceKeyFactory() {
-  const occurrences = new Map<string, number>()
-
-  return (signature: string) => {
-    const occurrence = occurrences.get(signature) ?? 0
-    occurrences.set(signature, occurrence + 1)
-    return `${signature}-${occurrence}`
-  }
 }
 
 function ElementHistogram({

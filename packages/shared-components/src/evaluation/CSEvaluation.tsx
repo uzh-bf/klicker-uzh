@@ -6,16 +6,7 @@ import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationCaseStudyResults from '../hooks/useEvaluationCaseStudyResults'
-
-function createOccurrenceKeyFactory() {
-  const occurrences = new Map<string, number>()
-
-  return (signature: string) => {
-    const occurrence = occurrences.get(signature) ?? 0
-    occurrences.set(signature, occurrence + 1)
-    return `${signature}-${occurrence}`
-  }
-}
+import createOccurrenceKeyFactory from '../utils/createOccurrenceKeyFactory'
 
 function CSEvaluation({
   evaluation,

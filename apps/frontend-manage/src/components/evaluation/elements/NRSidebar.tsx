@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import createOccurrenceKeyFactory from '@klicker-uzh/shared-components/src/utils/createOccurrenceKeyFactory'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
 import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
@@ -28,16 +29,6 @@ interface NRSidebarProps {
   showStatistics: ShowStatisticsType
   setShowStatistics: Dispatch<SetStateAction<ShowStatisticsType>>
   type: ActivityEvaluationType
-}
-
-function createOccurrenceKeyFactory() {
-  const occurrences = new Map<string, number>()
-
-  return (signature: string) => {
-    const occurrence = occurrences.get(signature) ?? 0
-    occurrences.set(signature, occurrence + 1)
-    return `${signature}-${occurrence}`
-  }
 }
 
 function NRSidebar({

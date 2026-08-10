@@ -247,6 +247,22 @@ ci(quality): enforce Biome lint
 - Browser verification: use .agents/skills/agent-browser/SKILL.md for every
   frontend-facing slice.
 
+## Test portfolio and evidence obligations
+
+The package uses existing checks and tests where they already cover the changed
+seams. It does not add tests solely to increase the diff; each risk surface has
+an explicit evidence status and a follow-up obligation when an environment gate
+is unavailable.
+
+| Risk surface | Current evidence | Obligation or gap |
+| --- | --- | --- |
+| Hook lifecycle and callback identity | Shared-components, PWA, and manage TypeScript checks; integrated review | Browser smoke test for username validation when the DevPod route is usable; the shared-components package has no test harness. |
+| Mutable Formik rows and repeated display values | Full `check:all`; occurrence-aware factories and client-only IDs reviewed in the integrated gate | No new unit test harness added; preserve the existing package and browser checks as the regression boundary. |
+| Accessibility interactions and button semantics | Full `check:all`; chat typecheck and 31 existing chat test files / 231 tests | Browser verification remains blocked by the recorded DevPod TLS/routing failure. |
+| GraphQL-facing activity and identity changes | Workspace typechecks, codegen-related checks, and security review | Clean GraphQL bundle and isolated integration suite remain blocked by the recorded Rollup and port-80 environment failures; current-head CI must prove them. |
+| Seed decision serialization | `prisma-data` check; flashcards are filtered and unsupported types fail fast | Seed execution is not run locally; CI or a working self-contained database environment must exercise the seed path. |
+| Biome enforcement and advisory boundary | Zero error-tier diagnostics, full `check:all`, pre-commit, Gitleaks, and CI configuration review | Warnings, infos, Knip, browser, pinned Node 24, GraphQL integration, and exact-head CI remain explicitly tracked as advisory or blocked evidence until proven. |
+
 ## Progress
 
 - 2026-08-09: PR #5186's six-phase Biome + Knip + Gitleaks migration is already
