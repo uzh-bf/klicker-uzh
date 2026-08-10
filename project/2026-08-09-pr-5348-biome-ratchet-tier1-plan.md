@@ -424,6 +424,11 @@ is unavailable.
   button no longer included the visible score after nested controls were
   removed. The score now remains inside the primary profile button, while
   join/leave controls stay as sibling buttons.
+- 2026-08-10: The exact current verification head passed the chat suite with
+  31 test files and 231 tests (`pnpm --filter @klicker-uzh/chat test:run`),
+  resolving the earlier 29-file/226-test evidence gap. The remaining browser,
+  pinned-Node-24, GraphQL integration, seed-execution, and exact-head CI gaps
+  are environment or publication evidence gaps recorded above.
 
 ## Finish state
 
