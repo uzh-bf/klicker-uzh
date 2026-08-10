@@ -284,52 +284,91 @@ export async function setCourseActivityStackMetadata({
   groupActivity: { name: string; displayName: string; description: string }
 }) {
   const prisma = await getPrisma()
-  const course = await prisma.course.findFirst({
-    where: { name: courseName, ownerId },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      practiceQuizzes: {
-        where: { name: practiceQuiz.name, isDeleted: false },
-        select: { id: true },
-        take: 1,
-      },
-      microLearnings: {
-        where: { name: microLearning.name, isDeleted: false },
-        select: { id: true },
-        take: 1,
-      },
-      groupActivities: {
-        where: { name: groupActivity.name, isDeleted: false },
-        select: { id: true },
-        take: 1,
-      },
-    },
-  })
-  const practiceQuizId = course?.practiceQuizzes[0]?.id
-  const microLearningId = course?.microLearnings[0]?.id
-  const groupActivityId = course?.groupActivities[0]?.id
+  const startedAt = Date.now()
+  let practiceQuizStackId: number | undefined
+  let microLearningStackId: number | undefined
+  let groupActivityStackId: number | undefined
 
-  if (!practiceQuizId || !microLearningId || !groupActivityId) {
-    throw new Error(`Course activities for ${courseName} not found.`)
+  while (Date.now() - startedAt < 15_000) {
+    const course = await prisma.course.findFirst({
+      where: { name: courseName, ownerId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    })
+
+    if (course) {
+      const [practiceQuizRecord, microLearningRecord, groupActivityRecord] =
+        await Promise.all([
+          prisma.practiceQuiz.findFirst({
+            where: {
+              courseId: course.id,
+              name: practiceQuiz.name,
+              isDeleted: false,
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { stacks: { select: { id: true }, take: 1 } },
+          }),
+          prisma.microLearning.findFirst({
+            where: {
+              courseId: course.id,
+              name: microLearning.name,
+              isDeleted: false,
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { stacks: { select: { id: true }, take: 1 } },
+          }),
+          prisma.groupActivity.findFirst({
+            where: {
+              courseId: course.id,
+              name: groupActivity.name,
+              isDeleted: false,
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { stacks: { select: { id: true }, take: 1 } },
+          }),
+        ])
+
+      practiceQuizStackId = practiceQuizRecord?.stacks[0]?.id
+      microLearningStackId = microLearningRecord?.stacks[0]?.id
+      groupActivityStackId = groupActivityRecord?.stacks[0]?.id
+
+      if (practiceQuizStackId && microLearningStackId && groupActivityStackId) {
+        break
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  if (!practiceQuizStackId || !microLearningStackId || !groupActivityStackId) {
+    const missing = [
+      !practiceQuizStackId && practiceQuiz.name,
+      !microLearningStackId && microLearning.name,
+      !groupActivityStackId && groupActivity.name,
+    ].filter(Boolean)
+
+    throw new Error(
+      `Course activity stacks for ${courseName} not found: ${missing.join(', ')}.`
+    )
   }
 
   const updates = await Promise.all([
     prisma.elementStack.updateMany({
-      where: { practiceQuizId },
+      where: { id: practiceQuizStackId },
       data: {
         displayName: practiceQuiz.displayName,
         description: practiceQuiz.description,
       },
     }),
     prisma.elementStack.updateMany({
-      where: { microLearningId },
+      where: { id: microLearningStackId },
       data: {
         displayName: microLearning.displayName,
         description: microLearning.description,
       },
     }),
     prisma.elementStack.updateMany({
-      where: { groupActivityId },
+      where: { id: groupActivityStackId },
       data: {
         displayName: groupActivity.displayName,
         description: groupActivity.description,

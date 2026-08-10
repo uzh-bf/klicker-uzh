@@ -33,11 +33,36 @@ async function findVisibleByTestId(
 export async function clickVisibleByTestId(
   page: Page,
   testId: string,
-  timeout?: number
+  timeout = 15_000
 ) {
-  const locator = await findVisibleByTestId(page, testId, timeout)
-  await locator.scrollIntoViewIfNeeded().catch(() => undefined)
-  await locator.click()
+  const startedAt = Date.now()
+  const locator = page.getByTestId(testId)
+
+  while (Date.now() - startedAt < timeout) {
+    const count = await locator.count()
+
+    for (let ix = 0; ix < count; ix++) {
+      const candidate = locator.nth(ix)
+      if (!(await candidate.isVisible().catch(() => false))) continue
+
+      await candidate.scrollIntoViewIfNeeded().catch(() => undefined)
+      const remaining = timeout - (Date.now() - startedAt)
+
+      try {
+        await candidate.click({
+          timeout: Math.max(1, Math.min(1_000, remaining)),
+        })
+        return
+      } catch {
+        // A closing menu portal can remain visible while intercepting clicks.
+        // Try another matching item or wait for the active portal to settle.
+      }
+    }
+
+    await page.waitForTimeout(100)
+  }
+
+  throw new Error(`No clickable element found for data-cy="${testId}"`)
 }
 
 export async function openActivityActionMenu(
