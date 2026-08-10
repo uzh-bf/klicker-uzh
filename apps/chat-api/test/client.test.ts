@@ -58,4 +58,27 @@ describe('engine client and readiness', () => {
     expect(headers.get('provider-authorization')).toBe('Bearer provider-secret')
     expect(String(captured?.body)).not.toContain('provider-secret')
   })
+
+  test('degrades readiness when the manifest does not respond before the timeout', async () => {
+    let aborted = false
+    const client = createEngineClient({
+      baseUrl: 'http://engine.local',
+      fetch: vi.fn(
+        async (_input, init) =>
+          new Promise<Response>((_, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              aborted = true
+              reject(new Error('aborted'))
+            })
+          })
+      ),
+    })
+    const probe = new EngineReadinessProbe(client, 0, 5)
+
+    await expect(probe.get()).resolves.toMatchObject({
+      ok: false,
+      reason: 'Engine manifest check timed out.',
+    })
+    expect(aborted).toBe(true)
+  })
 })

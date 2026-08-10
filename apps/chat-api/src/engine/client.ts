@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/chat-engine-contract'
 
 export type EngineClient = {
-  manifest(): Promise<EngineManifest>
+  manifest(options?: { signal?: AbortSignal }): Promise<EngineManifest>
   chat(
     request: EngineChatRequest,
     options: {
@@ -52,9 +52,10 @@ export function createEngineClient(
   }
 
   return {
-    async manifest() {
+    async manifest(options = {}) {
       const response = await request(`${requireBaseUrl()}/v1/manifest`, {
         headers: serviceHeaders(serviceToken),
+        signal: options.signal,
       })
       if (!response.ok) {
         throw new Error(`Engine manifest returned HTTP ${response.status}.`)
@@ -120,14 +121,26 @@ export class EngineReadinessProbe {
 
   constructor(
     private readonly engine: EngineClient,
-    private readonly ttlMs = 15_000
+    private readonly ttlMs = 15_000,
+    private readonly manifestTimeoutMs = 5_000
   ) {}
 
   async get(): Promise<EngineReadiness> {
     if (Date.now() - this.lastCheckedAt < this.ttlMs) return this.state
     this.lastCheckedAt = Date.now()
+    const abortController = new AbortController()
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
     try {
-      const manifest = await this.engine.manifest()
+      const timeout = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          abortController.abort()
+          reject(new Error('Engine manifest check timed out.'))
+        }, this.manifestTimeoutMs)
+      })
+      const manifest = await Promise.race([
+        this.engine.manifest({ signal: abortController.signal }),
+        timeout,
+      ])
       this.state = {
         ok: manifest.contractVersion === CHAT_ENGINE_CONTRACT_VERSION,
         contractVersion: manifest.contractVersion,
@@ -144,6 +157,8 @@ export class EngineReadinessProbe {
         engineId: null,
         reason: error instanceof Error ? error.message : 'Engine unavailable.',
       }
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle)
     }
     return this.state
   }
