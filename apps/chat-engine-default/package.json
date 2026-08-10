@@ -1,0 +1,45 @@
+{
+  "name": "@klicker-uzh/chat-engine-default",
+  "version": "3.4.0-alpha.67",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.30",
+    "@hono/node-server": "1.19.11",
+    "@klicker-uzh/chat-engine-contract": "workspace:*",
+    "ai": "7.0.52",
+    "hono": "4.12.30",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.9",
+    "tsx": "~4.19.4",
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
+  },
+  "scripts": {
+    "build": "run-s build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "rollup -c",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
+    "dev": "tsx --watch src/index.ts",
+    "smoke:openrouter": "tsx src/smoke/openrouter.ts",
+    "start:test": "node dist/index.js",
+    "test:run": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "=24"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}
