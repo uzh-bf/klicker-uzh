@@ -47,7 +47,7 @@ function ChoicesSidebar({
                 : 0
 
             return (
-              <div key={`${instance.id}-${choice.value}`}>
+              <div key={`${instance.id}-${choice.ix}`}>
                 <div className="flex flex-row items-center justify-between leading-5">
                   <div
                     style={{

@@ -71,6 +71,7 @@ export interface IChoicesElementEvaluationResults {
   totalAnswers: number
   anonymousAnswers: number
   choices: {
+    ix: number
     value: string
     count: number
     correct?: boolean | null
@@ -353,6 +354,7 @@ export const ChoiceElementResultsRef = builder.objectRef<
 >('ChoiceElementResults')
 export const ChoiceElementResults = ChoiceElementResultsRef.implement({
   fields: (t) => ({
+    ix: t.exposeInt('ix'),
     value: t.exposeString('value'),
     count: t.exposeInt('count'),
     correct: t.exposeBoolean('correct', { nullable: true }),

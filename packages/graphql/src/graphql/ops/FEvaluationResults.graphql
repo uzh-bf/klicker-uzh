@@ -27,6 +27,7 @@ fragment EvaluationResults on ActivityEvaluation {
           totalAnswers
           anonymousAnswers
           choices {
+            ix
             value
             count
             correct

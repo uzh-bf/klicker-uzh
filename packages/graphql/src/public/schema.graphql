@@ -759,6 +759,7 @@ type ChoiceElementResults {
   correct: Boolean
   count: Int!
   feedback: String
+  ix: Int!
   value: String!
 }
 

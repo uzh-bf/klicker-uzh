@@ -309,6 +309,17 @@ ci(quality): enforce Biome lint
   repository. A targeted scan of the 13 files changed by this maintainability
   pass reported zero findings; no new Opengrep finding was identified in the
   changed surface.
+- 2026-08-10: The exact-range integrated review of `origin/v3...c4fcaea49`
+  found three actionable regressions: the live-quiz cooldown trigger had been
+  removed, nested interactive controls remained inside four `role="button"`
+  rows, and evaluation choice keys used duplicate answer text. The branch now
+  restores the lifecycle trigger, uses sibling primary/action controls, and
+  exposes the existing choice index through GraphQL for stable keys.
+- 2026-08-10: After the review fixes, GraphQL generation, the frontend-manage
+  check, the shared-components check, the GraphQL check, and targeted Biome
+  lint pass. The ignored local GraphQL declaration output was refreshed only
+  to let this host's dependent package check consume the generated `ix` type;
+  the source and tracked generated artifacts are the delivery surface.
 
 ## Finish state
 
