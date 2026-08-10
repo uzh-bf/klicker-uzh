@@ -286,8 +286,11 @@ function CourseOverviewHeader({
       <div className="mb-2 flex min-w-0 basis-full flex-row flex-wrap items-center justify-end gap-2 lg:flex-initial lg:basis-auto">
         {course.isEditor ? (
           <Button
+            basic
             onClick={() => setCourseSettingsModal(true)}
-            className={{ root: 'h-8' }}
+            className={{
+              root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
+            }}
             data={{ cy: 'course-settings-button' }}
           >
             <Button.Icon icon={faPencil} />
@@ -295,8 +298,11 @@ function CourseOverviewHeader({
           </Button>
         ) : null}
         <Button
+          basic
           onClick={() => setIsActivityLogOpen(true)}
-          className={{ root: 'h-8' }}
+          className={{
+            root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
+          }}
           data={{ cy: 'course-activity-log-button' }}
         >
           <Button.Icon icon={faMessage} />

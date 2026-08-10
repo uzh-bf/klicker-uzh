@@ -367,7 +367,7 @@ mobile actions, new dependencies, automated layout tests, and unrelated PR
 - [x] Plan extension recorded before implementation.
 - [x] Commit Slice A plan checkpoint.
 - [x] Implement and verify Slice A responsive grouping.
-- [ ] Implement and verify Slice B secondary-action hierarchy.
+- [x] Implement and verify Slice B secondary-action hierarchy.
 - [ ] Complete Slice C final verification and exact-head review.
 
 Slice A evidence: at 390px, 594px, 1024px, and 1280px the course-header
@@ -376,3 +376,12 @@ actions share one row; at 390px Modify plus Comments share the first action row
 and Join plus the ellipsis share the second. The document-level 678px scroll
 width at 390px comes from the existing global navigation, not the course-header
 action cluster and remains outside this slice.
+
+Slice B evidence: Modify course and View Comments now use the compact basic
+secondary treatment while Join course retains the primary treatment. The
+authenticated Playwright capture passed at 390px, 594px, 1024px, and 1280px in
+English and at 594px in German. The focused ordinary-course action test passed
+with the existing labelled overflow trigger, menu interactions, and action
+selectors. Manage typecheck, changed-file ESLint, Biome formatting, and
+`git diff --check` passed; the temporary capture harness is not part of the
+change.
