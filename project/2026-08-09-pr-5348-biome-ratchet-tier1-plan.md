@@ -411,6 +411,10 @@ is unavailable.
   suppressed missing callback returns even though group-activity decisions do
   not support flashcards. The seed now filters flashcards explicitly and throws
   on any future unsupported element type instead of storing undefined entries.
+- 2026-08-10: The integrated review found that keyboard activation on Markdown
+  links inside an unflipped flashcard bubbled to the card handler and was
+  cancelled. The handler now flips only when the card itself is the event
+  target, preserving native link activation.
 
 ## Finish state
 

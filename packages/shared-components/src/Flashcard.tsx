@@ -55,7 +55,11 @@ function Flashcard({
           )}
           onClick={!isFlipped ? handleFlip : undefined}
           onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
-            if (!isFlipped && (event.key === 'Enter' || event.key === ' ')) {
+            if (
+              event.target === event.currentTarget &&
+              !isFlipped &&
+              (event.key === 'Enter' || event.key === ' ')
+            ) {
               event.preventDefault()
               handleFlip()
             }
