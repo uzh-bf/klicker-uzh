@@ -153,7 +153,8 @@ function getCourseDuplicationEndDateSchema(
   t: TranslationFn,
   endDatePast: boolean
 ) {
-  if (endDatePast) return yup.date()
+  if (endDatePast)
+    return yup.date().required(t('manage.courseList.courseEndReq'))
 
   return yup
     .date()
