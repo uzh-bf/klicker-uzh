@@ -4,18 +4,20 @@ import {
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import { CORRELATED_RESPONSE_EVENT } from '@klicker-uzh/util'
+import { processAggregateResponseMessage } from './processors/aggregateProcessor.js'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
-import { processResponseMessage } from './processors/processor.js'
+import { processCorrelatedResponseMessage } from './processors/correlatedProcessor.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
   retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+  fn: processAggregateResponseMessage,
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -30,7 +32,15 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+  fn: processAggregateResponseMessage,
+})
+
+export const processCorrelatedResponseTask = hatchetClient.durableTask({
+  name: 'process-correlated-response-v1',
+  retries: 3,
+  defaultPriority: Priority.HIGH,
+  onEvents: [CORRELATED_RESPONSE_EVENT],
+  fn: processCorrelatedResponseMessage,
 })
 
 export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
@@ -89,7 +99,11 @@ async function main() {
   const workflows =
     process.env.ASSESSMENT_MODE === 'true'
       ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+      : [
+          processCorrelatedResponseTask,
+          processAuthenticatedResponseTask,
+          processAnonymousResponseTask,
+        ]
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)
@@ -104,8 +118,6 @@ async function main() {
 
   console.log('▶Starting worker to process responses...')
   await worker.start()
-
-  console.log('Response processor worker started successfully!')
 }
 
 await main()
