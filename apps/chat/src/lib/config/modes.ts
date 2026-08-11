@@ -21,6 +21,13 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
+export function hasModeOption(
+  modeOptions: Record<string, string>,
+  mode: string
+): boolean {
+  return Object.prototype.hasOwnProperty.call(modeOptions, mode)
+}
+
 export function extractModeDescriptions(
   systemPrompts: unknown
 ): Record<string, string> {

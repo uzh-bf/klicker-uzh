@@ -67,4 +67,22 @@ describe('settingsStore mode loading', () => {
       explainer: 'explainer mode',
     })
   })
+
+  test('keeps a selected mode whose description is empty', async () => {
+    useSettingsStore.setState({ selectedMode: 'custom' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          systemPrompts: { custom: { description: '' } },
+        }),
+      })
+    )
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+
+    expect(useSettingsStore.getState().selectedMode).toBe('custom')
+    expect(useSettingsStore.getState().modeOptions).toEqual({ custom: '' })
+  })
 })

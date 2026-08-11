@@ -2,7 +2,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import { extractModeDescriptions } from '../lib/config/modes'
+import { extractModeDescriptions, hasModeOption } from '../lib/config/modes'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
@@ -177,7 +177,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           set((state) => {
             let selectedMode = state.selectedMode
-            if (!resolvedModeOptions[selectedMode]) {
+            if (!hasModeOption(resolvedModeOptions, selectedMode)) {
               selectedMode = Object.keys(resolvedModeOptions)[0] ?? selectedMode
             }
 
