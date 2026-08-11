@@ -3,7 +3,7 @@
 ## Identity
 
 - Original date: 2026-06-24
-- Revised: 2026-08-10
+- Revised: 2026-08-11
 - Branch: `codex/mastra-chat-openrouter-smoke`
 - Target: `v3`
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
@@ -16,6 +16,30 @@ Current branch state:
 - The old public implementation head is preserved locally as `backup/mastra-chat-openrouter-smoke-pre-reconstruct-20260810` at `349cded017` and privately as `archive/klicker-uzh-pr-5126`.
 - The remote pull request still points to the old prototype head `7717572aba` and remains conflicting. Replacing it requires a separate, explicitly approved force-with-lease push after this plan is accepted.
 - Do not merge, close, or delete the old pull request or branch until the reconstructed branch has been pushed and verified on GitHub.
+
+Locked continuation decisions:
+
+- `codex/mastra-chat-openrouter-smoke` is the canonical public implementation line. The older `codex/catalyst-repo-split` branch contributes coordination evidence only and will not remain a second implementation authority.
+- Continued delivery uses clean, ordered pull-request layers. Each repository has its own stack; cross-repository dependencies are coordinated by explicit contract and deployment gates.
+- Public engine contract generations are ordinal (`v1`, `v2`, `v3`), not semantic versions. The public contract and conformance suite are canonical, and Catalyst PR #3 must be adapted to them before it can merge.
+- Public and private work proceeds as coherent interleaved milestones rather than finishing one repository in isolation.
+- Production proves the public default-engine path first. Selecting the Catalyst engine is a later deployment configuration change after the same contract and end-to-end gates pass.
+- The `v3-ai` roll-up will land in `v3`. Its MCP servers, embedded assistant, and related generalized AI surfaces then become public baseline capabilities; this stack does not migrate or recreate them as a sibling package.
+- Contract rollovers are engine-first: an engine may temporarily serve the current and next ordinal generation, while `chat-api` selects exactly one configured generation and never negotiates or silently downgrades.
+- Engine manifests expose only behavior that the chat host enforces: text, reasoning, images, tools, cancellation, credential modes, and resource limits. Tutoring, routing, retrieval, and orchestration remain private implementation details.
+- W3C `traceparent` and `tracestate` HTTP headers are the canonical trace transport. Each engine stream has exactly one terminal `finish`, `abort`, or `error` event, and only validated usage from completed provider work is chargeable.
+- `chat-api` mints one short-lived MCP JWT per engine request. It scopes issuer, server audiences, expiry, token ID, run ID, and allowed tools; engines only forward it and MCP services verify it.
+- The public repository owns the canonical generated schemas, fixtures, and black-box conformance runner. Catalyst records a pinned public commit and runs that exact suite in CI; the contract package remains unpublished and Catalyst does not maintain a second contract authority.
+- Learning analytics is a complete feature stack with multiple reviewable layers, not one sibling pull request. Other substantial Catalyst capabilities use the same feature-stack model without creating dependencies between unrelated features.
+- The public repository retains analytics UI, GraphQL read/control surfaces, Prisma schema, and migrations. The private analytics service reads domain tables and writes only analytics-owned derived tables; the public analytics compute service and its build/sync plumbing are removed after cutover.
+- Each source repository owns its service images and service-level deployment defaults. Environment GitOps composes those services into one KlickerUZH application deployment with shared service discovery and Infisical-managed secrets.
+- Public source pull requests retire only after source-to-target coverage and remote readback: replace chat prototype PR #5126 in place, close tutor/research PR #5129 after the private import, and close analytics phase-A PR #5073 only as part of retiring its full analytics source stack. Branch deletion remains a separately authorized final action.
+- The private learning-analytics work preserves the existing source progression as separate review layers: foundations, production runtime, consent/finalization, current-`v3` reconciliation, computation-side privacy/eligibility, and delivery/cutover. Mixed source pull requests use path-and-commit ledgers; public Prisma, GraphQL, UI, documentation, and feature-flag work remains public.
+- Adaptive learning uses its own stateless private service and ordinal contract. Public authorization, Prisma state, attempt lifecycle, deterministic grading, publication snapshots, and UI/API remain in KlickerUZH; Catalyst owns IRT estimation, calibration mathematics, item selection, stopping, classification, and psychometric diagnostics.
+- The adaptive source stack splits by ownership: PR #5289 moves private with history; PR #5290 remains the public persistence layer; PR #5291 remains the public host API but calls the engine; PR #5292 remains public UI; PR #5293 divides private simulation/conformance from public API/browser evidence. PR #5113 retires only after exact coverage.
+- Knowledge-base management UI and backend remain public. Knowledge-graph generation is private Catalyst logic currently in `kg-content-generation`; a later history-preserving stack moves it to `apps/knowledge-graph-generation`. Shared data ingestion remains an external infrastructure dependency.
+- Grading/feedback and content generation are planned feature stacks but remain inactive beyond their existing Catalyst module roots until concrete source or product requirements exist.
+- The three active split stacks are chat/tutoring, learning analytics, and adaptive learning. Knowledge-graph consolidation follows them.
 
 ## Higher-Level Dependency
 
@@ -49,7 +73,7 @@ This plan applies the settled split to public chat only:
 - The old prototype branch contains `apps/chat-api`, a default engine, an OpenRouter smoke, and GitHub Actions plumbing. It is a source to adapt, not a merge base or a reason to recreate already-shipped chat behavior.
 - A real local smoke previously reached OpenRouter with `deepseek/deepseek-v4-flash`, streamed text, and verified persistence and credits.
 - The current workflow is not a merge gate because it tolerates failure and uses a placeholder API key.
-- The generalized embedded-assistant and MCP work from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) exists only on `v3-ai`. Its owning roll-up [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) is still draft and conflicting. It is source for the bounded post-seam follow-up below; it does not block Slices 1-6 or the current-`v3` frontend cutover, and its generation consumers must later adapt directly to the landed `chat-api` and engine contract.
+- The generalized embedded-assistant and MCP work from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) currently exists on `v3-ai`, whose owning roll-up [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) is still draft and conflicting. The approved sequence lands that roll-up in `v3`. This branch must then update onto the resulting `v3` and treat those surfaces as baseline consumers of the public `chat-api` and engine contract rather than extracting or recreating them separately.
 
 ### Research Ownership And Limits
 
@@ -108,7 +132,7 @@ The final public pull request must include a working default engine. A Catalyst 
 - No public engine SDK or package publication.
 - No grading, content generation, or async job placeholders.
 - No broad chat UI redesign.
-- No wholesale merge of `v3-ai` or [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) into this pull request.
+- No manual partial merge, cherry-pick, or parallel recreation of `v3-ai` while its owning roll-up is still in flight. Incorporate it by updating onto `v3` after the roll-up lands.
 - No third-party extension promise beyond the internal operational seam.
 
 ## Ownership
@@ -121,7 +145,7 @@ The final public pull request must include a working default engine. A Catalyst 
 
 ## Engine Contract
 
-The contract is a small internal HTTP seam defined in an un-published public workspace package, `packages/chat-engine-contract`. Build it by adapting the preserved public prototype and current Catalyst schemas, then add only the fields required by current `v3`; do not redesign it from scratch.
+The contract is a small internal HTTP seam defined in an un-published public workspace package, `packages/chat-engine-contract`. Build it by adapting the preserved public prototype and current Catalyst schemas, then add only the fields required by current `v3`; do not redesign it from scratch. The package generates the canonical schemas, fixtures, and black-box conformance runner. Catalyst CI records a pinned public commit, checks out that exact contract source, and runs its suite against the built private service rather than publishing an npm package or maintaining an independent contract authority.
 
 ### Manifest
 
@@ -131,9 +155,21 @@ Minimum response:
 
 - engine identity
 - supported contract version
-- chat feature flags: text, reasoning, images, tools, cancellation
+- host-enforced feature flags: text, reasoning, images, tools, cancellation
+- supported provider credential modes and contract-defined resource limits
+
+Tutoring, routing, retrieval, and orchestration are not manifest capabilities.
+They remain engine implementation details unless a later contract generation
+requires the chat host to change behavior based on them.
 
 `chat-api` validates the manifest at startup and periodically. An unavailable or incompatible engine places generation in degraded mode while non-generation endpoints remain available.
+
+During a contract rollover, the engine may expose both the current and next
+ordinal endpoint generations. `chat-api` calls exactly the generation selected
+by deployment configuration. It does not negotiate, choose the highest common
+generation, or silently downgrade. Add the new engine generation first, switch
+the host only after conformance passes, and remove the old generation in a
+later deployment.
 
 ### Chat
 
@@ -157,8 +193,10 @@ Request contains only:
 - ordered message history, including persisted text, reasoning, and tool-call/result parts needed by the active branch
 - bounded image attachments as `{ id, type: 'image', mediaType, dataUrl, description? }`
 - approved MCP server/tool descriptors
-- one short-lived scoped MCP execution token, carried separately from the JSON body
-- trace context
+- one short-lived scoped MCP execution token, carried separately from the JSON body; its claims bind issuer, permitted server audiences, expiry, token ID, run ID, and allowed tools
+
+W3C `traceparent` and optional `tracestate` HTTP headers carry trace context.
+The JSON request body does not carry a second trace representation.
 
 Provider credential modes are mutually exclusive:
 
@@ -186,6 +224,11 @@ Response contains:
 - normalized raw input/output/reasoning/cache token usage for completed provider work, including available completed-step usage on cancellation
 - finish reason
 - structured contract errors
+
+Every stream emits exactly one terminal `finish`, `abort`, or `error` event.
+Only validated usage for completed provider work is chargeable. An abort may
+therefore carry completed-step usage, while unknown or invalid usage remains a
+contract failure rather than an inferred charge.
 
 The engine does not calculate credits or monetary cost. `chat-api` persists final or available partial text, reasoning, and tool-call parts and charges validated usage at most once. Missing or invalid usage is a contract failure: `chat-api` records it without inventing a charge.
 
@@ -318,7 +361,7 @@ Thread creation is durably idempotent at the existing HTTP/database seam: replay
 - Configure engine URLs only at deployment level from an allowlist.
 - Authenticate engines with service credentials held in memory and excluded from logs.
 - Authorize MCP servers and tools in `chat-api`.
-- Mint short-lived, audience-bound, asymmetrically signed MCP tokens; the engine receives no signing key.
+- Mint one short-lived, asymmetrically signed MCP token per engine request. Bind it to issuer, permitted server audiences, expiry, token ID, run ID, and allowed tools; the engine receives no signing key and can only forward it.
 - Keep provider and MCP credentials in headers or deployment configuration, never in persisted request bodies.
 - Apply body, attachment, concurrency, and rate limits before provider invocation.
 - Validate manifest, engine stream parts, usage, tool calls, and finish data.
@@ -337,7 +380,7 @@ Required configuration includes:
 - browser origin allowlist
 - public `chat-api` URL
 - engine base URL and service credential
-- engine manifest compatibility range
+- selected engine contract generation
 - MCP signing key and verification configuration
 - provider key for the selected engine
 
@@ -373,20 +416,28 @@ The browser never selects an engine URL. A future deployment-defined `engineProf
 - Reviewer: Codex `reviewer`, GPT-5.6 Sol at high effort, read-only on the 2026-08-10 working draft.
 - Verdict: `DONE_WITH_CONCERNS`; five findings met the reporting threshold.
 - Accepted: define the full resolved-generation and credential-mode contract, make thread creation durably idempotent with a client-generated UUID, make the public boundary ADR unconditional, and remove duplicate Slice 3 persistence/policy tests.
-- Refined: the broad `v3-ai` prerequisite becomes a separately bounded sequential follow-up package sourced from the exact [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) merge commit. It does not expand this PR or reintroduce the old Next backend.
-- Follow-up verdict: the five findings were resolved; one stale pre-cutover dependency sentence was removed. No reported planning finding remains open.
+- Superseded on 2026-08-11: the earlier review refined `v3-ai` into a separately bounded follow-up package. The owner has since ruled that the complete `v3-ai` roll-up will land in `v3` and become the baseline for this stack. The consolidated plan therefore requires a fresh planning-stage review before implementation resumes.
+- Earlier review verdict: the five findings in that version were resolved; one stale pre-cutover dependency sentence was removed.
 
-## Sequential Public Follow-Up
+## Upstream `v3-ai` Integration Gate
 
-The generalized embedded-assistant and MCP work is a separate public capability package, not a hidden Slice 4 expansion or a wholesale `v3-ai` merge:
+The generalized MCP servers, embedded assistant, and related AI surfaces enter
+this work through their owning `v3-ai` roll-up:
 
-- Source: exact squash merge commit `7cf91ba2a2` from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109), with a source-to-target coverage ledger.
-- Include: lecturer manage-assistant UI and proposal flows; embedded/PWA authentication and chat context; lecturer/student MCP authorization, allowlists, rate limits, and tool-output fencing; the directly supporting tests and deployment resources.
-- Adapt: all chat generation consumers target the public `chat-api` and engine contract from this plan. Do not restore Next.js chat generation routes, duplicate auth, or private Catalyst policy.
-- Exclude: unrelated `v3-ai` merges, obsolete package versions, analytics work, and any capability not traceable to the selected source commit.
-- Check: focused manage-assistant, embedded-auth, proposal, MCP-security, and real routed-browser flows on then-current `v3`, plus a coverage ledger proving every selected source path was ported, superseded, or deliberately deferred.
+- Let the owning roll-up land in `v3`; do not extract, cherry-pick, or recreate
+  its components in this stack.
+- Update the canonical public stack onto that new `v3` baseline using the
+  repository's agreed integration method before building dependent layers.
+- Resolve overlaps so every generation consumer uses the public `chat-api` and
+  engine contract without restoring Next.js generation routes, duplicating
+  authentication, or importing private Catalyst policy.
+- Rerun the contract, chat API, affected frontend, browser, and final review
+  gates after integration. Earlier current-head evidence does not prove the
+  combined branch.
 
-This is a sequential follow-up after the public seam, not another layer inside [PR #5126](https://github.com/uzh-bf/klicker-uzh/pull/5126). [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) can be closed only after its remaining unique commits have the same explicit coverage ruling and the user separately authorizes closure.
+This is an upstream integration gate within the public core stack, not a
+separate capability package. Updating, merging, or closing the existing
+pull requests remains separately authorized work.
 
 ## Implementation Slices
 
@@ -419,7 +470,7 @@ Work:
 - Implement `apps/chat-engine-default` with a manifest and one streaming chat endpoint by extracting the current generic AI SDK/provider behavior rather than rewriting it.
 - Preserve explicit OpenAI-compatible provider injection and the `deepseek/deepseek-v4-flash` OpenRouter smoke configuration.
 - Add cancellation, normalized usage, and sanitized structured errors.
-- Keep the package un-published; Catalyst adoption consumes the versioned HTTP contract and conformance fixtures through an explicit sync/adaptation change in its own repository.
+- Keep the package un-published; Catalyst records a pinned public commit and runs the schemas, fixtures, and black-box conformance runner from that exact revision against its built service. Catalyst implementation adapters may differ internally but cannot redefine the contract.
 
 Verification:
 
