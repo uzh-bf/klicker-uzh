@@ -1,8 +1,10 @@
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 import {
-  NonRetryableError,
   type Context,
   type DurableContext,
   type JsonObject,
+  NonRetryableError,
   type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
@@ -16,8 +18,6 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
 import {
@@ -151,7 +151,7 @@ export async function processAssessmentResponse(
     )
   }
 
-  const { valid, message: validationError } = validateStudentResponse({
+  const { valid } = validateStudentResponse({
     type: type as any,
     response,
     restrictions: parsedRestrictions,
@@ -159,12 +159,12 @@ export async function processAssessmentResponse(
 
   if (!valid) {
     throw new NonRetryableError(
-      `Response to question instance ${message.instanceId} is not valid: ${validationError}`
+      `Response to question instance ${message.instanceId} is not valid`
     )
   }
 
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions = undefined
+  let parsedSolutions: unknown
   try {
     if (solutions) {
       parsedSolutions = JSON.parse(solutions)
