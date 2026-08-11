@@ -14,8 +14,10 @@ import {
 } from '../src/correlatedResponseAdmission.js'
 import { dispatchPendingCorrelatedResponses } from '../src/correlatedResponseOutbox.js'
 import {
+  adaptLiveQuizResponseInstanceInfo,
   hasJsonContentType,
   isAllowedCorsOrigin,
+  loadLiveQuizResponseInstance,
   resolveResponseCollectionMode,
 } from '../src/liveQuizResponseRequest.js'
 
@@ -65,6 +67,89 @@ describe('correlated response request safeguards', () => {
     assert.equal(hasJsonContentType('application/json; charset=utf-8'), true)
     assert.equal(hasJsonContentType('text/plain'), false)
     assert.equal(hasJsonContentType(undefined), false)
+  })
+
+  it('adapts the operational Redis hash before strict response validation', async () => {
+    const rawInstanceInfo = {
+      namespace: 'quiz-namespace',
+      startedAt: '1754000000000',
+      sessionBlockId: '7',
+      liveQuizId: 'quiz-1',
+      courseId: 'course-1',
+      type: 'SELECTION',
+      basePoints: 'true',
+      pointsMultiplier: '1',
+      defaultPoints: '10',
+      defaultCorrectPoints: '5',
+      maxBonusPoints: '45',
+      timeToZeroBonus: '20',
+      blockExecution: '3',
+      blockStartedAt: '1754000000000',
+      responseCollectionMode: 'CORRELATED_EXPORT',
+      numberOfInputs: '2',
+      solutions: '[11,12]',
+    }
+
+    const loaded = await loadLiveQuizResponseInstance({
+      database: {
+        liveQuiz: {
+          findUnique: async () => {
+            throw new Error('database mode lookup should not be needed')
+          },
+        },
+      } as any,
+      redis: {
+        hgetall: async () => rawInstanceInfo,
+      },
+      request: {
+        messageId: 'message-1',
+        liveQuizId: 'quiz-1',
+        instanceId: '42',
+        response: { selection: [11, 12] },
+        responseTimestamp: 1_000,
+        cookieHeader: undefined,
+      },
+    })
+
+    assert.equal(loaded.responseCollectionMode, 'CORRELATED_EXPORT')
+    assert.deepEqual(loaded.instanceInfo, {
+      type: 'SELECTION',
+      blockExecution: '3',
+      sessionBlockId: '7',
+      basePoints: 'true',
+      defaultCorrectPoints: '5',
+      defaultPoints: '10',
+      maxBonusPoints: '45',
+      pointsMultiplier: '1',
+      solutions: '[11,12]',
+      timeToZeroBonus: '20',
+      numberOfInputs: '2',
+      selectionAnswerIds: '[11,12]',
+    })
+
+    const caseStudyInfo = adaptLiveQuizResponseInstanceInfo({
+      type: 'CASE_STUDY',
+      blockExecution: '3',
+      sessionBlockId: '7',
+      solutions: JSON.stringify([
+        {
+          caseId: 'case-a',
+          itemSolutions: [
+            {
+              itemId: 11,
+              criteriaSolutions: [
+                { criterionId: 'criterion-a', min: 0, max: 5 },
+              ],
+            },
+          ],
+        },
+      ]),
+    })
+    assert.deepEqual(JSON.parse(caseStudyInfo.caseStudyResponseShape!), {
+      cases: ['case-a'],
+      items: [11],
+      criteria: [{ id: 'criterion-a', min: 0, max: 5 }],
+    })
   })
 
   it('centralizes correlated quiz and PIN admission', async () => {

@@ -1209,6 +1209,7 @@ export async function activateLiveQuizBlock(
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
+      responseCollectionMode: updatedQuiz.responseCollectionMode,
     }
 
     switch (elementData.type) {
@@ -1276,11 +1277,13 @@ export async function activateLiveQuizBlock(
       }
 
       case DB.ElementType.SELECTION: {
+        const selectionAnswerIds = JSON.stringify(
+          elementData.options.answerCollectionSolutionIds
+        )
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
-          solutions: JSON.stringify(
-            elementData.options.answerCollectionSolutionIds
-          ),
+          selectionAnswerIds,
+          solutions: selectionAnswerIds,
           numberOfInputs: elementData.options.numberOfInputs,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
@@ -1292,6 +1295,24 @@ export async function activateLiveQuizBlock(
       }
 
       case DB.ElementType.CASE_STUDY: {
+        const caseStudyResponseShape = JSON.stringify({
+          cases: elementData.options.cases.map((caseItem) => caseItem.id),
+          items:
+            elementData.options.items?.map((item) => item.id) ??
+            Array.from(
+              new Set(
+                elementData.options.cases.flatMap(
+                  (caseItem) =>
+                    caseItem.solutions?.map((solution) => solution.itemId) ?? []
+                )
+              )
+            ),
+          criteria: elementData.options.criteria.map((criterion) => ({
+            id: criterion.id,
+            min: criterion.min,
+            max: criterion.max,
+          })),
+        })
         // convert solutions to object for faster access
         const validSolutions = elementData.options.cases.every(
           (caseItem) => caseItem.solutions
@@ -1306,6 +1327,7 @@ export async function activateLiveQuizBlock(
 
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          caseStudyResponseShape,
           solutions: solutions ? JSON.stringify(solutions) : undefined,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {

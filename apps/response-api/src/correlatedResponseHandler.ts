@@ -2,10 +2,10 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { LiveQuizResponseCollectionMode } from '@klicker-uzh/prisma/client'
 import {
   CORRELATED_RESPONSE_EVENT,
+  type CorrelatedResponseDeliveryMessage,
   parseCorrelatedResponseInstanceInfo,
   resolveLiveQuizResponseIdentity,
   validateStudentResponse,
-  type CorrelatedResponseDeliveryMessage,
 } from '@klicker-uzh/util'
 import { admitCorrelatedResponse } from './correlatedResponseAdmission.js'
 import type { LiveQuizResponseRequest } from './liveQuizResponseRequest.js'
@@ -66,20 +66,18 @@ export async function handleCorrelatedResponse({
     restrictions = acceptedInstanceInfo.restrictions
       ? JSON.parse(acceptedInstanceInfo.restrictions)
       : undefined
-  } catch (error) {
-    throw new Error(
-      `Invalid response restrictions for live quiz ${request.liveQuizId}, instance ${request.instanceId}: ${String(error)}`
-    )
+  } catch {
+    return {
+      status: 400,
+      body: { error: 'Invalid correlated response metadata' },
+    }
   }
 
   const validation = validateStudentResponse({
     type: acceptedInstanceInfo.type,
     response: request.response,
     instanceInfo: acceptedInstanceInfo,
-    restrictions:
-      typeof restrictions === 'object' && restrictions !== null
-        ? restrictions
-        : undefined,
+    restrictions,
   })
   if (!validation.valid) {
     return { status: 400, body: { error: validation.message } }
