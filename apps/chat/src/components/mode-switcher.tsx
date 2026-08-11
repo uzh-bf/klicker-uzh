@@ -67,6 +67,9 @@ export function ModeSwitcher() {
         const label = isKnownMode(mode)
           ? t(`chat.modes.${mode}`)
           : mode.charAt(0).toUpperCase() + mode.slice(1)
+        const description = isKnownMode(mode)
+          ? t(`chat.modes.${mode}Description`)
+          : modeOptions[mode]?.trim()
         const isActive = mode === selectedMode
 
         return (
@@ -79,6 +82,7 @@ export function ModeSwitcher() {
                 }}
                 type="button"
                 aria-pressed={isActive}
+                aria-label={description ? `${label}: ${description}` : label}
                 data-cy={`chat-mode-option-${mode}`}
                 onClick={() => setSelectedMode(mode)}
                 className={twMerge(
@@ -97,7 +101,14 @@ export function ModeSwitcher() {
                 <span>{label}</span>
               </button>
             </TooltipTrigger>
-            <TooltipContent>{label}</TooltipContent>
+            <TooltipContent className="max-w-64 text-left text-pretty">
+              <p className="font-medium">{label}</p>
+              {description ? (
+                <p data-cy={`chat-mode-description-${mode}`} className="mt-1">
+                  {description}
+                </p>
+              ) : null}
+            </TooltipContent>
           </Tooltip>
         )
       })}

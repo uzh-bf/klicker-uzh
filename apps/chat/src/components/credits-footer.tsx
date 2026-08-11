@@ -5,6 +5,55 @@ import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
 
+function CreditBalance({ current, total }: { current: number; total: number }) {
+  return (
+    <>
+      {Math.round(current)} / {total}
+    </>
+  )
+}
+
+/**
+ * Keeps the balance and the fallback state visible in the main mobile layout
+ * while the sidebar is closed. The embedded layout has its own
+ * `EmbeddedCreditsBar`, so this is rendered only by `SidebarMain`.
+ */
+export function MobileCreditsBar() {
+  const t = useTranslations()
+  const credits = useSettingsStore((state) => state.credits)
+  const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
+
+  if (!creditsLoaded) return null
+
+  return (
+    <div
+      data-cy="chat-mobile-credits-bar"
+      className="bg-background border-b px-3 py-1.5 md:hidden"
+    >
+      <div className="flex items-center gap-1.5 text-xs">
+        <Zap className="text-muted-foreground size-3.5 shrink-0" />
+        <span className="text-muted-foreground truncate">
+          {t('chat.credits.title')}
+        </span>
+        <span
+          data-cy="chat-mobile-credits-display"
+          className="ml-auto shrink-0 font-medium tabular-nums"
+        >
+          <CreditBalance current={credits.current} total={credits.total} />
+        </span>
+      </div>
+      {credits.current === 0 ? (
+        <p
+          data-cy="chat-mobile-fallback-notice"
+          className="text-muted-foreground mt-0.5 text-xs text-pretty"
+        >
+          {t('chat.credits.fallbackNotice')}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 export function CreditsFooter() {
   const t = useTranslations()
   const format = useFormatter()

@@ -19,6 +19,7 @@ import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
+import { MobileCreditsBar } from './credits-footer'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
@@ -532,6 +533,7 @@ function SidebarMain({
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
       </div>
+      <MobileCreditsBar />
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (

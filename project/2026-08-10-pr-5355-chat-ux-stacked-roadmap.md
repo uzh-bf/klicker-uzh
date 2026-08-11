@@ -423,6 +423,18 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   retry/return actions and no raw server error; after the throw was removed,
   clicking Retry refreshed the route back to the authenticated composer. The
   same fault-injection and retry proof passed in German at 1440x900.
+- Verified for layer 03 (2026-08-11) in the real in-app Browser after the
+  documented devrouter restart: EN desktop shows the informative Tutor
+  tooltip and provider-neutral model descriptions; EN mobile at 390x844 keeps
+  the `0 / 100` balance and fallback notice below the header while the sidebar
+  is closed; DE desktop reconciles a persisted premium selection to the
+  `GPT-4.1 Mini` fallback at zero credits with localized copy; and EN/DE
+  embedded layouts show only the existing `EmbeddedCreditsBar`, not the
+  sidebar mobile bar. The
+  seeded test balance was restored to 100 after the proof. Focused Playwright
+  reached all four new tests but remains blocked before assertions because the
+  DevPod lacks the Chromium headless shell; hosted CI remains the automated
+  gate.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,

@@ -112,6 +112,20 @@ response from another chatbot cannot expose stale credit/model state as current.
 is sticky once a load has succeeded: a refresh (including a failing one) keeps the last known
 balance on screen instead of hiding the footer for the rest of the session.
 
+The settings panel translates model capabilities into student-facing descriptions. It does not
+render deployment registry descriptions, because those can expose provider or router terminology
+and are not localized. Automatic, reasoning, general-purpose, and fallback models each have a
+localized explanation in `packages/i18n/messages/en.ts` and `de.ts`; the read-only automatic
+selection state uses the same plain-language contract. Known Tutor and Explainer modes use their
+localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
+their configured description.
+
+In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the current
+balance visible below the header at mobile widths, even while the design-system sidebar drawer
+is closed. When the balance reaches zero it also states that new messages use the smaller model.
+The bar is rendered only by `SidebarMain`; embedded mode continues to use its existing
+`EmbeddedCreditsBar` so the two compact readouts are never shown together.
+
 Two further credit conventions are easy to break:
 
 - `getNextResetTime` (`src/utils/creditPeriods.ts`) returns **`null` for
