@@ -391,15 +391,29 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   `check:all` gate passed with 24/24 tasks after the layer-01 commits; chat
   typecheck and lint passed with 0 errors and 5 pre-existing warnings. The
   focused Playwright journey still reaches the runner but cannot launch
-  because Chromium is not installed in the container.
+  because the container lacks a usable Chromium headless shell; this remains
+  an automated-verification gap for hosted CI.
 - Planning-stage review: `DONE_WITH_CONCERNS`; all verified findings listed in
   Plan identity were accepted into this revision. No unresolved planning-stage
   finding remains.
-- Verified for layer 01: the real in-app Browser shows the modal at 390x844 and
-  1280x720 with consequence-first ordering, visible Decline/Accept actions, no
-  close button, and Escape leaving the gate open. The fixture was restored
-  after Playwright global setup removed the chatbot row; the route now reaches
-  the unauthenticated 307 login redirect rather than the prior 404.
+- Integrated review (2026-08-11, exact range `v3..a996a199d`) returned
+  `NEEDS CHANGES`: the close-button assertion was scoped outside the dialog,
+  and the planned automated/browser matrix was incomplete. The assertion was
+  corrected in `bcae6c4b9`; the remaining verification concern is now closed
+  by the live browser pass below.
+- Verified for layer 01 in the real in-app Browser after an exact devrouter
+  restart: `testuser1` reaches the consent modal in EN and DE at 1440x900 and
+  390x844. The modal keeps consequence-first ordering, stacks content and
+  actions on mobile, exposes no close button, stays open after Escape, and
+  closes only after the explicit accept action. German locale selection was
+  performed through the participant UI, and acceptance returned to the German
+  composer. The screenshots are retained under the gitignored
+  `project/_local/browser/` evidence directory.
+- Environment recovery note: the 404s observed during the browser pass were
+  caused by a stale Turbopack `.next` route manifest after dependency
+  recovery, not by missing source routes. Clearing only generated
+  `apps/chat/.next` and restarting the exact devrouter checkout restored the
+  API routes and the consent flow.
 - Publication note: the repository pre-push hook could not complete its
   unrelated root build because unchanged `olat-api` source fails Rollup's
   parser; the layer-specific checks and container chat production build passed,
