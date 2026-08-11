@@ -52,6 +52,11 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global

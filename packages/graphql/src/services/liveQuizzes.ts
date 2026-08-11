@@ -22,17 +22,30 @@ import {
   updateLiveQuizBlockResultsFromCache,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
+import { createHash, createHmac, randomBytes } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { computeRanks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import { allocateLiveQuizPin } from './liveQuizPin.js'
+import {
+  clearLiveQuizScheduledPublicationTask,
+  deleteLiveQuizScheduledPublicationTask,
+  materializeLiveQuizPublication,
+  reconcileLiveQuizPublications,
+  transitionLiveQuizToPublished,
+} from './liveQuizPublication.js'
+import {
+  assertLiveQuizResponseCollectionModeEditable,
+  deriveLiveQuizResponseCollectionMode,
+  lockCourseLiveQuizResponseCollectionSettings,
+  lockLiveQuizResponseCollectionState,
+} from './liveQuizResponseCollection.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -186,6 +199,7 @@ interface ManipulateLiveQuizArgs {
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
+  responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
 }
 
 export async function manipulateLiveQuiz(
@@ -206,6 +220,7 @@ export async function manipulateLiveQuiz(
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
+    responseCollectionMode,
   }: ManipulateLiveQuizArgs,
   ctx: ContextWithUser
 ) {
@@ -238,9 +253,6 @@ export async function manipulateLiveQuiz(
 
     if (!existingActivity) {
       throw new GraphQLError('Live quiz not found')
-    }
-    if (existingActivity.status === DB.PublicationStatus.PUBLISHED) {
-      throw new GraphQLError('Cannot edit a published live quiz')
     }
   }
 
@@ -276,9 +288,11 @@ export async function manipulateLiveQuiz(
   }
 
   // fetch the course to which the live quiz should be linked regarding the gamification and assessment settings
-  const course = courseId
+  const targetCourseId =
+    typeof courseId !== 'undefined' ? courseId : existingActivity?.courseId
+  const course = targetCourseId
     ? await ctx.prisma.course.findUnique({
-        where: { id: courseId },
+        where: { id: targetCourseId },
         select: { isGamificationEnabled: true, isAssessmentEnabled: true },
       })
     : null
@@ -290,6 +304,20 @@ export async function manipulateLiveQuiz(
 
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
+
+  const responseCollectionModeSetting = deriveLiveQuizResponseCollectionMode({
+    isAssessmentEnabled: assessmentSetting,
+    isGamificationEnabled: gamificationSetting,
+    requestedMode: responseCollectionMode,
+    existingMode: existingActivity?.responseCollectionMode,
+  })
+
+  if (existingActivity) {
+    assertLiveQuizResponseCollectionModeEditable({
+      liveQuiz: existingActivity,
+      responseCollectionMode: responseCollectionModeSetting,
+    })
+  }
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
@@ -317,32 +345,7 @@ export async function manipulateLiveQuiz(
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
   if (requiresNewPin) {
-    let pinValid = false
-
-    for (let attempt = 0; attempt < 10; attempt++) {
-      // generate a new pin code
-      newPinCode = generatePassword.generate({
-        uppercase: true,
-        lowercase: false,
-        numbers: true,
-        symbols: false,
-        length: 6,
-      })
-
-      // check if the pin code is still available
-      const existingLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
-        where: { pinCode: newPinCode },
-      })
-      if (!existingLiveQuiz) {
-        pinValid = true
-        break
-      }
-    }
-
-    // if the pin is still invalid, return null and abort the transaction
-    if (!pinValid) {
-      throw new Error('Could not find available pin code for live quiz')
-    }
+    newPinCode = await allocateLiveQuizPin({ database: ctx.prisma })
   }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
@@ -370,6 +373,13 @@ export async function manipulateLiveQuiz(
         : undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
+    responseCollectionMode: responseCollectionModeSetting,
+    exportSalt:
+      existingActivity?.exportSalt ??
+      (responseCollectionModeSetting ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+        ? randomBytes(32).toString('hex')
+        : undefined),
     pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -404,6 +414,43 @@ export async function manipulateLiveQuiz(
 
   const activity = await ctx.prisma.$transaction(
     async (prisma) => {
+      if (targetCourseId) {
+        const lockedCourse = await lockCourseLiveQuizResponseCollectionSettings(
+          {
+            prisma,
+            courseId: targetCourseId,
+          }
+        )
+        if (!lockedCourse) {
+          throw new GraphQLError('Course not found')
+        }
+        if (
+          lockedCourse.isAssessmentEnabled !== course?.isAssessmentEnabled ||
+          lockedCourse.isGamificationEnabled !== course?.isGamificationEnabled
+        ) {
+          throw new GraphQLError(
+            'Course settings changed while the live quiz was being saved',
+            { extensions: { code: 'CONFLICT' } }
+          )
+        }
+      }
+
+      if (id) {
+        const lockedActivity = await lockLiveQuizResponseCollectionState({
+          prisma,
+          liveQuizId: id,
+        })
+
+        if (!lockedActivity) {
+          throw new GraphQLError('Live quiz not found')
+        }
+
+        assertLiveQuizResponseCollectionModeEditable({
+          liveQuiz: lockedActivity,
+          responseCollectionMode: responseCollectionModeSetting,
+        })
+      }
+
       // delete all instances that are not used anymore
       await prisma.elementInstance.deleteMany({
         where: { id: { in: instancesToDelete } },
@@ -804,80 +851,37 @@ export async function startLiveQuiz(
   ctx: ContextWithUser
 ) {
   try {
-    const quiz = await ctx.prisma.liveQuiz.findFirst({
-      where: {
-        id,
-        status: {
-          in: [
-            DB.PublicationStatus.DRAFT,
-            DB.PublicationStatus.SCHEDULED,
-            DB.PublicationStatus.PUBLISHED,
-          ],
-        },
-      },
-      include: { blocks: { orderBy: { id: 'asc' } } },
+    const publication = await transitionLiveQuizToPublished({
+      prisma: ctx.prisma,
+      liveQuizId: id,
+      source: 'manual',
     })
 
-    // if there is no live quiz matching the current user and quiz id, exit early
-    if (!quiz) {
-      return null
+    if (!publication) return null
+    await materializeLiveQuizPublication({
+      prisma: ctx.prisma,
+      quiz: publication.quiz,
+      redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
+    })
+
+    if (publication.scheduledPublicationTaskId) {
+      await deleteLiveQuizScheduledPublicationTask({
+        prisma: ctx.prisma,
+        liveQuizId: publication.quiz.id,
+        startedAt: publication.quiz.startedAt,
+        scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
+        deleteScheduledTask: (taskId) => ctx.hatchet.scheduled.delete(taskId),
+      })
     }
 
-    // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
-      ? ctx.redisAssessmentExec
-      : ctx.redisExec
-
-    switch (quiz.status) {
-      case DB.PublicationStatus.PUBLISHED:
-        return quiz
-
-      case DB.PublicationStatus.DRAFT:
-      case DB.PublicationStatus.SCHEDULED: {
-        try {
-          const pipeline = redis.pipeline()
-          pipeline.hmset(`lq:${quiz.id}:meta`, {
-            namespace: quiz.namespace,
-            startedAt: Number(new Date()),
-            isGamificationEnabled: quiz.isGamificationEnabled,
-            isAssessmentEnabled: quiz.isAssessmentEnabled,
-          })
-
-          await pipeline.exec()
-        } catch (e) {
-          console.error(e)
-        }
-
-        // remove the scheduled hatchet publication task, if it exists
-        if (quiz.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
-          }
-        }
-
-        // generate a random pin code
-        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
-            scheduledPublicationTaskId: null,
-          },
-        })
-
-        await sendTeamsNotification({
-          scope: 'graphql/startLiveQuiz',
-          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
-        })
-
-        return startedLiveQuiz
-      }
+    if (publication.didStart) {
+      await sendTeamsNotification({
+        scope: 'graphql/startLiveQuiz',
+        text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
+      })
     }
+    return publication.quiz
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
@@ -1116,8 +1120,7 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  // update the quiz with an updated version through the corresponding subscription
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
+  const runningLiveQuizUpdate = {
     id: updatedQuiz.id,
     beforeFirstBlock: false,
     activeBlock: {
@@ -1159,7 +1162,7 @@ export async function activateLiveQuizBlock(
           ? removeSolutionFromInstances({ instances: block.elements })
           : [],
     })),
-  })
+  }
 
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
@@ -1182,6 +1185,7 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      responseCollectionMode: updatedQuiz.responseCollectionMode,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
@@ -1257,6 +1261,11 @@ export async function activateLiveQuizBlock(
             elementData.options.answerCollectionSolutionIds
           ),
           numberOfInputs: elementData.options.numberOfInputs,
+          selectionAnswerIds: JSON.stringify(
+            elementData.options.answerCollection?.entries.map(
+              (entry) => entry.id
+            ) ?? []
+          ),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1282,6 +1291,15 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: solutions ? JSON.stringify(solutions) : undefined,
+          caseStudyResponseShape: JSON.stringify({
+            cases: elementData.options.cases.map((caseItem) => caseItem.id),
+            items: (elementData.options.items ?? []).map((item) => item.id),
+            criteria: elementData.options.criteria.map(({ id, min, max }) => ({
+              id,
+              min,
+              max,
+            })),
+          }),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1301,7 +1319,8 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
+  await redisMulti.exec()
+  ctx.pubSub.publish('runningLiveQuizUpdated', runningLiveQuizUpdate)
   return updatedQuiz
 }
 
@@ -2123,83 +2142,135 @@ export async function cancelLiveQuiz(
   if (!quiz) return null
 
   try {
-    if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
-      throw new Error('Live quiz is not running')
-    }
+    const { abortedStartedAt, lockedQuiz, updatedQuiz } =
+      await ctx.prisma.$transaction(async (prisma) => {
+        await prisma.$queryRaw`
+          SELECT "id"
+          FROM "public"."LiveQuiz"
+          WHERE "id" = ${id}::uuid AND "isDeleted" = false
+          FOR UPDATE
+        `
+        const lockedQuiz = await prisma.liveQuiz.findUnique({
+          where: { id, isDeleted: false },
+          include: {
+            activeBlock: true,
+            blocks: { include: { elements: true, activeInLiveQuiz: true } },
+            leaderboard: true,
+          },
+        })
+        if (!lockedQuiz) {
+          throw new Error('Live quiz not found')
+        }
+        if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+          throw new Error('Live quiz is not running')
+        }
+        // Assessment quizzes can only be aborted before the first block is activated.
+        // Keep this ahead of the startedAt check so the assessment restriction still
+        // reports its own error instead of a generic missing-timestamp error.
+        if (
+          lockedQuiz.isAssessmentEnabled &&
+          (lockedQuiz.activeBlock ||
+            lockedQuiz.blocks.some(
+              (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+            ))
+        ) {
+          throw new Error(
+            'Assessment quizzes can only be aborted before the first block is activated'
+          )
+        }
 
-    // if the quiz is an assessment quiz, it can only be aborted before the first block is activated
-    if (
-      quiz.isAssessmentEnabled &&
-      (quiz.activeBlock ||
-        quiz.blocks.some(
-          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
-        ))
-    ) {
-      throw new Error(
-        'Assessment quizzes can only be aborted before the first block is activated'
-      )
-    }
+        if (!lockedQuiz.startedAt) {
+          throw new Error('Published live quiz has no start timestamp')
+        }
 
-    const instances = quiz.blocks.flatMap((block) => block.elements)
-    const [updatedQuiz] = await ctx.prisma.$transaction([
-      ctx.prisma.liveQuiz.update({
-        where: { id },
-        data: {
-          status: DB.PublicationStatus.DRAFT,
-          startedAt: null,
-          activeBlock: { disconnect: true },
-          leaderboard: { deleteMany: {} },
-          temporaryLeaderboard: { deleteMany: {} },
-          feedbacks: { deleteMany: {} },
-          confusionFeedbacks: { deleteMany: {} },
-          blocks: {
-            updateMany: {
-              where: {
-                status: {
-                  in: [
-                    DB.ElementBlockStatus.EXECUTED,
-                    DB.ElementBlockStatus.ACTIVE,
-                  ],
+        const instances = lockedQuiz.blocks.flatMap((block) => block.elements)
+        if (
+          lockedQuiz.responseCollectionMode ===
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+        ) {
+          const instanceIds = instances.map((instance) => instance.id)
+          await prisma.liveQuizPendingResponse.deleteMany({
+            where: { liveQuizId: id },
+          })
+          await prisma.liveQuizResponseExportLabel.deleteMany({
+            where: { liveQuizId: id },
+          })
+          await prisma.liveQuizResponse.deleteMany({
+            where: { instanceId: { in: instanceIds } },
+          })
+          await prisma.liveQuizRespondent.deleteMany({
+            where: { liveQuizId: id },
+          })
+        }
+
+        const updatedQuiz = await prisma.liveQuiz.update({
+          where: { id },
+          data: {
+            status: DB.PublicationStatus.DRAFT,
+            startedAt: null,
+            activeBlock: { disconnect: true },
+            leaderboard: { deleteMany: {} },
+            temporaryLeaderboard: { deleteMany: {} },
+            feedbacks: { deleteMany: {} },
+            confusionFeedbacks: { deleteMany: {} },
+            blocks: {
+              updateMany: {
+                where: {
+                  status: {
+                    in: [
+                      DB.ElementBlockStatus.EXECUTED,
+                      DB.ElementBlockStatus.ACTIVE,
+                    ],
+                  },
                 },
-              },
-              data: {
-                status: DB.ElementBlockStatus.SCHEDULED,
-                startedAt: null,
-                closedAt: null,
-                expiresAt: null,
-                execution: { increment: 1 },
+                data: {
+                  status: DB.ElementBlockStatus.SCHEDULED,
+                  startedAt: null,
+                  closedAt: null,
+                  expiresAt: null,
+                  execution: { increment: 1 },
+                },
               },
             },
           },
-        },
-        include: {
-          activeBlock: true,
-          blocks: { include: { elements: true, activeInLiveQuiz: true } },
-        },
-      }),
-
-      ...instances.map((instance) => {
-        const initialResults = getInitialInstanceResults(instance.elementData)
-
-        return ctx.prisma.elementInstance.update({
-          where: { id: instance.id },
-          data: { results: initialResults, anonymousResults: initialResults },
+          include: {
+            activeBlock: true,
+            blocks: { include: { elements: true, activeInLiveQuiz: true } },
+          },
         })
-      }),
-    ])
+
+        await Promise.all(
+          instances.map((instance) => {
+            const initialResults = getInitialInstanceResults(
+              instance.elementData
+            )
+            return prisma.elementInstance.update({
+              where: { id: instance.id },
+              data: {
+                results: initialResults,
+                anonymousResults: initialResults,
+              },
+            })
+          })
+        )
+
+        return {
+          abortedStartedAt: lockedQuiz.startedAt,
+          lockedQuiz,
+          updatedQuiz,
+        }
+      })
 
     // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
+    const redis = lockedQuiz.isAssessmentEnabled
       ? ctx.redisAssessmentExec
       : ctx.redisExec
 
-    // unlink all cache keys from the redis cache
-    const keys = await redis.keys(`lq:${id}:*`)
-    const pipe = redis.multi()
-    for (const key of keys) {
-      pipe.unlink(key)
-    }
-    await pipe.exec()
+    await clearAbortedLiveQuizRedisGeneration({
+      redis,
+      liveQuizId: id,
+      startedAt: abortedStartedAt,
+    })
 
     await sendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
@@ -2214,6 +2285,35 @@ export async function cancelLiveQuiz(
     })
     throw error
   }
+}
+
+export async function clearAbortedLiveQuizRedisGeneration({
+  redis,
+  liveQuizId,
+  startedAt,
+}: {
+  redis: Pick<Redis, 'eval'>
+  liveQuizId: string
+  startedAt: Date
+}) {
+  return redis.eval(
+    `
+      local currentStartedAt = redis.call('HGET', KEYS[1], 'startedAt')
+      if currentStartedAt and currentStartedAt ~= ARGV[1] then
+        return 0
+      end
+
+      local keys = redis.call('KEYS', ARGV[2])
+      if #keys == 0 then
+        return 0
+      end
+      return redis.call('UNLINK', unpack(keys))
+    `,
+    1,
+    `lq:${liveQuizId}:meta`,
+    String(startedAt.getTime()),
+    `lq:${liveQuizId}:*`
+  )
 }
 
 export async function getLiveQuizEvaluation(
@@ -2263,6 +2363,26 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  const permission =
+    typeof hmac !== 'string' && ctx.user?.sub
+      ? await ctx.prisma.derivedPermission.findUnique({
+          where: {
+            liveQuizId_userId: { liveQuizId: id, userId: ctx.user.sub },
+          },
+          select: { permissionLevel: true },
+        })
+      : null
+  const hasWritePermission =
+    permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+    permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+    permission?.permissionLevel === DB.PermissionLevel.WRITE
+  const canExportCorrelatedResponses =
+    hasWritePermission &&
+    liveQuiz.status === DB.PublicationStatus.ENDED &&
+    !liveQuiz.isAssessmentEnabled &&
+    liveQuiz.responseCollectionMode ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+
   // depending on the quiz assessment setting, select the corresponding redis instance
   const redis = liveQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec
@@ -2306,6 +2426,9 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    status: liveQuiz.status,
+    responseCollectionMode: liveQuiz.responseCollectionMode,
+    canExportCorrelatedResponses,
     isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
     pinCode: liveQuiz.pinCode,
     results: blockEvaluations,
@@ -2319,6 +2442,7 @@ export async function getLiveQuizEvaluation(
         : null, // only shown on evaluation for completed quizzes
   }
 }
+
 // #endregion
 
 // ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------
@@ -3150,17 +3274,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
     )
 
     try {
-      // check if the live quiz exists and if its availableFrom date is in the past
-      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
-        where: {
-          id: liveQuizId,
-          isDeleted: false,
-          status: DB.PublicationStatus.SCHEDULED,
-          availableFrom: { lte: new Date() },
-        },
+      const publication = await transitionLiveQuizToPublished({
+        prisma: globalCtx.prisma,
+        liveQuizId,
+        source: 'scheduled',
       })
 
-      if (!liveQuiz) {
+      if (!publication) {
         await sendTeamsNotification({
           scope: 'hatchet/live-quiz-start',
           text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
@@ -3170,37 +3290,32 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         )
       }
 
-      // depending on the quiz assessment setting, select the corresponding redis instance
-      const redis = liveQuiz.isAssessmentEnabled
-        ? globalCtx.redisAssessmentExec
-        : globalCtx.redisExec
-
-      // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
+      await materializeLiveQuizPublication({
+        prisma: globalCtx.prisma,
+        quiz: publication.quiz,
+        redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
+      })
+      if (publication.scheduledPublicationTaskId) {
+        await clearLiveQuizScheduledPublicationTask({
+          prisma: globalCtx.prisma,
+          liveQuizId: publication.quiz.id,
+          startedAt: publication.quiz.startedAt,
+          scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
         })
-        .exec()
+      }
 
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
-
-      await sendTeamsNotification({
-        scope: 'hatchet/live-quiz-start',
-        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
-      })
+      if (publication.didStart) {
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
+        })
+      }
 
       // invalidate the cache for the live quiz
       globalCtx.emitter.emit('invalidate', {
         typename: 'LiveQuiz',
-        id: startedLiveQuiz.id,
+        id: publication.quiz.id,
       })
 
       return true
@@ -3212,6 +3327,18 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
       })
       throw error // rethrow to allow Hatchet to handle retries
     }
+  }
+
+export const handleReconcileLiveQuizPublications: HatchetHandlers['handleReconcileLiveQuizPublications'] =
+  async (_, globalCtx) => {
+    await reconcileLiveQuizPublications({
+      prisma: globalCtx.prisma,
+      redisExec: globalCtx.redisExec,
+      redisAssessmentExec: globalCtx.redisAssessmentExec,
+      deleteScheduledTask: (taskId) =>
+        globalCtx.hatchet.scheduled.delete(taskId),
+    })
+    return true
   }
 
 export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation'] =

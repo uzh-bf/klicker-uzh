@@ -35,7 +35,9 @@
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file .env src/index.ts",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts",
-    "start:test": "node --env-file .env dist/index.js"
+    "start:test": "node --env-file .env dist/index.js",
+    "test": "pnpm run test:run",
+    "test:run": "node --import tsx --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

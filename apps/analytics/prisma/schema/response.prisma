@@ -129,9 +129,11 @@ model LiveQuizResponse {
   instanceId            Int
   elementBlockExecution Int
 
-  // link to participant
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
+  // exactly one identity is linked: an account participant or a quiz-scoped respondent
+  participant   Participant?        @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String?             @db.Uuid
+  respondent    LiveQuizRespondent? @relation(fields: [respondentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  respondentId  String?             @db.Uuid
 
   // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
   appliedCorrections AppliedPointCorrection[]
@@ -141,7 +143,35 @@ model LiveQuizResponse {
   updatedAt DateTime @updatedAt
 
   @@unique([instanceId, elementBlockExecution, participantId])
+  @@unique([instanceId, elementBlockExecution, respondentId])
   @@index([instanceId, elementBlockExecution])
+}
+
+model LiveQuizResponseExportLabel {
+  identityHash String
+  label        Int
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @db.Uuid
+
+  @@id([liveQuizId, identityHash])
+  @@unique([liveQuizId, label])
+}
+
+model LiveQuizPendingResponse {
+  id               String   @id @db.Uuid
+  responseKey      String   @unique
+  eventPayload     String?
+  nextDeliveryAt   DateTime?
+  deliveryAttempts Int      @default(0)
+  createdAt        DateTime @default(now())
+  settledAt        DateTime?
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @db.Uuid
+
+  @@index([liveQuizId])
+  @@index([nextDeliveryAt])
 }
 
 enum PointCorrectionType {

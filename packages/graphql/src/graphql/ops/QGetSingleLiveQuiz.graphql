@@ -2,6 +2,7 @@ query GetSingleLiveQuiz($quizId: String!) {
   liveQuiz(id: $quizId) {
     id
     name
+    status
     displayName
     description
     blocks {
@@ -26,6 +27,7 @@ query GetSingleLiveQuiz($quizId: String!) {
     timeToZeroBonus
     isGamificationEnabled
     isAssessmentEnabled
+    responseCollectionMode
     pinCode
     isLiveQAEnabled
     isConfusionFeedbackEnabled

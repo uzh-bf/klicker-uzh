@@ -15,6 +15,7 @@ mutation EditLiveQuiz(
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
+  $responseCollectionMode: LiveQuizResponseCollectionMode
 ) {
   editLiveQuiz(
     id: $id
@@ -33,6 +34,7 @@ mutation EditLiveQuiz(
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled
     isModerationEnabled: $isModerationEnabled
+    responseCollectionMode: $responseCollectionMode
   ) {
     ...ActivityInfoData
   }

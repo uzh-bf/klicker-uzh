@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import ExcelJS from 'exceljs'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CliUsageError, parseExportCourseArgs } from '../src/cli.js'
 import { transformCorrection } from '../src/corrections.js'
@@ -19,6 +19,7 @@ import {
 } from '../src/exportCourse.js'
 import { transformInvitation } from '../src/invitations.js'
 import {
+  fetchLiveQuizResponses,
   LIVE_QUIZ_RESPONSE_HEADERS,
   transformLiveQuizResponse,
 } from '../src/liveQuizResponses.js'
@@ -284,6 +285,61 @@ describe('@klicker-uzh/export', () => {
 
     const out = transformLiveQuizResponse(row)
     expect(out.slice(0, 5)).toEqual([9002, '', '', 0, 78])
+  })
+
+  it('leaves participant identity columns empty for quiz-scoped respondents', () => {
+    const row = {
+      id: 9003,
+      response: { type: 'SC', choices: [] },
+      correctness: 'CORRECT',
+      basePoints: 10,
+      correctnessPoints: 5,
+      bonusPoints: 0,
+      submittedAt: new Date('2026-01-02T03:04:05.000Z'),
+      correctionOnly: false,
+      elementBlockExecution: 0,
+      participant: null,
+      instance: {
+        id: 44,
+        order: 0,
+        elementId: 79,
+        elementType: 'SC',
+        elementData: { name: 'Question', content: 'Question' },
+        elementBlock: {
+          id: 6,
+          order: 1,
+          liveQuiz: { id: 'live-quiz-1', name: 'Quiz', displayName: null },
+        },
+      },
+      _count: { appliedCorrections: 0 },
+    } as unknown as Parameters<typeof transformLiveQuizResponse>[0]
+
+    const out = transformLiveQuizResponse(row)
+
+    expect(out[5]).toBe('')
+    expect(out[6]).toBe('')
+  })
+
+  it('preserves email ordering with respondent id as the fallback', async () => {
+    const findMany = vi.fn().mockResolvedValue([])
+
+    await fetchLiveQuizResponses(
+      {
+        liveQuizResponse: { findMany },
+      } as unknown as Parameters<typeof fetchLiveQuizResponses>[0],
+      'course-1'
+    )
+
+    const query = findMany.mock.calls[0]![0]
+    expect(
+      query.where.instance.elementBlock.liveQuiz.responseCollectionMode
+    ).toEqual({
+      not: 'CORRELATED_EXPORT',
+    })
+    expect(query.orderBy.slice(0, 2)).toEqual([
+      { participant: { email: 'asc' } },
+      { respondentId: 'asc' },
+    ])
   })
 
   it('emits liveQuizResponseId and elementBlockExecution join keys on corrections', () => {

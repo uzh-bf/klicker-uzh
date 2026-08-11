@@ -20,6 +20,10 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
       copy({
         targets: [{ src: 'src/public/*', dest: 'dist' }],

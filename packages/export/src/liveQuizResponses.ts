@@ -1,13 +1,14 @@
-import type {
-  ElementType,
-  ResponseCorrectness,
+import {
+  LiveQuizResponseCollectionMode,
+  type ElementType,
+  type ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import type {
   ElementData,
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
 
-import { type PiiContext, FULL_PII, applyPii } from './pii.js'
+import { FULL_PII, applyPii, type PiiContext } from './pii.js'
 import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 /**
@@ -66,7 +67,7 @@ type LiveQuizResponseRow = {
   submittedAt: Date
   correctionOnly: boolean
   elementBlockExecution: number
-  participant: { id: string; email: string | null }
+  participant: { id: string; email: string | null } | null
   instance: {
     id: number
     order: number
@@ -90,7 +91,12 @@ export async function fetchLiveQuizResponses(
     where: {
       instance: {
         elementBlock: {
-          liveQuiz: { courseId },
+          liveQuiz: {
+            courseId,
+            responseCollectionMode: {
+              not: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+            },
+          },
         },
       },
     },
@@ -129,6 +135,7 @@ export async function fetchLiveQuizResponses(
     },
     orderBy: [
       { participant: { email: 'asc' } },
+      { respondentId: 'asc' },
       { instance: { elementBlock: { liveQuiz: { name: 'asc' } } } },
       { instance: { elementBlock: { order: 'asc' } } },
       { elementBlockExecution: 'asc' },
@@ -197,8 +204,8 @@ export function transformLiveQuizResponse(
     block?.order ?? '',
     row.instance.order,
     row.instance.elementId,
-    row.participant.id,
-    applyPii(row.participant.email, ctx),
+    row.participant?.id ?? '',
+    applyPii(row.participant?.email ?? null, ctx),
     row.instance.id,
     row.instance.elementType,
     elementData.name,

@@ -1,6 +1,7 @@
 import {
   ElementOrderType,
   ElementType,
+  LiveQuizResponseCollectionMode,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Workflow } from '@uzh-bf/design-system'
@@ -74,6 +75,7 @@ export interface LiveQuizFormValues extends CommonFormValues {
   blocks: ElementBlockFormValues[]
   isGamificationEnabled: boolean
   isAssessmentEnabled: boolean
+  responseCollectionMode: LiveQuizResponseCollectionMode
   isPinProtected: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean

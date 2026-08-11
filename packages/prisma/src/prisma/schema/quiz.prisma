@@ -79,16 +79,23 @@ enum AccessMode {
   RESTRICTED
 }
 
+enum LiveQuizResponseCollectionMode {
+  AGGREGATED_ANONYMOUS
+  CORRELATED_EXPORT
+}
+
 model LiveQuiz {
   id String @id @default(uuid()) @db.Uuid
 
   originalId                 String?
-  isLiveQAEnabled            Boolean @default(false)
-  isConfusionFeedbackEnabled Boolean @default(true)
-  isModerationEnabled        Boolean @default(true)
-  isGamificationEnabled      Boolean @default(false)
-  isAssessmentEnabled        Boolean @default(false)
-  isDeleted                  Boolean @default(false)
+  isLiveQAEnabled            Boolean                        @default(false)
+  isConfusionFeedbackEnabled Boolean                        @default(true)
+  isModerationEnabled        Boolean                        @default(true)
+  isGamificationEnabled      Boolean                        @default(false)
+  isAssessmentEnabled        Boolean                        @default(false)
+  isDeleted                  Boolean                        @default(false)
+  responseCollectionMode     LiveQuizResponseCollectionMode @default(AGGREGATED_ANONYMOUS)
+  exportSalt                 String?
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
 
@@ -101,6 +108,8 @@ model LiveQuiz {
   displayName          String
   description          String?
   startedAt            DateTime?
+  publicationMetadataMaterializedAt DateTime?
+  publicationMetadataRetryAt DateTime?
   finishedAt           DateTime?
   pointsMultiplier     Int       @default(1)
   defaultPoints        Int       @default(10)
@@ -118,6 +127,9 @@ model LiveQuiz {
   blocks               ElementBlock[]
   leaderboard          LeaderboardEntry[]
   temporaryLeaderboard TemporaryLeaderboardEntry[]
+  respondents          LiveQuizRespondent[]
+  responseExportLabels LiveQuizResponseExportLabel[]
+  pendingResponses     LiveQuizPendingResponse[]
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
@@ -141,6 +153,8 @@ model LiveQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status, publicationMetadataRetryAt, publicationMetadataMaterializedAt])
 }
 
 // #endregion

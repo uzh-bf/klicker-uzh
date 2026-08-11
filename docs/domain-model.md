@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-07-07'
+timestamp: '2026-07-29'
 tags:
   - backend
   - prisma
@@ -48,6 +48,14 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Live-quiz response collection
+
+`LiveQuiz.responseCollectionMode` is configured per quiz and defaults to `AGGREGATED_ANONYMOUS`. That mode keeps the existing anonymous aggregate behavior and does not create durable `LiveQuizResponse` rows. `CORRELATED_EXPORT` persists first responses from logged-in, temporary, and anonymous respondents so answers can be correlated across the quiz. Correlated export is mutually exclusive with gamification because response-derived points could otherwise be matched to a visible leaderboard; direct quiz changes, batch course assignment, course-level gamification changes, and the database constraint enforce this invariant.
+
+Anonymous and temporary users are represented by the identity-only `LiveQuizRespondent`; this is not a `Participant` account and stores no username, avatar, or score. `LiveQuizResponse` has exactly one owner (`participantId` or `respondentId`) and unique first-response constraints per instance, block execution, and owner. `LiveQuizResponseExportLabel` stores only an HMAC-derived identity hash and stable positive row number for each quiz. Assessment remains a separate, always-identifiable response workflow.
+
+Anonymous continuity is best-effort and cookie-based. Public participation has no Sybil resistance: clearing or rejecting the quiz cookie can create another respondent row, so the correlated teaching export must not be treated as proof of one human per row. The CSV is pseudonymized individual-level data, not a differentially private research export; v3.5 excludes free-text answers, while future research exports still need broader PII controls. Deployment-level abuse controls are required if public anonymous participation is exposed to hostile traffic.
 
 ## Gamification details
 

@@ -14,6 +14,7 @@ mutation CreateLiveQuiz(
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
+  $responseCollectionMode: LiveQuizResponseCollectionMode
 ) {
   createLiveQuiz(
     name: $name
@@ -31,6 +32,7 @@ mutation CreateLiveQuiz(
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled
     isModerationEnabled: $isModerationEnabled
+    responseCollectionMode: $responseCollectionMode
   ) {
     ...ActivityInfoData
   }

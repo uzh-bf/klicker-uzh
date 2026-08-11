@@ -8,6 +8,13 @@ export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),
 })
 
+export const LiveQuizResponseCollectionMode = builder.enumType(
+  'LiveQuizResponseCollectionMode',
+  {
+    values: Object.values(DB.LiveQuizResponseCollectionMode),
+  }
+)
+
 export const ElementBlockStatus = builder.enumType('ElementBlockStatus', {
   values: Object.values(DB.ElementBlockStatus),
 })
@@ -124,6 +131,9 @@ export const LiveQuiz = LiveQuizRef.implement({
 
     status: t.expose('status', { type: PublicationStatus }),
     accessMode: t.expose('accessMode', { type: LiveQuizAccessMode }),
+    responseCollectionMode: t.expose('responseCollectionMode', {
+      type: LiveQuizResponseCollectionMode,
+    }),
 
     numOfBlocks: t.exposeInt('numOfBlocks', { nullable: true }),
     numOfInstances: t.exposeInt('numOfInstances', { nullable: true }),
@@ -175,6 +185,24 @@ export const LiveQuizInfo = LiveQuizInfoRef.implement({
     name: t.exposeString('name'),
   }),
 })
+
+export interface ICorrelatedLiveQuizResponseExport {
+  filename: string
+  content: string
+  warning: string
+}
+export const CorrelatedLiveQuizResponseExportRef =
+  builder.objectRef<ICorrelatedLiveQuizResponseExport>(
+    'CorrelatedLiveQuizResponseExport'
+  )
+export const CorrelatedLiveQuizResponseExport =
+  CorrelatedLiveQuizResponseExportRef.implement({
+    fields: (t) => ({
+      filename: t.exposeString('filename'),
+      content: t.exposeString('content'),
+      warning: t.exposeString('warning'),
+    }),
+  })
 
 interface ILiveQuizMeta {
   id: string

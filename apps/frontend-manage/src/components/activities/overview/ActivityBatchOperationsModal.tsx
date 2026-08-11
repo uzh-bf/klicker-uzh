@@ -12,7 +12,7 @@ import {
 //       liveQuizPoints: selectedActions.liveQuizPoints ?? undefined,
 //     },
 //   })ops'
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
@@ -366,9 +366,20 @@ function ActivityBatchOperationsModal({
                     }
                   } catch (error) {
                     console.error(error)
+                    const isCorrelatedGamificationConflict =
+                      error instanceof ApolloError &&
+                      error.graphQLErrors.some(
+                        (graphQLError) =>
+                          graphQLError.extensions?.code ===
+                          'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT'
+                      )
                     toast({
                       type: 'error',
-                      message: t('manage.activities.batchOperationFailed'),
+                      message: isCorrelatedGamificationConflict
+                        ? t(
+                            'manage.activities.batchCorrelatedGamificationConflict'
+                          )
+                        : t('manage.activities.batchOperationFailed'),
                       options: { duration: 5000 },
                     })
                   }

@@ -76,7 +76,12 @@ export default function () {
 
   const resVote = http.post(
     'https://response-api.klicker.stg.df-app.ch/AddResponse',
-    vote
+    vote,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
   )
   check(resVote, { 'status 200': (r) => r.status === 200 })
 

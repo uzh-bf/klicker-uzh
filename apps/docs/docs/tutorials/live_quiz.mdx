@@ -44,15 +44,16 @@ To create a Live Quiz, navigate to the library and use the corresponding button 
 5. **Multiplier:** When gamification is enabled (separately or through the quiz being assigned to a gamified course), a multiplier can be set for the Live Quiz. The selected factor will be applied to all points (except for base points) collected in the Live Quiz and, if defined, combined with the multiplier of the question. For more information on the distributed points, please refer to the [grading logic overview](/gamification/grading_logic).
 6. **Advanced Live Quiz Settings:** If desired, the different points distributed during a live quiz can be customized through the settings dialog that opens when clicking on the corresponding icon. Customized grading logic is only supported in gamified live quizzes. More information can be found in the [grading logic overview](/gamification/grading_logic).
 7. **Audience Interaction:** You can already choose which audience interaction components should be enabled at the start of the Live Quiz. All settings can be modified at any time during the quiz execution.
+8. **Response Collection:** By default, KlickerUZH keeps only anonymous, aggregated results. For research or teaching-evaluation use cases, you can enable correlated response storage for the new quiz. This stores each participant's first response per question and makes a pseudonymous CSV available after the quiz ends, with one respondent per row. Correlated response storage cannot be combined with gamification because leaderboard scores could reveal respondents in the export. The CSV never includes names, account identifiers, response timestamps, or free-text answers.
 
 **Create blocks using existing questions:**
 
-8. In the final step, you can add your prepared questions to the Live Quiz using one of the following two methods. Questions in the same block will become available to students at the same time, while questions in different blocks will be released sequentially at the lecturer's discretion. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
+9. In the final step, you can add your prepared questions to the Live Quiz using one of the following two methods. Questions in the same block will become available to students at the same time, while questions in different blocks will be released sequentially at the lecturer's discretion. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
    1. **Drag & Drop:** To add a new question to an existing block, simply drag the question onto the plus sign beneath the desired block. Similarly, you may also drag questions onto the "New block" button to create a new block with the question.
    2. **Select Questions:** Select one or more questions that should be added to the Live Quiz. The wizard will automatically display all different options for adding the selected questions to the activity. You can either add them to an existing block or create one or multiple new blocks with the selected questions.
    3. **Ordering:** To order individual elements within a certain block or move entire blocks (mainly for sequentially ordered practice quizzes), please use the provided arrows.
-9. Optionally, you can add a **countdown** to the blocks, which will be displayed to the students during the quiz execution. Started blocks will be closed automatically after the countdown has expired.
-10. Finally, confirm the creation and your Live Quiz is prepared!
+10. Optionally, you can add a **countdown** to the blocks, which will be displayed to the students during the quiz execution. Started blocks will be closed automatically after the countdown has expired.
+11. Finally, confirm the creation and your Live Quiz is prepared!
 
 ## How can I edit a Live Quiz?
 
@@ -106,6 +107,8 @@ Once the Live Quiz has been started, the following actions can be performed on t
 3. **Activate Feedback:** If the feedback option is activated, in addition to answering the question, participants also have the possibility to provide feedback on the speed and difficulty of the lecture. Their inputs will be displayed in aggregated form directly in the cockpit and are available as a timeline on the evaluation view after the quiz has ended. For more information, please refer to the [Live Q&A and Feedback tutorial](/tutorials/live_qa/).
 4. **Activate Live Q&A:** If Live Q&A is activated, participants can ask follow-up questions they may have and provide written feedback. For more details on Live Q&A, review the dedicated [tutorial section](/tutorials/live_qa/).
 5. **End / Abort Live Quiz:** Once the last block has finished, you can **end** the Live Quiz. Students will no longer be able to submit feedback or questions. The evaluation view of completed quizzes can be accessed through the activity list, and contains the final live quiz leaderboard, all submitted Live Q&A questions, as well as a timeline of all feedback in addition to the question evaluations. If you choose to **abort** your live quiz, please make sure to carefully review the mentioned consequences.
+
+For a quiz with correlated response storage, the completed evaluation also offers a CSV download. Each row has a stable pseudonymous respondent number and each question execution has its own response column. Repeated downloads keep existing respondent numbers stable.
 
 Additionally, you can access the following important views directly from the lecturer cockpit:
 
