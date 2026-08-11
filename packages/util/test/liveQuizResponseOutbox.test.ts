@@ -40,41 +40,46 @@ describe('correlated live quiz outbox contract', () => {
   })
 
   it('rejects an unsupported admitted identity kind', () => {
-    const encryptedPayload = encryptCorrelatedResponseEvent({
-      message: {
-        ...message,
-        acceptedIdentity: {
-          ...message.acceptedIdentity,
-          kind: 'unsupported',
-        },
-      } as unknown as CorrelatedResponseEventMessage,
-      secret: 'test-secret',
-    })
-
     expect(() =>
-      decryptCorrelatedResponseEvent({
-        encryptedPayload,
+      encryptCorrelatedResponseEvent({
+        message: {
+          ...message,
+          acceptedIdentity: {
+            ...message.acceptedIdentity,
+            kind: 'unsupported',
+          },
+        } as unknown as CorrelatedResponseEventMessage,
+        secret: 'test-secret',
+      })
+    ).toThrow('Invalid correlated response outbox message')
+  })
+
+  it('rejects private fields before they enter the encrypted outbox', () => {
+    expect(() =>
+      encryptCorrelatedResponseEvent({
+        message: {
+          ...message,
+          response: {
+            value: 'accepted answer',
+            privateMarker: 'must-not-cross-the-boundary',
+          },
+        } as unknown as CorrelatedResponseEventMessage,
         secret: 'test-secret',
       })
     ).toThrow('Invalid correlated response outbox message')
   })
 
   it('rejects incomplete question-specific metadata', () => {
-    const encryptedPayload = encryptCorrelatedResponseEvent({
-      message: {
-        ...message,
-        instanceInfo: {
-          type: 'SC',
-          blockExecution: '1',
-          sessionBlockId: '7',
-        },
-      } as unknown as CorrelatedResponseEventMessage,
-      secret: 'test-secret',
-    })
-
     expect(() =>
-      decryptCorrelatedResponseEvent({
-        encryptedPayload,
+      encryptCorrelatedResponseEvent({
+        message: {
+          ...message,
+          instanceInfo: {
+            type: 'SC',
+            blockExecution: '1',
+            sessionBlockId: '7',
+          },
+        } as unknown as CorrelatedResponseEventMessage,
         secret: 'test-secret',
       })
     ).toThrow('Invalid correlated response outbox message')
@@ -110,6 +115,50 @@ describe('live quiz response validation', () => {
       validateStudentResponse({
         type: 'FREE_TEXT',
         response: ['not', 'an', 'object'],
+      }).valid
+    ).toBe(false)
+  })
+
+  it('fails closed when response metadata is absent or malformed', () => {
+    expect(
+      validateStudentResponse({
+        type: 'SC',
+        response: { choices: [{ ix: 0, selected: true }] },
+        instanceInfo: { choiceCount: 'not-a-number' },
+      }).valid
+    ).toBe(false)
+    expect(
+      validateStudentResponse({
+        type: 'SELECTION',
+        response: { selection: [11] },
+        instanceInfo: {
+          numberOfInputs: '1',
+          selectionAnswerIds: '{not-json',
+        },
+      }).valid
+    ).toBe(false)
+    expect(
+      validateStudentResponse({
+        type: 'CASE_STUDY',
+        response: { assessment: { case: { 11: { criterion: 3 } } } },
+        instanceInfo: { caseStudyResponseShape: '{not-json' },
+      }).valid
+    ).toBe(false)
+  })
+
+  it('fails closed when restrictions are malformed', () => {
+    expect(
+      validateStudentResponse({
+        type: 'NUMERICAL',
+        response: { value: '1' },
+        restrictions: { min: '0' },
+      }).valid
+    ).toBe(false)
+    expect(
+      validateStudentResponse({
+        type: 'FREE_TEXT',
+        response: { value: 'valid' },
+        restrictions: { maxLength: '5' },
       }).valid
     ).toBe(false)
   })
