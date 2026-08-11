@@ -2150,11 +2150,13 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     const headingSelector =
       'h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]'
     const readHeadingSizes = () =>
-      content.locator(headingSelector).evaluateAll((headings) =>
-        headings.map((heading) =>
-          Number.parseFloat(getComputedStyle(heading).fontSize)
+      content
+        .locator(headingSelector)
+        .evaluateAll((headings) =>
+          headings.map((heading) =>
+            Number.parseFloat(getComputedStyle(heading).fontSize)
+          )
         )
-      )
     const assertHeadingScale = (headingSizes: number[]) => {
       expect(headingSizes).toHaveLength(6)
       for (let index = 1; index < headingSizes.length; index += 1) {
