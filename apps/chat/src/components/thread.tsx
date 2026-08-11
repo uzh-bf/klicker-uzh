@@ -394,7 +394,9 @@ const ThreadWelcome: FC<{
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? getModeDescription(t, activeMode, modeOptions)
+    ? Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
+      ? (modeOptions[activeMode]?.trim() ?? '')
+      : getModeDescription(t, activeMode, modeOptions)
     : null
 
   return (
