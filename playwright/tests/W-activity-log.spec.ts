@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test'
 import questionsData from '../fixtures/questions.json' with { type: 'json' }
 import activityLogData from '../fixtures/W-activity-log.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import { chooseActivityAction, chooseCourseAction } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -742,7 +742,7 @@ test.describe('Feature test for activity logs', () => {
       await page.getByTestId('close-activity-log').click()
 
       await openCourseOverview(page, data.seededCourse)
-      await page.getByTestId('course-share-button').click()
+      await chooseCourseAction(page, 'course-share-button')
       await setUserPermissions(page)
     })
 
