@@ -383,15 +383,15 @@ evidence; they do not receive redundant implementation-coupled unit tests.
 - Current (2026-08-11): layer 01 consent-gate implementation and visual
   verification are committed locally on `rs/chat-ux-audit`; the reviewed
   roadmap is carried in this same layer. The branch is rebased onto current
-  `origin/v3` (`0d7b4e461`) and is ready for stack-aware publication. PR #5355
-  is still draft, but its forge head is the old docs-only revision and needs a
-  stack-aware force-with-lease update after the native stack is initialized.
+  `origin/v3` (`0d7b4e461`) and published as the bottom of the native stack.
+  PR #5355 is still draft and its title/body now need the whole-layer update.
 - Verified: GitHub stack capability is enabled; `gh stack view --json` reports
-  that the bottom branch is not yet part of a local stack. The exact
-  container's full `check:all` gate passed with 24/24 tasks after the layer-01
-  commits; chat typecheck and lint passed with 0 errors and 5 pre-existing
-  warnings. The focused Playwright journey still reaches the runner but cannot
-  launch because Chromium is not installed in the container.
+  the five-branch chain rooted at `v3`, with all branch pointers pushed using
+  gh-stack's atomic force-with-lease operation. The exact container's full
+  `check:all` gate passed with 24/24 tasks after the layer-01 commits; chat
+  typecheck and lint passed with 0 errors and 5 pre-existing warnings. The
+  focused Playwright journey still reaches the runner but cannot launch
+  because Chromium is not installed in the container.
 - Planning-stage review: `DONE_WITH_CONCERNS`; all verified findings listed in
   Plan identity were accepted into this revision. No unresolved planning-stage
   finding remains.
@@ -400,8 +400,13 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   close button, and Escape leaving the gate open. The fixture was restored
   after Playwright global setup removed the chatbot row; the route now reaches
   the unauthenticated 307 login redirect rather than the prior 404.
-- Next: initialize the five-branch native stack, update and publish draft PR
-  #5355, then create and execute layers 02–05 bottom-up.
+- Publication note: the repository pre-push hook could not complete its
+  unrelated root build because unchanged `olat-api` source fails Rollup's
+  parser; the layer-specific checks and container chat production build passed,
+  and the exception was recorded when the stack was pushed.
+- Next: update draft PR #5355 with whole-layer evidence, then implement layers
+  02–05 bottom-up. The four upper branches currently point at the layer-01 tip
+  and carry no PR until their named work packages are implemented.
 
 ### Autonomous goal prompt
 
