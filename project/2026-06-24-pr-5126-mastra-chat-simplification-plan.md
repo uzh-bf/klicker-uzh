@@ -36,7 +36,7 @@ Locked continuation decisions:
 - Public source pull requests retire only after source-to-target coverage and remote readback: replace chat prototype PR #5126 in place, close tutor/research PR #5129 after the private import, and close analytics phase-A PR #5073 only as part of retiring its full analytics source stack. Branch deletion remains a separately authorized final action.
 - The private learning-analytics work preserves the existing source progression as separate review layers: foundations, production runtime, consent/finalization, current-`v3` reconciliation, computation-side privacy/eligibility, and delivery/cutover. Mixed source pull requests use path-and-commit ledgers; public Prisma, GraphQL, UI, documentation, and feature-flag work remains public.
 - Adaptive learning uses its own stateless private service and ordinal contract. Public authorization, Prisma state, attempt lifecycle, deterministic grading, publication snapshots, and UI/API remain in KlickerUZH; Catalyst owns IRT estimation, calibration mathematics, item selection, stopping, classification, and psychometric diagnostics.
-- The adaptive source stack splits by ownership: PR #5289 moves private with history; PR #5290 remains the public persistence layer; PR #5291 remains the public host API but calls the engine; PR #5292 remains public UI; PR #5293 divides private simulation/conformance from public API/browser evidence. PR #5113 retires only after exact coverage.
+- The adaptive source stack splits by ownership: PR #5289 moves private with history; PR #5290 remains the public persistence layer; PR #5291 remains the public host API but calls the engine; PR #5292 remains public UI; PR #5293 remains entirely public Playwright/configuration/accessibility evidence. Private simulation evidence comes from PR #5289. PR #5113 retires only after exact coverage.
 - Knowledge-base management UI and backend remain public. Knowledge-graph generation is private Catalyst logic currently in `kg-content-generation`; a later history-preserving stack moves it to `apps/knowledge-graph-generation`. Shared data ingestion remains an external infrastructure dependency.
 - Grading/feedback and content generation are planned feature stacks but remain inactive beyond their existing Catalyst module roots until concrete source or product requirements exist.
 - The three active split stacks are chat/tutoring, learning analytics, and adaptive learning. Knowledge-graph consolidation follows them.
@@ -45,6 +45,9 @@ Locked continuation decisions:
 
 The Catalyst repository split has preserved the private source and established the runtime boundary:
 
+- The cross-feature execution plan and Catalyst ADRs live in the private
+  repository at `docs/project/2026-08-11-catalyst-feature-stacks-plan.md` and
+  `docs/adr/`; this public plan governs only the chat host/default-engine stack.
 - [Catalyst PR #2](https://github.com/uzh-bf/klicker-uzh-catalyst/pull/2) contains the operational repository wiring.
 - [Catalyst PR #3](https://github.com/uzh-bf/klicker-uzh-catalyst/pull/3) contains the runnable, stateless tutoring-engine boundary and the private archive refs for public PRs [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126) and [#5129](https://github.com/uzh-bf/klicker-uzh/pull/5129).
 - Both Catalyst pull requests remain draft and do not block building the public default path.
