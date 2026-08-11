@@ -177,6 +177,14 @@ export async function testInitialization(
         return { success: true }
       },
     }),
+    dispatchAssessmentAuditOutbox: hatchet.task({
+      name: 'dispatch-assessment-audit-outbox-test',
+      fn: async () => ({ success: true }),
+    }),
+    monitorAssessmentAudit: hatchet.task({
+      name: 'monitor-assessment-audit-test',
+      fn: async () => ({ success: true }),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

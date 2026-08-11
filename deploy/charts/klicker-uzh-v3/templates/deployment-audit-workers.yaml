@@ -1,0 +1,86 @@
+{{- if .Values.assessmentAudit.enabled }}
+{{- if ne (int .Values.assessmentAudit.worker.replicaCount) 1 }}
+{{- fail "assessmentAudit.worker.replicaCount must remain 1 until dispatcher heartbeat state is shared" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-worker
+  annotations:
+    reloader.stakater.com/auto: 'true'
+spec:
+  revisionHistoryLimit: 5
+  replicas: {{ .Values.assessmentAudit.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: assessment-audit-worker
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-audit-workers.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+        {{- with .Values.assessmentAudit.worker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: assessment-audit-worker
+        azure.workload.identity/use: 'true'
+    spec:
+      serviceAccountName: {{ required "assessmentAudit.worker.serviceAccountName is required when assessment audit is enabled" .Values.assessmentAudit.worker.serviceAccountName }}
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.assessmentAudit.worker.priorityClassName }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: assessment-audit-worker
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.assessmentAudit.worker.image.repository }}:{{ required "assessmentAudit.worker.image.tag is required when assessment audit is enabled" .Values.assessmentAudit.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.assessmentAudit.worker.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-assessment-audit-worker
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-general
+          env:
+            - name: HATCHET_WORKER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: metrics
+              containerPort: 9464
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.assessmentAudit.worker.resources | nindent 12 }}
+      {{- with .Values.assessmentAudit.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessmentAudit.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessmentAudit.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

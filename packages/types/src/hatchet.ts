@@ -69,6 +69,16 @@ export type CourseDeletionEvent = {
 }
 
 export interface HatchetHandlers {
+  handleDispatchAssessmentAuditOutbox: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleMonitorAssessmentAudit: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -167,6 +177,14 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   buildKBGraph: TaskWorkflowDeclaration<BuildKBGraphInput, { success: boolean }>
+  dispatchAssessmentAuditOutbox: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
+  monitorAssessmentAudit: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

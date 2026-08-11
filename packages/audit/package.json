@@ -8,6 +8,9 @@
     "dist"
   ],
   "dependencies": {
+    "@azure/data-tables": "13.3.2",
+    "@azure/identity": "4.13.1",
+    "@azure/storage-blob": "12.25.0",
     "@klicker-uzh/prisma": "workspace:*",
     "canonicalize": "3.0.0",
     "uuid": "10.0.0",
@@ -37,6 +40,9 @@
   },
   "volta": {
     "extends": "../../package.json"
+  },
+  "bin": {
+    "klicker-audit": "dist/cli/index.js"
   },
   "type": "module"
 }
