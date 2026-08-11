@@ -11,6 +11,7 @@ import { EventEmitter } from 'events'
 import { Redis } from 'ioredis'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { loginTemporaryParticipant } from '../src/services/accounts.js'
 import {
   cancelLiveQuiz,
   clearAbortedLiveQuizRedisGeneration,
@@ -181,6 +182,140 @@ describe('Live quiz abort cleanup', () => {
     expect(metadataKey).toBe(`lq:${liveQuiz.id}:meta`)
     expect(expectedStartedAt).toBe(String(startedAt.getTime()))
     expect(cachePattern).toBe(`lq:${liveQuiz.id}:*`)
+  })
+
+  it('does not recreate a correlated identity when abort wins the lifecycle lock', async () => {
+    const element = await prisma.element.create({
+      data: {
+        name: uuid(),
+        content: uuid(),
+        type: ElementType.CONTENT,
+        options: {},
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    const liveQuiz = await seedLiveQuiz(
+      {
+        elements: [{ id: element.id, type: ElementType.CONTENT }],
+        status: PublicationStatus.PUBLISHED,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        startedAt: new Date(),
+      },
+    })
+    const instance = await prisma.elementInstance.findFirstOrThrow({
+      where: { elementBlock: { liveQuizId: liveQuiz.id } },
+    })
+    await prisma.elementInstance.update({
+      where: { id: instance.id },
+      data: {
+        elementData: { type: ElementType.CONTENT, options: {} } as any,
+        results: { total: 0 },
+        anonymousResults: { total: 0 },
+      },
+    })
+
+    let releaseLock!: () => void
+    let lockAcquired!: () => void
+    const lockReleased = new Promise<void>((resolve) => {
+      releaseLock = resolve
+    })
+    const lifecycleLockAcquired = new Promise<void>((resolve) => {
+      lockAcquired = resolve
+    })
+    const lifecycleLock = prisma.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "public"."LiveQuiz"
+        WHERE "id" = ${liveQuiz.id}::uuid AND "isDeleted" = false
+        FOR UPDATE
+      `
+      lockAcquired()
+      await lockReleased
+    })
+
+    await lifecycleLockAcquired
+
+    let abortLockRequested!: () => void
+    const abortLockRequest = new Promise<void>((resolve) => {
+      abortLockRequested = resolve
+    })
+    const abortPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property === '$transaction') {
+          return (callback: (transaction: unknown) => Promise<unknown>) =>
+            target.$transaction(async (transaction) => {
+              const instrumentedTransaction = new Proxy(transaction, {
+                get(
+                  transactionTarget,
+                  transactionProperty,
+                  transactionReceiver
+                ) {
+                  if (transactionProperty === '$queryRaw') {
+                    return (...args: unknown[]) => {
+                      const query = (transactionTarget.$queryRaw as any)(
+                        ...args
+                      )
+                      abortLockRequested()
+                      return query
+                    }
+                  }
+                  const value = Reflect.get(
+                    transactionTarget,
+                    transactionProperty,
+                    transactionReceiver
+                  )
+                  return typeof value === 'function'
+                    ? value.bind(transactionTarget)
+                    : value
+                },
+              })
+              return callback(instrumentedTransaction)
+            })
+        }
+        return Reflect.get(target, property, receiver)
+      },
+    })
+    const redis = {
+      eval: async () => 0,
+    }
+    const abort = cancelLiveQuiz({ id: liveQuiz.id }, {
+      ...userOneCtx,
+      prisma: abortPrisma,
+      redisExec: redis,
+      redisAssessmentExec: redis,
+    } as any)
+
+    await abortLockRequest
+    const login = loginTemporaryParticipant(
+      {
+        liveQuizId: liveQuiz.id,
+        pseudonym: `temporary-${uuid()}`,
+      },
+      {
+        ...userOneCtx,
+        res: { cookie: () => undefined } as any,
+      }
+    )
+
+    releaseLock()
+    await lifecycleLock
+    await expect(abort).resolves.not.toBeNull()
+    await expect(login).resolves.toBeNull()
+    await expect(
+      prisma.liveQuizRespondent.count({ where: { liveQuizId: liveQuiz.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.temporaryLeaderboardEntry.count({
+        where: { quizId: liveQuiz.id },
+      })
+    ).resolves.toBe(0)
   })
 
   it('preserves Redis keys from a newer publication generation', async () => {
