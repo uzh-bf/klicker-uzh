@@ -427,6 +427,10 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
   and the retry proof above closes that finding.
+- The follow-up review of the corrected layer-02 range found that malformed
+  chatbot IDs still reached Prisma and the retryable error surface. The route
+  now validates UUID shape before lookup, and the E2E contract covers both
+  malformed and well-formed missing IDs as branded 404s.
 - Layer-02 automated verification currently passes chat typecheck, lint with
   0 errors and the same 5 pre-existing warnings, and 31 files / 231 tests.
   The focused Playwright journey remains a hosted-CI gate because this

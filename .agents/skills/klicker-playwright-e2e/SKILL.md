@@ -67,12 +67,13 @@ pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
 Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
-participant before exercising `/<chatbotId>` routes. A missing chatbot should
-assert the branded segment 404 and its response status; an unexpected route
-failure must be fault-injected only in an uncommitted local proof, restored
-before commit, and asserted against the branded `error.tsx` retry/return
-surface without exposing the server error text. Keep the `/noLogin` assertion
-focused on the login action and concise return copy, not a raw redirect URL.
+participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
+well-formed missing chatbot should assert the branded 404 and its response
+status; an unexpected route failure must be fault-injected only in an
+uncommitted local proof, restored before commit, and asserted against the
+branded `error.tsx` retry/return surface without exposing the server error
+text. Keep the `/noLogin` assertion focused on the login action and concise
+return copy, not a raw redirect URL.
 
 ## Fast Failure Triage
 
