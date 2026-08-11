@@ -420,8 +420,13 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   renders in German at 1440x900 and in English at 390x844, keeps the branded
   return action, and omits the unknown UUID from visible copy. A temporary
   throw in the dynamic layout rendered the English mobile error card with
-  retry/return actions and no raw server error; the throw was removed before
-  commit, and the valid route returned to the authenticated composer.
+  retry/return actions and no raw server error; after the throw was removed,
+  clicking Retry refreshed the route back to the authenticated composer. The
+  same fault-injection and retry proof passed in German at 1440x900.
+- Intermediate review of the initial layer-02 commit `c7765925f` returned
+  `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
+  server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
+  and the retry proof above closes that finding.
 - Layer-02 automated verification currently passes chat typecheck, lint with
   0 errors and the same 5 pre-existing warnings, and 31 files / 231 tests.
   The focused Playwright journey remains a hosted-CI gate because this

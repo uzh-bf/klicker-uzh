@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { ChatRecoveryCard } from '../components/chat-recovery-card'
 
 export default function Error({
-  reset,
+  unstable_retry,
 }: {
   error: Error & { digest?: string }
-  reset: () => void
+  unstable_retry: () => void
 }) {
   const t = useTranslations()
   const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
@@ -25,7 +25,7 @@ export default function Error({
       <button
         type="button"
         data-cy="chat-error-retry"
-        onClick={reset}
+        onClick={unstable_retry}
         className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {t('chat.recovery.retry')}
