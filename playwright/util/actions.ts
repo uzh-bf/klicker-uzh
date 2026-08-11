@@ -118,6 +118,17 @@ export async function chooseActionByTestId(
   triggerTestId: string,
   actionTestId: string
 ) {
+  const directAction = page
+    .getByTestId(actionTestId)
+    .and(page.getByRole('button'))
+    .first()
+
+  if (await directAction.isVisible().catch(() => false)) {
+    await directAction.scrollIntoViewIfNeeded().catch(() => undefined)
+    await directAction.click()
+    return
+  }
+
   await openActionMenuByTestId(page, triggerTestId, actionTestId)
   await clickVisibleByTestId(page, actionTestId)
 }
