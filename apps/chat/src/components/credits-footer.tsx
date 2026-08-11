@@ -4,11 +4,12 @@ import { Progress } from '@uzh-bf/design-system'
 import { Zap } from 'lucide-react'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useSettingsStore } from '../stores/settingsStore'
+import { formatCredits } from './thread-credits-format'
 
 function CreditBalance({ current, total }: { current: number; total: number }) {
   return (
     <>
-      {Math.round(current)} / {total}
+      {formatCredits(current)} / {formatCredits(total)}
     </>
   )
 }
