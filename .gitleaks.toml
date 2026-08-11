@@ -30,7 +30,7 @@ paths = [
 
 # Azurite's fixed, public emulator credential. It is documented by Microsoft
 # and cannot authenticate to Azure Storage; keep the exception value-specific.
-regexTarget = "match"
+regexTarget = "secret"
 regexes = [
   '''^Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==$''',
 ]
