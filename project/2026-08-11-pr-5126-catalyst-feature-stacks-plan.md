@@ -124,6 +124,68 @@ service only after contract and end-to-end proof.
   Gate 0 completion is the evidence used for stack adoption and Gate 1; this
   draft's snapshot is not sufficient.
 
+## Gate 0 Evidence - 2026-08-11
+
+- Public target: fetched `origin/v3` and the final GitHub ref readback both
+  resolved to `ca0e6068abb7b7d2ef36ed08b53940ebddc770cc`.
+- Canonical public head: `8bbe13909a33725fcd1ee0ba63f0eb60f31548d3`;
+  merge base `0d7b4e46126f2f01931f07deccbd719ad0c163a5`; 18 commits
+  ahead and 2 behind current `v3`. The two new base commits touch no path changed
+  by the canonical branch. The worktree is clean.
+- Remote public PR #5126 still points to old head `7717572aba8cc48782ba80eb76eeb4136877b8a4`,
+  is draft/conflicting, and is not current-head evidence.
+- Private `main` is `d8c0a2f6b8a25f818fad6ddd61e326881a57b60a`.
+  Private PR #2 is at `58fcb7e8825db47265f7d918941c98d1549d60df`;
+  PR #3 and its worktree are at `37354aa518db4b96dbc61942f9a77c50bc4bf8db`.
+  Both PRs are draft, mergeable, and green; the private worktree is clean.
+- Private archive refs still resolve exactly to public source heads:
+  PR #5126 at `7717572aba8cc48782ba80eb76eeb4136877b8a4` and
+  PR #5129 at `93f869a7621776cc2a37bdee8f20f7d5e1285e4e`.
+- GitHub source stack metadata is intact: analytics stack 5259 contains
+  #5199/#5073/#5230/#5231/#5198/#5265; adaptive stack 5294 contains
+  #5289–#5293; GrowthBook stack 5324 contains #5322/#5323; `v3-ai` stack 5223
+  contains #5092/#5174/#5206. Private PRs #2/#3 are not yet linked as a GitHub
+  stack.
+- `v3-ai` is still draft/conflicting with six failing checks. The analytics
+  foundation PR is conflicting and later analytics layers contain failed or
+  cancelled checks. The adaptive foundation and persistence PRs are
+  conflicting; UI and release layers contain failing browser checks. These are
+  source branches, not merge-ready target layers.
+
+Substantive source size excludes lockfiles, generated GraphQL artifacts,
+project-plan documents, screenshots, and notebooks:
+
+| Source | Substantive delta | Planning consequence |
+| --- | ---: | --- |
+| Canonical CH-P1 branch | +5,093/-8 across 39 files | Retain the approved existing-tracer exception; report contract, engine, chat API, and tests separately at Gate 3 |
+| Analytics #5199 private app paths | +2,986/-70 across 55 files | Mechanical history-import exception |
+| Analytics #5073 private app paths | +12,812/-2,067 across 104 files | Split database/runtime, worker/DAG, and dry-run/equivalence work |
+| Analytics #5230 private app paths | +4,246/-2,410 across 44 files | Keep consent/finalization as a risk-isolated package with exact public-state removal proof |
+| Analytics #5231 private app paths | +247/-46 across 11 files | Current-schema reconciliation remains one layer |
+| Analytics #5198 private app paths | +2,122/-905 across 72 files | Split eligibility/derived privacy from de-identification/output |
+| Adaptive #5289 kernel | +18,421 across 68 files | Retain the mathematical-kernel import exception |
+| Adaptive #5290 persistence | +10,891/-824 across 63 files | Retain one atomic migration/data-foundation package with generated Prisma reported separately |
+| Adaptive #5291 public API | +45,803/-2,837 across 205 files | Split authoring/calibration administration from participant attempt runtime |
+| Adaptive #5292 public UI | +16,706/-855 across 94 files | Split lecturer authoring UI from participant runtime UI |
+| Adaptive #5293 release evidence | +4,098/-26 across 17 files | Keep one test/release package; private simulation evidence remains in #5289 |
+
+Gate 0 result:
+
+- CH-P1, CF-C1, and TU-C1 retain their approved topology. No base-overlap or
+  archive mismatch blocks local contract work.
+- Analytics and adaptive learning require the topology amendment below before
+  branch creation or extraction. Source branches remain untouched.
+- Proposed private analytics amendment: three sequential stacks—foundation and
+  runtime (`#5199`, then database/runtime, worker/DAG, dry-run equivalence from
+  #5073); correctness and privacy (consent/finalization #5230, reconciliation
+  #5231, eligibility/derived privacy, de-identification/output from #5198);
+  delivery (schema pin/drift, public completion contract and database grants,
+  image/service defaults).
+- Proposed public adaptive amendment: foundation/host stack (contract,
+  persistence, authoring/calibration API, participant runtime API), followed by
+  product/release stack (lecturer UI, participant UI, release validation and
+  cutover). The private three-layer adaptive stack is unchanged.
+
 ## Milestone Order
 
 | Order | Milestone | Entry gate | Exit gate |
@@ -398,12 +460,15 @@ recovery evidence. No plan step attempts to revoke an existing license grant.
 - [x] Planning-stage Sol review completed; verified findings integrated.
 - [x] Grill documentation committed separately from this plan.
 - [x] This plan committed before the next implementation layer.
+- [x] Gate 0 live-state, stack metadata, source size, and archive audit completed.
+- [ ] Gate 0 analytics/adaptive topology amendment approved.
 - [ ] Public and private stack topology created/adopted after Gate 1 approval.
 - [ ] Active stacks executed and verified.
 - [ ] Source PRs retired only through their explicit gates.
 
 ## Next Action
 
-Run Gate 0 against live public, private, and source repositories. Record current
-SHAs, PR topology, checks, substantive sizes, and dirty-state findings; stop
-before any remote or destructive action.
+Obtain approval for the Gate 0 analytics/adaptive topology amendment. Then
+start CH-P1 contract alignment locally and prepare the private PR #2/#3 stack
+for non-mutating topology validation. Stop before any remote or destructive
+action.
