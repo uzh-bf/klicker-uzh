@@ -469,9 +469,13 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   class-only and is covered by those package gates. Focused Playwright could
   not launch locally because the container lacks Chromium's
   `headless_shell-1208` executable; hosted CI remains the browser-runner gate.
-- Next: commit the verified layer-05 package, run the required simplifier and
-  integrated final review, then push and create its draft PR before closing the
-  stack.
+- Review follow-up (2026-08-11): the integrated review found that silent stream
+  interruptions bypassed failed-turn chrome and that source Markdown h5/h6
+  collapsed to one accessible level. Both fixes and their focused contracts are
+  now included in the working layer; the reviewed commit remains
+  `2854f753e` until this follow-up is committed.
+- Next: rerun the package gates and integrated final review on the follow-up,
+  then push and create its draft PR before closing the stack.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,

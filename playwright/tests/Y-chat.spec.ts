@@ -2129,7 +2129,7 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     page,
   }) => {
     await mockChatStream(page, {
-      text: '# Main heading\n\n## Supporting heading\n\n### Detail heading',
+      text: '# Main heading\n\n## Supporting heading\n\n### Detail heading\n\n#### Fourth heading\n\n##### Fifth heading\n\n###### Sixth heading',
     })
     await visitChat(page)
 
@@ -2141,17 +2141,23 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await expect(content.locator('h3')).toContainText('Supporting heading')
     await expect(content.locator('h4')).toContainText('Detail heading')
+    await expect(content.locator('h5')).toContainText('Fourth heading')
+    await expect(content.locator('h6')).toContainText('Fifth heading')
+    await expect(
+      content.locator('[role="heading"][aria-level="7"]')
+    ).toContainText('Sixth heading')
 
     const headingSizes = await content
-      .locator('h2, h3, h4')
+      .locator('h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]')
       .evaluateAll((headings) =>
         headings.map((heading) =>
           Number.parseFloat(getComputedStyle(heading).fontSize)
         )
       )
-    expect(headingSizes).toHaveLength(3)
-    expect(headingSizes[0]).toBeGreaterThan(headingSizes[1])
-    expect(headingSizes[1]).toBeGreaterThan(headingSizes[2])
+    expect(headingSizes).toHaveLength(6)
+    for (let index = 1; index < headingSizes.length; index += 1) {
+      expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+    }
     expect(Math.max(...headingSizes)).toBeLessThan(36)
   })
 
@@ -2216,6 +2222,31 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Partial answer before the failure.')
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
+  })
+
+  test('A silent stream interruption keeps failed-turn actions suppressed', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Partial answer before the connection closed.',
+      omitFinish: true,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Trigger a silent interruption')
+
+    const callout = page.getByTestId('chat-message-error')
+    await expect(callout).toBeVisible({ timeout: 15_000 })
+    await expect(callout).toContainText('Connection interrupted')
+    await expect(callout.getByTestId('chat-retry-message-button')).toBeVisible()
 
     const assistant = page.getByTestId('chat-assistant-message').last()
     await expect(

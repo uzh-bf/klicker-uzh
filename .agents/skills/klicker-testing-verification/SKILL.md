@@ -34,10 +34,11 @@ intermediate state until the test releases it. Use that seam to test the assista
 row while it is still streaming, and capture DOM identity around feedback clicks
 when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
-For message-presentation changes, include a heading-rich answer and a streamed
-failure in the focused browser contract: headings should remain hierarchical and
-proportional, while failed assistant turns should not expose reload, rating, or
-relative-time metadata alongside their dedicated retry callout.
+For message-presentation changes, include a heading-rich answer and both explicit
+and silent streamed failures in the focused browser contract: headings should
+remain hierarchical and proportional, while failed assistant turns should not
+expose reload, rating, or relative-time metadata alongside their dedicated retry
+callout.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 

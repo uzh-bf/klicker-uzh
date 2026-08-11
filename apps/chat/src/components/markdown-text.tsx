@@ -138,12 +138,14 @@ const defaultComponents = memoizeMarkdownComponents({
     />
   ),
   h6: ({ className, ...props }) => (
-    <h6
+    <div
+      {...props}
+      role="heading"
+      aria-level={7}
       className={cn(
         'my-3 text-sm font-semibold text-pretty first:mt-0 last:mb-0',
         className
       )}
-      {...props}
     />
   ),
   p: ({ className, ...props }) => (
