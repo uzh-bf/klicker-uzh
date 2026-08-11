@@ -16,6 +16,7 @@ import {
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import { getOpenAIProviderOptions } from '@/src/lib/server/openaiProviderOptions'
 import {
   mapAssistantStepContent,
   type PersistedAssistantContentPart,
@@ -1206,6 +1207,10 @@ export async function POST(
   const traceId = isAiTelemetryEnabled
     ? await getTraceIdForMessage(assistantMessageId)
     : null
+  const openAIProviderOptions = await getOpenAIProviderOptions({
+    assistantMessageId,
+    owningThreadId: owningThread?.id ?? null,
+  })
 
   const startStream = () =>
     streamText({
@@ -1214,6 +1219,7 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
+          ...openAIProviderOptions,
           ...(selectedModelConfig.supportsReasoning && {
             store: getOpenAIResponsesStore(),
           }),
