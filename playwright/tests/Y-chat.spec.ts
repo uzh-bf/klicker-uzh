@@ -2147,18 +2147,26 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
       content.locator('[role="heading"][aria-level="7"]')
     ).toContainText('Sixth heading')
 
-    const headingSizes = await content
-      .locator('h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]')
-      .evaluateAll((headings) =>
+    const headingSelector =
+      'h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]'
+    const readHeadingSizes = () =>
+      content.locator(headingSelector).evaluateAll((headings) =>
         headings.map((heading) =>
           Number.parseFloat(getComputedStyle(heading).fontSize)
         )
       )
-    expect(headingSizes).toHaveLength(6)
-    for (let index = 1; index < headingSizes.length; index += 1) {
-      expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+    const assertHeadingScale = (headingSizes: number[]) => {
+      expect(headingSizes).toHaveLength(6)
+      for (let index = 1; index < headingSizes.length; index += 1) {
+        expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+      }
+      expect(Math.max(...headingSizes)).toBeLessThan(36)
     }
-    expect(Math.max(...headingSizes)).toBeLessThan(36)
+
+    assertHeadingScale(await readHeadingSizes())
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    assertHeadingScale(await readHeadingSizes())
   })
 
   test('Caption under a streamed answer shows the mode and credit cost', async ({
