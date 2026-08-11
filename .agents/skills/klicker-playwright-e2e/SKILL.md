@@ -66,6 +66,14 @@ pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
 
 Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
 
+For `apps/chat` app-router recovery, authenticate the browser with a seeded
+participant before exercising `/<chatbotId>` routes. A missing chatbot should
+assert the branded segment 404 and its response status; an unexpected route
+failure must be fault-injected only in an uncommitted local proof, restored
+before commit, and asserted against the branded `error.tsx` retry/return
+surface without exposing the server error text. Keep the `/noLogin` assertion
+focused on the login action and concise return copy, not a raw redirect URL.
+
 ## Fast Failure Triage
 
 - `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.

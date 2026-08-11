@@ -20,6 +20,8 @@ import {
 } from '../util/chat.js'
 import { selectOption } from '../util/workflow.js'
 
+const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
+
 /**
  * Chatbot (apps/chat) E2E
  *
@@ -73,6 +75,31 @@ test.describe('Chatbot Authentication & Access Control', () => {
     )
     await expect(page.getByTestId('chat-no-login-link')).toContainText(
       'Go to KlickerUZH Login'
+    )
+    await expect(page.getByTestId('chat-no-login')).not.toContainText(
+      CHATBOT_ID
+    )
+    await expect(page.getByTestId('chat-no-login')).toContainText(
+      'After logging in, you will return to this chatbot.'
+    )
+  })
+
+  test('Unknown chatbot link shows branded not-found recovery', async ({
+    page,
+  }) => {
+    await setParticipantToken(page, await getEnrolledParticipantId())
+
+    const response = await page.goto(`${chatUrl()}/${UNKNOWN_CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    expect(response?.status()).toBe(404)
+    await expect(page.getByTestId('chat-not-found')).toBeVisible()
+    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+      'Chatbot not found'
+    )
+    await expect(page.getByTestId('chat-not-found-home')).toContainText(
+      'Open KlickerUZH'
     )
   })
 

@@ -409,6 +409,23 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   performed through the participant UI, and acceptance returned to the German
   composer. The screenshots are retained under the gitignored
   `project/_local/browser/` evidence directory.
+- Current (2026-08-11): layer 02 branded-error-routing is implemented on
+  `rs/chat-ux-error-states` as the next stack slice. The dynamic layout now
+  distinguishes an absent chatbot row with `notFound()` from unexpected
+  failures; root `app/not-found.tsx` and `app/error.tsx` provide the recovery
+  surfaces because a same-segment error boundary cannot catch its layout.
+  Loading, no-login, locale, wiki, E2E guidance, and the focused unknown-link
+  contract are included in this slice.
+- Verified for layer 02 in the real in-app Browser: the missing-chatbot card
+  renders in German at 1440x900 and in English at 390x844, keeps the branded
+  return action, and omits the unknown UUID from visible copy. A temporary
+  throw in the dynamic layout rendered the English mobile error card with
+  retry/return actions and no raw server error; the throw was removed before
+  commit, and the valid route returned to the authenticated composer.
+- Layer-02 automated verification currently passes chat typecheck, lint with
+  0 errors and the same 5 pre-existing warnings, and 31 files / 231 tests.
+  The focused Playwright journey remains a hosted-CI gate because this
+  container lacks a usable Chromium headless shell.
 - Environment recovery note: the 404s observed during the browser pass were
   caused by a stale Turbopack `.next` route manifest after dependency
   recovery, not by missing source routes. Clearing only generated

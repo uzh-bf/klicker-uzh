@@ -226,13 +226,40 @@ export const Assistant = ({
     return (
       <div
         data-cy="chat-loading"
+        role="status"
+        aria-busy="true"
         className={twMerge(
-          'flex items-center justify-center',
-          embedded ? 'h-full' : 'h-screen'
+          'bg-muted flex items-center justify-center px-4',
+          embedded ? 'h-full' : 'min-h-screen'
         )}
       >
-        <div className={embedded ? 'text-sm' : 'text-lg'}>
-          {t('chat.assistant.loading')}
+        <div
+          className={twMerge(
+            'bg-card flex w-full items-center gap-4 rounded-xl border p-6 shadow-sm',
+            embedded ? 'max-w-xs p-4' : 'max-w-sm'
+          )}
+        >
+          <Image
+            src="/KlickerLogo.png"
+            alt=""
+            width={48}
+            height={48}
+            priority
+            className="size-12 shrink-0 object-contain"
+          />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div
+              aria-hidden="true"
+              className="bg-muted h-3 w-28 animate-pulse rounded-full motion-reduce:animate-none"
+            />
+            <div
+              aria-hidden="true"
+              className="bg-muted h-3 w-full animate-pulse rounded-full motion-reduce:animate-none"
+            />
+            <p className="text-muted-foreground text-sm">
+              {t('chat.assistant.loading')}
+            </p>
+          </div>
         </div>
       </div>
     )
