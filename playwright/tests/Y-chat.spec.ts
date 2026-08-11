@@ -131,13 +131,13 @@ test.describe('Chatbot Disclaimer Flow', () => {
   }) => {
     await visitChat(page)
 
-    const content = page.getByTestId('chat-disclaimer-content')
     const consequences = page.getByTestId('chat-disclaimer-consequences')
     const actions = page.getByTestId('chat-disclaimer-actions')
+    const dialog = page.getByRole('dialog')
 
     await expect(consequences).toBeVisible()
     await expect(actions).toBeVisible()
-    await expect(content.getByRole('button', { name: /^close$/i })).toHaveCount(
+    await expect(dialog.getByRole('button', { name: /^close$/i })).toHaveCount(
       0
     )
     await expect(
@@ -145,6 +145,9 @@ test.describe('Chatbot Disclaimer Flow', () => {
         'xpath=following-sibling::*[@data-cy="chat-disclaimer-actions"]'
       )
     ).toHaveCount(1)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
   })
 
   test('Accepting disclaimer closes modal and enables chat', async ({
