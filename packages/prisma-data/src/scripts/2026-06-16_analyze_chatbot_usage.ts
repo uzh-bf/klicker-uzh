@@ -3,6 +3,13 @@ import { Prisma } from '@klicker-uzh/prisma/client'
 import { open } from 'fs/promises'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
+import {
+  type AggregateScope,
+  aggregateLangfuseObservations,
+  aggregateLiteLLMSpend,
+  incompleteCostResult,
+  reconcileCostLedgers,
+} from './lib/aggregateCostReconciliation.js'
 import type { SheetValue, WorkbookSheet } from './lib/simpleWorkbook.js'
 import {
   formatDate,
@@ -11,6 +18,7 @@ import {
 } from './lib/simpleWorkbook.js'
 
 type CliOptions = {
+  gatewayCost: boolean
   all: boolean
   query?: string
   chatbotId?: string
@@ -578,6 +586,7 @@ function usage() {
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --chatbotId <uuid>',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --courseId <uuid>',
     '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --query MAT183',
+    '  pnpm --filter @klicker-uzh/prisma-data script:prod src/scripts/2026-06-16_analyze_chatbot_usage.ts --gateway-cost --from 2026-08-01 --to 2026-08-08',
     '',
     'Options:',
     '  --all                      Analyze all chatbots with activity in the date window.',
@@ -593,6 +602,7 @@ function usage() {
     '  --minTopicMessages <n>      Minimum user messages for topic labels. Default: 5.',
     '  --minTopicParticipants <n>  Minimum participants for topic labels. Default: 3.',
     '  --includeMessageContent     Write full raw message content JSONL and include workbook previews.',
+    '  --gateway-cost              Read aggregate Langfuse/LiteLLM cost evidence and print JSON. Requires --from and --to as a UTC half-open window.',
   ].join('\n')
 }
 
@@ -627,6 +637,7 @@ function validateArgs(args: string[]) {
     '--minTopicMessages',
     '--minTopicParticipants',
     '--includeMessageContent',
+    '--gateway-cost',
   ])
 
   for (const arg of args) {
@@ -739,12 +750,45 @@ function parseArgs(): CliOptions {
   const query = getArgValue(args, '--query') ?? getArgValue(args, '--course')
   const chatbotId = getArgValue(args, '--chatbotId')
   const courseId = getArgValue(args, '--courseId')
+  const gatewayCost = hasFlag(args, '--gateway-cost')
   const selectors = [
     all ? 'all' : undefined,
     query,
     chatbotId,
     courseId,
   ].filter(Boolean)
+
+  if (gatewayCost) {
+    if (selectors.length > 0) {
+      throw new Error(
+        '--gateway-cost cannot be combined with a chatbot selector.'
+      )
+    }
+
+    const from = parseDate(getArgValue(args, '--from'))
+    const to = parseDate(getArgValue(args, '--to'))
+    if (!from || !to) {
+      throw new Error('--gateway-cost requires --from and --to.')
+    }
+    if (from.getTime() >= to.getTime()) {
+      throw new Error('Gateway cost window must have --from before --to.')
+    }
+
+    return {
+      gatewayCost: true,
+      all: false,
+      scopeLabel: 'gateway_cost',
+      semester: 'gateway_cost',
+      from,
+      to,
+      outDir: resolve(repoRoot, 'output'),
+      filePrefix: 'gateway_cost',
+      minTopicMessages: 5,
+      minTopicParticipants: 3,
+      includeMessageContent: false,
+    }
+  }
+
   if (selectors.length === 0) {
     throw new Error(
       'Pass one selector: --all, --chatbotId, --courseId, or --query. No course is selected by default.'
@@ -784,6 +828,7 @@ function parseArgs(): CliOptions {
     `${todayPrefix}_chatbot_usage_analytics_${sanitizeFilename(windowLabel)}_${scope}`
 
   return {
+    gatewayCost: false,
     all,
     query,
     chatbotId,
@@ -1029,6 +1074,183 @@ function parseCostAnalysisConfig(): CostAnalysisConfig {
       'CHATBOT_ANALYSIS_CALIBRATED_TOTAL_COST'
     ),
     modelCostMultipliers: parseModelCostMultipliers(),
+  }
+}
+
+const GATEWAY_COST_PAGE_SIZE = 100
+const GATEWAY_COST_MAX_PAGES = 1000
+
+function requiredEnvironment(name: string) {
+  const value = process.env[name]?.trim()
+  if (!value) throw new Error(`${name} is required for --gateway-cost.`)
+  return value
+}
+
+function costSourceBaseUrl(...names: string[]) {
+  const value = names.map((name) => process.env[name]?.trim()).find(Boolean)
+  if (!value) {
+    throw new Error(`${names.join(' or ')} is required for --gateway-cost.`)
+  }
+
+  const url = new URL(value).toString().replace(/\/$/, '')
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  throw new Error('Cost source URLs must use HTTP or HTTPS.')
+}
+
+async function requestCostJson(url: string, headers: Record<string, string>) {
+  let response: Response
+  try {
+    response = await fetch(url, { headers })
+  } catch {
+    throw new Error('A cost source is unreachable.')
+  }
+
+  if (!response.ok) {
+    throw new Error(`A cost source returned HTTP ${response.status}.`)
+  }
+
+  try {
+    return (await response.json()) as unknown
+  } catch {
+    throw new Error('A cost source returned invalid JSON.')
+  }
+}
+
+function responseRows(payload: unknown, label: string) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error(`${label} response must be an object.`)
+  }
+
+  const data = (payload as { data?: unknown }).data
+  if (!Array.isArray(data)) {
+    throw new Error(`${label} response data must be an array.`)
+  }
+  return data
+}
+
+function listRows(payload: unknown, label: string) {
+  if (Array.isArray(payload)) return payload
+  return responseRows(payload, label)
+}
+
+async function loadLangfuseCostRows(
+  scope: AggregateScope,
+  host: string,
+  authorization: string
+) {
+  const rows: unknown[] = []
+
+  for (let page = 1; page <= GATEWAY_COST_MAX_PAGES; page += 1) {
+    const params = new URLSearchParams({
+      type: 'GENERATION',
+      environment: scope.environment,
+      fromStartTime: scope.from,
+      toStartTime: scope.to,
+      limit: String(GATEWAY_COST_PAGE_SIZE),
+      page: String(page),
+    })
+    const payload = await requestCostJson(
+      `${host}/api/public/observations?${params.toString()}`,
+      { Authorization: authorization }
+    )
+    const pageRows = responseRows(payload, 'Langfuse observations')
+    rows.push(...pageRows)
+
+    const meta =
+      payload && typeof payload === 'object' && !Array.isArray(payload)
+        ? (payload as { meta?: unknown }).meta
+        : undefined
+    const totalPages =
+      meta && typeof meta === 'object' && !Array.isArray(meta)
+        ? Number((meta as { totalPages?: unknown }).totalPages)
+        : Number.NaN
+
+    if (
+      pageRows.length < GATEWAY_COST_PAGE_SIZE ||
+      (Number.isInteger(totalPages) && page >= totalPages)
+    ) {
+      return rows
+    }
+  }
+
+  throw new Error('Langfuse cost evidence exceeded the page safety limit.')
+}
+
+async function loadLiteLLMCostRows(
+  scope: AggregateScope,
+  host: string,
+  authorization: string
+) {
+  const params = new URLSearchParams({
+    start_date: scope.from.slice(0, 10),
+    end_date: scope.to.slice(0, 10),
+    summarize: 'false',
+  })
+  const payload = await requestCostJson(
+    `${host}/spend/logs?${params.toString()}`,
+    { Authorization: authorization }
+  )
+  return listRows(payload, 'LiteLLM spend')
+}
+
+async function runGatewayCostReport(options: CliOptions) {
+  const scope: AggregateScope = {
+    from: options.from.toISOString(),
+    to: options.to.toISOString(),
+    environment: requiredEnvironment('LANGFUSE_TRACING_ENVIRONMENT'),
+    teamId: requiredEnvironment('LITELLM_TEAM_ID'),
+  }
+  const langfuseHost = costSourceBaseUrl('LANGFUSE_HOST', 'LANGFUSE_BASE_URL')
+  const litellmHost = costSourceBaseUrl('LITELLM_BASE_URL')
+  const langfusePublicKey = requiredEnvironment('LANGFUSE_PUBLIC_KEY')
+  const langfuseSecretKey = requiredEnvironment('LANGFUSE_SECRET_KEY')
+  const litellmApiKey = requiredEnvironment('LITELLM_API_KEY')
+  const langfuseAuthorization = `Basic ${Buffer.from(
+    `${langfusePublicKey}:${langfuseSecretKey}`
+  ).toString('base64')}`
+
+  const [langfuseRows, litellmRows] = await Promise.all([
+    loadLangfuseCostRows(scope, langfuseHost, langfuseAuthorization),
+    loadLiteLLMCostRows(scope, litellmHost, `Bearer ${litellmApiKey}`),
+  ])
+
+  try {
+    const result = reconcileCostLedgers(
+      aggregateLangfuseObservations(langfuseRows, scope),
+      aggregateLiteLLMSpend(litellmRows, scope),
+      {
+        absoluteTolerance: Number(
+          process.env.GATEWAY_COST_ABSOLUTE_TOLERANCE_USD ?? '0.000001'
+        ),
+        relativeTolerance: Number(
+          process.env.GATEWAY_COST_RELATIVE_TOLERANCE ?? '0.001'
+        ),
+      }
+    )
+
+    return {
+      ...result,
+      scope: {
+        from: scope.from,
+        to: scope.to,
+        environment: scope.environment,
+        teamScope: 'configured LiteLLM team',
+      },
+      countGrain: 'positive-cost generations',
+      cacheAccounting: 'mutually exclusive input buckets required',
+    }
+  } catch (error) {
+    return {
+      ...incompleteCostResult(error),
+      scope: {
+        from: scope.from,
+        to: scope.to,
+        environment: scope.environment,
+        teamScope: 'configured LiteLLM team',
+      },
+      countGrain: 'positive-cost generations',
+      cacheAccounting: 'mutually exclusive input buckets required',
+    }
   }
 }
 
@@ -3192,6 +3414,15 @@ async function writeMessageContentJsonl(
 
 async function main() {
   const options = parseArgs()
+  if (options.gatewayCost) {
+    const result = await runGatewayCostReport(options)
+    console.log(JSON.stringify(result, null, 2))
+    if (result.status !== 'reconciled') {
+      process.exitCode = result.status === 'incomplete' ? 2 : 1
+    }
+    return
+  }
+
   const modelRegistry = parseModelRegistry()
   const costConfig = parseCostAnalysisConfig()
   const chatbots = await loadChatbots(options)
