@@ -2,8 +2,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import { extractModeDescriptions, hasModeOption } from '../lib/config/modes'
-import { DEFAULT_PROMPT } from '../lib/config/prompts'
+import {
+  resolveModeDescriptions,
+  resolveSelectedMode,
+} from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -147,15 +149,12 @@ export const useSettingsStore = create<SettingsState>()(
               'No valid mode options found, falling back to defaults.'
             )
             set((state) => ({
-              modeOptions: Object.fromEntries(
-                Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                  key,
-                  (value as { description: string }).description,
-                ])
-              ),
+              modeOptions: resolveModeDescriptions(null),
               modeOptionsChatbotId: chatbotId,
-              selectedMode:
-                Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
+              selectedMode: resolveSelectedMode(
+                resolveModeDescriptions(null),
+                state.selectedMode
+              ),
               modelSelectionEnabled: false,
             }))
             return
@@ -163,29 +162,19 @@ export const useSettingsStore = create<SettingsState>()(
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const modes = extractModeDescriptions(responseData.systemPrompts)
-
-          const resolvedModeOptions: Record<string, string> =
-            Object.keys(modes).length > 0
-              ? modes
-              : Object.fromEntries(
-                  Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                    key,
-                    (value as { description: string }).description,
-                  ])
-                )
+          const resolvedModeOptions = resolveModeDescriptions(
+            responseData.systemPrompts
+          )
 
           set((state) => {
-            let selectedMode = state.selectedMode
-            if (!hasModeOption(resolvedModeOptions, selectedMode)) {
-              selectedMode = Object.keys(resolvedModeOptions)[0] ?? selectedMode
-            }
-
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
               modelSelectionEnabled,
-              selectedMode,
+              selectedMode: resolveSelectedMode(
+                resolvedModeOptions,
+                state.selectedMode
+              ),
             }
           })
         } catch (error) {
@@ -193,14 +182,12 @@ export const useSettingsStore = create<SettingsState>()(
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
           set((state) => ({
-            modeOptions: Object.fromEntries(
-              Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
-                key,
-                (value as { description: string }).description,
-              ])
-            ),
+            modeOptions: resolveModeDescriptions(null),
             modeOptionsChatbotId: chatbotId,
-            selectedMode: Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
+            selectedMode: resolveSelectedMode(
+              resolveModeDescriptions(null),
+              state.selectedMode
+            ),
             modelSelectionEnabled: false,
           }))
         }

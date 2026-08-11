@@ -464,10 +464,17 @@ test.describe('Chatbot Messaging Interface', () => {
 
     const input = page.getByTestId('chat-composer-input')
     const starter = await input.inputValue()
+    expect(starter.length).toBeGreaterThan(0)
     expect(starter).not.toMatch(/\[[^\]]+\]/)
+    await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
     await input.fill('My own question about a specific topic')
     await expect(input).toHaveValue('My own question about a specific topic')
     await expect(page.getByTestId('chat-send-button')).toBeEnabled()
+
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'My own question about a specific topic'
+    )
   })
 
   test('Composer input is visible and accepts text', async ({ page }) => {

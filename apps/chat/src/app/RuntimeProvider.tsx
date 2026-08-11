@@ -16,14 +16,17 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+import { resolveSelectedMode } from '../lib/config/modes'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 export function RuntimeProvider({
   chatbotId,
+  initialModeOptions,
   children,
 }: Readonly<{
   chatbotId: string
+  initialModeOptions: Record<string, string>
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
@@ -46,6 +49,10 @@ export function RuntimeProvider({
   const resetSession = useChatStore((state) => state.resetSession)
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const loadedModeOptions = useSettingsStore((state) => state.modeOptions)
+  const modeOptionsChatbotId = useSettingsStore(
+    (state) => state.modeOptionsChatbotId
+  )
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
   )
@@ -53,6 +60,15 @@ export function RuntimeProvider({
     (state) =>
       state.modelOptions.find((model) => model.id === selectedModel)
         ?.supportsImageAttachments !== false
+  )
+  const activeModeOptions =
+    modeOptionsChatbotId === chatbotId &&
+    Object.keys(loadedModeOptions).length > 0
+      ? loadedModeOptions
+      : initialModeOptions
+  const effectiveSelectedMode = resolveSelectedMode(
+    activeModeOptions,
+    selectedMode
   )
   const loadCredits = useSettingsStore((state) => state.loadCredits)
   const loadModeOptions = useSettingsStore((state) => state.loadModeOptions)
@@ -229,14 +245,15 @@ export function RuntimeProvider({
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(
     selectedModel,
-    selectedMode,
+    effectiveSelectedMode,
     selectedReasoningEffort
   )
 
   // init thread management hooks
   const { onNew, onEdit, onReload, onCancel } = useThreadManagement(
     generateChatResponse,
-    abortControllerRef
+    abortControllerRef,
+    effectiveSelectedMode
   )
 
   const convertMessage = useCallback(

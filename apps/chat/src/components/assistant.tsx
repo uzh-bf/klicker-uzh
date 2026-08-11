@@ -117,7 +117,10 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
   return (
     <>
       <ChatUiProvider>
-        <RuntimeProvider chatbotId={chatbot.id}>
+        <RuntimeProvider
+          chatbotId={chatbot.id}
+          initialModeOptions={initialModeOptions}
+        >
           <AssistantLayout
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}

@@ -75,7 +75,10 @@ describe('settingsStore mode loading', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          systemPrompts: { custom: { description: '' } },
+          systemPrompts: {
+            tutor: { description: 'Tutor mode' },
+            custom: { description: '' },
+          },
         }),
       })
     )
@@ -83,6 +86,9 @@ describe('settingsStore mode loading', () => {
     await useSettingsStore.getState().loadModeOptions('chatbot-1')
 
     expect(useSettingsStore.getState().selectedMode).toBe('custom')
-    expect(useSettingsStore.getState().modeOptions).toEqual({ custom: '' })
+    expect(useSettingsStore.getState().modeOptions).toEqual({
+      tutor: 'Tutor mode',
+      custom: '',
+    })
   })
 })

@@ -65,8 +65,8 @@ import { Button } from '@uzh-bf/design-system'
 import {
   formatModeLabel,
   getModeDescription,
-  hasModeOption,
   isKnownMode,
+  resolveSelectedMode,
 } from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
 import { getThreadSuggestions } from '../lib/config/suggestions'
@@ -391,9 +391,7 @@ const ThreadWelcome: FC<{
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
-  const activeMode = hasModeOption(modeOptions, selectedMode)
-    ? selectedMode
-    : Object.keys(modeOptions)[0]
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
     ? getModeDescription(t, activeMode, modeOptions)
@@ -466,9 +464,7 @@ const ThreadWelcomeSuggestions: FC<{
 
   if (Object.keys(modeOptions).length === 0) return null
 
-  const activeMode = hasModeOption(modeOptions, selectedMode)
-    ? selectedMode
-    : Object.keys(modeOptions)[0]
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const suggestions = getThreadSuggestions(activeMode)
 
   return (

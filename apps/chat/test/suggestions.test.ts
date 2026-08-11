@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { extractModeDescriptions } from '../src/lib/config/modes'
+import {
+  extractModeDescriptions,
+  resolveModeDescriptions,
+  resolveSelectedMode,
+} from '../src/lib/config/modes'
 import { getThreadSuggestions } from '../src/lib/config/suggestions'
 
 describe('thread suggestions', () => {
@@ -44,5 +48,17 @@ describe('thread suggestions', () => {
       explainer: 'Explainer description',
       invalid: '',
     })
+  })
+
+  test('uses the tutor fallback when a chatbot has no mode descriptions', () => {
+    expect(resolveModeDescriptions(null)).toEqual({
+      tutor: 'Acts as a patient and knowledgeable tutor.',
+    })
+  })
+
+  test('resolves a selected mode by key even when its description is empty', () => {
+    expect(
+      resolveSelectedMode({ tutor: 'Tutor mode', custom: '' }, 'custom')
+    ).toBe('custom')
   })
 })

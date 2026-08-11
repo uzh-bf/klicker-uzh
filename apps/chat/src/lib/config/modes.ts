@@ -5,6 +5,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
+import { DEFAULT_MODE_DESCRIPTIONS } from './mode-descriptions'
 
 // Presentation metadata for the chatbot mode keys exposed via `systemPrompts`.
 // Modes are configured per chatbot, so only the well-known keys get a dedicated
@@ -54,6 +55,24 @@ export function extractModeDescriptions(
       ]
     })
   )
+}
+
+export function resolveModeDescriptions(
+  systemPrompts: unknown
+): Record<string, string> {
+  const descriptions = extractModeDescriptions(systemPrompts)
+  return Object.keys(descriptions).length > 0
+    ? descriptions
+    : { ...DEFAULT_MODE_DESCRIPTIONS }
+}
+
+export function resolveSelectedMode(
+  modeOptions: Record<string, string>,
+  selectedMode: string
+): string {
+  return hasModeOption(modeOptions, selectedMode)
+    ? selectedMode
+    : (Object.keys(modeOptions)[0] ?? selectedMode)
 }
 
 export function getModeDescription(
