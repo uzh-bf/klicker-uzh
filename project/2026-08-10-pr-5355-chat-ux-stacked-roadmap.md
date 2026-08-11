@@ -483,9 +483,12 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   `headless_shell-1208` is absent; hosted CI remains the browser-runner gate.
   The configured simplifier could not authenticate because its Claude OAuth
   token expired, so no simplifier finding is inferred.
-- Next: run the production build and integrated final review on
-  `ebcac875..c69a38cff`, record closure, then push and create the layer-05 draft
-  PR before closing the stack.
+- Hosted CI for [PR #5363](https://github.com/uzh-bf/klicker-uzh/pull/5363)
+  passed its active checks: TypeScript, gitleaks, syncpack, CodeQL, Greptile,
+  and the related package status checks. The stack workflow skipped the chat
+  test and image-build jobs.
+- Next: keep all five PRs in draft for layer-by-layer human review. No ready,
+  merge, or deployment action has been taken.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
