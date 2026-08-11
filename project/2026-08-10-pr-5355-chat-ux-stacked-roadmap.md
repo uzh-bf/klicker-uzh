@@ -380,25 +380,28 @@ evidence; they do not receive redundant implementation-coupled unit tests.
 
 ### Progress
 
-- Current: layer 01 consent-gate implementation and visual verification are
-  complete locally on `rs/chat-ux-audit`; the reviewed roadmap is carried in
-  this same layer. The commit/publish boundary is still blocked by sandboxed
-  worktree Git metadata writes.
-- Verified: GitHub stack capability is enabled; PR #5355 is open and draft;
-  the local branch is clean before this roadmap edit and contains the corrected
-  F24 finding one commit ahead of its remote.
+- Current (2026-08-11): layer 01 consent-gate implementation and visual
+  verification are committed locally on `rs/chat-ux-audit`; the reviewed
+  roadmap is carried in this same layer. The branch is rebased onto current
+  `origin/v3` (`0d7b4e461`) and is ready for stack-aware publication. PR #5355
+  is still draft, but its forge head is the old docs-only revision and needs a
+  stack-aware force-with-lease update after the native stack is initialized.
+- Verified: GitHub stack capability is enabled; `gh stack view --json` reports
+  that the bottom branch is not yet part of a local stack. The exact
+  container's full `check:all` gate passed with 24/24 tasks after the layer-01
+  commits; chat typecheck and lint passed with 0 errors and 5 pre-existing
+  warnings. The focused Playwright journey still reaches the runner but cannot
+  launch because Chromium is not installed in the container.
 - Planning-stage review: `DONE_WITH_CONCERNS`; all verified findings listed in
   Plan identity were accepted into this revision. No unresolved planning-stage
   finding remains.
-- Verified for layer 01: chat tests (231 passed), isolated chat TypeScript,
-  and chat lint (0 errors, 5 pre-existing warnings) pass in the exact
-  container. The focused Playwright journey reaches the runner but cannot
-  launch because the container still lacks Playwright's Chromium headless
-  executable after the normal install attempt. The real in-app Browser shows
-  the modal at 390x844 and 1280x720 with consequence-first ordering, visible
-  Decline/Accept actions, no close button, and Escape leaving the gate open.
-- Next: obtain host-side staging/commit access, then run the required review
-  gates and publish layer 01 before creating and executing layers 02–05.
+- Verified for layer 01: the real in-app Browser shows the modal at 390x844 and
+  1280x720 with consequence-first ordering, visible Decline/Accept actions, no
+  close button, and Escape leaving the gate open. The fixture was restored
+  after Playwright global setup removed the chatbot row; the route now reaches
+  the unauthenticated 307 login redirect rather than the prior 404.
+- Next: initialize the five-branch native stack, update and publish draft PR
+  #5355, then create and execute layers 02–05 bottom-up.
 
 ### Autonomous goal prompt
 
