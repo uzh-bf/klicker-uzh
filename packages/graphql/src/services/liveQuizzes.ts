@@ -47,6 +47,7 @@ import {
   lockCourseLiveQuizResponseCollectionSettings,
   lockLiveQuizResponseCollectionState,
 } from './liveQuizResponseCollection.js'
+import { buildLiveQuizSelectionResponseMetadata } from './liveQuizResponseCacheMetadata.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -1277,15 +1278,16 @@ export async function activateLiveQuizBlock(
       }
 
       case DB.ElementType.SELECTION: {
-        const selectionAnswerIds = JSON.stringify(
-          elementData.options.answerCollection?.entries.map(
-            (entry) => entry.id
-          ) ?? elementData.options.answerCollectionSolutionIds
-        )
+        const { selectionAnswerIds, solutions } =
+          buildLiveQuizSelectionResponseMetadata({
+            answerCollectionEntries:
+              elementData.options.answerCollection?.entries,
+            solutionIds: elementData.options.answerCollectionSolutionIds,
+          })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           selectionAnswerIds,
-          solutions: selectionAnswerIds,
+          solutions,
           numberOfInputs: elementData.options.numberOfInputs,
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
