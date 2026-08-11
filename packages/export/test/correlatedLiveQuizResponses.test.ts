@@ -137,6 +137,25 @@ describe('createCorrelatedLiveQuizResponseCsv', () => {
     expect(result.csv).not.toContain('private-marker')
   })
 
+  it('does not let sibling response fields override structured choices', () => {
+    const result = createCorrelatedLiveQuizResponseCsv({
+      quizName: 'Quiz',
+      questions,
+      responses: [
+        {
+          ...responses[1]!,
+          response: {
+            choices: [{ ix: 0, selected: true }],
+            value: 'private-marker',
+          },
+        },
+      ],
+    })
+
+    expect(result.csv).toContain('"[{""ix"":0,""selected"":true}]"')
+    expect(result.csv).not.toContain('private-marker')
+  })
+
   it('does not expose source identifiers, hashes, types, or timestamps', () => {
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Quiz',

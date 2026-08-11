@@ -13,4 +13,17 @@ describe('validateStudentResponse', () => {
 
     expect(result.valid).toBe(false)
   })
+
+  it('rejects unexpected fields in the response envelope', () => {
+    const result = validateStudentResponse({
+      type: 'SC',
+      instanceInfo: { choiceCount: '1' },
+      response: {
+        choices: [{ ix: 0, selected: true }],
+        value: 'private-marker',
+      },
+    })
+
+    expect(result.valid).toBe(false)
+  })
 })

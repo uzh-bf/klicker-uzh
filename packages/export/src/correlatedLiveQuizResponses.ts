@@ -40,13 +40,6 @@ function encodeResponse(response: unknown): string {
     return response == null ? '' : String(response)
   }
 
-  if ('value' in response) {
-    const value = response.value
-    return value == null ? '' : String(value)
-  }
-  if ('viewed' in response) {
-    return String(response.viewed)
-  }
   if ('choices' in response) {
     const choices = Array.isArray(response.choices)
       ? response.choices.map((choice) => {
@@ -71,6 +64,13 @@ function encodeResponse(response: unknown): string {
   }
   if ('assessment' in response) {
     return JSON.stringify(canonicalize(response.assessment))
+  }
+  if ('viewed' in response) {
+    return String(response.viewed)
+  }
+  if ('value' in response) {
+    const value = response.value
+    return value == null ? '' : String(value)
   }
 
   return JSON.stringify(canonicalize(response))

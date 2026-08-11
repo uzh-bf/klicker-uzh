@@ -200,30 +200,41 @@ export async function loginTemporaryParticipant(
 
   const temporaryParticipantId = uuidv4()
 
-  // Keep the temporary leaderboard row for the existing UX while assigning the
-  // same quiz-scoped identity to the durable response model.
-  await ctx.prisma.$transaction([
-    ctx.prisma.temporaryLeaderboardEntry.create({
-      data: {
-        id: temporaryParticipantId,
-        username: pseudonym.trim(),
-        avatar: avatar ?? undefined,
-        score: 0,
-        quiz: {
-          connect: { id: liveQuizId },
+  const temporaryLeaderboardEntryData = {
+    id: temporaryParticipantId,
+    username: pseudonym.trim(),
+    avatar: avatar ?? undefined,
+    score: 0,
+    quiz: {
+      connect: { id: liveQuizId },
+    },
+  }
+
+  if (
+    liveQuiz.responseCollectionMode ===
+    DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    // Keep the temporary leaderboard row for the existing UX while assigning
+    // the same quiz-scoped identity to the durable response model.
+    await ctx.prisma.$transaction([
+      ctx.prisma.temporaryLeaderboardEntry.create({
+        data: temporaryLeaderboardEntryData,
+      }),
+      ctx.prisma.liveQuizRespondent.create({
+        data: {
+          id: temporaryParticipantId,
+          type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+          liveQuiz: {
+            connect: { id: liveQuizId },
+          },
         },
-      },
-    }),
-    ctx.prisma.liveQuizRespondent.create({
-      data: {
-        id: temporaryParticipantId,
-        type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-        liveQuiz: {
-          connect: { id: liveQuizId },
-        },
-      },
-    }),
-  ])
+      }),
+    ])
+  } else {
+    await ctx.prisma.temporaryLeaderboardEntry.create({
+      data: temporaryLeaderboardEntryData,
+    })
+  }
 
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(

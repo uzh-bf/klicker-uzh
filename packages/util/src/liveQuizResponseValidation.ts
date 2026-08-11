@@ -88,6 +88,7 @@ export function validateStudentResponse({
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     const choiceCount = parsePositiveInteger(instanceInfo?.choiceCount)
     if (
+      !hasExactKeys(response, ['choices']) ||
       !Array.isArray(response.choices) ||
       response.choices.length === 0 ||
       (choiceCount !== null && response.choices.length !== choiceCount) ||
@@ -147,6 +148,7 @@ export function validateStudentResponse({
         ? Number(response.value.trim())
         : Number.NaN
     if (
+      !hasExactKeys(response, ['value']) ||
       typeof response.value !== 'string' ||
       !Number.isFinite(parsedResponse)
     ) {
@@ -175,7 +177,11 @@ export function validateStudentResponse({
   }
 
   if (type === 'FREE_TEXT') {
-    if (!response.value || typeof response.value !== 'string') {
+    if (
+      !hasExactKeys(response, ['value']) ||
+      !response.value ||
+      typeof response.value !== 'string'
+    ) {
       return {
         valid: false,
         message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
@@ -202,6 +208,7 @@ export function validateStudentResponse({
     const numberOfInputs = parsePositiveInteger(instanceInfo?.numberOfInputs)
     const answerIds = parseNumberArray(instanceInfo?.selectionAnswerIds)
     if (
+      !hasExactKeys(response, ['selection']) ||
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
       (numberOfInputs !== null &&
@@ -237,6 +244,7 @@ export function validateStudentResponse({
       instanceInfo?.caseStudyResponseShape
     )
     if (
+      !hasExactKeys(response, ['assessment']) ||
       !isRecord(response.assessment) ||
       Object.keys(response.assessment).length === 0 ||
       !Object.values(response.assessment).every(
@@ -298,7 +306,7 @@ export function validateStudentResponse({
   }
 
   if (type === 'CONTENT') {
-    if (response.viewed !== true) {
+    if (!hasExactKeys(response, ['viewed']) || response.viewed !== true) {
       return {
         valid: false,
         message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
