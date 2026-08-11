@@ -101,6 +101,43 @@ describe('standard live quiz response handlers', () => {
     })
   })
 
+  it('rejects malformed restrictions before creating a pending response', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const token = await createLiveQuizRespondentToken({
+      respondentId: '33333333-3333-4333-8333-333333333333',
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+    let pushed = false
+
+    const result = await handleCorrelatedResponse({
+      request: {
+        ...request,
+        cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${token}`,
+      },
+      instanceInfo: {
+        type: 'NUMERICAL',
+        blockExecution: '3',
+        sessionBlockId: '7',
+        restrictions: '{not-json',
+      },
+      responseCollectionMode: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      database: {} as any,
+      getIdentityConfig: () => ({ secret, issuer }),
+      pushEvent: async () => {
+        pushed = true
+      },
+    })
+
+    assert.deepEqual(result, {
+      status: 400,
+      body: { error: 'Invalid correlated response metadata' },
+    })
+    assert.equal(pushed, false)
+  })
+
   it('registers and publishes only an outbox id for correlated responses', async () => {
     const secret = 'test-secret'
     const issuer = 'https://api.test'
