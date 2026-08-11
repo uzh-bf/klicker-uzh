@@ -1278,7 +1278,9 @@ export async function activateLiveQuizBlock(
 
       case DB.ElementType.SELECTION: {
         const selectionAnswerIds = JSON.stringify(
-          elementData.options.answerCollectionSolutionIds
+          elementData.options.answerCollection?.entries.map(
+            (entry) => entry.id
+          ) ?? elementData.options.answerCollectionSolutionIds
         )
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,

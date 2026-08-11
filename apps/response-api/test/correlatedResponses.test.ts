@@ -87,7 +87,8 @@ describe('correlated response request safeguards', () => {
       blockStartedAt: '1754000000000',
       responseCollectionMode: 'CORRELATED_EXPORT',
       numberOfInputs: '2',
-      solutions: '[11,12]',
+      selectionAnswerIds: '[11,12]',
+      solutions: '[11]',
     }
 
     const loaded = await loadLiveQuizResponseInstance({
@@ -121,10 +122,10 @@ describe('correlated response request safeguards', () => {
       defaultPoints: '10',
       maxBonusPoints: '45',
       pointsMultiplier: '1',
-      solutions: '[11,12]',
+      selectionAnswerIds: '[11,12]',
+      solutions: '[11]',
       timeToZeroBonus: '20',
       numberOfInputs: '2',
-      selectionAnswerIds: '[11,12]',
     })
 
     const caseStudyInfo = adaptLiveQuizResponseInstanceInfo({
