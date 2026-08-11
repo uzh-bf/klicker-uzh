@@ -1,4 +1,4 @@
-import { type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export type ActivityActionType =
   | 'LIVE_QUIZ'
@@ -30,43 +30,22 @@ async function findVisibleByTestId(
   throw new Error(`No visible element found for data-cy="${testId}"`)
 }
 
+function openMenuItemByTestId(page: Page, testId: string) {
+  return page
+    .locator('[data-slot="dropdown-menu-content"][data-state="open"]')
+    .getByTestId(testId)
+    .first()
+}
+
 export async function clickVisibleByTestId(
   page: Page,
   testId: string,
   timeout = 15_000
 ) {
-  const startedAt = Date.now()
-  const locator = page.getByTestId(testId)
-  let lastClickError: unknown
-
-  while (Date.now() - startedAt < timeout) {
-    const count = await locator.count()
-
-    for (let ix = 0; ix < count; ix++) {
-      const candidate = locator.nth(ix)
-      if (!(await candidate.isVisible().catch(() => false))) continue
-
-      await candidate.scrollIntoViewIfNeeded().catch(() => undefined)
-      const remaining = timeout - (Date.now() - startedAt)
-
-      try {
-        await candidate.click({
-          timeout: Math.max(1, Math.min(1_000, remaining)),
-        })
-        return
-      } catch (error) {
-        lastClickError = error
-        // A closing menu portal can remain visible while intercepting clicks.
-        // Try another matching item or wait for the active portal to settle.
-      }
-    }
-
-    await page.waitForTimeout(100)
-  }
-
-  throw new Error(`No clickable element found for data-cy="${testId}"`, {
-    cause: lastClickError,
-  })
+  const locator = openMenuItemByTestId(page, testId)
+  await locator.waitFor({ state: 'visible', timeout })
+  await locator.scrollIntoViewIfNeeded().catch(() => undefined)
+  await locator.click({ timeout })
 }
 
 export async function openActivityActionMenu(
@@ -112,15 +91,26 @@ export async function openActionMenuByTestId(
   expectedActionTestId?: string
 ) {
   const trigger = await findVisibleByTestId(page, triggerTestId)
+  const expectedAction = expectedActionTestId
+    ? openMenuItemByTestId(page, expectedActionTestId)
+    : undefined
 
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
-    await trigger.scrollIntoViewIfNeeded().catch(() => undefined)
-    await trigger.click()
+  if (expectedAction && (await expectedAction.isVisible().catch(() => false)))
+    return
+
+  if ((await trigger.getAttribute('aria-expanded')) === 'true') {
+    if (!expectedAction) return
+
+    // An action from a closing Radix portal can still be visible. Close that
+    // menu fully before opening a fresh menu with actionable items.
+    await page.keyboard.press('Escape')
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   }
 
-  if (expectedActionTestId) {
-    await findVisibleByTestId(page, expectedActionTestId)
-  }
+  await trigger.scrollIntoViewIfNeeded().catch(() => undefined)
+  await trigger.click()
+
+  if (expectedAction) await expectedAction.waitFor({ state: 'visible' })
 }
 
 export async function chooseActionByTestId(
