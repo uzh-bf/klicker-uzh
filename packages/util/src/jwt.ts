@@ -49,6 +49,7 @@ export async function verifyJWT(
     algorithms?: 'HS256'[]
     clockTolerance?: string | number
     issuer?: string
+    logError?: boolean
   } = {}
 ): Promise<JWTPayload> {
   try {
@@ -59,7 +60,9 @@ export async function verifyJWT(
     })
     return payload as JWTPayload
   } catch (error) {
-    console.error('JWT verification failed:', error)
+    if (opts.logError !== false) {
+      console.error('JWT verification failed:', error)
+    }
     throw new Error('Invalid token')
   }
 }
