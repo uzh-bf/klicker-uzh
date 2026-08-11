@@ -1,6 +1,6 @@
 # PR #5348 — Biome Tier 1 ratchet
 
-Status: IN PROGRESS — widened from the noBlankTarget slice
+Status: IN PROGRESS — post-CI regression fixes pending exact-head verification
 Date: 2026-08-09
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
@@ -256,8 +256,8 @@ is unavailable.
 
 | Risk surface | Current evidence | Obligation or gap |
 | --- | --- | --- |
-| Hook lifecycle and callback identity | Shared-components, PWA, and manage TypeScript checks; integrated review | Browser smoke test for username validation when the DevPod route is usable; the shared-components package has no test harness. |
-| Mutable Formik rows and repeated display values | Full `check:all`; occurrence-aware factories and client-only IDs reviewed in the integrated gate | No new unit test harness added; preserve the existing package and browser checks as the regression boundary. |
+| Hook lifecycle and callback identity | Shared-components, PWA, and manage TypeScript checks; Sol review; CI run 31409848476 isolated a render-loop regression | Exact-head CI must confirm the callback-identity fix; the local DevPod browser route remains unavailable for a clean smoke test. |
+| Mutable Formik rows and repeated display values | Full `check:all`; Sol review; CI run 31409848476 isolated the post-delete comparator failure | Exact-head CI must confirm the guarded comparator; no new unit test harness is added. |
 | Accessibility interactions and button semantics | Full `check:all`; chat typecheck and 31 existing chat test files / 231 tests | Browser verification remains blocked by the recorded DevPod TLS/routing failure. |
 | GraphQL-facing activity and identity changes | Workspace typechecks, codegen-related checks, and security review | Clean GraphQL bundle and isolated integration suite remain blocked by the recorded Rollup and port-80 environment failures; current-head CI must prove them. |
 | Seed decision serialization | `prisma-data` check; flashcards are filtered and unsupported types fail fast | Seed execution is not run locally; CI or a working self-contained database environment must exercise the seed path. |
@@ -491,6 +491,27 @@ is unavailable.
   reviews all returned PASS with no P0-P3 findings. The package is locally
   ready for publication; the finish state remains IN PROGRESS only because
   PR #5348 has not been updated or pushed and current-head CI has not run.
+- 2026-08-11: CI run 31409848476 failed Playwright shards 1–6 at branch head
+  `f3bedb9cda521e2a7a596cfe0df14f4d899e615f`, while the non-browser checks
+  passed. The prior run 31335442402 passed at `a978aab7d8154bc6459aaa7cbc59fea704e6159e`, establishing the regression boundary.
+- 2026-08-11: Sol identified a template-conversion maximum-update-depth
+  regression caused by the newly enforced hook dependency and the parent's
+  inline callback. `TemplateConversionModal` now passes a stable `useCallback`
+  handler. Sol also identified the Case Study post-delete failure as an
+  index-based Formik comparator reading a temporarily missing row;
+  `CaseStudyCasesFields` now guards both indexed accesses. The ownership-
+  transfer permission-row failure remains unproven and is intentionally not
+  patched.
+- 2026-08-11: Biome check and the frontend-manage typecheck pass for the two
+  fixes. Focused browser verification reached the DevPod stack but could not
+  use its canonical HTTPS route from the container; exact-head CI remains the
+  required browser gate.
+- 2026-08-11: The exact pre-commit fan-out was attempted in the pinned DevPod.
+  Staged-file Biome/Prettier checks passed, but unrelated `chat` generated route
+  types failed and the analytics lint could not build pandas because the image
+  has no C compiler. The host hook could not start because host `run-p` is not
+  installed; these are environment gates, not failures in the two changed
+  files.
 
 ## Finish state
 

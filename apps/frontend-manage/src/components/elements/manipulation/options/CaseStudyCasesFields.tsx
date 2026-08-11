@@ -85,8 +85,8 @@ function CaseStudyCasesFields({
                 <FastField
                   name={`options.cases.${ix}.description`}
                   shouldUpdate={(next: any, prev: any) =>
-                    next?.formik.values.options.cases[ix].description !==
-                    prev?.formik.values.options.cases[ix].description
+                    next?.formik.values.options.cases?.[ix]?.description !==
+                    prev?.formik.values.options.cases?.[ix]?.description
                   }
                 >
                   {({ field, meta }: FastFieldProps) => (
