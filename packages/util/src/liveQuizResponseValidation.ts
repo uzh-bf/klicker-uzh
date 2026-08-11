@@ -13,7 +13,9 @@ function parseNumberArray(value: string | undefined): number[] | null {
   try {
     const parsed: unknown = JSON.parse(value)
     return Array.isArray(parsed) &&
-      parsed.every((entry) => Number.isInteger(entry))
+      parsed.length > 0 &&
+      parsed.every((entry) => Number.isInteger(entry)) &&
+      new Set(parsed).size === parsed.length
       ? (parsed as number[])
       : null
   } catch {
@@ -36,19 +38,30 @@ function parseCaseStudyResponseShape(
     if (
       !isRecord(parsed) ||
       !Array.isArray(parsed.cases) ||
-      !parsed.cases.every((entry) => typeof entry === 'string') ||
+      !parsed.cases.every(
+        (entry) => typeof entry === 'string' && entry.length > 0
+      ) ||
+      new Set(parsed.cases).size !== parsed.cases.length ||
       !Array.isArray(parsed.items) ||
-      !parsed.items.every((entry) => Number.isInteger(entry)) ||
+      !parsed.items.every((entry) => Number.isInteger(entry) && entry > 0) ||
+      new Set(parsed.items).size !== parsed.items.length ||
       !Array.isArray(parsed.criteria) ||
       !parsed.criteria.every(
         (entry) =>
           isRecord(entry) &&
           typeof entry.id === 'string' &&
+          entry.id.length > 0 &&
           typeof entry.min === 'number' &&
           Number.isFinite(entry.min) &&
           typeof entry.max === 'number' &&
-          Number.isFinite(entry.max)
-      )
+          Number.isFinite(entry.max) &&
+          entry.min <= entry.max
+      ) ||
+      new Set(
+        parsed.criteria.map((entry) =>
+          isRecord(entry) && typeof entry.id === 'string' ? entry.id : ''
+        )
+      ).size !== parsed.criteria.length
     ) {
       return null
     }
@@ -61,10 +74,47 @@ function parseCaseStudyResponseShape(
 
 function hasExactKeys(record: Record<string, unknown>, expected: string[]) {
   const actual = Object.keys(record).sort()
+  const expectedKeys = [...expected].sort()
   return (
-    actual.length === expected.length &&
-    actual.every((key, index) => key === expected[index])
+    actual.length === expectedKeys.length &&
+    actual.every((key, index) => key === expectedKeys[index])
   )
+}
+
+function hasOnlyKeys(record: Record<string, unknown>, allowed: string[]) {
+  return Object.keys(record).every((key) => allowed.includes(key))
+}
+
+function validateRestrictions(type: string | undefined, restrictions: unknown) {
+  if (typeof restrictions === 'undefined') return true
+  if (!isRecord(restrictions)) return false
+
+  if (type === 'NUMERICAL') {
+    if (!hasOnlyKeys(restrictions, ['min', 'max'])) return false
+    const min = restrictions.min
+    const max = restrictions.max
+    if (
+      (typeof min !== 'undefined' &&
+        (typeof min !== 'number' || !Number.isFinite(min))) ||
+      (typeof max !== 'undefined' &&
+        (typeof max !== 'number' || !Number.isFinite(max)))
+    ) {
+      return false
+    }
+    return !(typeof min === 'number' && typeof max === 'number' && min > max)
+  }
+
+  if (type === 'FREE_TEXT') {
+    return (
+      hasOnlyKeys(restrictions, ['maxLength']) &&
+      (!('maxLength' in restrictions) ||
+        (typeof restrictions.maxLength === 'number' &&
+          Number.isInteger(restrictions.maxLength) &&
+          restrictions.maxLength >= 0))
+    )
+  }
+
+  return false
 }
 
 export function validateStudentResponse({
@@ -85,21 +135,29 @@ export function validateStudentResponse({
     }
   }
 
+  if (!validateRestrictions(type, restrictions)) {
+    return {
+      valid: false,
+      message: `Invalid restrictions submitted for ${type} question`,
+    }
+  }
+
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     const choiceCount = parsePositiveInteger(instanceInfo?.choiceCount)
     if (
+      choiceCount === null ||
       !hasExactKeys(response, ['choices']) ||
       !Array.isArray(response.choices) ||
       response.choices.length === 0 ||
-      (choiceCount !== null && response.choices.length !== choiceCount) ||
+      response.choices.length !== choiceCount ||
       !response.choices.every(
         (choice) =>
           isRecord(choice) &&
           (hasExactKeys(choice, ['ix']) ||
             hasExactKeys(choice, ['ix', 'selected'])) &&
           Number.isInteger(choice.ix) &&
-          (choiceCount === null ||
-            (Number(choice.ix) >= 0 && Number(choice.ix) < choiceCount)) &&
+          Number(choice.ix) >= 0 &&
+          Number(choice.ix) < choiceCount &&
           (typeof choice.selected === 'boolean' ||
             typeof choice.selected === 'undefined')
       ) ||
@@ -208,16 +266,16 @@ export function validateStudentResponse({
     const numberOfInputs = parsePositiveInteger(instanceInfo?.numberOfInputs)
     const answerIds = parseNumberArray(instanceInfo?.selectionAnswerIds)
     if (
+      numberOfInputs === null ||
+      answerIds === null ||
       !hasExactKeys(response, ['selection']) ||
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      (numberOfInputs !== null &&
-        response.selection.length !== numberOfInputs) ||
+      response.selection.length !== numberOfInputs ||
       !response.selection.every((entry) => Number.isInteger(entry)) ||
-      (answerIds !== null &&
-        !response.selection.every(
-          (entry) => entry === -1 || answerIds.includes(entry)
-        ))
+      !response.selection.every(
+        (entry) => entry === -1 || answerIds.includes(entry)
+      )
     ) {
       return {
         valid: false,
@@ -243,6 +301,13 @@ export function validateStudentResponse({
     const responseShape = parseCaseStudyResponseShape(
       instanceInfo?.caseStudyResponseShape
     )
+    if (!responseShape) {
+      return {
+        valid: false,
+        message: `Invalid case study response metadata`,
+      }
+    }
+
     if (
       !hasExactKeys(response, ['assessment']) ||
       !isRecord(response.assessment) ||
@@ -267,38 +332,36 @@ export function validateStudentResponse({
       }
     }
 
-    if (responseShape) {
-      const expectedCases = [...responseShape.cases].sort()
-      const expectedItems = responseShape.items.map(String).sort()
-      const expectedCriteria = responseShape.criteria
-        .map((criterion) => criterion.id)
-        .sort()
-      if (
-        !hasExactKeys(response.assessment, expectedCases) ||
-        !Object.values(response.assessment).every(
-          (caseObject) =>
-            isRecord(caseObject) &&
-            hasExactKeys(caseObject, expectedItems) &&
-            Object.values(caseObject).every(
-              (itemObject) =>
-                isRecord(itemObject) &&
-                hasExactKeys(itemObject, expectedCriteria) &&
-                responseShape.criteria.every((criterion) => {
-                  const value = itemObject[criterion.id]
-                  return (
-                    typeof value === 'number' &&
-                    Number.isFinite(value) &&
-                    value >= criterion.min &&
-                    value <= criterion.max
-                  )
-                })
-            )
-        )
-      ) {
-        return {
-          valid: false,
-          message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
-        }
+    const expectedCases = [...responseShape.cases].sort()
+    const expectedItems = responseShape.items.map(String).sort()
+    const expectedCriteria = responseShape.criteria
+      .map((criterion) => criterion.id)
+      .sort()
+    if (
+      !hasExactKeys(response.assessment, expectedCases) ||
+      !Object.values(response.assessment).every(
+        (caseObject) =>
+          isRecord(caseObject) &&
+          hasExactKeys(caseObject, expectedItems) &&
+          Object.values(caseObject).every(
+            (itemObject) =>
+              isRecord(itemObject) &&
+              hasExactKeys(itemObject, expectedCriteria) &&
+              responseShape.criteria.every((criterion) => {
+                const value = itemObject[criterion.id]
+                return (
+                  typeof value === 'number' &&
+                  Number.isFinite(value) &&
+                  value >= criterion.min &&
+                  value <= criterion.max
+                )
+              })
+          )
+      )
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
       }
     }
 

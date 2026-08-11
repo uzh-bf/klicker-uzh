@@ -4,11 +4,13 @@ import {
   createHash,
   randomBytes,
 } from 'node:crypto'
+import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import type {
   AcceptedCorrelatedResponseIdentity,
   CorrelatedResponseEventMessage,
 } from './liveQuizResponseIdentity.js'
 import { parseCorrelatedResponseInstanceInfo } from './liveQuizResponseMetadata.js'
+import { validateStudentResponse } from './liveQuizResponseValidation.js'
 
 const CORRELATED_OUTBOX_ENCRYPTION_CONTEXT =
   'klicker-live-quiz-correlated-outbox-v1'
@@ -27,10 +29,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function hasExactKeys(record: Record<string, unknown>, expected: string[]) {
+  const actual = Object.keys(record).sort()
+  const expectedKeys = [...expected].sort()
+  return (
+    actual.length === expectedKeys.length &&
+    actual.every((key, index) => key === expectedKeys[index])
+  )
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 function isAcceptedIdentity(
   value: unknown
 ): value is AcceptedCorrelatedResponseIdentity {
-  if (!isRecord(value) || typeof value.id !== 'string') {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ['id', 'kind']) ||
+    !isNonEmptyString(value.id)
+  ) {
     return false
   }
 
@@ -41,21 +60,68 @@ function isAcceptedIdentity(
   )
 }
 
-function isCorrelatedResponseEventMessage(
+const INVALID_RESTRICTIONS = Symbol('invalid restrictions')
+
+function parseRestrictions(value: string | undefined) {
+  if (typeof value === 'undefined') return undefined
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return INVALID_RESTRICTIONS
+  }
+}
+
+function normalizeCorrelatedResponseEventMessage(
   value: unknown
-): value is CorrelatedResponseEventMessage {
-  return (
-    isRecord(value) &&
-    typeof value.messageId === 'string' &&
-    typeof value.sessionId === 'string' &&
-    typeof value.instanceId === 'string' &&
-    isRecord(value.response) &&
+): CorrelatedResponseEventMessage | null {
+  return isRecord(value) &&
+    hasExactKeys(value, [
+      'acceptedIdentity',
+      'instanceId',
+      'instanceInfo',
+      'messageId',
+      'response',
+      'responseTimestamp',
+      'sessionId',
+    ]) &&
+    isNonEmptyString(value.messageId) &&
+    isNonEmptyString(value.sessionId) &&
+    isNonEmptyString(value.instanceId) &&
     typeof value.responseTimestamp === 'number' &&
     Number.isFinite(value.responseTimestamp) &&
-    !('cookie' in value) &&
-    parseCorrelatedResponseInstanceInfo(value.instanceInfo) !== null &&
+    value.responseTimestamp >= 0 &&
     isAcceptedIdentity(value.acceptedIdentity)
-  )
+    ? (() => {
+        const instanceInfo = parseCorrelatedResponseInstanceInfo(
+          value.instanceInfo
+        )
+        if (!instanceInfo) return null
+
+        const restrictions = parseRestrictions(instanceInfo.restrictions)
+        if (restrictions === INVALID_RESTRICTIONS) return null
+
+        const validation = validateStudentResponse({
+          type: instanceInfo.type,
+          response: value.response as LiveQuizResponseInput,
+          restrictions,
+          instanceInfo,
+        })
+        if (!validation.valid) return null
+
+        return {
+          messageId: value.messageId,
+          sessionId: value.sessionId,
+          instanceId: value.instanceId,
+          response: value.response as LiveQuizResponseInput,
+          responseTimestamp: value.responseTimestamp,
+          acceptedIdentity: {
+            kind: value.acceptedIdentity.kind,
+            id: value.acceptedIdentity.id,
+          },
+          instanceInfo,
+        }
+      })()
+    : null
 }
 
 export function encryptCorrelatedResponseEvent({
@@ -65,6 +131,11 @@ export function encryptCorrelatedResponseEvent({
   message: CorrelatedResponseEventMessage
   secret: string
 }) {
+  const normalizedMessage = normalizeCorrelatedResponseEventMessage(message)
+  if (!normalizedMessage) {
+    throw new Error('Invalid correlated response outbox message')
+  }
+
   const iv = randomBytes(CORRELATED_OUTBOX_IV_LENGTH)
   const cipher = createCipheriv(
     'aes-256-gcm',
@@ -73,7 +144,7 @@ export function encryptCorrelatedResponseEvent({
     { authTagLength: CORRELATED_OUTBOX_AUTH_TAG_LENGTH }
   )
   const encrypted = Buffer.concat([
-    cipher.update(JSON.stringify(message), 'utf8'),
+    cipher.update(JSON.stringify(normalizedMessage), 'utf8'),
     cipher.final(),
   ])
   const tag = cipher.getAuthTag()
@@ -120,8 +191,9 @@ export function decryptCorrelatedResponseEvent({
     decipher.final(),
   ])
   const message: unknown = JSON.parse(decrypted.toString('utf8'))
-  if (!isCorrelatedResponseEventMessage(message)) {
+  const normalizedMessage = normalizeCorrelatedResponseEventMessage(message)
+  if (!normalizedMessage) {
     throw new Error('Invalid correlated response outbox message')
   }
-  return message
+  return normalizedMessage
 }
