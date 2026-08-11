@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/audit/|packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -135,6 +135,8 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run build
+          cd ../audit
+          pnpm run build
           cd ../types
           pnpm run build
           cd ../grading
@@ -154,6 +156,12 @@ jobs:
           pnpm run prisma:reset:raw -f
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Run assessment audit tests
+        run: pnpm --filter @klicker-uzh/audit test
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
 
       - name: Run tests
         run: |
