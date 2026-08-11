@@ -233,6 +233,9 @@ empty one, overrides the localized generic mode explanation; the synthesized Tut
 the localized generic copy. Message action bars
 remain mounted for touch users rather than relying on hover. An unavailable image edit uses
 `aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
+Failed assistant turns keep their own localized retry callout but omit the normal reload and
+thumbs-rating actions and the relative timestamp, so an incomplete answer is not presented as a
+finished answer ready for feedback.
 Each thread row shows the thread's last chat mode as an icon plus localized label under the title
 (`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
 amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant

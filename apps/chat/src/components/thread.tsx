@@ -172,6 +172,11 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     return null
   }
 
+  // A failed turn has its own localized callout and retry action. The normal
+  // answer timestamp and feedback controls would make an incomplete response
+  // look like a finished answer that is ready to rate.
+  if (hasChatError(message)) return null
+
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
   const modelId = typeof custom.modelId === 'string' ? custom.modelId : null
@@ -1424,6 +1429,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   if (!showMessageActions) return null
+  const hasError = hasChatError(message)
 
   return (
     <div
@@ -1455,7 +1461,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hasChatError(message) && (
+        {!hasError && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
@@ -1472,7 +1478,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Tooltip>
         )}
 
-        <MessageRatingButtons />
+        {!hasError && <MessageRatingButtons />}
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>

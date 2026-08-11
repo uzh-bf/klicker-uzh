@@ -79,8 +79,8 @@ export default {
       openKlickerUzh: 'Open KlickerUZH',
     },
     branchPicker: {
-      previous: 'Previous branch',
-      next: 'Next branch',
+      previous: 'Previous version',
+      next: 'Next version',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
