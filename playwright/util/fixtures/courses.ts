@@ -19,6 +19,7 @@ type CourseDuplicationActivityReference = {
   id: string
   name: string
   status: string
+  randomSelections: (number | null)[]
   stacks: {
     displayName: string | null
     description: string | null
@@ -379,6 +380,57 @@ export async function setCourseActivityStackMetadata({
   if (updates.some((update) => update.count !== 1)) {
     throw new Error(`Expected one stack per course activity for ${courseName}.`)
   }
+}
+
+export async function setCourseLiveQuizBlockRandomSelection({
+  courseName,
+  liveQuizName,
+  randomSelection,
+  ownerId = USER_ID_TEST,
+}: {
+  courseName: string
+  liveQuizName: string
+  randomSelection: number
+  ownerId?: string
+}) {
+  const prisma = await getPrisma()
+  const course = await prisma.course.findFirst({
+    where: { name: courseName, ownerId },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  })
+
+  if (!course) {
+    throw new Error(`Course with name ${courseName} not found.`)
+  }
+
+  const liveQuiz = await prisma.liveQuiz.findFirst({
+    where: {
+      courseId: course.id,
+      name: liveQuizName,
+      isDeleted: false,
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      blocks: {
+        orderBy: { order: 'asc' },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  })
+  const blockId = liveQuiz?.blocks[0]?.id
+
+  if (!blockId) {
+    throw new Error(
+      `Live quiz block for ${liveQuizName} in ${courseName} not found.`
+    )
+  }
+
+  await prisma.elementBlock.update({
+    where: { id: blockId },
+    data: { randomSelection },
+  })
 }
 
 export async function ensureCourseParticipation({
@@ -1354,6 +1406,7 @@ export async function getCourseDuplicationSummary({
     id: activity.id,
     name: activity.name,
     status: activity.status,
+    randomSelections: activity.blocks.map((block) => block.randomSelection),
     stacks: [],
     instances: activity.blocks.flatMap((block) =>
       block.elements.map(mapInstance)
@@ -1368,6 +1421,7 @@ export async function getCourseDuplicationSummary({
     id: activity.id,
     name: activity.name,
     status: activity.status,
+    randomSelections: [],
     stacks: activity.stacks.map((stack) => ({
       displayName: stack.displayName,
       description: stack.description,

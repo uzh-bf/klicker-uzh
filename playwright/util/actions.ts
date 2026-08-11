@@ -37,6 +37,7 @@ export async function clickVisibleByTestId(
 ) {
   const startedAt = Date.now()
   const locator = page.getByTestId(testId)
+  let lastClickError: unknown
 
   while (Date.now() - startedAt < timeout) {
     const count = await locator.count()
@@ -53,7 +54,8 @@ export async function clickVisibleByTestId(
           timeout: Math.max(1, Math.min(1_000, remaining)),
         })
         return
-      } catch {
+      } catch (error) {
+        lastClickError = error
         // A closing menu portal can remain visible while intercepting clicks.
         // Try another matching item or wait for the active portal to settle.
       }
@@ -62,7 +64,9 @@ export async function clickVisibleByTestId(
     await page.waitForTimeout(100)
   }
 
-  throw new Error(`No clickable element found for data-cy="${testId}"`)
+  throw new Error(`No clickable element found for data-cy="${testId}"`, {
+    cause: lastClickError,
+  })
 }
 
 export async function openActivityActionMenu(

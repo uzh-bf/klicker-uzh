@@ -395,6 +395,7 @@ export async function manipulateLiveQuiz(
       create: blocks.map((block) => ({
         order: block.order,
         timeLimit: block.timeLimit,
+        randomSelection: block.randomSelection,
         elements: {
           connectOrCreate: block.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({

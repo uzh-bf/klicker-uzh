@@ -19,6 +19,8 @@ import {
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
+import timezone from 'dayjs/plugin/timezone.js'
+import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
@@ -37,9 +39,13 @@ import { checkAccess, type PermissionCheck } from './sharing.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
 const DUPLICATE_COURSE_TRANSACTION_TIMEOUT = 120000
+const COURSE_DUPLICATION_TIME_ZONE = 'Europe/Zurich'
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
 
@@ -2773,14 +2779,23 @@ function getDuplicatedActivityElements(
 }
 
 export function applyCourseStartDelta(date: Date, deltaCourseStart: number) {
-  return dayjs(date).add(deltaCourseStart, 'day').toDate()
+  return dayjs(date)
+    .tz(COURSE_DUPLICATION_TIME_ZONE)
+    .add(deltaCourseStart, 'day')
+    .tz(COURSE_DUPLICATION_TIME_ZONE, true)
+    .toDate()
 }
 
-// round the day delta instead of truncating it: course start dates are
-// local-midnight instants, so DST transitions and legacy non-midnight
-// timestamps make the exact difference deviate from whole days
 export function getCourseStartDayDelta(newStartDate: Date, oldStartDate: Date) {
-  return Math.round(dayjs(newStartDate).diff(dayjs(oldStartDate), 'day', true))
+  const getLocalCalendarDate = (date: Date) => {
+    const localDate = dayjs(date).tz(COURSE_DUPLICATION_TIME_ZONE)
+    return Date.UTC(localDate.year(), localDate.month(), localDate.date())
+  }
+
+  return Math.round(
+    (getLocalCalendarDate(newStartDate) - getLocalCalendarDate(oldStartDate)) /
+      MILLISECONDS_PER_DAY
+  )
 }
 
 async function copyCourseDuplicationDirectPermissions({
@@ -2912,6 +2927,7 @@ async function copyCourseLiveQuizzes({
         blocks: oldLiveQuiz.blocks.map((block) => ({
           order: block.order,
           timeLimit: block.timeLimit,
+          randomSelection: block.randomSelection,
           elements: getDuplicatedActivityElements(block.elements),
         })),
         courseId: newCourseId,

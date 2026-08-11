@@ -1247,6 +1247,7 @@ export type ElementBlock = {
 export type ElementBlockInput = {
   elements: Array<ElementInstanceInput>;
   order: Scalars['Int']['input'];
+  randomSelection?: InputMaybe<Scalars['Int']['input']>;
   timeLimit?: InputMaybe<Scalars['Int']['input']>;
 };
 

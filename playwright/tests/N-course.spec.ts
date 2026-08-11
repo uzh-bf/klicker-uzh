@@ -66,6 +66,7 @@ import {
   grantLiveQuizDirectPermission,
   resetCourseLiveQuiz,
   setCourseActivityStackMetadata,
+  setCourseLiveQuizBlockRandomSelection,
   submitCourseLiveQuizStudentResponse,
   updateCourseGroupDeadlineDate,
   updateElementContentAndInstances,
@@ -146,6 +147,7 @@ const SHARING_STACK_METADATA = {
     description: 'Group activity stack instructions',
   },
 }
+const SHARING_LIVE_QUIZ_RANDOM_SELECTION = 1
 
 // From cypress/fixtures/questions.json
 const SCML = {
@@ -1238,21 +1240,25 @@ function expectCopiedActivityReferences({
     {
       collection: 'liveQuizzes' as const,
       name: SHARING.liveQuiz,
+      randomSelections: [SHARING_LIVE_QUIZ_RANDOM_SELECTION],
       stacks: [],
     },
     {
       collection: 'practiceQuizzes' as const,
       name: SHARING.practiceQuiz,
+      randomSelections: [],
       stacks: [SHARING_STACK_METADATA.practiceQuiz],
     },
     {
       collection: 'microLearnings' as const,
       name: SHARING.microLearning,
+      randomSelections: [],
       stacks: [SHARING_STACK_METADATA.microLearning],
     },
     {
       collection: 'groupActivities' as const,
       name: SHARING.groupActivity,
+      randomSelections: [],
       stacks: [SHARING_STACK_METADATA.groupActivity],
     },
   ]
@@ -1272,6 +1278,12 @@ function expectCopiedActivityReferences({
     expect(sourceActivity, `source ${activityRow.name}`).toBeTruthy()
     expect(copiedActivity, `copied ${activityRow.name}`).toBeTruthy()
     expect(copiedActivity!.id).not.toEqual(sourceActivity!.id)
+    expect(sourceActivity!.randomSelections).toEqual(
+      activityRow.randomSelections
+    )
+    expect(copiedActivity!.randomSelections).toEqual(
+      sourceActivity!.randomSelections
+    )
     expect(sourceActivity!.stacks).toEqual(activityRow.stacks)
     expect(copiedActivity!.stacks).toEqual(sourceActivity!.stacks)
     expect(copiedActivity!.instances).toHaveLength(
@@ -2457,6 +2469,11 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       stack: {
         elements: [CSML.title],
       },
+    })
+    await setCourseLiveQuizBlockRandomSelection({
+      courseName: SHARING.course,
+      liveQuizName: SHARING.liveQuiz,
+      randomSelection: SHARING_LIVE_QUIZ_RANDOM_SELECTION,
     })
     await setCourseActivityStackMetadata({
       courseName: SHARING.course,

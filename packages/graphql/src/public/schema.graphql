@@ -1138,6 +1138,7 @@ type ElementBlock {
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
   order: Int!
+  randomSelection: Int
   timeLimit: Int
 }
 
