@@ -18,6 +18,9 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0003](./0003-chat-framework-upgrade.md) — Fold the chat framework upgrade into the v3 student-chat branch
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
 - [0005](./0005-versioned-chat-engine-boundary.md) — Cross chat generation through a versioned internal engine boundary
+- [0006](./0006-roll-chat-engine-contract-generations.md) — Roll ordinal chat-engine contract generations without negotiation
+- [0007](./0007-use-a-stateless-catalyst-adaptive-engine.md) — Keep adaptive product state public and psychometric decisions in a stateless Catalyst engine
+- [0008](./0008-split-learning-analytics-compute-from-product-surfaces.md) — Keep analytics product surfaces public and move computation into a least-privilege private service
 - [0006](./0006-public-catalyst-capability-floor.md) — What public KlickerUZH keeps when Catalyst is absent
 - [0007](./0007-reintegrate-v3-ai-behind-feature-flags.md) — Reintegrate `v3-ai` into `v3` behind feature flags, after VK2
 - [0008](./0008-assessment-identity-boundary-and-public-projection.md) — Keep assessment identity course-scoped and minimize public credential identity
