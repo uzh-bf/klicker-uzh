@@ -83,6 +83,13 @@ layout outside the closed drawer. Set the viewport before `visitChat`; embedded
 chat already owns its compact `EmbeddedCreditsBar` and should not receive the
 sidebar mobile bar.
 
+For chat welcome coverage, assert that the chatbot name and selected mode
+description are visible before clicking a starter. Starter clicks populate the
+composer without sending; assert the value contains no square-bracket template
+placeholder, then edit the value before sending. The initial mode descriptions
+are passed with the chatbot shell so this journey should not wait for a second
+render of the starter grid.
+
 ## Fast Failure Triage
 
 - `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.

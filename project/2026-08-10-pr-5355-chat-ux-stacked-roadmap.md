@@ -435,6 +435,22 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   reached all four new tests but remains blocked before assertions because the
   DevPod lacks the Chromium headless shell; hosted CI remains the automated
   gate.
+- Current (2026-08-11): layer 04 welcome-and-composer-guidance is implemented
+  on `rs/chat-ux-welcome-composer`. The server passes only sanitized chatbot
+  mode descriptions into the initial shell, so the welcome view is scoped to
+  the chatbot and does not wait for a second mode-options render. Starter
+  prompts use complete editable wording, show an explicit pre-send hint, and
+  retain Tutor/Explainer mapping. The mobile empty state keeps both starter
+  cards above the fixed composer.
+- Verified for layer 04 (2026-08-11) in the real in-app Browser after the
+  documented devrouter restart: EN and DE desktop at 1440x900 show the
+  chatbot name, selected mode description, and two starter cards; EN and DE
+  mobile at 390x844 keep both cards fully visible above the composer. Clicking
+  a starter populates the composer without square-bracket placeholders and the
+  value remains editable. The visible PWA account menu confirmed the session
+  as `testuser1` while switching between locales. Focused Playwright remains
+  blocked before assertions by the missing Chromium headless shell; hosted CI
+  remains the automated gate.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
@@ -456,9 +472,10 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   unrelated root build because unchanged `olat-api` source fails Rollup's
   parser; the layer-specific checks and container chat production build passed,
   and the exception was recorded when the stack was pushed.
-- Next: update draft PR #5355 with whole-layer evidence, then implement layers
-  02–05 bottom-up. The four upper branches currently point at the layer-01 tip
-  and carry no PR until their named work packages are implemented.
+- Next: commit and review layer 04, push its reviewed head, then implement
+  layer 05. The layer-05 branch already rebases onto the reviewed layer-03
+  head; draft PR descriptions still need to be created or refreshed for the
+  completed packages without marking any PR ready or merging.
 
 ### Autonomous goal prompt
 

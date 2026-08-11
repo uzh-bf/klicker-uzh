@@ -21,6 +21,44 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
+export function extractModeDescriptions(
+  systemPrompts: unknown
+): Record<string, string> {
+  if (
+    !systemPrompts ||
+    typeof systemPrompts !== 'object' ||
+    Array.isArray(systemPrompts)
+  ) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(systemPrompts).map(([mode, value]) => {
+      const modeConfig =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : null
+
+      return [
+        mode,
+        typeof modeConfig?.description === 'string'
+          ? modeConfig.description
+          : '',
+      ]
+    })
+  )
+}
+
+export function getModeDescription(
+  t: ReturnType<typeof useTranslations<never>>,
+  mode: string,
+  modeOptions: Record<string, string>
+): string {
+  return isKnownMode(mode)
+    ? t(`chat.modes.${mode}Description`)
+    : (modeOptions[mode]?.trim() ?? '')
+}
+
 export function getModeIcon(mode: string): LucideIcon {
   return isKnownMode(mode) ? MODE_ICONS[mode] : Sparkles
 }

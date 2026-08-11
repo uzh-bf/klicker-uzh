@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
+import { extractModeDescriptions } from '../lib/config/modes'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
@@ -162,16 +163,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const modes: Record<string, string> = {}
-          if (responseData.systemPrompts) {
-            for (const [key, value] of Object.entries(
-              responseData.systemPrompts
-            )) {
-              const description = (value as { description?: string })
-                ?.description
-              modes[key] = typeof description === 'string' ? description : ''
-            }
-          }
+          const modes = extractModeDescriptions(responseData.systemPrompts)
 
           const resolvedModeOptions: Record<string, string> =
             Object.keys(modes).length > 0

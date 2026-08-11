@@ -138,22 +138,26 @@ export default {
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
-      welcomeTitle: 'Hello there!',
-      welcomeSubtitle: 'How can I help you?',
+      welcomeTitle: 'Welcome!',
+      welcomeTo: 'You are chatting with {chatbot}.',
+      welcomeSubtitle: 'Choose a starter or write your own question.',
+      welcomeMode: 'Selected mode: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Conversation starters',
+      editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
       practiceTopicPrompt:
-        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+        'I want to practise a specific topic from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
       workThroughProblem: 'Work through a problem',
       workThroughProblemPrompt:
-        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+        'Help me work through a problem from the course materials step by step. Ask me questions and give hints before revealing the solution.',
       explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+        'Explain a difficult concept from the course materials in simple terms, using one worked example and citations.',
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
-        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+        'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:

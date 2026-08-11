@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { extractModeDescriptions } from '../src/lib/config/modes'
 import { getThreadSuggestions } from '../src/lib/config/suggestions'
 
 describe('thread suggestions', () => {
@@ -26,5 +27,22 @@ describe('thread suggestions', () => {
     expect(getThreadSuggestions('custom-mode')).toEqual(
       getThreadSuggestions('tutor')
     )
+  })
+
+  test('extracts only mode descriptions for the initial welcome shell', () => {
+    expect(
+      extractModeDescriptions({
+        tutor: { prompt: 'private prompt', description: 'Tutor description' },
+        explainer: {
+          prompt: 'private prompt',
+          description: 'Explainer description',
+        },
+        invalid: 'not a mode config',
+      })
+    ).toEqual({
+      tutor: 'Tutor description',
+      explainer: 'Explainer description',
+      invalid: '',
+    })
   })
 })

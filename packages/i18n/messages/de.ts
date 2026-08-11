@@ -141,22 +141,26 @@ export default {
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
-      welcomeTitle: 'Hallo!',
-      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+      welcomeTitle: 'Willkommen!',
+      welcomeTo: 'Du chattest mit {chatbot}.',
+      welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
+      welcomeMode: 'Ausgewählter Modus: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Gesprächseinstiege',
+      editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
       practiceTopicPrompt:
-        'Ich möchte [ein bestimmtes Thema] aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
+        'Ich möchte ein bestimmtes Thema aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
       workThroughProblem: 'Eine Aufgabe bearbeiten',
       workThroughProblemPrompt:
-        'Hilf mir, diese Aufgabe Schritt für Schritt zu bearbeiten: [füge eine Aufgabe aus den Kursunterlagen ein]. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
       explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Erkläre [ein bestimmtes Konzept] aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+        'Erkläre ein schwieriges Konzept aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
-        'Vergleiche [Konzept A] und [Konzept B] anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+        'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
     },
     message: {
       creditsUsed:

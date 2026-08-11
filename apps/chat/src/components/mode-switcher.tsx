@@ -3,7 +3,11 @@
 import { useTranslations } from 'next-intl'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getModeIcon, isKnownMode } from '../lib/config/modes'
+import {
+  getModeDescription,
+  getModeIcon,
+  isKnownMode,
+} from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -67,9 +71,7 @@ export function ModeSwitcher() {
         const label = isKnownMode(mode)
           ? t(`chat.modes.${mode}`)
           : mode.charAt(0).toUpperCase() + mode.slice(1)
-        const description = isKnownMode(mode)
-          ? t(`chat.modes.${mode}Description`)
-          : modeOptions[mode]?.trim()
+        const description = getModeDescription(t, mode, modeOptions)
         const isActive = mode === selectedMode
 
         return (

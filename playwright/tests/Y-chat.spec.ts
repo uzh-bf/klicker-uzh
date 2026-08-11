@@ -449,8 +449,25 @@ test.describe('Chatbot Messaging Interface', () => {
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
     await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'How can I help you'
+      'You are chatting with'
     )
+    await expect(page.getByTestId('chat-welcome-mode')).toBeVisible()
+    await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Starter prompt is editable and contains no raw placeholder', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-welcome-suggestion').first().click()
+
+    const input = page.getByTestId('chat-composer-input')
+    const starter = await input.inputValue()
+    expect(starter).not.toMatch(/\[[^\]]+\]/)
+    await input.fill('My own question about a specific topic')
+    await expect(input).toHaveValue('My own question about a specific topic')
+    await expect(page.getByTestId('chat-send-button')).toBeEnabled()
   })
 
   test('Composer input is visible and accepts text', async ({ page }) => {
