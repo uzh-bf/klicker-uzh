@@ -692,17 +692,17 @@ function CourseDuplicationModal({
           const updateDatesFromStartDate = async (startDate?: Date) => {
             if (!startDate) return
 
-            await setFieldValue(
-              'endDate',
-              dayjs(startDate).add(deltaCourseDates, 'day').toDate()
-            )
+            const endDate = dayjs(startDate)
+              .add(deltaCourseDates, 'day')
+              .toDate()
 
-            if (values.isGroupCreationEnabled) {
-              await setFieldValue(
-                'groupCreationDeadline',
-                getGroupCreationDeadline(startDate)
-              )
-            }
+            await setFieldValue('endDate', endDate)
+            await setFieldValue(
+              'groupCreationDeadline',
+              values.isGroupCreationEnabled
+                ? getGroupCreationDeadline(startDate)
+                : endDate
+            )
           }
 
           const updateDatesFromEndDate = async (endDate?: Date) => {
