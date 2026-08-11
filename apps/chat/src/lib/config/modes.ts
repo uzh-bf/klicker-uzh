@@ -22,7 +22,7 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
-export function extractModeDescriptions(
+export function resolveModeDescriptions(
   systemPrompts: unknown
 ): Record<string, string> {
   if (
@@ -30,10 +30,10 @@ export function extractModeDescriptions(
     typeof systemPrompts !== 'object' ||
     Array.isArray(systemPrompts)
   ) {
-    return {}
+    return { ...DEFAULT_MODE_DESCRIPTIONS }
   }
 
-  return Object.fromEntries(
+  const descriptions = Object.fromEntries(
     Object.entries(systemPrompts).map(([mode, value]) => {
       const modeConfig =
         value && typeof value === 'object' && !Array.isArray(value)
@@ -48,12 +48,7 @@ export function extractModeDescriptions(
       ]
     })
   )
-}
 
-export function resolveModeDescriptions(
-  systemPrompts: unknown
-): Record<string, string> {
-  const descriptions = extractModeDescriptions(systemPrompts)
   return Object.keys(descriptions).length > 0
     ? descriptions
     : { ...DEFAULT_MODE_DESCRIPTIONS }

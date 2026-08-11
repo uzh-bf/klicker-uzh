@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
 import {
-  extractModeDescriptions,
   resolveModeDescriptions,
   resolveSelectedMode,
 } from '../src/lib/config/modes'
@@ -33,9 +32,9 @@ describe('thread suggestions', () => {
     )
   })
 
-  test('extracts only mode descriptions for the initial welcome shell', () => {
+  test('resolves only mode descriptions for the initial welcome shell', () => {
     expect(
-      extractModeDescriptions({
+      resolveModeDescriptions({
         tutor: { prompt: 'private prompt', description: 'Tutor description' },
         explainer: {
           prompt: 'private prompt',
