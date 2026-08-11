@@ -111,7 +111,7 @@ export function RuntimeProvider({
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
       void (async () => {
-        await loadModeOptions(chatbotId)
+        await loadModeOptions(chatbotId, initialModeOptions)
         await loadCredits(chatbotId)
       })()
       return
@@ -147,10 +147,18 @@ export function RuntimeProvider({
     })()
 
     void (async () => {
-      await loadModeOptions(chatbotId)
+      await loadModeOptions(chatbotId, initialModeOptions)
       await loadCredits(chatbotId)
     })()
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
+  }, [
+    chatbotId,
+    embedded,
+    initialModeOptions,
+    loadCredits,
+    loadModeOptions,
+    loadThreads,
+    threadId,
+  ])
 
   // sync active thread with URL params
   useEffect(() => {

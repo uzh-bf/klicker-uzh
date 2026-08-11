@@ -76,7 +76,10 @@ interface SettingsState {
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
-  loadModeOptions: (chatbotId: string) => Promise<void>
+  loadModeOptions: (
+    chatbotId: string,
+    initialModeOptions?: Record<string, string>
+  ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
   resetCredits: () => void
@@ -131,8 +134,15 @@ export const useSettingsStore = create<SettingsState>()(
           return { selectedReasoningEffort: resolvedEffort }
         }),
 
-      loadModeOptions: async (chatbotId: string) => {
+      loadModeOptions: async (
+        chatbotId: string,
+        initialModeOptions?: Record<string, string>
+      ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
+        const fallbackModeOptions =
+          initialModeOptions && Object.keys(initialModeOptions).length > 0
+            ? initialModeOptions
+            : resolveModeDescriptions(null)
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
@@ -149,10 +159,10 @@ export const useSettingsStore = create<SettingsState>()(
               'No valid mode options found, falling back to defaults.'
             )
             set((state) => ({
-              modeOptions: resolveModeDescriptions(null),
+              modeOptions: fallbackModeOptions,
               modeOptionsChatbotId: chatbotId,
               selectedMode: resolveSelectedMode(
-                resolveModeDescriptions(null),
+                fallbackModeOptions,
                 state.selectedMode
               ),
               modelSelectionEnabled: false,
@@ -182,10 +192,10 @@ export const useSettingsStore = create<SettingsState>()(
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
           set((state) => ({
-            modeOptions: resolveModeDescriptions(null),
+            modeOptions: fallbackModeOptions,
             modeOptionsChatbotId: chatbotId,
             selectedMode: resolveSelectedMode(
-              resolveModeDescriptions(null),
+              fallbackModeOptions,
               state.selectedMode
             ),
             modelSelectionEnabled: false,

@@ -448,10 +448,12 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'You are chatting with'
+    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
+      'You are chatting with E2E Chatbot.'
     )
-    await expect(page.getByTestId('chat-welcome-mode')).toBeVisible()
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Tutor mode.'
+    )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
   })
 
