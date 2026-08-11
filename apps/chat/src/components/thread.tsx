@@ -432,7 +432,7 @@ const ThreadWelcome: FC<{
             <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeSubtitle')}
             </p>
-            {modeLabel && modeDescription && (
+            {modeLabel && (
               <div
                 data-cy="chat-welcome-mode"
                 className="bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl px-4 py-3 text-left text-sm delay-150 duration-300 motion-reduce:animate-none"
@@ -440,9 +440,11 @@ const ThreadWelcome: FC<{
                 <p className="font-medium">
                   {t('chat.thread.welcomeMode', { mode: modeLabel })}
                 </p>
-                <p className="text-muted-foreground mt-1 text-pretty">
-                  {modeDescription}
-                </p>
+                {modeDescription ? (
+                  <p className="text-muted-foreground mt-1 text-pretty">
+                    {modeDescription}
+                  </p>
+                ) : null}
               </div>
             )}
           </div>
