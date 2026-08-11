@@ -126,6 +126,7 @@ model LiveQuiz {
   leaderboard          LeaderboardEntry[]
   temporaryLeaderboard TemporaryLeaderboardEntry[]
   respondents          LiveQuizRespondent[]
+  pendingResponses     LiveQuizPendingResponse[]
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
