@@ -373,7 +373,7 @@ const ThinkingDots: FC = () => {
 
 const useWelcomeModeOptions = (
   initialModeOptions: Record<string, string>,
-  initialModeOptionsAreFallback: boolean
+  initialModeOptionsAreFallback = false
 ) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const modeOptions = useSettingsStore((state) => state.modeOptions)
@@ -475,10 +475,7 @@ const ThreadWelcome: FC<{
             )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions
-          initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-        />
+        <ThreadWelcomeSuggestions initialModeOptions={initialModeOptions} />
       </div>
     </ThreadPrimitive.Empty>
   )
@@ -488,14 +485,10 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC<{
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
-}> = ({ initialModeOptions, initialModeOptionsAreFallback }) => {
+}> = ({ initialModeOptions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
 
   if (Object.keys(modeOptions).length === 0) return null
 
