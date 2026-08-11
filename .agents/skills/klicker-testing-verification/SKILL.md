@@ -27,6 +27,33 @@ fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
 and proves public tool-call/finish conversion without a model key; it does not
 replace a real-upstream staging smoke test.
 
+For provider-option changes that must serialize through both OpenAI transports,
+also run the focused provider-options fixture:
+
+```bash
+pnpm --filter @klicker-uzh/chat exec vitest run test/openai-provider-options.test.ts test/openai-chat-streaming.test.ts
+```
+
+It checks the turn-scoped `metadata.session_id` and thread-stable
+`prompt_cache_key` on Chat Completions and Responses request bodies. This is
+local serialization evidence only; it does not prove deployed routing or
+provider cache hits.
+
+For aggregate gateway cost evidence, run the pure synthetic contract from
+`packages/prisma-data`:
+
+```bash
+pnpm exec tsx src/scripts/lib/aggregateCostReconciliation.test.ts
+```
+
+The report mode in
+`src/scripts/2026-06-16_analyze_chatbot_usage.ts` uses a half-open UTC window
+and secret-backed read-only Langfuse/LiteLLM access. It counts positive-cost
+generations and fails closed when cache buckets, scope, model/count parity, or
+cost reconciliation are incomplete. Never infer cache tokens from price drift
+and never report this aggregate mode as exact course allocation or Azure invoice
+proof.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic

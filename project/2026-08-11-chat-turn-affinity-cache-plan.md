@@ -160,13 +160,14 @@ changes.
 - [x] Reconciled live refs and dirty primary checkouts.
 - [x] Created clean worktree from current `origin/v3`.
 - [x] Completed the revised planning-stage review.
-- [ ] Commit this plan.
-- [ ] Implement runtime options.
-- [ ] Implement aggregate reconciliation.
-- [ ] Update durable documentation and complete final reviews.
+- [x] Commit this plan.
+- [x] Implement runtime options.
+- [x] Implement aggregate reconciliation.
+- [x] Update durable documentation and verification contract.
+- [ ] Complete final reviews.
 
 ## Next Steps
 
-1. Commit this plan, then implement the runtime slice.
+1. Complete the integrated correctness, security, and maintainability reviews.
 2. Keep deployment rollout and cost measurement at their explicit approval
-   gates.
+   gates; the `--gateway-cost` mode is ready for a later matched UTC window.

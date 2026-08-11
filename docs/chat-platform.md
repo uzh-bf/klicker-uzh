@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-10'
+timestamp: '2026-08-11'
 tags:
   - frontend
   - chat
@@ -103,6 +103,33 @@ claim an end-to-end answer stream.
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
+
+### Turn and cost evidence
+
+`apps/chat/src/lib/server/openaiProviderOptions.ts:getOpenAIProviderOptions`
+derives two provider-only keys from existing identifiers. The assistant message
+id becomes a pseudonymous `metadata.session_id`, so all internal calls in one
+`streamText` tool loop share a turn key. The owning thread id becomes a stable,
+pseudonymous `promptCacheKey`; it is omitted when ownership cannot be verified.
+The route creates these options once before
+`apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:POST` starts the stream,
+so the key does not make the conversation sticky across assistant responses.
+
+The gateway's current affinity experiment is deliberately disabled in the
+paired deployment configuration. The `x-litellm-session-id` correlation header
+and the Langfuse trace/session headers remain separate observability contracts;
+keeping them does not mean routing affinity is enabled.
+
+For aggregate evidence, run the explicit
+`--gateway-cost --from YYYY-MM-DD --to YYYY-MM-DD` mode of
+`packages/prisma-data/src/scripts/2026-06-16_analyze_chatbot_usage.ts:runGatewayCostReport`.
+The window is UTC and half-open. The mode reads Langfuse generation pages and
+LiteLLM spend rows in memory, emits model/count/token/cost aggregates as JSON,
+and never writes raw observations or credentials. It counts positive-cost
+generations and requires the mutually exclusive algebra
+`input = uncached + cache-read + cache-write`; missing cache fields, scope
+drift, model/count drift, or cost drift fail closed. This is aggregate gateway
+evidence, not an exact course allocation or Azure invoice.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
 `src/stores/settingsStore.ts:loadCredits` accepts only the latest request generation, so a late

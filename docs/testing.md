@@ -31,6 +31,32 @@ index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
 
+For provider-option changes that affect both OpenAI transports, also run the
+focused chat fixture:
+
+```bash
+pnpm --filter @klicker-uzh/chat exec vitest run \
+  test/openai-provider-options.test.ts test/openai-chat-streaming.test.ts
+```
+
+`test/openai-provider-options.test.ts` proves the turn key and thread cache key
+on both Chat Completions and Responses request bodies. It is still local
+serialization evidence, not proof that a deployed gateway routes or caches the
+request.
+
+The aggregate cost reconciler is a dependency-light script test and does not
+need a database or network:
+
+```bash
+pnpm exec tsx src/scripts/lib/aggregateCostReconciliation.test.ts
+```
+
+Run it from `packages/prisma-data`. The explicit gateway report mode uses
+secret-backed runtime environment variables and must be run only with an
+approved read-only measurement window. It fails closed when cache buckets or
+Langfuse/LiteLLM scope and cost parity are incomplete; local synthetic fixtures
+do not establish staging, production, or Azure billing evidence.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
