@@ -114,9 +114,9 @@ export function parseCorrelatedResponseInstanceInfo(
     sessionBlockId: value.sessionBlockId,
   }
   for (const field of OPTIONAL_STRING_FIELDS) {
-    const fieldValue = value[field]
-    if (typeof fieldValue === 'string') {
-      common[field] = fieldValue
+    if (field in value) {
+      if (typeof value[field] !== 'string') return null
+      common[field] = value[field]
     }
   }
 

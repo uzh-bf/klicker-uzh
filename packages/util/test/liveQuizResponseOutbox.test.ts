@@ -69,6 +69,21 @@ describe('correlated live quiz outbox contract', () => {
     ).toThrow('Invalid correlated response outbox message')
   })
 
+  it('rejects non-string optional metadata before encryption', () => {
+    expect(() =>
+      encryptCorrelatedResponseEvent({
+        message: {
+          ...message,
+          instanceInfo: {
+            ...message.instanceInfo,
+            restrictions: { min: 10 },
+          },
+        } as unknown as CorrelatedResponseEventMessage,
+        secret: 'test-secret',
+      })
+    ).toThrow('Invalid correlated response outbox message')
+  })
+
   it('rejects incomplete question-specific metadata', () => {
     expect(() =>
       encryptCorrelatedResponseEvent({
