@@ -35,13 +35,13 @@ function litellmSpend(overrides: Record<string, unknown> = {}) {
   return {
     team_id: 'team-aibuddy',
     model: 'aibuddy/azure/gpt-5.6-luna',
+    startTime: '2026-08-03T12:00:00.000Z',
     prompt_tokens: 100,
     completion_tokens: 20,
     prompt_tokens_details: {
       cached_tokens: 40,
       cache_creation_input_tokens: 10,
     },
-    metadata: { session_id: 'assistant-1' },
     spend: 0.2,
     ...overrides,
   }
@@ -53,10 +53,7 @@ function matchingLedgers(): { langfuse: CostLedger; litellm: CostLedger } {
       [langfuseObservation(), langfuseObservation({ totalCost: 0 })],
       scope
     ),
-    litellm: aggregateLiteLLMSpend(
-      [litellmSpend(), litellmSpend({ team_id: 'other-team', spend: 2 })],
-      scope
-    ),
+    litellm: aggregateLiteLLMSpend([litellmSpend()], scope),
   }
 }
 
@@ -73,8 +70,19 @@ function testMatchingLedgersReconcile() {
   assert.equal(result.langfuse?.cacheReadInputTokens, 40)
   assert.equal(result.langfuse?.cacheReadRate, 0.4)
   assert.equal(result.langfuse?.averageCostPerGeneration, 0.2)
-  assert.equal(result.litellm?.assistantResponseCount, 1)
-  assert.equal(result.litellm?.averageCostPerAssistantResponse, 0.2)
+  assert.deepEqual(result.litellm?.modelDistribution, [
+    {
+      model: 'aibuddy/azure/gpt-5.6-luna',
+      generationCount: 1,
+      inputTokens: 100,
+      uncachedInputTokens: 50,
+      cacheReadInputTokens: 40,
+      cacheWriteInputTokens: 10,
+      outputTokens: 20,
+      share: 1,
+      totalCost: 0.2,
+    },
+  ])
 }
 
 function testMissingCacheWriteIsIncomplete() {
@@ -122,6 +130,37 @@ function testNegativeCacheAlgebraIsRejected() {
   )
 }
 
+function testExactWindowAndSourceScopeAreFailClosed() {
+  const inWindow = aggregateLiteLLMSpend(
+    [
+      litellmSpend(),
+      litellmSpend({ startTime: scope.to }),
+      litellmSpend({ startTime: '2026-07-31T23:59:59.999Z' }),
+    ],
+    scope
+  )
+  assert.equal(inWindow.rows[0]?.generationCount, 1)
+
+  assert.throws(
+    () =>
+      aggregateLiteLLMSpend([litellmSpend({ startTime: undefined })], scope),
+    /startTime is missing/
+  )
+  assert.throws(
+    () =>
+      aggregateLiteLLMSpend([litellmSpend({ team_id: 'other-team' })], scope),
+    /outside the requested team scope/
+  )
+  assert.throws(
+    () =>
+      aggregateLangfuseObservations(
+        [langfuseObservation({ type: undefined })],
+        scope
+      ),
+    /type must be GENERATION/
+  )
+}
+
 function testModelSetCountCostAndScopeDriftAreNotReconciled() {
   const { langfuse, litellm } = matchingLedgers()
   const differentModel = aggregateLiteLLMSpend(
@@ -165,6 +204,18 @@ function testModelSetCountCostAndScopeDriftAreNotReconciled() {
     /cost differs/
   )
 
+  const tokenDrift = {
+    ...litellm,
+    rows: litellm.rows.map((row) => ({ ...row, outputTokens: 21 })),
+  }
+  assert.match(
+    reconcileCostLedgers(langfuse, tokenDrift, {
+      absoluteTolerance: 0.000001,
+      relativeTolerance: 0.001,
+    }).issues.join('|'),
+    /outputTokens differs/
+  )
+
   assert.match(
     reconcileCostLedgers(langfuse, differentScope, {
       absoluteTolerance: 0.000001,
@@ -178,19 +229,39 @@ function testSummaryOfEmptyLedgerIsExplicit() {
   const summary = summarizeCostLedger({
     scope,
     rows: [],
-    assistantResponseCount: null,
   })
   assert.equal(summary.generationCount, 0)
   assert.equal(summary.cacheReadRate, null)
   assert.equal(summary.averageCostPerGeneration, null)
-  assert.equal(summary.averageCostPerAssistantResponse, null)
   assert.deepEqual(summary.modelDistribution, [])
+}
+
+function testInvalidTolerancesAreRejected() {
+  const { langfuse, litellm } = matchingLedgers()
+  assert.throws(
+    () =>
+      reconcileCostLedgers(langfuse, litellm, {
+        absoluteTolerance: Number.NaN,
+        relativeTolerance: 0.001,
+      }),
+    /absoluteTolerance must be a finite non-negative number/
+  )
+  assert.throws(
+    () =>
+      reconcileCostLedgers(langfuse, litellm, {
+        absoluteTolerance: 0.000001,
+        relativeTolerance: Number.POSITIVE_INFINITY,
+      }),
+    /relativeTolerance must be a finite non-negative number/
+  )
 }
 
 testMatchingLedgersReconcile()
 testMissingCacheWriteIsIncomplete()
 testNegativeCacheAlgebraIsRejected()
+testExactWindowAndSourceScopeAreFailClosed()
 testModelSetCountCostAndScopeDriftAreNotReconciled()
 testSummaryOfEmptyLedgerIsExplicit()
+testInvalidTolerancesAreRejected()
 
 console.log('aggregate cost reconciliation tests passed')

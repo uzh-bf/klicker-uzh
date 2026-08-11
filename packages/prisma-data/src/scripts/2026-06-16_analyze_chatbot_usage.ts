@@ -1133,6 +1133,24 @@ function listRows(payload: unknown, label: string) {
   return responseRows(payload, label)
 }
 
+function nextUtcDate(isoTimestamp: string) {
+  const date = new Date(isoTimestamp)
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Gateway cost window must use valid UTC timestamps.')
+  }
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
+
+function costTolerance(name: string, fallback: number) {
+  const raw = process.env[name]
+  const value = raw === undefined ? fallback : Number(raw)
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${name} must be a finite non-negative number.`)
+  }
+  return value
+}
+
 async function loadLangfuseCostRows(
   scope: AggregateScope,
   host: string,
@@ -1183,7 +1201,9 @@ async function loadLiteLLMCostRows(
 ) {
   const params = new URLSearchParams({
     start_date: scope.from.slice(0, 10),
-    end_date: scope.to.slice(0, 10),
+    // LiteLLM accepts calendar dates here. Fetch the enclosing end date and
+    // apply the exact half-open UTC boundary to each returned startTime row.
+    end_date: nextUtcDate(scope.to),
     summarize: 'false',
   })
   const payload = await requestCostJson(
@@ -1205,6 +1225,14 @@ async function runGatewayCostReport(options: CliOptions) {
   const langfusePublicKey = requiredEnvironment('LANGFUSE_PUBLIC_KEY')
   const langfuseSecretKey = requiredEnvironment('LANGFUSE_SECRET_KEY')
   const litellmApiKey = requiredEnvironment('LITELLM_API_KEY')
+  const absoluteTolerance = costTolerance(
+    'GATEWAY_COST_ABSOLUTE_TOLERANCE_USD',
+    0.000001
+  )
+  const relativeTolerance = costTolerance(
+    'GATEWAY_COST_RELATIVE_TOLERANCE',
+    0.001
+  )
   const langfuseAuthorization = `Basic ${Buffer.from(
     `${langfusePublicKey}:${langfuseSecretKey}`
   ).toString('base64')}`
@@ -1219,12 +1247,8 @@ async function runGatewayCostReport(options: CliOptions) {
       aggregateLangfuseObservations(langfuseRows, scope),
       aggregateLiteLLMSpend(litellmRows, scope),
       {
-        absoluteTolerance: Number(
-          process.env.GATEWAY_COST_ABSOLUTE_TOLERANCE_USD ?? '0.000001'
-        ),
-        relativeTolerance: Number(
-          process.env.GATEWAY_COST_RELATIVE_TOLERANCE ?? '0.001'
-        ),
+        absoluteTolerance,
+        relativeTolerance,
       }
     )
 

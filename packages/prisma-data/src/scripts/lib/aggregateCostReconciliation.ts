@@ -19,7 +19,6 @@ export type CostAggregate = {
 export type CostLedger = {
   scope: AggregateScope
   rows: CostAggregate[]
-  assistantResponseCount: number | null
 }
 
 export type CostSummary = {
@@ -30,13 +29,16 @@ export type CostSummary = {
   cacheWriteInputTokens: number
   outputTokens: number
   totalCost: number
-  assistantResponseCount: number | null
   cacheReadRate: number | null
   averageCostPerGeneration: number | null
-  averageCostPerAssistantResponse: number | null
   modelDistribution: Array<{
     model: string
     generationCount: number
+    inputTokens: number
+    uncachedInputTokens: number
+    cacheReadInputTokens: number
+    cacheWriteInputTokens: number
+    outputTokens: number
     share: number
     totalCost: number
   }>
@@ -210,16 +212,52 @@ function inputBuckets(object: JsonObject, nested: JsonObject[], label: string) {
   }
 }
 
+function scopeBounds(scope: AggregateScope) {
+  const from = Date.parse(scope.from)
+  const to = Date.parse(scope.to)
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from >= to) {
+    throw new CostEvidenceError(
+      'Cost evidence scope must be a valid half-open UTC window'
+    )
+  }
+  return { from, to }
+}
+
+function readRequiredTimestamp(
+  object: JsonObject,
+  candidates: string[],
+  label: string
+) {
+  const value = candidates
+    .map((candidate) => object[candidate])
+    .find((candidate) => candidate !== undefined && candidate !== null)
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw new CostEvidenceError(`${label} is missing`)
+  }
+
+  const timestamp = new Date(value).getTime()
+  if (!Number.isFinite(timestamp)) {
+    throw new CostEvidenceError(`${label} must be a valid timestamp`)
+  }
+  return timestamp
+}
+
 export function aggregateLangfuseObservations(
   payload: unknown,
   scope: AggregateScope
 ): CostLedger {
+  scopeBounds(scope)
   const rows = asArray(payload, 'Langfuse observations')
   const aggregates = new Map<string, CostAggregate>()
 
   for (const [index, value] of rows.entries()) {
     const object = asObject(value, `Langfuse observation ${index}`)
-    if (object.type !== undefined && object.type !== 'GENERATION') continue
+    if (object.type !== 'GENERATION') {
+      throw new CostEvidenceError(
+        `Langfuse observation ${index}.type must be GENERATION`
+      )
+    }
 
     const totalCost = readRequiredNumber(
       object,
@@ -235,7 +273,12 @@ export function aggregateLangfuseObservations(
 
     // Zero-cost observations are not part of the cost-bearing reconciliation
     // contract. This matches the gateway audit's positive-spend count grain.
-    if (totalCost <= 0) continue
+    if (totalCost < 0) {
+      throw new CostEvidenceError(
+        `Langfuse observation ${index}.totalCost must be non-negative`
+      )
+    }
+    if (totalCost === 0) continue
 
     const usageDetails = asObject(
       object.usageDetails ?? {},
@@ -280,7 +323,6 @@ export function aggregateLangfuseObservations(
   return {
     scope,
     rows: Array.from(aggregates.values()).sort(byModel),
-    assistantResponseCount: null,
   }
 }
 
@@ -291,60 +333,40 @@ function nestedPromptDetails(object: JsonObject) {
     : []
 }
 
-function assistantResponseId(object: JsonObject) {
-  const rawMetadata = object.metadata
-  let metadata: JsonObject | null = null
-  if (
-    rawMetadata &&
-    typeof rawMetadata === 'object' &&
-    !Array.isArray(rawMetadata)
-  ) {
-    metadata = rawMetadata as JsonObject
-  } else if (typeof rawMetadata === 'string') {
-    try {
-      const parsed = JSON.parse(rawMetadata)
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        metadata = parsed as JsonObject
-      }
-    } catch {
-      metadata = null
-    }
-  }
-
-  const candidates = [
-    object.session_id,
-    object.sessionId,
-    metadata?.session_id,
-    metadata?.sessionId,
-  ]
-  return candidates.find(
-    (value): value is string => typeof value === 'string' && value.length > 0
-  )
-}
-
 export function aggregateLiteLLMSpend(
   payload: unknown,
   scope: AggregateScope
 ): CostLedger {
+  const { from, to } = scopeBounds(scope)
   const rows = asArray(payload, 'LiteLLM spend')
   const aggregates = new Map<string, CostAggregate>()
-  const responseIds = new Set<string>()
-  let missingResponseId = false
 
   for (const [index, value] of rows.entries()) {
     const object = asObject(value, `LiteLLM spend row ${index}`)
-    if (String(object.team_id ?? '') !== scope.teamId) continue
-
     const totalCost = readRequiredNumber(
       object,
       ['spend', 'totalCost', 'total_cost'],
       `LiteLLM spend row ${index}.totalCost`
     )
-    if (totalCost <= 0) continue
+    if (totalCost < 0) {
+      throw new CostEvidenceError(
+        `LiteLLM spend row ${index}.totalCost must be non-negative`
+      )
+    }
+    if (totalCost === 0) continue
 
-    const responseId = assistantResponseId(object)
-    if (responseId) responseIds.add(responseId)
-    else missingResponseId = true
+    const startTime = readRequiredTimestamp(
+      object,
+      ['startTime', 'start_time'],
+      `LiteLLM spend row ${index}.startTime`
+    )
+    if (startTime < from || startTime >= to) continue
+
+    if (object.team_id !== scope.teamId) {
+      throw new CostEvidenceError(
+        `LiteLLM spend row ${index}.team_id is outside the requested team scope`
+      )
+    }
 
     const buckets = inputBuckets(
       object,
@@ -383,7 +405,6 @@ export function aggregateLiteLLMSpend(
   return {
     scope,
     rows: Array.from(aggregates.values()).sort(byModel),
-    assistantResponseCount: missingResponseId ? null : responseIds.size,
   }
 }
 
@@ -425,11 +446,8 @@ export function summarizeCostLedger(ledger: CostLedger): CostSummary {
     }
   )
 
-  const assistantResponseCount = ledger.assistantResponseCount
-
   return {
     ...totals,
-    assistantResponseCount,
     cacheReadRate:
       totals.inputTokens > 0
         ? totals.cacheReadInputTokens / totals.inputTokens
@@ -438,13 +456,14 @@ export function summarizeCostLedger(ledger: CostLedger): CostSummary {
       totals.generationCount > 0
         ? totals.totalCost / totals.generationCount
         : null,
-    averageCostPerAssistantResponse:
-      assistantResponseCount !== null && assistantResponseCount > 0
-        ? totals.totalCost / assistantResponseCount
-        : null,
     modelDistribution: ledger.rows.map((row) => ({
       model: row.model,
       generationCount: row.generationCount,
+      inputTokens: row.inputTokens,
+      uncachedInputTokens: row.uncachedInputTokens,
+      cacheReadInputTokens: row.cacheReadInputTokens,
+      cacheWriteInputTokens: row.cacheWriteInputTokens,
+      outputTokens: row.outputTokens,
       share:
         totals.generationCount > 0
           ? row.generationCount / totals.generationCount
@@ -459,6 +478,17 @@ export function reconcileCostLedgers(
   litellm: CostLedger,
   options: { absoluteTolerance: number; relativeTolerance: number }
 ): ReconciliationResult {
+  for (const [label, value] of [
+    ['absoluteTolerance', options.absoluteTolerance],
+    ['relativeTolerance', options.relativeTolerance],
+  ] as const) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new CostEvidenceError(
+        `${label} must be a finite non-negative number`
+      )
+    }
+  }
+
   const langfuseSummary = summarizeCostLedger(langfuse)
   const litellmSummary = summarizeCostLedger(litellm)
   const issues: string[] = []

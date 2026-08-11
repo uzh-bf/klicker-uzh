@@ -125,11 +125,13 @@ For aggregate evidence, run the explicit
 `packages/prisma-data/src/scripts/2026-06-16_analyze_chatbot_usage.ts:runGatewayCostReport`.
 The window is UTC and half-open. The mode reads Langfuse generation pages and
 LiteLLM spend rows in memory, emits model/count/token/cost aggregates as JSON,
-and never writes raw observations or credentials. It counts positive-cost
+and never writes raw observations or credentials. The date-based LiteLLM query
+is widened to the enclosing UTC dates, then each positive-cost row is filtered
+by its exact `startTime` and required team id. It counts positive-cost
 generations and requires the mutually exclusive algebra
 `input = uncached + cache-read + cache-write`; missing cache fields, scope
-drift, model/count drift, or cost drift fail closed. This is aggregate gateway
-evidence, not an exact course allocation or Azure invoice.
+or type drift, model/count/token drift, or cost drift fail closed. This is
+aggregate gateway evidence, not an exact course allocation or Azure invoice.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
 `src/stores/settingsStore.ts:loadCredits` accepts only the latest request generation, so a late

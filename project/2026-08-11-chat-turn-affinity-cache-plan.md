@@ -140,7 +140,8 @@ changes.
   holding image, model catalog, environment, team scope, weekday mix, and
   unrelated routing changes constant where possible. Report request and
   generation counts, routed-model distribution, input/output/cache buckets,
-  cache-read rate, total spend, and average cost per assistant response.
+  cache-read rate, total spend, and average cost per generation. Do not infer
+  an assistant-response denominator from session correlation keys.
 - STG and PRD rollout, secret-backed queries, paid measurement, merge, and
   production claims each require separate approval. Local/CI evidence does not
   prove route selection, cache hits, Langfuse ingestion, Azure billing, or

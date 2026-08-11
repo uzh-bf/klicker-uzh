@@ -45,7 +45,9 @@ serialization evidence, not proof that a deployed gateway routes or caches the
 request.
 
 The aggregate cost reconciler is a dependency-light script test and does not
-need a database or network:
+need a database or network. It covers exact UTC row boundaries, source-scope
+and generation-type drift, token/cache algebra, tolerance validation, and
+Langfuse/LiteLLM model parity:
 
 ```bash
 pnpm exec tsx src/scripts/lib/aggregateCostReconciliation.test.ts
