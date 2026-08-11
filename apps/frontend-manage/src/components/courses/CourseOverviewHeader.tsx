@@ -398,7 +398,7 @@ function CourseOverviewHeader({
                   groupDeadlineDate: groupDeadlineDateUTC,
                   maxGroupSize,
                   preferredGroupSize,
-                  id: course.id,
+                  sourceCourseId: course.id,
                   duplicateLiveQuizzes: values.copyLiveQuizzes,
                   duplicatePracticeQuizzes: values.copyPracticeQuizzes,
                   duplicateMicrolearnings: values.copyMicroLearnings,

@@ -12,7 +12,7 @@ mutation CreateCourse(
   $language: LocaleType!
   $notificationEmail: String
   $isGamificationEnabled: Boolean!
-  $id: String
+  $sourceCourseId: String
   $duplicateLiveQuizzes: Boolean
   $duplicatePracticeQuizzes: Boolean
   $duplicateMicrolearnings: Boolean
@@ -32,7 +32,7 @@ mutation CreateCourse(
     language: $language
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
-    id: $id
+    sourceCourseId: $sourceCourseId
     duplicateLiveQuizzes: $duplicateLiveQuizzes
     duplicatePracticeQuizzes: $duplicatePracticeQuizzes
     duplicateMicrolearnings: $duplicateMicrolearnings

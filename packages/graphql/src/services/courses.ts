@@ -2582,7 +2582,7 @@ interface CreateCourseArgs {
   notificationEmail?: string | null
   isGamificationEnabled: boolean
   isAssessmentEnabled?: boolean | null
-  id?: string | null // if set, duplicate the course with the provided id
+  sourceCourseId?: string | null
   duplicateLiveQuizzes?: boolean | null
   duplicatePracticeQuizzes?: boolean | null
   duplicateMicrolearnings?: boolean | null
@@ -3446,7 +3446,7 @@ export async function duplicateCourse(
     preferredGroupSize,
     language,
     notificationEmail,
-    id,
+    sourceCourseId,
     duplicateLiveQuizzes,
     duplicatePracticeQuizzes,
     duplicateMicrolearnings,
@@ -3454,28 +3454,38 @@ export async function duplicateCourse(
   }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
-  if (!id) {
+  if (!sourceCourseId) {
     throw new Error('Course ID to duplicate not provided')
   }
 
   const hasDuplicationAccess = await checkAccess(
-    [{ courseId: id, minimumPermissionLevel: DB.PermissionLevel.ADMIN }],
+    [
+      {
+        courseId: sourceCourseId,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      },
+    ],
     ctx
   )
   if (!hasDuplicationAccess) return null
 
   await recomputeDerivedPermissions(
-    { courseId: id, userId: ctx.user.sub },
+    { courseId: sourceCourseId, userId: ctx.user.sub },
     ctx.prisma
   )
   const hasRefreshedDuplicationAccess = await checkAccess(
-    [{ courseId: id, minimumPermissionLevel: DB.PermissionLevel.ADMIN }],
+    [
+      {
+        courseId: sourceCourseId,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      },
+    ],
     ctx
   )
   if (!hasRefreshedDuplicationAccess) return null
 
   const oldCourse = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id: sourceCourseId },
     include: courseDuplicationInclude,
   })
 
