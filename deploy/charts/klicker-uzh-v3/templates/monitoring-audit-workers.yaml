@@ -1,0 +1,60 @@
+{{- if and .Values.assessmentAudit.enabled .Values.assessmentAudit.monitoring.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-worker
+spec:
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-worker
+  ports:
+    - name: metrics
+      port: 9464
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: assessment-audit-worker
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.assessmentAudit.monitoring.interval }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: assessment-audit-worker
+      rules:
+        - alert: AssessmentAuditMonitorHeartbeatMissing
+          expr: absent(assessment_audit_monitor_last_success_timestamp_seconds) or (time() - assessment_audit_monitor_last_success_timestamp_seconds > 180)
+          for: 3m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit monitor heartbeat is absent or stale
+        - alert: AssessmentAuditWorkerUnavailable
+          expr: kube_deployment_status_replicas_available{namespace={{ .Release.Namespace | quote }},deployment={{ printf "%s-assessment-audit-worker" (include "chart.fullname" .) | quote }}} < 1
+          for: 3m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit worker has no available replica
+{{- end }}

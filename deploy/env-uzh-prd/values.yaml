@@ -153,6 +153,22 @@ hatchet:
           value: reserved
           effect: NoSchedule
 
+assessmentAudit:
+  enabled: false
+  environment: prd
+  rollout: disabled
+  tableEndpoint: ''
+  blobEndpoint: ''
+  worker:
+    serviceAccountName: ''
+    priorityClassName: production-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
+      pullPolicy: IfNotPresent
+      tag: ''
+  monitoring:
+    enabled: false
+
 auth:
   priorityClassName: production-workload
 

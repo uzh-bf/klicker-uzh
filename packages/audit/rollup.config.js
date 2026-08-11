@@ -3,7 +3,10 @@ import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 
 export default defineConfig({
-  input: ['src/index.ts'],
+  input: {
+    index: 'src/index.ts',
+    'cli/index': 'src/cli/index.ts',
+  },
   output: {
     dir: 'dist',
     format: 'esm',

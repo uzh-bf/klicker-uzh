@@ -105,6 +105,23 @@ hatchet:
           value: reserved
           effect: NoSchedule
 
+assessmentAudit:
+  enabled: false
+  environment: stg
+  rollout: disabled
+  # Supplied from the df-cloud Pulumi stack only after staging validation.
+  tableEndpoint: ''
+  blobEndpoint: ''
+  worker:
+    serviceAccountName: ''
+    priorityClassName: staging-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
+      pullPolicy: Always
+      tag: v3
+  monitoring:
+    enabled: false
+
 auth:
   priorityClassName: staging-workload
   podAnnotations:

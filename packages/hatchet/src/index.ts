@@ -64,6 +64,37 @@ export function prepareHatchetTasks({
     },
   }
 
+  // ! ASSESSMENT AUDIT DELIVERY
+  // #region
+  const dispatchAssessmentAuditOutbox = hatchet.task({
+    name: 'dispatch-assessment-audit-outbox',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleDispatchAssessmentAuditOutbox(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const monitorAssessmentAudit = hatchet.task({
+    name: 'monitor-assessment-audit',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleMonitorAssessmentAudit(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+  // #endregion
+
   // ! AUDIT LOGGING
   // #region
   const createAuditLogEntry = hatchet.task({
@@ -365,6 +396,8 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    dispatchAssessmentAuditOutbox,
+    monitorAssessmentAudit,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

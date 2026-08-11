@@ -73,6 +73,26 @@ services:
       postgres:
         condition: service_healthy
 
+  # --- Azure Storage emulator for audit evidence adapter conformance tests ---
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.36.0
+    command:
+      - azurite
+      - --silent
+      - --location
+      - /data
+      - --debug
+      - /data/debug.log
+      - --blobHost
+      - 0.0.0.0
+      - --queueHost
+      - 0.0.0.0
+      - --tableHost
+      - 0.0.0.0
+    networks: [default]
+    volumes:
+      - azurite_data:/data
+
   app:
     build:
       context: .
@@ -118,6 +138,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      azurite:
+        condition: service_started
 
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
@@ -158,6 +180,7 @@ volumes:
     external: true
     name: klicker-uzh-pnpm-store-v1
   hatchet_lite_config:
+  azurite_data:
 
 networks:
   devnet:
