@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  hasConfiguredModeDescriptions,
   resolveModeDescriptions,
   resolveSelectedMode,
 } from '../src/lib/config/modes'
@@ -53,6 +54,10 @@ describe('thread suggestions', () => {
     expect(resolveModeDescriptions(null)).toEqual({
       tutor: 'Acts as a patient and knowledgeable tutor.',
     })
+    expect(hasConfiguredModeDescriptions(null)).toBe(false)
+    expect(hasConfiguredModeDescriptions({ tutor: { description: '' } })).toBe(
+      true
+    )
   })
 
   test('resolves a selected mode by key even when its description is empty', () => {

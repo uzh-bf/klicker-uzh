@@ -23,10 +23,12 @@ const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 export function RuntimeProvider({
   chatbotId,
   initialModeOptions,
+  initialModeOptionsAreFallback,
   children,
 }: Readonly<{
   chatbotId: string
   initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
@@ -111,7 +113,11 @@ export function RuntimeProvider({
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
       void (async () => {
-        await loadModeOptions(chatbotId, initialModeOptions)
+        await loadModeOptions(
+          chatbotId,
+          initialModeOptions,
+          initialModeOptionsAreFallback
+        )
         await loadCredits(chatbotId)
       })()
       return
@@ -147,13 +153,18 @@ export function RuntimeProvider({
     })()
 
     void (async () => {
-      await loadModeOptions(chatbotId, initialModeOptions)
+      await loadModeOptions(
+        chatbotId,
+        initialModeOptions,
+        initialModeOptionsAreFallback
+      )
       await loadCredits(chatbotId)
     })()
   }, [
     chatbotId,
     embedded,
     initialModeOptions,
+    initialModeOptionsAreFallback,
     loadCredits,
     loadModeOptions,
     loadThreads,

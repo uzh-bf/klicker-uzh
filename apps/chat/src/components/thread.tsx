@@ -91,6 +91,7 @@ type ThreadProps = {
   chatbotAvatar: string
   chatbotName: string
   initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -261,6 +262,7 @@ export const Thread: FC<ThreadProps> = ({
   chatbotAvatar,
   chatbotName,
   initialModeOptions,
+  initialModeOptionsAreFallback,
 }) => {
   const { embedded } = useChatUi()
   const messageComponents = useMemo(
@@ -292,6 +294,7 @@ export const Thread: FC<ThreadProps> = ({
           chatbotAvatar={chatbotAvatar}
           chatbotName={chatbotName}
           initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
@@ -368,33 +371,54 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const useWelcomeModeOptions = (initialModeOptions: Record<string, string>) => {
+const useWelcomeModeOptions = (
+  initialModeOptions: Record<string, string>,
+  initialModeOptionsAreFallback: boolean
+) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const modeOptions = useSettingsStore((state) => state.modeOptions)
   const modeOptionsChatbotId = useSettingsStore(
     (state) => state.modeOptionsChatbotId
   )
+  const modeOptionsAreFallback = useSettingsStore(
+    (state) => state.modeOptionsAreFallback
+  )
 
-  const currentChatbotModeOptions =
+  const hasCurrentChatbotModeOptions =
     modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
-      ? modeOptions
-      : initialModeOptions
 
-  return currentChatbotModeOptions
+  return {
+    modeOptions: hasCurrentChatbotModeOptions
+      ? modeOptions
+      : initialModeOptions,
+    modeOptionsAreFallback: hasCurrentChatbotModeOptions
+      ? modeOptionsAreFallback
+      : initialModeOptionsAreFallback,
+  }
 }
 
 const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
   initialModeOptions: Record<string, string>
-}> = ({ chatbotAvatar, chatbotName, initialModeOptions }) => {
+  initialModeOptionsAreFallback: boolean
+}> = ({
+  chatbotAvatar,
+  chatbotName,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+}) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const modeOptions = useWelcomeModeOptions(initialModeOptions)
+  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
+    initialModeOptions,
+    initialModeOptionsAreFallback
+  )
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
+    ? !modeOptionsAreFallback &&
+      Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
       ? (modeOptions[activeMode]?.trim() ?? '')
       : getModeDescription(t, activeMode, modeOptions)
     : null
@@ -451,7 +475,10 @@ const ThreadWelcome: FC<{
             )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions initialModeOptions={initialModeOptions} />
+        <ThreadWelcomeSuggestions
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
       </div>
     </ThreadPrimitive.Empty>
   )
@@ -461,10 +488,14 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC<{
   initialModeOptions: Record<string, string>
-}> = ({ initialModeOptions }) => {
+  initialModeOptionsAreFallback: boolean
+}> = ({ initialModeOptions, initialModeOptionsAreFallback }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const modeOptions = useWelcomeModeOptions(initialModeOptions)
+  const { modeOptions } = useWelcomeModeOptions(
+    initialModeOptions,
+    initialModeOptionsAreFallback
+  )
 
   if (Object.keys(modeOptions).length === 0) return null
 

@@ -1,7 +1,10 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
-import { resolveModeDescriptions } from '../../lib/config/modes'
+import {
+  hasConfiguredModeDescriptions,
+  resolveModeDescriptions,
+} from '../../lib/config/modes'
 import { z } from 'zod'
 
 interface ChatLayoutProps {
@@ -25,6 +28,9 @@ export default async function ChatLayout({
   if (!chatbot) notFound()
 
   const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
+  const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(
+    chatbot.systemPrompts
+  )
 
   return (
     <>
@@ -35,6 +41,7 @@ export default async function ChatLayout({
           avatar: chatbot.avatar ?? undefined,
         }}
         initialModeOptions={initialModeOptions}
+        initialModeOptionsAreFallback={initialModeOptionsAreFallback}
       />
       {children}
     </>

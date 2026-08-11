@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import {
+  hasConfiguredModeDescriptions,
   resolveModeDescriptions,
   resolveSelectedMode,
 } from '../lib/config/modes'
@@ -71,6 +72,7 @@ interface SettingsState {
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
   modeOptionsChatbotId: string | null
+  modeOptionsAreFallback: boolean
 
   // Actions
   setSelectedModel: (model: ModelID) => void
@@ -78,7 +80,8 @@ interface SettingsState {
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (
     chatbotId: string,
-    initialModeOptions?: Record<string, string>
+    initialModeOptions?: Record<string, string>,
+    initialModeOptionsAreFallback?: boolean
   ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -101,6 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
       modelSelectionEnabled: false,
       modeOptions: {},
       modeOptionsChatbotId: null,
+      modeOptionsAreFallback: true,
 
       // available options
       modelOptions: [],
@@ -136,16 +140,23 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (
         chatbotId: string,
-        initialModeOptions?: Record<string, string>
+        initialModeOptions?: Record<string, string>,
+        initialModeOptionsAreFallback = false
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
-        const fallbackModeOptions =
+        const hasInitialModeOptions = !!(
           initialModeOptions && Object.keys(initialModeOptions).length > 0
-            ? initialModeOptions
-            : resolveModeDescriptions(null)
+        )
+        const fallbackModeOptions = hasInitialModeOptions
+          ? initialModeOptions
+          : resolveModeDescriptions(null)
+        const fallbackModeOptionsAreFallback = hasInitialModeOptions
+          ? initialModeOptionsAreFallback
+          : true
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
+          modeOptionsAreFallback: true,
           modelSelectionEnabled: false,
         })
 
@@ -161,6 +172,7 @@ export const useSettingsStore = create<SettingsState>()(
             set((state) => ({
               modeOptions: fallbackModeOptions,
               modeOptionsChatbotId: chatbotId,
+              modeOptionsAreFallback: fallbackModeOptionsAreFallback,
               selectedMode: resolveSelectedMode(
                 fallbackModeOptions,
                 state.selectedMode
@@ -180,6 +192,9 @@ export const useSettingsStore = create<SettingsState>()(
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
+              modeOptionsAreFallback: !hasConfiguredModeDescriptions(
+                responseData.systemPrompts
+              ),
               modelSelectionEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
@@ -194,6 +209,7 @@ export const useSettingsStore = create<SettingsState>()(
           set((state) => ({
             modeOptions: fallbackModeOptions,
             modeOptionsChatbotId: chatbotId,
+            modeOptionsAreFallback: fallbackModeOptionsAreFallback,
             selectedMode: resolveSelectedMode(
               fallbackModeOptions,
               state.selectedMode

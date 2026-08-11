@@ -22,6 +22,15 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
+export function hasConfiguredModeDescriptions(systemPrompts: unknown): boolean {
+  return !!(
+    systemPrompts &&
+    typeof systemPrompts === 'object' &&
+    !Array.isArray(systemPrompts) &&
+    Object.keys(systemPrompts).length > 0
+  )
+}
+
 export function resolveModeDescriptions(
   systemPrompts: unknown
 ): Record<string, string> {

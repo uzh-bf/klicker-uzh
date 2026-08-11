@@ -451,6 +451,14 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   as `testuser1` while switching between locales. Focused Playwright remains
   blocked before assertions by the missing Chromium headless shell; hosted CI
   remains the automated gate.
+- Final layer-04 review corrections (2026-08-11): the secondary mode-options
+  refresh now retains the sanitized initial chatbot modes on rejection or a
+  non-OK response, and the welcome Playwright contract asserts the fixture
+  chatbot name and configured Tutor description. The welcome distinguishes
+  genuine configured descriptions, including an intentionally empty value,
+  from the synthesized Tutor fallback so fallback copy remains localized.
+- Next: push the reviewed layer-04 head, create or refresh the draft PRs for
+  layers 02–05, then implement and review layer 05 conversation presentation.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
@@ -472,11 +480,6 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   unrelated root build because unchanged `olat-api` source fails Rollup's
   parser; the layer-specific checks and container chat production build passed,
   and the exception was recorded when the stack was pushed.
-- Next: commit and review layer 04, push its reviewed head, then implement
-  layer 05. The layer-05 branch already rebases onto the reviewed layer-03
-  head; draft PR descriptions still need to be created or refreshed for the
-  completed packages without marking any PR ready or merging.
-
 ### Autonomous goal prompt
 
 Use this prompt after Gate 1 approval:

@@ -24,6 +24,7 @@ describe('settingsStore mode loading', () => {
     useSettingsStore.setState({
       modeOptions: {},
       modeOptionsChatbotId: null,
+      modeOptionsAreFallback: true,
       selectedMode: 'tutor',
     })
   })
@@ -90,6 +91,21 @@ describe('settingsStore mode loading', () => {
       tutor: 'Tutor mode',
       custom: '',
     })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
+  })
+
+  test('marks synthesized mode descriptions as the localized fallback', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ systemPrompts: null }),
+      })
+    )
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(true)
   })
 
   test('keeps initial chatbot modes when the mode refresh fails', async () => {
@@ -104,6 +120,7 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().modeOptions).toEqual({
       explainer: 'Explainer mode',
     })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
   })
 
   test('keeps initial chatbot modes on a non-ok mode refresh', async () => {
@@ -124,5 +141,6 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().modeOptions).toEqual({
       custom: 'Custom mode',
     })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
   })
 })
