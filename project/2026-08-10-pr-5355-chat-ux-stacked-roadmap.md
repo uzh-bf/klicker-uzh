@@ -468,7 +468,8 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   `check:all` gate passed. The final `text-pretty` heading refinement is
   class-only and is covered by those package gates. Focused Playwright could
   not launch locally because the container lacks Chromium's
-  `headless_shell-1208` executable; hosted CI remains the browser-runner gate.
+  `headless_shell-1208` executable; hosted CI supplied the browser-runner
+  proof.
 - Review follow-up (2026-08-11): integrated review findings are resolved in
   `fd1bc9c60` and `c69a38cff`. Silent stream interruptions now use the same
   localized retry callout as explicit errors, source Markdown h6 uses a
@@ -480,13 +481,14 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   passed. The real in-app Browser still showed the branched heading treatment
   and mobile failed-turn chrome. Focused Playwright launched the global setup
   but all three selected tests were blocked before execution because
-  `headless_shell-1208` is absent; hosted CI remains the browser-runner gate.
+  `headless_shell-1208` is absent.
   The configured simplifier could not authenticate because its Claude OAuth
   token expired, so no simplifier finding is inferred.
 - Hosted CI for [PR #5363](https://github.com/uzh-bf/klicker-uzh/pull/5363)
-  passed its active checks: TypeScript, gitleaks, syncpack, CodeQL, Greptile,
-  and the related package status checks. The stack workflow skipped the chat
-  test and image-build jobs.
+  passed all active checks, including all eight Playwright shards and
+  `test-playwright-status`, after the mode-tooltip assertion was scoped to the
+  visible tooltip. The stack workflow skipped the chat test and image-build
+  jobs. The final branch head is `c69364478`.
 - Next: keep all five PRs in draft for layer-by-layer human review. No ready,
   merge, or deployment action has been taken.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
