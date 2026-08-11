@@ -380,7 +380,7 @@ const useWelcomeModeOptions = (initialModeOptions: Record<string, string>) => {
       ? modeOptions
       : initialModeOptions
 
-  return { chatbotId, modeOptions: currentChatbotModeOptions }
+  return currentChatbotModeOptions
 }
 
 const ThreadWelcome: FC<{
@@ -390,7 +390,7 @@ const ThreadWelcome: FC<{
 }> = ({ chatbotAvatar, chatbotName, initialModeOptions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
@@ -462,7 +462,7 @@ const ThreadWelcomeSuggestions: FC<{
 }> = ({ initialModeOptions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
 
   if (Object.keys(modeOptions).length === 0) return null
 
