@@ -93,5 +93,11 @@ promote the failed alpha.68 commit.
   pruning, proving the local assets survive the image path.
 - 2026-08-13: Slice 1 committed as `b93214ce0`; frontend wiki and agent guidance
   now record the local-font build contract.
-- Current: finish the Slice 1 simplifier, validate the wiki, browser-verify all
-  five apps, and run the integrated final review.
+- 2026-08-13: Slice 1 simplifier returned `SIMPLIFIED_AS_IS`. The full check
+  suite passed on both commits. The wiki's new entry validates; its 24 remaining
+  conformance errors are pre-existing files outside this package.
+- 2026-08-13: Auth, Chat, Control, Manage, and PWA loaded their package-local
+  WOFF2 assets in the browser with no Google font requests. Authenticated Control
+  and Manage pages were also inspected. The final PWA Docker installer-stage
+  build passed after Turbo pruning.
+- Current: run the integrated final review over the committed package range.
