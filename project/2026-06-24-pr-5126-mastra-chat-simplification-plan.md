@@ -3,14 +3,14 @@
 ## Identity
 
 - Original date: 2026-06-24
-- Revised: 2026-08-11
+- Revised: 2026-08-12
 - Branch: `codex/mastra-chat-openrouter-smoke`
 - Target: `v3`
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
 - Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- Status: Slices 1-2 and the canonical `v1` conformance runner are implemented
-  locally; current-head review and the upstream `v3-ai` gate remain open; no
-  remote publication has been authorized.
+- Status: Slices 1-2, the canonical `v1` conformance runner, and the
+  request-provider origin boundary are implemented locally on current `v3`;
+  current-head review and remote publication remain open.
 
 Current branch state:
 
@@ -26,7 +26,10 @@ Locked continuation decisions:
 - Public engine contract generations are ordinal (`v1`, `v2`, `v3`), not semantic versions. The public contract and conformance suite are canonical, and Catalyst PR #3 must be adapted to them before it can merge.
 - Public and private work proceeds as coherent interleaved milestones rather than finishing one repository in isolation.
 - Production proves the public default-engine path first. Selecting the Catalyst engine is a later deployment configuration change after the same contract and end-to-end gates pass.
-- The `v3-ai` roll-up will land in `v3`. Its MCP servers, embedded assistant, and related generalized AI surfaces then become public baseline capabilities; this stack does not migrate or recreate them as a sibling package.
+- The unfinished `v3-ai` roll-up will eventually land in `v3`, but it is not a
+  prerequisite for this contract foundation. Its MCP servers, embedded
+  assistant, and related generalized AI surfaces integrate later as consumers;
+  this stack does not migrate or recreate them as a sibling package.
 - Contract rollovers are engine-first: an engine may temporarily serve the current and next ordinal generation, while `chat-api` selects exactly one configured generation and never negotiates or silently downgrades.
 - Engine manifests expose only behavior that the chat host enforces: text, reasoning, images, tools, cancellation, credential modes, and resource limits. Tutoring, routing, retrieval, and orchestration remain private implementation details.
 - W3C `traceparent` and `tracestate` HTTP headers are the canonical trace transport. Each engine stream has exactly one terminal `finish`, `abort`, or `error` event, and only validated usage from completed provider work is chargeable.
@@ -78,12 +81,12 @@ This plan applies the settled split to public chat only:
 - The old prototype branch contains `apps/chat-api`, a default engine, an OpenRouter smoke, and GitHub Actions plumbing. It is a source to adapt, not a merge base or a reason to recreate already-shipped chat behavior.
 - A real local smoke previously reached OpenRouter with `deepseek/deepseek-v4-flash`, streamed text, and verified persistence and credits.
 - The current workflow is not a merge gate because it tolerates failure and uses a placeholder API key.
-- The generalized embedded-assistant and MCP work from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) currently exists on `v3-ai`, whose owning roll-up [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) is still draft and conflicting. The approved sequence lands that roll-up in `v3`. This branch must then update onto the resulting `v3` and treat those surfaces as baseline consumers of the public `chat-api` and engine contract rather than extracting or recreating them separately.
+- The generalized embedded-assistant and MCP work from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) currently exists on `v3-ai`, whose owning roll-up [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) is still draft and conflicting. It is not needed for the neutral `v1` contract, public default engine, or private Catalyst adapter. When it is ready, those surfaces become consumers of the host/engine seam rather than being extracted or recreated here.
 - 2026-08-12 readback: fetched `origin/v3` is `5264353ff7`, while
-  `origin/v3-ai` is `ee8bb99195`; PR #5092 remains draft and conflicting. The
-  only current changed-path overlap with this branch is `docs/chat-platform.md`,
-  `turbo.json`, and `pnpm-lock.yaml`, but the approved gate still requires the
-  complete roll-up to land before this branch updates its base.
+  `origin/v3-ai` is `ee8bb99195`; PR #5092 remains draft and conflicting. This
+  branch was rebased cleanly onto that current `v3` without importing unfinished
+  `v3-ai` work. Its pre-rebase state is preserved at
+  `refs/stack-backup/20260812-current-v3/codex/mastra-chat-openrouter-smoke`.
 
 ### Research Ownership And Limits
 
@@ -142,7 +145,9 @@ The final public pull request must include a working default engine. A Catalyst 
 - No public engine SDK or package publication.
 - No grading, content generation, or async job placeholders.
 - No broad chat UI redesign.
-- No manual partial merge, cherry-pick, or parallel recreation of `v3-ai` while its owning roll-up is still in flight. Incorporate it by updating onto `v3` after the roll-up lands.
+- No manual partial merge, cherry-pick, or parallel recreation of unfinished
+  `v3-ai`. Integrate its consumers in their owning later stack after the roll-up
+  is ready.
 - No third-party extension promise beyond the internal operational seam.
 
 ## Ownership
@@ -429,21 +434,21 @@ The browser never selects an engine URL. A future deployment-defined `engineProf
 - Superseded on 2026-08-11: the earlier review refined `v3-ai` into a separately bounded follow-up package. The owner has since ruled that the complete `v3-ai` roll-up will land in `v3` and become the baseline for this stack. The consolidated plan therefore requires a fresh planning-stage review before implementation resumes.
 - Earlier review verdict: the five findings in that version were resolved; one stale pre-cutover dependency sentence was removed.
 
-## Upstream `v3-ai` Integration Gate
+## Later `v3-ai` Integration
 
 The generalized MCP servers, embedded assistant, and related AI surfaces enter
-this work through their owning `v3-ai` roll-up:
+the platform through their owning `v3-ai` roll-up, but they do not block this
+foundation:
 
-- Let the owning roll-up land in `v3`; do not extract, cherry-pick, or recreate
-  its components in this stack.
-- Update the canonical public stack onto that new `v3` baseline using the
-  repository's agreed integration method before building dependent layers.
-- Resolve overlaps so every generation consumer uses the public `chat-api` and
-  engine contract without restoring Next.js generation routes, duplicating
-  authentication, or importing private Catalyst policy.
-- Rerun the contract, chat API, affected frontend, browser, and final review
-  gates after integration. Earlier current-head evidence does not prove the
-  combined branch.
+- Complete and land the owning roll-up independently; do not extract,
+  cherry-pick, or recreate its components in this stack.
+- After it lands, record the new `v3` SHA and an overlap/consumer ledger before
+  building the MCP/assistant integration layer.
+- Reuse its MCP server identity and authorization model when `chat-api` mints
+  scoped execution tokens. Do not invent a second server registry.
+- Until then, `chat-api` supplies no tools. The foundation exposes one
+  fail-closed authorization seam that returns approved tools and their matching
+  token together.
 
 This is an upstream integration gate within the public core stack, not a
 separate capability package. Updating, merging, or closing the existing
@@ -663,15 +668,19 @@ Rollback after deployment changes engine configuration or rolls back the release
       locally against the compiled Catalyst adapter with `finish` terminals for
       deployment, request-credential, and tool scenarios and an `abort`
       terminal for the cancellation scenario.
-- [ ] Resolve the reviewed provider-origin policy and implement the approved
-      scoped MCP execution token mint-and-forward path after `v3-ai` lands.
-- [ ] After `v3-ai` lands, update onto the resulting `v3`, rerun current-head
-      checks/reviews, then seek the separate force-with-lease publication
-      approval for PR #5126.
+- [x] Rebased the foundation onto fetched `origin/v3` at `5264353ff7` without
+      importing the unfinished `v3-ai` roll-up.
+- [x] Enforced a deployment-configured exact-origin allowlist before either the
+      public host or engine accepts request-scoped provider credentials.
+- [x] Replaced the partial public MCP hook with a fail-closed seam that returns
+      approved tools and their execution token together. The later `v3-ai`
+      integration will implement the issuer; no tool is exposed before then.
+- [ ] Rerun current-head checks/reviews, then seek the separate
+      force-with-lease publication approval for PR #5126.
 - [ ] Slices 3-6 implemented and verified.
 
 ## Next Action
 
-Wait for the complete `v3-ai` roll-up to land in `v3`. Then update this branch
-onto that exact baseline, rerun the contract/chat-api/default-engine checks and
-reviews, and stop before the separately authorized PR #5126 replacement.
+Run the current-head contract, chat-api, default-engine, chart, security, and
+integrated review gates on current `v3`. Then stop before the separately
+authorized PR #5126 force-with-lease replacement.

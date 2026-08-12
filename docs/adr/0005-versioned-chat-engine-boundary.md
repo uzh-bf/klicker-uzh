@@ -25,7 +25,11 @@ output limit, applied reasoning settings, response-storage behavior, and an
 explicit provider credential mode. It does not contain prices, credit state,
 fallback flags, the unresolved model registry, or secrets. Request-scoped and
 deployment-owned provider credentials are mutually exclusive and are never
-persisted or logged. Engines do not retry or select another engine.
+persisted or logged. Before forwarding a request-scoped credential, both
+`chat-api` and the selected engine require the provider base URL's exact HTTP
+origin in deployment configuration. An empty allowlist disables request-scoped
+provider mode; it does not affect deployment-owned credentials. Engines do not
+retry or select another engine.
 
 The default public engine implements this contract using the repository's
 existing AI SDK and OpenAI-compatible provider behavior. Catalyst can implement
@@ -39,6 +43,12 @@ headers. The JSON request has no second trace representation. Approved tools
 cross as schemas and stable server IDs; one scoped execution token is sent in
 `x-mcp-execution-token`, and the engine calls a deployment-owned MCP execution
 endpoint instead of opening caller-selected MCP server URLs.
+
+The unfinished `v3-ai` roll-up is a later consumer of this boundary, not a
+prerequisite for the `v1` contract or either engine implementation. Until its
+public MCP authorization and token issuer are integrated, `chat-api` supplies
+no tools. The host interface accepts tools only together with their scoped
+execution token so a partial integration fails closed.
 
 This preserves one platform policy and one conversation store while allowing
 generation implementations to evolve independently. The cost is an explicit

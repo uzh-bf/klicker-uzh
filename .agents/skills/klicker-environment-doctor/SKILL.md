@@ -96,3 +96,11 @@ Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` 
 ## Check 9 — secrets (config-derived)
 
 App dev servers need Infisical (`infisical whoami` to verify auth); infra and builds do not. No Infisical access → use the `dev:raw`/localhost path and say so in your report instead of debugging secret-dependent features.
+
+If request-scoped chat provider calls fail with `PROVIDER_NOT_CONFIGURED` or
+`PROVIDER_ORIGIN_NOT_ALLOWED`, compare the base URL origin with
+`CHAT_PROVIDER_ALLOWED_ORIGINS` on `chat-api` and
+`CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS` on the selected public engine. Both are
+comma-separated exact HTTP(S) origins, not URLs with `/v1` paths. The local
+devcontainer declares `http://litellm:4000` for both. Do not broaden either
+list to accept an arbitrary chatbot-provided host.

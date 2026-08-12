@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-10'
+timestamp: '2026-08-12'
 tags:
   - frontend
   - chat
@@ -30,6 +30,15 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
 - `apps/chat-api/src/` — the Slice 2 Hono tracer and engine adapter; generation is
   degraded when `CHAT_ENGINE_URL` is unavailable or its manifest is incompatible.
+- Request-scoped provider credentials are fail-closed. Their base URL origin
+  must be listed exactly in `CHAT_PROVIDER_ALLOWED_ORIGINS` at the public host
+  and in `CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS` at the public default engine.
+  Entries are comma-separated HTTP(S) origins with no path. An empty list
+  disables request-scoped mode; deployment-owned provider mode still works.
+- The tracer does not depend on the unfinished `v3-ai` roll-up. Generalized MCP
+  servers and embedded assistants integrate later. Until that work supplies an
+  approved tool set and a matching short-lived execution token together, the
+  tracer sends no tools.
 - `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.

@@ -1,10 +1,11 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import type { LanguageModel } from 'ai'
 import type { ResolvedGeneration } from '@klicker-uzh/chat-engine-contract'
+import type { LanguageModel } from 'ai'
 
 export type ProviderConfig = {
   deploymentBaseUrl?: string
   deploymentApiKey?: string
+  providerAllowedOrigins?: ReadonlySet<string>
 }
 
 /**

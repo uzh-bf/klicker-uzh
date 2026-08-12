@@ -1,34 +1,46 @@
-import { bodyLimit } from 'hono/body-limit'
-import { getCookie } from 'hono/cookie'
-import { Hono } from 'hono'
 import { createHash, randomUUID } from 'node:crypto'
-import { z } from 'zod'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
-  engineChatRequestSchema,
-  imageAttachmentSchema,
   type EngineChatRequest,
+  engineChatRequestSchema,
   type ImageAttachment,
+  imageAttachmentSchema,
+  parseProviderAllowedOrigins,
+  providerOriginIsAllowed,
 } from '@klicker-uzh/chat-engine-contract'
 import { safeDecrypt } from '@klicker-uzh/util'
+import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
+import { getCookie } from 'hono/cookie'
+import { z } from 'zod'
 import {
   createEngineClient,
-  EngineReadinessProbe,
   type EngineClient,
   type EngineReadiness,
+  EngineReadinessProbe,
 } from './engine/client.js'
 import {
   createValidatedPlatformStream,
-  usageIsChargeable,
   type PlatformMetadata,
+  usageIsChargeable,
 } from './engine/stream.js'
 import {
+  type ChatModelConfig,
+  calculateCost,
+  getAllowedReasoningEffortsForModel,
+  getAutomaticModelId,
+  getChatModelRegistry,
+} from './policy/modelRegistry.js'
+import {
+  type AuthFailure,
   authenticateParticipant,
   isFailure,
-  type AuthFailure,
 } from './runtime/auth.js'
 import {
+  type ChatbotRecord,
   checkDisclaimer,
+  type FinalizeAssistantInput,
+  type FinalizeAssistantResult,
   finalizeAssistantTurn,
   getChatbot,
   getCredits,
@@ -36,17 +48,7 @@ import {
   getThread,
   loadEngineMessages,
   persistUserMessage,
-  type ChatbotRecord,
-  type FinalizeAssistantInput,
-  type FinalizeAssistantResult,
 } from './runtime/defaultDependencies.js'
-import {
-  calculateCost,
-  getAllowedReasoningEffortsForModel,
-  getAutomaticModelId,
-  getChatModelRegistry,
-  type ChatModelConfig,
-} from './policy/modelRegistry.js'
 
 const MAX_BODY_BYTES = 32 * 1024 * 1024
 
@@ -121,10 +123,15 @@ export type ChatApiDependencies = {
   ) => Promise<FinalizeAssistantResult>
   engine: EngineClient
   readiness?: { get: () => Promise<EngineReadiness> }
-  getTools?: (
-    chatbot: ChatbotRecord,
+  authorizeTools?: (input: {
+    chatbot: ChatbotRecord
     mode: string
-  ) => Promise<EngineChatRequest['tools']>
+    participantId: string
+    runId: string
+  }) => Promise<{
+    tools: EngineChatRequest['tools']
+    executionToken: string
+  } | null>
 }
 
 function mediaType(dataUrl: string): ImageAttachment['mediaType'] {
@@ -181,7 +188,8 @@ function traceContextForRequest(
 
 function resolveCredentialMode(
   chatbot: ChatbotRecord,
-  model: ChatModelConfig
+  model: ChatModelConfig,
+  providerAllowedOrigins: ReadonlySet<string>
 ): {
   generation: EngineChatRequest['generation']
   providerAuthorization?: string
@@ -213,6 +221,9 @@ function resolveCredentialMode(
   const providerBaseUrl = chatbot.openaiBaseUrl ?? process.env.OPENAI_BASE_URL
   if (!providerBaseUrl)
     throw new Error('Request provider base URL is not configured.')
+  if (!providerOriginIsAllowed(providerBaseUrl, providerAllowedOrigins)) {
+    throw new Error('Request provider origin is not allowed.')
+  }
   let providerApiKey = process.env.OPENAI_API_KEY
   if (chatbot.openaiApiKey) providerApiKey = safeDecrypt(chatbot.openaiApiKey)
   if (!providerApiKey)
@@ -255,7 +266,13 @@ function jsonError(
   return { error, code, status }
 }
 
-export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
+export function createChatApiApp(
+  overrides: Partial<ChatApiDependencies> = {},
+  configuration: { providerAllowedOrigins?: ReadonlySet<string> } = {}
+) {
+  const providerAllowedOrigins =
+    configuration.providerAllowedOrigins ??
+    parseProviderAllowedOrigins(process.env.CHAT_PROVIDER_ALLOWED_ORIGINS)
   const engine = overrides.engine ?? createEngineClient()
   const dependencies: ChatApiDependencies = {
     authenticate: authenticateParticipant,
@@ -326,7 +343,7 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
       }
 
       const lastMessage = input.messages[input.messages.length - 1]
-      if (!lastMessage || lastMessage.role !== 'user') {
+      if (lastMessage?.role !== 'user') {
         return c.json(
           {
             error: 'The final message must be from the user',
@@ -413,9 +430,13 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
             ? input.reasoningEffort
             : defaultReasoningEffort(allowedReasoning)
 
-      let credential
+      let credential: ReturnType<typeof resolveCredentialMode>
       try {
-        credential = resolveCredentialMode(chatbot, model)
+        credential = resolveCredentialMode(
+          chatbot,
+          model,
+          providerAllowedOrigins
+        )
       } catch {
         return c.json(
           {
@@ -454,9 +475,29 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
       }
 
       const userMessageId = lastMessage.id
-      const tools = dependencies.getTools
-        ? await dependencies.getTools(chatbot, input.selectedMode)
-        : []
+      const runId = randomUUID()
+      const toolAuthorization = dependencies.authorizeTools
+        ? await dependencies.authorizeTools({
+            chatbot,
+            mode: input.selectedMode,
+            participantId: auth.participantId,
+            runId,
+          })
+        : null
+      if (
+        toolAuthorization &&
+        (toolAuthorization.tools.length === 0 ||
+          toolAuthorization.executionToken.length === 0)
+      ) {
+        return c.json(
+          {
+            error: 'MCP execution is not configured',
+            code: 'MCP_EXECUTION_NOT_CONFIGURED',
+          },
+          503
+        )
+      }
+      const tools = toolAuthorization?.tools ?? []
       const engineMessages = await dependencies.loadEngineMessages(
         input.threadId,
         input.messages,
@@ -474,7 +515,7 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
         threadId: input.threadId,
         userMessageId,
         assistantMessageId,
-        runId: randomUUID(),
+        runId,
         locale:
           input.locale ??
           c.req.header('accept-language')?.split(',')[0] ??
@@ -517,6 +558,7 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
       try {
         engineResponse = await dependencies.engine.chat(engineRequest, {
           providerAuthorization: credential.providerAuthorization,
+          mcpExecutionToken: toolAuthorization?.executionToken,
           traceContext,
           signal: engineAbort.signal,
         })

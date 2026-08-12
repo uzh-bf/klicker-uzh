@@ -1,9 +1,9 @@
-import { MockLanguageModelV3 } from 'ai/test'
-import { describe, expect, test } from 'vitest'
 import {
   conformanceRequest,
   parseEngineStreamPart,
 } from '@klicker-uzh/chat-engine-contract'
+import { MockLanguageModelV3 } from 'ai/test'
+import { describe, expect, test } from 'vitest'
 import { createDefaultEngineApp } from '../src/index.js'
 
 function mockStream() {
@@ -95,6 +95,43 @@ describe('default chat engine', () => {
     expect(model.doStreamCalls).toHaveLength(1)
   })
 
+  test('rejects request credentials for provider origins outside the engine allowlist', async () => {
+    const requestModeRequest = {
+      ...conformanceRequest,
+      generation: {
+        ...conformanceRequest.generation,
+        credentialMode: {
+          mode: 'request' as const,
+          providerBaseUrl: 'https://untrusted.example.test/v1',
+        },
+      },
+    }
+    const model = new MockLanguageModelV3({
+      doStream: { stream: mockStream() },
+    })
+    const app = createDefaultEngineApp({
+      serviceToken: 'service-secret',
+      providerAllowedOrigins: new Set(['https://provider.example.test']),
+      modelFactory: () => model,
+    })
+
+    const response = await app.request('/v1/chat', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer service-secret',
+        'content-type': 'application/json',
+        'provider-authorization': 'Bearer provider-secret',
+      },
+      body: JSON.stringify(requestModeRequest),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({
+      error: { code: 'PROVIDER_ORIGIN_NOT_ALLOWED' },
+    })
+    expect(model.doStreamCalls).toHaveLength(0)
+  })
+
   test('rejects missing service, provider, and MCP credentials before streaming', async () => {
     const requestModeRequest = {
       ...conformanceRequest,
@@ -119,6 +156,7 @@ describe('default chat engine', () => {
     })
     const app = createDefaultEngineApp({
       serviceToken: 'service-secret',
+      providerAllowedOrigins: new Set(['https://openrouter.ai']),
       modelFactory: () => model,
     })
 
@@ -149,6 +187,9 @@ describe('default chat engine', () => {
       body: JSON.stringify(requestModeRequest),
     })
     expect(missingMcpToken.status).toBe(400)
+    expect(await missingMcpToken.json()).toMatchObject({
+      error: { code: 'MCP_TOKEN_REQUIRED' },
+    })
     expect(model.doStreamCalls).toHaveLength(0)
   })
 
