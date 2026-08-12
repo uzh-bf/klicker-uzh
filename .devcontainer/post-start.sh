@@ -79,11 +79,13 @@ export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORI
 # read-only MCP fixture. Keep it in the app container so the seeded
 # http://localhost:1417/mcp endpoint remains valid in every workspace. Prove
 # readiness before starting Chat so its first request cannot miss the fixture.
+MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
+MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
 "$DEVROUTER_PROCESS_HELPER" ensure \
   --name klicker-local-mcp \
   --match 'apps/chat/scripts/local-mcp-server.mjs' \
   --log /tmp/local-mcp.log \
-  -- node apps/chat/scripts/local-mcp-server.mjs
+  -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
 
 for attempt in $(seq 1 20); do
   if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then

@@ -134,7 +134,9 @@ host-side `devrouter ensure` delivers its matching process helper and invokes
 `/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
 fixture. Exact workspace, command, adapter bytes, and declared non-secret
 runtime-origin values are fingerprinted for reuse; stale owned groups are
-replaced boundedly, and unknown processes are never killed. HTTP readiness remains in
+replaced boundedly, and unknown processes are never killed. The MCP command
+also carries the fixture source hash so a source edit forces managed
+replacement. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
