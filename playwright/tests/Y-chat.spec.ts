@@ -1325,13 +1325,13 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await page.getByTestId('chat-mode-option-tutor').hover()
-    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
-      'patient'
-    )
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
+    ).toContainText('patient')
 
     await page.getByTestId('chat-mode-option-explainer').hover()
     await expect(
-      page.getByTestId('chat-mode-description-explainer')
+      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
     ).toContainText('difficult concepts')
   })
 
