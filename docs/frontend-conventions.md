@@ -39,11 +39,12 @@ spinner.
 
 ## Components and styling
 
-- **Local fonts**: all five Next.js apps load Source Sans 3 and JetBrains Mono
-  through `packages/shared-components/src/font.ts` and its package-local WOFF2
-  assets. Keep the existing exports and CSS variables when changing typography,
-  and keep production builds independent of external font services. Upstream
-  versions, licenses, and asset hashes live beside the files in
+- **Local fonts**: all five Next.js apps load Source Sans 3 through
+  `packages/shared-components/src/font.ts`; Chat and Manage also use JetBrains
+  Mono. Both families use package-local WOFF2 assets. Keep the existing exports
+  and CSS variables when changing typography, and keep production builds
+  independent of external font services. Upstream versions, licenses, and asset
+  hashes live beside the files in
   `packages/shared-components/src/fonts/PROVENANCE.md`.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.

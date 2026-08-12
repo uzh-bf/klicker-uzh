@@ -102,8 +102,9 @@ promote the failed alpha.68 commit.
   and Manage pages were also inspected. The final PWA Docker installer-stage
   build passed after Turbo pruning.
 - 2026-08-13: Integrated review found no blocker. Its measured P2 transfer-size
-  regression is being corrected by restoring the former 69 KB Latin variable
-  payload as two pinned local assets; its P3 wiki claim is rejected because
-  browser traces show both shared definitions are bundled by all five apps.
-- Current: verify and commit the transfer-size correction, then run the one
-  permitted integrated correction review.
+  regression was corrected by restoring the former 69 KB Latin variable payload
+  as two pinned local assets. The correction review closed P2 and confirmed the
+  P3 wiki wording should distinguish production consumers from development
+  bundling; the wiki now does so.
+- Current: implementation and verification complete; branch is ready for a
+  separately authorized push and PR.
