@@ -124,6 +124,8 @@
   `def434085`. Both approved the implementation after identifying this stale
   remaining-work line; no config, runtime, security, or maintainability change
   was requested.
-- Integrated final review: reopened for the widened exact branch head.
-- Remaining: complete exact-head integrated final review, then stop before push
-  or PR update unless separately authorized.
+- Integrated final review: done for `b6eeb6a63..1f6817bd7`. The correction pass
+  found one stale Chat runbook paragraph and no implementation, security,
+  architecture, test, or ADR issue. The documentation-only correction is
+  committed and verified through focused main-session checks.
+- Remaining: stop before push or PR update unless separately authorized.

@@ -420,8 +420,8 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 The self-contained devcontainer starts the seeded local MCP fixture through
 `post-start.sh`. Benibot's Tutor and Explainer configurations already point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Select the direct `GPT-5.6 Luna` model, then prompt
-Benibot with “Use the local MCP tool to test the integration. Search for
+tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
 non-empty answer, and the `synthetic-course-material.pdf` source card. Keep
