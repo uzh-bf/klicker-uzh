@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-11'
+timestamp: '2026-08-12'
 tags:
   - backend
   - prisma
@@ -38,6 +38,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks. The A4 settlement migration `20260812000000_live_quiz_response_respondent_unique` adds the respondent-response uniqueness boundary with `CREATE UNIQUE INDEX CONCURRENTLY`; keep the capability gate disabled until that migration and the worker are deployed together, and preflight for duplicate respondent responses before applying it.
 - The immutable correlated export label is domain state, not CSV-rendering state. Add its nullable persistence shape in A1, allocate it transactionally for every respondent during A5 finalization, then let B1 render only finalized labels. Do not let an export request lazily assign labels or depend on `exportSalt` after finalization.
+- The A5 publication migration `20260730080000_live_quiz_publication_materialization` adds nullable materialization and retry timestamps plus the lookup index used by the scheduled reconciliation task. Publication remains backward-compatible: the database generation is recorded before Redis metadata is written, and incomplete rows are retried by the general worker.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations
