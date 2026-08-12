@@ -13,6 +13,8 @@ tags:
 
 Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Next.js **pages router**. `apps/chat` is the app-router exception with its own conventions: [Chat Platform](./chat-platform.md).
 
+Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Keep the contextual action primary and place low-frequency actions in one labelled overflow menu. Keep the visible buttons and overflow trigger in one action cluster; let that cluster wrap across viewports without separating or shrinking the ellipsis control or duplicating controls (`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`).
+
 Assessment report exports intentionally keep one browser-side artifact:
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
 creates the self-contained HTML used by both report actions. **View report**

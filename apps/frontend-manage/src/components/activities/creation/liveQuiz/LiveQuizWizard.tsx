@@ -240,6 +240,7 @@ function LiveQuizWizard({
       ? initialValues.blocks.map((block) => ({
           clientId: createElementBlockClientId(),
           timeLimit: block.timeLimit ?? undefined,
+          randomSelection: block.randomSelection,
           elements: block.elements!.map((instance) => {
             const [elementId, _] = instance.elementData.id.split('-v')
 

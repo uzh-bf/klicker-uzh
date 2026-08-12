@@ -2949,6 +2949,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
+      changeAvailabilityDateMicrolearnings:
+        'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
+      changeAvailabilityDateGroupActivities:
+        'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
+      courseDatesForCourseDuplicationTooltip:
+        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      fixedDateInterval:
+        'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
+      groupCreationDeadlineForCourseDuplicationTooltip:
+        'Changing the course dates recalculates this deadline based on its original offset. You can adjust it afterwards.',
+      copyLiveQuizzesTooltip:
+        'If you activate this setting, all live quizzes in the course will be copied to the new course.',
+      copyPracticeQuizzesTooltip:
+        'If you activate this setting, all practice quizzes in the course will be copied to the new course.',
+      copyMicroLearningsTooltip:
+        'If you activate this setting, all microlearnings in the course will be copied to the new course.',
+      copyGroupActivitiesTooltip:
+        'If you activate this setting, all group activities in the course will be copied to the new course. When disabling group creation, this setting is disabled.',
+      courseDuplicationCopyInfo:
+        'Duplicating a course creates independent activity copies and preserves direct sharing permissions. The copied activity instances still reference the same underlying elements. If you duplicate a course owned by somebody else, the original owner keeps administrative access to the copy.',
+      courseCopySuffix: 'Copy',
+      courseDuplicationEndDateInPast:
+        'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationNoAccess:
+        'You no longer have sufficient permissions to duplicate this course.',
+      courseDuplicationPartialFailure:
+        'Not all selected activities or activity instances could be duplicated. No partial course was created.',
+      courseDuplicationInProgress:
+        'Duplicating large courses can take a while.',
+      courseDuplicationSucceeded:
+        'Course "{name}" has been duplicated successfully.',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',
@@ -3071,7 +3103,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     course: {
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
+      duplicateCourse: 'Duplicate course',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',

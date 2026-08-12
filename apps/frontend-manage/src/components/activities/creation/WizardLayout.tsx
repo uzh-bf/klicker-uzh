@@ -60,6 +60,7 @@ export function createGroupActivityClueClientId(): string {
 export interface ElementBlockFormValues {
   clientId: string
   timeLimit?: number
+  randomSelection?: number | null
   elements: ElementInstanceFormInput[]
 }
 

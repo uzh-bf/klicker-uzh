@@ -27,7 +27,18 @@ const config = defineConfig([
       typescript(
         withNonIncrementalTypescriptOptions({
           tsconfig: './tsconfig.json',
-          rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+          rootDir: '.',
+          filterRoot: '.',
+          include: [
+            'src/**/*.cts',
+            'src/**/*.mts',
+            'src/**/*.ts',
+            'src/**/*.tsx',
+            'instrumented/**/*.cts',
+            'instrumented/**/*.mts',
+            'instrumented/**/*.ts',
+            'instrumented/**/*.tsx',
+          ],
         })
       ),
     ],

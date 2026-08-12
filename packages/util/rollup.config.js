@@ -25,6 +25,13 @@ const config = defineConfig([
         withNonIncrementalTypescriptOptions({
           tsconfig: './tsconfig.json',
           rootDir: 'src',
+          filterRoot: '.',
+          include: [
+            'src/**/*.cts',
+            'src/**/*.mts',
+            'src/**/*.ts',
+            'src/**/*.tsx',
+          ],
         })
       ),
     ],

@@ -63,6 +63,7 @@ export enum SharingType {
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
+  randomSelection?: number | null
   elements: ElementInstanceInput[]
 }
 
