@@ -304,10 +304,11 @@ Do:
 
 - Create quiz-scoped anonymous correlated respondent when mode is `CORRELATED_EXPORT`.
 - Persist the opaque token in an HttpOnly quiz-scoped cookie where possible. The
-  initialization response may also return the signed anonymous respondent token
-  for memory-only use by the current page when browsers block the cookie; never
-  put it in local storage, URLs, or a non-HttpOnly cookie. Do not reuse it across
-  quizzes.
+  first initialization response is cookie-only; if a correlated submission
+  returns the missing-identity `401`, retry initialization with an explicit
+  fallback request and return the signed anonymous respondent token for
+  memory-only use by the current page. Never put it in local storage, URLs, or a
+  non-HttpOnly cookie. Do not reuse it across quizzes.
 - Forward respondent token through `response-api`.
 - Add the synchronous correlated-mode Redis vote-hash gate in response-api so duplicates return recorded-before.
 - Worker verifies token secret / signature and maps to `LiveQuizRespondent`; respondent id alone is not accepted.
@@ -435,8 +436,9 @@ Commit:
 
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
-- Respondent cookies can be blocked. The current page uses a memory-only signed
-  token as a fallback, while a reload may create another pseudonymous row.
+- Respondent cookies can be blocked. The current page retries initialization for
+  a memory-only signed token only after the cookie-backed submission returns
+  identity `401`; a reload may create another pseudonymous row.
 - Memory-only respondent tokens are bearer credentials for one quiz. Use a signed token and verify it server-side before writing correlated responses.
 - Free text is excluded from the v3.5 correlated teaching export. Other future
   research/export channels still need their own PII review.
@@ -476,7 +478,7 @@ Later research:
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
 - 2026-08-12: The accepted privacy boundary is now reflected here: correlated teaching export excludes free-text answers, matching ADR 0001 and the export tests.
-- 2026-08-12: Cookie-blocked correlated sessions use a quiz-scoped signed respondent token returned only to the current page in memory; cookie identities retain precedence, and PIN admission remains cookie-based.
+- 2026-08-12: Cookie-blocked correlated sessions retry identity initialization after the cookie-backed submission returns identity `401`; only that explicit fallback returns a quiz-scoped signed respondent token to current-page memory. Cookie identities retain precedence, and PIN admission remains cookie-based.
 - 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
 
 ## Goal Prompt Requirements

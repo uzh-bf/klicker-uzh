@@ -2073,15 +2073,28 @@ test.describe.serial('Different live-quiz workflows', () => {
         const initializationResponse = studentPage.waitForResponse((response) =>
           response.url().includes('/InitializeLiveQuizResponseIdentity')
         )
-        const correlatedResponse = studentPage.waitForResponse((response) =>
-          response.url().includes('/AddCorrelatedResponse')
+        const fallbackInitializationResponse = studentPage.waitForResponse(
+          (response) =>
+            response.url().includes('/InitializeLiveQuizResponseIdentity') &&
+            response.request().postDataJSON()?.allowTokenFallback === true
+        )
+        const correlatedResponse = studentPage.waitForResponse(
+          (response) =>
+            response.url().includes('/AddCorrelatedResponse') &&
+            response.status() === 200
         )
         await studentPage.getByTestId('sc-0-answer-option-0').click()
         await studentPage.getByTestId('student-submit-answer').click()
 
-        expect((await initializationResponse).status()).toBe(200)
+        const initialResponse = await initializationResponse
+        expect(initialResponse.status()).toBe(200)
+        expect(await initialResponse.json()).not.toHaveProperty(
+          'respondentToken'
+        )
+        const fallbackResponse = await fallbackInitializationResponse
+        expect(fallbackResponse.status()).toBe(200)
+        expect(await fallbackResponse.json()).toHaveProperty('respondentToken')
         const response = await correlatedResponse
-        expect(response.status()).toBe(200)
         expect(response.request().headers().authorization).toMatch(
           /^Bearer \S+$/
         )

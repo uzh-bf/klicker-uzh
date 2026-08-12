@@ -11,9 +11,11 @@ import {
   decryptCorrelatedResponseEvent,
   getLiveQuizRespondentCookieName,
   hashLiveQuizRespondentToken,
+  resolveLiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
 import { handleAggregateResponse } from '../src/aggregateResponse.js'
 import { handleCorrelatedResponse } from '../src/correlatedResponseHandler.js'
+import { getCorrelatedResponseInitializationToken } from '../src/liveQuizResponseInitialization.js'
 import type { LiveQuizResponseRequest } from '../src/liveQuizResponseRequest.js'
 
 const request: LiveQuizResponseRequest = {
@@ -26,6 +28,49 @@ const request: LiveQuizResponseRequest = {
 }
 
 describe('standard live quiz response handlers', () => {
+  it('does not expose an existing respondent cookie token to page JavaScript', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const token = await createLiveQuizRespondentToken({
+      respondentId: '33333333-3333-4333-8333-333333333333',
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+    const identity = await resolveLiveQuizResponseIdentity({
+      cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${token}`,
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+
+    assert.ok(identity)
+    assert.equal(
+      getCorrelatedResponseInitializationToken({
+        created: false,
+        identity,
+        allowTokenFallback: true,
+      }),
+      undefined
+    )
+    assert.equal(
+      getCorrelatedResponseInitializationToken({
+        created: true,
+        identity,
+        allowTokenFallback: false,
+      }),
+      undefined
+    )
+    assert.equal(
+      getCorrelatedResponseInitializationToken({
+        created: true,
+        identity,
+        allowTokenFallback: true,
+      }),
+      token
+    )
+  })
+
   it('rejects correlated collection on the aggregate endpoint', async () => {
     let pushed = false
     const result = await handleAggregateResponse({
