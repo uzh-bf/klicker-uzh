@@ -40,8 +40,9 @@ The `create-audit-log-entry` task is the pre-existing free-form audit path. It i
 not the provider-neutral assessment evidence contract or its append-only store.
 The new contract, PostgreSQL outbox, and Azure delivery path are documented in
 [Assessment Audit Evidence](./assessment-audit-evidence.md). The new dispatcher
-does not consume those legacy free-form events; later producer layers replace
-assessment uses with typed evidence events.
+does not consume those legacy free-form events. Layer 4 replaces lecturer and
+system assessment uses with typed transactional evidence; Layer 5 removes the
+remaining response-pipeline uses when Hatchet submission materialization lands.
 
 ## Worker task catalog
 
@@ -72,6 +73,13 @@ Job state lives in Redis under three key families (all self-expiring): status re
 To correlate a user report ("my duplication vanished") with only a course name or approximate time: list their keys with `SCAN 0 MATCH "course-duplication:source:<userId>:*"` (keys carry the source course id), read the referenced job record with `GET course-duplication:job:<jobId>` while it exists, and check `prisma.course.findUnique({ where: { id: <jobId> } })` for the outcome. Permission `AuditLogEntry` rows written inside a successful copy transaction outlive the Redis record. Worker logs carry the job id.
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
+Scheduled assessment publication carries an optional stable initiating user ID
+from the scheduling mutation. Its producer records `SYSTEM` as the actor and
+that user as `initiatedBy`; repair scripts and historical tasks that do not have
+the initiator remain valid and omit the field. Timed in-process block closure
+uses the same actor distinction. The authoritative lifecycle write and audit
+outbox event share one Prisma transaction.
+
 The same image runs as a separate `assessment-audit-worker` deployment when
 `ASSESSMENT_AUDIT_WORKER_ENABLED=true`. It has the `dispatcher` identity class
 and an exact workflow selection:

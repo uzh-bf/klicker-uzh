@@ -1,3 +1,7 @@
+import {
+  emitCoveredParticipantEligibilityChange,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   type ActivityStudentPerformance,
@@ -23,6 +27,7 @@ import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
+import { assessmentAuditParticipantOperation } from './assessmentAuditProducers.js'
 import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
@@ -98,41 +103,67 @@ export async function joinCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  // upsert or activate participation in the course
-  const participation = await ctx.prisma.participation.upsert({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    create: {
-      isActive: true,
-      course: { connect: { id: courseId } },
-      participant: { connect: { id: ctx.user.sub } },
-    },
-    update: { isActive: true },
+  const auditOperation = assessmentAuditParticipantOperation({
+    participantId: ctx.user.sub,
   })
-
-  if (!participation) return null
-
-  // upsert a course leaderboard entry with zero points
-  const lbEntry = await ctx.prisma.leaderboardEntry.upsert({
-    where: {
-      type_participantId_courseId: {
-        type: DB.LeaderboardType.COURSE,
-        participantId: ctx.user.sub,
-        courseId,
-      },
-    },
-    create: {
-      type: DB.LeaderboardType.COURSE,
-      participant: { connect: { id: ctx.user.sub } },
-      course: { connect: { id: courseId } },
-      participation: { connect: { id: participation.id } },
-      score: 0,
-    },
-    update: {},
+  const { participation, lbEntry } = await runInAuditTransaction(
+    ctx.prisma,
+    async (tx, auditTx) => {
+      const previous = await tx.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        select: { isActive: true },
+      })
+      const participation = await tx.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        create: {
+          isActive: true,
+          course: { connect: { id: courseId } },
+          participant: { connect: { id: ctx.user.sub } },
+        },
+        update: { isActive: true },
+      })
+      const lbEntry = await tx.leaderboardEntry.upsert({
+        where: {
+          type_participantId_courseId: {
+            type: DB.LeaderboardType.COURSE,
+            participantId: ctx.user.sub,
+            courseId,
+          },
+        },
+        create: {
+          type: DB.LeaderboardType.COURSE,
+          participant: { connect: { id: ctx.user.sub } },
+          course: { connect: { id: courseId } },
+          participation: { connect: { id: participation.id } },
+          score: 0,
+        },
+        update: {},
+      })
+      if (previous?.isActive !== true) {
+        await emitCoveredParticipantEligibilityChange({
+          tx,
+          auditTx,
+          courseId,
+          participantId: ctx.user.sub,
+          eligible: true,
+          actor: auditOperation.actor,
+          correlationId: auditOperation.correlationId,
+          occurredAt: auditOperation.occurredAt,
+          producerOperationId: `${auditOperation.correlationId}:eligibility-added`,
+        })
+      }
+      return { participation, lbEntry }
+    }
   })
 
   // invalidate participation and leaderboard entry
@@ -191,49 +222,70 @@ export async function leaveCourseLeaderboard(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  const auditOperation = assessmentAuditParticipantOperation({
+    participantId: ctx.user.sub,
+  })
   // leave a course leaderboard as a participant
   // deletes the leaderboard entries related to the course and sets the participation to inactive
   // meaning that no further points will be collected
-  const participation = await ctx.prisma.participation.update({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
-    },
-    data: {
-      isActive: false,
-    },
-  })
+  const participation = await runInAuditTransaction(
+    ctx.prisma,
+    async (tx, auditTx) => {
+      const previous = await tx.participation.findUniqueOrThrow({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        select: { isActive: true },
+      })
+      const participation = await tx.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        data: { isActive: false },
+      })
 
-  // delete the course leaderboard entry linked to the participation
-  await ctx.prisma.leaderboardEntry.delete({
-    where: {
-      type_participantId_courseId: {
-        type: DB.LeaderboardType.COURSE,
-        participantId: ctx.user.sub,
-        courseId,
-      },
-    },
-  })
-
-  // TODO: check if this deletion operation has any effect or can be removed
-  await ctx.prisma.leaderboardEntry.deleteMany({
-    where: { participation: { id: participation.id } },
-  })
-
-  // delete all session leaderboard entries linked to the participation
-  await ctx.prisma.leaderboardEntry.deleteMany({
-    where: { sessionParticipationId: participation.id },
-  })
-
-  // reset collected points on timeline entries linked to this participation
-  await ctx.prisma.timelineEntry.updateMany({
-    where: { participationId: participation.id },
-    data: {
-      collectedPoints: 0,
-    },
-  })
+      // delete the leaderboard entries linked to the participation
+      await tx.leaderboardEntry.delete({
+        where: {
+          type_participantId_courseId: {
+            type: DB.LeaderboardType.COURSE,
+            participantId: ctx.user.sub,
+            courseId,
+          },
+        },
+      })
+      await tx.leaderboardEntry.deleteMany({
+        where: { participation: { id: participation.id } },
+      })
+      await tx.leaderboardEntry.deleteMany({
+        where: { sessionParticipationId: participation.id },
+      })
+      await tx.timelineEntry.updateMany({
+        where: { participationId: participation.id },
+        data: { collectedPoints: 0 },
+      })
+      if (previous.isActive) {
+        await emitCoveredParticipantEligibilityChange({
+          tx,
+          auditTx,
+          courseId,
+          participantId: ctx.user.sub,
+          eligible: false,
+          actor: auditOperation.actor,
+          correlationId: auditOperation.correlationId,
+          occurredAt: auditOperation.occurredAt,
+          producerOperationId: `${auditOperation.correlationId}:eligibility-removed`,
+        })
+      }
+      return participation
+    }
+  )
 
   // TODO: reset collected points and points dates on questionresponse and questionresponsedetail
 

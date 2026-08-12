@@ -4,31 +4,53 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
+import {
+  type AuditEventDraft,
+  extractBaselineMediaUrls,
+  hashCanonicalValue,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityLogModificationDetails,
+  type ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
-  ElementManipulationInput,
+  type ElementManipulationInput,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
-import EventEmitter from 'events'
-import { prop, sortBy, swapIndices } from 'remeda'
+import type EventEmitter from 'events'
+import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
+import {
+  captureAssessmentAuditSnapshotMedia,
+  createAssessmentAuditMediaDependencies,
+  loadAssessmentAuditSnapshot,
+} from './assessmentAuditActivation.js'
+import {
+  assessmentBaselineMarkdown,
+  assessmentSourceElementState,
+} from './assessmentAuditBaseline.js'
+import {
+  assessmentAuditUserOperation,
+  assessmentMediaChangeDrafts,
+  buildAssessmentMutationAuditDrafts,
+  emitCoveredAssessmentAuditEvents,
+  loadCoveredAssessmentMediaStates,
+} from './assessmentAuditProducers.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
@@ -708,6 +730,276 @@ export async function manipulateElement(
   }
 }
 
+export async function manipulateElementWithAssessmentAudit(
+  args: ElementManipulationInput,
+  ctx: ContextWithUser
+) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
+  return runInAuditTransaction(
+    ctx.prisma,
+    async (tx, auditTx) => {
+      const elementId = args.id ?? undefined
+      const before =
+        elementId === undefined
+          ? null
+          : await tx.element.findUnique({
+              where: { id: elementId, isDeleted: false },
+              include: {
+                answerCollection: { include: { entries: true } },
+                answerCollectionItems: true,
+              },
+            })
+      const referencedLiveQuizzes =
+        elementId === undefined
+          ? []
+          : await tx.elementInstance.findMany({
+              where: {
+                elementId,
+                elementBlock: {
+                  is: { liveQuiz: { isAssessmentEnabled: true } },
+                },
+              },
+              orderBy: { id: 'asc' },
+              select: {
+                elementBlock: { select: { liveQuizId: true } },
+              },
+            })
+      const liveQuizIds = [
+        ...new Set(
+          referencedLiveQuizzes.flatMap((instance) =>
+            instance.elementBlock === null
+              ? []
+              : [instance.elementBlock.liveQuizId]
+          )
+        ),
+      ].sort()
+      const beforeSnapshots = new Map(
+        await Promise.all(
+          liveQuizIds.map(
+            async (liveQuizId) =>
+              [
+                liveQuizId,
+                await loadAssessmentAuditSnapshot(tx, liveQuizId),
+              ] as const
+          )
+        )
+      )
+      const result = await manipulateElement(args, { ...ctx, prisma: tx })
+      if (before === null || result === null) return result
+      const after = await tx.element.findUniqueOrThrow({
+        where: { id: before.id },
+        include: {
+          answerCollection: { include: { entries: true } },
+          answerCollectionItems: true,
+        },
+      })
+      const beforeState = assessmentSourceElementState(
+        processElementData(before),
+        false
+      )
+      const afterState = assessmentSourceElementState(
+        processElementData(after),
+        false
+      )
+      for (const liveQuizId of liveQuizIds) {
+        const drafts: AuditEventDraft[] = [
+          {
+            eventType: 'ASSESSMENT_SOURCE_ELEMENT_CHANGED',
+            producerOperationId: `${auditOperation.correlationId}:source-element:${before.id}:${liveQuizId}`,
+            scope: { elementId: before.id },
+            payload: {
+              entityType: 'SOURCE_ELEMENT',
+              entityId: String(before.id),
+              before: beforeState,
+              after: afterState,
+              reasonCode: 'LECTURER_SOURCE_ELEMENT_MUTATION',
+            },
+          },
+        ]
+        const beforeSnapshot = beforeSnapshots.get(liveQuizId)
+        const afterSnapshot = await loadAssessmentAuditSnapshot(tx, liveQuizId)
+        if (beforeSnapshot != null && afterSnapshot !== null) {
+          drafts.push(
+            ...buildAssessmentMutationAuditDrafts({
+              before: beforeSnapshot,
+              after: afterSnapshot,
+              producerOperationId: auditOperation.correlationId,
+            }).filter(
+              (draft) =>
+                draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
+                draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
+            )
+          )
+        }
+        await emitCoveredAssessmentAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId,
+          operation: auditOperation,
+          drafts,
+        })
+      }
+      return result
+    },
+    { timeout: 60000 }
+  )
+}
+
+type PreparedAssessmentInstanceRefreshMedia = Awaited<
+  ReturnType<typeof captureAssessmentAuditSnapshotMedia>
+> & {
+  mediaReferenceHash: string
+}
+
+async function prepareAssessmentInstanceRefreshMedia(input: {
+  client: ContextWithUser['prisma']
+  elementId: number
+  userId: string
+  includeTemplates: boolean
+  capturedAt: Date
+}): Promise<Map<string, PreparedAssessmentInstanceRefreshMedia>> {
+  const element = await input.client.element.findUnique({
+    where: { id: input.elementId, isDeleted: false },
+    include: {
+      answerCollection: { include: { entries: true } },
+      answerCollectionItems: true,
+    },
+  })
+  if (element === null) return new Map()
+
+  const acceptedStatuses = input.includeTemplates
+    ? [
+        DB.PublicationStatus.DRAFT,
+        DB.PublicationStatus.SCHEDULED,
+        DB.PublicationStatus.TEMPLATE,
+      ]
+    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
+  const liveQuizzes = await input.client.liveQuiz.findMany({
+    where: {
+      isAssessmentEnabled: true,
+      status: { in: acceptedStatuses },
+      permissions: {
+        some: {
+          userId: input.userId,
+          permissionLevel: {
+            in: [
+              DB.PermissionLevel.WRITE,
+              DB.PermissionLevel.ADMIN,
+              DB.PermissionLevel.OWNER,
+            ],
+          },
+        },
+      },
+      blocks: { some: { elements: { some: { elementId: input.elementId } } } },
+    },
+    orderBy: { id: 'asc' },
+    select: { id: true },
+  })
+  const coveredScopes = await input.client.assessmentAuditScope.findMany({
+    where: {
+      liveQuizId: { in: liveQuizzes.map((liveQuiz) => liveQuiz.id) },
+      coverageState: DB.AssessmentAuditCoverageState.COVERED,
+    },
+    select: { liveQuizId: true },
+  })
+  const coveredLiveQuizIds = new Set(
+    coveredScopes.map((scope) => scope.liveQuizId)
+  )
+  if (coveredLiveQuizIds.size === 0) return new Map()
+  const replacement = processElementData(element)
+  const prepared = new Map<string, PreparedAssessmentInstanceRefreshMedia>()
+  const media = createAssessmentAuditMediaDependencies()
+  for (const liveQuiz of liveQuizzes.filter((quiz) =>
+    coveredLiveQuizIds.has(quiz.id)
+  )) {
+    const snapshot = await loadAssessmentAuditSnapshot(
+      input.client,
+      liveQuiz.id
+    )
+    if (snapshot === null) continue
+    const projected = {
+      ...snapshot,
+      blocks: snapshot.blocks.map((block) => ({
+        ...block,
+        elements: block.elements.map((instance) =>
+          instance.elementId === input.elementId
+            ? { ...instance, elementData: replacement }
+            : instance
+        ),
+      })),
+    }
+    const captured = await captureAssessmentAuditSnapshotMedia({
+      client: input.client,
+      snapshot: projected,
+      media,
+      capturedAt: input.capturedAt,
+    })
+    prepared.set(liveQuiz.id, {
+      ...captured,
+      mediaReferenceHash: hashCanonicalValue(
+        extractBaselineMediaUrls(assessmentBaselineMarkdown(projected))
+      ),
+    })
+  }
+  return prepared
+}
+
+function appendPreparedAssessmentMediaDrafts(input: {
+  drafts: AuditEventDraft[]
+  liveQuizId: string
+  afterSnapshot: Parameters<typeof assessmentBaselineMarkdown>[0]
+  mediaBefore: Awaited<ReturnType<typeof loadCoveredAssessmentMediaStates>>
+  prepared: PreparedAssessmentInstanceRefreshMedia | undefined
+  producerOperationId: string
+}) {
+  const hasEffectiveInstanceChange = input.drafts.some(
+    (draft) =>
+      draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' ||
+      draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED'
+  )
+  if (!hasEffectiveInstanceChange || input.mediaBefore === null) return
+  if (input.prepared === undefined) {
+    throw new Error(
+      `Assessment media was not staged for refreshed live quiz ${input.liveQuizId}`
+    )
+  }
+  const afterMediaReferenceHash = hashCanonicalValue(
+    extractBaselineMediaUrls(assessmentBaselineMarkdown(input.afterSnapshot))
+  )
+  if (afterMediaReferenceHash !== input.prepared.mediaReferenceHash) {
+    throw new Error(
+      `Assessment media staging no longer matches live quiz ${input.liveQuizId}`
+    )
+  }
+  if (input.prepared.limitations.length > 0) {
+    for (const [index, draft] of input.drafts.entries()) {
+      if (
+        draft.eventType !== 'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' &&
+        draft.eventType !== 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED'
+      ) {
+        continue
+      }
+      input.drafts[index] = {
+        ...draft,
+        payload: {
+          ...draft.payload,
+          reasonCode: 'LECTURER_CONTENT_MUTATION_EXTERNAL_MEDIA_NOT_CAPTURED',
+        },
+      } as AuditEventDraft
+    }
+  }
+  input.drafts.push(
+    ...assessmentMediaChangeDrafts({
+      before: input.mediaBefore,
+      after: input.prepared.capturedMedia,
+      producerOperationId: input.producerOperationId,
+    })
+  )
+}
+
 export async function applyElementBatchOperations(
   {
     elementIds,
@@ -805,46 +1097,305 @@ export async function applyElementBatchOperations(
   // execute the required element updates and, if enabled, update the corresponding linked instances
   // needs to be sequential since element instance updates potentially include derived permission updates
   const updatedElements: DB.Element[] = []
-  for (const element of dbElements) {
-    updatedElements.push(
-      await ctx.prisma.$transaction(async (tx) => {
-        // execute the element update
-        const updatedElement = await tx.element.update({
-          where: { id: element.id },
-          data: {
-            version: { increment: 1 },
-            isArchived: archive ? true : unarchive ? false : undefined,
-            status: status ?? undefined,
-            pointsMultiplier:
-              typeof multiplier !== 'undefined' && multiplier !== null
-                ? multiplier
-                : undefined,
-            basePoints:
-              typeof basePoints !== 'undefined' && basePoints !== null
-                ? element.type !== DB.ElementType.CONTENT &&
-                  element.type !== DB.ElementType.FLASHCARD
-                  ? basePoints
-                  : false
-                : undefined,
-          },
-        })
-
-        // if enabled, update the corresponding element instances
-        if (updateInstances) {
-          await updateElementInstances(
-            {
-              elementId: updatedElement.id,
-              includeTemplates: updateTemplateInstances,
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
+  const batchReferences = await ctx.prisma.elementInstance.findMany({
+    where: {
+      elementId: { in: dbElements.map((element) => element.id) },
+      elementBlock: { is: { liveQuiz: { isAssessmentEnabled: true } } },
+    },
+    select: {
+      elementId: true,
+      elementBlock: { select: { liveQuizId: true } },
+    },
+  })
+  const batchElementIdsByLiveQuiz = new Map<string, number[]>()
+  for (const reference of batchReferences) {
+    if (reference.elementBlock === null) continue
+    const liveQuizId = reference.elementBlock.liveQuizId
+    const elementIds = batchElementIdsByLiveQuiz.get(liveQuizId) ?? []
+    if (!elementIds.includes(reference.elementId)) {
+      elementIds.push(reference.elementId)
+      elementIds.sort((left, right) => left - right)
+      batchElementIdsByLiveQuiz.set(liveQuizId, elementIds)
+    }
+  }
+  const updatedElementIds = new Set<number>()
+  for (const element of [...dbElements].sort(
+    (left, right) => left.id - right.id
+  )) {
+    try {
+      const preparedMedia = updateInstances
+        ? await prepareAssessmentInstanceRefreshMedia({
+            client: ctx.prisma,
+            elementId: element.id,
+            userId: ctx.user.sub,
+            includeTemplates: updateTemplateInstances,
+            capturedAt: auditOperation.occurredAt,
+          })
+        : new Map<string, PreparedAssessmentInstanceRefreshMedia>()
+      const updatedElement = await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) => {
+          const beforeElement = await tx.element.findUniqueOrThrow({
+            where: { id: element.id },
+            include: {
+              answerCollection: { include: { entries: true } },
+              answerCollectionItems: true,
             },
-            tx,
-            ctx.emitter,
-            ctx.user.sub
+          })
+          const references = await tx.elementInstance.findMany({
+            where: {
+              elementId: element.id,
+              elementBlock: { is: { liveQuiz: { isAssessmentEnabled: true } } },
+            },
+            select: { elementBlock: { select: { liveQuizId: true } } },
+          })
+          const liveQuizIds = [
+            ...new Set(
+              references.flatMap((instance) =>
+                instance.elementBlock === null
+                  ? []
+                  : [instance.elementBlock.liveQuizId]
+              )
+            ),
+          ].sort()
+          const beforeSnapshots = new Map(
+            await Promise.all(
+              liveQuizIds.map(
+                async (liveQuizId) =>
+                  [
+                    liveQuizId,
+                    await loadAssessmentAuditSnapshot(tx, liveQuizId),
+                  ] as const
+              )
+            )
           )
-        }
 
-        return updatedElement
+          // execute the element update
+          const updatedElement = await tx.element.update({
+            where: { id: element.id },
+            data: {
+              version: { increment: 1 },
+              isArchived: archive ? true : unarchive ? false : undefined,
+              status: status ?? undefined,
+              pointsMultiplier:
+                typeof multiplier !== 'undefined' && multiplier !== null
+                  ? multiplier
+                  : undefined,
+              basePoints:
+                typeof basePoints !== 'undefined' && basePoints !== null
+                  ? element.type !== DB.ElementType.CONTENT &&
+                    element.type !== DB.ElementType.FLASHCARD
+                    ? basePoints
+                    : false
+                  : undefined,
+            },
+          })
+
+          // if enabled, update the corresponding element instances
+          if (updateInstances) {
+            await updateElementInstances(
+              {
+                elementId: updatedElement.id,
+                includeTemplates: updateTemplateInstances,
+              },
+              tx,
+              ctx.emitter,
+              ctx.user.sub,
+              { failOnError: true }
+            )
+          }
+
+          const afterElement = await tx.element.findUniqueOrThrow({
+            where: { id: element.id },
+            include: {
+              answerCollection: { include: { entries: true } },
+              answerCollectionItems: true,
+            },
+          })
+          const beforeSource = assessmentSourceElementState(
+            processElementData(beforeElement),
+            false
+          )
+          const afterSourceData = processElementData(afterElement)
+          const unchangedEffectiveSource = assessmentSourceElementState(
+            afterSourceData,
+            false
+          )
+          const afterSource = assessmentSourceElementState(
+            afterSourceData,
+            updateInstances &&
+              beforeSource.sourceContentHash !==
+                unchangedEffectiveSource.sourceContentHash
+          )
+          for (const liveQuizId of liveQuizIds) {
+            const batchElementIds = batchElementIdsByLiveQuiz.get(
+              liveQuizId
+            ) ?? [element.id]
+            const itemIndex = batchElementIds.indexOf(element.id)
+            const drafts: AuditEventDraft[] = [
+              ...(itemIndex === 0
+                ? [
+                    {
+                      eventType: 'ASSESSMENT_BULK_OPERATION_STARTED' as const,
+                      producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:started`,
+                      payload: {
+                        operationId: auditOperation.correlationId,
+                        operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+                        status: 'STARTED' as const,
+                      },
+                    },
+                  ]
+                : []),
+              {
+                eventType: 'ASSESSMENT_SOURCE_ELEMENT_CHANGED' as const,
+                producerOperationId: `${auditOperation.correlationId}:source-element:${element.id}:${liveQuizId}`,
+                scope: { elementId: element.id },
+                payload: {
+                  entityType: 'SOURCE_ELEMENT' as const,
+                  entityId: String(element.id),
+                  before: beforeSource,
+                  after: afterSource,
+                  reasonCode: 'LECTURER_SOURCE_ELEMENT_BATCH_MUTATION',
+                },
+              },
+            ]
+            if (updateInstances) {
+              const beforeSnapshot = beforeSnapshots.get(liveQuizId)
+              const afterSnapshot = await loadAssessmentAuditSnapshot(
+                tx,
+                liveQuizId
+              )
+              if (beforeSnapshot != null && afterSnapshot !== null) {
+                const instanceDrafts = buildAssessmentMutationAuditDrafts({
+                  before: beforeSnapshot,
+                  after: afterSnapshot,
+                  producerOperationId: `${auditOperation.correlationId}:element:${element.id}`,
+                }).filter(
+                  (draft) =>
+                    draft.eventType ===
+                      'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' ||
+                    draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
+                    draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
+                )
+                const mediaBefore = await loadCoveredAssessmentMediaStates(
+                  tx,
+                  liveQuizId
+                )
+                appendPreparedAssessmentMediaDrafts({
+                  drafts: instanceDrafts,
+                  liveQuizId,
+                  afterSnapshot,
+                  mediaBefore,
+                  prepared: preparedMedia.get(liveQuizId),
+                  producerOperationId: `${auditOperation.correlationId}:element:${element.id}`,
+                })
+                drafts.push(...instanceDrafts)
+              }
+            }
+            drafts.push({
+              eventType: 'ASSESSMENT_BULK_ITEM_COMPLETED',
+              producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:element:${element.id}:completed`,
+              scope: { elementId: element.id },
+              payload: {
+                operationId: auditOperation.correlationId,
+                operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+                itemId: String(element.id),
+                status: 'SUCCEEDED',
+              },
+            })
+            if (itemIndex === batchElementIds.length - 1) {
+              drafts.push({
+                eventType: 'ASSESSMENT_BULK_OPERATION_COMPLETED',
+                producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:completed`,
+                payload: {
+                  operationId: auditOperation.correlationId,
+                  operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+                  status: 'COMPLETED',
+                  succeededCount: batchElementIds.length,
+                  failedCount: 0,
+                },
+              })
+            }
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId,
+              operation: auditOperation,
+              drafts,
+            })
+          }
+
+          return updatedElement
+        },
+        { timeout: 60000 }
+      )
+      updatedElements.push(updatedElement)
+      updatedElementIds.add(element.id)
+    } catch (error) {
+      await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+        for (const [liveQuizId, batchElementIds] of batchElementIdsByLiveQuiz) {
+          const succeededCount = batchElementIds.filter((elementId) =>
+            updatedElementIds.has(elementId)
+          ).length
+          if (succeededCount === batchElementIds.length) continue
+          const drafts: AuditEventDraft[] = []
+          if (succeededCount === 0) {
+            drafts.push({
+              eventType: 'ASSESSMENT_BULK_OPERATION_STARTED',
+              producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:started`,
+              payload: {
+                operationId: auditOperation.correlationId,
+                operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+                status: 'STARTED',
+              },
+            })
+          }
+          for (const failedElementId of batchElementIds.filter(
+            (elementId) => !updatedElementIds.has(elementId)
+          )) {
+            drafts.push({
+              eventType: 'ASSESSMENT_BULK_ITEM_COMPLETED',
+              producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:element:${failedElementId}:failed`,
+              scope: { elementId: failedElementId },
+              payload: {
+                operationId: auditOperation.correlationId,
+                operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+                itemId: String(failedElementId),
+                status: 'FAILED',
+                reasonCode:
+                  failedElementId === element.id
+                    ? 'SOURCE_ELEMENT_BATCH_ITEM_FAILED'
+                    : 'SOURCE_ELEMENT_BATCH_ABORTED_BEFORE_ITEM',
+              },
+            })
+          }
+          drafts.push({
+            eventType: 'ASSESSMENT_BULK_OPERATION_COMPLETED',
+            producerOperationId: `${auditOperation.correlationId}:bulk:${liveQuizId}:completed`,
+            payload: {
+              operationId: auditOperation.correlationId,
+              operationType: 'SOURCE_ELEMENT_BATCH_MUTATION',
+              status: 'COMPLETED',
+              succeededCount,
+              failedCount: batchElementIds.length - succeededCount,
+              reasonCode: 'SOURCE_ELEMENT_BATCH_ABORTED',
+            },
+          })
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId,
+            operation: auditOperation,
+            drafts,
+          })
+        }
       })
-    )
+      throw error
+    }
   }
 
   // return the number of successfully updated elements
@@ -1549,7 +2100,8 @@ export async function updateElementInstances(
   }: { elementId: number; includeTemplates: boolean },
   prisma: PrismaTransactionClient,
   emitter: EventEmitter,
-  userId: string
+  userId: string,
+  options: { failOnError?: boolean } = {}
 ) {
   // fetch the element and return null, if the element does not exist
   const acceptedStatusValues = includeTemplates
@@ -1742,270 +2294,273 @@ export async function updateElementInstances(
   let touchedAnswerCollectionIds: number[] = []
 
   // execute the instance updates
-  const updatedInstances = (
-    await Promise.allSettled(
-      Object.values(instanceData).map(
-        async ({
-          instanceId,
-          multiplier,
-          liveQuizId,
-          practiceQuizId,
-          microLearningId,
-          groupActivityId,
-          templateId,
-          reviewStatus,
-        }) => {
-          const oldInstance = await prisma.elementInstance.findUnique({
-            where: { id: instanceId },
-          })
+  const updateResults = await Promise.allSettled(
+    Object.values(instanceData).map(
+      async ({
+        instanceId,
+        multiplier,
+        liveQuizId,
+        practiceQuizId,
+        microLearningId,
+        groupActivityId,
+        templateId,
+        reviewStatus,
+      }) => {
+        const oldInstance = await prisma.elementInstance.findUnique({
+          where: { id: instanceId },
+        })
 
-          if (!oldInstance) return null
+        if (!oldInstance) return null
 
-          // prepare new element data objects
-          const newElementData = processElementData(element)
+        // prepare new element data objects
+        const newElementData = processElementData(element)
 
-          // prepare new results objects
-          const newResults = getInitialInstanceResults(newElementData)
+        // prepare new results objects
+        const newResults = getInitialInstanceResults(newElementData)
 
-          const instance = await prisma.elementInstance.update({
-            where: { id: instanceId },
-            data: {
-              elementData: newElementData,
-              results: newResults,
-              anonymousResults: newResults,
-              // keep previous options where possible and update them only where required
-              options: {
-                ...oldInstance.options,
-                basePoints: element.basePoints,
-                pointsMultiplier: multiplier * element.pointsMultiplier,
+        const instance = await prisma.elementInstance.update({
+          where: { id: instanceId },
+          data: {
+            elementData: newElementData,
+            results: newResults,
+            anonymousResults: newResults,
+            // keep previous options where possible and update them only where required
+            options: {
+              ...oldInstance.options,
+              basePoints: element.basePoints,
+              pointsMultiplier: multiplier * element.pointsMultiplier,
+            },
+          },
+        })
+
+        // if the previous activity status was set to reviewed, update it to indicated that the content was modified
+        if (reviewStatus === DB.ReviewStatus.REVIEWED) {
+          if (typeof liveQuizId !== 'undefined') {
+            await prisma.liveQuiz.update({
+              where: { id: liveQuizId },
+              data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+            })
+          } else if (typeof practiceQuizId !== 'undefined') {
+            await prisma.practiceQuiz.update({
+              where: { id: practiceQuizId },
+              data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+            })
+          } else if (typeof microLearningId !== 'undefined') {
+            await prisma.microLearning.update({
+              where: { id: microLearningId },
+              data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+            })
+          } else if (typeof groupActivityId !== 'undefined') {
+            await prisma.groupActivity.update({
+              where: { id: groupActivityId },
+              data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
+            })
+          }
+        }
+
+        if (
+          includeTemplates &&
+          typeof templateId !== 'undefined' &&
+          (element.type === DB.ElementType.SELECTION ||
+            element.type === DB.ElementType.CASE_STUDY) &&
+          element.answerCollectionId !== null
+        ) {
+          // get all answer collections and answer collection entries used in any instance in the affected template
+          let instanceCollectionIds: number[] = []
+          let instanceCollectionEntryIds: number[] = []
+
+          if (typeof liveQuizId !== 'undefined') {
+            const {
+              answerCollectionIds: ids,
+              answerCollectionEntryIds: entryIds,
+            } = await getActivityAnswerCollectionIds(
+              {
+                activityId: liveQuizId,
+                activityType: ActivityType.LIVE_QUIZ,
               },
+              prisma
+            )
+
+            instanceCollectionIds = ids
+            instanceCollectionEntryIds = entryIds
+          } else if (typeof practiceQuizId !== 'undefined') {
+            const {
+              answerCollectionIds: ids,
+              answerCollectionEntryIds: entryIds,
+            } = await getActivityAnswerCollectionIds(
+              {
+                activityId: practiceQuizId,
+                activityType: ActivityType.PRACTICE_QUIZ,
+              },
+              prisma
+            )
+
+            instanceCollectionIds = ids
+            instanceCollectionEntryIds = entryIds
+          } else if (typeof microLearningId !== 'undefined') {
+            const {
+              answerCollectionIds: ids,
+              answerCollectionEntryIds: entryIds,
+            } = await getActivityAnswerCollectionIds(
+              {
+                activityId: microLearningId,
+                activityType: ActivityType.MICRO_LEARNING,
+              },
+              prisma
+            )
+
+            instanceCollectionIds = ids
+            instanceCollectionEntryIds = entryIds
+          } else if (typeof groupActivityId !== 'undefined') {
+            const {
+              answerCollectionIds: ids,
+              answerCollectionEntryIds: entryIds,
+            } = await getActivityAnswerCollectionIds(
+              {
+                activityId: groupActivityId,
+                activityType: ActivityType.GROUP_ACTIVITY,
+              },
+              prisma
+            )
+
+            instanceCollectionIds = ids
+            instanceCollectionEntryIds = entryIds
+          }
+
+          // fetch the existing template and the contained answer collections
+          const template = await prisma.activityTemplate.findUnique({
+            where: {
+              id: templateId,
+            },
+            include: {
+              answerCollections: true,
+              answerCollectionItems: true,
             },
           })
 
-          // if the previous activity status was set to reviewed, update it to indicated that the content was modified
-          if (reviewStatus === DB.ReviewStatus.REVIEWED) {
-            if (typeof liveQuizId !== 'undefined') {
-              await prisma.liveQuiz.update({
-                where: { id: liveQuizId },
-                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
-              })
-            } else if (typeof practiceQuizId !== 'undefined') {
-              await prisma.practiceQuiz.update({
-                where: { id: practiceQuizId },
-                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
-              })
-            } else if (typeof microLearningId !== 'undefined') {
-              await prisma.microLearning.update({
-                where: { id: microLearningId },
-                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
-              })
-            } else if (typeof groupActivityId !== 'undefined') {
-              await prisma.groupActivity.update({
-                where: { id: groupActivityId },
-                data: { reviewStatus: DB.ReviewStatus.MODIFIED_AFTER_REVIEW },
-              })
-            }
+          if (!template) {
+            return null
           }
 
+          // find answer collections that should be connected and or disconnected from the template
+          const templateCollectionIds = template.answerCollections.map(
+            (collection) => collection.id
+          )
+          const collectionsToDisconnect = templateCollectionIds.filter(
+            (id) => !instanceCollectionIds.includes(id)
+          )
+          const collectionsToConnect = instanceCollectionIds.filter(
+            (id) => !templateCollectionIds.includes(id)
+          )
+
+          const templateCollectionEntryIds = template.answerCollectionItems.map(
+            (collection) => collection.id
+          )
+          const collectionEntriesToDisconnect =
+            templateCollectionEntryIds.filter(
+              (id) => !instanceCollectionEntryIds.includes(id)
+            )
+          const collectionEntriesToConnect = instanceCollectionEntryIds.filter(
+            (id) => !templateCollectionEntryIds.includes(id)
+          )
+
+          // add all answer collections that were added or removed to the touched ones for a derived permissions update
+          touchedAnswerCollectionIds = touchedAnswerCollectionIds.concat([
+            ...collectionsToDisconnect,
+            ...collectionsToConnect,
+          ])
+
+          // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
           if (
-            includeTemplates &&
-            typeof templateId !== 'undefined' &&
-            (element.type === DB.ElementType.SELECTION ||
-              element.type === DB.ElementType.CASE_STUDY) &&
-            element.answerCollectionId !== null
+            collectionsToConnect.length > 0 ||
+            collectionsToDisconnect.length > 0 ||
+            collectionEntriesToConnect.length > 0 ||
+            collectionEntriesToDisconnect.length > 0
           ) {
-            // get all answer collections and answer collection entries used in any instance in the affected template
-            let instanceCollectionIds: number[] = []
-            let instanceCollectionEntryIds: number[] = []
-
-            if (typeof liveQuizId !== 'undefined') {
-              const {
-                answerCollectionIds: ids,
-                answerCollectionEntryIds: entryIds,
-              } = await getActivityAnswerCollectionIds(
-                {
-                  activityId: liveQuizId,
-                  activityType: ActivityType.LIVE_QUIZ,
-                },
-                prisma
-              )
-
-              instanceCollectionIds = ids
-              instanceCollectionEntryIds = entryIds
-            } else if (typeof practiceQuizId !== 'undefined') {
-              const {
-                answerCollectionIds: ids,
-                answerCollectionEntryIds: entryIds,
-              } = await getActivityAnswerCollectionIds(
-                {
-                  activityId: practiceQuizId,
-                  activityType: ActivityType.PRACTICE_QUIZ,
-                },
-                prisma
-              )
-
-              instanceCollectionIds = ids
-              instanceCollectionEntryIds = entryIds
-            } else if (typeof microLearningId !== 'undefined') {
-              const {
-                answerCollectionIds: ids,
-                answerCollectionEntryIds: entryIds,
-              } = await getActivityAnswerCollectionIds(
-                {
-                  activityId: microLearningId,
-                  activityType: ActivityType.MICRO_LEARNING,
-                },
-                prisma
-              )
-
-              instanceCollectionIds = ids
-              instanceCollectionEntryIds = entryIds
-            } else if (typeof groupActivityId !== 'undefined') {
-              const {
-                answerCollectionIds: ids,
-                answerCollectionEntryIds: entryIds,
-              } = await getActivityAnswerCollectionIds(
-                {
-                  activityId: groupActivityId,
-                  activityType: ActivityType.GROUP_ACTIVITY,
-                },
-                prisma
-              )
-
-              instanceCollectionIds = ids
-              instanceCollectionEntryIds = entryIds
-            }
-
-            // fetch the existing template and the contained answer collections
-            const template = await prisma.activityTemplate.findUnique({
+            await prisma.activityTemplate.update({
               where: {
                 id: templateId,
               },
-              include: {
-                answerCollections: true,
-                answerCollectionItems: true,
+              data: {
+                answerCollections:
+                  collectionsToConnect.length > 0 ||
+                  collectionsToDisconnect.length > 0
+                    ? {
+                        connect:
+                          collectionsToConnect.length > 0
+                            ? collectionsToConnect.map((id) => ({
+                                id,
+                              }))
+                            : [],
+                        disconnect:
+                          collectionsToDisconnect.length > 0
+                            ? collectionsToDisconnect.map((id) => ({
+                                id,
+                              }))
+                            : [],
+                      }
+                    : undefined,
+                answerCollectionItems:
+                  collectionEntriesToConnect.length > 0 ||
+                  collectionEntriesToDisconnect.length > 0
+                    ? {
+                        connect:
+                          collectionEntriesToConnect.length > 0
+                            ? collectionEntriesToConnect.map((id) => ({
+                                id,
+                              }))
+                            : [],
+                        disconnect:
+                          collectionEntriesToDisconnect.length > 0
+                            ? collectionEntriesToDisconnect.map((id) => ({
+                                id,
+                              }))
+                            : [],
+                      }
+                    : undefined,
               },
             })
-
-            if (!template) {
-              return null
-            }
-
-            // find answer collections that should be connected and or disconnected from the template
-            const templateCollectionIds = template.answerCollections.map(
-              (collection) => collection.id
-            )
-            const collectionsToDisconnect = templateCollectionIds.filter(
-              (id) => !instanceCollectionIds.includes(id)
-            )
-            const collectionsToConnect = instanceCollectionIds.filter(
-              (id) => !templateCollectionIds.includes(id)
-            )
-
-            const templateCollectionEntryIds =
-              template.answerCollectionItems.map((collection) => collection.id)
-            const collectionEntriesToDisconnect =
-              templateCollectionEntryIds.filter(
-                (id) => !instanceCollectionEntryIds.includes(id)
-              )
-            const collectionEntriesToConnect =
-              instanceCollectionEntryIds.filter(
-                (id) => !templateCollectionEntryIds.includes(id)
-              )
-
-            // add all answer collections that were added or removed to the touched ones for a derived permissions update
-            touchedAnswerCollectionIds = touchedAnswerCollectionIds.concat([
-              ...collectionsToDisconnect,
-              ...collectionsToConnect,
-            ])
-
-            // check if the list of answer collection ids in the template and the ones used in the instance coincide, otherwise update these links
-            if (
-              collectionsToConnect.length > 0 ||
-              collectionsToDisconnect.length > 0 ||
-              collectionEntriesToConnect.length > 0 ||
-              collectionEntriesToDisconnect.length > 0
-            ) {
-              await prisma.activityTemplate.update({
-                where: {
-                  id: templateId,
-                },
-                data: {
-                  answerCollections:
-                    collectionsToConnect.length > 0 ||
-                    collectionsToDisconnect.length > 0
-                      ? {
-                          connect:
-                            collectionsToConnect.length > 0
-                              ? collectionsToConnect.map((id) => ({
-                                  id,
-                                }))
-                              : [],
-                          disconnect:
-                            collectionsToDisconnect.length > 0
-                              ? collectionsToDisconnect.map((id) => ({
-                                  id,
-                                }))
-                              : [],
-                        }
-                      : undefined,
-                  answerCollectionItems:
-                    collectionEntriesToConnect.length > 0 ||
-                    collectionEntriesToDisconnect.length > 0
-                      ? {
-                          connect:
-                            collectionEntriesToConnect.length > 0
-                              ? collectionEntriesToConnect.map((id) => ({
-                                  id,
-                                }))
-                              : [],
-                          disconnect:
-                            collectionEntriesToDisconnect.length > 0
-                              ? collectionEntriesToDisconnect.map((id) => ({
-                                  id,
-                                }))
-                              : [],
-                        }
-                      : undefined,
-                },
-              })
-            }
           }
-
-          if (!instance) return null
-
-          if (typeof liveQuizId !== 'undefined') {
-            emitter.emit('invalidate', {
-              typename: 'LiveQuiz',
-              id: liveQuizId,
-            })
-          } else if (typeof practiceQuizId !== 'undefined') {
-            emitter.emit('invalidate', {
-              typename: 'PracticeQuiz',
-              id: practiceQuizId,
-            })
-          } else if (typeof microLearningId !== 'undefined') {
-            emitter.emit('invalidate', {
-              typename: 'MicroLearning',
-              id: microLearningId,
-            })
-          } else if (typeof groupActivityId !== 'undefined') {
-            emitter.emit('invalidate', {
-              typename: 'GroupActivity',
-              id: groupActivityId,
-            })
-          } else if (typeof templateId !== 'undefined') {
-            emitter.emit('invalidate', {
-              typename: 'Template',
-              id: templateId,
-            })
-          }
-
-          return instance
         }
-      )
+
+        if (!instance) return null
+
+        if (typeof liveQuizId !== 'undefined') {
+          emitter.emit('invalidate', {
+            typename: 'LiveQuiz',
+            id: liveQuizId,
+          })
+        } else if (typeof practiceQuizId !== 'undefined') {
+          emitter.emit('invalidate', {
+            typename: 'PracticeQuiz',
+            id: practiceQuizId,
+          })
+        } else if (typeof microLearningId !== 'undefined') {
+          emitter.emit('invalidate', {
+            typename: 'MicroLearning',
+            id: microLearningId,
+          })
+        } else if (typeof groupActivityId !== 'undefined') {
+          emitter.emit('invalidate', {
+            typename: 'GroupActivity',
+            id: groupActivityId,
+          })
+        } else if (typeof templateId !== 'undefined') {
+          emitter.emit('invalidate', {
+            typename: 'Template',
+            id: templateId,
+          })
+        }
+
+        return instance
+      }
     )
-  ).flatMap((result) => {
+  )
+  if (options.failOnError) {
+    const failure = updateResults.find((result) => result.status === 'rejected')
+    if (failure?.status === 'rejected') throw failure.reason
+  }
+  const updatedInstances = updateResults.flatMap((result) => {
     if (result.status !== 'fulfilled' || !result.value) return []
     return result.value
   })
@@ -2026,6 +2581,99 @@ export async function updateElementInstances(
   await flagOutdatedElementInstances({ elementId }, prisma, emitter)
 
   return updatedInstances
+}
+
+export async function updateElementInstancesWithAssessmentAudit(
+  args: { elementId: number; includeTemplates: boolean },
+  ctx: ContextWithUser
+) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
+  const preparedMedia = await prepareAssessmentInstanceRefreshMedia({
+    client: ctx.prisma,
+    elementId: args.elementId,
+    userId: ctx.user.sub,
+    includeTemplates: args.includeTemplates,
+    capturedAt: auditOperation.occurredAt,
+  })
+  return runInAuditTransaction(
+    ctx.prisma,
+    async (tx, auditTx) => {
+      const references = await tx.elementInstance.findMany({
+        where: {
+          elementId: args.elementId,
+          elementBlock: { is: { liveQuiz: { isAssessmentEnabled: true } } },
+        },
+        select: { elementBlock: { select: { liveQuizId: true } } },
+      })
+      const liveQuizIds = [
+        ...new Set(
+          references.flatMap((instance) =>
+            instance.elementBlock === null
+              ? []
+              : [instance.elementBlock.liveQuizId]
+          )
+        ),
+      ].sort()
+      const before = new Map(
+        await Promise.all(
+          liveQuizIds.map(
+            async (liveQuizId) =>
+              [
+                liveQuizId,
+                await loadAssessmentAuditSnapshot(tx, liveQuizId),
+              ] as const
+          )
+        )
+      )
+      const result = await updateElementInstances(
+        args,
+        tx,
+        ctx.emitter,
+        ctx.user.sub,
+        { failOnError: true }
+      )
+      for (const liveQuizId of liveQuizIds) {
+        const beforeSnapshot = before.get(liveQuizId)
+        const afterSnapshot = await loadAssessmentAuditSnapshot(tx, liveQuizId)
+        if (beforeSnapshot == null || afterSnapshot === null) continue
+        const instanceDrafts = buildAssessmentMutationAuditDrafts({
+          before: beforeSnapshot,
+          after: afterSnapshot,
+          producerOperationId: auditOperation.correlationId,
+        }).filter(
+          (draft) =>
+            draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' ||
+            draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
+            draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
+        )
+        const mediaBefore = await loadCoveredAssessmentMediaStates(
+          tx,
+          liveQuizId
+        )
+        appendPreparedAssessmentMediaDrafts({
+          drafts: instanceDrafts,
+          liveQuizId,
+          afterSnapshot,
+          mediaBefore,
+          prepared: preparedMedia.get(liveQuizId),
+          producerOperationId: auditOperation.correlationId,
+        })
+        await emitCoveredAssessmentAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId,
+          courseId: afterSnapshot.courseId,
+          operation: auditOperation,
+          drafts: instanceDrafts,
+        })
+      }
+      return result
+    },
+    { timeout: 60000 }
+  )
 }
 
 export async function flagOutdatedElementInstances(
@@ -2123,4 +2771,70 @@ export async function flagOutdatedElementInstances(
   }
 
   return true
+}
+
+export async function flagOutdatedElementInstancesWithAssessmentAudit(
+  { elementId }: { elementId: number },
+  ctx: ContextWithUser
+) {
+  const operation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
+  return runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+    const references = await tx.elementInstance.findMany({
+      where: {
+        elementId,
+        elementBlock: { is: { liveQuiz: { isAssessmentEnabled: true } } },
+      },
+      select: { elementBlock: { select: { liveQuizId: true } } },
+    })
+    const liveQuizIds = [
+      ...new Set(
+        references.flatMap((instance) =>
+          instance.elementBlock === null
+            ? []
+            : [instance.elementBlock.liveQuizId]
+        )
+      ),
+    ].sort()
+    const before = new Map(
+      await Promise.all(
+        liveQuizIds.map(
+          async (liveQuizId) =>
+            [
+              liveQuizId,
+              await loadAssessmentAuditSnapshot(tx, liveQuizId),
+            ] as const
+        )
+      )
+    )
+    const result = await flagOutdatedElementInstances(
+      { elementId },
+      tx,
+      ctx.emitter
+    )
+    for (const liveQuizId of liveQuizIds) {
+      const beforeSnapshot = before.get(liveQuizId)
+      const afterSnapshot = await loadAssessmentAuditSnapshot(tx, liveQuizId)
+      if (beforeSnapshot == null || afterSnapshot === null) continue
+      await emitCoveredAssessmentAuditEvents({
+        tx,
+        auditTx,
+        liveQuizId,
+        courseId: afterSnapshot.courseId,
+        operation,
+        drafts: buildAssessmentMutationAuditDrafts({
+          before: beforeSnapshot,
+          after: afterSnapshot,
+          producerOperationId: operation.correlationId,
+        }).filter(
+          (draft) =>
+            draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
+            draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
+        ),
+      })
+    }
+    return result
+  })
 }

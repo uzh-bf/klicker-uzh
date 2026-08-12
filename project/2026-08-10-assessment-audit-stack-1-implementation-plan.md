@@ -1,7 +1,7 @@
 # Stack 1 Assessment Audit Evidence Implementation Plan
 
 - **Date:** 2026-08-10
-- **Status:** proposed for the single planning-gate review with Roland
+- **Status:** approved at the single planning gate; implementation in progress
 - **Binding design:**
   [assessment audit logging design, revision 7](./2026-08-04-assessment-audit-logging-design.md)
 - **Completed first work item:**
@@ -10,8 +10,8 @@
 - **Staging proof target:** 2026-09-01
 - **Topology owner:** platform engineer implementing the stack
 
-No implementation starts until the planning gate approves this document. Stack
-2 client-observed capture is not part of this plan and cannot delay Stack 1.
+The planning gate approved this document. Stack 2 client-observed capture is
+not part of this plan and cannot delay Stack 1.
 
 ## Delivery outcome
 
@@ -670,18 +670,24 @@ Branch: `feat/assessment-audit-producers`, stacked on layer 3.
   configuration/name/access/timing changes, block activation/closure, and
   scheduled publication/closure handlers.
 - `packages/graphql/src/services/elements.ts`: effective source Element change,
-  instance refresh/update/remove, and media replacement for covered assessment
+  instance refresh/update/remove, and media capture/replacement for covered assessment
   references.
-- `packages/graphql/src/services/courses.ts`: assessment eligibility,
-  participant reset/removal, point corrections, and affected bulk operations.
+- `packages/graphql/src/services/courses.ts`: assessment eligibility, point
+  corrections, and affected bulk operations; assessment-wide participant
+  response reset is emitted by the reset service before deletion.
+- `packages/graphql/src/services/participantInvitations.ts` and
+  `packages/graphql/src/scripts/importParticipantInvitations.ts`: invitation
+  auto-acceptance and semester-start repair paths emit effective assessment
+  eligibility changes through one shared transaction.
 - `packages/graphql/src/services/sharing.ts`: only effective Course/LiveQuiz
   lecturer permission changes that alter a covered assessment; generic sharing
   history remains in the existing model.
 - `packages/graphql/src/services/assessmentReports.ts` and
   `packages/graphql/src/services/verification.ts`: issue, supersede, and revoke
   report events with snapshot hashes.
-- `packages/graphql/src/services/stacks.ts` and relevant workers: authoritative
-  post-submission response/score recomputation or modification paths only.
+- New post-submission response administration names are added only when a real
+  authoritative platform mutation and its durability point exist; the launch
+  contract does not reserve placeholder events.
 - Add focused tests beside the current GraphQL service tests and update
   `packages/audit/test/producer-coverage.test.ts`.
 

@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import {
-  type EventType,
   buildAssessmentBaselinePart,
   createTrustedAuditContext,
+  type EventType,
   emitAuditEvents,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import { prisma } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
 import {
   type AssessmentAuditMediaDependencies,
   persistPreparedAssessmentAuditActivation,
@@ -15,7 +16,10 @@ import {
   prepareAssessmentAuditActivation,
   prepareReopeningAssessmentAuditActivation,
 } from '../src/services/assessmentAuditActivation.js'
-import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
+import {
+  assessmentAuditUserOperation,
+  emitCoveredAssessmentAuditEvents,
+} from '../src/services/assessmentAuditProducers.js'
 
 const unavailableMedia: AssessmentAuditMediaDependencies = {
   allowedHosts: ['test.blob.core.windows.net'],
@@ -252,6 +256,59 @@ describe('assessment audit activation', () => {
     ).toMatchObject({ status: 'ENDED', finishedAt })
     expect(
       await prisma.assessmentAuditScope.count({ where: { liveQuizId } })
+    ).toBe(0)
+  })
+
+  it('rolls back a covered business mutation when producer evidence is invalid', async () => {
+    const baselineId = randomUUID()
+    await prisma.assessmentAuditScope.create({
+      data: {
+        liveQuizId,
+        lifecycleEpoch: 1,
+        coverageState: 'COVERED',
+        baselineId,
+        baselineKind: 'CREATION',
+        activatedAt: new Date(),
+      },
+    })
+    const operation = assessmentAuditUserOperation({
+      userId,
+      requiredPermission: 'WRITE',
+    })
+
+    await expect(
+      runInAuditTransaction(prisma, async (tx, auditTx) => {
+        await tx.liveQuiz.update({
+          where: { id: liveQuizId },
+          data: { displayName: 'Must roll back' },
+        })
+        await emitCoveredAssessmentAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId,
+          operation,
+          drafts: [
+            {
+              eventType: 'ASSESSMENT_CONFIGURATION_CHANGED',
+              producerOperationId: `${operation.correlationId}:invalid`,
+              payload: {
+                entityType: 'ASSESSMENT',
+                entityId: liveQuizId,
+                before: null,
+                after: null,
+              } as never,
+            },
+          ],
+        })
+      })
+    ).rejects.toThrow()
+    expect(
+      await prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuizId } })
+    ).toMatchObject({
+      displayName: expect.not.stringMatching('Must roll back'),
+    })
+    expect(
+      await prisma.assessmentAuditOutboxEvent.count({ where: { liveQuizId } })
     ).toBe(0)
   })
 

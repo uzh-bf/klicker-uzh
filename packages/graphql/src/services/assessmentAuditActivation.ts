@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import {
-  AzureBlobAuditMediaSource,
-  AzureImmutableAuditMediaStore,
   type AuditActor,
   type AuditEventDraft,
   type AuditMediaSource,
   type AuditTransactionClient,
+  AzureBlobAuditMediaSource,
+  AzureImmutableAuditMediaStore,
   type BaselinePartPayload,
   type BaselineRootPayload,
   buildAssessmentBaseline,
+  canonicalizeJson,
   captureAssessmentMedia,
   createAzureAuditClients,
   createAzureAuditCredential,
@@ -16,22 +17,21 @@ import {
   discoverBaselineMediaReferences,
   emitAuditEvents,
   extractBaselineMediaUrls,
-  canonicalizeJson,
   type ImmutableAuditMediaStore,
+  type RolloutBaselinePayload,
   readAzureAuditStorageConfig,
   retentionBatchFor,
-  type RolloutBaselinePayload,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
-import * as DB from '@klicker-uzh/prisma/client'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
-  assessmentBaselineMarkdown,
   type AssessmentBaselineSnapshot,
+  assessmentBaselineMarkdown,
   buildAssessmentBaselineContents,
 } from './assessmentAuditBaseline.js'
 
-const BASELINE_QUIZ_SELECT = {
+export const ASSESSMENT_AUDIT_QUIZ_SELECT = {
   id: true,
   name: true,
   displayName: true,
@@ -94,7 +94,7 @@ const BASELINE_QUIZ_SELECT = {
 } satisfies Prisma.LiveQuizSelect
 
 type BaselineQuizRecord = Prisma.LiveQuizGetPayload<{
-  select: typeof BASELINE_QUIZ_SELECT
+  select: typeof ASSESSMENT_AUDIT_QUIZ_SELECT
 }>
 
 type BaselineReadClient = Pick<
@@ -180,21 +180,29 @@ function mapQuizRecord(record: BaselineQuizRecord): AssessmentBaselineSnapshot {
   }
 }
 
+export async function loadAssessmentAuditSnapshot(
+  client: Pick<Prisma.TransactionClient, 'liveQuiz'>,
+  liveQuizId: string
+): Promise<AssessmentBaselineSnapshot | null> {
+  const quiz = await client.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: ASSESSMENT_AUDIT_QUIZ_SELECT,
+  })
+  return quiz === null ? null : mapQuizRecord(quiz)
+}
+
 export async function loadAssessmentBaselineSnapshot(
   client: BaselineReadClient,
   liveQuizId: string
 ): Promise<AssessmentBaselineSnapshot> {
-  const quiz = await client.liveQuiz.findUnique({
-    where: { id: liveQuizId },
-    select: BASELINE_QUIZ_SELECT,
-  })
+  const quiz = await loadAssessmentAuditSnapshot(client, liveQuizId)
   if (quiz === null || quiz.isDeleted || !quiz.isAssessmentEnabled) {
     throw new Error('Assessment audit activation requires an active assessment')
   }
-  return mapQuizRecord(quiz)
+  return quiz
 }
 
-async function prepareCapturedMedia(input: {
+export async function captureAssessmentAuditSnapshotMedia(input: {
   client: BaselineReadClient
   snapshot: AssessmentBaselineSnapshot
   media: AssessmentAuditMediaDependencies
@@ -269,12 +277,13 @@ async function prepareAssessmentAuditActivationInternal(input: {
   }
   const lifecycleEpoch =
     input.lifecycleEpoch ?? (latestScope?.lifecycleEpoch ?? 0) + 1
-  const { capturedMedia, limitations } = await prepareCapturedMedia({
-    client: input.client,
-    snapshot,
-    media: input.media,
-    capturedAt,
-  })
+  const { capturedMedia, limitations } =
+    await captureAssessmentAuditSnapshotMedia({
+      client: input.client,
+      snapshot,
+      media: input.media,
+      capturedAt,
+    })
   const contents = buildAssessmentBaselineContents({
     snapshot,
     capturedMedia,

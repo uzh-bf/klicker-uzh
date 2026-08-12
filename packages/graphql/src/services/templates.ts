@@ -1,16 +1,17 @@
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  CaseStudyElementData,
-  ElementOptionsInput,
-  SelectionElementData,
-  TemplateBlockInput,
+  type CaseStudyElementData,
+  type ElementOptionsInput,
+  type SelectionElementData,
+  type TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -20,6 +21,12 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  assessmentAuditUserOperation,
+  assessmentLifecycleDraft,
+  emitCoveredAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { manipulateElement } from './elements.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
@@ -1556,6 +1563,7 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: { permissions: { where: { userId: ctx.user.sub } } },
   })
 
   if (!templateLiveQuiz) {
@@ -1776,7 +1784,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null = undefined
+            let options: ElementOptionsInput | undefined | null
             if (
               values.type === DB.ElementType.SC ||
               values.type === DB.ElementType.MC ||
@@ -1916,6 +1924,49 @@ export async function createLiveQuizFromTemplate(
     },
     { timeout: 60000 }
   )
+
+  if (newLiveQuiz.isAssessmentEnabled) {
+    try {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: newLiveQuiz.id,
+      })
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        console.warn('Assessment template copy recorded an audit coverage gap')
+      } else {
+        const auditOperation = assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        })
+        const copied =
+          templateLiveQuiz.ownerId === ctx.user.sub ||
+          templateLiveQuiz.permissions.length > 0
+        await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId: newLiveQuiz.id,
+            courseId: newLiveQuiz.courseId,
+            operation: auditOperation,
+            drafts: [
+              assessmentLifecycleDraft({
+                eventType: copied ? 'ASSESSMENT_COPIED' : 'ASSESSMENT_IMPORTED',
+                producerOperationId: `${auditOperation.correlationId}:${copied ? 'copied' : 'imported'}`,
+                fromState: null,
+                toState: 'DRAFT',
+                reasonCode: copied
+                  ? 'CREATED_FROM_ACCESSIBLE_TEMPLATE'
+                  : 'IMPORTED_FROM_CATALOG_TEMPLATE',
+                sourceLiveQuizId: templateLiveQuiz.id,
+              }),
+            ],
+          })
+        })
+      }
+    } catch {
+      console.warn('Assessment template copy audit activation remains pending')
+    }
+  }
 
   return newLiveQuiz.id
 }

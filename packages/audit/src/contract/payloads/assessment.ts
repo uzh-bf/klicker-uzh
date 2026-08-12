@@ -511,7 +511,7 @@ export function accessChangePayloadSchema(subjectType: 'PARTICIPANT' | 'USER') {
 }
 
 export function sessionPayloadSchema(
-  transition: 'STARTED' | 'RESUMED' | 'ENDED' | 'FORCIBLY_TERMINATED'
+  transition: 'STARTED' | 'RESUMED' | 'ENDED'
 ) {
   return z
     .object({

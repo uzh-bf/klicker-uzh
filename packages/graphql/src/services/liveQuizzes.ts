@@ -47,6 +47,13 @@ import {
   readAssessmentAuditRolloutConfig,
 } from './assessmentAuditActivation.js'
 import {
+  assessmentAuditUserOperation,
+  assessmentLifecycleDraft,
+  buildAssessmentMutationAuditDrafts,
+  emitCoveredAssessmentAuditEvents,
+  recordCoveredAssessmentActionRejected,
+} from './assessmentAuditProducers.js'
+import {
   activateNewAssessmentAuditIfSelected,
   assessmentAuditReadiness,
 } from './assessmentAuditRollout.js'
@@ -426,6 +433,10 @@ export async function manipulateLiveQuiz(
     },
   }
 
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
   const persistLiveQuiz = async (prisma: PrismaTransactionClient) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
@@ -520,6 +531,66 @@ export async function manipulateLiveQuiz(
     return upsertedQuiz
   }
 
+  const persisted = transactionPrisma
+    ? await persistActivityWithPermissions({
+        persist: persistLiveQuiz,
+        invalidateTypename: 'LiveQuiz',
+        invalidateId: id,
+        ctx,
+        transactionPrisma,
+      })
+    : await runInAuditTransaction(
+        ctx.prisma,
+        async (auditPrisma, auditTx) => {
+          const beforeSnapshot = id
+            ? await loadAssessmentAuditSnapshot(auditPrisma, id)
+            : null
+          const result = await persistActivityWithPermissions({
+            persist: persistLiveQuiz,
+            invalidateTypename: 'LiveQuiz',
+            invalidateId: id,
+            ctx,
+            transactionPrisma: auditPrisma,
+          })
+          if (beforeSnapshot !== null) {
+            const afterSnapshot = await loadAssessmentAuditSnapshot(
+              auditPrisma,
+              result.activity.id
+            )
+            if (afterSnapshot === null) {
+              throw new Error('Updated assessment could not be reloaded')
+            }
+            await emitCoveredAssessmentAuditEvents({
+              tx: auditPrisma,
+              auditTx,
+              liveQuizId: result.activity.id,
+              courseId: afterSnapshot.courseId,
+              operation: auditOperation,
+              drafts: buildAssessmentMutationAuditDrafts({
+                before: beforeSnapshot,
+                after: afterSnapshot,
+                producerOperationId: auditOperation.correlationId,
+              }),
+            })
+          }
+          return result
+        },
+        { timeout: 60000 }
+      )
+
+  const {
+    activity,
+    permissionLevel,
+    derived,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = persisted
+
   if (!id && activity.isAssessmentEnabled) {
     try {
       const outcome = await activateNewAssessmentAuditIfSelected({
@@ -533,25 +604,6 @@ export async function manipulateLiveQuiz(
       console.warn('New assessment audit activation remains pending')
     }
   }
-  const {
-    activity,
-    permissionLevel,
-    derived,
-    isOwner,
-    isManager,
-    isEditor,
-    isExecutor,
-    isShared,
-    isRemovable,
-    sharingType,
-  } = await persistActivityWithPermissions({
-    persist: persistLiveQuiz,
-    invalidateTypename: 'LiveQuiz',
-    invalidateId: id,
-    ctx,
-    transactionPrisma,
-  })
-
   return {
     id: activity.id,
     templateId: activity.templateInfo?.id ?? null,

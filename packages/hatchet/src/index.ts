@@ -193,9 +193,15 @@ export function prepareHatchetTasks({
   const publishScheduledLiveQuiz = hatchet.task({
     name: 'publish-scheduled-live-quiz',
     retries: 3,
-    fn: async ({ liveQuizId }: { liveQuizId: string }, executionContext) => {
+    fn: async (
+      {
+        liveQuizId,
+        initiatedByUserId,
+      }: { liveQuizId: string; initiatedByUserId?: string },
+      executionContext
+    ) => {
       const success = await handlers.handlePublishScheduledLiveQuiz(
-        { liveQuizId },
+        { liveQuizId, initiatedByUserId },
         globalContext,
         executionContext
       )
