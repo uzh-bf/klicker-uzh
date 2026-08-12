@@ -7,14 +7,24 @@ import {
   getModeDescription,
   getModeIcon,
   isKnownMode,
+  resolveSelectedMode,
 } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-export function ModeSwitcher() {
+export function ModeSwitcher({
+  modeOptions: modeOptionsOverride,
+}: {
+  modeOptions?: Record<string, string>
+} = {}) {
   const t = useTranslations()
-  const { modeOptions, selectedMode, setSelectedMode } = useSettingsStore()
+  const storeModeOptions = useSettingsStore((state) => state.modeOptions)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
+  const modeOptions = modeOptionsOverride ?? storeModeOptions
   const modeKeys = Object.keys(modeOptions)
+  const modeKeysSignature = modeKeys.join('|')
+  const effectiveSelectedMode = resolveSelectedMode(modeOptions, selectedMode)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>())
@@ -26,7 +36,7 @@ export function ModeSwitcher() {
 
   useLayoutEffect(() => {
     const measure = () => {
-      const activeButton = buttonRefs.current.get(selectedMode)
+      const activeButton = buttonRefs.current.get(effectiveSelectedMode)
       if (!activeButton) return
       setThumb({
         left: activeButton.offsetLeft,
@@ -43,7 +53,7 @@ export function ModeSwitcher() {
     const observer = new ResizeObserver(measure)
     buttonRefs.current.forEach((button) => observer.observe(button))
     return () => observer.disconnect()
-  }, [selectedMode, modeKeys.join('|')])
+  }, [effectiveSelectedMode, modeKeysSignature])
 
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
@@ -72,7 +82,7 @@ export function ModeSwitcher() {
           ? t(`chat.modes.${mode}`)
           : mode.charAt(0).toUpperCase() + mode.slice(1)
         const description = getModeDescription(t, mode, modeOptions)
-        const isActive = mode === selectedMode
+        const isActive = mode === effectiveSelectedMode
 
         return (
           <Tooltip key={mode}>

@@ -230,7 +230,8 @@ needs a separate structured planning flow and tool/result budget. Chatbot-scoped
 are supplied with the initial shell, so the welcome view and starters do not wait for the settings
 request or briefly render the wrong persisted mode. A genuine configured description, including an
 empty one, overrides the localized generic mode explanation; the synthesized Tutor fallback keeps
-the localized generic copy. Message action bars
+the localized generic copy. On an empty thread, the selected-mode card also renders the same mode
+switcher as the header, so participants can change modes before choosing a starter. Message action bars
 remain mounted for touch users rather than relying on hover. An unavailable image edit uses
 `aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
 Failed assistant turns, including silent stream interruptions, keep their own localized retry
