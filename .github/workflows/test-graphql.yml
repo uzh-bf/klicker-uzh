@@ -149,6 +149,10 @@ jobs:
           pnpm run build
           cd ../../apps/hatchet-worker-general
           pnpm run build
+          cd ../response-api
+          pnpm run build
+          cd ../hatchet-worker-response-processor
+          pnpm run build
 
       - name: Setup database
         run: |
