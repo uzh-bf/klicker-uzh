@@ -1363,6 +1363,11 @@ const AssistantMessage: FC = () => {
       m.status?.type === 'running' &&
       m.content.length === 0
   )
+  const hasAnswerText = useMessage((message) =>
+    message.content.some(
+      (part) => part.type === 'text' && part.text.trim().length > 0
+    )
+  )
   // Computed once here (not inside SourcesSection/MarkdownText) and shared
   // via context, so the sources grid and the inline `[n]` citation chips
   // read the same normalized list instead of each re-parsing the tool JSON.
@@ -1423,7 +1428,7 @@ const AssistantMessage: FC = () => {
         <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
-          <SourcesSection />
+          {hasAnswerText && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
       </div>
