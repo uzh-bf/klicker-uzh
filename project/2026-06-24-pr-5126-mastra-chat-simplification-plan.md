@@ -9,15 +9,15 @@
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
 - Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
 - Status: Slices 1-2, the canonical `v1` conformance runner, and the
-  request-provider origin boundary are implemented locally on current `v3`;
-  current-head review and remote publication remain open.
+  request-provider origin boundary are implemented, reviewed, and published
+  on current `v3` in draft PR #5126. Slices 3-6 remain pending.
 
 Current branch state:
 
-- The local branch was reconstructed from fetched `origin/v3` and now contains the approved plan, ADR 0005, Slice 1 contract/default-engine commits, and the committed Slice 2 tracer.
-- The old public implementation head is preserved locally as `backup/mastra-chat-openrouter-smoke-pre-reconstruct-20260810` at `349cded017` and privately as `archive/klicker-uzh-pr-5126`.
-- The remote pull request still points to the old prototype head `7717572aba` and remains conflicting. Replacing it requires a separate, explicitly approved force-with-lease push after this plan is accepted.
-- Do not merge, close, or delete the old pull request or branch until the reconstructed branch has been pushed and verified on GitHub.
+- The branch was reconstructed from fetched `origin/v3` and now contains the approved plan, ADR 0005, Slice 1 contract/default-engine commits, and the committed Slice 2 tracer.
+- The old public implementation head is preserved locally as `backup/mastra-chat-openrouter-smoke-pre-reconstruct-20260810` at `349cded017`, at `refs/stack-backup/20260812-current-v3/codex/mastra-chat-openrouter-smoke`, and privately as `archive/klicker-uzh-pr-5126`.
+- The explicitly approved force-with-lease replacement published contract commit `44306fb0f2fa3d1d7de7606699232f9247268009` to draft PR #5126. Remote readback matches that commit.
+- Do not merge, close, or delete the pull request or branch without separate authorization.
 
 Locked continuation decisions:
 
@@ -471,9 +471,15 @@ Current evidence:
 
 - `git rev-list --left-right --count HEAD...origin/v3` returned `4 0` after the 2026-08-10 fetch.
 - `git diff --name-status origin/v3...HEAD` contains only this plan.
-- The remote PR remains unchanged at the old prototype head. A force-with-lease push is a later explicit approval gate, not part of Slice 0's completed local work.
+- The old remote prototype was replaced only after explicit approval. The
+  reconstructed branch was read back from draft PR #5126 at contract commit
+  `44306fb0f2fa3d1d7de7606699232f9247268009`.
 
-Remaining publication check: after an explicitly approved force-with-lease push, read back the remote SHA, diff, secret checks, CI, and GitHub mergeability before treating the reconstruction as published.
+Publication evidence: GitHub type, format, lint, syncpack, Gitleaks, GitGuardian,
+Greptile, and build-and-compile checks passed. Two install jobs failed while
+downloading the pre-existing `sharp@0.32.6` libvips binary with HTTP 503 and
+then attempted to compile without system libvips. This runner dependency
+failure is outside the branch diff and does not invalidate the focused checks.
 
 ### Slice 1 - Contract And Default Engine Tracer
 
@@ -680,12 +686,18 @@ Rollback after deployment changes engine configuration or rolls back the release
       runner now starts the SSE request, aborts its actual request signal after
       the first chunk, and validates the resulting metadata and `abort`
       terminal against the private adapter.
-- [ ] Rerun current-head checks/reviews, then seek the separate
-      force-with-lease publication approval for PR #5126.
+- [x] Reran current-head Node 24 contract, default-engine, chat-api, and chart
+      checks. Security, maintainability, and integrated final reviews found no
+      remaining issue at confidence 75 or higher.
+- [x] Published the explicitly approved force-with-lease replacement and read
+      back draft PR #5126 at public contract commit `44306fb0f2`. GitHub's
+      branch-relevant type, format, lint, build-and-compile, syncpack, and
+      secret checks passed; two independent install jobs hit the same external
+      `sharp@0.32.6` libvips download failure.
 - [ ] Slices 3-6 implemented and verified.
 
 ## Next Action
 
-Run the current-head contract, chat-api, default-engine, chart, security, and
-integrated review gates on current `v3`. Then stop before the separately
-authorized PR #5126 force-with-lease replacement.
+Keep PR #5126 draft for human review. The next implementation milestone is
+Slice 3, which completes the public conversation and policy surface without
+depending on the unfinished `v3-ai` roll-up.
