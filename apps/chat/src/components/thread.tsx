@@ -702,25 +702,16 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   )
 }
 
-const ThreadComposerImageAttachment: FC = () => {
+const ComposerImageAttachment: FC<{
+  variant?: 'thread' | 'edit'
+}> = ({ variant }) => {
   const imageSrc = useAuiState((s) => selectAttachmentImageSrc(s.attachment))
   const attachmentName = useAuiState((s) => selectAttachmentName(s.attachment))
   return (
     <ComposerAttachmentView
       imageSrc={imageSrc}
       attachmentName={attachmentName}
-    />
-  )
-}
-
-const EditComposerImageAttachment: FC = () => {
-  const imageSrc = useAuiState((s) => selectAttachmentImageSrc(s.attachment))
-  const attachmentName = useAuiState((s) => selectAttachmentName(s.attachment))
-  return (
-    <ComposerAttachmentView
-      imageSrc={imageSrc}
-      attachmentName={attachmentName}
-      variant="edit"
+      variant={variant}
     />
   )
 }
@@ -729,13 +720,9 @@ const ComposerAttachments: FC<{
   source?: 'thread' | 'edit'
   inline?: boolean
 }> = ({ source = 'thread', inline = false }) => {
-  const Component =
-    source === 'edit'
-      ? EditComposerImageAttachment
-      : ThreadComposerImageAttachment
   const primitive = (
     <ComposerPrimitive.Attachments>
-      {() => <Component />}
+      {() => <ComposerImageAttachment variant={source} />}
     </ComposerPrimitive.Attachments>
   )
 
