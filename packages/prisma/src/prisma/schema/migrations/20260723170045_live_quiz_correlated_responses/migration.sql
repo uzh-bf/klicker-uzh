@@ -37,9 +37,6 @@ ALTER TABLE "public"."LiveQuizResponse" VALIDATE CONSTRAINT "LiveQuizResponse_id
 -- CreateIndex
 CREATE INDEX "LiveQuizRespondent_liveQuizId_idx" ON "public"."LiveQuizRespondent"("liveQuizId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "LiveQuizResponse_instanceId_elementBlockExecution_responden_key" ON "public"."LiveQuizResponse"("instanceId", "elementBlockExecution", "respondentId");
-
 -- AddForeignKey
 ALTER TABLE "public"."LiveQuizRespondent" ADD CONSTRAINT "LiveQuizRespondent_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "public"."LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

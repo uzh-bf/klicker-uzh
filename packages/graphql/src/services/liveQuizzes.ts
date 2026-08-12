@@ -41,6 +41,12 @@ import {
   materializeLiveQuizPublication,
   transitionLiveQuizToPublished,
 } from './liveQuizPublication.js'
+import {
+  assertLiveQuizResponseCollectionModeEditable,
+  deriveLiveQuizResponseCollectionMode,
+  lockCourseLiveQuizResponseCollectionSettings,
+  lockLiveQuizResponseCollectionState,
+} from './liveQuizResponseCollection.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -200,29 +206,6 @@ interface ManipulateLiveQuizArgs {
   responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
 }
 
-function assertLiveQuizModeEditable({
-  activity,
-  responseCollectionMode,
-}: {
-  activity: Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>
-  responseCollectionMode: DB.LiveQuizResponseCollectionMode
-}) {
-  if (
-    responseCollectionMode !== activity.responseCollectionMode &&
-    activity.status !== DB.PublicationStatus.DRAFT &&
-    activity.status !== DB.PublicationStatus.SCHEDULED
-  ) {
-    throw new GraphQLError(
-      'Response collection mode cannot be changed after publication',
-      { extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' } }
-    )
-  }
-
-  if (activity.status === DB.PublicationStatus.PUBLISHED) {
-    throw new GraphQLError('Cannot edit a published live quiz')
-  }
-}
-
 export async function manipulateLiveQuiz(
   {
     id,
@@ -312,9 +295,11 @@ export async function manipulateLiveQuiz(
   }
 
   // fetch the course to which the live quiz should be linked regarding the gamification and assessment settings
-  const course = courseId
+  const targetCourseId =
+    typeof courseId !== 'undefined' ? courseId : existingActivity?.courseId
+  const course = targetCourseId
     ? await prisma.course.findUnique({
-        where: { id: courseId },
+        where: { id: targetCourseId },
         select: { isGamificationEnabled: true, isAssessmentEnabled: true },
       })
     : null
@@ -327,15 +312,16 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
-  const responseCollectionModeSetting = assessmentSetting
-    ? DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
-    : (responseCollectionMode ??
-      existingActivity?.responseCollectionMode ??
-      DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS)
+  const responseCollectionModeSetting = deriveLiveQuizResponseCollectionMode({
+    isAssessmentEnabled: assessmentSetting,
+    isGamificationEnabled: gamificationSetting,
+    requestedMode: responseCollectionMode,
+    existingMode: existingActivity?.responseCollectionMode,
+  })
 
   if (existingActivity) {
-    assertLiveQuizModeEditable({
-      activity: existingActivity,
+    assertLiveQuizResponseCollectionModeEditable({
+      liveQuiz: existingActivity,
       responseCollectionMode: responseCollectionModeSetting,
     })
   }
@@ -460,24 +446,37 @@ export async function manipulateLiveQuiz(
   }
 
   const persistLiveQuiz = async (prisma: PrismaTransactionClient) => {
+    if (targetCourseId) {
+      const lockedCourse = await lockCourseLiveQuizResponseCollectionSettings({
+        prisma,
+        courseId: targetCourseId,
+      })
+      if (!lockedCourse) {
+        throw new GraphQLError('Course not found')
+      }
+      if (
+        lockedCourse.isAssessmentEnabled !== course?.isAssessmentEnabled ||
+        lockedCourse.isGamificationEnabled !== course?.isGamificationEnabled
+      ) {
+        throw new GraphQLError(
+          'Course settings changed while the live quiz was being saved',
+          { extensions: { code: 'CONFLICT' } }
+        )
+      }
+    }
+
     if (id) {
-      const [lockedActivity] = await prisma.$queryRaw<
-        Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>[]
-      >`
-        SELECT
-          "status"::text AS "status",
-          "responseCollectionMode"::text AS "responseCollectionMode"
-        FROM "public"."LiveQuiz"
-        WHERE "id" = ${id}::uuid AND "isDeleted" = false
-        FOR UPDATE
-      `
+      const lockedActivity = await lockLiveQuizResponseCollectionState({
+        prisma,
+        liveQuizId: id,
+      })
 
       if (!lockedActivity) {
         throw new GraphQLError('Live quiz not found')
       }
 
-      assertLiveQuizModeEditable({
-        activity: lockedActivity,
+      assertLiveQuizResponseCollectionModeEditable({
+        liveQuiz: lockedActivity,
         responseCollectionMode: responseCollectionModeSetting,
       })
     }

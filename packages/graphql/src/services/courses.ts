@@ -35,6 +35,7 @@ import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
 import { manipulateMicroLearning } from './microLearning.js'
 import { manipulatePracticeQuiz } from './practiceQuizzes.js'
+import { deriveCourseLiveQuizResponseCollectionTransition } from './liveQuizResponseCollection.js'
 import { checkAccess, type PermissionCheck } from './sharing.js'
 
 // custom date parser
@@ -3679,6 +3680,24 @@ export async function updateCourseSettings(
           participantGroups: true,
         },
       },
+      liveQuizzes: {
+        where: {
+          isDeleted: false,
+          status: {
+            in: [
+              DB.PublicationStatus.DRAFT,
+              DB.PublicationStatus.SCHEDULED,
+              DB.PublicationStatus.PUBLISHED,
+            ],
+          },
+        },
+        select: {
+          id: true,
+          pinCode: true,
+          responseCollectionMode: true,
+          status: true,
+        },
+      },
     },
   })
 
@@ -3705,6 +3724,20 @@ export async function updateCourseSettings(
     course.isAssessmentEnabled !== isAssessmentEnabled
       ? (isAssessmentEnabled ?? undefined)
       : undefined
+
+  deriveCourseLiveQuizResponseCollectionTransition({
+    state: {
+      course: {
+        id: course.id,
+        isAssessmentEnabled: course.isAssessmentEnabled,
+        isGamificationEnabled: course.isGamificationEnabled,
+      },
+      liveQuizzes: course.liveQuizzes,
+    },
+    isAssessmentEnabled: newAssessmentSetting ?? course.isAssessmentEnabled,
+    isGamificationEnabled:
+      newGamificationSetting ?? course.isGamificationEnabled,
+  })
 
   const updatedCourse = await ctx.prisma.course.update({
     where: { id },
@@ -3753,6 +3786,10 @@ export async function updateCourseSettings(
                 data: {
                   isGamificationEnabled: newGamificationSetting,
                   isAssessmentEnabled: newAssessmentSetting,
+                  responseCollectionMode:
+                    newAssessmentSetting === true
+                      ? DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
+                      : undefined,
                 },
               },
             },
@@ -5011,6 +5048,34 @@ export async function enableGamification(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  const courseState = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      id: true,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      liveQuizzes: {
+        where: { isDeleted: false },
+        select: {
+          id: true,
+          pinCode: true,
+          responseCollectionMode: true,
+          status: true,
+        },
+      },
+    },
+  })
+  if (!courseState) return null
+
+  deriveCourseLiveQuizResponseCollectionTransition({
+    state: {
+      course: courseState,
+      liveQuizzes: courseState.liveQuizzes,
+    },
+    isAssessmentEnabled: courseState.isAssessmentEnabled,
+    isGamificationEnabled: true,
+  })
+
   const course = await ctx.prisma.course.update({
     where: { id: courseId },
     data: { isGamificationEnabled: true },

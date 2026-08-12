@@ -69,7 +69,7 @@ describe('Live quiz response collection mode', () => {
     expect(stored.exportSalt).toBeNull()
   })
 
-  it('installs the respondent identity constraints and uniqueness index', async () => {
+  it('installs the respondent identity constraints', async () => {
     const constraints = await prisma.$queryRaw<
       { name: string; definition: string }[]
     >`
@@ -93,20 +93,6 @@ describe('Live quiz response collection mode', () => {
     expect(definitions.LiveQuizRespondent_secret_check).toContain(
       '"verificationSecretHash" IS NOT NULL'
     )
-
-    const indexes = await prisma.$queryRaw<{ name: string }[]>`
-      SELECT indexname::text AS "name"
-      FROM pg_indexes
-      WHERE schemaname = 'public'
-        AND indexname =
-          'LiveQuizResponse_instanceId_elementBlockExecution_responden_key'
-    `
-
-    expect(indexes).toEqual([
-      {
-        name: 'LiveQuizResponse_instanceId_elementBlockExecution_responden_key',
-      },
-    ])
   })
 
   it('creates and retains an export salt when correlated export is enabled', async () => {
