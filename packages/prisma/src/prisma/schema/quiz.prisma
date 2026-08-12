@@ -108,6 +108,7 @@ model LiveQuiz {
   displayName          String
   description          String?
   startedAt            DateTime?
+  publicationGeneration Int       @default(0)
   publicationMetadataMaterializedAt DateTime?
   publicationMetadataRetryAt DateTime?
   finishedAt           DateTime?

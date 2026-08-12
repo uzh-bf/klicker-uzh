@@ -1,0 +1,2 @@
+ALTER TABLE "LiveQuiz"
+ADD COLUMN "publicationGeneration" INTEGER NOT NULL DEFAULT 0;
