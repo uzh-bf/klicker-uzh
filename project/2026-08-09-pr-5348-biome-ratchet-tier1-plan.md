@@ -1,11 +1,11 @@
 # PR #5348 — Biome Tier 1 ratchet
 
-Status: IN PROGRESS — post-CI regression fixes pending exact-head verification
-Date: 2026-08-09
+Status: IN PROGRESS — exact-head quality checks green; Playwright build baseline blocker remains
+Date: 2026-08-12
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
 Plan artifact: project/2026-08-09-pr-5348-biome-ratchet-tier1-plan.md
-Base: 0d7b4e461 (origin/v3; verified 2026-08-10)
+Base: 5264353ff (live v3; verified 2026-08-12)
 Worktree: trees/biome-ratchet-tier1
 Related history: project/2026-07-19-biome-knip-repo-quality.md
 
@@ -37,8 +37,8 @@ opening another rule-sized PR.
   2,000 export/type findings, and additional enum, duplicate-export, and
   configuration findings. It is not ready for blocking enforcement in this
   package.
-- The branch is refreshed against current `origin/v3`
-  (`0d7b4e461`). The final integrated review
+- The branch was refreshed against the live `v3` target
+  (`5264353ff`). The final integrated review
   first found the prior head four target commits behind and identified an
   overlap in `apps/chat/src/components/thread.tsx`; merge commit `28426f3ae`
   retains the upstream chat stabilization and feedback behavior while
@@ -129,7 +129,7 @@ reports, and verification remain on PR #5348.
 
 ### Check
 
-- Confirm the current base remains 338763a41.
+- Confirm the current base is the live `v3` tip.
 - Record the 491-error baseline from the current tree.
 - Review the plan and PR text for stale “next slice” and “standalone rule”
   language.
@@ -512,6 +512,24 @@ is unavailable.
   has no C compiler. The host hook could not start because host `run-p` is not
   installed; these are environment gates, not failures in the two changed
   files.
+- 2026-08-12: The branch was integrated with the live `v3` tip in merge commit
+  `dc216ef24efa28a55cc3eef0b115ece466f17f0a` and pushed to PR #5348. The
+  exact-head local `pnpm run check` passed all 24 tasks, and the exact GitHub
+  check rerun passed formatting, Biome, ESLint, TypeScript, syncpack, Gitleaks,
+  Knip, Prisma-sync, AGENTS validation, and the package build prerequisite.
+- 2026-08-12: The pinned DevPod exact CI build command passed all 20 Turbo
+  `build:test` tasks. GitHub's Playwright build workflow failed independently
+  on the PR head while the runner's Node 24 process initialized
+  `@parcel/watcher` for `frontend-control`; the live `v3` comparison also
+  fails independently in `frontend-pwa` while resolving Turbopack's generated
+  Google-font module. Neither failure is in the Biome or TypeScript gate, and
+  neither affected surface was changed by this quality branch. The Playwright
+  status gate still requires a repository/runner-level decision before it can
+  be called green.
+- 2026-08-12: The local branch is clean and the remote PR head is
+  `dc216ef24efa28a55cc3eef0b115ece466f17f0a` against live `v3`
+  `5264353ff77afc598ea69f05f262b25f882ca38c`. PR #5348 remains draft and
+  mergeable; it has not been marked ready or merged.
 
 ## Finish state
 
