@@ -40,10 +40,7 @@ type AssessmentContext = DurableContext<UnknownInputType, {}>
 
 type AssessmentProcessorDependencies = {
   client: typeof prisma
-  redis: Pick<
-    ReturnType<typeof getAssessmentRedis>,
-    'hgetall' | 'hset' | 'hsetnx'
-  >
+  redis: Pick<ReturnType<typeof getAssessmentRedis>, 'hgetall' | 'hsetnx'>
   now: () => Date
   resolveHatchetEventId: (
     message: AssessmentCommand,
@@ -496,7 +493,9 @@ export async function processAssessmentResponse(
                 })
           if (
             existingResponse.submissionId === message.submissionId &&
-            terminalStage === 'SUBMISSION_PERSISTED'
+            hashCanonicalValue(existingResponse.response) ===
+              hashCanonicalValue(message.response) &&
+            (coveredScope === null || terminalStage === 'SUBMISSION_PERSISTED')
           ) {
             if (coveredScope !== null) {
               const recovered = await commandHasRecordedFailure({
@@ -640,10 +639,10 @@ export async function processAssessmentResponse(
       return { status: 208 }
     }
 
-    await dependencies.redis.hset(
+    await dependencies.redis.hsetnx(
       `${instanceKey}:votes`,
       message.correlationId,
-      'true'
+      'accepted'
     )
     const quizInfo = await dependencies.redis.hgetall(`${instanceKey}:info`)
     await ctx.v1.events.push('response-processed:aggregation', {

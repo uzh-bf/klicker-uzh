@@ -297,6 +297,162 @@ describe.runIf(runDatabaseTests)(
       }
     })
 
+    it('recovers an uncovered submission after the response commits but its Redis marker fails', async () => {
+      await prisma.assessmentAuditScope.delete({
+        where: {
+          liveQuizId_lifecycleEpoch: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+          },
+        },
+      })
+      const testHarness = harness()
+      testHarness.dependencies.redis.hgetall.mockResolvedValue({
+        ...testHarness.info,
+        firstResponseReceivedAt: '2026-08-12T12:00:00.000Z',
+      })
+      testHarness.dependencies.redis.hsetnx
+        .mockRejectedValueOnce(new Error('synthetic post-commit Redis outage'))
+        .mockResolvedValue(1)
+
+      try {
+        await expect(
+          processAssessmentResponse(
+            command(),
+            testHarness.context,
+            testHarness.dependencies
+          )
+        ).rejects.toThrow('synthetic post-commit Redis outage')
+        expect(
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
+        expect(testHarness.push).not.toHaveBeenCalled()
+
+        const retry = await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+
+        expect(retry.status).toBe(200)
+        expect(testHarness.push).toHaveBeenCalledTimes(1)
+        expect(
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
+      } finally {
+        await prisma.assessmentAuditScope.create({
+          data: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+            coverageState: 'COVERED',
+            baselineId: BASELINE_ID,
+            baselineKind: 'CREATION',
+            activatedAt: new Date('2026-08-12T11:00:00.000Z'),
+          },
+        })
+      }
+    })
+
+    it('recovers an uncovered submission after aggregation publication fails', async () => {
+      await prisma.assessmentAuditScope.delete({
+        where: {
+          liveQuizId_lifecycleEpoch: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+          },
+        },
+      })
+      const testHarness = harness()
+      testHarness.push
+        .mockRejectedValueOnce(
+          new Error('synthetic aggregation publication outage')
+        )
+        .mockResolvedValue({ eventId: 'aggregation-event' })
+
+      try {
+        await expect(
+          processAssessmentResponse(
+            command(),
+            testHarness.context,
+            testHarness.dependencies
+          )
+        ).rejects.toThrow('synthetic aggregation publication outage')
+        expect(
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
+
+        const retry = await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+
+        expect(retry.status).toBe(200)
+        expect(testHarness.push).toHaveBeenCalledTimes(2)
+        expect(
+          await prisma.liveQuizResponse.count({
+            where: { submissionId: SUBMISSION_ID },
+          })
+        ).toBe(1)
+      } finally {
+        await prisma.assessmentAuditScope.create({
+          data: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+            coverageState: 'COVERED',
+            baselineId: BASELINE_ID,
+            baselineKind: 'CREATION',
+            activatedAt: new Date('2026-08-12T11:00:00.000Z'),
+          },
+        })
+      }
+    })
+
+    it('does not replay a different answer that reuses an uncovered submission ID', async () => {
+      await prisma.assessmentAuditScope.delete({
+        where: {
+          liveQuizId_lifecycleEpoch: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+          },
+        },
+      })
+      const testHarness = harness()
+
+      try {
+        await processAssessmentResponse(
+          command(),
+          testHarness.context,
+          testHarness.dependencies
+        )
+        const reused = await processAssessmentResponse(
+          command({ response: { choices: [{ ix: 1, selected: true }] } }),
+          testHarness.context,
+          testHarness.dependencies
+        )
+
+        expect(reused.status).toBe(208)
+        expect(testHarness.push).toHaveBeenCalledTimes(1)
+      } finally {
+        await prisma.assessmentAuditScope.create({
+          data: {
+            liveQuizId: LIVE_QUIZ_ID,
+            lifecycleEpoch: 1,
+            coverageState: 'COVERED',
+            baselineId: BASELINE_ID,
+            baselineKind: 'CREATION',
+            activatedAt: new Date('2026-08-12T11:00:00.000Z'),
+          },
+        })
+      }
+    })
+
     it('is idempotent for a Hatchet retry and records a second command as duplicate', async () => {
       const first = harness(HATCHET_EVENT_ID)
       await processAssessmentResponse(

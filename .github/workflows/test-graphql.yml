@@ -173,6 +173,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           NODE_ENV: test
+          REDIS_ASSESSMENT_HOST: localhost
+          REDIS_ASSESSMENT_PORT: 6380
 
       - name: Run tests
         if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}

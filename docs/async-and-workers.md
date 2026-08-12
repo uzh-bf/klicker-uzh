@@ -127,7 +127,9 @@ the provider-neutral PostgreSQL outbox described in
 - `processAuthenticatedResponseTask` — durable
 - `processAssessmentResponseWorkflow` — durable; materializes accepted,
   validated, terminal, failure, and recovery evidence
-- `aggregateAssessmentResponsesTask` — keyed by `instanceId`
+- `aggregateAssessmentResponsesTask` — keyed by `instanceId`; atomically moves
+  the existing submission vote marker from `accepted` to `aggregated` with its
+  result and leaderboard increments, making repeated Hatchet delivery a no-op
 
 `apps/hatchet-worker-general` selects workflows via `HATCHET_WORKFLOWS`.
 Ordinary workers exclude privileged audit workflows; dedicated audit workers
