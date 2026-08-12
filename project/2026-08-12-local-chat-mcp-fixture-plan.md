@@ -120,9 +120,10 @@
   Browser, Auto called `KB_doc_query`, rendered a non-empty answer containing
   `KLICKER_LOCAL_MCP_OK` and the source card, and preserved all three after
   reload.
-- Auto V2 simplifier and intermediate review: pending; both run in parallel on
-  the immutable implementation range because model routing is a cross-system
-  seam.
+- Auto V2 simplifier and intermediate review: done in parallel on commit
+  `def434085`. Both approved the implementation after identifying this stale
+  remaining-work line; no config, runtime, security, or maintainability change
+  was requested.
 - Integrated final review: reopened for the widened exact branch head.
-- Remaining: implement and verify Auto V2, complete its reviews, then stop
-  before push or PR update unless separately authorized.
+- Remaining: complete exact-head integrated final review, then stop before push
+  or PR update unless separately authorized.
