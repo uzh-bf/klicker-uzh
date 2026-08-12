@@ -39,12 +39,7 @@ export async function loadLiteLLMCostRows(
   const rows: unknown[] = []
 
   for (let page = 1; page <= GATEWAY_COST_MAX_PAGES; page += 1) {
-    const request = buildLiteLLMSpendRequest(
-      scope,
-      host,
-      authorization,
-      page
-    )
+    const request = buildLiteLLMSpendRequest(scope, host, authorization, page)
     const payload = await requestJson(request.url, request.headers)
     const pageRows = responseRows(payload)
     rows.push(...pageRows)
