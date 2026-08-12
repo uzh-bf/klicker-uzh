@@ -51,13 +51,16 @@ Langfuse/LiteLLM model parity:
 
 ```bash
 pnpm exec tsx src/scripts/lib/aggregateCostReconciliation.test.ts
+pnpm exec tsx src/scripts/lib/litellmCostSource.test.ts
 ```
 
-Run it from `packages/prisma-data`. The explicit gateway report mode uses
-secret-backed runtime environment variables and must be run only with an
-approved read-only measurement window. It fails closed when cache buckets or
-Langfuse/LiteLLM scope and cost parity are incomplete; local synthetic fixtures
-do not establish staging, production, or Azure billing evidence.
+Run both commands from `packages/prisma-data`. The first covers aggregate
+reconciliation; the second covers the team-scoped, paginated LiteLLM request
+contract. The explicit gateway report mode uses secret-backed runtime
+environment variables and must be run only with an approved read-only
+measurement window. It fails closed when cache buckets or Langfuse/LiteLLM
+scope and cost parity are incomplete; local synthetic fixtures do not
+establish staging, production, or Azure billing evidence.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser

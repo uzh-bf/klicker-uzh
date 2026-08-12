@@ -44,9 +44,11 @@ For aggregate gateway cost evidence, run the pure synthetic contract from
 
 ```bash
 pnpm exec tsx src/scripts/lib/aggregateCostReconciliation.test.ts
+pnpm exec tsx src/scripts/lib/litellmCostSource.test.ts
 ```
 
-The report mode in
+The first command covers aggregate reconciliation; the second covers the
+team-scoped, paginated LiteLLM request contract. The report mode in
 `src/scripts/2026-06-16_analyze_chatbot_usage.ts` uses a half-open UTC window
 and secret-backed read-only Langfuse/LiteLLM access. It counts positive-cost
 generations and fails closed when cache buckets, scope, model/count parity, or
