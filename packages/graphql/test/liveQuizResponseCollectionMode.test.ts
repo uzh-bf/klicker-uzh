@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { manipulateLiveQuiz } from '../src/services/liveQuizzes.js'
 import {
@@ -213,5 +214,53 @@ describe('Live quiz response collection mode', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' },
     })
+  })
+
+  it('rechecks the mode lock when a quiz is published during an edit', async () => {
+    const draftQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.DRAFT },
+      userOneCtx
+    )
+    const findUnique = prisma.liveQuiz.findUnique.bind(prisma.liveQuiz)
+    const findUniqueDuringPublish = async (
+      args: Parameters<typeof prisma.liveQuiz.findUnique>[0]
+    ) => {
+      const activity = await findUnique(args)
+      await prisma.liveQuiz.update({
+        where: { id: draftQuiz.id },
+        data: { status: PublicationStatus.PUBLISHED },
+      })
+      return activity
+    }
+    const findUniqueSpy = vi
+      .spyOn(prisma.liveQuiz, 'findUnique')
+      .mockImplementationOnce(
+        findUniqueDuringPublish as unknown as typeof prisma.liveQuiz.findUnique
+      )
+
+    try {
+      await expect(
+        manipulateLiveQuiz(
+          {
+            ...liveQuizArgs(),
+            id: draftQuiz.id,
+            responseCollectionMode:
+              LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({
+        extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' },
+      })
+    } finally {
+      findUniqueSpy.mockRestore()
+    }
+
+    const stored = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: draftQuiz.id },
+    })
+    expect(stored.responseCollectionMode).toBe(
+      LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS
+    )
   })
 })

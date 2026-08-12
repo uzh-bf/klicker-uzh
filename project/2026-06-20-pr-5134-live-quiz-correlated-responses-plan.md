@@ -457,7 +457,9 @@ Later research:
 - 2026-07-23: User selected self-service CSV delivery with clean headers. Review findings integrated. The existing draft PR now continues into implementation; it must not merge as a plan-only PR.
 - 2026-07-23: Branch rebased onto current `v3` and force-pushed with lease. Slice 1 started: schema constraints, GraphQL mode wiring, service lock/default behavior, and existing export compatibility.
 - 2026-07-23: Slice 1 implementation completed locally. Added the response mode, export salt, quiz-scoped respondent model, dual response identity constraints, GraphQL create/edit/query wiring, server-side mode locking, assessment-only response narrowing, and nullable-participant export compatibility.
-- 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks. Independent review and simplification remain before the slice is finalized.
+- 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks.
+- 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
+- 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
 
 ## Goal Prompt Requirements
 
@@ -473,6 +475,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Sync the branch with current `v3`, then start Slice 1 with schema, raw SQL checks, service locking, and existing export compatibility in one commit.
-2. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
-3. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Commit the accepted Slice 1 review fixes, run the separate simplification review, and finalize Slice 1.
+2. Start Slice 2 with the manage UI setting and assessment-specific disabled state.
+3. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
+4. Deliver the self-service CSV and evaluation-page action together in Slice 6.

@@ -196,6 +196,29 @@ interface ManipulateLiveQuizArgs {
   responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
 }
 
+function assertLiveQuizModeEditable({
+  activity,
+  responseCollectionMode,
+}: {
+  activity: Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>
+  responseCollectionMode: DB.LiveQuizResponseCollectionMode
+}) {
+  if (
+    responseCollectionMode !== activity.responseCollectionMode &&
+    activity.status !== DB.PublicationStatus.DRAFT &&
+    activity.status !== DB.PublicationStatus.SCHEDULED
+  ) {
+    throw new GraphQLError(
+      'Response collection mode cannot be changed after publication',
+      { extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' } }
+    )
+  }
+
+  if (activity.status === DB.PublicationStatus.PUBLISHED) {
+    throw new GraphQLError('Cannot edit a published live quiz')
+  }
+}
+
 export async function manipulateLiveQuiz(
   {
     id,
@@ -306,20 +329,11 @@ export async function manipulateLiveQuiz(
       existingActivity?.responseCollectionMode ??
       DB.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS)
 
-  if (
-    existingActivity &&
-    responseCollectionModeSetting !== existingActivity.responseCollectionMode &&
-    existingActivity.status !== DB.PublicationStatus.DRAFT &&
-    existingActivity.status !== DB.PublicationStatus.SCHEDULED
-  ) {
-    throw new GraphQLError(
-      'Response collection mode cannot be changed after publication',
-      { extensions: { code: 'LIVE_QUIZ_RESPONSE_MODE_LOCKED' } }
-    )
-  }
-
-  if (existingActivity?.status === DB.PublicationStatus.PUBLISHED) {
-    throw new GraphQLError('Cannot edit a published live quiz')
+  if (existingActivity) {
+    assertLiveQuizModeEditable({
+      activity: existingActivity,
+      responseCollectionMode: responseCollectionModeSetting,
+    })
   }
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
@@ -442,6 +456,28 @@ export async function manipulateLiveQuiz(
   }
 
   const persistLiveQuiz = async (prisma: PrismaTransactionClient) => {
+    if (id) {
+      const [lockedActivity] = await prisma.$queryRaw<
+        Pick<DB.LiveQuiz, 'status' | 'responseCollectionMode'>[]
+      >`
+        SELECT
+          "status"::text AS "status",
+          "responseCollectionMode"::text AS "responseCollectionMode"
+        FROM "public"."LiveQuiz"
+        WHERE "id" = ${id}::uuid AND "isDeleted" = false
+        FOR UPDATE
+      `
+
+      if (!lockedActivity) {
+        throw new GraphQLError('Live quiz not found')
+      }
+
+      assertLiveQuizModeEditable({
+        activity: lockedActivity,
+        responseCollectionMode: responseCollectionModeSetting,
+      })
+    }
+
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
       where: { id: { in: instancesToDelete } },
