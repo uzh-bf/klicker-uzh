@@ -14,8 +14,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export function ModeSwitcher({
   modeOptions: modeOptionsOverride,
+  testIdPrefix = 'chat-mode',
 }: {
   modeOptions?: Record<string, string>
+  testIdPrefix?: string
 } = {}) {
   const t = useTranslations()
   const storeModeOptions = useSettingsStore((state) => state.modeOptions)
@@ -63,7 +65,7 @@ export function ModeSwitcher({
       ref={containerRef}
       role="group"
       aria-label={t('chat.modes.switcherLabel')}
-      data-cy="chat-mode-switcher"
+      data-cy={`${testIdPrefix}-switcher`}
       className="bg-muted scrollbar-none relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5"
     >
       {thumb && (
@@ -95,7 +97,7 @@ export function ModeSwitcher({
                 type="button"
                 aria-pressed={isActive}
                 aria-label={description ? `${label}: ${description}` : label}
-                data-cy={`chat-mode-option-${mode}`}
+                data-cy={`${testIdPrefix}-option-${mode}`}
                 onClick={() => setSelectedMode(mode)}
                 className={twMerge(
                   'relative z-10 inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors touch-manipulation fine-pointer:min-h-8',
@@ -116,7 +118,10 @@ export function ModeSwitcher({
             <TooltipContent className="max-w-64 text-left text-pretty">
               <p className="font-medium">{label}</p>
               {description ? (
-                <p data-cy={`chat-mode-description-${mode}`} className="mt-1">
+                <p
+                  data-cy={`${testIdPrefix}-description-${mode}`}
+                  className="mt-1"
+                >
                   {description}
                 </p>
               ) : null}

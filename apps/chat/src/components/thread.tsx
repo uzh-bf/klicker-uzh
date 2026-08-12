@@ -474,7 +474,10 @@ const ThreadWelcome: FC<{
                 </p>
                 {Object.keys(modeOptions).length > 1 && (
                   <div className="mt-3 flex justify-center">
-                    <ModeSwitcher modeOptions={modeOptions} />
+                    <ModeSwitcher
+                      modeOptions={modeOptions}
+                      testIdPrefix="chat-welcome-mode"
+                    />
                   </div>
                 )}
                 {modeDescription ? (
