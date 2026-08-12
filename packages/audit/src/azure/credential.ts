@@ -81,7 +81,7 @@ export function readAzureAuditStorageConfig(
 
 export function createAzureAuditClients(
   config: AzureAuditStorageConfig,
-  credential: TokenCredential = new DefaultAzureCredential()
+  credential: TokenCredential = createAzureAuditCredential()
 ): AzureAuditClients {
   const tableEndpoint = validateServiceEndpoint(config.tableEndpoint, 'table')
   const blobEndpoint = validateServiceEndpoint(config.blobEndpoint, 'blob')
@@ -117,4 +117,8 @@ export function createAzureAuditClients(
       media: blobService.getContainerClient(AUDIT_BLOB_CONTAINER_NAMES.media),
     },
   }
+}
+
+export function createAzureAuditCredential(): TokenCredential {
+  return new DefaultAzureCredential()
 }

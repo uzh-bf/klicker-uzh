@@ -17,6 +17,22 @@ export class AuditMediaConflictError extends Error {
   }
 }
 
+export type ImmutableAuditMediaPolicy = {
+  blobName: string
+  contentHash: string
+  versionId: string
+  retainUntil: Date
+  outcome: 'EXTENDED' | 'ALREADY_SUFFICIENT'
+}
+
+export interface ImmutableAuditMediaPolicyStore {
+  extendRetention(input: {
+    blobName: string
+    contentHash: string
+    retainUntil: Date
+  }): Promise<ImmutableAuditMediaPolicy>
+}
+
 function statusCodeIs(error: unknown, ...statusCodes: number[]): boolean {
   return (
     typeof error === 'object' &&
@@ -50,7 +66,9 @@ function requireVersionId(
   return versionId
 }
 
-export class AzureImmutableAuditMediaStore implements ImmutableAuditMediaStore {
+export class AzureImmutableAuditMediaStore
+  implements ImmutableAuditMediaStore, ImmutableAuditMediaPolicyStore
+{
   private readonly container: ContainerClient
   private readonly now: () => Date
 
@@ -159,6 +177,72 @@ export class AzureImmutableAuditMediaStore implements ImmutableAuditMediaStore {
       versionId: requiredVersionId,
       retainUntil: lockedUntil,
       outcome,
+    }
+  }
+
+  async extendRetention(input: {
+    blobName: string
+    contentHash: string
+    retainUntil: Date
+  }): Promise<ImmutableAuditMediaPolicy> {
+    if (input.blobName !== auditMediaContentAddress(input.contentHash)) {
+      throw new TypeError('Audit media address does not match its content hash')
+    }
+    if (
+      Number.isNaN(input.retainUntil.getTime()) ||
+      input.retainUntil.getTime() <= this.now().getTime()
+    ) {
+      throw new TypeError('Audit media retainUntil must be in the future')
+    }
+    const blob = this.container.getBlockBlobClient(input.blobName)
+    const baseProperties = await blob.getProperties()
+    if (baseProperties.metadata?.sha256 !== input.contentHash) {
+      throw new AuditMediaConflictError(input.blobName)
+    }
+    const versionId = requireVersionId(baseProperties.versionId, input.blobName)
+    const version = blob.withVersion(versionId)
+    const properties = await version.getProperties()
+    if (
+      properties.metadata?.sha256 !== input.contentHash ||
+      properties.immutabilityPolicyMode !== 'Locked' ||
+      properties.immutabilityPolicyExpiresOn === undefined
+    ) {
+      throw new AuditMediaConflictError(input.blobName)
+    }
+    if (
+      properties.immutabilityPolicyExpiresOn.getTime() >=
+      input.retainUntil.getTime()
+    ) {
+      return {
+        blobName: input.blobName,
+        contentHash: input.contentHash,
+        versionId,
+        retainUntil: properties.immutabilityPolicyExpiresOn,
+        outcome: 'ALREADY_SUFFICIENT',
+      }
+    }
+    await version.setImmutabilityPolicy({
+      expiriesOn: input.retainUntil,
+      policyMode: 'Locked',
+    })
+    const extended = await version.getProperties()
+    if (
+      extended.metadata?.sha256 !== input.contentHash ||
+      extended.immutabilityPolicyMode !== 'Locked' ||
+      extended.immutabilityPolicyExpiresOn === undefined ||
+      extended.immutabilityPolicyExpiresOn.getTime() <
+        input.retainUntil.getTime()
+    ) {
+      throw new Error(
+        `Immutable audit media ${input.blobName} retention was not extended`
+      )
+    }
+    return {
+      blobName: input.blobName,
+      contentHash: input.contentHash,
+      versionId,
+      retainUntil: extended.immutabilityPolicyExpiresOn,
+      outcome: 'EXTENDED',
     }
   }
 }

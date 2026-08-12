@@ -142,4 +142,31 @@ describe('Azure immutable audit media store', () => {
       AuditMediaConflictError
     )
   })
+
+  it('only extends locked media retention and never shortens it', async () => {
+    const container = new MemoryMediaContainer()
+    const now = new Date('2026-08-12T00:00:00.000Z')
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient,
+      () => now
+    )
+    const input = await mediaFixture(Buffer.from('renewable media'))
+    await store.createFromFile(input)
+    const later = new Date('2028-03-01T00:00:00.000Z')
+
+    expect(
+      await store.extendRetention({
+        blobName: input.blobName,
+        contentHash: input.contentHash,
+        retainUntil: later,
+      })
+    ).toMatchObject({ outcome: 'EXTENDED', retainUntil: later })
+    expect(
+      await store.extendRetention({
+        blobName: input.blobName,
+        contentHash: input.contentHash,
+        retainUntil: input.retainUntil,
+      })
+    ).toMatchObject({ outcome: 'ALREADY_SUFFICIENT', retainUntil: later })
+  })
 })
