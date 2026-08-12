@@ -1142,6 +1142,26 @@ function nextUtcDate(isoTimestamp: string) {
   return date.toISOString().slice(0, 10)
 }
 
+function litellmEndDate(isoTimestamp: string) {
+  const date = new Date(isoTimestamp)
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Gateway cost window must use valid UTC timestamps.')
+  }
+
+  // A midnight half-open boundary does not need the following calendar day;
+  // fetching it can make the LiteLLM spend response too large to serve.
+  if (
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0
+  ) {
+    return date.toISOString().slice(0, 10)
+  }
+
+  return nextUtcDate(isoTimestamp)
+}
+
 function costTolerance(name: string, fallback: number) {
   const raw = process.env[name]
   const value = raw === undefined ? fallback : Number(raw)
@@ -1203,12 +1223,12 @@ async function loadLiteLLMCostRows(
     start_date: scope.from.slice(0, 10),
     // LiteLLM accepts calendar dates here. Fetch the enclosing end date and
     // apply the exact half-open UTC boundary to each returned startTime row.
-    end_date: nextUtcDate(scope.to),
+    end_date: litellmEndDate(scope.to),
     summarize: 'false',
   })
   const payload = await requestCostJson(
     `${host}/spend/logs?${params.toString()}`,
-    { Authorization: authorization }
+    { 'x-litellm-api-key': authorization }
   )
   return listRows(payload, 'LiteLLM spend')
 }
