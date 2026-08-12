@@ -465,6 +465,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await page.getByTestId('chat-welcome-suggestion').first().click()
 
     const input = page.getByTestId('chat-composer-input')
+    await expect(input).toHaveValue(/.+/)
     const starter = await input.inputValue()
     expect(starter.length).toBeGreaterThan(0)
     expect(starter).not.toMatch(/\[[^\]]+\]/)
