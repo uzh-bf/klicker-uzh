@@ -86,4 +86,10 @@ promote the failed alpha.68 commit.
 
 - 2026-08-12: Approved program plan and planning-stage review complete.
 - 2026-08-12: Package worktree created from `v3` at `5264353ff`.
-- Current: commit this plan, then vendor and activate pinned local assets.
+- 2026-08-13: Slice 1 implemented with pinned Source Sans 3 3.052R and
+  JetBrains Mono 2.304 assets, upstream licenses, and recorded SHA-256 hashes.
+- 2026-08-13: Node 24 shared-components check and all five affected production
+  builds pass. The PWA Docker installer-stage build also passes after Turbo
+  pruning, proving the local assets survive the image path.
+- Current: commit Slice 1, run its simplifier, then document and browser-verify
+  the local-font build contract.
