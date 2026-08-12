@@ -24,6 +24,8 @@ This is the only execution topology. The capability sections below are owned by 
 
 The stack is implemented and reviewed bottom-up. Updating A1 requires a cascading local rebase through A5 and then B1-B2 before publication. No layer is authorized for merge or ready status by this plan.
 
+Current-state gap: B1 still contains the interim `LiveQuizResponseExportLabel` migration, retains HMAC-derived identity hashes, and assigns labels during export. Before readiness, A1 must persist a nullable immutable label on `LiveQuizRespondent`; A5 must allocate that label transactionally during settlement-gated finalization and delete the active bindings, settled receipts, and salt; B1 must remove HMAC identity storage and lazy label assignment and render only finalized respondent labels.
+
 ## Non-Goals
 
 - No assessment behavior change. Assessment remains identifiable and auditable by design.
@@ -491,6 +493,7 @@ Later research:
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
 - 2026-08-12: The replacement A1-A5 and B1-B2 stack is published as drafts. ADR review replaced the compatibility identity with generation-scoped respondents and active-only bindings, moved immutable label persistence into A1/A5, defined receipt settlement and locking, and kept B1 as rendering only. These changes are documented but not yet implemented or pushed.
+- 2026-08-12: The correlated teaching-export boundary excludes free-text answers, matching [ADR-0007](../docs/adr/0007-correlated-live-quiz-response-boundary.md). The interim B1 export-label migration does not yet satisfy ADR-0006 and is assigned to A1, A5, and B1 above.
 
 ## Goal Prompt Requirements
 
