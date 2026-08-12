@@ -3,10 +3,25 @@
 Goal: add opt-in standard live quiz mode that stores row-correlatable responses for export while keeping participant-facing UI clear and assessment separate.
 
 Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
-Branch: `codex/live-quiz-correlated-responses`
+Branch: `rs/pr5134-b2-ui` (Stack B, UI layer)
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: implementation in progress
+Status: B2 implementation complete locally; draft stacked PR publication is pending the browser runtime gate and CI.
+
+## Current Stack Topology
+
+The original PR #5134 source branch remains preserved. The replacement stack is:
+
+| Layer | Branch | Parent | Responsibility |
+| --- | --- | --- | --- |
+| P0 | `rs/pr5134-rollup` | `v3` | Rollup TypeScript-state prerequisite; draft PR #5362 |
+| Stack A | `rs/pr5134-a1-domain` -> `a2-contracts` -> `a3-admission` -> `a4-settlement` -> `a5-lifecycle` | P0 | schema, contracts, admission, settlement, and lifecycle backend slices |
+| Stack B1 | `rs/pr5134-b1-export` | `rs/pr5134-a5-lifecycle` | correlated export materialization and GraphQL delivery |
+| Stack B2 | `rs/pr5134-b2-ui` | `rs/pr5134-b1-export` | Manage/PWA mode UX, response routing, export action, i18n, and browser contract |
+
+The local B2 worktree is `trees/pr5134-b1-export`; the GitHub PRs for B1 and B2
+are still to be created as drafts. No branch is authorized for merge or ready
+status from this plan.
 
 ## Non-Goals
 
@@ -480,13 +495,15 @@ Later research:
 - 2026-08-12: The accepted privacy boundary is now reflected here: correlated teaching export excludes free-text answers, matching ADR 0001 and the export tests.
 - 2026-08-12: Cookie-blocked correlated sessions retry identity initialization after the cookie-backed submission returns identity `401`; only that explicit fallback returns a quiz-scoped signed respondent token to current-page memory. Cookie identities retain precedence, and PIN admission remains cookie-based.
 - 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
+- 2026-08-12: Final review found and fixed a legacy temporary-participant continuity gap. Correlated identity resolution now confirms a temporary leaderboard entry for the target quiz before reusing a legacy unscoped temporary cookie; stale cookies fall through to the quiz-scoped anonymous respondent or explicit bearer fallback.
+- 2026-08-12: Final review also required this plan refresh. The stack topology, current B2 status, browser-runtime blocker, and draft-publication next steps are now recorded here.
 
 ## Goal Prompt Requirements
 
 If handed to another agent:
 
 - Use this file as current plan.
-- Use branch `codex/live-quiz-correlated-responses`.
+- Use the active stacked branch and topology recorded above; B2 is `rs/pr5134-b2-ui`.
 - Update `Progress` before and after each slice.
 - Work one slice at a time.
 - Run review + simplification subagents after each slice.
@@ -495,7 +512,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the accepted Slice 1 review fixes, run the separate simplification review, and finalize Slice 1.
-2. Start Slice 2 with the manage UI setting and assessment-specific disabled state.
-3. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
-4. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Commit and independently review the legacy temporary-cookie fallback fix, then rerun the integrated final review on the resulting B2 range.
+2. Repair or bypass the shared DevPod lifecycle/font runtime failure and execute the focused correlated Playwright journey plus the repository-mandated Manage/PWA browser checks.
+3. Publish `rs/pr5134-b1-export` and `rs/pr5134-b2-ui` as draft stacked PRs with whole-branch descriptions, preserving P0 and Stack A as their parents.
+4. Keep all PRs draft until CI and the browser gate are green; merge, ready-for-review, and cleanup actions remain separately authorized.

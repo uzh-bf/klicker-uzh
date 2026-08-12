@@ -12,10 +12,14 @@ import {
   getLiveQuizRespondentCookieName,
   hashLiveQuizRespondentToken,
   resolveLiveQuizResponseIdentity,
+  signJWT,
 } from '@klicker-uzh/util'
 import { handleAggregateResponse } from '../src/aggregateResponse.js'
 import { handleCorrelatedResponse } from '../src/correlatedResponseHandler.js'
-import { getCorrelatedResponseInitializationToken } from '../src/liveQuizResponseInitialization.js'
+import {
+  getCorrelatedResponseInitializationToken,
+  resolveCorrelatedResponseIdentity,
+} from '../src/liveQuizResponseInitialization.js'
 import type { LiveQuizResponseRequest } from '../src/liveQuizResponseRequest.js'
 
 const request: LiveQuizResponseRequest = {
@@ -69,6 +73,81 @@ describe('standard live quiz response handlers', () => {
       }),
       token
     )
+  })
+
+  it('ignores an unscoped temporary cookie without a target-quiz entry', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const legacyTemporaryToken = await signJWT(
+      {
+        sub: '33333333-3333-4333-8333-333333333333',
+        role: 'TEMPORARY_PARTICIPANT',
+      },
+      secret,
+      { issuer }
+    )
+    const findUniqueCalls: unknown[] = []
+    const database = {
+      temporaryLeaderboardEntry: {
+        findUnique: async (args: unknown) => {
+          findUniqueCalls.push(args)
+          return null
+        },
+      },
+    } as any
+
+    const identity = await resolveCorrelatedResponseIdentity({
+      database,
+      cookieHeader: `temporary_participant_token=${legacyTemporaryToken}`,
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+
+    assert.equal(identity, null)
+    assert.equal(findUniqueCalls.length, 1)
+  })
+
+  it('falls through a stale temporary cookie to the respondent cookie', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const legacyTemporaryToken = await signJWT(
+      {
+        sub: '33333333-3333-4333-8333-333333333333',
+        role: 'TEMPORARY_PARTICIPANT',
+      },
+      secret,
+      { issuer }
+    )
+    const respondentToken = await createLiveQuizRespondentToken({
+      respondentId: '44444444-4444-4444-8444-444444444444',
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+
+    const identity = await resolveCorrelatedResponseIdentity({
+      database: {
+        temporaryLeaderboardEntry: {
+          findUnique: async () => null,
+        },
+      },
+      cookieHeader: [
+        `temporary_participant_token=${legacyTemporaryToken}`,
+        `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${respondentToken}`,
+      ].join('; '),
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+
+    assert.deepEqual(identity, {
+      kind: 'anonymous',
+      id: '44444444-4444-4444-8444-444444444444',
+      liveQuizId: request.liveQuizId,
+      token: respondentToken,
+      cookieName: getLiveQuizRespondentCookieName(request.liveQuizId),
+    })
   })
 
   it('rejects correlated collection on the aggregate endpoint', async () => {

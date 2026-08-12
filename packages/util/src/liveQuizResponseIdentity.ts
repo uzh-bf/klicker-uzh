@@ -99,12 +99,14 @@ export async function resolveLiveQuizResponseIdentity({
   secret,
   issuer,
   respondentToken,
+  ignoreTemporaryParticipant = false,
 }: {
   cookieHeader: string | undefined
   liveQuizId: string
   secret: string
   issuer: string
   respondentToken?: string
+  ignoreTemporaryParticipant?: boolean
 }): Promise<LiveQuizResponseIdentity | null> {
   const cookies = parseCookiesHeader(cookieHeader)
 
@@ -127,25 +129,27 @@ export async function resolveLiveQuizResponseIdentity({
     }
   }
 
-  const temporaryToken = cookies[TEMPORARY_PARTICIPANT_COOKIE_NAME]
-  const temporaryPayload = await verifyIdentityToken({
-    token: temporaryToken,
-    secret,
-    issuer,
-  })
-  const scopeQuizId = temporaryPayload?.scopeQuizId
-  if (
-    temporaryToken &&
-    temporaryPayload?.role === UserRole.TEMPORARY_PARTICIPANT &&
-    typeof temporaryPayload.sub === 'string' &&
-    (scopeQuizId === undefined || scopeQuizId === liveQuizId)
-  ) {
-    return {
-      kind: 'temporary',
-      id: temporaryPayload.sub,
-      liveQuizId,
+  if (!ignoreTemporaryParticipant) {
+    const temporaryToken = cookies[TEMPORARY_PARTICIPANT_COOKIE_NAME]
+    const temporaryPayload = await verifyIdentityToken({
       token: temporaryToken,
-      cookieName: TEMPORARY_PARTICIPANT_COOKIE_NAME,
+      secret,
+      issuer,
+    })
+    const scopeQuizId = temporaryPayload?.scopeQuizId
+    if (
+      temporaryToken &&
+      temporaryPayload?.role === UserRole.TEMPORARY_PARTICIPANT &&
+      typeof temporaryPayload.sub === 'string' &&
+      (scopeQuizId === undefined || scopeQuizId === liveQuizId)
+    ) {
+      return {
+        kind: 'temporary',
+        id: temporaryPayload.sub,
+        liveQuizId,
+        token: temporaryToken,
+        cookieName: TEMPORARY_PARTICIPANT_COOKIE_NAME,
+      }
     }
   }
 
