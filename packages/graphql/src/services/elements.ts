@@ -1139,13 +1139,6 @@ export async function applyElementBatchOperations(
       const updatedElement = await runInAuditTransaction(
         ctx.prisma,
         async (tx, auditTx) => {
-          const beforeElement = await tx.element.findUniqueOrThrow({
-            where: { id: element.id },
-            include: {
-              answerCollection: { include: { entries: true } },
-              answerCollectionItems: true,
-            },
-          })
           const references = await tx.elementInstance.findMany({
             where: {
               elementId: element.id,
@@ -1153,15 +1146,28 @@ export async function applyElementBatchOperations(
             },
             select: { elementBlock: { select: { liveQuizId: true } } },
           })
+          const referencedLiveQuizIds = references.flatMap((instance) =>
+            instance.elementBlock === null
+              ? []
+              : [instance.elementBlock.liveQuizId]
+          )
+          const coveredScopes = await tx.assessmentAuditScope.findMany({
+            where: {
+              liveQuizId: { in: referencedLiveQuizIds },
+              coverageState: DB.AssessmentAuditCoverageState.COVERED,
+            },
+            select: { liveQuizId: true },
+          })
           const liveQuizIds = [
-            ...new Set(
-              references.flatMap((instance) =>
-                instance.elementBlock === null
-                  ? []
-                  : [instance.elementBlock.liveQuizId]
-              )
-            ),
+            ...new Set(coveredScopes.map((scope) => scope.liveQuizId)),
           ].sort()
+          const beforeElement = await tx.element.findUniqueOrThrow({
+            where: { id: element.id },
+            include: {
+              answerCollection: { include: { entries: true } },
+              answerCollectionItems: true,
+            },
+          })
           const beforeSnapshots = new Map(
             await Promise.all(
               liveQuizIds.map(
@@ -1209,6 +1215,7 @@ export async function applyElementBatchOperations(
             )
           }
 
+          if (liveQuizIds.length === 0) return updatedElement
           const afterElement = await tx.element.findUniqueOrThrow({
             where: { id: element.id },
             include: {
