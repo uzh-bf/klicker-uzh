@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import {
   ElementBlockStatus,
   ElementType,
@@ -5,7 +6,6 @@ import {
   PublicationStatus,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
-import { createHmac } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getCorrelatedLiveQuizResponseExport } from '../src/services/correlatedLiveQuizResponseExport.js'
@@ -74,6 +74,7 @@ function createContext({
   pendingResponseCount = 0,
   responseBytes,
   responseCount,
+  respondentCount,
 }: {
   liveQuiz?: typeof defaultLiveQuiz | null
   blocks?: any[]
@@ -82,6 +83,7 @@ function createContext({
   pendingResponseCount?: number
   responseBytes?: bigint
   responseCount?: bigint
+  respondentCount?: bigint
 } = {}) {
   const queryRaw = vi
     .fn()
@@ -98,6 +100,17 @@ function createContext({
             )
           ),
         responseCount: responseCount ?? BigInt(responses.length),
+        respondentCount:
+          respondentCount ??
+          BigInt(
+            new Set(
+              responses.map((response) =>
+                response.participantId
+                  ? `participant:${response.participantId}`
+                  : `respondent:${response.respondentId}`
+              )
+            ).size
+          ),
       },
     ])
   const blockFindMany = vi.fn().mockResolvedValue(blocks)
@@ -306,6 +319,29 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
   it('rejects oversized response input before materializing response rows', async () => {
     const { ctx, responseFindMany } = createContext({
       responseBytes: BigInt(5 * 1024 * 1024 + 1),
+    })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
+    expect(responseFindMany).not.toHaveBeenCalled()
+  })
+
+  it('rejects a sparse response matrix before materializing response rows', async () => {
+    const { ctx, responseFindMany } = createContext({
+      blocks: [
+        {
+          ...defaultBlocks[0],
+          elements: Array.from({ length: 41 }, (_, index) => ({
+            id: index + 10,
+            order: index,
+            elementType: ElementType.SC,
+          })),
+        },
+      ],
+      responseBytes: 1n,
+      responseCount: 25_000n,
+      respondentCount: 25_000n,
     })
 
     await expect(
