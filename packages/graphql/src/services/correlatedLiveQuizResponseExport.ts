@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto'
 import {
   CorrelatedLiveQuizExportSizeError,
   createCorrelatedLiveQuizResponseCsv,
@@ -5,11 +6,13 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import { buildLiveQuizResponseIdentityKey } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
-import { createHmac } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 
 const MAX_CORRELATED_EXPORT_RESPONSE_COUNT = 25_000n
 const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(5 * 1024 * 1024)
+const MAX_CORRELATED_EXPORT_MATRIX_CELLS = 1_000_000n
+const MIN_CSV_BYTES_PER_COLUMN_AND_RESPONDENT = 3n
+const MIN_CSV_BYTES_PER_RESPONDENT_ROW = 2n
 
 export async function getCorrelatedLiveQuizResponseExport(
   { id }: { id: string },
@@ -95,11 +98,19 @@ export async function getCorrelatedLiveQuizResponseExport(
           },
         })
         const [responseSize] = await prisma.$queryRaw<
-          { responseBytes: bigint; responseCount: bigint }[]
+          {
+            responseBytes: bigint
+            responseCount: bigint
+            respondentCount: bigint
+          }[]
         >`
           SELECT
             COALESCE(SUM(octet_length(response."response"::text)), 0)::bigint AS "responseBytes",
-            COUNT(*)::bigint AS "responseCount"
+            COUNT(*)::bigint AS "responseCount",
+            (
+              COUNT(DISTINCT response."participantId") +
+              COUNT(DISTINCT response."respondentId")
+            )::bigint AS "respondentCount"
           FROM "public"."LiveQuizResponse" AS response
           INNER JOIN "public"."ElementInstance" AS instance
             ON instance."id" = response."instanceId"
@@ -110,10 +121,23 @@ export async function getCorrelatedLiveQuizResponseExport(
             AND response."correctionOnly" = false
             AND instance."elementType" <> 'FREE_TEXT'
         `
+        const exportedColumnCount = blocks.reduce(
+          (count, block) =>
+            count + BigInt(block.elements.length) * BigInt(block.execution + 1),
+          0n
+        )
+        const matrixCellCount =
+          (responseSize?.respondentCount ?? 0n) * exportedColumnCount
+        const minimumCsvBytes =
+          (responseSize?.respondentCount ?? 0n) *
+          (exportedColumnCount * MIN_CSV_BYTES_PER_COLUMN_AND_RESPONDENT +
+            MIN_CSV_BYTES_PER_RESPONDENT_ROW)
         if (
           !responseSize ||
           responseSize.responseCount > MAX_CORRELATED_EXPORT_RESPONSE_COUNT ||
-          responseSize.responseBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
+          responseSize.responseBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
+          matrixCellCount > MAX_CORRELATED_EXPORT_MATRIX_CELLS ||
+          minimumCsvBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
         ) {
           throw new CorrelatedLiveQuizExportSizeError(
             'Correlated live quiz export exceeds the bounded response input size'
