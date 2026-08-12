@@ -86,8 +86,9 @@ promote the failed alpha.68 commit.
 
 - 2026-08-12: Approved program plan and planning-stage review complete.
 - 2026-08-12: Package worktree created from `v3` at `5264353ff`.
-- 2026-08-13: Slice 1 implemented with pinned Source Sans 3 3.052R and
-  JetBrains Mono 2.304 assets, upstream licenses, and recorded SHA-256 hashes.
+- 2026-08-13: Slice 1 implemented with pinned Google Fonts Latin variable
+  assets for Source Sans 3 and JetBrains Mono, upstream licenses, and recorded
+  SHA-256 hashes.
 - 2026-08-13: Node 24 shared-components check and all five affected production
   builds pass. The PWA Docker installer-stage build also passes after Turbo
   pruning, proving the local assets survive the image path.
@@ -100,4 +101,9 @@ promote the failed alpha.68 commit.
   WOFF2 assets in the browser with no Google font requests. Authenticated Control
   and Manage pages were also inspected. The final PWA Docker installer-stage
   build passed after Turbo pruning.
-- Current: run the integrated final review over the committed package range.
+- 2026-08-13: Integrated review found no blocker. Its measured P2 transfer-size
+  regression is being corrected by restoring the former 69 KB Latin variable
+  payload as two pinned local assets; its P3 wiki claim is rejected because
+  browser traces show both shared definitions are bundled by all five apps.
+- Current: verify and commit the transfer-size correction, then run the one
+  permitted integrated correction review.
