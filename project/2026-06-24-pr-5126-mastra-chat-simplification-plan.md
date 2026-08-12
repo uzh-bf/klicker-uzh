@@ -655,6 +655,16 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] The exported public runner passed locally against the compiled Catalyst
       application: manifest `v1`, Catalyst engine identity, five validated
       stream parts, and exactly one `finish` terminal.
+- [x] The cross-repository seam review identified that the first exported
+      runner covered only the successful deployment-credential path. The
+      canonical suite now also rejects ambiguous/missing provider credentials,
+      requires and observes an approved tool execution, propagates W3C trace
+      headers, and validates the abort fixture. The expanded suite passes
+      locally against the compiled Catalyst adapter with `finish` terminals for
+      deployment, request-credential, and tool scenarios and an `abort`
+      terminal for the cancellation scenario.
+- [ ] Resolve the reviewed provider-origin policy and implement the approved
+      scoped MCP execution token mint-and-forward path after `v3-ai` lands.
 - [ ] After `v3-ai` lands, update onto the resulting `v3`, rerun current-head
       checks/reviews, then seek the separate force-with-lease publication
       approval for PR #5126.
