@@ -47,5 +47,9 @@
 ## Progress
 
 - Planning-stage review: done; all required corrections incorporated.
-- Active: Slice 1 implementation.
-- Remaining: Slice 1 verification/review, Slice 2 implementation/verification/review, integrated final review.
+- Slice 1: committed as `a03162584`; Chat check, 239 Chat tests, Playwright typecheck/list, and root `check:all` passed. The focused Playwright runtime was blocked before page launch because the DevPod lacks the pinned Chromium binary; a real Browser pass remains in the package completion gate.
+- Slice 1 simplifier: done — no justified net reduction. Intermediate review: not required — presentation timing and deterministic fixture only, with no trust, protocol, or data-integrity boundary change.
+- Slice 2 implementation: complete. Registry compatibility tests preserve the omitted-field behavior, rendered staging/production values keep Auto on Responses without a manual effort capability, and the recreated local LiteLLM v1.96.2 service reports the new summary flag as active.
+- Real Browser pass: complete. Auto remained selected; the live MCP turn showed no source section during the post-tool/pre-answer gap, then produced and persisted the marker, answer, tool result, and synthetic source. A controlled Auto reasoning turn rendered `Denkprozess`, and LiteLLM recorded the semantic REASONING route to `gpt-5.6-sol-medium`.
+- Active: Slice 2 verification and immutable commit.
+- Remaining: Slice 2 simplifier/intermediate review, final package checks, integrated final review.

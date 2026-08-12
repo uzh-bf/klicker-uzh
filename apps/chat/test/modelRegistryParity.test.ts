@@ -12,6 +12,8 @@ type ParityModel = {
   id: string
   deploymentId: string
   fallback: boolean
+  supportsReasoning: boolean
+  usesResponsesApi?: boolean
   supportedReasoningEfforts: string[]
 }
 
@@ -48,6 +50,18 @@ describe('default chat model registry parity', () => {
           .sort()
           .join(',')
       ).toBe([...model.supportedReasoningEfforts].sort().join(','))
+    }
+  })
+
+  test('every model uses the same OpenAI API adapter', () => {
+    const backendById = byId(backendModels)
+    for (const model of chatModels) {
+      expect(backendById.get(model.id)?.supportsReasoning).toBe(
+        model.supportsReasoning
+      )
+      expect(backendById.get(model.id)?.usesResponsesApi).toBe(
+        model.usesResponsesApi
+      )
     }
   })
 
