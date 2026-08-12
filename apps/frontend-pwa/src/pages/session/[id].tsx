@@ -59,8 +59,18 @@ function getResponseApiEndpoint(endpoint: string) {
   return url.toString()
 }
 
-function ensureCorrelatedResponseIdentity(liveQuizId: string) {
-  const existing = responseIdentityInitializations.get(liveQuizId)
+function ensureCorrelatedResponseIdentity(
+  liveQuizId: string,
+  allowTokenFallback = false
+) {
+  const cacheKey = `${liveQuizId}:${allowTokenFallback ? 'fallback' : 'cookie'}`
+  if (!allowTokenFallback) {
+    const fallback = responseIdentityInitializations.get(
+      `${liveQuizId}:fallback`
+    )
+    if (fallback) return fallback
+  }
+  const existing = responseIdentityInitializations.get(cacheKey)
   if (existing) return existing
 
   const initialization = (async () => {
@@ -70,7 +80,10 @@ function ensureCorrelatedResponseIdentity(liveQuizId: string) {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ liveQuizId }),
+        body: JSON.stringify({
+          liveQuizId,
+          ...(allowTokenFallback ? { allowTokenFallback: true } : {}),
+        }),
       }
     )
     if (!response.ok) {
@@ -89,11 +102,11 @@ function ensureCorrelatedResponseIdentity(liveQuizId: string) {
 
     return undefined
   })().catch((error) => {
-    responseIdentityInitializations.delete(liveQuizId)
+    responseIdentityInitializations.delete(cacheKey)
     throw error
   })
 
-  responseIdentityInitializations.set(liveQuizId, initialization)
+  responseIdentityInitializations.set(cacheKey, initialization)
   return initialization
 }
 
@@ -193,15 +206,30 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 
   try {
-    const response = await fetch(
-      getResponseApiEndpoint(
-        responseCollectionMode ===
-          LiveQuizResponseCollectionMode.CorrelatedExport
-          ? 'AddCorrelatedResponse'
-          : 'AddResponse'
-      ),
-      requestOptions
+    const responseEndpoint = getResponseApiEndpoint(
+      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+        ? 'AddCorrelatedResponse'
+        : 'AddResponse'
     )
+    let response = await fetch(responseEndpoint, requestOptions)
+    if (
+      responseCollectionMode ===
+        LiveQuizResponseCollectionMode.CorrelatedExport &&
+      response.status === 401 &&
+      !respondentToken
+    ) {
+      respondentToken = await ensureCorrelatedResponseIdentity(liveQuizId, true)
+      if (respondentToken) {
+        requestOptions = {
+          ...requestOptions,
+          headers: {
+            ...(requestOptions.headers as Record<string, string>),
+            Authorization: `Bearer ${respondentToken}`,
+          },
+        }
+        response = await fetch(responseEndpoint, requestOptions)
+      }
+    }
 
     let responseTimestamp: number | undefined
     try {

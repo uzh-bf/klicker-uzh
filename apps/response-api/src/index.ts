@@ -20,6 +20,7 @@ import {
 } from './correlatedResponseAdmission.js'
 import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
 import { dispatchPendingCorrelatedResponses } from './correlatedResponseOutbox.js'
+import { getCorrelatedResponseInitializationToken } from './liveQuizResponseInitialization.js'
 import {
   hasJsonContentType,
   isAllowedCorsOrigin,
@@ -147,7 +148,7 @@ async function ensureCorrelatedResponseIdentity({
   res: ServerResponse
   liveQuizId: string
   publicationGeneration: number
-}): Promise<LiveQuizResponseIdentity> {
+}): Promise<{ created: boolean; identity: LiveQuizResponseIdentity }> {
   const { secret, issuer } = getResponseIdentityConfig()
   const cookieHeader =
     typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
@@ -162,7 +163,7 @@ async function ensureCorrelatedResponseIdentity({
     (existingIdentity.kind !== 'anonymous' ||
       existingIdentity.publicationGeneration === publicationGeneration)
   ) {
-    return existingIdentity
+    return { created: false, identity: existingIdentity }
   }
 
   const respondentId = randomUUID()
@@ -192,7 +193,7 @@ async function ensureCorrelatedResponseIdentity({
         process.env.COOKIE_DOMAIN !== '127.0.0.1',
     })
   )
-  return identity
+  return { created: true, identity }
 }
 
 async function handleInitializeLiveQuizResponseIdentity(
@@ -225,17 +226,19 @@ async function handleInitializeLiveQuizResponseIdentity(
   if (admission.status === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
-  const identity = await ensureCorrelatedResponseIdentity({
+  const ensuredIdentity = await ensureCorrelatedResponseIdentity({
     req,
     res,
     liveQuizId: payload.liveQuizId,
     publicationGeneration: admission.publicationGeneration,
   })
+  const respondentToken = getCorrelatedResponseInitializationToken({
+    ...ensuredIdentity,
+    allowTokenFallback: payload.allowTokenFallback === true,
+  })
   return sendJson(req, res, 200, {
     status: 'ready',
-    ...(identity.kind === 'anonymous'
-      ? { respondentToken: identity.token }
-      : {}),
+    ...(respondentToken ? { respondentToken } : {}),
   })
 }
 
