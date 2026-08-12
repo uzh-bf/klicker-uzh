@@ -63,6 +63,15 @@ routing as production behaviour ([docs/chat-platform.md](../../../docs/chat-plat
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
+For the seeded local MCP smoke test, verify
+`http://localhost:1417/health`, select the direct `GPT-5.6 Luna` model in
+Benibot, and send the prompt recorded in `AGENTS.md`. Require a completed
+`KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
+card both before and after reloading the thread. Auto Mode currently proves
+tool discovery, invocation, persistence, and rendering locally, but its
+OpenRouter follow-up step can be empty after a tool result; do not use that
+path as proof of final-answer synthesis.
+
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:

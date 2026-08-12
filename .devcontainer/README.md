@@ -130,10 +130,11 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
 host-side `devrouter ensure` delivers its matching process helper and invokes
 `post-start.sh` (set Klicker origins and call that helper). Runtime state is
-`/tmp/devrouter-process-klicker-dev.state`: exact workspace, command, adapter
-bytes, and declared non-secret runtime-origin values are fingerprinted for
-reuse; stale owned groups are replaced boundedly, and unknown processes are
-never killed. HTTP readiness remains in
+`/tmp/devrouter-process-klicker-dev.state` for the app stack and
+`/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
+fixture. Exact workspace, command, adapter bytes, and declared non-secret
+runtime-origin values are fingerprinted for reuse; stale owned groups are
+replaced boundedly, and unknown processes are never killed. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
@@ -151,3 +152,5 @@ analytics image and lint CI so the root quality gate runs inside the container.
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
+- Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
+  fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.

@@ -140,6 +140,45 @@ The same command starts and proves primary and linked checkouts. Use `devrouter 
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
+**OpenRouter-backed local chat:** Start a new or stopped environment through
+Infisical so the local LiteLLM container receives the OpenRouter key without
+writing it to disk:
+
+```bash
+infisical run \
+  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
+  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
+```
+
+If LiteLLM is already running without those variables, stop the workspace with
+`devrouter workspace stop <workspace>` and rerun the command; `ensure` does not
+replace environment variables inside an existing service container. Use only
+seeded or synthetic test content because OpenRouter is an external upstream and
+the Azure-specific chatbot disclaimer does not describe this local path.
+
+Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
+`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
+the request and chooses the configured target in `util/litellm/config.yaml`:
+simple/default requests use `gpt-5.6-luna` with medium effort,
+medium/complex requests use Luna with xhigh effort, and reasoning requests use
+`gpt-5.6-sol` with low effort. LiteLLM then forwards that target through
+OpenRouter's OpenAI-compatible endpoint; OpenRouter supplies the selected model
+but does not perform the classification. LiteLLM falls back from the Sol target
+to `gpt-5.1` on an upstream failure. Separately, when Chat credits reach zero,
+Chat selects `gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+
+The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
+and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
+`/tmp/local-mcp.log`. Select the direct `GPT-5.6 Luna` model, then test the
+complete path in Chat with: “Use the local MCP tool to test the integration.
+Search for `portfolio diversification` and tell me the exact marker it
+returns.” A successful turn calls `KB_doc_query` and shows
+`KLICKER_LOCAL_MCP_OK` plus the synthetic source card. Local Auto Mode currently
+completes and renders the tool result but OpenRouter returns an empty follow-up
+assistant step, so use the direct model when the final marker text is part of
+the test.
+
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash

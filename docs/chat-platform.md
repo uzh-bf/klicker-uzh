@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-10'
+timestamp: '2026-08-12'
 tags:
   - frontend
   - chat
@@ -40,6 +40,8 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
+- Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
+  read-only `doc_query` tool on port 1417 for the seeded Benibot.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
@@ -407,6 +409,20 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
+
+The self-contained devcontainer starts the seeded local MCP fixture through
+`post-start.sh`. Benibot's Tutor and Explainer configurations already point to
+`http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
+tool as `KB_doc_query`. Select the direct `GPT-5.6 Luna` model, then prompt
+Benibot with “Use the local MCP tool to test the integration. Search for
+`portfolio diversification` and tell me the exact marker it returns.” The
+end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
+answer, and the `synthetic-course-material.pdf` source card. Local Auto Mode
+discovers, calls, persists, and renders the same tool result, but the current
+OpenRouter path returns an empty second assistant step after that result; use
+the direct model when checking final answer synthesis. The fixture is synthetic
+wiring evidence only; it does not validate retrieval quality or a deployed MCP
+server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
