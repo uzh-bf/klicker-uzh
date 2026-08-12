@@ -424,12 +424,11 @@ tool as `KB_doc_query`. Select the direct `GPT-5.6 Luna` model, then prompt
 Benibot with “Use the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
-answer, and the `synthetic-course-material.pdf` source card. Local Auto Mode
-discovers, calls, persists, and renders the same tool result, but the current
-OpenRouter path returns an empty second assistant step after that result; use
-the direct model when checking final answer synthesis. The fixture is synthetic
-wiring evidence only; it does not validate retrieval quality or a deployed MCP
-server.
+non-empty answer, and the `synthetic-course-material.pdf` source card. Keep
+Auto Mode selected and require the tool result, answer, and source to remain
+after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
+from the model/tool path. The fixture is synthetic wiring evidence only; it
+does not validate retrieval quality or a deployed MCP server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
