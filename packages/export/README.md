@@ -132,7 +132,14 @@ It excludes:
 - chatbot API credentials, base URLs, avatar, and owner/course/disclaimer relations
 - attachment image and preview base64 payloads
 
-Chatbot, participant, thread, message, attachment, parent-message, and tool-call identifiers are deterministically replaced with export-local values such as `message_00001`. Model IDs remain unchanged because they are evaluation context rather than database or participant identities.
+Chatbot, participant, thread, message, attachment, parent-message, and tool-call
+identifiers are replaced with type-prefixed, full SHA-256 pseudonyms such as
+`message_ae067212f643e9704d7b5343cee469a763dd9eb141adbafbd1b739c3d02a52db`.
+The same source identifier receives the same pseudonym across separate exports,
+so participants and records can be correlated across selected chatbots and
+runs. Tool-call identifiers remain scoped by thread. Model IDs remain unchanged
+because they are evaluation context rather than database or participant
+identities.
 
 New output directories are created as `0700`. An existing output directory must
 already be owner-only; the exporter never changes caller-owned directory
@@ -140,13 +147,18 @@ permissions. Existing output files and symlinks are never followed or
 overwritten.
 
 > [!WARNING]
-> This output is **pseudonymized, not anonymized**. System prompts, thread titles, message/reasoning content, and attachment descriptions remain unchanged and can contain personal information. Use only an approved AI evaluation system and handle the artifact according to the applicable data-protection rules.
+> This output is **pseudonymized, not anonymized**. The hashes are deliberately
+> unsalted to support cross-export correlation; anyone who knows a source ID can
+> reproduce its exported pseudonym. System prompts, thread titles,
+> message/reasoning content, and attachment descriptions remain unchanged and
+> can contain personal information. Use only an approved AI evaluation system
+> and handle the artifact according to the applicable data-protection rules.
 
 The command uses the same compile-time and runtime read-only Prisma guard as the
 course exporter. It validates that every requested chatbot exists. If a
 message's parent does not resolve inside that message's thread, the exported
 `parentId` is `null` and `warnings.invalidParentReferences` records only the
-affected export-local thread and message IDs; the unresolved source ID is not
+affected hashed thread and message IDs; the unresolved source ID is not
 emitted. This changes only the generated JSON and never updates database data.
 Self-referencing and cyclic parent chains remain hard errors before the
 artifact is written.

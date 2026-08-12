@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-12'
 tags:
   - backend
   - prisma
@@ -85,7 +85,7 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 Data-export gotchas that bite when touching report generation:
 
-- The package has two separate read-only workflows: course live-quiz analysis (`export-course.ts`) and nested chatbot evaluation JSON (`export-chatbots.ts`). Chatbot exports accept repeated `--chatbotId` values, use export-local record/participant keys, omit credentials and attachment base64, and preserve message text; they are pseudonymized rather than anonymized. `ChatMessage.parentId` is not a Prisma self-relation, so legacy data can point outside the message's thread. The exporter leaves database data untouched, emits that `parentId` as `null`, and adds a warning containing only export-local thread/message IDs; self-references and cycles still fail. Operator details and the exact scope live in `packages/export/README.md`.
+- The package has two separate read-only workflows: course live-quiz analysis (`export-course.ts`) and nested chatbot evaluation JSON (`export-chatbots.ts`). Chatbot exports accept repeated `--chatbotId` values, replace structural IDs with unsalted, type-prefixed full SHA-256 pseudonyms that stay stable across separate exports, omit credentials and attachment base64, and preserve message text. The linkability is intentional, but a known source ID can be rehashed, so the output is pseudonymized rather than anonymized. `ChatMessage.parentId` is not a Prisma self-relation, so legacy data can point outside the message's thread. The exporter leaves database data untouched, emits that `parentId` as `null`, and adds a warning containing only hashed thread/message IDs; self-references and cycles still fail. Operator details and the exact scope live in `packages/export/README.md`.
 - Prisma relation inference can collapse nested `ElementInstance`/`ElementBlock` selects to `never` — keep explicit row DTOs at the query boundary and cast once there.
 - ExcelJS sheet names collide **case-insensitively** and cap at 31 chars — dedupe on a lowercase key (`exportCourse.ts`).
 - ExcelJS `autoFilter` must span data rows: a header-only range (or autoFilter on an empty sheet) makes Excel flag the workbook as corrupt on open — set `to.row` to the last data row and skip autoFilter on header-only sheets (`exportCourse.ts:addSheet`).

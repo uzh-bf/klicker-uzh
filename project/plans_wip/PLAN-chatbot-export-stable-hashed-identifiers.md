@@ -107,11 +107,110 @@ opengrep scan --config auto packages/export
 4. Run package and repository verification.
 5. Obtain independent final review, commit, push, and update draft PR #5302.
 
+## Implementation plan
+
+### Task 1: Lock the stable identifier contract in tests
+
+**Files:**
+
+- Modify `packages/export/test/chatbotTransform.test.ts`
+
+**Interface:**
+
+- `createHashedKeyMap(values: string[], prefix: string): Map<string, string>`
+- `buildChatbotExportDocument(rows, exportedAt): ChatbotExportDocument`
+
+Steps:
+
+1. Replace the sequential-key unit test with a known SHA-256 vector. Assert
+   that `source-a` becomes
+   `message_0f9f5ce47831e099e77e295ed8bb627f089efa8672ee6fbdc49eac6f0d7f5275`
+   and duplicates collapse to one map entry.
+2. Update the nested-export assertions for chatbot, participant, thread,
+   message, attachment, parent, structured-content, warning, and tool-call IDs.
+3. Add an independent-export regression: build two documents with different
+   chatbot selections/orderings but the same source participant ID and assert
+   that both contain exactly the same `participant_<digest>` value.
+4. Keep the existing assertions that model IDs and free text are unchanged and
+   source structural IDs are absent.
+5. Run
+   `pnpm --filter @klicker-uzh/export exec vitest run test/chatbotTransform.test.ts`.
+   The new assertions must fail against the sequential implementation.
+
+### Task 2: Replace sequential keys with SHA-256 keys
+
+**Files:**
+
+- Modify `packages/export/src/chatbotTransform.ts`
+
+**Interface:**
+
+```ts
+export function createHashedKeyMap(values: string[], prefix: string) {
+  return new Map(
+    [...new Set(values)].map((value) => [
+      value,
+      `${prefix}_${createHash('sha256').update(value).digest('hex')}`,
+    ])
+  )
+}
+```
+
+Steps:
+
+1. Import `createHash` from `node:crypto`.
+2. Replace `createKeyMap` with `createHashedKeyMap`; retain de-duplication and
+   type prefixes, but remove index-based assignment and sorting from mapping.
+3. Use the new helper for chatbot, participant, thread, message, attachment,
+   and thread-scoped tool-call maps. Leave canonical output ordering unchanged.
+4. Run the targeted transform test and the full package test suite. All tests
+   must pass, including self-reference/cycle failures and orphan-parent
+   warnings.
+
+### Task 3: Align the public and engineering contracts
+
+**Files:**
+
+- Modify `packages/export/README.md`
+- Modify `docs/chat-platform.md`
+- Modify `docs/data-and-migrations.md`
+- Modify `docs/log.md`
+- Modify the existing chatbot-export design and implementation records
+- Modify this plan's progress checklist
+
+Steps:
+
+1. Replace sequential/one-based wording and examples with full SHA-256
+   pseudonyms and explicitly document cross-export linkability.
+2. State that unsalted hashing is intentional, is not anonymization, and lets
+   anyone with a known source ID reproduce the pseudonym.
+3. Retain the unchanged read-only, model-ID, text, attachment, and parent-warning
+   contracts.
+4. Add a `2026-08-12` wiki log entry and bump meaningful wiki page timestamps.
+5. Format changed TypeScript with Biome and Markdown with Prettier.
+
+### Task 4: Verify and publish
+
+Steps:
+
+1. Run the package tests, check, build, compiled CLI help, `pnpm run check:all`,
+   `pnpm run build`, `git diff --check`, and
+   `opengrep scan --config auto packages/export`.
+2. Inspect staged files for secrets or real participant/export data. Never add
+   the untracked `export-output/` directory.
+3. Commit the implementation as
+   `feat(export): use stable hashed identifiers`.
+4. Ask an independent reviewer to inspect the committed branch diff for
+   correctness, privacy, determinism, and documentation consistency; resolve
+   accepted findings before push.
+5. Push the branch and update draft PR #5302 so its complete branch summary and
+   example JSON use hashed identifiers rather than sequential identifiers.
+
 ## Progress
 
 - [x] Scope and privacy trade-off approved.
-- [ ] Regression tests added.
-- [ ] Stable hash transformation implemented.
-- [ ] Documentation aligned.
-- [ ] Verification complete.
+- [x] Regression tests added.
+- [x] Stable hash transformation implemented.
+- [x] Documentation aligned.
+- [x] Verification complete.
 - [ ] Independent review and PR update complete.

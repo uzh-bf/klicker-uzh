@@ -2,11 +2,31 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildChatbotExportDocument,
-  createKeyMap,
+  createHashedKeyMap,
   type RawChatbotExportRow,
 } from '../src/chatbotTransform.js'
 
 const exportedAt = '2026-08-04T12:00:00.000Z'
+const expectedIds = {
+  chatbotA:
+    'chatbot_8b1af2d86812af60213f5b7092c8ebb07fc7c5e77b5bcca1e4faecdfe8cc7422',
+  chatbotB:
+    'chatbot_448c5fabc1c4ff867b75e4fbb66ff098521a12a7d3ea96df2deacf390cdb5327',
+  participantA:
+    'participant_a0aa14b0a5b8dc7d5edcf53f0e43329b7972cc1974a82d0ee2cb8edefe13a115',
+  threadA:
+    'thread_2af2a78c9fae773d421456326461d840adae2b9d79916c2f7b49a61190f6cd8d',
+  threadB:
+    'thread_3d779df4ce9d3f7c323be2154e3ecc251a6fce8bfecfa637600ebcf82fe094d0',
+  messageA:
+    'message_ae067212f643e9704d7b5343cee469a763dd9eb141adbafbd1b739c3d02a52db',
+  messageB:
+    'message_c764788420b4cb93d33f7ca8102a06110daad89ad5683e408fa83415fbe0cde8',
+  attachmentA:
+    'attachment_8e57bdbd6dc06c9635bbf16cde1fa2a2c5446f20190d032049905ca66e6ceb51',
+  toolCallA:
+    'tool_call_c3a338a8b3ae4c26b81baa2b977220828c6616919a8b629c3f22b1386b0e1e0c',
+} as const
 
 function rawChatbot(
   overrides: Partial<RawChatbotExportRow> = {}
@@ -73,14 +93,58 @@ function rawThread(
 }
 
 describe('chatbot export transformation', () => {
-  it('creates deterministic, sorted, one-based export keys', () => {
-    expect(
-      createKeyMap(['source-b', 'source-a', 'source-b'], 'message')
-    ).toEqual(
-      new Map([
-        ['source-a', 'message_00001'],
-        ['source-b', 'message_00002'],
-      ])
+  it('creates deterministic SHA-256 export keys', () => {
+    const keys = createHashedKeyMap(
+      ['source-b', 'source-a', 'source-b'],
+      'message'
+    )
+
+    expect(keys.size).toBe(2)
+    expect(keys.get('source-a')).toBe(
+      'message_0f9f5ce47831e099e77e295ed8bb627f089efa8672ee6fbdc49eac6f0d7f5275'
+    )
+    expect(keys.get('source-b')).toBe(
+      'message_3fed13457ee26a4f5b27c42544aa57045981a075a6103aab87e0b81c032e9d01'
+    )
+  })
+
+  it('keeps participant ids stable across independent exports', () => {
+    const firstDocument = buildChatbotExportDocument(
+      [
+        rawChatbot({
+          threads: [
+            rawThread('source-thread-z', [], {
+              participantId: 'source-participant-shared',
+            }),
+          ],
+        }),
+      ],
+      exportedAt
+    )
+    const secondDocument = buildChatbotExportDocument(
+      [
+        rawChatbot({
+          id: 'source-chatbot-b',
+          threads: [
+            rawThread('source-thread-a', [], {
+              participantId: 'aaa-participant',
+            }),
+            rawThread('source-thread-z', [], {
+              participantId: 'source-participant-shared',
+            }),
+          ],
+        }),
+      ],
+      exportedAt
+    )
+
+    const expectedParticipantId =
+      'participant_8feed6321dd888ca3e8011d7d9c489601d924fb03be2617e0536aac2c651a9d9'
+    expect(firstDocument.chatbots[0]!.threads[0]!.participantId).toBe(
+      expectedParticipantId
+    )
+    expect(secondDocument.chatbots[0]!.threads[1]!.participantId).toBe(
+      expectedParticipantId
     )
   })
 
@@ -213,26 +277,26 @@ describe('chatbot export transformation', () => {
     )
 
     expect(document.chatbots.map((chatbot) => chatbot.id)).toEqual([
-      'chatbot_00001',
-      'chatbot_00002',
+      expectedIds.chatbotA,
+      expectedIds.chatbotB,
     ])
     const firstThread = document.chatbots[0]!.threads[0]!
-    expect(firstThread.id).toBe('thread_00001')
-    expect(firstThread.participantId).toBe('participant_00001')
+    expect(firstThread.id).toBe(expectedIds.threadA)
+    expect(firstThread.participantId).toBe(expectedIds.participantA)
     expect(firstThread.messages.map((message) => message.id)).toEqual([
-      'message_00001',
-      'message_00002',
+      expectedIds.messageA,
+      expectedIds.messageB,
     ])
-    expect(firstThread.messages[1]!.parentId).toBe('message_00001')
+    expect(firstThread.messages[1]!.parentId).toBe(expectedIds.messageA)
     expect(firstThread.messages[0]!.content).toEqual([
       {
         type: 'tool-call',
-        toolCallId: 'tool_call_00001',
+        toolCallId: expectedIds.toolCallA,
         input: {
-          chatbot: 'chatbot_00001',
-          thread: 'thread_00001',
-          message: 'message_00002',
-          attachment: 'attachment_00001',
+          chatbot: expectedIds.chatbotA,
+          thread: expectedIds.threadA,
+          message: expectedIds.messageB,
+          attachment: expectedIds.attachmentA,
         },
       },
       {
@@ -247,8 +311,8 @@ describe('chatbot export transformation', () => {
     expect(firstThread.messages[1]!.content).toEqual([
       {
         type: 'tool-result',
-        toolCallId: 'tool_call_00001',
-        result: { participant: 'participant_00001' },
+        toolCallId: expectedIds.toolCallA,
+        result: { participant: expectedIds.participantA },
       },
     ])
     expect(firstThread.messages[0]!.modelId).toBe('semantic-model-id')
@@ -257,7 +321,7 @@ describe('chatbot export transformation', () => {
     expect(firstThread.messages[0]!.createdAt).toBe('2026-02-01T00:01:00.000Z')
     expect(firstThread.messages[0]!.attachments).toEqual([
       {
-        id: 'attachment_00001',
+        id: expectedIds.attachmentA,
         type: 'IMAGE',
         position: 0,
         imageDescription: 'A chart',
@@ -339,8 +403,8 @@ describe('chatbot export transformation', () => {
     expect(document.chatbots[0]!.threads[0]!.messages[0]!.parentId).toBeNull()
     expect(document.warnings.invalidParentReferences).toEqual([
       {
-        threadId: 'thread_00001',
-        messageId: 'message_00001',
+        threadId: expectedIds.threadA,
+        messageId: expectedIds.messageA,
         reason: 'not_in_thread',
       },
     ])
@@ -379,8 +443,12 @@ describe('chatbot export transformation', () => {
       }>
     )[0]!.toolCallId
 
-    expect(firstToolCallId).toBe('tool_call_00001')
-    expect(secondToolCallId).toBe('tool_call_00002')
+    expect(firstToolCallId).toBe(
+      'tool_call_3b64ae0994e6fd79038dc97282511c7f31d526ab3f0d081fb58a271a4d4bda6f'
+    )
+    expect(secondToolCallId).toBe(
+      'tool_call_84db698f38c829673cd4066d86d7093992f5c41d5ae04cd15b538b81b30a430d'
+    )
   })
 
   it('normalizes parent ids that point into another thread', () => {
@@ -400,8 +468,8 @@ describe('chatbot export transformation', () => {
     expect(document.chatbots[0]!.threads[1]!.messages[0]!.parentId).toBeNull()
     expect(document.warnings.invalidParentReferences).toEqual([
       {
-        threadId: 'thread_00002',
-        messageId: 'message_00002',
+        threadId: expectedIds.threadB,
+        messageId: expectedIds.messageB,
         reason: 'not_in_thread',
       },
     ])

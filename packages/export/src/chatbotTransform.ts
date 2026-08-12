@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import type { Prisma } from '@klicker-uzh/prisma/client'
 
 interface DecimalLike {
@@ -141,13 +143,11 @@ const scope = {
   attachmentImagesIncluded: false,
 } as const
 
-export function createKeyMap(values: string[], prefix: string) {
-  const unique = [...new Set(values)].sort()
-
+export function createHashedKeyMap(values: string[], prefix: string) {
   return new Map(
-    unique.map((value, index) => [
+    [...new Set(values)].map((value) => [
       value,
-      `${prefix}_${String(index + 1).padStart(5, '0')}`,
+      `${prefix}_${createHash('sha256').update(value).digest('hex')}`,
     ])
   )
 }
@@ -301,23 +301,23 @@ export function buildChatbotExportDocument(
     invalidParentReferences.map(({ messageId }) => messageId)
   )
 
-  const chatbotIds = createKeyMap(
+  const chatbotIds = createHashedKeyMap(
     chatbots.map((chatbot) => chatbot.id),
     'chatbot'
   )
-  const participantIds = createKeyMap(
+  const participantIds = createHashedKeyMap(
     threads.map((thread) => thread.participantId),
     'participant'
   )
-  const threadIds = createKeyMap(
+  const threadIds = createHashedKeyMap(
     threads.map((thread) => thread.id),
     'thread'
   )
-  const messageIds = createKeyMap(
+  const messageIds = createHashedKeyMap(
     messages.map((message) => message.id),
     'message'
   )
-  const attachmentIds = createKeyMap(
+  const attachmentIds = createHashedKeyMap(
     attachments.map((attachment) => attachment.id),
     'attachment'
   )
@@ -331,7 +331,7 @@ export function buildChatbotExportDocument(
       toolCallSourceIds.push(`${thread.id}\0${toolCallId}`)
     }
   }
-  const toolCallIds = createKeyMap(toolCallSourceIds, 'tool_call')
+  const toolCallIds = createHashedKeyMap(toolCallSourceIds, 'tool_call')
   const knownIds = mergeKnownIds(
     chatbotIds,
     participantIds,

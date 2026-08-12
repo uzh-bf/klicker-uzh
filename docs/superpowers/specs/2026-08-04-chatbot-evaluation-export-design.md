@@ -5,7 +5,7 @@
 Add a read-only command-line exporter that accepts one or more `Chatbot.id`
 values and writes one AI-friendly JSON file containing the selected chatbot
 configurations and their conversation histories. Privacy-relevant identifiers
-are replaced with deterministic, export-local identifiers starting at one.
+are replaced with stable, type-prefixed full SHA-256 pseudonyms.
 
 The output is intended for evaluation with an AI system, not for importing back
 into the KlickerUZH database.
@@ -77,15 +77,15 @@ The file is nested for direct use by an AI evaluator:
   },
   "chatbots": [
     {
-      "id": "chatbot_00001",
+      "id": "chatbot_8b1af2d86812af60213f5b7092c8ebb07fc7c5e77b5bcca1e4faecdfe8cc7422",
       "name": "Example",
       "threads": [
         {
-          "id": "thread_00001",
-          "participantId": "participant_00001",
+          "id": "thread_2af2a78c9fae773d421456326461d840adae2b9d79916c2f7b49a61190f6cd8d",
+          "participantId": "participant_a0aa14b0a5b8dc7d5edcf53f0e43329b7972cc1974a82d0ee2cb8edefe13a115",
           "messages": [
             {
-              "id": "message_00001",
+              "id": "message_ae067212f643e9704d7b5343cee469a763dd9eb141adbafbd1b739c3d02a52db",
               "parentId": null,
               "role": "user",
               "content": [{ "type": "text", "text": "Hello" }],
@@ -106,7 +106,7 @@ Dates are serialized as ISO-8601 strings. Prisma `Decimal` values, including
 
 The exported `Chatbot` data contains:
 
-- export-local `id`
+- hashed `id`
 - `name`, `description`, and `systemPrompts`
 - credit configuration fields
 - `modelSelection`, `allowedModelIds`, and
@@ -116,13 +116,13 @@ The exported `Chatbot` data contains:
 
 The exported `ChatThread` data contains:
 
-- export-local `id` and `participantId`
+- hashed `id` and `participantId`
 - `title`, `createdAt`, and `updatedAt`
 - nested messages
 
 The exported `ChatMessage` data contains:
 
-- export-local `id` and nullable remapped `parentId`; a source parent that does
+- hashed `id` and nullable remapped `parentId`; a source parent that does
   not resolve inside the same thread is exported as `null`
 - `role`, `content`, `chatMode`, `modelId`, and `reasoningEffort`
 - `reasoningContent` and `creditsUsed`
@@ -131,7 +131,7 @@ The exported `ChatMessage` data contains:
 
 The exported `ChatAttachment` data contains:
 
-- export-local `id`
+- hashed `id`
 - `type`, `position`, and `imageDescription`
 - `createdAt` and `updatedAt`
 
@@ -156,29 +156,34 @@ MCP URLs and encrypted authentication secrets from entering the artifact.
 
 `User`, `Course`, and `Participant` rows are excluded to avoid pulling personal
 data and unrelated relations into the export. Participants are represented
-only by export-local identifiers on threads.
+only by hashed identifiers on threads.
 
 ## Identifier policy
 
 Privacy-relevant record and relationship identifiers are replaced consistently
-within one export:
+with stable pseudonyms:
 
-| Source identifier          | Export value                   |
-| -------------------------- | ------------------------------ |
-| `Chatbot.id`               | `chatbot_00001`                |
-| `ChatThread.participantId` | `participant_00001`            |
-| `ChatThread.id`            | `thread_00001`                 |
-| `ChatMessage.id`           | `message_00001`                |
-| `ChatMessage.parentId`     | matching message key or `null` |
-| `ChatAttachment.id`        | `attachment_00001`             |
-| JSON property `toolCallId` | `tool_call_00001`              |
+| Source identifier          | Export value                             |
+| -------------------------- | ---------------------------------------- |
+| `Chatbot.id`               | `chatbot_<64 lowercase SHA-256 hex>`     |
+| `ChatThread.participantId` | `participant_<64 lowercase SHA-256 hex>` |
+| `ChatThread.id`            | `thread_<64 lowercase SHA-256 hex>`      |
+| `ChatMessage.id`           | `message_<64 lowercase SHA-256 hex>`     |
+| `ChatMessage.parentId`     | matching message pseudonym or `null`     |
+| `ChatAttachment.id`        | `attachment_<64 lowercase SHA-256 hex>`  |
+| JSON property `toolCallId` | `tool_call_<64 lowercase SHA-256 hex>`   |
 
-Mappings are type-specific, start at one, and use five-digit zero padding.
-They are deterministic for the same selected database state and independent of
-the order of CLI inputs or Prisma query results. Participant mappings are
-shared across all selected chatbots in the same file. Tool-call source
-identifiers are scoped by thread, while their export values remain unique
-across the whole file.
+Mappings are type-specific and computed as the type prefix plus the full
+lowercase hexadecimal SHA-256 digest of the source identifier. They are stable
+across separate exports and independent of the selected chatbot set, CLI input
+order, or Prisma query order. Participant mappings therefore allow the same
+participant to be correlated across separately exported chatbots. Tool-call
+source identifiers are scoped by thread before hashing, while their export
+values remain unique across the whole file.
+
+The hashes are deliberately unsalted to provide cross-export stability. This
+is pseudonymization, not anonymization: anyone who knows a source identifier can
+compute its exported pseudonym.
 
 Known source record identifiers are also replaced when an exact string value
 appears inside structured message `content`. Exact `toolCallId` properties are
@@ -197,10 +202,10 @@ records and are material evaluation context.
    metadata through the export package's existing compile-time and runtime
    read-only Prisma client.
 3. Abort without writing if any requested chatbot is missing.
-4. Establish canonical ordering and build the export-local identifier maps.
+4. Establish canonical ordering and build the stable hashed identifier maps.
 5. Inspect parent relationships. Replace a parent that does not resolve inside
    the same thread with `null` in the export and record a warning using only the
-   export-local thread and message IDs. Abort on a self-reference or cycle.
+   hashed thread and message IDs. Abort on a self-reference or cycle.
 6. Transform the queried rows into the nested, secret-free output shape.
 7. Serialize one pretty-printed JSON file with a trailing newline and restricted
    permissions.
@@ -229,7 +234,7 @@ The implementation extends `packages/export` with focused units:
 
 - chatbot CLI parsing and usage text
 - Prisma query and raw row types
-- deterministic identifier mapping and nested transformation
+- stable SHA-256 identifier mapping and nested transformation
 - safe JSON file creation
 - a thin executable wrapper that connects, exports, reports, and disconnects
 
@@ -259,7 +264,7 @@ Automated tests cover:
 
 - repeated chatbot IDs, de-duplication, optional output directory, and CLI
   failures
-- deterministic one-based mappings independent of input/query order
+- stable SHA-256 mappings independent of the selected set and input/query order
 - correct nesting and consistent participant, parent-message, and tool-call
   references
 - preservation of exact-token free text and thread-scoped tool-call mappings

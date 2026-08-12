@@ -26,13 +26,13 @@ ordinary draft pull request.
       image payloads.
 - [x] Exclude secrets, infrastructure configuration, owner/course relations,
       participant records, disclaimer/MCP data, and credit balances.
-- [x] Replace privacy-relevant record and relationship IDs with deterministic,
-      type-prefixed values starting at one.
+- [x] Replace privacy-relevant record and relationship IDs with stable,
+      type-prefixed full SHA-256 pseudonyms.
 - [x] Keep semantic model IDs and all message/reasoning text unchanged.
 - [x] Scope tool-call identifiers by thread so unrelated provider IDs cannot be
       linked accidentally.
 - [x] Normalize missing and cross-thread parent-message relationships to
-      `null` in the export with warnings that contain only export-local IDs.
+      `null` in the export with warnings that contain only hashed IDs.
 - [x] Reject self-referencing and cyclic parent-message relationships before
       touching the filesystem.
 - [x] Use the existing compile-time and runtime read-only Prisma guard.
@@ -45,9 +45,13 @@ ordinary draft pull request.
       schema changes.
 - [x] Update package documentation and the engineering wiki.
 
+The SHA-256 pseudonyms are deliberately unsalted so the same source ID maps to
+the same output across separate exports. This enables cross-export correlation,
+but it is not anonymization: a known source ID can be rehashed.
+
 ## Verification evidence
 
-- `pnpm --filter @klicker-uzh/export test` — 46 tests passed after final review
+- `pnpm --filter @klicker-uzh/export test` — 47 tests passed after final review
   fixes.
 - `pnpm --filter @klicker-uzh/export check` — passed.
 - `pnpm --filter @klicker-uzh/export build` — passed.

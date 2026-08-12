@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-04'
+timestamp: '2026-08-12'
 tags:
   - frontend
   - chat
@@ -41,7 +41,7 @@ Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migratio
 
 ## Operator conversation export
 
-`packages/export/src/scripts/export-chatbots.ts` exports selected chatbots and their nested threads/messages as pseudonymized JSON for AI evaluation. It queries the Prisma models directly, so it does not depend on the current AI-SDK route handlers or the in-flight Mastra service boundary. Attachment descriptions are included but image base64 is omitted; message content remains unchanged and can contain personal information. A parent reference that does not resolve inside its thread becomes `null` only in the exported document and produces a warning with export-local IDs; the read-only exporter does not modify the database. See [`packages/export/README.md`](../packages/export/README.md) for the command, identifier policy, and exact included/excluded scope.
+`packages/export/src/scripts/export-chatbots.ts` exports selected chatbots and their nested threads/messages as pseudonymized JSON for AI evaluation. It queries the Prisma models directly, so it does not depend on the current AI-SDK route handlers or the in-flight Mastra service boundary. Attachment descriptions are included but image base64 is omitted; message content remains unchanged and can contain personal information. Structural identifiers use unsalted, type-prefixed full SHA-256 pseudonyms: they are stable across separate exports for correlation, but a known source ID can be rehashed, so the output is not anonymized. A parent reference that does not resolve inside its thread becomes `null` only in the exported document and produces a warning with hashed IDs; the read-only exporter does not modify the database. See [`packages/export/README.md`](../packages/export/README.md) for the command, identifier policy, and exact included/excluded scope.
 
 ## Client-state gotchas
 
