@@ -1,5 +1,8 @@
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  MCP_EXECUTION_TOKEN_HEADER,
+  TRACEPARENT_HEADER,
+  TRACESTATE_HEADER,
   parseEngineManifest,
   type EngineChatRequest,
   type EngineManifest,
@@ -12,6 +15,7 @@ export type EngineClient = {
     options: {
       providerAuthorization?: string
       mcpExecutionToken?: string
+      traceContext?: { traceparent: string; tracestate?: string }
       signal: AbortSignal
     }
   ): Promise<Response>
@@ -72,7 +76,13 @@ export function createEngineClient(
         headers.set('provider-authorization', chatOptions.providerAuthorization)
       }
       if (chatOptions.mcpExecutionToken) {
-        headers.set('x-mcp-execution-token', chatOptions.mcpExecutionToken)
+        headers.set(MCP_EXECUTION_TOKEN_HEADER, chatOptions.mcpExecutionToken)
+      }
+      if (chatOptions.traceContext) {
+        headers.set(TRACEPARENT_HEADER, chatOptions.traceContext.traceparent)
+        if (chatOptions.traceContext.tracestate) {
+          headers.set(TRACESTATE_HEADER, chatOptions.traceContext.tracestate)
+        }
       }
       const response = await request(`${requireBaseUrl()}/v1/chat`, {
         method: 'POST',

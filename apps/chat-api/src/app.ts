@@ -164,7 +164,7 @@ function traceParentForAssistant(messageId: string): string {
 function traceContextForRequest(
   request: Request,
   assistantMessageId: string
-): NonNullable<EngineChatRequest['traceContext']> {
+): { traceparent: string; tracestate?: string } {
   const incomingTraceParent = request.headers.get('traceparent')
   const traceparent =
     incomingTraceParent &&
@@ -464,6 +464,7 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
       )
       const requestId = randomUUID()
       const assistantMessageId = input.assistantMessageId
+      const traceContext = traceContextForRequest(c.req.raw, assistantMessageId)
       const engineRequest: EngineChatRequest = {
         contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
         requestId,
@@ -482,7 +483,6 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
         generation,
         messages: engineMessages,
         tools,
-        traceContext: traceContextForRequest(c.req.raw, assistantMessageId),
       }
       try {
         engineChatRequestSchema.parse(engineRequest)
@@ -517,6 +517,7 @@ export function createChatApiApp(overrides: Partial<ChatApiDependencies> = {}) {
       try {
         engineResponse = await dependencies.engine.chat(engineRequest, {
           providerAuthorization: credential.providerAuthorization,
+          traceContext,
           signal: engineAbort.signal,
         })
       } catch {

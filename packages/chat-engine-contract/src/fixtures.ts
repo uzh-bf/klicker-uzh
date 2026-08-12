@@ -1,6 +1,7 @@
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
   type EngineChatRequest,
+  type EngineManifest,
   type EngineStreamPart,
 } from './schema.js'
 
@@ -111,3 +112,23 @@ export const conformanceAbortStream: EngineStreamPart[] = [
   },
   { type: 'abort', reason: 'client cancelled' },
 ]
+
+export const conformanceManifest: EngineManifest = {
+  contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+  engineId: 'conformance-engine',
+  features: {
+    text: true,
+    reasoning: true,
+    images: true,
+    tools: true,
+    cancellation: true,
+  },
+  providerCredentialModes: ['request', 'deployment'],
+  limits: {
+    maxMessages: 100,
+    maxTools: 64,
+    maxImageAttachments: 3,
+    maxDecodedImageBytes: 5 * 1024 * 1024,
+    maxDataUrlLength: 7_000_000,
+  },
+}

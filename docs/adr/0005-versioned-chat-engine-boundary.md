@@ -33,6 +33,13 @@ the same contract with Mastra in its private repository. Contract conformance
 tests are the compatibility gate; engine selection remains deployment
 configuration, never a browser choice.
 
+Contract generations use ordinal route and body literals such as `v1`. W3C
+trace context travels only in `traceparent` and optional `tracestate` HTTP
+headers. The JSON request has no second trace representation. Approved tools
+cross as schemas and stable server IDs; one scoped execution token is sent in
+`x-mcp-execution-token`, and the engine calls a deployment-owned MCP execution
+endpoint instead of opening caller-selected MCP server URLs.
+
 This preserves one platform policy and one conversation store while allowing
 generation implementations to evolve independently. The cost is an explicit
 HTTP serialization and validation seam, plus a required conformance run for

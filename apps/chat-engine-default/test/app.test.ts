@@ -57,7 +57,17 @@ describe('default chat engine', () => {
 
     const manifestResponse = await app.request('/v1/manifest')
     expect(manifestResponse.status).toBe(200)
-    expect((await manifestResponse.json()).contractVersion).toBe('v1')
+    expect(await manifestResponse.json()).toMatchObject({
+      contractVersion: 'v1',
+      providerCredentialModes: ['request', 'deployment'],
+      limits: {
+        maxMessages: 100,
+        maxTools: 64,
+        maxImageAttachments: 3,
+        maxDecodedImageBytes: 5 * 1024 * 1024,
+        maxDataUrlLength: 7_000_000,
+      },
+    })
 
     const response = await app.request('/v1/chat', {
       method: 'POST',
