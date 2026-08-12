@@ -31,6 +31,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
+- **Live-quiz identities are policy-specific** — assessment responses retain `participantId`; standard correlated responses use generation-scoped `respondentId` for logged-in and anonymous browsers alike. Keep `TemporaryLeaderboardEntry` isolated to gamification, place account/token mappings in a generation-scoped active-only binding with inverse uniqueness, and implement irreversible quiz-lock-fenced finalization per [ADR-0005](../../../docs/adr/0005-separate-live-quiz-response-identity-policies.md) and [ADR-0006](../../../docs/adr/0006-finalize-correlated-identities-after-settlement.md).
 
 ## Seeds — two independent paths
 

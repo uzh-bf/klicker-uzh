@@ -37,7 +37,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks, but defers the respondent-response uniqueness index until the admission writer slice. A standard transactional `CREATE UNIQUE INDEX` on the existing response table could block active response processing; add that index only with the admission rollout and its preflight/verification.
-- Export-label persistence is owned by the export slice rather than the domain-boundary slice. Do not add a label table to the initial response-collection migration before the export implementation consumes it.
+- The immutable correlated export label is domain state, not CSV-rendering state. Add its nullable persistence shape in A1, allocate it transactionally for every respondent during A5 finalization, then let B1 render only finalized labels. Do not let an export request lazily assign labels or depend on `exportSalt` after finalization.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations
@@ -131,6 +131,8 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **Live-quiz response ownership is mode-specific**: assessment responses retain `participantId`; standard correlated responses use `respondentId` even when the browser is logged in. Correlated respondents and active bindings are scoped by `publicationGeneration`; enforce one binding per respondent and one respondent per participant or anonymous credential in that generation. Keep the exclusive-owner checks, unique indexes, and service lookups aligned with [ADR-0005](./adr/0005-separate-live-quiz-response-identity-policies.md).
+- **Correlated credentials are active-only data**: account mappings and respondent-token hashes belong in a separate binding that is deleted only after the generation is ended and every receipt has `settledAt` set. Admission holds a shared quiz-row lock through receipt insertion; ending/finalization takes the exclusive lock before checking that predicate. Finalization keeps the minimal respondent parent for referential integrity, allocates immutable labels, deletes settled receipt metadata, removes the export salt, and is irreversible ([ADR-0006](./adr/0006-finalize-correlated-identities-after-settlement.md)). Implement this as expand-contract across releases; do not drop the existing owner relation while old code can still write it.
 
 ## Adjacent: export package (`packages/export`)
 

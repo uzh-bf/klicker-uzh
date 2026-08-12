@@ -1,8 +1,7 @@
-# Correlated Live Quiz Response Boundary
+# 7. Separate aggregate, correlated, and assessment response boundaries
 
-## Status
-
-Accepted
+- **Status:** Accepted — 2026-08-11
+- **Context:** [PR #5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
 
 ## Context
 
@@ -17,3 +16,5 @@ Correlated publication is disabled by default during the first deployment phase.
 ## Consequences
 
 Aggregate and correlated live quizzes cannot share one persistence path, and correlated mode remains incompatible with gamification because leaderboard state can reidentify response rows. Assessment continues to require identifiable tracing. The v3.5 correlated teaching export excludes free-text answers; differential privacy and broader PII controls remain future research-export work.
+
+The mode-specific owner model and post-settlement minimization boundary are defined in [ADR-0005](./0005-separate-live-quiz-response-identity-policies.md) and [ADR-0006](./0006-finalize-correlated-identities-after-settlement.md).

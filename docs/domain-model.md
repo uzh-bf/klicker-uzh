@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-11'
+timestamp: '2026-08-12'
 tags:
   - backend
   - prisma
@@ -61,10 +61,12 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ### LiveQuiz response collection
 
-`LiveQuiz.responseCollectionMode` defaults to `AGGREGATED_ANONYMOUS`. `CORRELATED_EXPORT` stores quiz-scoped respondent identity in `LiveQuizRespondent` and is designed for stable pseudonymous export labels; it does not expose account identifiers. The boundary and rollout contract are recorded in [ADR-0001](./adr/0001-correlated-live-quiz-response-boundary.md).
+`LiveQuiz.responseCollectionMode` defaults to `AGGREGATED_ANONYMOUS`. The response owner is mode-specific: aggregate standard quizzes store no individual response rows, assessments retain `Participant` ownership, and `CORRELATED_EXPORT` uses a generation-scoped `LiveQuizRespondent` for logged-in and anonymous respondents alike. `TemporaryLeaderboardEntry` remains a separate gamification projection. The boundary and rollout contract are recorded in [ADR-0007](./adr/0007-correlated-live-quiz-response-boundary.md); ownership and minimization are recorded in [ADR-0005](./adr/0005-separate-live-quiz-response-identity-policies.md) and [ADR-0006](./adr/0006-finalize-correlated-identities-after-settlement.md).
 
 - Assessment courses always store `AGGREGATED_ANONYMOUS` response-collection mode; assessment-specific response handling remains identifiable through its separate assessment path.
 - Correlated collection is incompatible with gamification because leaderboard state could re-identify respondents.
+- While a correlated quiz generation accepts responses, a separate active binding maps each respondent to either a participant account or a hashed anonymous credential, with generation-scoped uniqueness in both directions. Once the generation has ended and every admitted response has settled, that binding and the settled receipt metadata are destroyed while the minimal respondent key, immutable export label, and retained response rows remain for the finite export-retention period.
+- Identity finalization is irreversible. Another run increments `publicationGeneration` and creates a fresh respondent namespace, export salt, bindings, receipts, and labels.
 - Response mode changes are editable only while a quiz is `DRAFT` or `SCHEDULED`; published or ended quizzes are locked.
 - Manual and scheduled publication share `packages/graphql/src/services/liveQuizPublication.ts:transitionLiveQuizToPublished`. Correlated publication remains blocked unless `LIVE_QUIZ_CORRELATED_RESPONSES_ENABLED` is explicitly enabled for that deployment.
 

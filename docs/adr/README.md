@@ -13,3 +13,6 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
+- [0005](./0005-separate-live-quiz-response-identity-policies.md) — Use mode-specific durable owners for assessment and correlated responses
+- [0006](./0006-finalize-correlated-identities-after-settlement.md) — Destroy correlated identity bindings after response settlement
+- [0007](./0007-correlated-live-quiz-response-boundary.md) — Separate aggregate, correlated, and assessment live-quiz response boundaries
