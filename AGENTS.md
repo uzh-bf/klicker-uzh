@@ -158,26 +158,29 @@ the Azure-specific chatbot disclaimer does not describe this local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
-the request and chooses the configured target in `util/litellm/config.yaml`:
-simple/default requests use `gpt-5.6-luna` with medium effort,
-medium/complex requests use Luna with xhigh effort, and reasoning requests use
-`gpt-5.6-sol` with low effort. LiteLLM then forwards that target through
-OpenRouter's OpenAI-compatible endpoint; OpenRouter supplies the selected model
-but does not perform the classification. LiteLLM falls back from the Sol target
-to `gpt-5.1` on an upstream failure. Separately, when Chat credits reach zero,
-Chat selects `gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+the request with the current Auto V2 policy in `util/litellm/config.yaml`.
+Classification uses Luna low; semantic corpus matching uses
+`openai/text-embedding-3-small`; SIMPLE, MEDIUM, and COMPLEX route to Luna
+medium, high, and xhigh; REASONING routes to Sol medium. LiteLLM then forwards
+all three request types through OpenRouter's OpenAI-compatible endpoint;
+OpenRouter supplies the selected models but does not make the routing decision.
+This adds one classifier request and, for semantic matching, one embedding
+request to the same external OpenRouter data boundary. It therefore adds local
+latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
+upstream failure. Separately, when Chat credits reach zero, Chat selects
+`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
 its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
-`/tmp/local-mcp.log`. Select the direct `GPT-5.6 Luna` model, then test the
-complete path in Chat with: “Use the local MCP tool to test the integration.
+`/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
+Chat with: “Use the local MCP tool to test the integration.
 Search for `portfolio diversification` and tell me the exact marker it
 returns.” A successful turn calls `KB_doc_query` and shows
-`KLICKER_LOCAL_MCP_OK` plus the synthetic source card. Local Auto Mode currently
-completes and renders the tool result but OpenRouter returns an empty follow-up
-assistant step, so use the direct model when the final marker text is part of
-the test.
+`KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
+card. Reload the thread and require the tool result, answer, and source to
+remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+router from the model/tool integration.
 
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 

@@ -85,24 +85,31 @@ Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
 
-The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
-**not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
-its own tier assignment, and the generic
+The local devcontainer simulation in `util/litellm/config.yaml` mirrors the
+deployed Klicker Auto V2 policy and semantic corpus with local, unprefixed model
+aliases: Luna medium/high/xhigh for SIMPLE/MEDIUM/COMPLEX and Sol medium for
+REASONING. It deliberately retains the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
-production Azure URLs or secret names. Local Auto Mode behaviour is therefore
-evidence about the wiring only, never about production routing. The local chat
-registry maps the user-facing `auto` model id to the `auto-router`
-LiteLLM deployment and exposes `gpt-5.6-luna` for a direct comparison. The
-seeded Benibot fixture allow-lists all three of `auto`, `gpt-5.6-luna` and
-`gpt-4.1-mini` explicitly, so it satisfies the fallback invariant below without
-relying on the `|| m.fallback` exemption that the runtime filters apply anyway.
+production Azure URLs, model prefixes, secrets, or failover topology. Local
+Auto Mode is therefore evidence about the wiring and policy simulation, never
+live production routing. The local chat registry maps the user-facing `auto`
+model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
+a direct comparison. The seeded Benibot fixture allow-lists all three of
+`auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
+fallback invariant below without relying on the `|| m.fallback` exemption that
+the runtime filters apply anyway.
 
-The local LiteLLM service uses the deployed semantic-router-compatible image
-`ghcr.io/berriai/litellm-database:v1.88.1`, has a healthcheck, and is included
-in `.devcontainer/devcontainer.json:runServices`. A model call still requires
-the operator's local `UPSTREAM_OPENAI_API_KEY`; without it, verify service
-health, model exposure, picker state, and request error handling, but do not
-claim an end-to-end answer stream.
+The local LiteLLM service pins
+`ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
+has a healthcheck, and is included in
+`.devcontainer/devcontainer.json:runServices`. Auto V2 uses Luna low for its LLM
+classifier and `openai/text-embedding-3-small` for semantic corpus matching,
+then invokes the selected answer model. With an OpenRouter upstream, all of
+those requests cross the same external provider boundary and add latency and
+usage cost. A model call still requires the operator's local
+`UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
+picker state, and request error handling, but do not claim an end-to-end answer
+stream.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.

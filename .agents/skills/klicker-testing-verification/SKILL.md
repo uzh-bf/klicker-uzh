@@ -57,20 +57,22 @@ CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
 separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
 chat credits payload before browser interaction. The local Auto Mode maps to
-LiteLLM's `complexity-router` and routes through the GPT-5.6 Luna/Sol aliases —
-a local-only tier map that the deployments do not ship, so never report local
-routing as production behaviour ([docs/chat-platform.md](../../../docs/chat-platform.md)).
+LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
+probes, then inspect logs for the expected `semantic_keyword_match` or
+`llm_classifier` cause and routed model. A successful answer after a classifier
+or embedding failure is only heuristic fallback and does not prove Auto V2.
+The local aliases and generic upstream differ from deployment infrastructure,
+so never report local routing as live production behaviour
+([docs/chat-platform.md](../../../docs/chat-platform.md)).
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
 For the seeded local MCP smoke test, verify
-`http://localhost:1417/health`, select the direct `GPT-5.6 Luna` model in
-Benibot, and send the prompt recorded in `AGENTS.md`. Require a completed
+`http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
+the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
-card both before and after reloading the thread. Auto Mode currently proves
-tool discovery, invocation, persistence, and rendering locally, but its
-OpenRouter follow-up step can be empty after a tool result; do not use that
-path as proof of final-answer synthesis.
+card in a non-empty final answer both before and after reloading the thread.
+Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
 ## Pre-PR verification checklist
 

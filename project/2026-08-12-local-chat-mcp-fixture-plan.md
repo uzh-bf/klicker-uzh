@@ -111,7 +111,15 @@
   and one low history-ordering finding. Both were fixed before publication:
   the fixture source hash now forces managed replacement, and this clean stack
   commits the reviewed plan first.
-- Auto V2 implementation: pending.
+- Auto V2 implementation: complete locally. LiteLLM 1.96.2 runs from the pinned
+  multi-platform digest and exposes every classifier, embedding, and tier alias.
+- Auto V2 verification: direct target calls and the 1,536-dimension embedding
+  call passed. Runtime logs proved semantic SIMPLE -> Luna medium, COMPLEX ->
+  Luna xhigh, REASONING -> Sol medium, and LLM-classified MEDIUM -> Luna high,
+  with no classifier, embedding, or heuristic-fallback warning. In the real
+  Browser, Auto called `KB_doc_query`, rendered a non-empty answer containing
+  `KLICKER_LOCAL_MCP_OK` and the source card, and preserved all three after
+  reload.
 - Auto V2 simplifier and intermediate review: pending; both run in parallel on
   the immutable implementation range because model routing is a cross-system
   seam.
