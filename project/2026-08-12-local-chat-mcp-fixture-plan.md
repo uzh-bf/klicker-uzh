@@ -7,7 +7,9 @@
   starts nothing there.
 - Decision: Add one deterministic, read-only MCP fixture to the existing Chat
   package and start it inside the app container. Keep the existing seeded URL,
-  add no dependency, and make no production configuration change.
+  add no dependency, and make no production configuration change. Complete the
+  same local test package by upgrading its LiteLLM simulation to the current
+  Auto V2 router used for Klicker in the AI deployment repository.
 - Package: Full-path stacked package on `rs/chat-local-mcp-fixture-clean`, based
   on `rs/chat-ux-conversation-polish` while draft PR #5363 remains open.
 
@@ -17,6 +19,10 @@
 - Accepted: start and health-check MCP before Chat; add read-only annotations;
   keep this package separate from PR #5363; document the direct-model smoke
   test and Auto Mode limitation.
+- Follow-up review: the widened Auto V2 slice received a planning-stage review
+  on 2026-08-12. The correction pass approved the explicit target mapping,
+  fallback, fail-closed routing matrix, OpenRouter trust boundary, and browser
+  completion gate.
 
 ## Slice: Local MCP tracer bullet
 
@@ -48,11 +54,51 @@
     claiming final synthesis when its second step is empty.
 - Commit: `chore(chat): add local MCP test fixture`.
 
+## Slice: Local Auto V2 routing
+
+- Route: main.
+- Budget skip reason: critical-path coupling across LiteLLM configuration,
+  OpenRouter model capabilities, the live Chat tool loop, and runtime log
+  evidence.
+- Test obligation: no new automated test. Configuration validation, controlled
+  runtime routing probes, and the real Browser tool journey exercise the
+  consequential seams without adding a mock of LiteLLM internals.
+- Do:
+  - Pin
+    `ghcr.io/berriai/litellm-database:v1.96.2@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836`.
+  - Mirror the deployed Klicker Auto V2 policy through the local generic
+    OpenRouter boundary: Luna low classifier, Luna medium/high/xhigh for
+    SIMPLE/MEDIUM/COMPLEX, Sol medium for REASONING, and
+    `openai/text-embedding-3-small` for semantic matching.
+  - Set `session_affinity: false`, `adaptive: false`, no escalation keywords,
+    a four-second classifier timeout, semantic keyword matching with threshold
+    `0.55`, and the exact deployed Klicker SIMPLE/COMPLEX/REASONING corpus.
+  - Keep Auto on Chat Completions, retain the existing generic upstream
+    credential boundary, and retarget the local Sol fallback from the removed
+    low-effort alias to Sol medium -> GPT-5.1.
+  - Document the extra classifier and embedding requests, latency/cost, and
+    OpenRouter data boundary in the runbook, devcontainer docs, wiki, testing
+    guidance, and this package's existing change log.
+- Check:
+  - Resolve the pinned image for the host architecture and validate Compose,
+    YAML, formatting, wiki, agent instructions, and secret hygiene.
+  - Call the embedding alias and every Luna/Sol target alias directly with its
+    configured effort.
+  - Send exact SIMPLE, COMPLEX, and REASONING corpus prompts and require
+    `cause=semantic_keyword_match` with the expected target in LiteLLM logs.
+  - Send a non-corpus prompt and require `cause=llm_classifier` with the
+    expected tier. Classifier or embedding failure, heuristic fallback, or a
+    mismatched model fails this gate even if an answer is returned.
+  - Browser: Auto invokes `KB_doc_query`, renders a non-empty final answer and
+    source, and preserves the tool result, answer, and source after reload. An
+    empty post-tool step fails the package.
+- Commit: `chore(chat): align local Auto Mode routing`.
+
 ## Progress
 
 - Planning-stage review: done.
-- Implementation: complete locally.
-- Verification: protocol, managed lifecycle, Chat suite, root checks, build,
+- MCP implementation: complete locally.
+- MCP verification: protocol, managed lifecycle, Chat suite, root checks, build,
   direct-model browser path, Auto Mode behavior, and reload persistence passed
   or were characterized as described above.
 - Plan commit: `939ec6dd7`.
@@ -65,4 +111,10 @@
   and one low history-ordering finding. Both were fixed before publication:
   the fixture source hash now forces managed replacement, and this clean stack
   commits the reviewed plan first.
-- Remaining: final verification readback and publication only when requested.
+- Auto V2 implementation: pending.
+- Auto V2 simplifier and intermediate review: pending; both run in parallel on
+  the immutable implementation range because model routing is a cross-system
+  seam.
+- Integrated final review: reopened for the widened exact branch head.
+- Remaining: implement and verify Auto V2, complete its reviews, then stop
+  before push or PR update unless separately authorized.
