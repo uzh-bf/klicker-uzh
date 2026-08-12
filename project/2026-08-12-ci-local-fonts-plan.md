@@ -91,5 +91,7 @@ promote the failed alpha.68 commit.
 - 2026-08-13: Node 24 shared-components check and all five affected production
   builds pass. The PWA Docker installer-stage build also passes after Turbo
   pruning, proving the local assets survive the image path.
-- Current: commit Slice 1, run its simplifier, then document and browser-verify
-  the local-font build contract.
+- 2026-08-13: Slice 1 committed as `b93214ce0`; frontend wiki and agent guidance
+  now record the local-font build contract.
+- Current: finish the Slice 1 simplifier, validate the wiki, browser-verify all
+  five apps, and run the integrated final review.
