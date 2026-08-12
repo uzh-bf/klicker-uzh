@@ -141,5 +141,6 @@ model AssessmentAuditOutboxEvent {
   @@index([deliveryState, nextAttemptAt, recordedAt])
   @@index([deliveryState, leaseExpiresAt])
   @@index([liveQuizId, lifecycleEpoch, recordedAt, eventId])
+  @@index([liveQuizId, correlationId, eventType], map: "AuditOutbox_quiz_correlation_event_idx")
   @@index([deliveryState, deliveredAt])
 }

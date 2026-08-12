@@ -115,7 +115,9 @@ export function validateStudentResponse({
     | 'CONTENT'
   response: LiveQuizResponseInput
   restrictions?: NumericalRestrictions | FreeTextRestrictions
-}): { valid: boolean; message?: string } {
+}):
+  | { valid: true; reasonCode?: never; message?: never }
+  | { valid: false; reasonCode: string; message: string } {
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     // response should be of format { ix: number, selected: boolean | undefined }[]
     if (
@@ -129,7 +131,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
+        reasonCode: 'CHOICES_FORMAT_INVALID',
+        message: 'Invalid response submitted for choices question',
       }
     }
 
@@ -140,7 +143,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for single choice question ${JSON.stringify(response)}`,
+        reasonCode: 'SINGLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for single choice question',
       }
     }
 
@@ -151,7 +155,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for multiple choice question ${JSON.stringify(response)}`,
+        reasonCode: 'MULTIPLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for multiple choice question',
       }
     }
 
@@ -159,7 +164,8 @@ export function validateStudentResponse({
     if (type === 'KPRIM' && response.choices.length !== 4) {
       return {
         valid: false,
-        message: `Invalid response submitted for KPRIM question ${JSON.stringify(response)}`,
+        reasonCode: 'KPRIM_CHOICE_COUNT_INVALID',
+        message: 'Invalid response submitted for KPRIM question',
       }
     }
 
@@ -174,7 +180,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for numerical question ${JSON.stringify(response)}`,
+        reasonCode: 'NUMERICAL_FORMAT_INVALID',
+        message: 'Invalid response submitted for numerical question',
       }
     }
 
@@ -191,7 +198,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Numerical response ${parsedResponse} out of bounds for numerical question with restrictions ${JSON.stringify(restrictions)}`,
+        reasonCode: 'NUMERICAL_OUT_OF_BOUNDS',
+        message: 'Numerical response is outside the allowed bounds',
       }
     }
 
@@ -201,7 +209,8 @@ export function validateStudentResponse({
     if (!response.value || typeof response.value !== 'string') {
       return {
         valid: false,
-        message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
+        reasonCode: 'FREE_TEXT_FORMAT_INVALID',
+        message: 'Invalid response submitted for free text question',
       }
     }
 
@@ -215,6 +224,7 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
+        reasonCode: 'FREE_TEXT_TOO_LONG',
         message: `Free text response exceeds maximum length of ${restrictions.maxLength} characters for free text question`,
       }
     }
@@ -233,7 +243,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+        reasonCode: 'SELECTION_FORMAT_INVALID',
+        message: 'Invalid response submitted for selection question',
       }
     }
 
@@ -261,7 +272,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        reasonCode: 'CASE_STUDY_FORMAT_INVALID',
+        message: 'Invalid response submitted for case study question',
       }
     }
 
@@ -271,7 +283,8 @@ export function validateStudentResponse({
     if (!response.viewed) {
       return {
         valid: false,
-        message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
+        reasonCode: 'CONTENT_RESPONSE_INVALID',
+        message: 'Invalid response submitted for content question',
       }
     }
 
@@ -280,7 +293,8 @@ export function validateStudentResponse({
 
   return {
     valid: false,
-    message: `Provided invalid question type in answer submission: ${type}`,
+    reasonCode: 'ELEMENT_TYPE_UNSUPPORTED',
+    message: 'Provided invalid question type in answer submission',
   }
 }
 

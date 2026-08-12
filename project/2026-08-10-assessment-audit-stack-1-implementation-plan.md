@@ -735,6 +735,9 @@ Branch: `feat/assessment-audit-submissions`, stacked on layer 4.
   `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts`,
   processor error handling, and tests.
 - Modify the existing assessment command types in `packages/types/src/hatchet.ts`.
+- Add the optional unique `LiveQuizResponse.submissionId` UUID and its
+  expand-contract migration so authoritative retries can be distinguished from
+  new duplicate commands.
 - Add focused Vitest configuration and `test` scripts to the Response API and
   response-processor packages; do not rely on untestable worker entry points.
 - Add the minimal stable submission ID/retry behavior to
