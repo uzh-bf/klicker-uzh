@@ -255,7 +255,7 @@ describe('standard live quiz response handlers', () => {
     const result = await handleCorrelatedResponse({
       request: {
         ...request,
-        cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${token}`,
+        respondentToken: token,
       },
       instanceInfo: {
         type: 'SC',

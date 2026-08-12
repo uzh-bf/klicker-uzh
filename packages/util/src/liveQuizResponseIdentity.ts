@@ -102,11 +102,13 @@ export async function resolveLiveQuizResponseIdentity({
   liveQuizId,
   secret,
   issuer,
+  respondentToken,
 }: {
   cookieHeader: string | undefined
   liveQuizId: string
   secret: string
   issuer: string
+  respondentToken?: string
 }): Promise<LiveQuizResponseIdentity | null> {
   const cookies = parseCookiesHeader(cookieHeader)
 
@@ -152,15 +154,15 @@ export async function resolveLiveQuizResponseIdentity({
   }
 
   const respondentCookieName = getLiveQuizRespondentCookieName(liveQuizId)
-  const respondentToken = cookies[respondentCookieName]
+  const respondentCookieToken = cookies[respondentCookieName]
   const respondentPayload = await verifyIdentityToken({
-    token: respondentToken,
+    token: respondentCookieToken,
     secret,
     issuer,
   })
   const publicationGeneration = respondentPayload?.publicationGeneration
   if (
-    respondentToken &&
+    respondentCookieToken &&
     respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
     respondentPayload.liveQuizId === liveQuizId &&
     typeof publicationGeneration === 'number' &&
@@ -173,6 +175,32 @@ export async function resolveLiveQuizResponseIdentity({
       id: respondentPayload.sub,
       liveQuizId,
       publicationGeneration,
+      token: respondentCookieToken,
+      cookieName: respondentCookieName,
+    }
+  }
+
+  const explicitRespondentPayload = await verifyIdentityToken({
+    token: respondentToken,
+    secret,
+    issuer,
+  })
+  const explicitPublicationGeneration =
+    explicitRespondentPayload?.publicationGeneration
+  if (
+    respondentToken &&
+    explicitRespondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
+    explicitRespondentPayload.liveQuizId === liveQuizId &&
+    typeof explicitPublicationGeneration === 'number' &&
+    Number.isInteger(explicitPublicationGeneration) &&
+    explicitPublicationGeneration >= 0 &&
+    typeof explicitRespondentPayload.sub === 'string'
+  ) {
+    return {
+      kind: 'anonymous',
+      id: explicitRespondentPayload.sub,
+      liveQuizId,
+      publicationGeneration: explicitPublicationGeneration,
       token: respondentToken,
       cookieName: respondentCookieName,
     }
