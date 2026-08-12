@@ -21,8 +21,11 @@ student answer → apps/response-api (HTTP) → Hatchet event
                                               ↓
         apps/hatchet-worker-general (aggregation + scheduled jobs)
 
-PostgreSQL audit outbox → dedicated general-worker image / audit identity
+PostgreSQL audit outbox → dispatcher deployment / Table identity
                          → append-only Azure Table Storage
+
+active audit scopes → media-policy deployment / Blob identity
+                    → extend locked immutable-media versions
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
@@ -70,18 +73,30 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
 The same image runs as a separate `assessment-audit-worker` deployment when
-`ASSESSMENT_AUDIT_WORKER_ENABLED=true`, with an explicit workflow selection:
+`ASSESSMENT_AUDIT_WORKER_ENABLED=true`. It has the `dispatcher` identity class
+and an exact workflow selection:
 
 - `dispatchAssessmentAuditOutbox` — every minute; leases canonical outbox rows,
   delivers create-only Azure Table entities, and records retry/quarantine state.
 - `monitorAssessmentAudit` — every minute; emits a metadata-only health snapshot
   and fails the Hatchet run on critical thresholds.
 
-That deployment uses a Pulumi-owned service account and Azure workload identity;
-the ordinary general worker has no audit-storage permission. Its `/healthz` and
-`/metrics` listener is enabled only when `ASSESSMENT_AUDIT_METRICS_PORT` is set.
-Chart resources stay disabled until staging endpoints, identity, permission
-matrix, ServiceMonitor, PrometheusRule, and owner-only alert routing are proven.
+A second `assessment-audit-media-policy-worker` deployment uses the
+`media-policy` identity class and exact selection:
+
+- `renewAssessmentAuditMediaPolicies` — daily at 01:17 UTC; streams immutable
+  media references for active covered scopes and extends, but never shortens,
+  each locked version-level retention policy.
+
+The GraphQL backend separately uses a Blob-only workload identity to capture
+owned assessment media during baseline activation. Each deployment uses its own
+Pulumi-owned service account and Azure workload identity; the ordinary general
+worker has no audit-storage permission. A privileged worker refuses task keys
+outside its identity class at startup. `/healthz` and `/metrics` are enabled only
+when `ASSESSMENT_AUDIT_METRICS_PORT` is set, and every audit metric carries
+`environment` and `role` labels. Chart resources stay disabled until staging
+endpoints, all three identities, the permission matrix, both `ServiceMonitor`
+targets, `PrometheusRule`, and owner-only alert routing are proven.
 
 ## Running locally (config-derived — verify on your machine)
 

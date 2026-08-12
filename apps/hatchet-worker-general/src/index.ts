@@ -17,12 +17,34 @@ const HATCHET_WORKER_NAME =
 function selectWorkflows(workflows: PreparedHatchetTasks) {
   // Select which workflows to load using an env var and keep it type-safe.
   // Privileged audit workflows require an explicit dedicated-worker opt-in.
-  const auditWorkflowKeys = new Set<keyof PreparedHatchetTasks>([
-    'dispatchAssessmentAuditOutbox',
-    'monitorAssessmentAudit',
-  ])
   const auditWorkerEnabled =
     process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
+  const auditWorkerRole = process.env.ASSESSMENT_AUDIT_WORKER_ROLE
+  const auditWorkflowKeysByRole = {
+    dispatcher: new Set<keyof PreparedHatchetTasks>([
+      'dispatchAssessmentAuditOutbox',
+      'monitorAssessmentAudit',
+    ]),
+    'media-policy': new Set<keyof PreparedHatchetTasks>([
+      'renewAssessmentAuditMediaPolicies',
+    ]),
+  } as const
+  if (
+    auditWorkerEnabled &&
+    (auditWorkerRole === undefined ||
+      !(auditWorkerRole in auditWorkflowKeysByRole))
+  ) {
+    throw new Error('ASSESSMENT_AUDIT_WORKER_ROLE is invalid')
+  }
+  const auditWorkflowKeys = auditWorkerEnabled
+    ? auditWorkflowKeysByRole[
+        auditWorkerRole as keyof typeof auditWorkflowKeysByRole
+      ]
+    : new Set<keyof PreparedHatchetTasks>([
+        'dispatchAssessmentAuditOutbox',
+        'monitorAssessmentAudit',
+        'renewAssessmentAuditMediaPolicies',
+      ])
   const allowedWorkflowKeys = new Set(
     (Object.keys(workflows) as Array<keyof PreparedHatchetTasks>).filter(
       (key) =>
@@ -112,6 +134,7 @@ function startAuditMetricsServer(): void {
     throw new Error('ASSESSMENT_AUDIT_METRICS_PORT must be a valid port')
   }
   const environment = process.env.ASSESSMENT_AUDIT_ENVIRONMENT ?? 'unknown'
+  const role = process.env.ASSESSMENT_AUDIT_WORKER_ROLE ?? 'general'
   const server = createServer((request, response) => {
     if (request.url === '/healthz') {
       response.writeHead(200, { 'content-type': 'text/plain' })
@@ -122,7 +145,7 @@ function startAuditMetricsServer(): void {
       response.writeHead(200, {
         'content-type': 'text/plain; version=0.0.4; charset=utf-8',
       })
-      response.end(renderAssessmentAuditPrometheusMetrics(environment))
+      response.end(renderAssessmentAuditPrometheusMetrics(environment, role))
       return
     }
     response.writeHead(404, { 'content-type': 'text/plain' })

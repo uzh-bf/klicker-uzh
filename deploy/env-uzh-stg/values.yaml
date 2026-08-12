@@ -109,15 +109,25 @@ assessmentAudit:
   enabled: false
   environment: stg
   rollout: disabled
+  pilotLiveQuizIds: ''
   # Supplied from the df-cloud Pulumi stack only after staging validation.
   tableEndpoint: ''
   blobEndpoint: ''
+  backendMedia:
+    serviceAccountName: ''
   worker:
     serviceAccountName: ''
     priorityClassName: staging-workload
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
+      tag: v3
+  mediaPolicyWorker:
+    serviceAccountName: ''
+    priorityClassName: staging-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
+      pullPolicy: IfNotPresent
       tag: v3
   monitoring:
     enabled: false

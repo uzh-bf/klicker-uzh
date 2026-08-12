@@ -76,11 +76,11 @@ export function compareAssessmentBaselineParts(
 }
 
 export function aggregateAssessmentBaselineParts(
-  parts: Iterable<Pick<BaselinePartPayload, 'partKey' | 'contentHash'>>
+  parts: Iterable<BaselinePartPayload>
 ): string {
   const hash = createHash('sha256')
   for (const part of parts) {
-    hash.update(canonicalizeJson([part.partKey, part.contentHash]))
+    hash.update(canonicalizeJson([part.partKey, hashCanonicalValue(part)]))
     hash.update('\n')
   }
   return hash.digest('hex')

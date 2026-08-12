@@ -38,6 +38,19 @@ function canonicalMediaUrl(value: string): string | null {
   }
 }
 
+export function extractBaselineMediaUrls(
+  markdown: readonly string[]
+): string[] {
+  const urls = new Set<string>()
+  for (const value of markdown) {
+    for (const match of value.matchAll(HTTPS_URL_PATTERN)) {
+      const sourceUrl = canonicalMediaUrl(match[0])
+      if (sourceUrl !== null) urls.add(sourceUrl)
+    }
+  }
+  return [...urls].sort()
+}
+
 export function discoverBaselineMediaReferences(input: {
   markdown: readonly string[]
   knownMedia: readonly KnownKlickerMedia[]
@@ -61,31 +74,24 @@ export function discoverBaselineMediaReferences(input: {
     Extract<AssessmentBaselineContent, { kind: 'LIMITATION' }>
   >()
 
-  for (const markdown of input.markdown) {
-    for (const match of markdown.matchAll(HTTPS_URL_PATTERN)) {
-      const rawUrl = match[0]
-      const sourceUrl = canonicalMediaUrl(rawUrl)
-      if (sourceUrl === null) {
-        continue
-      }
-      const known = knownByUrl.get(sourceUrl)
-      if (known !== undefined) {
-        ownedById.set(known.id, {
-          mediaId: known.id,
-          sourceUrl,
-          mimeType: known.mimeType,
-        })
-        continue
-      }
-
-      const subjectId = sha256Hex(sourceUrl)
-      limitationsBySubject.set(subjectId, {
-        kind: 'LIMITATION',
-        subjectType: 'EXTERNAL_MEDIA',
-        subjectId,
-        reasonCode: 'EXTERNAL_MEDIA_NOT_CAPTURED',
+  for (const sourceUrl of extractBaselineMediaUrls(input.markdown)) {
+    const known = knownByUrl.get(sourceUrl)
+    if (known !== undefined) {
+      ownedById.set(known.id, {
+        mediaId: known.id,
+        sourceUrl,
+        mimeType: known.mimeType,
       })
+      continue
     }
+
+    const subjectId = sha256Hex(sourceUrl)
+    limitationsBySubject.set(subjectId, {
+      kind: 'LIMITATION',
+      subjectType: 'EXTERNAL_MEDIA',
+      subjectId,
+      reasonCode: 'EXTERNAL_MEDIA_NOT_CAPTURED',
+    })
   }
 
   return {

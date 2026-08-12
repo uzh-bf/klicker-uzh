@@ -76,7 +76,20 @@ export async function captureAssessmentMedia(input: {
       for await (const value of source.body) {
         const chunk = Buffer.from(value)
         if (chunk.byteLength === 0) continue
-        await file.write(chunk)
+        let offset = 0
+        while (offset < chunk.byteLength) {
+          const { bytesWritten } = await file.write(
+            chunk,
+            offset,
+            chunk.byteLength - offset
+          )
+          if (bytesWritten === 0) {
+            throw new Error(
+              'Klicker media capture could not write source bytes'
+            )
+          }
+          offset += bytesWritten
+        }
         hash.update(chunk)
         byteLength += chunk.byteLength
       }
