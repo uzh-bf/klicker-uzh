@@ -1,6 +1,9 @@
+import { prisma } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
-import { describe, expect, it, vi } from 'vitest'
+import { v4 as uuid } from 'uuid'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { transitionLiveQuizToPublished } from '../src/services/liveQuizPublication.js'
+import { getDatabaseUrl } from './helpers.js'
 
 function makePrisma({
   sourceStatus,
@@ -139,5 +142,91 @@ describe('live quiz publication gate', () => {
       true,
     ])
     expect(fake.update).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('live quiz publication database lock', () => {
+  const clients: DB.PrismaClient[] = []
+  let liveQuizId: string | undefined
+  let ownerId: string | undefined
+
+  beforeAll(async () => {
+    getDatabaseUrl()
+    clients.push(prisma, prisma, prisma)
+
+    ownerId = uuid()
+    await clients[0]!.user.create({
+      data: {
+        id: ownerId,
+        email: `${ownerId}@example.com`,
+        shortname: ownerId,
+      },
+    })
+    const liveQuiz = await clients[0]!.liveQuiz.create({
+      data: {
+        name: `publication-lock-${ownerId}`,
+        displayName: `publication-lock-${ownerId}`,
+        ownerId,
+        responseCollectionMode:
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        exportSalt: 'test-export-salt',
+      },
+    })
+    liveQuizId = liveQuiz.id
+  })
+
+  afterAll(async () => {
+    if (liveQuizId) {
+      await clients[0]?.liveQuiz.delete({ where: { id: liveQuizId } })
+    }
+    if (ownerId) {
+      await clients[0]?.user.delete({ where: { id: ownerId } })
+    }
+    await clients[0]?.$disconnect()
+  })
+
+  it('serializes concurrent publication behind the database row lock', async () => {
+    let holderReadyResolve!: () => void
+    const holderReady = new Promise<void>((resolve) => {
+      holderReadyResolve = resolve
+    })
+    const holder = clients[0]!.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id"
+        FROM "public"."LiveQuiz"
+        WHERE "id" = ${liveQuizId}::uuid
+        FOR UPDATE
+      `
+      holderReadyResolve()
+      await transaction.$queryRaw`SELECT 1 FROM pg_sleep(0.5)`
+    })
+
+    await holderReady
+    const results = await Promise.all([
+      transitionLiveQuizToPublished({
+        prisma: clients[1]!,
+        liveQuizId: liveQuizId!,
+        source: 'manual',
+        correlatedResponsesEnabled: true,
+      }),
+      transitionLiveQuizToPublished({
+        prisma: clients[2]!,
+        liveQuizId: liveQuizId!,
+        source: 'manual',
+        correlatedResponsesEnabled: true,
+      }),
+    ])
+    await holder
+
+    expect(results.map((result) => result?.didStart).sort()).toEqual([
+      false,
+      true,
+    ])
+    await expect(
+      clients[0]!.liveQuiz.findUniqueOrThrow({
+        where: { id: liveQuizId },
+        select: { status: true },
+      })
+    ).resolves.toEqual({ status: DB.PublicationStatus.PUBLISHED })
   })
 })

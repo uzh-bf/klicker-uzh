@@ -798,7 +798,7 @@ export async function applyActivityBatchOperations(
 
       // if required, find a new pin code for the live quiz that is still available
       let newPinCode: string | null = null
-      if (isCourseChanged && newCourse.isAssessmentEnabled) {
+      if (isCourseChanged && targetCourse!.isAssessmentEnabled) {
         let pinValid = false
 
         for (let attempt = 0; attempt < 10; attempt++) {
