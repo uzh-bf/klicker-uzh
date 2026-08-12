@@ -8,9 +8,10 @@
 - Target: `v3`
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
 - Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- Status: Slices 1-2, the canonical `v1` conformance runner, and the
-  request-provider origin boundary are implemented, reviewed, and published
-  on current `v3` in draft PR #5126. Slices 3-6 remain pending.
+- Status: CH-P1 foundation complete in draft PR #5126. Its canonical `v1`
+  contract, default engine, authenticated generation tracer, conformance
+  runner, and provider-origin boundary are implemented, reviewed, and
+  published. CH-P2 through CH-P5 are separate follow-on packages.
 
 Current branch state:
 
@@ -115,7 +116,7 @@ Those are not required for v1. `@mastra/memory` and `@mastra/pg` are not install
 
 Future Catalyst engines may store derived memory only through an explicit, versioned, opt-in capability under opaque identifiers. That capability must define reset, export, deletion, retention, and ownership rules. It must never be implicit or hidden from `chat-api`, and it is outside v1. Prisma remains the canonical conversation record.
 
-## Goal
+## Milestone Goal
 
 Deliver one production chat path:
 
@@ -131,7 +132,14 @@ deployment-selected engine
   public default AI SDK engine OR private Catalyst Mastra engine
 ```
 
-The final public pull request must include a working default engine. A Catalyst deployment may select the private Mastra engine after it passes the same contract and browser flow.
+The complete public stack must deliver a working default engine. A Catalyst
+deployment may select the private Mastra engine after it passes the same
+contract and browser flow.
+
+PR #5126 is the inert CH-P1 foundation package. It establishes the public
+contract, default engine, and authenticated generation tracer while the old
+Next route remains active. It does not own the later conversation API,
+frontend cutover, deployment, or route-removal packages.
 
 ## Non-Goals
 
@@ -431,8 +439,18 @@ The browser never selects an engine URL. A future deployment-defined `engineProf
 - Reviewer: Codex `reviewer`, GPT-5.6 Sol at high effort, read-only on the 2026-08-10 working draft.
 - Verdict: `DONE_WITH_CONCERNS`; five findings met the reporting threshold.
 - Accepted: define the full resolved-generation and credential-mode contract, make thread creation durably idempotent with a client-generated UUID, make the public boundary ADR unconditional, and remove duplicate Slice 3 persistence/policy tests.
-- Superseded on 2026-08-11: the earlier review refined `v3-ai` into a separately bounded follow-up package. The owner has since ruled that the complete `v3-ai` roll-up will land in `v3` and become the baseline for this stack. The consolidated plan therefore requires a fresh planning-stage review before implementation resumes.
+- Historical 2026-08-11 review note: that version expected the complete
+  `v3-ai` roll-up to become this stack's baseline. The later owner ruling in
+  this plan supersedes that expectation: `v3-ai` is an independent consumer,
+  not a foundation prerequisite.
 - Earlier review verdict: the five findings in that version were resolved; one stale pre-cutover dependency sentence was removed.
+- 2026-08-13 topology review: Codex `reviewer`, GPT-5.6 Sol at high effort,
+  reviewed the three uncommitted public/private plan updates read-only. Verdict:
+  `DONE_WITH_CONCERNS`. Accepted corrections keep CH-P3 default-off with the old
+  route retained, scope the dual-path prohibition to CH-P5, preserve MCP issuer
+  ownership in the later `v3-ai` integration, and align the private manifest
+  description with the canonical public fields. No ADR conflict or missing ADR
+  was found.
 
 ## Later `v3-ai` Integration
 
@@ -454,7 +472,7 @@ This is an upstream integration gate within the public core stack, not a
 separate capability package. Updating, merging, or closing the existing
 pull requests remains separately authorized work.
 
-## Implementation Slices
+## PR #5126 Foundation Slices
 
 Each slice is one tracer bullet: minimal implementation, fastest meaningful verification, plan progress update, main-session simplification, conventional commit, accepted fixes, and verification rerun. Use a separate intermediate reviewer only for the architecture, security, data-integrity, or cross-system slices that meet the repository's risk gate.
 
@@ -521,26 +539,33 @@ Verification:
 - authenticated `chat-api` to default-engine deterministic smoke
 - full `chat-api` to default-engine OpenRouter smoke when the approved key is available
 
-### Slice 3 - Conversation And Policy Surface
+## Follow-On Public Packages
+
+Each follow-on package starts from updated `v3` after its predecessor lands.
+PR #5126 is not widened with these packages.
+
+### CH-P2 - Conversation And Policy Surface
 
 Work:
 
 - Add equivalent bootstrap, credits, thread create/list/title/delete, messages, feedback, disclaimer, and attachment endpoints to `chat-api`.
-- Leave the old Next routes and their service imports intact until Slice 4; do not move shared files in a way that breaks the temporary old path.
+- Leave the old Next routes and their service imports intact until CH-P3; do not move shared files in a way that breaks the temporary old path.
 - Move and adapt the current server services and the deep Prisma conversation module; do not recreate shipped behavior or add a generic repository interface.
 - Add participant/chatbot ownership guards, credentialed CORS, CSRF, rate limits, and request limits.
 - Preserve the existing frontend create-before-send flow, accept its canonical client-generated thread UUID, and make repeated creates replay-safe; keep message creation idempotent.
 - Preserve ordered feedback writes, sanitized persisted tool results, citation-bearing tool parts, and complete/partial assistant persistence.
 - Validate usage and compute credits from the public model registry.
-- Mint scoped MCP tokens and authorize supplied tools.
+- Retain the fail-closed no-tools seam from CH-P1. CH-P2 neither invents a
+  second server registry nor mints MCP execution tokens; the later independent
+  `v3-ai` consumer package owns tool authorization and token minting.
 
 Verification:
 
 - database integration tests for ownership, branches, attachments, ordered feedback and telemetry, and thread/message replay semantics
-- CORS, CSRF, IDOR, rate-limit, and token-scope tests
-- endpoint-policy interaction tests only where they add a distinct failure beyond Slice 2
+- CORS, CSRF, IDOR, rate-limit, and fail-closed no-tools tests
+- endpoint-policy interaction tests only where they add a distinct failure beyond CH-P1
 
-### Slice 4 - Frontend Direct Cutover
+### CH-P3 - Frontend Direct Cutover
 
 Work:
 
@@ -550,9 +575,13 @@ Work:
 - Move bootstrap, credits, feedback, and all conversation calls to direct `chat-api` requests.
 - Preserve the existing explicit `POST /threads` before the first message, extend it with the canonical client-generated thread UUID, and keep canonical user and assistant message IDs.
 - Preserve assistant-ui edit, reload, cancel, branching, reasoning, tool, citation, feedback, attachment, mode-aware starter, and mobile behavior from current `v3`.
-- Verify the complete new route while the old route still exists.
-- Delete `apps/chat/src/app/api/**` and remove obsolete server-only chat dependencies and configuration.
-- Search for and remove all legacy-backend and automatic engine-failover references while retaining the configured zero-credit model policy.
+- Verify the complete new route behind an explicit off-by-default migration
+  flag while the old route remains available.
+- Retain `apps/chat/src/app/api/**` and its server-only dependencies through
+  CH-P4 so the default-off package is safe to land and rollback remains
+  available. CH-P5 owns activation and removal.
+- Remove automatic engine-failover references while retaining the configured
+  zero-credit model policy.
 
 Verification:
 
@@ -567,7 +596,7 @@ Browser verification:
 - use `npx agent-browser`
 - capture and inspect before/after screenshots at desktop and mobile widths
 
-### Slice 5 - Deployment And Real CI Smoke
+### CH-P4 - Deployment And Real CI Smoke
 
 Work:
 
@@ -589,7 +618,15 @@ Verification:
 - deployed LiteLLM compatibility smoke when authorized access and credentials exist
 - check that logs and artifacts contain no credential or prompt leakage
 
-### Slice 6 - Finish Gates
+### CH-P5 - Activation, Cleanup, And Finish Gates
+
+Work:
+
+- Activate the direct path only after CH-P4 environment proof and explicit
+  cutover approval.
+- Remove the migration flag, `apps/chat/src/app/api/**`, obsolete server-only
+  chat dependencies and configuration, and all remaining legacy-backend
+  references after old-route traffic is verified as zero.
 
 Verification:
 
@@ -610,7 +647,9 @@ Catalyst gate:
 
 ## Cutover And Rollback
 
-Development may temporarily contain both paths only to verify the new path. The pull request must not merge with both.
+CH-P1 through CH-P4 may land with both paths because the old route stays active
+and the direct path remains default-off. CH-P5 is the final cutover package and
+must not merge with both generation paths active.
 
 Cutover:
 
@@ -621,7 +660,25 @@ Cutover:
 
 Rollback after deployment changes engine configuration or rolls back the release. It does not restore a second code path.
 
-## Merge Criteria
+## PR #5126 Merge Criteria
+
+- The ordinal `v1` package is the canonical public contract authority.
+- The public default engine and authenticated `chat-api` generation tracer
+  pass their focused Node 24 checks and black-box conformance suite.
+- The Catalyst adapter passes the same immutable public contract revision.
+- Request-scoped provider credentials are constrained by exact deployment
+  origin allowlists, and tools fail closed without their matching execution
+  token.
+- The old Next route remains active, so the package is inert and independently
+  safe to land.
+- Current-head CI, security, maintainability, and integrated review gates pass.
+  The two Playwright failures from run `31635506742` are owned by Codex task
+  `019ff782-1989-7301-9f80-5d5a505f34f6`; this package consumes that task's
+  fix and current-head readback rather than duplicating its investigation.
+- The pull request description reports the substantive package size and its
+  approved existing-tracer exception.
+
+## Milestone Completion Criteria
 
 - `apps/chat` is frontend-only for chat behavior.
 - All browser chat traffic goes directly to `apps/chat-api`.
@@ -656,8 +713,8 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Slice 1 corrective commits `b451f38ec` and `b335bacfa` passed the final exact-scope intermediate review; real OpenRouter smoke remains conditional on approved credentials and a running engine.
 - [x] Slice 2 tracer implemented locally: authenticated existing-thread Hono route, engine manifest/readiness probe, strict request/stream adaptation, explicit credential modes, current credit-aware model selection, canonical IDs and trace context, transactional final/partial persistence, and exactly-once finalization tests.
 - [x] Slice 2 focused typecheck, tests, build, and the local HTTP abort propagation spike passed on Node 22; the repository declares Node 24.
-- [x] Slice 2 architecture/data-integrity intermediate review completed cleanly on `2a276b1d18..ba6599b8d`; readiness timeout, separate-chunk terminal cancellation, and canonical assistant-ID fixes are covered. Live concurrent Prisma debit integration remains deferred to Slice 3.
-- [x] Slice 2 integrated final review passed cleanly on `2a276b1d18..ba6599b8d`; the final reviewer found no verified P0-P2 issues. The Node 22 versus Node 24 verification limitation and Slice 3 contention gate remain explicit.
+- [x] Slice 2 architecture/data-integrity intermediate review completed cleanly on `2a276b1d18..ba6599b8d`; readiness timeout, separate-chunk terminal cancellation, and canonical assistant-ID fixes are covered. Live concurrent Prisma debit integration remains deferred to CH-P2.
+- [x] Slice 2 integrated final review passed cleanly on `2a276b1d18..ba6599b8d`; the final reviewer found no verified P0-P2 issues. The Node 22 versus Node 24 verification limitation and CH-P2 contention gate remain explicit.
 - [x] Canonical `v1` contract candidate now keeps W3C trace context in HTTP
       headers, advertises provider modes and exact resource limits, enforces the
       three-image/user-only history rule, and exports a black-box HTTP
@@ -694,10 +751,19 @@ Rollback after deployment changes engine configuration or rolls back the release
       branch-relevant type, format, lint, build-and-compile, syncpack, and
       secret checks passed; two independent install jobs hit the same external
       `sharp@0.32.6` libvips download failure.
-- [ ] Slices 3-6 implemented and verified.
+- [x] Confirmed PR #5126 ends at CH-P1; full chat cutover criteria govern the
+      milestone rather than this inert foundation package.
+- [ ] Consume the Playwright correction and current-head evidence from task
+      `019ff782-1989-7301-9f80-5d5a505f34f6`, then complete Gate 3 for PR
+      #5126.
+- [ ] Land PR #5126 only after Catalyst PR #3 lands and explicit merge
+      authorization is given.
+- [ ] CH-P2 through CH-P5 implemented and verified as follow-on packages from
+      updated `v3`.
 
 ## Next Action
 
-Keep PR #5126 draft for human review. The next implementation milestone is
-Slice 3, which completes the public conversation and policy surface without
-depending on the unfinished `v3-ai` roll-up.
+Keep PR #5126 draft until the separate Playwright task supplies current-head
+green evidence. After Gate 3, land Catalyst PR #3 first and PR #5126 second,
+each only with explicit merge authorization. TU-C2 then runs before CH-P2; no
+follow-on implementation starts while either foundation remains open.
