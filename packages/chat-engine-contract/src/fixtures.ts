@@ -37,7 +37,69 @@ export const conformanceRequest: EngineChatRequest = {
   tools: [],
 }
 
+export const conformanceRequestCredentialRequest: EngineChatRequest = {
+  ...conformanceRequest,
+  requestId: 'request-credential-1',
+  generation: {
+    ...conformanceRequest.generation,
+    credentialMode: {
+      mode: 'request',
+      providerBaseUrl: 'https://provider.example.test/v1',
+    },
+  },
+}
+
+export const conformanceToolRequest: EngineChatRequest = {
+  ...conformanceRequest,
+  requestId: 'request-tool-1',
+  tools: [
+    {
+      name: 'doc_query',
+      description: 'Search approved course documents.',
+      inputSchema: {
+        type: 'object',
+        properties: { query: { type: 'string' } },
+        required: ['query'],
+      },
+      serverId: 'doc-server',
+    },
+  ],
+}
+
+export const conformanceAbortRequest: EngineChatRequest = {
+  ...conformanceRequest,
+  requestId: 'request-abort-1',
+}
+
 export const conformanceStream: EngineStreamPart[] = [
+  { type: 'start', messageId: 'assistant-1' },
+  { type: 'text-start', id: 'text-1' },
+  { type: 'text-delta', id: 'text-1', delta: 'A bond is debt.' },
+  { type: 'text-end', id: 'text-1' },
+  {
+    type: 'finish',
+    finishReason: 'stop',
+    messageMetadata: {
+      contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+      engineId: 'conformance-engine',
+      runId: 'run-1',
+      modelId: 'gpt-4.1-mini',
+      deploymentId: 'gpt-4.1-mini',
+      usage: {
+        inputTokens: 12,
+        outputTokens: 8,
+        reasoningTokens: null,
+        cacheReadTokens: null,
+        cacheWriteTokens: null,
+        totalTokens: 20,
+      },
+      reasoningContent: null,
+      aborted: false,
+    },
+  },
+]
+
+export const conformanceToolStream: EngineStreamPart[] = [
   { type: 'start', messageId: 'assistant-1' },
   { type: 'start-step' },
   {
@@ -68,7 +130,7 @@ export const conformanceStream: EngineStreamPart[] = [
     finishReason: 'stop',
     messageMetadata: {
       contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
-      engineId: 'public-ai-sdk',
+      engineId: 'conformance-engine',
       runId: 'run-1',
       modelId: 'gpt-4.1-mini',
       deploymentId: 'gpt-4.1-mini',
@@ -94,7 +156,7 @@ export const conformanceAbortStream: EngineStreamPart[] = [
     type: 'message-metadata',
     messageMetadata: {
       contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
-      engineId: 'public-ai-sdk',
+      engineId: 'conformance-engine',
       runId: 'run-1',
       modelId: 'gpt-4.1-mini',
       deploymentId: 'gpt-4.1-mini',

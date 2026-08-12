@@ -1,10 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  conformanceAbortRequest,
   conformanceAbortStream,
   conformanceManifest,
   conformanceRequest,
+  conformanceRequestCredentialRequest,
   conformanceStream,
+  conformanceToolRequest,
+  conformanceToolStream,
   engineChatRequestSchema,
   engineManifestSchema,
   engineStreamPartSchema,
@@ -13,13 +17,21 @@ import {
 } from '../src/index.js'
 
 describe('chat engine contract', () => {
-  test('accepts the conformance request and sparse tool lifecycle fixture', () => {
-    expect(engineChatRequestSchema.parse(conformanceRequest)).toEqual(
-      conformanceRequest
-    )
+  test('accepts the conformance requests and stream fixtures', () => {
+    for (const request of [
+      conformanceRequest,
+      conformanceRequestCredentialRequest,
+      conformanceToolRequest,
+      conformanceAbortRequest,
+    ]) {
+      expect(engineChatRequestSchema.parse(request)).toEqual(request)
+    }
     expect(
       conformanceStream.map((part) => parseEngineStreamPart(part))
     ).toEqual(conformanceStream)
+    expect(
+      conformanceToolStream.map((part) => parseEngineStreamPart(part))
+    ).toEqual(conformanceToolStream)
     expect(
       conformanceAbortStream.map((part) => parseEngineStreamPart(part))
     ).toEqual(conformanceAbortStream)
