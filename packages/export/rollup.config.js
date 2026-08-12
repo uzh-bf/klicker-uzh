@@ -5,7 +5,7 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration (library entry)
-    input: ['src/index.ts'],
+    input: ['src/index.ts', 'src/correlatedLiveQuizResponses.ts'],
     output: {
       dir: 'dist',
       format: 'esm',

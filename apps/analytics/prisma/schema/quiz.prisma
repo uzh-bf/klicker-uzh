@@ -130,6 +130,7 @@ model LiveQuiz {
   temporaryLeaderboard TemporaryLeaderboardEntry[]
   respondents          LiveQuizRespondent[]
   respondentBindings   LiveQuizRespondentBinding[]
+  responseExportLabels LiveQuizResponseExportLabel[]
   pendingResponses     LiveQuizPendingResponse[]
 
   feedbacks          Feedback[]
