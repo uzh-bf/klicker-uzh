@@ -87,6 +87,11 @@ outbox retain scalar LiveQuiz/course/participant UUIDs without foreign keys so
 later deletion of mutable domain rows cannot erase the evidence trail. See
 [Assessment Audit Evidence](./assessment-audit-evidence.md).
 
+Assessment-mode `LiveQuizResponse` rows additionally carry the optional unique
+`submissionId` created by the PWA. This identity binds one authoritative
+response to its Hatchet command history; ordinary LiveQuiz responses and older
+rows keep it `NULL`.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

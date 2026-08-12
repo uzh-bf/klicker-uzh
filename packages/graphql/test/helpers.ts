@@ -154,20 +154,6 @@ export async function testInitialization(
       name: 'monitor-assessment-audit-test',
       fn: async () => ({ success: true }),
     }),
-    createAuditLogEntry: hatchet.task({
-      name: 'create-audit-log-entry',
-      fn: async ({
-        message,
-      }: {
-        message: Record<string, string | undefined> & {
-          correlationId?: string
-          info: string
-        }
-      }) => {
-        console.info('Audit log triggered', message)
-        return { success: true }
-      },
-    }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
       fn: async (

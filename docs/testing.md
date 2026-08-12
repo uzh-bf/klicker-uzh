@@ -20,6 +20,8 @@ tags:
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
 | Assessment audit contract and outbox                                             | package vitest — pure tests need no services; outbox integration needs disposable Postgres | `pnpm --filter @klicker-uzh/audit test`                                                                             |
+| Assessment response receipt                                                       | Response API vitest; loopback HTTP with injected JWT/Hatchet seams                         | `pnpm --filter @klicker-uzh/response-api test`                                                                      |
+| Assessment response materialization                                               | response-processor vitest; validation is service-free, atomic evidence tests need Postgres | `pnpm --filter @klicker-uzh/hatchet-worker-response-processor test`                                                 |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
 | UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
@@ -121,6 +123,10 @@ provider-level acceptance check.
   response-processor worker descendants before reporting ready. Without those
   processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
   accept answers that never reach cockpit/evaluation.
+- Assessment response materialization tests additionally prove that accepted,
+  duplicate, invalid, and failed submissions produce one terminal audit outcome
+  and that the business response and audit outbox commit atomically. Run them in
+  the self-contained DevPod for the full gate.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
 
 ## CI matrix

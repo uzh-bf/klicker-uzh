@@ -34,15 +34,20 @@ Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setu
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
+Non-assessment responses emit `response-received:authenticated|anonymous`. The
+assessment path validates a caller-generated UUID `submissionId`, the existing
+correlation JWT, and the Participant session, then emits the existing
+`response-received:assessment` command. It no longer short-circuits duplicates
+through Redis. It acknowledges only after Hatchet returns an event ID and
+returns `503` when that durable transport is unavailable. Live-quiz vs
+assessment behavior switches on `ASSESSMENT_MODE`; assessment mode has no Redis
+dependency in the response API itself.
 
-The `create-audit-log-entry` task is the pre-existing free-form audit path. It is
-not the provider-neutral assessment evidence contract or its append-only store.
-The new contract, PostgreSQL outbox, and Azure delivery path are documented in
-[Assessment Audit Evidence](./assessment-audit-evidence.md). The new dispatcher
-does not consume those legacy free-form events. Layer 4 replaces lecturer and
-system assessment uses with typed transactional evidence; Layer 5 removes the
-remaining response-pipeline uses when Hatchet submission materialization lands.
+The former `create-audit-log-entry` free-form task has been removed. Assessment
+submission evidence is now materialized from the existing Hatchet command into
+the provider-neutral PostgreSQL outbox described in
+[Assessment Audit Evidence](./assessment-audit-evidence.md).
 
 ## Worker task catalog
 
@@ -50,7 +55,8 @@ remaining response-pipeline uses when Hatchet submission materialization lands.
 
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
-- `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
+- `processAssessmentResponseWorkflow` — durable; materializes accepted,
+  validated, terminal, failure, and recovery evidence
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the

@@ -197,6 +197,17 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 ## Schema-level gotchas
 
+- **Assessment `LiveQuizResponse.submissionId` is optional but unique.** New
+  assessment submissions store the PWA-generated UUID so Hatchet retries and
+  duplicate commands can be classified durably. Existing, correction-only, and
+  non-assessment responses remain `NULL`; do not synthesize IDs for old rows.
+  Its expand migration creates the unique index concurrently so the rollout
+  does not block writes to the existing response table. Keep that migration
+  non-transactional: PostgreSQL rejects `CREATE INDEX CONCURRENTLY` inside a
+  transaction. The same migration adds the
+  `AuditOutbox_quiz_correlation_event_idx` lookup used to classify Hatchet
+  retries and duplicate submission commands without scanning a quiz's full
+  evidence history.
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
 

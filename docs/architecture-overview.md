@@ -56,8 +56,8 @@ Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — ne
 
 Student answers do not hit the GraphQL API. The path is:
 
-1. `apps/response-api` (`handleAddResponse` / `handleAddAssessmentResponse`) accepts `POST /AddResponse`, verifies/dedupes (assessment path: JWT correlation key + Redis `hget`), and emits Hatchet events `response-received:{authenticated|anonymous|assessment}`.
-2. `apps/hatchet-worker-response-processor` consumes them (`processAnonymousResponseTask`, `processAuthenticatedResponseTask`, `processAssessmentResponseWorkflow`) and re-emits aggregation events.
+1. `apps/response-api` (`createResponseServer`) accepts `POST /AddResponse`. The standard path emits `response-received:{authenticated|anonymous}`. The separate assessment-mode deployment validates the stable caller `submissionId`, correlation JWT, and Participant session; awaits `response-received:assessment` acceptance; returns the Hatchet event ID; and has no assessment-Redis dedupe dependency.
+2. `apps/hatchet-worker-response-processor` consumes those commands. For a covered assessment, `processAssessmentResponse` resolves the triggering Hatchet event, writes accepted/validated/terminal evidence to the provider-neutral outbox, and commits `LiveQuizResponse` plus persisted/scored evidence atomically before re-emitting aggregation work. Uncovered assessments skip the audit-provenance lookup and preserve the ordinary response path.
 3. `apps/hatchet-worker-general` runs aggregation plus scheduled work (publish/end scheduled activities, daily crons for group scores and random group assignments) — task definitions in `packages/hatchet/src/index.ts:prepareHatchetTasks`, handlers from `@klicker-uzh/graphql`.
 
 Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all).

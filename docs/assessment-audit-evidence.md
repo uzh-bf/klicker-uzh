@@ -21,30 +21,30 @@ and the delivery order lives in the
 ## Current implementation boundary
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
-path, Layer 3 baseline/media primitives, and the Layer 4 lecturer/system
-producer boundary. It validates and canonicalizes
-envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
+path, Layer 3 baseline/media primitives, the Layer 4 lecturer/system producer
+boundary, and Layer 5 Hatchet submission materialization. It validates and
+canonicalizes envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
 leased rows through a provider-neutral append-sink, and implements Azure Table,
 immutable-media, owner-CLI, and media-policy adapters. GraphQL owns assessment
 snapshot mapping, two-phase activation, rollout accounting, automatic
 `all`-mode creation coverage, atomic reopening, start-time readiness, and typed
 lecturer/system producer orchestration. The
 dedicated deployments remain dormant by default until their Pulumi-provisioned
-staging identities and endpoints are supplied. Hatchet submission
-materialization arrives in Layer 5; the manifest
-sealer and retention worker remain fast-follow work.
+staging identities and endpoints are supplied. The manifest sealer and
+retention worker remain fast-follow work.
 
-The older Hatchet `create-audit-log-entry` workflow and `AuditLog` model remain
-unchanged. They are not the new evidence store and must not be presented as
-providing the guarantees described here.
+The older Hatchet `create-audit-log-entry` workflow and its current call sites
+have been removed. Historical database or migration artifacts named `AuditLog`
+are not the evidence store and must not be presented as providing the
+guarantees described here.
 
 ## Data flow
 
 ```text
-authoritative mutation ─┐
-                       ├─ same Prisma transaction ─ emitAuditEvents
-Hatchet materializer ──┘                              │
-                                                     ▼
+authoritative mutation ── same Prisma transaction ─┐
+Hatchet command ── response processor transaction ─┤
+                                                   │
+                                                   ▼
                                   AssessmentAuditOutboxEvent
                                   (exact canonical JSON text)
                                                      │
@@ -72,6 +72,37 @@ critical or authoritative evidence must share the business transaction.
 Hatchet submission materialization remains a separate emission lane, but it
 ultimately writes the same event contract and outbox. The browser-observed
 Stack 2 lane uses the same registry later through the independent audit ingress.
+
+## Participant submission materialization
+
+The PWA creates one UUID `submissionId` for each submit action and reuses it for
+its bounded network/Hatchet-unavailable retry. The assessment response API
+validates that ID together with the existing correlation JWT and Participant
+session, records `receivedAt`, stamps `transportAttemptedAt` immediately before
+the existing `response-received:assessment` push, and acknowledges only after
+Hatchet returns an event ID. A failed push returns `503`; it never reports a
+successful submission. No raw answer, correlation token, cookie, or transport
+error is written to application logs.
+
+The response processor resolves the triggering Hatchet event through the
+workflow-run association exposed by Hatchet. It never substitutes the workflow
+run ID for the event ID. This provenance lookup occurs only after the quiz is
+confirmed as covered, so deliberately uncovered quizzes retain their existing
+processing path without an audit-only dependency. For covered assessments it
+records server acceptance and validation before terminal completion. Rejection
+and duplicate evidence use an audit-only transaction; response creation,
+persisted evidence, and scored evidence use one Prisma transaction. A transient
+failure remains retryable and is followed by append-only recovery evidence when
+processing later reaches a terminal outcome.
+
+`LiveQuizResponse.submissionId` is an optional unique UUID. Existing and
+non-assessment responses remain valid with `NULL`; an assessment response stores
+the stable ID so a retry of the same Hatchet command can be distinguished from
+a second transport command or a genuinely different duplicate response. Audit
+idempotency for Lane 2 includes both `submissionId` and the actual Hatchet event
+ID. This matters after a lost HTTP response: a resend may create another Hatchet
+command with the same submission ID, which materializes as a durable duplicate
+without creating a second authoritative response.
 
 ## Contract and identity
 
@@ -369,6 +400,13 @@ Layer 4 adds a registry-to-production-source coverage test plus focused tests
 for exact configuration/block/instance snapshots, deterministic response/reset
 hashes, effective-permission filtering, media capture/replacement, and
 post-activation media retention indexes.
+Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
+all supported response families, stable receipts, duplicate and changed-answer
+commands, late and missing-participation rejection, persistence/evidence
+rollback, retry/recovery, terminal cardinality, and dispatcher outage/drain.
+These local proofs do not replace the staging Azure conformance, owner export,
+full assessment-browser flow, or burst/RSS gates required before this draft
+layer can leave draft status.
 
 ```bash
 pnpm --filter @klicker-uzh/audit check
@@ -383,6 +421,8 @@ pnpm --filter @klicker-uzh/audit exec vitest run \
   test/producer-coverage.test.ts \
   test/event-registry.test.ts \
   test/table-mapping.test.ts
+pnpm --filter @klicker-uzh/response-api test
+pnpm --filter @klicker-uzh/hatchet-worker-response-processor test
 ```
 
 The test command needs a disposable local PostgreSQL database with all Prisma

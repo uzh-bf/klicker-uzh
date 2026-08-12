@@ -89,6 +89,13 @@ composer without sending; assert the value contains no square-bracket template
 placeholder, then edit the value before sending. The initial mode descriptions
 are passed with the chatbot shell so this journey should not wait for a second
 render of the starter grid.
+Standard and assessment response processing are separate runtime modes. Keep
+both the Response API and response processor on `ASSESSMENT_MODE=false` for
+ordinary live-quiz flows. Assessment submission coverage needs separate
+instances of both services with `ASSESSMENT_MODE=true`, the assessment Response
+API URL compiled into or intercepted for the PWA, and the same
+`APP_SECRET`/issuer configuration as the backend that creates correlation JWTs.
+Do not replace one mode with the other in a shared full-suite run.
 
 ## Fast Failure Triage
 

@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/audit/|packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/audit/|packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|apps/hatchet-worker-response-processor/|apps/response-api/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -154,6 +154,10 @@ jobs:
           pnpm run build
           cd ../../apps/hatchet-worker-general
           pnpm run build
+          cd ../hatchet-worker-response-processor
+          pnpm run build
+          cd ../response-api
+          pnpm run build
 
       - name: Setup database
         run: |
@@ -166,6 +170,14 @@ jobs:
         run: pnpm --filter @klicker-uzh/audit test
         env:
           AZURITE_TABLE_ENDPOINT: http://127.0.0.1:10002/devstoreaccount1
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
+
+      - name: Run assessment submission tests
+        run: |
+          pnpm --filter @klicker-uzh/response-api test
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor test
+        env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           NODE_ENV: test
 

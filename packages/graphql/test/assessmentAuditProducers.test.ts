@@ -213,6 +213,7 @@ describe('assessment lecturer and system producer snapshots', () => {
     const response = {
       id: 7,
       submittedAt: new Date('2026-08-12T08:00:00.123Z'),
+      submissionId: null,
       response: {
         choices: [
           { ix: 2, selected: true },
