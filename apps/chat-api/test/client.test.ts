@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  conformanceManifest,
   conformanceRequest,
 } from '@klicker-uzh/chat-engine-contract'
 import {
@@ -15,17 +16,7 @@ describe('engine client and readiness', () => {
       manifest: vi.fn(async () => {
         attempts += 1
         if (attempts === 1) throw new Error('connection refused')
-        return {
-          contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
-          engineId: 'default',
-          features: {
-            text: true,
-            reasoning: true,
-            images: true,
-            tools: true,
-            cancellation: true,
-          } as const,
-        }
+        return { ...conformanceManifest, engineId: 'default' }
       }),
       chat: vi.fn(),
     }
@@ -50,13 +41,22 @@ describe('engine client and readiness', () => {
     })
     await client.chat(conformanceRequest, {
       providerAuthorization: 'Bearer provider-secret',
+      traceContext: {
+        traceparent: '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
+        tracestate: 'vendor=value',
+      },
       signal: new AbortController().signal,
     })
 
     const headers = new Headers(captured?.headers)
     expect(headers.get('authorization')).toBe('Bearer service-secret')
     expect(headers.get('provider-authorization')).toBe('Bearer provider-secret')
+    expect(headers.get('traceparent')).toBe(
+      '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01'
+    )
+    expect(headers.get('tracestate')).toBe('vendor=value')
     expect(String(captured?.body)).not.toContain('provider-secret')
+    expect(String(captured?.body)).not.toContain('traceparent')
   })
 
   test('degrades readiness when the manifest does not respond before the timeout', async () => {

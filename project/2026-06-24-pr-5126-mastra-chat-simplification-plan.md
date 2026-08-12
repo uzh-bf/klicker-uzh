@@ -8,7 +8,9 @@
 - Target: `v3`
 - Pull request: [#5126](https://github.com/uzh-bf/klicker-uzh/pull/5126)
 - Plan path: `project/2026-06-24-pr-5126-mastra-chat-simplification-plan.md`
-- Status: Slice 1 is committed and reviewed; Slice 2 is committed and reviewed locally; no remote publication has been authorized.
+- Status: Slices 1-2 and the canonical `v1` conformance runner are implemented
+  locally; current-head review and the upstream `v3-ai` gate remain open; no
+  remote publication has been authorized.
 
 Current branch state:
 
@@ -77,6 +79,11 @@ This plan applies the settled split to public chat only:
 - A real local smoke previously reached OpenRouter with `deepseek/deepseek-v4-flash`, streamed text, and verified persistence and credits.
 - The current workflow is not a merge gate because it tolerates failure and uses a placeholder API key.
 - The generalized embedded-assistant and MCP work from [PR #5109](https://github.com/uzh-bf/klicker-uzh/pull/5109) currently exists on `v3-ai`, whose owning roll-up [PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092) is still draft and conflicting. The approved sequence lands that roll-up in `v3`. This branch must then update onto the resulting `v3` and treat those surfaces as baseline consumers of the public `chat-api` and engine contract rather than extracting or recreating them separately.
+- 2026-08-12 readback: fetched `origin/v3` is `5264353ff7`, while
+  `origin/v3-ai` is `ee8bb99195`; PR #5092 remains draft and conflicting. The
+  only current changed-path overlap with this branch is `docs/chat-platform.md`,
+  `turbo.json`, and `pnpm-lock.yaml`, but the approved gate still requires the
+  complete roll-up to land before this branch updates its base.
 
 ### Research Ownership And Limits
 
@@ -640,8 +647,21 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Slice 2 focused typecheck, tests, build, and the local HTTP abort propagation spike passed on Node 22; the repository declares Node 24.
 - [x] Slice 2 architecture/data-integrity intermediate review completed cleanly on `2a276b1d18..ba6599b8d`; readiness timeout, separate-chunk terminal cancellation, and canonical assistant-ID fixes are covered. Live concurrent Prisma debit integration remains deferred to Slice 3.
 - [x] Slice 2 integrated final review passed cleanly on `2a276b1d18..ba6599b8d`; the final reviewer found no verified P0-P2 issues. The Node 22 versus Node 24 verification limitation and Slice 3 contention gate remain explicit.
+- [x] Canonical `v1` contract candidate now keeps W3C trace context in HTTP
+      headers, advertises provider modes and exact resource limits, enforces the
+      three-image/user-only history rule, and exports a black-box HTTP
+      conformance runner. Node 24 verification passed 6 contract tests, 4
+      default-engine tests, 15 chat-api tests, and focused type-checks.
+- [x] The exported public runner passed locally against the compiled Catalyst
+      application: manifest `v1`, Catalyst engine identity, five validated
+      stream parts, and exactly one `finish` terminal.
+- [ ] After `v3-ai` lands, update onto the resulting `v3`, rerun current-head
+      checks/reviews, then seek the separate force-with-lease publication
+      approval for PR #5126.
 - [ ] Slices 3-6 implemented and verified.
 
 ## Next Action
 
-Slice 2 is committed and reviewed locally. Keep the Next route as the production path; do not push, force-push, change either pull request, or begin Slice 3/deployment work without a separate approval gate.
+Wait for the complete `v3-ai` roll-up to land in `v3`. Then update this branch
+onto that exact baseline, rerun the contract/chat-api/default-engine checks and
+reviews, and stop before the separately authorized PR #5126 replacement.

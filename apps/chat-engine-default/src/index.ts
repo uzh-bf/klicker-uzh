@@ -66,6 +66,14 @@ const DEFAULT_MANIFEST: EngineManifest = engineManifestSchema.parse({
     tools: true,
     cancellation: true,
   },
+  providerCredentialModes: ['request', 'deployment'],
+  limits: {
+    maxMessages: 100,
+    maxTools: 64,
+    maxImageAttachments: 3,
+    maxDecodedImageBytes: 5 * 1024 * 1024,
+    maxDataUrlLength: 7_000_000,
+  },
 })
 
 function jsonError(

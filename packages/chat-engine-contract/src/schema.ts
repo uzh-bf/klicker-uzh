@@ -2,9 +2,14 @@ import { z } from 'zod'
 
 export const CHAT_ENGINE_CONTRACT_VERSION = 'v1' as const
 export const MCP_EXECUTION_TOKEN_HEADER = 'x-mcp-execution-token'
+export const TRACEPARENT_HEADER = 'traceparent'
+export const TRACESTATE_HEADER = 'tracestate'
 
 const MAX_DATA_URL_LENGTH = 7_000_000
 const MAX_DECODED_IMAGE_BYTES = 5 * 1024 * 1024
+const MAX_IMAGE_ATTACHMENTS = 3
+const MAX_MESSAGES = 100
+const MAX_TOOLS = 64
 const IMAGE_MEDIA_TYPES = [
   'image/jpeg',
   'image/png',
@@ -179,13 +184,6 @@ export const resolvedGenerationSchema = z
     }
   })
 
-export const traceContextSchema = z
-  .object({
-    traceparent: z.string().max(512).optional(),
-    tracestate: z.string().max(512).optional(),
-  })
-  .strict()
-
 export const engineChatRequestSchema = z
   .object({
     contractVersion: z.literal(CHAT_ENGINE_CONTRACT_VERSION),
@@ -200,9 +198,8 @@ export const engineChatRequestSchema = z
     locale: z.string().min(2).max(16),
     systemPrompt: z.string().max(200_000),
     generation: resolvedGenerationSchema,
-    messages: z.array(engineMessageSchema).min(1).max(100),
-    tools: z.array(approvedToolSchema).max(64),
-    traceContext: traceContextSchema.optional(),
+    messages: z.array(engineMessageSchema).min(1).max(MAX_MESSAGES),
+    tools: z.array(approvedToolSchema).max(MAX_TOOLS),
   })
   .strict()
   .superRefine((request, ctx) => {
@@ -217,6 +214,27 @@ export const engineChatRequestSchema = z
       }
       seenNames.add(tool.name)
     })
+    let imageCount = 0
+    request.messages.forEach((message, messageIndex) => {
+      message.parts.forEach((part) => {
+        if (part.type !== 'image') return
+        imageCount += 1
+        if (message.role === 'assistant') {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['messages', messageIndex, 'parts'],
+            message: 'Assistant messages cannot contain images.',
+          })
+        }
+      })
+    })
+    if (imageCount > MAX_IMAGE_ATTACHMENTS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['messages'],
+        message: 'At most three image attachments are allowed.',
+      })
+    }
   })
 
 const tokenSchema = z.number().int().nonnegative().nullable()
@@ -458,6 +476,19 @@ export const engineManifestSchema = z
         images: z.boolean(),
         tools: z.boolean(),
         cancellation: z.literal(true),
+      })
+      .strict(),
+    providerCredentialModes: z.tuple([
+      z.literal('request'),
+      z.literal('deployment'),
+    ]),
+    limits: z
+      .object({
+        maxMessages: z.literal(MAX_MESSAGES),
+        maxTools: z.literal(MAX_TOOLS),
+        maxImageAttachments: z.literal(MAX_IMAGE_ATTACHMENTS),
+        maxDecodedImageBytes: z.literal(MAX_DECODED_IMAGE_BYTES),
+        maxDataUrlLength: z.literal(MAX_DATA_URL_LENGTH),
       })
       .strict(),
   })

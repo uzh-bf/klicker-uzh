@@ -2,9 +2,11 @@ import { describe, expect, test } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
   conformanceAbortStream,
+  conformanceManifest,
   conformanceRequest,
   conformanceStream,
   engineChatRequestSchema,
+  engineManifestSchema,
   engineStreamPartSchema,
   parseEngineStreamPart,
   validateProviderCredentialHeaders,
@@ -21,6 +23,21 @@ describe('chat engine contract', () => {
     expect(
       conformanceAbortStream.map((part) => parseEngineStreamPart(part))
     ).toEqual(conformanceAbortStream)
+    expect(engineManifestSchema.parse(conformanceManifest)).toEqual(
+      conformanceManifest
+    )
+  })
+
+  test('keeps W3C trace context out of the JSON request', () => {
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        traceContext: {
+          traceparent:
+            '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
+        },
+      }).success
+    ).toBe(false)
   })
 
   test('requires exactly one explicit provider credential mode', () => {
@@ -148,6 +165,35 @@ describe('chat engine contract', () => {
             ...conformanceRequest.messages[0],
             parts: [decodedLimitImage],
           },
+        ],
+      }).success
+    ).toBe(false)
+  })
+
+  test('enforces the manifest image count and user-only image history', () => {
+    const image = {
+      id: 'image-1',
+      type: 'image' as const,
+      mediaType: 'image/png' as const,
+      dataUrl: 'data:image/png;base64,AA==',
+    }
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        messages: [
+          {
+            id: 'user-images',
+            role: 'user',
+            parts: [image, image, image, image],
+          },
+        ],
+      }).success
+    ).toBe(false)
+    expect(
+      engineChatRequestSchema.safeParse({
+        ...conformanceRequest,
+        messages: [
+          { id: 'assistant-image', role: 'assistant', parts: [image] },
         ],
       }).success
     ).toBe(false)

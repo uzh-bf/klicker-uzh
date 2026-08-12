@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
+  conformanceManifest,
   type EngineChatRequest,
 } from '@klicker-uzh/chat-engine-contract'
 import { createChatApiApp, type ChatApiDependencies } from '../src/app.js'
@@ -59,15 +60,8 @@ function baseDependencies(
     })),
     engine: {
       manifest: vi.fn(async () => ({
-        contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+        ...conformanceManifest,
         engineId: 'fake-engine',
-        features: {
-          text: true,
-          reasoning: true,
-          images: true,
-          tools: true,
-          cancellation: true,
-        } as const,
       })),
       chat: vi.fn(async (request) => chat(request)),
     },
@@ -146,8 +140,16 @@ describe('chat-api Slice 2 tracer', () => {
     expect(response.status).toBe(200)
     expect(captured.value?.generation.modelId).toBe('gpt-4.1-mini')
     expect(captured.value?.generation.credentialMode.mode).toBe('deployment')
-    expect(captured.value?.traceContext?.traceparent).toMatch(
-      /^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/
+    expect(captured.value).not.toHaveProperty('traceContext')
+    expect(dependencies.engine.chat).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        traceContext: {
+          traceparent: expect.stringMatching(
+            /^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/
+          ),
+        },
+      })
     )
     expect(text).toContain('"type":"finish"')
     expect(text).toContain('"creditsUsed":0.0000176')
