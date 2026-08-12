@@ -23,6 +23,41 @@ export interface CorrelatedLiveQuizExportResponse {
   bonusPoints: number
 }
 
+const CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES = [
+  'response',
+  'correct',
+  'points',
+] as const
+
+function getColumnPrefix({
+  blockOrder,
+  questionOrder,
+  execution,
+}: {
+  blockOrder: number
+  questionOrder: number
+  execution: number
+}) {
+  return `block_${String(blockOrder + 1).padStart(2, '0')}_question_${String(questionOrder + 1).padStart(2, '0')}_execution_${String(execution + 1).padStart(2, '0')}`
+}
+
+export function getCorrelatedLiveQuizResponseCsvHeaderByteLength({
+  questions,
+}: {
+  questions: CorrelatedLiveQuizExportQuestion[]
+}) {
+  let byteLength = Buffer.byteLength('\uFEFFrespondent', 'utf8')
+  for (const question of questions) {
+    for (const execution of question.executions) {
+      const prefix = getColumnPrefix({ ...question, execution })
+      for (const suffix of CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES) {
+        byteLength += Buffer.byteLength(`,${prefix}_${suffix}`, 'utf8')
+      }
+    }
+  }
+  return byteLength + Buffer.byteLength('\r\n', 'utf8')
+}
+
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize)
   if (value && typeof value === 'object') {
@@ -115,7 +150,7 @@ export function createCorrelatedLiveQuizResponseCsv({
         ...question,
         execution,
         key: `${question.instanceId}:${execution}`,
-        prefix: `block_${String(question.blockOrder + 1).padStart(2, '0')}_question_${String(question.questionOrder + 1).padStart(2, '0')}_execution_${String(execution + 1).padStart(2, '0')}`,
+        prefix: getColumnPrefix({ ...question, execution }),
       }))
     )
     .sort(
@@ -142,11 +177,11 @@ export function createCorrelatedLiveQuizResponseCsv({
 
   const headers = [
     'respondent',
-    ...columns.flatMap(({ prefix }) => [
-      `${prefix}_response`,
-      `${prefix}_correct`,
-      `${prefix}_points`,
-    ]),
+    ...columns.flatMap(({ prefix }) =>
+      CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES.map(
+        (suffix) => `${prefix}_${suffix}`
+      )
+    ),
   ]
 
   const lines = [headers.map(escapeCsvValue).join(',')]
