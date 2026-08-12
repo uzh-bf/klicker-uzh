@@ -29,6 +29,12 @@ const CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES = [
   'points',
 ] as const
 
+type CorrelatedLiveQuizExportColumn = CorrelatedLiveQuizExportQuestion & {
+  execution: number
+  key: string
+  prefix: string
+}
+
 function getColumnPrefix({
   blockOrder,
   questionOrder,
@@ -41,18 +47,35 @@ function getColumnPrefix({
   return `block_${String(blockOrder + 1).padStart(2, '0')}_question_${String(questionOrder + 1).padStart(2, '0')}_execution_${String(execution + 1).padStart(2, '0')}`
 }
 
+function getColumns(
+  questions: CorrelatedLiveQuizExportQuestion[]
+): CorrelatedLiveQuizExportColumn[] {
+  return questions
+    .flatMap((question) =>
+      question.executions.map((execution) => ({
+        ...question,
+        execution,
+        key: `${question.instanceId}:${execution}`,
+        prefix: getColumnPrefix({ ...question, execution }),
+      }))
+    )
+    .sort(
+      (left, right) =>
+        left.blockOrder - right.blockOrder ||
+        left.questionOrder - right.questionOrder ||
+        left.execution - right.execution
+    )
+}
+
 export function getCorrelatedLiveQuizResponseCsvHeaderByteLength({
   questions,
 }: {
   questions: CorrelatedLiveQuizExportQuestion[]
 }) {
   let byteLength = Buffer.byteLength('\uFEFFrespondent', 'utf8')
-  for (const question of questions) {
-    for (const execution of question.executions) {
-      const prefix = getColumnPrefix({ ...question, execution })
-      for (const suffix of CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES) {
-        byteLength += Buffer.byteLength(`,${prefix}_${suffix}`, 'utf8')
-      }
+  for (const { prefix } of getColumns(questions)) {
+    for (const suffix of CORRELATED_LIVE_QUIZ_EXPORT_COLUMN_SUFFIXES) {
+      byteLength += Buffer.byteLength(`,${prefix}_${suffix}`, 'utf8')
     }
   }
   return byteLength + Buffer.byteLength('\r\n', 'utf8')
@@ -144,21 +167,7 @@ export function createCorrelatedLiveQuizResponseCsv({
   questions: CorrelatedLiveQuizExportQuestion[]
   responses: CorrelatedLiveQuizExportResponse[]
 }) {
-  const columns = questions
-    .flatMap((question) =>
-      question.executions.map((execution) => ({
-        ...question,
-        execution,
-        key: `${question.instanceId}:${execution}`,
-        prefix: getColumnPrefix({ ...question, execution }),
-      }))
-    )
-    .sort(
-      (left, right) =>
-        left.blockOrder - right.blockOrder ||
-        left.questionOrder - right.questionOrder ||
-        left.execution - right.execution
-    )
+  const columns = getColumns(questions)
 
   const orderedRespondentLabels = [
     ...new Set(responses.map(({ respondentLabel }) => respondentLabel)),

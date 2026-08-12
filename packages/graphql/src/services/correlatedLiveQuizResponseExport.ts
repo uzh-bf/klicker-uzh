@@ -17,6 +17,13 @@ const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(
 const MAX_CORRELATED_EXPORT_MATRIX_CELLS = 1_000_000n
 const MIN_CSV_BYTES_PER_COLUMN_AND_RESPONDENT = 3n
 const MIN_CSV_BYTES_PER_RESPONDENT_ROW = 2n
+// These response-side values intentionally overestimate CSV expansion. The
+// exact builder still enforces the final limit, but this preflight must reject
+// an oversized combined output before loading response rows into memory.
+const MAX_CSV_BYTES_PER_COLUMN_AND_RESPONDENT = 64n
+const MAX_CSV_BYTES_PER_RESPONDENT_LABEL = 32n
+const MAX_CSV_BYTES_PER_RESPONSE_MULTIPLIER = 8n
+const MAX_CSV_BYTES_PER_RESPONSE_OVERHEAD = 64n
 
 export async function getCorrelatedLiveQuizResponseExport(
   { id }: { id: string },
@@ -153,13 +160,25 @@ export async function getCorrelatedLiveQuizResponseExport(
           (responseSize?.respondentCount ?? 0n) *
           (exportedColumnCount * MIN_CSV_BYTES_PER_COLUMN_AND_RESPONDENT +
             MIN_CSV_BYTES_PER_RESPONDENT_ROW)
+        const maximumCsvBytes = responseSize
+          ? headerBytes +
+            responseSize.respondentCount *
+              (MAX_CSV_BYTES_PER_RESPONDENT_LABEL +
+                MIN_CSV_BYTES_PER_RESPONDENT_ROW) +
+            responseSize.respondentCount *
+              exportedColumnCount *
+              MAX_CSV_BYTES_PER_COLUMN_AND_RESPONDENT +
+            responseSize.responseBytes * MAX_CSV_BYTES_PER_RESPONSE_MULTIPLIER +
+            responseSize.responseCount * MAX_CSV_BYTES_PER_RESPONSE_OVERHEAD
+          : 0n
         if (
           !responseSize ||
           responseSize.responseCount > MAX_CORRELATED_EXPORT_RESPONSE_COUNT ||
           responseSize.responseBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
           headerBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
           matrixCellCount > MAX_CORRELATED_EXPORT_MATRIX_CELLS ||
-          minimumCsvBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
+          minimumCsvBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
+          maximumCsvBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
         ) {
           throw new CorrelatedLiveQuizExportSizeError(
             'Correlated live quiz export exceeds the bounded response input size'
