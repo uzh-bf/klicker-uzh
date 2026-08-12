@@ -19,6 +19,37 @@ function sse(parts: EngineStreamPart[]): Response {
   )
 }
 
+function abortSse(signal: AbortSignal | null): Response {
+  if (!signal)
+    throw new Error('Abort conformance request did not carry a signal.')
+  const encoder = new TextEncoder()
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        for (const part of conformanceAbortStream.slice(0, 3)) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(part)}\n\n`)
+          )
+        }
+        signal.addEventListener(
+          'abort',
+          () => {
+            for (const part of conformanceAbortStream.slice(3)) {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(part)}\n\n`)
+              )
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+            controller.close()
+          },
+          { once: true }
+        )
+      },
+    }),
+    { headers: { 'content-type': 'text/event-stream' } }
+  )
+}
+
 describe('chat engine conformance suite', () => {
   test('covers credentials, approved tools, and the abort terminal', async () => {
     const request = async (
@@ -57,7 +88,7 @@ describe('chat engine conformance suite', () => {
         return sse(conformanceToolStream)
       }
       if (body.requestId === conformanceAbortRequest.requestId) {
-        return sse(conformanceAbortStream)
+        return abortSse(init?.signal ?? null)
       }
       return sse(conformanceStream)
     }
