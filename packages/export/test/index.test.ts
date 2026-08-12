@@ -331,6 +331,11 @@ describe('@klicker-uzh/export', () => {
     )
 
     const query = findMany.mock.calls[0]![0]
+    expect(
+      query.where.instance.elementBlock.liveQuiz.responseCollectionMode
+    ).toEqual({
+      not: 'CORRELATED_EXPORT',
+    })
     expect(query.orderBy.slice(0, 2)).toEqual([
       { participant: { email: 'asc' } },
       { respondentId: 'asc' },

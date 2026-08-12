@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-10'
+timestamp: '2026-08-12'
 tags:
   - testing
   - ci
@@ -14,13 +14,14 @@ tags:
 
 ## Which level for which change
 
-| Change                                                               | Test level                                                                                 | Command                                                                                                             |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                      | Playwright e2e                                                                             | see routing below                                                                                                   |
-| Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+| Change                                                               | Test level                                                                                      | Command                                                                                                                                   |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                                  | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run`                       |
+| GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN`      | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                                        |
+| Correlated export backend                                            | export unit tests plus focused GraphQL export-service tests; migration uses disposable Postgres | `pnpm --filter @klicker-uzh/export test` and `pnpm exec vitest run test/correlatedLiveQuizResponseExport.test.ts` from `packages/graphql` |
+| Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                                 | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                                                     |
+| UI / user flows                                                      | Playwright e2e                                                                                  | see routing below                                                                                                                         |
+| Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                             | `pnpm --filter @klicker-uzh/office-addin test`                                                                                            |
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
@@ -68,6 +69,7 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
   alone is not model-call evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
 - **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
+- Correlated export tests cover stable label reuse, free-text exclusion, permission/state readiness, unsettled-response blocking, identity stripping, formula-safe CSV encoding, and fail-closed size limits. The GraphQL package imports the export build, so `.github/workflows/test-graphql.yml` builds `packages/export` before `packages/graphql`.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
 
 ## CI matrix

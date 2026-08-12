@@ -2216,6 +2216,9 @@ export async function cancelLiveQuiz(
         await prisma.liveQuizRespondent.deleteMany({
           where: { liveQuizId: id },
         })
+        await prisma.liveQuizResponseExportLabel.deleteMany({
+          where: { liveQuizId: id },
+        })
       }
 
       const updatedQuiz = await prisma.liveQuiz.update({
@@ -2400,6 +2403,24 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  const permission =
+    typeof hmac !== 'string' && ctx.user?.sub
+      ? await ctx.prisma.derivedPermission.findUnique({
+          where: {
+            liveQuizId_userId: { liveQuizId: id, userId: ctx.user.sub },
+          },
+          select: { permissionLevel: true },
+        })
+      : null
+  const canExportCorrelatedResponses =
+    (permission?.permissionLevel === DB.PermissionLevel.OWNER ||
+      permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
+      permission?.permissionLevel === DB.PermissionLevel.WRITE) &&
+    liveQuiz.status === DB.PublicationStatus.ENDED &&
+    !liveQuiz.isAssessmentEnabled &&
+    liveQuiz.responseCollectionMode ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+
   // depending on the quiz assessment setting, select the corresponding redis instance
   const redis = liveQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec
@@ -2443,6 +2464,9 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    status: liveQuiz.status,
+    responseCollectionMode: liveQuiz.responseCollectionMode,
+    canExportCorrelatedResponses,
     isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
     pinCode: liveQuiz.pinCode,
     results: blockEvaluations,

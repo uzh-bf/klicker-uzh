@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-11'
+timestamp: '2026-08-12'
 tags:
   - backend
   - prisma
@@ -61,7 +61,7 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ### LiveQuiz response collection
 
-`LiveQuiz.responseCollectionMode` defaults to `AGGREGATED_ANONYMOUS`. `CORRELATED_EXPORT` stores quiz-scoped respondent identity in `LiveQuizRespondent` and is designed for stable pseudonymous export labels; it does not expose account identifiers. The boundary and rollout contract are recorded in [ADR-0001](./adr/0001-correlated-live-quiz-response-boundary.md).
+`LiveQuiz.responseCollectionMode` defaults to `AGGREGATED_ANONYMOUS`. `CORRELATED_EXPORT` stores quiz-scoped respondent identity in `LiveQuizRespondent`; the export service maps that identity to an HMAC-derived hash and an append-only `LiveQuizResponseExportLabel` row number. The CSV exposes only the row number and response results, not account identifiers, names, emails, usernames, temporary pseudonyms, timestamps, or free-text answers. The boundary and rollout contract are recorded in [ADR-0001](./adr/0001-correlated-live-quiz-response-boundary.md).
 
 - Assessment courses always store `AGGREGATED_ANONYMOUS` response-collection mode; assessment-specific response handling remains identifiable through its separate assessment path.
 - Correlated collection is incompatible with gamification because leaderboard state could re-identify respondents.

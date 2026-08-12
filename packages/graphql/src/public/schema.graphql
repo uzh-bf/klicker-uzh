@@ -39,6 +39,7 @@ type ActivityDetails {
 }
 
 type ActivityEvaluation {
+  canExportCorrelatedResponses: Boolean
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
   courseLanguage: LocaleType
@@ -49,7 +50,9 @@ type ActivityEvaluation {
   isAssessmentEnabled: Boolean
   name: String!
   pinCode: String
+  responseCollectionMode: LiveQuizResponseCollectionMode
   results: [StackEvaluation!]!
+  status: PublicationStatus
 }
 
 type ActivityFeedback {
@@ -940,6 +943,12 @@ type ContentInstanceEvaluation {
   score: Float!
   xp: Int
   xpAwarded: Int
+}
+
+type CorrelatedLiveQuizResponseExport {
+  content: String!
+  filename: String!
+  warning: String!
 }
 
 type Course {
@@ -2449,6 +2458,7 @@ type Query {
   controlCourse(id: String!): Course
   controlCourses: [Course!]
   controlLiveQuiz(id: String!): LiveQuiz
+  correlatedLiveQuizResponseExport(id: String!): CorrelatedLiveQuizResponseExport
   countCatalogSharingRequests: Int!
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
