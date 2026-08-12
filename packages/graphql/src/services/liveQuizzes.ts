@@ -37,6 +37,10 @@ import {
   getPermissionBooleans,
   persistActivityWithPermissions,
 } from './activities.js'
+import {
+  materializeLiveQuizPublication,
+  transitionLiveQuizToPublished,
+} from './liveQuizPublication.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -868,80 +872,38 @@ export async function startLiveQuiz(
   ctx: ContextWithUser
 ) {
   try {
-    const quiz = await ctx.prisma.liveQuiz.findFirst({
-      where: {
-        id,
-        status: {
-          in: [
-            DB.PublicationStatus.DRAFT,
-            DB.PublicationStatus.SCHEDULED,
-            DB.PublicationStatus.PUBLISHED,
-          ],
-        },
-      },
-      include: { blocks: { orderBy: { id: 'asc' } } },
+    const publication = await transitionLiveQuizToPublished({
+      prisma: ctx.prisma,
+      liveQuizId: id,
+      source: 'manual',
     })
 
-    // if there is no live quiz matching the current user and quiz id, exit early
-    if (!quiz) {
-      return null
-    }
+    if (!publication) return null
+    await materializeLiveQuizPublication({
+      quiz: publication.quiz,
+      redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
+    })
 
-    // depending on the quiz assessment setting, select the corresponding redis instance
-    const redis = quiz.isAssessmentEnabled
-      ? ctx.redisAssessmentExec
-      : ctx.redisExec
-
-    switch (quiz.status) {
-      case DB.PublicationStatus.PUBLISHED:
-        return quiz
-
-      case DB.PublicationStatus.DRAFT:
-      case DB.PublicationStatus.SCHEDULED: {
+    if (publication.didStart) {
+      if (publication.scheduledPublicationTaskId) {
         try {
-          const pipeline = redis.pipeline()
-          pipeline.hmset(`lq:${quiz.id}:meta`, {
-            namespace: quiz.namespace,
-            startedAt: Number(new Date()),
-            isGamificationEnabled: quiz.isGamificationEnabled,
-            isAssessmentEnabled: quiz.isAssessmentEnabled,
-          })
-
-          await pipeline.exec()
-        } catch (e) {
-          console.error(e)
+          await ctx.hatchet.scheduled.delete(
+            publication.scheduledPublicationTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled task for live quiz ${id}:`,
+            error
+          )
         }
-
-        // remove the scheduled hatchet publication task, if it exists
-        if (quiz.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
-          }
-        }
-
-        // generate a random pin code
-        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
-            scheduledPublicationTaskId: null,
-          },
-        })
-
-        await sendTeamsNotification({
-          scope: 'graphql/startLiveQuiz',
-          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
-        })
-
-        return startedLiveQuiz
       }
+      await sendTeamsNotification({
+        scope: 'graphql/startLiveQuiz',
+        text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
+      })
     }
+    return publication.quiz
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
@@ -3214,17 +3176,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
     )
 
     try {
-      // check if the live quiz exists and if its availableFrom date is in the past
-      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
-        where: {
-          id: liveQuizId,
-          isDeleted: false,
-          status: DB.PublicationStatus.SCHEDULED,
-          availableFrom: { lte: new Date() },
-        },
+      const publication = await transitionLiveQuizToPublished({
+        prisma: globalCtx.prisma,
+        liveQuizId,
+        source: 'scheduled',
       })
 
-      if (!liveQuiz) {
+      if (!publication) {
         await sendTeamsNotification({
           scope: 'hatchet/live-quiz-start',
           text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
@@ -3234,37 +3192,23 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         )
       }
 
-      // depending on the quiz assessment setting, select the corresponding redis instance
-      const redis = liveQuiz.isAssessmentEnabled
-        ? globalCtx.redisAssessmentExec
-        : globalCtx.redisExec
+      await materializeLiveQuizPublication({
+        quiz: publication.quiz,
+        redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
+      })
 
-      // start the live quiz
-      await redis
-        .pipeline()
-        .hmset(`lq:${liveQuiz.id}:meta`, {
-          namespace: liveQuiz.namespace,
-          startedAt: Number(new Date()),
+      if (publication.didStart) {
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `START Live quiz ${publication.quiz.name} with id ${publication.quiz.id}.`,
         })
-        .exec()
-
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
-
-      await sendTeamsNotification({
-        scope: 'hatchet/live-quiz-start',
-        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
-      })
+      }
 
       // invalidate the cache for the live quiz
       globalCtx.emitter.emit('invalidate', {
         typename: 'LiveQuiz',
-        id: startedLiveQuiz.id,
+        id: publication.quiz.id,
       })
 
       return true
