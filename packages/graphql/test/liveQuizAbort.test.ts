@@ -1,22 +1,22 @@
+import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   ElementType,
   LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
 import { Redis } from 'ioredis'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { loginTemporaryParticipant } from '../src/services/accounts.js'
+import { materializeLiveQuizPublication } from '../src/services/liveQuizPublication.js'
 import {
   cancelLiveQuiz,
   clearAbortedLiveQuizRedisGeneration,
 } from '../src/services/liveQuizzes.js'
-import { materializeLiveQuizPublication } from '../src/services/liveQuizPublication.js'
 import {
   initializePrisma,
   seedLiveQuiz,
@@ -119,6 +119,13 @@ describe('Live quiz abort cleanup', () => {
         settledAt: new Date(),
       },
     })
+    await prisma.liveQuizResponseExportLabel.create({
+      data: {
+        liveQuizId: liveQuiz.id,
+        identityHash: 'test-identity-hash',
+        label: 1,
+      },
+    })
 
     let receivedStartedAt: string | undefined
     let receivedPublicationGeneration: string | undefined
@@ -169,6 +176,11 @@ describe('Live quiz abort cleanup', () => {
     ).resolves.toBe(0)
     await expect(
       prisma.liveQuizPendingResponse.count({
+        where: { liveQuizId: liveQuiz.id },
+      })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.liveQuizResponseExportLabel.count({
         where: { liveQuizId: liveQuiz.id },
       })
     ).resolves.toBe(0)

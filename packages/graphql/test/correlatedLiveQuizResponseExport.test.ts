@@ -372,4 +372,27 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
     expect(responseFindMany).not.toHaveBeenCalled()
   })
+
+  it('rejects combined header and response output before materializing rows', async () => {
+    const { ctx, responseFindMany } = createContext({
+      blocks: [
+        {
+          ...defaultBlocks[0],
+          elements: Array.from({ length: 25_000 }, (_, index) => ({
+            id: index + 10,
+            order: index,
+            elementType: ElementType.SC,
+          })),
+        },
+      ],
+      responseBytes: 500_000n,
+      responseCount: 1n,
+      respondentCount: 1n,
+    })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_TOO_LARGE')
+    expect(responseFindMany).not.toHaveBeenCalled()
+  })
 })
