@@ -10,6 +10,7 @@ import {
   incompleteCostResult,
   reconcileCostLedgers,
 } from './lib/aggregateCostReconciliation.js'
+import { loadLiteLLMCostRows } from './lib/litellmCostSource.js'
 import type { SheetValue, WorkbookSheet } from './lib/simpleWorkbook.js'
 import {
   formatDate,
@@ -1077,9 +1078,6 @@ function parseCostAnalysisConfig(): CostAnalysisConfig {
   }
 }
 
-const GATEWAY_COST_PAGE_SIZE = 100
-const GATEWAY_COST_MAX_PAGES = 1000
-
 function requiredEnvironment(name: string) {
   const value = process.env[name]?.trim()
   if (!value) throw new Error(`${name} is required for --gateway-cost.`)
@@ -1126,40 +1124,6 @@ function responseRows(payload: unknown, label: string) {
     throw new Error(`${label} response data must be an array.`)
   }
   return data
-}
-
-function listRows(payload: unknown, label: string) {
-  if (Array.isArray(payload)) return payload
-  return responseRows(payload, label)
-}
-
-function nextUtcDate(isoTimestamp: string) {
-  const date = new Date(isoTimestamp)
-  if (Number.isNaN(date.getTime())) {
-    throw new Error('Gateway cost window must use valid UTC timestamps.')
-  }
-  date.setUTCDate(date.getUTCDate() + 1)
-  return date.toISOString().slice(0, 10)
-}
-
-function litellmEndDate(isoTimestamp: string) {
-  const date = new Date(isoTimestamp)
-  if (Number.isNaN(date.getTime())) {
-    throw new Error('Gateway cost window must use valid UTC timestamps.')
-  }
-
-  // A midnight half-open boundary does not need the following calendar day;
-  // fetching it can make the LiteLLM spend response too large to serve.
-  if (
-    date.getUTCHours() === 0 &&
-    date.getUTCMinutes() === 0 &&
-    date.getUTCSeconds() === 0 &&
-    date.getUTCMilliseconds() === 0
-  ) {
-    return date.toISOString().slice(0, 10)
-  }
-
-  return nextUtcDate(isoTimestamp)
 }
 
 function costTolerance(name: string, fallback: number) {
@@ -1214,25 +1178,6 @@ async function loadLangfuseCostRows(
   throw new Error('Langfuse cost evidence exceeded the page safety limit.')
 }
 
-async function loadLiteLLMCostRows(
-  scope: AggregateScope,
-  host: string,
-  authorization: string
-) {
-  const params = new URLSearchParams({
-    start_date: scope.from.slice(0, 10),
-    // LiteLLM accepts calendar dates here. Fetch the enclosing end date and
-    // apply the exact half-open UTC boundary to each returned startTime row.
-    end_date: litellmEndDate(scope.to),
-    summarize: 'false',
-  })
-  const payload = await requestCostJson(
-    `${host}/spend/logs?${params.toString()}`,
-    { 'x-litellm-api-key': authorization }
-  )
-  return listRows(payload, 'LiteLLM spend')
-}
-
 async function runGatewayCostReport(options: CliOptions) {
   const scope: AggregateScope = {
     from: options.from.toISOString(),
@@ -1259,7 +1204,12 @@ async function runGatewayCostReport(options: CliOptions) {
 
   const [langfuseRows, litellmRows] = await Promise.all([
     loadLangfuseCostRows(scope, langfuseHost, langfuseAuthorization),
-    loadLiteLLMCostRows(scope, litellmHost, `Bearer ${litellmApiKey}`),
+    loadLiteLLMCostRows(
+      scope,
+      litellmHost,
+      `Bearer ${litellmApiKey}`,
+      requestCostJson
+    ),
   ])
 
   try {

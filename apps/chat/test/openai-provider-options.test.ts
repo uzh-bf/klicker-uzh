@@ -73,6 +73,7 @@ describe('OpenAI provider routing and cache options', () => {
         openai: await getOpenAIProviderOptions({
           assistantMessageId: 'assistant-1',
           owningThreadId: 'thread-1',
+          routingSource: 'default',
         }),
       },
       tools: {
@@ -102,10 +103,12 @@ describe('OpenAI provider routing and cache options', () => {
     const first = await getOpenAIProviderOptions({
       assistantMessageId: 'assistant-1',
       owningThreadId: 'thread-1',
+      routingSource: 'default',
     })
     const second = await getOpenAIProviderOptions({
       assistantMessageId: 'assistant-2',
       owningThreadId: 'thread-1',
+      routingSource: 'default',
     })
 
     expect(first.metadata.session_id).not.toBe(second.metadata.session_id)
@@ -153,6 +156,7 @@ describe('OpenAI provider routing and cache options', () => {
     const options = await getOpenAIProviderOptions({
       assistantMessageId: 'assistant-1',
       owningThreadId: 'thread-1',
+      routingSource: 'default',
     })
 
     const result = await generateText({
@@ -171,9 +175,20 @@ describe('OpenAI provider routing and cache options', () => {
     const options = await getOpenAIProviderOptions({
       assistantMessageId: 'assistant-1',
       owningThreadId: null,
+      routingSource: 'default',
     })
 
     expect(options.metadata.session_id).toEqual(expect.any(String))
     expect(options).not.toHaveProperty('promptCacheKey')
+  })
+
+  test('does not send gateway options to custom chatbot endpoints', async () => {
+    const options = await getOpenAIProviderOptions({
+      assistantMessageId: 'assistant-1',
+      owningThreadId: 'thread-1',
+      routingSource: 'custom',
+    })
+
+    expect(options).toEqual({})
   })
 })

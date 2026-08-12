@@ -1210,6 +1210,7 @@ export async function POST(
   const openAIProviderOptions = await getOpenAIProviderOptions({
     assistantMessageId,
     owningThreadId: owningThread?.id ?? null,
+    routingSource: routing.source,
   })
 
   const startStream = () =>
