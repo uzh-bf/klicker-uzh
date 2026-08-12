@@ -1087,6 +1087,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       previousCase: 'Previous case',
       nextCase: 'Next case',
       thisLiveQuizGamified: 'This live quiz is gamified!',
+      responseCollectionAggregatedNotice:
+        'This quiz does not create a participant-level response export. Answers contribute to aggregate result totals.',
+      responseCollectionCorrelatedNotice:
+        'Answers in this quiz are stored per participant and can be exported with random labels (e.g. respondent_001) instead of names.',
       loginSelectionHint:
         'You are about to join a gamified live quiz. Please choose between the following options: <ul><li>Login with <b>KlickerUZH-Account</b>: Collect points and XP</li><li>Create a <b>temporary pseudonym</b>: Collect points in this live quiz only (points not available in course)</li><li>Particiate <b>anonymously</b>: Do not participate in the gamification elements</li></ul>',
       loginWithAccount: 'Login with Klicker-Account',
@@ -1596,6 +1600,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
       batchOperationFailed:
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      batchCorrelatedGamificationConflict:
+        'The selected activities include a correlated-response Live Quiz, which cannot be assigned to a gamified course.',
     },
     assessment: {
       assessmentResults: 'Assessment Results',
@@ -2131,6 +2137,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
+      responseCollectionMode: 'Response storage',
+      responseCollectionModeTooltip:
+        'Choose whether answers stay aggregate-only or are stored per participant for export.',
+      responseCollectionAggregated: 'Aggregate only',
+      responseCollectionCorrelated: 'Correlated export',
+      responseCollectionAggregatedSummary:
+        'Responses contribute to aggregate live results; no participant-level response rows are retained for export.',
+      responseCollectionCorrelatedSummary:
+        'Responses are stored per participant and can be exported with random labels instead of names.',
+      responseCollectionAssessment:
+        'This setting does not apply: assessment quizzes always store identifiable responses.',
+      responseCollectionGamificationConflict:
+        'Correlated exports cannot be combined with gamification because leaderboard scores could reveal respondents.',
+      responseCollectionLockedCourseConflict:
+        'This correlated quiz cannot be assigned to a gamified or assessment course after publication.',
+      responseCollectionLocked:
+        'This setting cannot be changed after the quiz is published.',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
       stackDisplayName: 'Stack title',
@@ -2819,6 +2842,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      downloadCorrelatedResponses: 'Download response CSV',
+      responseExportPrivacyWarning:
+        'Respondent labels in this export are randomly assigned; names, account identifiers, usernames, temporary pseudonyms, timestamps, and free-text answers are not included.',
+      responseExportFailed: 'The response export could not be downloaded.',
+      responseExportEmpty: 'No correlated responses are available to export.',
+      responseExportNotReady:
+        'Responses are still being processed. Try the download again shortly.',
+      responseExportTooLarge:
+        'This response export is too large for direct download.',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:
@@ -3024,6 +3056,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       languageTooltip:
         'Choose a language that will be used as the default when exporting activity access links, etc. Students can still change the language in the student app.',
       courseCreationFailed: 'Failed to create course...',
+      gamificationCorrelatedQuizConflict:
+        'Gamification cannot be enabled while this course contains a correlated-response Live Quiz. Change the quiz response collection setting first.',
+      assessmentCorrelatedQuizConflict:
+        'End the running Live Quiz before enabling assessment mode.',
       groupDeadlineFuture: 'The group creation deadline must be in the future.',
       groupDeadlineBeforeEnd:
         'The group creation deadline must be before the course end date.',

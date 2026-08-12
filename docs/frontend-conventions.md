@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-10'
+timestamp: '2026-08-12'
 tags:
   - frontend
 ---
@@ -56,6 +56,16 @@ spinner.
 ## Data fetching
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+
+## Live Quiz response modes
+
+`LiveQuizResponseCollectionMode` is a persisted activity setting, not a
+frontend-only preference (`apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizWizard.tsx:LiveQuizWizard`). The wizard defaults to aggregate anonymous collection, forces aggregate collection for assessment courses, and clears gamification when correlated export is selected. Published and ended quizzes keep their existing mode locked. The student page renders the matching privacy notice and selects the corresponding response-api endpoint; correlated mode first calls `InitializeLiveQuizResponseIdentity` and then submits to `AddCorrelatedResponse` (`apps/frontend-pwa/src/pages/session/[id].tsx:handleNewResponse`).
+
+The manage evaluation page renders the correlated CSV action only when the
+server grants `canExportCorrelatedResponses`; the action includes its privacy
+warning and maps the bounded export-service failure messages to localized
+toasts (`apps/frontend-manage/src/components/evaluation/CorrelatedResponseExport.tsx:CorrelatedResponseExport`).
 
 ## i18n (next-intl)
 

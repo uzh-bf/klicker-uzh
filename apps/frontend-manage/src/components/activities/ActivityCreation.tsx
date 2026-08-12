@@ -216,7 +216,16 @@ function ActivityCreation({
   }
 
   return (
-    <div className="print-hidden md:h-73 md:min-h-73 mb-3 flex flex-col justify-center">
+    <div
+      className={`print-hidden mb-3 flex flex-col justify-center ${
+        creationMode === ActivityType.LiveQuiz
+          ? // shrink-0 keeps the auto-height live quiz wizard at its content height;
+            // the surrounding column would otherwise shrink it to min-h-96 and let the
+            // step navigation overlap the element library below
+            'shrink-0 md:h-auto md:min-h-96'
+          : 'md:h-73 md:min-h-73'
+      }`}
+    >
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard

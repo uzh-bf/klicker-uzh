@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-03'
+timestamp: '2026-08-12'
 tags:
   - architecture
 ---
@@ -61,6 +61,9 @@ Student answers do not hit the GraphQL API. The path is:
 3. `apps/hatchet-worker-general` runs aggregation plus scheduled work (publish/end scheduled activities, publication reconciliation, and daily crons for group scores and random group assignments) — task definitions in `packages/hatchet/src/index.ts:prepareHatchetTasks`, handlers from `@klicker-uzh/graphql`.
 
 Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all).
+
+The manage Live Quiz wizard persists `LiveQuizResponseCollectionMode` with the
+activity (`apps/frontend-manage/src/components/activities/creation/liveQuiz/submitLiveQuizForm.tsx:submitLiveQuizForm`). Aggregate anonymous collection is the default; assessment courses force that mode, and correlated export cannot be combined with gamification. Once a quiz is published, the wizard keeps the response mode and incompatible course choices locked. The student page (`apps/frontend-pwa/src/pages/session/[id].tsx:ensureCorrelatedResponseIdentity`) initializes one anonymous response identity per quiz before using `POST /AddCorrelatedResponse`; aggregate responses continue through `POST /AddResponse`. The ended-quiz evaluation exposes the CSV download only when `canExportCorrelatedResponses` is true (`apps/frontend-manage/src/components/evaluation/CorrelatedResponseExport.tsx:CorrelatedResponseExport`).
 
 The backend also runs a homegrown boot-time data-migration runner (`apps/backend-docker/src/migration.ts:migrate`, currently an empty list) tracked in its own `Migration` table — distinct from Prisma migrations.
 
