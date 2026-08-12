@@ -52,6 +52,9 @@ NOCOMMIT*
 20??-??-??_chatbot*.csv
 output/
 
+# Chatbot/course export artifacts may contain real participant data.
+/export-output/
+
 # Environment-specific files
 .env.*
 
