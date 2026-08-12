@@ -13,7 +13,7 @@ type ParityModel = {
   deploymentId: string
   fallback: boolean
   supportsReasoning: boolean
-  usesResponsesApi?: boolean
+  usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
 }
 
