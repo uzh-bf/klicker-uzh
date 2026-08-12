@@ -497,6 +497,7 @@ Later research:
 - 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
 - 2026-08-12: Final review found and fixed a legacy temporary-participant continuity gap. Correlated identity resolution now confirms a temporary leaderboard entry for the target quiz before reusing a legacy unscoped temporary cookie; stale cookies fall through to the quiz-scoped anonymous respondent or explicit bearer fallback.
 - 2026-08-12: Final review also required this plan refresh. The stack topology, current B2 status, browser-runtime blocker, and draft-publication next steps are now recorded here.
+- 2026-08-12: Final review found that `test-graphql` did not run the response-api or response-processor integrity suites. The workflow now includes both app paths in its filter and runs their existing `test:run` scripts beside the GraphQL tests; browser runtime verification remains the separate pre-merge blocker.
 
 ## Goal Prompt Requirements
 
