@@ -36,7 +36,7 @@ import {
   getPermissionBooleans,
   persistActivityWithPermissions,
 } from './activities.js'
-import { allocateLiveQuizPin } from './liveQuizPin.js'
+import { allocateLiveQuizPin, withLiveQuizPinRetry } from './liveQuizPin.js'
 import {
   clearLiveQuizScheduledPublicationTask,
   deleteLiveQuizScheduledPublicationTask,
@@ -355,9 +355,6 @@ export async function manipulateLiveQuiz(
 
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
-  if (requiresNewPin) {
-    newPinCode = await allocateLiveQuizPin({ database: ctx.prisma })
-  }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
@@ -443,6 +440,10 @@ export async function manipulateLiveQuiz(
         )
       }
     }
+    if (requiresNewPin) {
+      newPinCode = await allocateLiveQuizPin({ database: prisma })
+      createOrUpdateJSON.pinCode = pinProtection ? newPinCode : null
+    }
 
     if (id) {
       const lockedActivity = await lockLiveQuizResponseCollectionState({
@@ -453,7 +454,6 @@ export async function manipulateLiveQuiz(
       if (!lockedActivity) {
         throw new GraphQLError('Live quiz not found')
       }
-
       assertLiveQuizResponseCollectionModeEditable({
         liveQuiz: lockedActivity,
         responseCollectionMode: responseCollectionModeSetting,
@@ -491,7 +491,6 @@ export async function manipulateLiveQuiz(
         id: { in: blocksToDelete },
       },
     })
-
     const upsertedQuiz = await prisma.liveQuiz.upsert({
       where: { id: id ?? uuidv4() },
       create: {
@@ -553,6 +552,15 @@ export async function manipulateLiveQuiz(
     return upsertedQuiz
   }
 
+  const persistWithPermissions = () =>
+    persistActivityWithPermissions({
+      persist: persistLiveQuiz,
+      invalidateTypename: 'LiveQuiz',
+      invalidateId: id,
+      ctx,
+      transactionPrisma,
+    })
+
   const {
     activity,
     permissionLevel,
@@ -564,13 +572,9 @@ export async function manipulateLiveQuiz(
     isShared,
     isRemovable,
     sharingType,
-  } = await persistActivityWithPermissions({
-    persist: persistLiveQuiz,
-    invalidateTypename: 'LiveQuiz',
-    invalidateId: id,
-    ctx,
-    transactionPrisma,
-  })
+  } = await (transactionPrisma
+    ? persistWithPermissions()
+    : withLiveQuizPinRetry(persistWithPermissions))
 
   return {
     id: activity.id,
@@ -2309,14 +2313,28 @@ export async function clearAbortedLiveQuizRedisGeneration({
         return 0
       end
 
-      local keys = redis.call('KEYS', ARGV[2])
-      if #keys == 0 then
+      local tombstone = redis.call('GET', KEYS[2])
+      if tombstone and tonumber(tombstone) > tonumber(ARGV[1]) then
         return 0
       end
-      return redis.call('UNLINK', unpack(keys))
+
+      redis.call('SET', KEYS[2], ARGV[1], 'EX', 2592000)
+      if not currentStartedAt then
+        return 0
+      end
+
+      local keys = redis.call('KEYS', ARGV[2])
+      local deleted = 0
+      for _, key in ipairs(keys) do
+        if key ~= KEYS[2] then
+          deleted = deleted + redis.call('UNLINK', key)
+        end
+      end
+      return deleted
     `,
-    1,
+    2,
     `lq:${liveQuizId}:meta`,
+    `lq:${liveQuizId}:aborted-generation`,
     String(startedAt.getTime()),
     `lq:${liveQuizId}:*`
   )

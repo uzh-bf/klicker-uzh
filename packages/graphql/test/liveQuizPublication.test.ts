@@ -62,10 +62,22 @@ describe('Live quiz publication', () => {
   } = {}) {
     const metadata: Record<string, string> = {}
     const redis = {
-      async hset(
-        _key: string,
-        values: Record<string, string | number | boolean>
+      async eval(
+        _script: string,
+        _numberOfKeys: number,
+        _metadataKey: string,
+        _tombstoneKey: string,
+        startedAt: string,
+        namespace: string,
+        isGamificationEnabled: string,
+        isAssessmentEnabled: string
       ) {
+        const values = {
+          namespace,
+          startedAt,
+          isGamificationEnabled,
+          isAssessmentEnabled,
+        }
         Object.assign(
           metadata,
           Object.fromEntries(

@@ -52,7 +52,7 @@ The response processor binds aggregate and correlated events to separate process
 - `reconcile-live-quiz-publications` — every minute, repairs published quizzes whose Redis publication metadata or scheduled task cleanup is incomplete
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
 
-Publication is deliberately two-phase: the database transaction records the published generation first, then the backend materializes the matching Redis metadata and marks it complete. The reconciliation cron retries incomplete materialization and removes stale scheduled-publication tasks idempotently. Aborting a quiz clears only the Redis generation whose persisted start timestamp was aborted, so a newer publication cannot be deleted by delayed cleanup from an older run.
+Publication is deliberately two-phase: the database transaction records the published generation first, then the backend materializes the matching Redis metadata and marks it complete. The reconciliation cron retries incomplete materialization and removes stale scheduled-publication tasks idempotently. Aborting a quiz records a Redis generation tombstone and clears only the generation whose persisted start timestamp was aborted, so a delayed older publication cannot recreate stale metadata and a newer publication cannot be deleted by older cleanup.
 
 ## Running locally (config-derived — verify on your machine)
 
