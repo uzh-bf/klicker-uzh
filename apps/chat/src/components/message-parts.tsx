@@ -3,7 +3,7 @@ import {
   groupPartByType,
   MessagePrimitive,
   type ReasoningMessagePartProps,
-  useMessage,
+  useAuiState,
 } from '@assistant-ui/react'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -97,7 +97,7 @@ const ReasoningGroup: FC<
   }>
 > = ({ active, children }) => {
   const t = useTranslations()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const reasoningEffort = message.metadata?.custom?.reasoningEffort
   const effortLabel =
     typeof reasoningEffort === 'string'

@@ -20,9 +20,13 @@ migration; it does not add the planned long-session history rail or compaction.
 
 ## Research
 
-- Evidence: npm registry on 2026-08-12 reports
-  `@assistant-ui/react@0.15.14`,
-  `@assistant-ui/react-markdown@0.14.10`, and `zustand@5.0.14`.
+- Evidence: npm registry on 2026-08-12 reports the newest versions that satisfy
+  the repository's 14-day `minimumReleaseAge` guard as
+  `@assistant-ui/react@0.15.1` (published 2026-07-29),
+  `@assistant-ui/react-markdown@0.14.8` (published 2026-07-28), and
+  `zustand@5.0.14` (published 2026-05-28). The newer 0.15.14/0.14.10 patches
+  were published 2026-08-12/2026-08-08 and remain ineligible without an
+  explicit repository policy change.
 - Evidence: official migration guide
   <https://www.assistant-ui.com/docs/migrations/v0-15> removes legacy runtime
   hooks, makes scope accessors properties, removes `ToolsState.tools` and the
@@ -60,8 +64,9 @@ migration; it does not add the planned long-session history rail or compaction.
 ### 1. Dependency and API migration
 
 - Route: main session; the cross-file API migration and runtime seam are coupled.
-- Do: update `apps/chat/package.json` and `pnpm-lock.yaml` to the pinned 0.15
-  package versions and explicit `zustand@5.0.14`. Migrate removed hooks in
+- Do: update `apps/chat/package.json` and `pnpm-lock.yaml` to
+  `@assistant-ui/react@0.15.1`, `@assistant-ui/react-markdown@0.14.8`, and
+  explicit `zustand@5.0.14`. Migrate removed hooks in
   `thread.tsx`, `message-parts.tsx`, and `useMessageSources.ts` to
   `useAui`/`useAuiState` and direct scope actions, including attachment-hook
   mappings. Replace `ThreadPrimitive.Messages components`,
@@ -116,4 +121,17 @@ migration; it does not add the planned long-session history rail or compaction.
 - 2026-08-12: takeover revalidated `v3`, created the named worktree, confirmed
   registry/docs evidence, and completed the planning-stage review. No
   implementation has started.
-- Next: execute Slice 1 from the task worktree under Node 24.
+- 2026-08-13: Slice 1 implementation complete under Node 24. The normal
+  repository release-age guard selected `@assistant-ui/react@0.15.1`,
+  `@assistant-ui/react-markdown@0.14.8`, and `zustand@5.0.14`; the source now
+  uses `useAui`/`useAuiState`, `AuiIf`, and children render functions for the
+  removed hooks and deprecated primitive props. `MessagePrimitive.Content`
+  remains because it is still present in the installed 0.15 API and is outside
+  the removed-hook migration surface.
+- Focused evidence: chat typecheck passed, 231 chat tests passed, ESLint passed
+  with the existing image-optimization warnings, formatting passed, and a
+  frozen lockfile check passed. The lockfile contains the assistant-ui 0.15
+  transitive closure required by the package manager; no release-age override
+  is used.
+- Next: commit Slice 1, run the required simplifier, then run browser evidence
+  and the full repository gates.
