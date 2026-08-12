@@ -150,6 +150,46 @@ describe('standard live quiz response handlers', () => {
     })
   })
 
+  it('falls through a stale temporary cookie to the explicit respondent token', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const legacyTemporaryToken = await signJWT(
+      {
+        sub: '33333333-3333-4333-8333-333333333333',
+        role: 'TEMPORARY_PARTICIPANT',
+      },
+      secret,
+      { issuer }
+    )
+    const respondentToken = await createLiveQuizRespondentToken({
+      respondentId: '44444444-4444-4444-8444-444444444444',
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+    })
+
+    const identity = await resolveCorrelatedResponseIdentity({
+      database: {
+        temporaryLeaderboardEntry: {
+          findUnique: async () => null,
+        },
+      },
+      cookieHeader: `temporary_participant_token=${legacyTemporaryToken}`,
+      liveQuizId: request.liveQuizId,
+      secret,
+      issuer,
+      respondentToken,
+    })
+
+    assert.deepEqual(identity, {
+      kind: 'anonymous',
+      id: '44444444-4444-4444-8444-444444444444',
+      liveQuizId: request.liveQuizId,
+      token: respondentToken,
+      cookieName: getLiveQuizRespondentCookieName(request.liveQuizId),
+    })
+  })
+
   it('rejects correlated collection on the aggregate endpoint', async () => {
     let pushed = false
     const result = await handleAggregateResponse({
