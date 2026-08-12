@@ -1,10 +1,10 @@
-import { describe, expect, test, vi } from 'vitest'
 import {
   CHAT_ENGINE_CONTRACT_VERSION,
   conformanceManifest,
   type EngineChatRequest,
 } from '@klicker-uzh/chat-engine-contract'
-import { createChatApiApp, type ChatApiDependencies } from '../src/app.js'
+import { describe, expect, test, vi } from 'vitest'
+import { type ChatApiDependencies, createChatApiApp } from '../src/app.js'
 
 const chatbot = {
   id: 'chatbot-1',
@@ -288,5 +288,168 @@ describe('chat-api Slice 2 tracer', () => {
       code: 'PROVIDER_NOT_CONFIGURED',
     })
     expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+
+  test('sends a request credential only to an explicitly allowed provider origin', async () => {
+    const dependencies = baseDependencies(async (request) =>
+      engineSse([
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: {
+            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            engineId: 'fake-engine',
+            runId: request.runId,
+            modelId: 'gpt-4.1-mini',
+            deploymentId: 'gpt-4.1-mini',
+            usage: {
+              inputTokens: 12,
+              outputTokens: 8,
+              reasoningTokens: null,
+              cacheReadTokens: null,
+              cacheWriteTokens: null,
+              totalTokens: 20,
+            },
+            reasoningContent: null,
+            aborted: false,
+          },
+        },
+      ])
+    )
+    dependencies.getChatbot = vi.fn(async () => ({
+      ...chatbot,
+      openaiApiKey: 'request-key',
+      openaiBaseUrl: 'https://provider.example.test/v1',
+    }))
+
+    const response = await createChatApiApp(dependencies, {
+      providerAllowedOrigins: new Set(['https://provider.example.test']),
+    }).request('/api/chatbots/chatbot-1/chat', {
+      method: 'POST',
+      headers: { cookie: 'participant_token=test' },
+      body: JSON.stringify(body),
+    })
+
+    expect(response.status).toBe(200)
+    expect(dependencies.engine.chat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generation: expect.objectContaining({
+          credentialMode: {
+            mode: 'request',
+            providerBaseUrl: 'https://provider.example.test/v1',
+          },
+        }),
+      }),
+      expect.objectContaining({
+        providerAuthorization: 'Bearer request-key',
+      })
+    )
+  })
+
+  test('rejects a request credential for an unlisted provider origin', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.getChatbot = vi.fn(async () => ({
+      ...chatbot,
+      openaiApiKey: 'request-key',
+      openaiBaseUrl: 'https://untrusted.example.test/v1',
+    }))
+
+    const response = await createChatApiApp(dependencies, {
+      providerAllowedOrigins: new Set(['https://provider.example.test']),
+    }).request('/api/chatbots/chatbot-1/chat', {
+      method: 'POST',
+      headers: { cookie: 'participant_token=test' },
+      body: JSON.stringify(body),
+    })
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'PROVIDER_NOT_CONFIGURED',
+    })
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+
+  test('requires tools and their execution token to be resolved together', async () => {
+    const dependencies = baseDependencies(async () => engineSse([]))
+    dependencies.authorizeTools = vi.fn(async () => ({
+      tools: [
+        {
+          name: 'doc_query',
+          inputSchema: { type: 'object' },
+          serverId: 'doc-server',
+        },
+      ],
+      executionToken: '',
+    }))
+
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { cookie: 'participant_token=test' },
+        body: JSON.stringify(body),
+      }
+    )
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      code: 'MCP_EXECUTION_NOT_CONFIGURED',
+    })
+    expect(dependencies.engine.chat).not.toHaveBeenCalled()
+  })
+
+  test('forwards an approved tool only with its matching execution token', async () => {
+    const dependencies = baseDependencies(async (request) =>
+      engineSse([
+        {
+          type: 'finish',
+          finishReason: 'stop',
+          messageMetadata: {
+            contractVersion: CHAT_ENGINE_CONTRACT_VERSION,
+            engineId: 'fake-engine',
+            runId: request.runId,
+            modelId: 'gpt-4.1-mini',
+            deploymentId: 'gpt-4.1-mini',
+            usage: {
+              inputTokens: 12,
+              outputTokens: 8,
+              reasoningTokens: null,
+              cacheReadTokens: null,
+              cacheWriteTokens: null,
+              totalTokens: 20,
+            },
+            reasoningContent: null,
+            aborted: false,
+          },
+        },
+      ])
+    )
+    dependencies.authorizeTools = vi.fn(async () => ({
+      tools: [
+        {
+          name: 'doc_query',
+          inputSchema: { type: 'object' },
+          serverId: 'doc-server',
+        },
+      ],
+      executionToken: 'scoped-token',
+    }))
+
+    const response = await createChatApiApp(dependencies).request(
+      '/api/chatbots/chatbot-1/chat',
+      {
+        method: 'POST',
+        headers: { cookie: 'participant_token=test' },
+        body: JSON.stringify(body),
+      }
+    )
+
+    expect(response.status).toBe(200)
+    expect(dependencies.engine.chat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: [expect.objectContaining({ name: 'doc_query' })],
+      }),
+      expect.objectContaining({ mcpExecutionToken: 'scoped-token' })
+    )
   })
 })

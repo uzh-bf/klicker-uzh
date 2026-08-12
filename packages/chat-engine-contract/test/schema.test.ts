@@ -13,6 +13,8 @@ import {
   engineManifestSchema,
   engineStreamPartSchema,
   parseEngineStreamPart,
+  parseProviderAllowedOrigins,
+  providerOriginIsAllowed,
   validateProviderCredentialHeaders,
 } from '../src/index.js'
 
@@ -209,5 +211,24 @@ describe('chat engine contract', () => {
         ],
       }).success
     ).toBe(false)
+  })
+
+  test('parses exact provider origins and rejects URL-shaped allowlist entries', () => {
+    const origins = parseProviderAllowedOrigins(
+      'https://provider.example.test, http://litellm.example.test:4000'
+    )
+    expect([...origins]).toEqual([
+      'https://provider.example.test',
+      'http://litellm.example.test:4000',
+    ])
+    expect(
+      providerOriginIsAllowed('https://provider.example.test/v1', origins)
+    ).toBe(true)
+    expect(
+      providerOriginIsAllowed('https://untrusted.example.test/v1', origins)
+    ).toBe(false)
+    expect(() =>
+      parseProviderAllowedOrigins('https://provider.example.test/v1')
+    ).toThrow('exact HTTP origins')
   })
 })

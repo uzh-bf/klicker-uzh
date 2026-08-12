@@ -1,38 +1,40 @@
+import { fileURLToPath } from 'node:url'
 import { serve } from '@hono/node-server'
 import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  dynamicTool,
-  isStepCount,
-  jsonSchema,
-  streamText,
-  type JSONValue,
-  type LanguageModel,
-  type ModelMessage,
-  type UIMessage,
-  type ToolResultPart,
-  type UIMessageStreamWriter,
-} from 'ai'
-import { Hono } from 'hono'
-import {
-  CHAT_ENGINE_CONTRACT_VERSION,
-  MCP_EXECUTION_TOKEN_HEADER,
-  engineChatRequestSchema,
-  engineManifestSchema,
   type ApprovedTool,
+  CHAT_ENGINE_CONTRACT_VERSION,
   type EngineChatRequest,
   type EngineFinishMetadata,
   type EngineManifest,
   type EngineMessage,
   type EngineUsage,
+  engineChatRequestSchema,
+  engineManifestSchema,
+  MCP_EXECUTION_TOKEN_HEADER,
+  parseProviderAllowedOrigins,
+  providerOriginIsAllowed,
   type ResolvedGeneration,
   validateProviderCredentialHeaders,
 } from '@klicker-uzh/chat-engine-contract'
-import { fileURLToPath } from 'node:url'
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  dynamicTool,
+  isStepCount,
+  type JSONValue,
+  jsonSchema,
+  type LanguageModel,
+  type ModelMessage,
+  streamText,
+  type ToolResultPart,
+  type UIMessage,
+  type UIMessageStreamWriter,
+} from 'ai'
+import { Hono } from 'hono'
 import {
   createProviderModel,
-  providerOptionsForGeneration,
   type ProviderConfig,
+  providerOptionsForGeneration,
 } from './provider.js'
 
 const DEFAULT_ENGINE_ID = 'public-ai-sdk'
@@ -308,7 +310,12 @@ function serviceAuthorized(request: Request, serviceToken: string | undefined) {
   return request.headers.get('authorization') === `Bearer ${serviceToken}`
 }
 
-type ProviderResolution = { providerApiKey: string } | { error: string }
+type ProviderResolution =
+  | { providerApiKey: string }
+  | {
+      code: 'INVALID_PROVIDER_CREDENTIAL_MODE' | 'PROVIDER_ORIGIN_NOT_ALLOWED'
+      error: string
+    }
 
 function resolveProviderKey(
   request: Request,
@@ -320,20 +327,40 @@ function resolveProviderKey(
     generation,
     request.headers
   )
-  if (!credentials.ok) return { error: credentials.message } as const
+  if (!credentials.ok) {
+    return {
+      code: 'INVALID_PROVIDER_CREDENTIAL_MODE',
+      error: credentials.message,
+    } as const
+  }
   if (generation.credentialMode.mode === 'request') {
+    if (
+      !providerOriginIsAllowed(
+        generation.credentialMode.providerBaseUrl,
+        options.providerAllowedOrigins ?? new Set()
+      )
+    ) {
+      return {
+        code: 'PROVIDER_ORIGIN_NOT_ALLOWED',
+        error: 'Request provider origin is not allowed.',
+      } as const
+    }
     return { providerApiKey: credentials.providerApiKey! } as const
   }
   const key =
     providerApiKey ?? options.deploymentApiKey ?? process.env.OPENAI_API_KEY
   if (!key)
     return {
+      code: 'INVALID_PROVIDER_CREDENTIAL_MODE',
       error: 'Deployment provider credential is not configured.',
     } as const
   return { providerApiKey: key } as const
 }
 
 export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
+  options.providerAllowedOrigins ??= parseProviderAllowedOrigins(
+    process.env.CHAT_ENGINE_PROVIDER_ALLOWED_ORIGINS
+  )
   const engineId =
     options.engineId ?? process.env.CHAT_ENGINE_ID ?? DEFAULT_ENGINE_ID
   const serviceToken =
@@ -377,7 +404,7 @@ export function createDefaultEngineApp(options: DefaultEngineOptions = {}) {
       options.modelFactory ? 'model-factory' : undefined
     )
     if ('error' in provider) {
-      return jsonError(400, 'INVALID_PROVIDER_CREDENTIAL_MODE', provider.error)
+      return jsonError(400, provider.code, provider.error)
     }
 
     const mcpToken = c.req.header(MCP_EXECUTION_TOKEN_HEADER)

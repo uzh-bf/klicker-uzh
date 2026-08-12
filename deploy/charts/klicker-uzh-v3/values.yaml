@@ -229,6 +229,7 @@ chat:
 
   openai:
     baseUrl: ''
+    allowedOrigins: ''
     storeResponses: false
 
   telemetry:
