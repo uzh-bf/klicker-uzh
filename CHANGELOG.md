@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.67...v3.4.0-alpha.68) (2026-08-12)
+
+
+### Features
+
+* **manage:** add course duplication ([#4954](https://github.com/uzh-bf/klicker-uzh/issues/4954)) ([f85b9c1](https://github.com/uzh-bf/klicker-uzh/commit/f85b9c1d86634dea2757dd1ba93a9acbec4efc11))
+
+
+### Bug Fixes
+
+* **build:** harden Rollup TypeScript state ([#5362](https://github.com/uzh-bf/klicker-uzh/issues/5362)) ([90604a4](https://github.com/uzh-bf/klicker-uzh/commit/90604a44ad267920fdd26a692893b95fa488052c))
+
 ## [3.4.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.66...v3.4.0-alpha.67) (2026-08-10)
 
 
