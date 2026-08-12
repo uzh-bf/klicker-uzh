@@ -168,8 +168,8 @@ In `CORRELATED_EXPORT`:
 
 - standard response worker persists `LiveQuizResponse` for all respondents.
 - still updates Redis aggregate path for live/evaluation UI.
-- response-api uses a correlated-mode Redis vote-hash gate so duplicate submissions synchronously return recorded-before.
-- worker-side lookup remains the authoritative first-response-wins gate before insert.
+- response-api derives a quiz-, block-, instance-, and respondent-scoped `responseKey` and reserves it together with the pending outbox row in one transaction.
+- The unique `LiveQuizPendingResponse.responseKey` constraint is the synchronous duplicate gate; PostgreSQL uniqueness returns `duplicate` before a second response is enqueued, while the pending row remains the authoritative delivery record.
 
 In `AGGREGATED_ANONYMOUS`:
 
@@ -325,13 +325,13 @@ Do:
   memory-only use by the current page. Never put it in local storage, URLs, or a
   non-HttpOnly cookie. Do not reuse it across quizzes.
 - Forward respondent token through `response-api`.
-- Add the synchronous correlated-mode Redis vote-hash gate in response-api so duplicates return recorded-before.
+- Derive a quiz-, block-, instance-, and respondent-scoped `responseKey` in response-api and reserve it with the encrypted pending outbox row in one transaction. The unique database constraint returns duplicate submissions synchronously; the outbox row remains the authoritative delivery record.
 - Worker verifies token secret / signature and maps to `LiveQuizRespondent`; respondent id alone is not accepted.
 - Persist `LiveQuizResponse` rows in correlated mode for logged-in and anonymous correlated respondents.
 - Do not persist temporary pseudonym responses through the unified respondent model in this slice unless Slice 5 is moved before Slice 4.
 - Keep aggregate Redis updates unchanged.
 - Keep an authoritative worker-side duplicate lookup before insert.
-- Keep worker changes additive; do not refactor the legacy processor in this feature.
+- Preserve aggregate and assessment behavior while routing mode-specific work through the extracted aggregate, assessment, correlated, and response-effect processor modules. This refactor is intentional: it isolates correlated persistence and shared effect planning from the legacy orchestration path, with existing aggregate/assessment tests retained alongside the correlated suites.
 
 Files:
 
@@ -498,6 +498,7 @@ Later research:
 - 2026-08-12: Final review found and fixed a legacy temporary-participant continuity gap. Correlated identity resolution now confirms a temporary leaderboard entry for the target quiz before reusing a legacy unscoped temporary cookie; stale cookies fall through to the quiz-scoped anonymous respondent or explicit bearer fallback.
 - 2026-08-12: Final review also required this plan refresh. The stack topology, current B2 status, browser-runtime blocker, and draft-publication next steps are now recorded here.
 - 2026-08-12: Final review found that `test-graphql` did not run the response-api or response-processor integrity suites. The workflow now includes both app paths in its filter and runs their existing `test:run` scripts beside the GraphQL tests; browser runtime verification remains the separate pre-merge blocker.
+- 2026-08-12: Final review follow-up aligned the plan with the implemented responseKey uniqueness and transactional outbox admission, and recorded the intentional processor extraction that preserves aggregate and assessment behavior. The workflow now also builds the response-api and response-processor production bundles before running their source-level suites.
 
 ## Goal Prompt Requirements
 
@@ -513,7 +514,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit and independently review the legacy temporary-cookie fallback fix, then rerun the integrated final review on the resulting B2 range.
-2. Repair or bypass the shared DevPod lifecycle/font runtime failure and execute the focused correlated Playwright journey plus the repository-mandated Manage/PWA browser checks.
+1. Run the response-api and response-processor production builds plus the focused correlated Playwright journey and repository-mandated Manage/PWA browser checks in the isolated DevPod.
+2. Rerun the integrated final review on the resulting B2 range and record the review report.
 3. Publish `rs/pr5134-b1-export` and `rs/pr5134-b2-ui` as draft stacked PRs with whole-branch descriptions, preserving P0 and Stack A as their parents.
 4. Keep all PRs draft until CI and the browser gate are green; merge, ready-for-review, and cleanup actions remain separately authorized.
