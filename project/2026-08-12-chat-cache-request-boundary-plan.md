@@ -43,7 +43,7 @@ The package owns two separate request contracts:
 
 ## Plan identity and authority
 
-- Status: draft pending user approval after planning-stage review.
+- Status: approved; implementation in progress on the named branch.
 - Plan: `project/2026-08-12-chat-cache-request-boundary-plan.md`
 - Repository: `/Users/rschlae/Git/klicker/klicker-uzh`
 - Branch: `rs/chat-cache-request-boundary`
@@ -262,6 +262,15 @@ integrated branch.
 
 ### Slice 2 — Default-provider exact-response cache boundary
 
+**Route:** `executor` for the bounded fetch-policy implementation and focused
+synthetic tests; the main session owns provider-boundary integration and
+acceptance verification.
+
+**Acceptance:** Default Chat Completions, Responses, and image-description
+requests carry both exact-cache bypass flags; custom requests preserve their
+existing fields and omit only the new gateway fields; focused tests pass in the
+validated devcontainer.
+
 **Scope:** Extract or extend the existing fetch wrapper in
 `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts` and, if useful, add
 `apps/chat/src/lib/server/openaiCachePolicy.ts`. Keep the existing Responses
@@ -312,6 +321,12 @@ both must return before the next slice.
 **Suggested commit:** `enhance(chat): bypass exact cache for personalized chat`
 
 ### Slice 3 — Stable prompt-prefix identity and deterministic request order
+
+**Route:** `main`.
+
+**Execution-tier skip reason:** critical-path coupling — the identity helper,
+canonical provider-facing tool projection, executable tool behavior, and both
+transport serializers must be designed and integrated together.
 
 **Scope:** Add
 `apps/chat/src/lib/server/promptCacheIdentity.ts` and integrate it at the
@@ -373,6 +388,12 @@ integration.
 **Suggested commit:** `enhance(chat): add stable prompt cache identity`
 
 ### Slice 4 — Transport contract, documentation, and closure
+
+**Route:** `main`.
+
+**Execution-tier skip reason:** critical-path coupling — documentation,
+public-usage assertions, and final verification must be fact-checked against
+the integrated runtime contract.
 
 **Scope:** Convert the useful assertions from the disposable probe into
 repository-owned tests, including public AI SDK `usage.inputTokenDetails` for
@@ -504,7 +525,7 @@ the report preserves the exact identity that was reviewed.
 - No review authorizes edits, commits, pushes, publication, deployment, or
   production access.
 
-## Progress at planning handoff
+## Progress
 
 - [x] Read the takeover handoff and required workflow skills.
 - [x] Validate the live `v3` ref through read-only remote lookup.
@@ -517,7 +538,13 @@ the report preserves the exact identity that was reviewed.
 - [x] Incorporate verified review corrections and independently recheck them.
 - [x] Present the reviewed plan for user approval; approval received on
   2026-08-12.
-- [ ] Commit the approved plan as the branch's first commit.
+- [x] Commit the approved plan as the branch's first commit (`1c8ff5bf0`).
+- [x] Slice 2 implemented: the default-provider fetch boundary adds the exact
+  cache bypass while preserving Responses normalization, and the focused
+  synthetic transport/image tests pass. The executor returned `NEEDS_CONTEXT`
+  without edits, so the main session retained provider-boundary integration.
+- [ ] Slice 2 review gate: commit the immutable slice, then run one
+  `slice-reviewer` and one `simplifier` in parallel before Slice 3.
 - [ ] Implement and verify the approved slices.
 
 ## Next action after user approval
