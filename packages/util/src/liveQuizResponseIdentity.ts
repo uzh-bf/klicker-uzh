@@ -98,11 +98,13 @@ export async function resolveLiveQuizResponseIdentity({
   liveQuizId,
   secret,
   issuer,
+  respondentToken,
 }: {
   cookieHeader: string | undefined
   liveQuizId: string
   secret: string
   issuer: string
+  respondentToken?: string
 }): Promise<LiveQuizResponseIdentity | null> {
   const cookies = parseCookiesHeader(cookieHeader)
 
@@ -148,14 +150,14 @@ export async function resolveLiveQuizResponseIdentity({
   }
 
   const respondentCookieName = getLiveQuizRespondentCookieName(liveQuizId)
-  const respondentToken = cookies[respondentCookieName]
+  const respondentCookieToken = cookies[respondentCookieName]
   const respondentPayload = await verifyIdentityToken({
-    token: respondentToken,
+    token: respondentCookieToken,
     secret,
     issuer,
   })
   if (
-    respondentToken &&
+    respondentCookieToken &&
     respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
     respondentPayload.liveQuizId === liveQuizId &&
     typeof respondentPayload.sub === 'string'
@@ -163,6 +165,26 @@ export async function resolveLiveQuizResponseIdentity({
     return {
       kind: 'anonymous',
       id: respondentPayload.sub,
+      liveQuizId,
+      token: respondentCookieToken,
+      cookieName: respondentCookieName,
+    }
+  }
+
+  const explicitRespondentPayload = await verifyIdentityToken({
+    token: respondentToken,
+    secret,
+    issuer,
+  })
+  if (
+    respondentToken &&
+    explicitRespondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
+    explicitRespondentPayload.liveQuizId === liveQuizId &&
+    typeof explicitRespondentPayload.sub === 'string'
+  ) {
+    return {
+      kind: 'anonymous',
+      id: explicitRespondentPayload.sub,
       liveQuizId,
       token: respondentToken,
       cookieName: respondentCookieName,

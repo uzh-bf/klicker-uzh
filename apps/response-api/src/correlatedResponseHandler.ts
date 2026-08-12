@@ -45,6 +45,7 @@ export async function handleCorrelatedResponse({
     liveQuizId: request.liveQuizId,
     secret: identityConfig.secret,
     issuer: identityConfig.issuer,
+    respondentToken: request.respondentToken,
   })
   if (!identity) {
     return {

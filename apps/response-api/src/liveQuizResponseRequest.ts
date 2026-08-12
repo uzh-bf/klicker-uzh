@@ -197,15 +197,18 @@ export type LiveQuizResponseRequest = {
   response: LiveQuizResponseInput
   responseTimestamp: number
   cookieHeader: string | undefined
+  respondentToken?: string
 }
 
 export function parseLiveQuizResponseRequest({
   payload,
   cookieHeader,
+  respondentToken,
   now = Date.now,
 }: {
   payload: unknown
   cookieHeader: string | undefined
+  respondentToken?: string
   now?: () => number
 }):
   | { ok: true; request: LiveQuizResponseRequest }
@@ -234,6 +237,7 @@ export function parseLiveQuizResponseRequest({
       response: response as LiveQuizResponseInput,
       responseTimestamp: now(),
       cookieHeader,
+      respondentToken,
     },
   }
 }

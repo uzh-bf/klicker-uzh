@@ -27,6 +27,10 @@
       "feedbackResponse": "Response to Feedback"
     }
   },
+  "correlated": {
+    "name": "Correlated Live Quiz",
+    "displayName": "Correlated Live Quiz (Display)"
+  },
   "liveQuiz": {
     "course": "Testkurs",
     "name": "Live Quiz 3",

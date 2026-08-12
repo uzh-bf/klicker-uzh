@@ -60,8 +60,9 @@ cleanup.
 
 For the correlated response UI, add the browser gate on top of those backend
 checks: verify the Manage wizard’s aggregate/correlated transition rules and
-published-mode lock, the PWA privacy notice and response endpoint selection, and
-the ended-quiz evaluation download/error states in both locales.
+published-mode lock, the PWA privacy notice and response endpoint selection,
+including the memory-only respondent-token fallback when the response cookie is
+blocked, and the ended-quiz evaluation download/error states in both locales.
 
 For publication and lifecycle changes, run the focused GraphQL publication and abort suites. Include a real Redis Lua smoke for generation cleanup and late publication: a persisted monotonic generation counter must let an immediate republish proceed even when timestamps share a millisecond, while an abort tombstone rejects an older metadata write, permits a newer generation, and fails closed when no current metadata exists. When assessment or course transitions allocate live-quiz PINs, cover the unique-write retry boundary as well as the ordinary allocation path.
 

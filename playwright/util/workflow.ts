@@ -1195,6 +1195,12 @@ export async function runTask(name: string, args: any = {}) {
       })
     ).pinCode
   }
+  if (name === 'getLiveQuizInfo') {
+    return prisma.liveQuiz.findFirstOrThrow({
+      where: { name: args.name, isDeleted: false },
+      select: { id: true, status: true, responseCollectionMode: true },
+    })
+  }
   if (name === 'verifyLiveQuizPin') {
     return (
       (

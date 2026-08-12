@@ -61,7 +61,18 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Cookie, Authorization'
+  )
+}
+
+function getBearerToken(req: IncomingMessage) {
+  const authorization = req.headers.authorization
+  if (typeof authorization !== 'string') return undefined
+
+  const match = /^Bearer\s+(\S+)$/i.exec(authorization)
+  return match?.[1]
 }
 
 function sendJson(
@@ -180,6 +191,8 @@ async function handleInitializeLiveQuizResponseIdentity(
   req: IncomingMessage,
   res: ServerResponse
 ) {
+  res.setHeader('Cache-Control', 'no-store')
+
   if (process.env.ASSESSMENT_MODE === 'true') {
     return sendJson(req, res, 200, { status: 'not_required' })
   }
@@ -204,12 +217,17 @@ async function handleInitializeLiveQuizResponseIdentity(
   if (admission === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
-  await ensureCorrelatedResponseIdentity({
+  const identity = await ensureCorrelatedResponseIdentity({
     req,
     res,
     liveQuizId: payload.liveQuizId,
   })
-  return sendJson(req, res, 200, { status: 'ready' })
+  return sendJson(req, res, 200, {
+    status: 'ready',
+    ...(identity.kind === 'anonymous'
+      ? { respondentToken: identity.token }
+      : {}),
+  })
 }
 
 async function readLiveQuizResponseRequest(
@@ -227,6 +245,7 @@ async function readLiveQuizResponseRequest(
     payload,
     cookieHeader:
       typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
+    respondentToken: getBearerToken(req),
   })
   if (!parsed.ok) {
     badRequest(req, res, parsed.message)

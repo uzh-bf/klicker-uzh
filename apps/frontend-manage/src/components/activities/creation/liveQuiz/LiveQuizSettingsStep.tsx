@@ -458,6 +458,7 @@ function LiveQuizSettingsStep({
                             value={
                               LiveQuizResponseCollectionMode.AggregatedAnonymous
                             }
+                            data-cy="set-quiz-response-collection-aggregated"
                             className="min-h-10 whitespace-normal px-2 text-xs"
                           >
                             {t(
@@ -469,6 +470,7 @@ function LiveQuizSettingsStep({
                               LiveQuizResponseCollectionMode.CorrelatedExport
                             }
                             disabled={selectedCourse?.isGamified}
+                            data-cy="set-quiz-response-collection-correlated"
                             className="min-h-10 whitespace-normal px-2 text-xs"
                           >
                             {t(

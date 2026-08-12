@@ -13,7 +13,9 @@ Status: implementation in progress
 - No assessment behavior change. Assessment remains identifiable and auditable by design.
 - No backfill for old standard live quizzes. Future quizzes only.
 - No research / DP export in this slice. Later admin workflow.
-- No PII removal from free-text responses yet.
+- Free-text answers are excluded from the correlated teaching export in this
+  slice; broader PII handling for other research/export channels remains future
+  work.
 - No per-respondent live UI. Live/evaluation UI stays aggregate-only.
 
 ## Current Evidence
@@ -41,7 +43,9 @@ Status: implementation in progress
 - Decision: labels are stable across re-exports after the quiz ends. Order internal identities by `HMAC(exportSalt, internalId)` before assigning labels; raw ids, response time, and join order are never exposed.
 - Decision: logged-in users may still use account internally for scoring/leaderboard, but export strips account identity.
 - Decision: temporary pseudonym remains visible on leaderboard, but export strips pseudonym.
-- Decision: free text included verbatim in teaching export for now; warn that free text can contain personal data.
+- Decision: free text is excluded from the correlated teaching export in this
+  slice. The export still carries pseudonymized individual-level data and must
+  not be described as anonymous or differential privacy.
 - Decision: duplicate submissions follow assessment semantics: first response counts; duplicate returns recorded-before.
 - Decision: anonymous correlated id persists per quiz if possible, survives reload/browser close; no cross-quiz reuse.
 - Decision: normal quiz editors can enable mode. No special permission.
@@ -70,7 +74,7 @@ German:
 
 Export warning:
 
-> Export uses random respondent labels and does not include names, emails, account ids, usernames, or temporary pseudonyms. Free-text answers may still contain personal data entered by participants.
+> Export uses random respondent labels and does not include names, emails, account ids, usernames, temporary pseudonyms, or free-text answers.
 
 ## Target Architecture
 
@@ -174,7 +178,7 @@ Output shape:
 - no email, participant id, username, temporary pseudonym, account type.
 - no submission or join timestamps.
 - unanswered cells are empty; scalar answers are plain text; structured answers use canonical compact JSON in one cell.
-- free text remains verbatim as data, but CSV formula-leading values are neutralized before download so spreadsheet software cannot execute participant input.
+- free-text answers are excluded from this teaching export; remaining scalar and structured values are formula-neutralized before download so spreadsheet software cannot execute participant input.
 - RFC 4180-compatible quoting, CRLF rows, and UTF-8 with BOM so commas, quotes, line breaks, and German text open cleanly in spreadsheet tools.
 - response includes a safe filename, CSV content, and the privacy warning shown by the UI.
 
@@ -299,7 +303,11 @@ Commit:
 Do:
 
 - Create quiz-scoped anonymous correlated respondent when mode is `CORRELATED_EXPORT`.
-- Persist opaque token or `id + secret` in browser/cookie where possible; no cross-quiz reuse.
+- Persist the opaque token in an HttpOnly quiz-scoped cookie where possible. The
+  initialization response may also return the signed anonymous respondent token
+  for memory-only use by the current page when browsers block the cookie; never
+  put it in local storage, URLs, or a non-HttpOnly cookie. Do not reuse it across
+  quizzes.
 - Forward respondent token through `response-api`.
 - Add the synchronous correlated-mode Redis vote-hash gate in response-api so duplicates return recorded-before.
 - Worker verifies token secret / signature and maps to `LiveQuizRespondent`; respondent id alone is not accepted.
@@ -365,9 +373,11 @@ Do:
 - Use HMAC-sorted stable `respondent_N` labels.
 - Strip all identifiers and respondent type.
 - Use clean, deterministic headers, canonical structured values, formula-injection protection, and RFC 4180-compatible escaping.
-- Include free-text verbatim.
-- Give this export an explicit teaching-matrix privacy mode; do not overload the existing pseudonymized export mode that redacts free text.
-- Show the free-text privacy warning next to the download action and include it in export metadata where applicable.
+- Exclude free-text answers from the teaching export.
+- Keep the export explicitly pseudonymized individual-level data; do not call it
+  anonymous or differential privacy.
+- Show the export contents warning next to the download action and include it in
+  export metadata where applicable.
 - Export unavailable/empty for old or aggregate-only quizzes with clear message.
 - Apply a documented response-size guard and return a clear error rather than truncating.
 
@@ -385,7 +395,7 @@ Files:
 
 Check:
 
-- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text inclusion, authorization, status/mode gating, and size-limit failure.
+- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text exclusion, authorization, status/mode gating, and size-limit failure.
 - DB-backed export with fixture data across logged-in, temporary, anonymous respondents.
 - Agent-browser download check: correct filename, headers, row shape, warning, and unavailable states.
 
@@ -400,9 +410,12 @@ Do:
 - Full local flow: create correlated LQ, submit as logged-in, temporary pseudonym, anonymous correlated, export.
 - Browser screenshots: manage setting; PWA notices in both modes.
 - Add seed data for a correlated quiz and all respondent types.
-- Add lecturer-facing docs for both modes, export contents, and free-text responsibility.
+- Add lecturer-facing docs for both modes, export contents, and the limits of the pseudonymized export boundary.
 - Add mandatory E2E cases: enable correlated mode; anonymous reload continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
-- Manually test blocked cookies/storage. Expected degradation: quiz remains usable, but anonymous responses may split into multiple export rows.
+- Manually test blocked respondent cookies/storage after the quiz is otherwise
+  admitted. The current page must remain usable through the memory-only signed
+  token; a reload may create another pseudonymous export row. PIN-protected
+  admission still requires its quiz PIN cookie.
 - Security review: token scope, cookie expiry, identifier leakage, export PII warnings.
 - Final branch review.
 - PR/MR body with screenshots and manual verification list.
@@ -422,9 +435,11 @@ Commit:
 
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
-- Token stored in browser can split respondents when cookies/storage blocked. Notice/export should tolerate multiple rows.
-- Browser-stored respondent ids are bearer identifiers. Use a signed token or separate secret and verify it server-side before writing correlated responses.
-- Free text can identify participants despite export pseudonyms. Warning required.
+- Respondent cookies can be blocked. The current page uses a memory-only signed
+  token as a fallback, while a reload may create another pseudonymous row.
+- Memory-only respondent tokens are bearer credentials for one quiz. Use a signed token and verify it server-side before writing correlated responses.
+- Free text is excluded from the v3.5 correlated teaching export. Other future
+  research/export channels still need their own PII review.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
 - Live worker has Redis-first design; DB writes must not slow response path enough to harm live quiz UX.
 - Returning CSV through GraphQL is intentionally simple for v1 but needs an explicit size limit; large-export streaming remains a later option.
@@ -460,6 +475,9 @@ Later research:
 - 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks.
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
+- 2026-08-12: The accepted privacy boundary is now reflected here: correlated teaching export excludes free-text answers, matching ADR 0001 and the export tests.
+- 2026-08-12: Cookie-blocked correlated sessions use a quiz-scoped signed respondent token returned only to the current page in memory; cookie identities retain precedence, and PIN admission remains cookie-based.
+- 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
 
 ## Goal Prompt Requirements
 
