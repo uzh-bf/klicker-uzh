@@ -8,8 +8,8 @@
 - Decision: Add one deterministic, read-only MCP fixture to the existing Chat
   package and start it inside the app container. Keep the existing seeded URL,
   add no dependency, and make no production configuration change.
-- Package: Full-path stacked package on `rs/chat-local-mcp-fixture`, based on
-  `rs/chat-ux-conversation-polish` while draft PR #5363 remains open.
+- Package: Full-path stacked package on `rs/chat-local-mcp-fixture-clean`, based
+  on `rs/chat-ux-conversation-polish` while draft PR #5363 remains open.
 
 ## Planning Review
 
@@ -55,8 +55,14 @@
 - Verification: protocol, managed lifecycle, Chat suite, root checks, build,
   direct-model browser path, Auto Mode behavior, and reload persistence passed
   or were characterized as described above.
-- Commit: `48c9a3f72`.
+- Plan commit: `939ec6dd7`.
+- Implementation commit: `b854a3bcb`.
+- Review-fix commit: `ed14f51d6`.
 - Simplifier: done — approved with no justified net reduction.
 - Intermediate review: done — no actionable correctness, security, lifecycle,
   cross-system, or verification findings.
-- Remaining: integrated final review before publication.
+- Integrated final review: completed with one medium runtime-identity finding
+  and one low history-ordering finding. Both were fixed before publication:
+  the fixture source hash now forces managed replacement, and this clean stack
+  commits the reviewed plan first.
+- Remaining: final verification readback and publication only when requested.
