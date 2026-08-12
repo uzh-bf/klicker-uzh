@@ -58,6 +58,11 @@ loaded, and the query must remain blocked until all accepted outbox rows are
 settled. The correlated abort integration test must also verify export-label
 cleanup.
 
+For the correlated response UI, add the browser gate on top of those backend
+checks: verify the Manage wizard’s aggregate/correlated transition rules and
+published-mode lock, the PWA privacy notice and response endpoint selection, and
+the ended-quiz evaluation download/error states in both locales.
+
 For publication and lifecycle changes, run the focused GraphQL publication and abort suites. Include a real Redis Lua smoke for generation cleanup and late publication: a persisted monotonic generation counter must let an immediate republish proceed even when timestamps share a millisecond, while an abort tombstone rejects an older metadata write, permits a newer generation, and fails closed when no current metadata exists. When assessment or course transitions allocate live-quiz PINs, cover the unique-write retry boundary as well as the ordinary allocation path.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.

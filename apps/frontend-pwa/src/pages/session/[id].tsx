@@ -12,6 +12,7 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
+  LiveQuizResponseCollectionMode,
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -44,23 +45,75 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
+const responseIdentityInitializations = new Map<string, Promise<void>>()
+
+function getResponseApiEndpoint(endpoint: string) {
+  const url = new URL(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string)
+  const basePath = url.pathname
+    .replace(/\/AddResponse\/?$/, '')
+    .replace(/\/$/, '')
+  url.pathname = `${basePath}/${endpoint}`
+  return url.toString()
+}
+
+function ensureCorrelatedResponseIdentity(liveQuizId: string) {
+  const existing = responseIdentityInitializations.get(liveQuizId)
+  if (existing) return existing
+
+  const initialization = (async () => {
+    const response = await fetch(
+      getResponseApiEndpoint('InitializeLiveQuizResponseIdentity'),
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liveQuizId }),
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Live quiz response identity initialization failed')
+    }
+  })().catch((error) => {
+    responseIdentityInitializations.delete(liveQuizId)
+    throw error
+  })
+
+  responseIdentityInitializations.set(liveQuizId, initialization)
+  return initialization
+}
+
 async function handleNewResponse({
   liveQuizId,
   instanceId,
   type,
   answer,
   correlationKey,
+  responseCollectionMode,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  responseCollectionMode: LiveQuizResponseCollectionMode
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
+  if (
+    responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+  ) {
+    try {
+      await ensureCorrelatedResponseIdentity(liveQuizId)
+    } catch {
+      return { statusCode: 1 }
+    }
+  }
+
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -122,7 +175,12 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
 
   try {
     const response = await fetch(
-      process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
+      getResponseApiEndpoint(
+        responseCollectionMode ===
+          LiveQuizResponseCollectionMode.CorrelatedExport
+          ? 'AddCorrelatedResponse'
+          : 'AddResponse'
+      ),
       requestOptions
     )
 
@@ -373,6 +431,7 @@ function Index({ id }: { id: string }) {
     isConfusionFeedbackEnabled,
     isGamificationEnabled,
     isAssessmentEnabled,
+    responseCollectionMode,
     isPartOfGamifiedCourse,
     course,
   } = data.studentLiveQuiz
@@ -439,7 +498,11 @@ function Index({ id }: { id: string }) {
         selectedBlock={selectedBlock}
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
-        handleNewResponse={handleNewResponse}
+        isAssessmentEnabled={isAssessmentEnabled}
+        responseCollectionMode={responseCollectionMode}
+        handleNewResponse={(params) =>
+          handleNewResponse({ ...params, responseCollectionMode })
+        }
         className={extraClassName}
       />
     )

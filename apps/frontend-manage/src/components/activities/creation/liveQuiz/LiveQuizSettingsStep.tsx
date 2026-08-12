@@ -8,7 +8,10 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  LiveQuizResponseCollectionMode,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
   LQ_DEFAULT_POINTS,
@@ -20,6 +23,8 @@ import {
   Checkbox,
   FormikSwitchField,
   SelectField,
+  ToggleGroup,
+  ToggleGroupItem,
   Tooltip,
   UserNotification,
 } from '@uzh-bf/design-system'
@@ -27,15 +32,105 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CreationFormValidator from '../CreationFormValidator'
 import MultiplierSelector from '../MultiplierSelector'
+import type { LiveQuizFormValues } from '../WizardLayout'
 import WizardNavigation from '../WizardNavigation'
 import AdvancedLiveQuizSettings from './AdvancedLiveQuizSettings'
 import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
+function applyResponseCollectionMode(
+  values: LiveQuizFormValues,
+  responseCollectionMode: LiveQuizResponseCollectionMode
+) {
+  return {
+    ...values,
+    responseCollectionMode,
+    isGamificationEnabled:
+      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+        ? false
+        : values.isGamificationEnabled,
+  }
+}
+
+function applyGamificationSetting(
+  values: LiveQuizFormValues,
+  isGamificationEnabled: boolean,
+  responseCollectionModeLocked: boolean
+) {
+  if (
+    isGamificationEnabled &&
+    responseCollectionModeLocked &&
+    values.responseCollectionMode ===
+      LiveQuizResponseCollectionMode.CorrelatedExport
+  ) {
+    return values
+  }
+
+  return {
+    ...values,
+    isGamificationEnabled,
+    responseCollectionMode:
+      isGamificationEnabled &&
+      values.responseCollectionMode ===
+        LiveQuizResponseCollectionMode.CorrelatedExport
+        ? LiveQuizResponseCollectionMode.AggregatedAnonymous
+        : values.responseCollectionMode,
+  }
+}
+
+function applyCourseSelection(
+  values: LiveQuizFormValues,
+  courseId: string,
+  previousCourse: ElementSelectCourse | undefined,
+  selectedCourse: ElementSelectCourse | undefined,
+  responseCollectionModeLocked: boolean
+) {
+  let nextValues: LiveQuizFormValues = {
+    ...values,
+    courseId,
+    isGamificationEnabled: previousCourse?.isGamified
+      ? false
+      : values.isGamificationEnabled,
+    isPinProtected: previousCourse?.isAssessmentEnabled
+      ? false
+      : values.isPinProtected,
+  }
+
+  if (courseId === 'no-course-selected') {
+    return {
+      ...nextValues,
+      isAssessmentEnabled: false,
+      multiplier: '1',
+    }
+  }
+
+  if (selectedCourse?.isGamified) {
+    nextValues = applyGamificationSetting(
+      nextValues,
+      true,
+      responseCollectionModeLocked
+    )
+  }
+
+  return {
+    ...nextValues,
+    isAssessmentEnabled: selectedCourse?.isAssessmentEnabled ?? false,
+    isPinProtected: selectedCourse?.isAssessmentEnabled
+      ? true
+      : nextValues.isPinProtected,
+    responseCollectionMode:
+      selectedCourse?.isAssessmentEnabled && !responseCollectionModeLocked
+        ? LiveQuizResponseCollectionMode.AggregatedAnonymous
+        : nextValues.responseCollectionMode,
+  }
+}
+
 function LiveQuizSettingsStep({
   editMode,
   duplicationMode,
+  responseCollectionModeLocked,
   formRef,
   formData,
   continueDisabled,
@@ -62,6 +157,16 @@ function LiveQuizSettingsStep({
     nonGamifiedCourses: nonGamifiedCourses ?? [],
     assessmentCourses: assessmentCourses ?? [],
   })
+  const availableCourses = [
+    ...(gamifiedCourses ?? []),
+    ...(nonGamifiedCourses ?? []),
+    ...(assessmentCourses ?? []),
+  ]
+  const correlatedIncompatibleCourseIds = new Set(
+    [...(gamifiedCourses ?? []), ...(assessmentCourses ?? [])].map(
+      (course) => course.value
+    )
+  )
 
   return (
     <Formik
@@ -71,12 +176,17 @@ function LiveQuizSettingsStep({
       innerRef={formRef}
       validationSchema={validationSchema}
     >
-      {({ values, errors, isValid, isSubmitting, setFieldValue }) => {
-        const selectedCourse = [
-          ...(gamifiedCourses ?? []),
-          ...(nonGamifiedCourses ?? []),
-          ...(assessmentCourses ?? []),
-        ].find((course) => course.value === values.courseId)
+      {({
+        values,
+        errors,
+        isValid,
+        isSubmitting,
+        setFieldValue,
+        setValues,
+      }) => {
+        const selectedCourse = availableCourses.find(
+          (course) => course.value === values.courseId
+        )
         const customizedGradingEnabled =
           parseInt(String(values.defaultPoints)) !== LQ_DEFAULT_POINTS ||
           parseInt(String(values.defaultCorrectPoints)) !==
@@ -90,6 +200,33 @@ function LiveQuizSettingsStep({
           !duplicationMode &&
           values.isAssessmentEnabled &&
           !selectedCourse?.isManager
+        const responseCollectionModeDisabled =
+          values.isAssessmentEnabled || responseCollectionModeLocked
+        const correlatedModeSelected =
+          values.responseCollectionMode ===
+          LiveQuizResponseCollectionMode.CorrelatedExport
+        const lockedCorrelatedMode =
+          responseCollectionModeLocked && correlatedModeSelected
+        const selectableCourseGroups = lockedCorrelatedMode
+          ? groupedCourses.map((group) => ({
+              ...group,
+              items: group.items.map((item) => {
+                const incompatibleCourse = correlatedIncompatibleCourseIds.has(
+                  item.value
+                )
+
+                return incompatibleCourse
+                  ? {
+                      ...item,
+                      disabled: true,
+                      tooltip: t(
+                        'manage.activityWizard.responseCollectionLockedCourseConflict'
+                      ),
+                    }
+                  : item
+              }),
+            }))
+          : groupedCourses
 
         return (
           <Form className="h-full w-full">
@@ -118,55 +255,22 @@ function LiveQuizSettingsStep({
                         disabled={courseSelectionDisabled}
                         value={values.courseId}
                         onChange={(value) => {
-                          // if the live quiz was assigned to another course before, get the corresponding settings
                           const prevCourse = values.courseId
-                            ? [
-                                ...(gamifiedCourses ?? []),
-                                ...(nonGamifiedCourses ?? []),
-                                ...(assessmentCourses ?? []),
-                              ].find(
-                                (course) => course.value === values.courseId
-                              )
+                            ? selectedCourse
                             : undefined
+                          const nextCourse = availableCourses.find(
+                            (course) => course.value === value
+                          )
 
-                          // set the new course
-                          setFieldValue('courseId', value)
-
-                          // if the gamification setting was true from the previous course, reset it to false
-                          // --> only keep manually modified gamification settings
-                          if (prevCourse?.isGamified) {
-                            setFieldValue('isGamificationEnabled', false)
-                          }
-
-                          // if the pin protection setting was true from the previous course, reset it to false
-                          // --> only keep manually modified pin protection settings
-                          if (prevCourse?.isAssessmentEnabled) {
-                            setFieldValue('isPinProtected', false)
-                          }
-
-                          if (value === 'no-course-selected') {
-                            setFieldValue('isAssessmentEnabled', false)
-                            setFieldValue('multiplier', '1')
-                          } else {
-                            const selectedCourse = [
-                              ...(gamifiedCourses ?? []),
-                              ...(nonGamifiedCourses ?? []),
-                              ...(assessmentCourses ?? []),
-                            ].find((course) => course.value === value)
-
-                            // if the new course has gamification enabled, set the setting accordingly
-                            if (selectedCourse?.isGamified) {
-                              setFieldValue('isGamificationEnabled', true)
-                            }
-
-                            // if the new course has assessment enabled, set the assessment and pin protection settings accordingly
-                            if (selectedCourse?.isAssessmentEnabled) {
-                              setFieldValue('isAssessmentEnabled', true)
-                              setFieldValue('isPinProtected', true)
-                            } else {
-                              setFieldValue('isAssessmentEnabled', false)
-                            }
-                          }
+                          void setValues(
+                            applyCourseSelection(
+                              values,
+                              value,
+                              prevCourse,
+                              nextCourse,
+                              responseCollectionModeLocked ?? false
+                            )
+                          )
                         }}
                         label={t('shared.generic.course')}
                         tooltip={t.rich(
@@ -187,7 +291,7 @@ function LiveQuizSettingsStep({
                         placeholder={t(
                           'manage.activityWizard.liveQuizSelectCourse'
                         )}
-                        groups={groupedCourses}
+                        groups={selectableCourseGroups}
                         data={{ cy: 'select-course' }}
                         className={{
                           select: {
@@ -232,12 +336,18 @@ function LiveQuizSettingsStep({
                         <Checkbox
                           label={t('shared.generic.gamification')}
                           checked={values.isGamificationEnabled}
-                          onCheck={() =>
-                            setFieldValue(
-                              'isGamificationEnabled',
+                          disabled={lockedCorrelatedMode}
+                          onCheck={() => {
+                            const enableGamification =
                               !values.isGamificationEnabled
+                            void setValues(
+                              applyGamificationSetting(
+                                values,
+                                enableGamification,
+                                responseCollectionModeLocked ?? false
+                              )
                             )
-                          }
+                          }}
                           className={{
                             indicator: 'text-xs',
                             root: 'w-4.5 h-4.5',
@@ -302,6 +412,101 @@ function LiveQuizSettingsStep({
                             className="text-primary-60"
                           />
                         </Tooltip>
+                      </div>
+                      <div className="border-border mt-3 border-t pt-3">
+                        <div className="mb-1 flex items-center gap-2">
+                          <span
+                            id="response-collection-mode-label"
+                            className="text-sm font-bold"
+                          >
+                            {t('manage.activityWizard.responseCollectionMode')}
+                          </span>
+                          <Tooltip
+                            tooltip={t(
+                              'manage.activityWizard.responseCollectionModeTooltip'
+                            )}
+                          >
+                            <FontAwesomeIcon
+                              icon={faQuestionCircle}
+                              className="text-primary-60"
+                            />
+                          </Tooltip>
+                        </div>
+                        <ToggleGroup
+                          type="single"
+                          variant="outline"
+                          value={values.responseCollectionMode}
+                          disabled={responseCollectionModeDisabled}
+                          onValueChange={(value) => {
+                            if (
+                              value ===
+                                LiveQuizResponseCollectionMode.AggregatedAnonymous ||
+                              value ===
+                                LiveQuizResponseCollectionMode.CorrelatedExport
+                            ) {
+                              void setValues(
+                                applyResponseCollectionMode(values, value)
+                              )
+                            }
+                          }}
+                          aria-labelledby="response-collection-mode-label"
+                          aria-describedby="response-collection-mode-description"
+                          data-cy="set-quiz-response-collection-mode"
+                          className="w-full"
+                        >
+                          <ToggleGroupItem
+                            value={
+                              LiveQuizResponseCollectionMode.AggregatedAnonymous
+                            }
+                            className="min-h-10 whitespace-normal px-2 text-xs"
+                          >
+                            {t(
+                              'manage.activityWizard.responseCollectionAggregated'
+                            )}
+                          </ToggleGroupItem>
+                          <ToggleGroupItem
+                            value={
+                              LiveQuizResponseCollectionMode.CorrelatedExport
+                            }
+                            disabled={selectedCourse?.isGamified}
+                            className="min-h-10 whitespace-normal px-2 text-xs"
+                          >
+                            {t(
+                              'manage.activityWizard.responseCollectionCorrelated'
+                            )}
+                          </ToggleGroupItem>
+                        </ToggleGroup>
+                        <div
+                          id="response-collection-mode-description"
+                          className="text-primary-80 mt-1 text-xs leading-4"
+                        >
+                          <p>
+                            {values.isAssessmentEnabled
+                              ? t(
+                                  'manage.activityWizard.responseCollectionAssessment'
+                                )
+                              : values.isGamificationEnabled
+                                ? t(
+                                    'manage.activityWizard.responseCollectionGamificationConflict'
+                                  )
+                                : values.responseCollectionMode ===
+                                    LiveQuizResponseCollectionMode.CorrelatedExport
+                                  ? t(
+                                      'manage.activityWizard.responseCollectionCorrelatedSummary'
+                                    )
+                                  : t(
+                                      'manage.activityWizard.responseCollectionAggregatedSummary'
+                                    )}
+                          </p>
+                          {!values.isAssessmentEnabled &&
+                          responseCollectionModeLocked ? (
+                            <p className="mt-1">
+                              {t(
+                                'manage.activityWizard.responseCollectionLocked'
+                              )}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>

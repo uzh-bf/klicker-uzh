@@ -96,6 +96,7 @@ async function submitLiveQuizForm({
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
+          responseCollectionMode: values.responseCollectionMode,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful or no course was assigned (and the activity was not removed from another course), return early
@@ -172,6 +173,7 @@ async function submitLiveQuizForm({
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
+          responseCollectionMode: values.responseCollectionMode,
         },
         update: (cache, { data: res }) => {
           // if the mutation was not successful, return early

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { ApolloError, useMutation, useQuery } from '@apollo/client'
 import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
@@ -522,7 +522,39 @@ function CourseOverviewHeader({
                 setSubmitting(false)
               }
             } catch (error) {
-              onError()
+              const isCorrelatedGamificationConflict =
+                error instanceof ApolloError &&
+                error.graphQLErrors.some(
+                  (graphQLError) =>
+                    graphQLError.extensions?.code ===
+                    'LIVE_QUIZ_CORRELATED_GAMIFICATION_CONFLICT'
+                )
+              if (isCorrelatedGamificationConflict) {
+                toast({
+                  type: 'error',
+                  message: t(
+                    'manage.courseList.gamificationCorrelatedQuizConflict'
+                  ),
+                  options: { duration: 6000 },
+                })
+              } else if (
+                error instanceof ApolloError &&
+                error.graphQLErrors.some(
+                  (graphQLError) =>
+                    graphQLError.extensions?.code ===
+                    'LIVE_QUIZ_ASSESSMENT_TRANSITION_CONFLICT'
+                )
+              ) {
+                toast({
+                  type: 'error',
+                  message: t(
+                    'manage.courseList.assessmentCorrelatedQuizConflict'
+                  ),
+                  options: { duration: 6000 },
+                })
+              } else {
+                onError()
+              }
               setSubmitting(false)
               console.log(error)
             }

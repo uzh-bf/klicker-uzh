@@ -108,6 +108,7 @@ Live quiz/student flows:
 - Keep Playwright-only session complexity when it handles real browser behavior: PWA storage restore, participant cookies, response API cookies, PIN cookies, temporary participants, and gamified account prompts.
 - Use the shared gamified prompt helper when available: accept the gamified live quiz dialog, log in with student credentials if redirected, then wait for `student-submit-answer`.
 - Return to the student PWA home deterministically with `page.goto('/')` and `homepage` visibility instead of fragile `header-home` click loops.
+- For correlated-response flows, assert the localized `live-quiz-response-collection-notice`, exercise the response-api identity cookie before the first answer, and verify the Manage evaluation download control is present only for an ended correlated quiz. Keep aggregate and assessment flows covered separately because they use different response routes.
 
 Permission matrices:
 
