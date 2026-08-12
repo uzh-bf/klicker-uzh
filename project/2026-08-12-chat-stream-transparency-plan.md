@@ -51,5 +51,6 @@
 - Slice 1 simplifier: done — no justified net reduction. Intermediate review: not required — presentation timing and deterministic fixture only, with no trust, protocol, or data-integrity boundary change.
 - Slice 2 implementation: complete. Registry compatibility tests preserve the omitted-field behavior, rendered staging/production values keep Auto on Responses without a manual effort capability, and the recreated local LiteLLM v1.96.2 service reports the new summary flag as active.
 - Real Browser pass: complete. Auto remained selected; the live MCP turn showed no source section during the post-tool/pre-answer gap, then produced and persisted the marker, answer, tool result, and synthetic source. A controlled Auto reasoning turn rendered `Denkprozess`, and LiteLLM recorded the semantic REASONING route to `gpt-5.6-sol-medium`.
-- Active: Slice 2 verification and immutable commit.
-- Remaining: Slice 2 simplifier/intermediate review, final package checks, integrated final review.
+- Slice 2: committed as `9d0c3c200`; the simplifier's accepted test-type reduction is `c19b1ab0d`. The configured intermediate reviewer remained runtime-unavailable after bounded retries, so no substitute review is claimed.
+- Final package verification: root `check:all` and production build passed. The exact branch range has 239 substantive changed lines.
+- Blocked: the configured integrated-final reviewer is also runtime-unavailable (`agent type is currently not available`). The package is locally verified but cannot be presented as review-complete or published until that required gate can run.
