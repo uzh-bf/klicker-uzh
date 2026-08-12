@@ -40,6 +40,8 @@ type LocatorEntity = {
   evidencePartitionKey: string
   evidenceRootRowKey: string
   chunkCount: number
+  liveQuizId: string
+  lifecycleEpoch: number
 }
 
 type RootEntity = {
@@ -60,9 +62,16 @@ type ChunkEntity = {
 
 type RetentionEntity = {
   eventId: string
+  eventHash: string
+  canonicalHash: string
+  evidencePartitionKey: string
+  evidenceRootRowKey: string
+  locatorPartitionKey: string
+  locatorRowKey: string
   liveQuizId: string
   lifecycleEpoch: number
   participantId?: string
+  resourceKind: string
   recordedAt: Date | string
 }
 
@@ -106,10 +115,12 @@ function assertLocator(entity: unknown): asserts entity is LocatorEntity {
     'canonicalHash',
     'evidencePartitionKey',
     'evidenceRootRowKey',
+    'liveQuizId',
   ]) {
     assertString(row[field], `locator ${field}`)
   }
   assertInteger(row.chunkCount, 'locator chunkCount')
+  assertInteger(row.lifecycleEpoch, 'locator lifecycleEpoch')
 }
 
 function assertRoot(entity: unknown): asserts entity is RootEntity {
@@ -122,6 +133,30 @@ function assertRoot(entity: unknown): asserts entity is RootEntity {
   }
   assertInteger(row.canonicalByteLength, 'root canonicalByteLength')
   assertInteger(row.chunkCount, 'root chunkCount')
+}
+
+function assertRetention(
+  entity: unknown,
+  eventId: string
+): asserts entity is RetentionEntity {
+  if (typeof entity !== 'object' || entity === null) {
+    throw new Error(`Audit retention index for ${eventId} is invalid`)
+  }
+  const row = entity as Record<string, unknown>
+  for (const field of [
+    'eventId',
+    'eventHash',
+    'canonicalHash',
+    'evidencePartitionKey',
+    'evidenceRootRowKey',
+    'locatorPartitionKey',
+    'locatorRowKey',
+    'liveQuizId',
+    'resourceKind',
+  ]) {
+    assertString(row[field], `retention ${field}`)
+  }
+  assertInteger(row.lifecycleEpoch, 'retention lifecycleEpoch')
 }
 
 async function mapInParallel<T, R>(
@@ -210,6 +245,49 @@ export class AzureTableAuditReader {
       throw new Error('Audit canonical envelope does not match its root')
     }
 
+    const shard = eventId.toLowerCase().match(/[0-9a-f]/)?.[0]
+    if (shard === undefined) {
+      throw new Error('Audit event ID has no hexadecimal shard')
+    }
+    const retentionPartitionKey = [
+      'v1',
+      locator.liveQuizId,
+      String(locator.lifecycleEpoch),
+      shard,
+    ].join('|')
+    const retention = await this.clients.retentionIndex.getEntity<RetentionEntity>(
+      retentionPartitionKey,
+      'event|' + eventId
+    )
+    assertRetention(retention, eventId)
+    if (
+      retention.eventId !== eventId ||
+      retention.eventHash !== root.eventHash ||
+      retention.canonicalHash !== root.canonicalHash ||
+      retention.evidencePartitionKey !== locator.evidencePartitionKey ||
+      retention.evidenceRootRowKey !== locator.evidenceRootRowKey ||
+      retention.locatorPartitionKey !== auditLocatorPartitionKey(eventId) ||
+      retention.locatorRowKey !== eventId ||
+      retention.liveQuizId !== locator.liveQuizId ||
+      retention.lifecycleEpoch !== locator.lifecycleEpoch ||
+      retention.resourceKind !== 'EVENT'
+    ) {
+      throw new Error('Audit retention index does not match its event')
+    }
+    if (
+      envelope.scope.liveQuizId !== locator.liveQuizId ||
+      envelope.scope.lifecycleEpoch !== locator.lifecycleEpoch
+    ) {
+      throw new Error('Audit scope does not match its locator')
+    }
+    if (
+      retention.participantId !== undefined &&
+      envelope.scope.participantId !== undefined &&
+      retention.participantId !== envelope.scope.participantId
+    ) {
+      throw new Error('Audit retention participant scope does not match')
+    }
+
     return {
       envelope,
       canonicalEnvelope,
@@ -269,5 +347,84 @@ export class AzureTableAuditReader {
         left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
         left.envelope.eventId.localeCompare(right.envelope.eventId)
     )
+  }
+
+  async exportQuizWithFailures(input: {
+    liveQuizId: string
+    lifecycleEpoch?: number
+    participantId?: string
+  }): Promise<{
+    verified: VerifiedAuditEvidence[]
+    failures: {
+      eventId: string
+      reason:
+        | 'RETENTION_INDEX_MISSING'
+        | 'LOCATOR_MISSING'
+        | 'EVIDENCE_MISSING'
+        | 'VERIFICATION_FAILED'
+      detail: string
+    }[]
+  }> {
+    const eventIds = await this.listQuizEventIds({
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch: input.lifecycleEpoch,
+    })
+    type ExportResult =
+      | { eventId: string; evidence: VerifiedAuditEvidence }
+      | {
+          eventId: string
+          failure: {
+            eventId: string
+            reason:
+              | 'RETENTION_INDEX_MISSING'
+              | 'LOCATOR_MISSING'
+              | 'EVIDENCE_MISSING'
+              | 'VERIFICATION_FAILED'
+            detail: string
+          }
+        }
+    const results = await mapInParallel(
+      eventIds,
+      AUDIT_EXPORT_READ_CONCURRENCY,
+      async (eventId): Promise<ExportResult> => {
+        try {
+          return { eventId, evidence: await this.verifyEvent(eventId) }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          let reason: 'RETENTION_INDEX_MISSING' | 'VERIFICATION_FAILED' =
+            'VERIFICATION_FAILED'
+          if (/retention index/i.test(message)) {
+            reason = 'RETENTION_INDEX_MISSING'
+          }
+          return { eventId, failure: { eventId, reason, detail: message } }
+        }
+      }
+    )
+    const verified = results
+      .filter((result): result is Extract<ExportResult, { evidence: unknown }> =>
+        'evidence' in result
+      )
+      .map((result) => result.evidence)
+    const failures = results
+      .filter((result): result is Extract<ExportResult, { failure: unknown }> =>
+        'failure' in result
+      )
+      .map((result) => result.failure)
+    const participantScoped =
+      input.participantId === undefined
+        ? verified
+        : verified.filter(
+            ({ envelope }) =>
+              envelope.scope.participantId === undefined ||
+              envelope.scope.participantId === input.participantId
+          )
+    return {
+      verified: participantScoped.sort(
+        (left, right) =>
+          left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
+          left.envelope.eventId.localeCompare(right.envelope.eventId)
+      ),
+      failures,
+    }
   }
 }

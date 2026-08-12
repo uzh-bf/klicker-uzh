@@ -1,3 +1,8 @@
+import { randomUUID } from 'node:crypto'
+import {
+  emitCoveredParticipantEligibilityChange,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   CourseAuthType,
@@ -416,7 +421,11 @@ async function autoAcceptInvitation(
   emailMode: InvitationEmailMode,
   prismaClient: PrismaClient
 ): Promise<number | null> {
-  return withSerializableInvitationTransaction(prismaClient, async (tx) => {
+  const correlationId = randomUUID()
+  const occurredAt = new Date()
+  return runInAuditTransaction(
+    prismaClient,
+    async (tx, auditTx) => {
     const eligibleParticipantIds = await findEligibleParticipantIds(
       email,
       emailMode,
@@ -439,6 +448,16 @@ async function autoAcceptInvitation(
       },
     })
 
+    const previous = await tx.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId,
+        },
+      },
+      select: { isActive: true },
+    })
+
     // Create or update participation
     await tx.participation.upsert({
       where: {
@@ -454,8 +473,120 @@ async function autoAcceptInvitation(
       update: {},
     })
 
+    if (previous?.isActive !== true) {
+      await emitCoveredParticipantEligibilityChange({
+        tx,
+        auditTx,
+        courseId,
+        participantId,
+        eligible: true,
+        actor: { kind: 'SYSTEM' },
+        correlationId,
+        occurredAt,
+        producerOperationId: `${correlationId}:auto-accepted-eligibility`,
+      })
+    }
+
     return invitation.id
-  })
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
+}
+
+/**
+ * Accepts an invitation from an administrative import or repair script while
+ * keeping the invitation, participation, and assessment evidence in one
+ * transaction. The email form creates an accepted invitation; the ID form
+ * repairs an existing invitation.
+ */
+export async function acceptParticipantInvitation(
+  input:
+    | {
+        email: string
+        courseId: string
+        participantId: string
+        matriculationNumber: string | null
+        invitationId?: never
+        acceptedAt?: Date
+      }
+    | {
+        invitationId: number
+        courseId: string
+        participantId: string
+        acceptedAt: Date | null
+        email?: never
+        matriculationNumber?: never
+      }
+): Promise<{ invitationId: number; participationId: number }> {
+  const correlationId = randomUUID()
+  const occurredAt = input.acceptedAt ?? new Date()
+
+  return runInAuditTransaction(
+    prisma,
+    async (tx, auditTx) => {
+      const previous = await tx.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: input.courseId,
+            participantId: input.participantId,
+          },
+        },
+        select: { isActive: true },
+      })
+
+      const invitation =
+        input.invitationId === undefined
+          ? await tx.participantInvitation.create({
+              data: {
+                email: input.email,
+                courseId: input.courseId,
+                status: InvitationStatus.ACCEPTED,
+                participantId: input.participantId,
+                acceptedAt: occurredAt,
+                matriculationNumber: input.matriculationNumber,
+              },
+            })
+          : await tx.participantInvitation.update({
+              where: { id: input.invitationId },
+              data: {
+                participantId: input.participantId,
+                status: InvitationStatus.ACCEPTED,
+                acceptedAt: occurredAt,
+              },
+            })
+
+      const participation = await tx.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: input.courseId,
+            participantId: input.participantId,
+          },
+        },
+        create: {
+          courseId: input.courseId,
+          participantId: input.participantId,
+        },
+        update: {},
+      })
+
+      if (previous?.isActive !== true) {
+        await emitCoveredParticipantEligibilityChange({
+          tx,
+          auditTx,
+          courseId: input.courseId,
+          participantId: input.participantId,
+          eligible: true,
+          actor: { kind: 'SYSTEM' },
+          correlationId,
+          occurredAt,
+          producerOperationId: `${correlationId}:invitation-accepted-eligibility`,
+        })
+      }
+
+      return { invitationId: invitation.id, participationId: participation.id }
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  )
 }
 
 async function requireAssessmentCourse(

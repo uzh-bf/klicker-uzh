@@ -21,15 +21,17 @@ and the delivery order lives in the
 ## Current implementation boundary
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
-path, and Layer 3 baseline/media primitives. It validates and canonicalizes
+path, Layer 3 baseline/media primitives, and the Layer 4 lecturer/system
+producer boundary. It validates and canonicalizes
 envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
 leased rows through a provider-neutral append-sink, and implements Azure Table,
 immutable-media, owner-CLI, and media-policy adapters. GraphQL owns assessment
 snapshot mapping, two-phase activation, rollout accounting, automatic
-`all`-mode creation coverage, atomic reopening, and start-time readiness. The
+`all`-mode creation coverage, atomic reopening, start-time readiness, and typed
+lecturer/system producer orchestration. The
 dedicated deployments remain dormant by default until their Pulumi-provisioned
-staging identities and endpoints are supplied. Lecturer/system producers and
-Hatchet submission materialization arrive in Layers 4 and 5; the manifest
+staging identities and endpoints are supplied. Hatchet submission
+materialization arrives in Layer 5; the manifest
 sealer and retention worker remain fast-follow work.
 
 The older Hatchet `create-audit-log-entry` workflow and `AuditLog` model remain
@@ -134,6 +136,54 @@ Evidence classes are deliberately different claims:
 - `ADMINISTRATIVE`: evidence-owner actions such as holds and annotations.
 
 None of these classes proves a person's unobservable intent.
+
+## Lecturer and system producers
+
+Covered LiveQuiz configuration, block, instance, source-element, lifecycle,
+eligibility, effective lecturer-permission, point-correction, report, and reset
+effects now emit typed evidence. Each authoritative event is constructed from
+an explicit normalized before/after snapshot inside the same Prisma transaction
+as its business write. Uncovered quizzes keep their prior behavior; once a
+scope is covered, invalid or conflicting evidence aborts the business
+transaction.
+
+Media introduced by an instance refresh is discovered and staged in immutable
+Blob storage before the database transaction. The transaction verifies that
+the staged canonical media-reference set still matches the effective
+after-state before it emits capture/replacement evidence. Klicker-owned capture
+failures abort the refresh;
+external media remains reference-only and marks the instance change with the
+stable `LECTURER_CONTENT_MUTATION_EXTERNAL_MEDIA_NOT_CAPTURED` limitation.
+
+Assessment runtime-session events describe the execution session of a LiveQuiz,
+using its UUID as `sessionId`. They are not participant browser/focus sessions
+and therefore have no participant scope. Scheduled publication and timed block
+closure use a `SYSTEM` actor; the scheduling lecturer is retained as
+`initiatedBy` when the task input has that identity.
+
+Course participation evidence is based on the effective `Participation.isActive`
+transition and stores only the stable participant UUID. This includes
+participant join/leave flows, invitation auto-acceptance, and the
+semester-start invitation import's accepted-invitation repair paths; all reuse
+the same transactional acceptance helper. Lecturer access evidence is computed
+from effective `DerivedPermission` state before and after recomputation.
+Changing a direct or group permission that leaves the effective assessment
+permission unchanged emits no assessment evidence.
+
+Point corrections record the exact response/scoring snapshot before and after
+the correction. Multi-response corrections add one bulk root, deterministic
+per-response outcomes, and a completed root in the same all-or-nothing
+transaction. Resetting a completed assessment groups every response by stable
+participant UUID, hashes the sorted pre-reset response snapshots, emits one
+`ASSESSMENT_PARTICIPANT_RESET` event per affected participant in the old
+lifecycle epoch, and only then deletes the responses and opens the new epoch.
+
+The launch contract intentionally contains no placeholder administration or
+runtime-session events. Klicker currently has no independent response
+edit/delete, score recompute, participant-response removal, ElementInstance
+hard-delete, or running-session forced-termination mutation. A future operation
+must introduce its event name, payload schema, producer, durability point, and
+test together.
 
 ## PostgreSQL foundation
 
@@ -250,7 +300,9 @@ with a version-level immutability policy and never exposes content update or
 delete operations.
 
 `AuditRetentionIndex` contains an append-only reverse index from immutable media
-versions to the assessment scopes that reference them. The daily media-policy
+versions to the assessment scopes that reference them. This includes baseline
+media parts and media captured or replaced by a covered source-element change.
+The daily media-policy
 worker streams active scope references from baseline-part outbox evidence and
 extends each version's locked policy to the current semester retention horizon.
 It never shortens an existing policy. Terminal-scope extension is added when
@@ -313,6 +365,10 @@ lease recovery, database checks, and the absence of audit-table foreign keys.
 GraphQL's database-backed tests additionally cover activation commit/rollback,
 exact retry versus changed snapshots, rollout resumption and gap accounting,
 automatic all-mode activation, and atomic reopening.
+Layer 4 adds a registry-to-production-source coverage test plus focused tests
+for exact configuration/block/instance snapshots, deterministic response/reset
+hashes, effective-permission filtering, media capture/replacement, and
+post-activation media retention indexes.
 
 ```bash
 pnpm --filter @klicker-uzh/audit check
@@ -321,7 +377,12 @@ pnpm --filter @klicker-uzh/audit build
 pnpm --filter @klicker-uzh/graphql exec vitest run \
   test/assessmentAuditBaseline.test.ts \
   test/assessmentAuditActivation.test.ts \
-  test/assessmentAuditRollout.test.ts
+  test/assessmentAuditRollout.test.ts \
+  test/assessmentAuditProducers.test.ts
+pnpm --filter @klicker-uzh/audit exec vitest run \
+  test/producer-coverage.test.ts \
+  test/event-registry.test.ts \
+  test/table-mapping.test.ts
 ```
 
 The test command needs a disposable local PostgreSQL database with all Prisma

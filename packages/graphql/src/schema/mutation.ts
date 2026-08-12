@@ -1073,7 +1073,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -1110,7 +1110,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -1151,7 +1151,10 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(args, ctx)
+          return await ElementService.manipulateElementWithAssessmentAudit(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1188,7 +1191,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
           )
@@ -1228,7 +1231,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
           )
@@ -1268,7 +1271,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1308,7 +1311,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
@@ -1383,11 +1386,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.updateElementInstances(
+            return await ElementService.updateElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter,
-              ctx.user.sub
+              ctx
             )
           }
         ),
@@ -1400,10 +1401,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.flagOutdatedElementInstances(
+            return await ElementService.flagOutdatedElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter
+              ctx
             )
           }
         ),
