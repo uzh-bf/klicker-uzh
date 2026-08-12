@@ -675,6 +675,11 @@ Rollback after deployment changes engine configuration or rolls back the release
 - [x] Replaced the partial public MCP hook with a fail-closed seam that returns
       approved tools and their execution token together. The later `v3-ai`
       integration will implement the issuer; no tool is exposed before then.
+- [x] Corrected the shared abort scenario after final review found that the
+      fixture selected an abort terminal without cancelling transport. The
+      runner now starts the SSE request, aborts its actual request signal after
+      the first chunk, and validates the resulting metadata and `abort`
+      terminal against the private adapter.
 - [ ] Rerun current-head checks/reviews, then seek the separate
       force-with-lease publication approval for PR #5126.
 - [ ] Slices 3-6 implemented and verified.

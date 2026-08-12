@@ -110,13 +110,15 @@ function requestHeaders(
 }
 
 async function sendChat(
-  options: ChatEngineConformanceOptions
+  options: ChatEngineConformanceOptions,
+  signal?: AbortSignal
 ): Promise<Response> {
   const request = options.fetch ?? globalThis.fetch
   return request(endpoint(options.baseUrl, '/v1/chat'), {
     method: 'POST',
     headers: requestHeaders(options),
     body: JSON.stringify(options.request),
+    signal,
   })
 }
 
@@ -256,14 +258,46 @@ export async function runChatEngineConformanceSuite(
     throw new Error('The tool stream did not execute an approved tool.')
   }
 
-  const abortResponse = await sendChat({
-    ...shared,
-    request: options.abortRequest,
-  })
+  const abortController = new AbortController()
+  const abortResponse = await sendChat(
+    {
+      ...shared,
+      request: options.abortRequest,
+    },
+    abortController.signal
+  )
   if (!abortResponse.ok) {
     throw new Error(`Abort scenario returned HTTP ${abortResponse.status}.`)
   }
-  const abortStream = await readStream(abortResponse, 'abort')
+  if (!abortResponse.body) {
+    throw new Error('Abort scenario returned no stream.')
+  }
+  const abortReader = abortResponse.body.getReader()
+  const firstChunk = await abortReader.read()
+  if (firstChunk.done) {
+    throw new Error('Abort scenario ended before cancellation.')
+  }
+  abortController.abort('conformance cancellation')
+  const abortStream = await readStream(
+    new Response(
+      new ReadableStream({
+        async start(controller) {
+          controller.enqueue(firstChunk.value)
+          for (;;) {
+            const chunk = await abortReader.read()
+            if (chunk.done) break
+            controller.enqueue(chunk.value)
+          }
+          controller.close()
+        },
+        cancel(reason) {
+          return abortReader.cancel(reason)
+        },
+      }),
+      { headers: abortResponse.headers }
+    ),
+    'abort'
+  )
   assertTerminalIdentity(abortStream, options.abortRequest, 'abort')
 
   return {
