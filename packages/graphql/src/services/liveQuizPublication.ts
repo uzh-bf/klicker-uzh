@@ -2,11 +2,14 @@ import * as DB from '@klicker-uzh/prisma/client'
 
 type PublicationSource = 'manual' | 'scheduled' | 'reconcile'
 type PublicationRedis = {
-  hset(
-    key: string,
-    values: Record<string, string | number | boolean>
+  eval(
+    script: string,
+    numberOfKeys: number,
+    ...args: string[]
   ): Promise<unknown>
 }
+
+const publicationGenerationTombstoneSuffix = ':aborted-generation'
 
 export async function transitionLiveQuizToPublished({
   prisma,
@@ -119,12 +122,42 @@ async function writeLiveQuizPublicationMetadata({
     )
   }
 
-  await redis.hset(`lq:${quiz.id}:meta`, {
-    namespace: quiz.namespace,
-    startedAt: Number(quiz.startedAt),
-    isGamificationEnabled: quiz.isGamificationEnabled,
-    isAssessmentEnabled: quiz.isAssessmentEnabled,
-  })
+  const generation = String(quiz.startedAt.getTime())
+  const result = await redis.eval(
+    `
+      local tombstone = redis.call('GET', KEYS[2])
+      if tombstone and tonumber(tombstone) >= tonumber(ARGV[1]) then
+        return 0
+      end
+
+      local currentStartedAt = redis.call('HGET', KEYS[1], 'startedAt')
+      if currentStartedAt and tonumber(currentStartedAt) > tonumber(ARGV[1]) then
+        return 0
+      end
+
+      redis.call(
+        'HSET',
+        KEYS[1],
+        'namespace', ARGV[2],
+        'startedAt', ARGV[1],
+        'isGamificationEnabled', ARGV[3],
+        'isAssessmentEnabled', ARGV[4]
+      )
+      return 1
+    `,
+    2,
+    `lq:${quiz.id}:meta`,
+    `lq:${quiz.id}${publicationGenerationTombstoneSuffix}`,
+    generation,
+    quiz.namespace,
+    String(quiz.isGamificationEnabled),
+    String(quiz.isAssessmentEnabled)
+  )
+  if (Number(result) !== 1) {
+    throw new Error(
+      `Live quiz ${quiz.id} changed during publication materialization`
+    )
+  }
 }
 
 async function markLiveQuizPublicationMaterialized({

@@ -49,6 +49,8 @@ Redis effects through the database-to-Lua fence, that aggregate and assessment
 processing remains compatible with pre-existing cache metadata, and that
 invalid-response logs do not serialize submitted answers.
 
+For publication and lifecycle changes, run the focused GraphQL publication and abort suites. Include a real Redis Lua smoke for generation cleanup and late publication: an abort tombstone must reject an older metadata write, permit a newer generation, and fail closed when no current metadata exists. When assessment or course transitions allocate live-quiz PINs, cover the unique-write retry boundary as well as the ordinary allocation path.
+
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
