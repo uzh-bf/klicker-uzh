@@ -22,7 +22,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
-import generatePassword from 'generate-password'
+import { allocateLiveQuizPin } from './liveQuizPin.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -3671,10 +3671,9 @@ export async function updateCourseSettings(
   }: UpdateCourseSettingsArgs,
   ctx: ContextWithUser
 ) {
-  // Read immutable date state before entering the settings transaction.
+  // verify that no past dates are modified or enabled gamification / group creation settings are disabled
   const course = await ctx.prisma.course.findUnique({
     where: { id },
-    select: { startDate: true },
   })
 
   if (!course) return null
@@ -3705,7 +3704,6 @@ export async function updateCourseSettings(
       },
     })
     if (!lockedCounts) return null
-
     const containsActivities =
       lockedCounts._count.liveQuizzes > 0 ||
       lockedCounts._count.practiceQuizzes > 0 ||
@@ -3713,6 +3711,8 @@ export async function updateCourseSettings(
       lockedCounts._count.groupActivities > 0
     const containsGroups = lockedCounts._count.participantGroups > 0
 
+    // Derive transitions only after locking so concurrent settings requests
+    // cannot update the course without propagating the same state to activities.
     const newGamificationSetting =
       lockedState.course.isGamificationEnabled !== isGamificationEnabled &&
       (isGamificationEnabled || (!containsActivities && !containsGroups))
@@ -3731,6 +3731,12 @@ export async function updateCourseSettings(
         isAssessmentEnabled:
           newAssessmentSetting ?? lockedState.course.isAssessmentEnabled,
       })
+    const liveQuizResponseCollectionModeById = new Map(
+      liveQuizResponseCollectionUpdates.map((update) => [
+        update.id,
+        update.responseCollectionMode,
+      ])
+    )
 
     const updated = await prisma.course.update({
       where: { id },
@@ -3742,20 +3748,26 @@ export async function updateCourseSettings(
         color: color ?? undefined,
         startDate: currentStartDatePast || !startDate ? undefined : startDate,
         endDate: endDate ?? undefined,
+        // only enable group creation or disable it if there are no groups
         isGroupCreationEnabled:
           isGroupCreationEnabled || !containsGroups
             ? (isGroupCreationEnabled ?? false)
             : undefined,
         groupDeadlineDate: groupDeadlineDate ?? undefined,
         notificationEmail: notificationEmail ?? undefined,
+        // only enable gamification or disable it if there are no activities or groups
         isGamificationEnabled: newGamificationSetting,
+        // set assessment mode - if enabling, remove PIN
         isAssessmentEnabled: newAssessmentSetting,
         pinCode: newAssessmentSetting === true ? null : undefined,
+        // reset the random assignment tracking if the group deadline is extended
         randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+        // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
         groupAssignmentPoolEntries:
           !isGroupCreationEnabled && !containsGroups
             ? { deleteMany: {} }
             : undefined,
+        // if the gamification or assessment setting was changed, update all activities assigned to the course
         ...(typeof newGamificationSetting !== 'undefined' ||
         typeof newAssessmentSetting !== 'undefined'
           ? {
@@ -3841,37 +3853,18 @@ export async function updateCourseSettings(
 
     if (newAssessmentSetting === true) {
       for (const liveQuiz of lockedState.liveQuizzes) {
-        let pinCode = liveQuiz.pinCode
-        if (!pinCode) {
-          for (let attempt = 0; attempt < 10; attempt++) {
-            const candidate = generatePassword.generate({
-              uppercase: true,
-              lowercase: false,
-              numbers: true,
-              symbols: false,
-              length: 6,
-            })
-            const existing = await prisma.liveQuiz.findUnique({
-              where: { pinCode: candidate },
-              select: { id: true },
-            })
-            if (!existing) {
-              pinCode = candidate
-              break
-            }
-          }
-        }
-        if (!pinCode) {
-          throw new Error('Could not find available pin code for live quiz')
-        }
-
-        const responseCollectionMode = liveQuizResponseCollectionUpdates.find(
-          (update) => update.id === liveQuiz.id
-        )?.responseCollectionMode
+        const responseCollectionMode = liveQuizResponseCollectionModeById.get(
+          liveQuiz.id
+        )
         if (!responseCollectionMode) {
           throw new Error(
             `Missing response collection transition for live quiz ${liveQuiz.id}`
           )
+        }
+
+        let pinCode = liveQuiz.pinCode
+        if (!pinCode) {
+          pinCode = await allocateLiveQuizPin({ database: prisma })
         }
 
         await prisma.liveQuiz.update({

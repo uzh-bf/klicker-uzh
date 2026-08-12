@@ -49,7 +49,10 @@ The response processor binds aggregate and correlated events to separate process
 - `create-audit-log-entry` (event-driven)
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
+- `reconcile-live-quiz-publications` — every minute, repairs published quizzes whose Redis publication metadata or scheduled task cleanup is incomplete
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+
+Publication is deliberately two-phase: the database transaction records the published generation first, then the backend materializes the matching Redis metadata and marks it complete. The reconciliation cron retries incomplete materialization and removes stale scheduled-publication tasks idempotently. Aborting a quiz clears only the Redis generation whose persisted start timestamp was aborted, so a newer publication cannot be deleted by delayed cleanup from an older run.
 
 ## Running locally (config-derived — verify on your machine)
 

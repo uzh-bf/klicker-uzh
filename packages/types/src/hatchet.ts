@@ -65,6 +65,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleReconcileLiveQuizPublications: (
+    {},
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handlePublishScheduledPracticeQuiz: (
     { practiceQuizId }: { practiceQuizId: string },
     globalCtx: HatchetHandlerGlobalContext,
