@@ -1,0 +1,100 @@
+import type {
+  BaselinePartPayload,
+  BaselineRootPayload,
+} from '../contract/payloads/coverage.js'
+import { baselineRootPayloadSchema } from '../contract/payloads/coverage.js'
+import {
+  type AssessmentBaselineContent,
+  aggregateAssessmentBaselineParts,
+  buildAssessmentBaselinePart,
+  compareAssessmentBaselineParts,
+} from './parts.js'
+
+export type { AssessmentBaselineContent } from './parts.js'
+
+export type BuiltAssessmentBaseline = {
+  root: BaselineRootPayload
+  parts: BaselinePartPayload[]
+}
+
+export function buildAssessmentBaseline(input: {
+  baselineId: string
+  baselineKind: BaselineRootPayload['baselineKind']
+  capturedAt: string
+  contents: readonly AssessmentBaselineContent[]
+}): BuiltAssessmentBaseline {
+  const parts = input.contents
+    .map((content) =>
+      buildAssessmentBaselinePart({
+        baselineId: input.baselineId,
+        baselineKind: input.baselineKind,
+        capturedAt: input.capturedAt,
+        content,
+      })
+    )
+    .sort(compareAssessmentBaselineParts)
+
+  const uniquePartKeys = new Set<string>()
+  for (const part of parts) {
+    if (uniquePartKeys.has(part.partKey)) {
+      throw new Error(`Duplicate assessment baseline part key ${part.partKey}`)
+    }
+    uniquePartKeys.add(part.partKey)
+  }
+
+  const expectedPartCounts = {
+    configuration: 0,
+    blocks: 0,
+    elementInstances: 0,
+    solutionsAndScoring: 0,
+    participantEligibility: 0,
+    lecturerPermissions: 0,
+    mediaReferences: 0,
+    limitations: 0,
+  }
+  for (const part of parts) {
+    switch (part.content.kind) {
+      case 'ASSESSMENT_CONFIGURATION':
+        expectedPartCounts.configuration++
+        break
+      case 'BLOCK':
+        expectedPartCounts.blocks++
+        break
+      case 'ELEMENT_INSTANCE':
+        expectedPartCounts.elementInstances++
+        break
+      case 'SOLUTION_AND_SCORING':
+        expectedPartCounts.solutionsAndScoring++
+        break
+      case 'PARTICIPANT_ELIGIBILITY':
+        expectedPartCounts.participantEligibility++
+        break
+      case 'LECTURER_PERMISSION':
+        expectedPartCounts.lecturerPermissions++
+        break
+      case 'MEDIA_REFERENCE':
+        expectedPartCounts.mediaReferences++
+        break
+      case 'LIMITATION':
+        expectedPartCounts.limitations++
+        break
+    }
+  }
+
+  if (expectedPartCounts.configuration !== 1) {
+    throw new Error(
+      'Assessment baseline requires exactly one configuration part'
+    )
+  }
+
+  const root = baselineRootPayloadSchema.parse({
+    baselineId: input.baselineId,
+    baselineKind: input.baselineKind,
+    baselineSchemaVersion: 1,
+    capturedAt: input.capturedAt,
+    expectedPartCounts,
+    aggregateHash: aggregateAssessmentBaselineParts(parts),
+  })
+
+  return { root, parts }
+}
