@@ -23,45 +23,74 @@ import {
   TIME_TO_ZERO_BONUS,
 } from '../constants.js'
 
-export function updateLeaderboards({
-  redisMulti,
-  participantId,
-  participantRole,
-  liveQuizKey,
-  sessionBlockId,
-  pointsAwarded,
-  xpAwarded,
-}: {
-  redisMulti: ChainableCommander
+type LeaderboardUpdate = {
+  key: string
+  field: string
+  increment: number
+}
+
+type LeaderboardInput = {
   participantId: string
   participantRole: string
   liveQuizKey: string
   sessionBlockId: string
   pointsAwarded: number
   xpAwarded: number
-}) {
+}
+
+export function getLeaderboardUpdates({
+  participantId,
+  participantRole,
+  liveQuizKey,
+  sessionBlockId,
+  pointsAwarded,
+  xpAwarded,
+}: LeaderboardInput): LeaderboardUpdate[] {
   // depending on the participant account type (permanent student account or
   // temporary pseudonym), set the correct points / experience points
   if (participantRole === 'PARTICIPANT') {
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lb`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(`${liveQuizKey}:lb`, participantId, pointsAwarded)
-    redisMulti.hincrby(`${liveQuizKey}:xp`, participantId, xpAwarded)
-  } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:xp`,
+        field: participantId,
+        increment: xpAwarded,
+      },
+    ]
+  }
+  if (participantRole === 'TEMPORARY_PARTICIPANT') {
     // temporary participants are only granted points, xp cannot be collected
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(
-      `${liveQuizKey}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+    ]
+  }
+  return []
+}
+
+export function updateLeaderboards({
+  redisMulti,
+  ...input
+}: { redisMulti: ChainableCommander } & LeaderboardInput) {
+  for (const update of getLeaderboardUpdates(input)) {
+    redisMulti.hincrby(update.key, update.field, update.increment)
   }
 }
 

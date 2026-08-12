@@ -180,6 +180,8 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           NODE_ENV: test
+          REDIS_ASSESSMENT_HOST: localhost
+          REDIS_ASSESSMENT_PORT: 6380
 
       - name: Run tests
         run: |

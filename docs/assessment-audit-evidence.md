@@ -95,6 +95,18 @@ persisted evidence, and scored evidence use one Prisma transaction. A transient
 failure remains retryable and is followed by append-only recovery evidence when
 processing later reaches a terminal outcome.
 
+PostgreSQL response persistence precedes the existing Redis/Hatchet live-result
+aggregation. A retry with the same `submissionId` therefore resumes this
+post-commit work both inside and outside audit coverage; it does not classify
+the already-persisted response as a new duplicate. The processor writes an
+`accepted` state with `HSETNX` in the existing per-instance `votes` hash and
+publishes the aggregation event on every same-command replay. The aggregation
+worker atomically applies all result and leaderboard increments together with
+the state transition to `aggregated`. Repeated events and a lost Redis command
+acknowledgement observe `aggregated` and become no-ops. These Redis states are
+operational idempotency markers, not audit evidence or a second source of
+authority.
+
 `LiveQuizResponse.submissionId` is an optional unique UUID. Existing and
 non-assessment responses remain valid with `NULL`; an assessment response stores
 the stable ID so a retry of the same Hatchet command can be distinguished from
