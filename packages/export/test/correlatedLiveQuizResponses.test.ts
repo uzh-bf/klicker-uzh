@@ -4,6 +4,7 @@ import {
   CorrelatedLiveQuizExportSizeError,
   createCorrelatedLiveQuizResponseCsv,
   DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES,
+  getCorrelatedLiveQuizResponseCsvHeaderByteLength,
 } from '../src/correlatedLiveQuizResponses.js'
 
 const questions = [
@@ -50,6 +51,18 @@ const responses = [
 ]
 
 describe('createCorrelatedLiveQuizResponseCsv', () => {
+  it('reports the UTF-8 size of the generated header', () => {
+    const result = createCorrelatedLiveQuizResponseCsv({
+      quizName: 'Quiz',
+      questions,
+      responses: [],
+    })
+
+    expect(
+      getCorrelatedLiveQuizResponseCsvHeaderByteLength({ questions })
+    ).toBe(Buffer.byteLength(`${result.csv.split('\r\n')[0]}\r\n`, 'utf8'))
+  })
+
   it('creates one stable pseudonymous row per assigned respondent label', () => {
     const first = createCorrelatedLiveQuizResponseCsv({
       quizName: 'Research Quiz',

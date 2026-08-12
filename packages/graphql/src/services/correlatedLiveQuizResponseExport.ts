@@ -2,6 +2,8 @@ import { createHmac } from 'node:crypto'
 import {
   CorrelatedLiveQuizExportSizeError,
   createCorrelatedLiveQuizResponseCsv,
+  DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES,
+  getCorrelatedLiveQuizResponseCsvHeaderByteLength,
 } from '@klicker-uzh/export/correlated-live-quiz-responses'
 import * as DB from '@klicker-uzh/prisma/client'
 import { buildLiveQuizResponseIdentityKey } from '@klicker-uzh/util'
@@ -9,7 +11,9 @@ import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
 const MAX_CORRELATED_EXPORT_RESPONSE_COUNT = 25_000n
-const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(5 * 1024 * 1024)
+const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(
+  DEFAULT_CORRELATED_LIVE_QUIZ_EXPORT_MAX_BYTES
+)
 const MAX_CORRELATED_EXPORT_MATRIX_CELLS = 1_000_000n
 const MIN_CSV_BYTES_PER_COLUMN_AND_RESPONDENT = 3n
 const MIN_CSV_BYTES_PER_RESPONDENT_ROW = 2n
@@ -97,6 +101,28 @@ export async function getCorrelatedLiveQuizResponseExport(
             },
           },
         })
+        const questions = blocks.flatMap((block) =>
+          block.elements
+            .filter(
+              (instance) => instance.elementType !== DB.ElementType.FREE_TEXT
+            )
+            .map((instance) => ({
+              blockOrder: block.order,
+              questionOrder: instance.order,
+              instanceId: instance.id,
+              executions: Array.from(
+                { length: block.execution + 1 },
+                (_, index) => index
+              ),
+            }))
+        )
+        const exportedColumnCount = questions.reduce(
+          (count, question) => count + BigInt(question.executions.length),
+          0n
+        )
+        const headerBytes = BigInt(
+          getCorrelatedLiveQuizResponseCsvHeaderByteLength({ questions })
+        )
         const [responseSize] = await prisma.$queryRaw<
           {
             responseBytes: bigint
@@ -121,11 +147,6 @@ export async function getCorrelatedLiveQuizResponseExport(
             AND response."correctionOnly" = false
             AND instance."elementType" <> 'FREE_TEXT'
         `
-        const exportedColumnCount = blocks.reduce(
-          (count, block) =>
-            count + BigInt(block.elements.length) * BigInt(block.execution + 1),
-          0n
-        )
         const matrixCellCount =
           (responseSize?.respondentCount ?? 0n) * exportedColumnCount
         const minimumCsvBytes =
@@ -136,6 +157,7 @@ export async function getCorrelatedLiveQuizResponseExport(
           !responseSize ||
           responseSize.responseCount > MAX_CORRELATED_EXPORT_RESPONSE_COUNT ||
           responseSize.responseBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
+          headerBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES ||
           matrixCellCount > MAX_CORRELATED_EXPORT_MATRIX_CELLS ||
           minimumCsvBytes > MAX_CORRELATED_EXPORT_RESPONSE_BYTES
         ) {
@@ -255,8 +277,8 @@ export async function getCorrelatedLiveQuizResponseExport(
         }
 
         return {
-          blocks,
           displayName: liveQuiz.displayName,
+          questions,
           responses: mappedResponses.map((response) => {
             const identityHash = identityHashByIdentityKey.get(
               response.identityKey
@@ -275,21 +297,7 @@ export async function getCorrelatedLiveQuizResponseExport(
 
     const result = createCorrelatedLiveQuizResponseCsv({
       quizName: exportData.displayName,
-      questions: exportData.blocks.flatMap((block) =>
-        block.elements
-          .filter(
-            (instance) => instance.elementType !== DB.ElementType.FREE_TEXT
-          )
-          .map((instance) => ({
-            blockOrder: block.order,
-            questionOrder: instance.order,
-            instanceId: instance.id,
-            executions: Array.from(
-              { length: block.execution + 1 },
-              (_, index) => index
-            ),
-          }))
-      ),
+      questions: exportData.questions,
       responses: exportData.responses,
     })
 

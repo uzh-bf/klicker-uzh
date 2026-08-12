@@ -52,9 +52,9 @@ invalid-response logs do not serialize submitted answers.
 For the correlated export backend, also run the export package tests and build,
 the focused `correlatedLiveQuizResponseExport.test.ts` suite, GraphQL codegen,
 and a disposable migration deploy. Stable labels must survive a late response,
-free-text must be excluded before size checks, the respondent-by-column matrix
-must be bounded before response rows are loaded, and the query must remain
-blocked until all accepted outbox rows are settled.
+free-text must be excluded before size checks, CSV headers and the
+respondent-by-column matrix must be bounded before response rows are loaded,
+and the query must remain blocked until all accepted outbox rows are settled.
 
 For publication and lifecycle changes, run the focused GraphQL publication and abort suites. Include a real Redis Lua smoke for generation cleanup and late publication: a persisted monotonic generation counter must let an immediate republish proceed even when timestamps share a millisecond, while an abort tombstone rejects an older metadata write, permits a newer generation, and fails closed when no current metadata exists. When assessment or course transitions allocate live-quiz PINs, cover the unique-write retry boundary as well as the ordinary allocation path.
 
