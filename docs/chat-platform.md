@@ -191,7 +191,10 @@ Initial thread and message loading uses skeleton rows and message-shaped placeho
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
 the action can be retried. Asynchronous disclaimer failures render in a live `role="alert"`
-region. Stream/send errors inside a message render as a styled callout, not inline markdown:
+region. The required disclaimer is a deliberate consent gate: the modal has no close or Escape
+exit, the consequence summary appears before the Accept/Decline actions, and Accept is the
+primary action. Students must choose one of those two explicit outcomes. Stream/send errors
+inside a message render as a styled callout, not inline markdown:
 `useChatResponse` pushes a `{ type: 'data', name: 'chat-error', data: { errorLabel, message } }`
 content part (assistant-ui's official `DataMessagePart` shape) and `message-parts.tsx` renders it
 as `ChatErrorPart` (`data-cy="chat-message-error"`). The convention is client-side only — data
