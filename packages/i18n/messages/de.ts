@@ -3,17 +3,30 @@ export default {
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
+      tutorDescription:
+        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
       explainer: 'Erklärer',
+      explainerDescription:
+        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
     },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
       selectAiModel: 'KI-Modell auswählen',
+      autoModelDescription:
+        'Wählt automatisch für jede Nachricht ein passendes Modell aus.',
+      reasoningModelDescription:
+        'Für schwierige Aufgaben mit mehreren Schritten. Die Antwort kann länger dauern und mehr Credits verbrauchen.',
+      standardModelDescription:
+        'Ein vielseitiges Modell für alltägliche Fragen.',
+      fallbackModelDescription:
+        'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
-        'Automatische Auswahl basierend auf verfügbaren Credits.',
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
       usingPrimaryModel:
-        'Primäres Modell wird mit verfügbaren Credits verwendet.',
-      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+      usingFallbackModel:
+        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -35,6 +48,8 @@ export default {
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
         'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+      fallbackNotice:
+        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
     },
     sidebar: {
       newChat: 'Neuer Chat',

@@ -1321,6 +1321,20 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
+  test('Mode switcher explains what each mode is for', async ({ page }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-mode-option-tutor').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
+    ).toContainText('patient')
+
+    await page.getByTestId('chat-mode-option-explainer').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
+    ).toContainText('difficult concepts')
+  })
+
   test('AI model section displays current model (automatic mode)', async ({
     page,
   }) => {
@@ -1356,6 +1370,27 @@ test.describe('Chatbot Settings Panel', () => {
     )
     await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
       'You have used up all your credits'
+    )
+
+    await openSettings(page)
+    await expect(page.getByTestId('chat-model-selection')).toContainText(
+      'GPT-4.1 Mini'
+    )
+  })
+
+  test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
+    page,
+  }) => {
+    await setCredits(participantId, 0, 100)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await visitChat(page)
+
+    await expect(page.getByTestId('chat-mobile-credits-bar')).toBeVisible()
+    await expect(page.getByTestId('chat-mobile-credits-display')).toContainText(
+      '0 / 100'
+    )
+    await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
+      'New messages use the smaller model'
     )
   })
 
@@ -1399,6 +1434,23 @@ test.describe('Chatbot Settings Panel', () => {
       'assistant reply #1',
       { timeout: 15_000 }
     )
+  })
+
+  test('Model descriptions explain capabilities without provider jargon', async ({
+    page,
+  }) => {
+    await setModelSelection(participantId, true)
+    await visitChat(page)
+    await openSettings(page)
+
+    const modelSection = page.getByTestId('chat-model-selection')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+
+    await expect(modelSection).toContainText(
+      'Built for difficult, multi-step questions'
+    )
+    await expect(modelSection).not.toContainText('LiteLLM')
+    await expect(modelSection).not.toContainText('OpenAI reasoning model')
   })
 
   // The selector only appears for a model that supports reasoning with more

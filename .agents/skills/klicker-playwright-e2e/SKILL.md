@@ -75,6 +75,14 @@ branded `error.tsx` retry/return surface without exposing the server error
 text. Keep the `/noLogin` assertion focused on the login action and concise
 return copy, not a raw redirect URL.
 
+For chat settings coverage, seed credits through the existing `setCredits`
+helper rather than mocking the credits route. A zero-credit response must leave
+only the fallback model available, reconcile an unavailable persisted model to
+that fallback, and expose the fallback notice in the sidebar-enabled mobile
+layout outside the closed drawer. Set the viewport before `visitChat`; embedded
+chat already owns its compact `EmbeddedCreditsBar` and should not receive the
+sidebar mobile bar.
+
 ## Fast Failure Triage
 
 - `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.

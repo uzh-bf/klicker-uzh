@@ -3,15 +3,28 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
+      tutorDescription: 'Get patient, step-by-step help with your questions.',
       explainer: 'Explainer',
+      explainerDescription: 'Get clear explanations of difficult concepts.',
     },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',
       selectAiModel: 'Select AI Model',
-      autoSelectionInfo: 'Automatic selection based on credit availability.',
-      usingPrimaryModel: 'Using primary model with available credits.',
-      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      autoModelDescription:
+        'Automatically chooses a suitable model for each message.',
+      reasoningModelDescription:
+        'Built for difficult, multi-step questions. It may take longer and use more credits.',
+      standardModelDescription:
+        'A general-purpose model for everyday questions.',
+      fallbackModelDescription:
+        'Uses fewer credits and remains available when your credits run out.',
+      autoSelectionInfo:
+        'KlickerUZH chooses a suitable model for each message.',
+      usingPrimaryModel:
+        'The standard model is used while credits are available.',
+      usingFallbackModel:
+        'No credits remain, so new messages use the smaller model.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -33,6 +46,8 @@ export default {
       resetNone: 'These credits do not refill automatically.',
       exhausted:
         'You have used up all your credits. However, you can still use the smaller model.',
+      fallbackNotice:
+        'Your credits are used up. New messages use the smaller model.',
     },
     sidebar: {
       newChat: 'New Chat',
