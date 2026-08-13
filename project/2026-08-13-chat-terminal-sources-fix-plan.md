@@ -115,10 +115,12 @@ No new product primitive is needed.
 
 ## Progress
 
-- Status: plan committed; isolated worktree created.
-- Completed: base/ref check, planning-stage challenge, and plan commit
-  `ba8b1b197`.
-- Active: S1 — terminal-aware source visibility.
-- Remaining: S1, S2, S3, simplification/reviews, integrated verification.
+- Status: S1 implemented and simplified; S2 — mixed-abort preservation active.
+- Completed: base/ref check, planning-stage challenge, plan commit
+  `ba8b1b197`, S1 commit `65ef187d7`, and S1 simplification adjustment.
+- Evidence: repository pre-commit checks passed for S1; focused browser launch
+  remains blocked by the isolated container's incomplete Chromium cache.
+- Remaining: S2, S3, persistence slice review/simplification, integrated
+  verification, and final review.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.

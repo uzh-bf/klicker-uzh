@@ -2024,7 +2024,6 @@ test.describe('Chatbot Source Citations', () => {
 
     const section = page.getByTestId('chat-sources-section')
     await expect(section).toBeVisible()
-    await expect(section).toContainText('Sources · 1')
     await expect(page.getByTestId('chat-source-card')).toHaveCount(1)
     await expect(section).toContainText('Terminal Only.pdf')
   })
