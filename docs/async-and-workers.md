@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-08-12'
 tags:
   - backend
   - hatchet
@@ -17,16 +17,22 @@ tags:
 ```
 student answer → apps/response-api (HTTP) → Hatchet event
                                               ↓
-        apps/hatchet-worker-response-processor (consume + re-emit)
-                                              ↓
-        apps/hatchet-worker-general (aggregation + scheduled jobs)
+        apps/hatchet-worker-response-processor
+                     ↓                 ↓
+                 Postgres           Redis aggregates
+
+        apps/hatchet-worker-general (lifecycle + block closure + scheduled jobs)
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, with `GET /healthz`, `POST /InitializeLiveQuizResponseIdentity`, `POST /AddResponse`, and `POST /AddCorrelatedResponse`. Aggregate responses keep the legacy cookie-forwarding path; correlated admission owns typed response validation, accepted instance metadata, identity creation, and the encrypted transactional outbox. Assessment responses remain on their separate no-outbox path and emit `response-received:assessment`; live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+
+For `CORRELATED_EXPORT`, initialization is the only route that may mint an anonymous quiz-scoped token. The dedicated correlated submission endpoint validates the complete response against the acceptance-time metadata before acknowledging it. The locked transaction rechecks the published mode, active block execution, and current quiz PIN, then stores the accepted identity, response key, encrypted snapshot, and `LiveQuizPendingResponse` row. Hatchet receives only `{ messageId }`; the worker loads that row and retries until terminal handling settles the receipt and erases the ciphertext. Keep `LIVE_QUIZ_CORRELATED_RESPONSES_ENABLED` disabled until the response API, worker, and migration are deployed together.
+
+The response processor binds aggregate and correlated events to separate processors. The aggregate processor owns participant-cookie verification, legacy duplicate handling, Redis pipelines, and leaderboard effects; aggregate and assessment validation remains compatible with already-materialized cache entries that predate the correlated-response metadata. The correlated processor loads and decrypts the matching outbox row, validates the admitted owner’s live-quiz scope without rechecking acceptance-time token expiry, and persists through normal quiz end but not abort or execution changes. Database uniqueness handles concurrent duplicate delivery; the processed marker makes Redis effects converge. Before correlated Redis effects are applied, the worker holds a shared database lock on the quiz and addressed block through the Lua mutation, so a block transition either wins first and suppresses the stale mutation or waits until the mutation is complete. Ended or closed blocks settle after durable persistence without late aggregate writes, and terminal handling marks the receipt settled. Invalid-response diagnostics contain identifiers and reasons, not response payloads.
 
 ## Worker task catalog
 
@@ -34,6 +40,7 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
+- `processCorrelatedResponseTask` — durable, loads its encrypted database outbox row by message id
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
@@ -46,4 +53,4 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 ## Running locally (config-derived — verify on your machine)
 
-The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
+The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. The response API and both response processors must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a process pointed at the wrong database happily accepts or processes events into nowhere. Drain `LiveQuizPendingResponse` before rotating `APP_SECRET`; queued payloads encrypted with the old value cannot be decrypted with the new one. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).

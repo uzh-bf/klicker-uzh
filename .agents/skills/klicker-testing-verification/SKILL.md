@@ -13,6 +13,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
 | Chat app logic (`apps/chat`)                 | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
+| Response API or response-processor helpers   | Run both packages' `test:run` scripts; for Redis Lua changes, also execute a focused smoke against a disposable key in real Redis                                                           |
 | `packages/graphql` services/schema           | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
 | Auth adapter against shared Prisma client    | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | UI or user flows                             | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
@@ -39,6 +40,19 @@ and silent streamed failures in the focused browser contract: headings should
 remain hierarchical and proportional, while failed assistant turns should not
 expose reload, rating, or relative-time metadata alongside their dedicated retry
 callout.
+
+For correlated live-quiz response changes, verify the durable boundary: authored
+response dimensions fail before outbox acknowledgement; the accepted snapshot,
+identity, and pending receipt are created under the shared lifecycle locks; Hatchet
+receives only `{ messageId }`; accepted responses persist through normal quiz end
+but not abort or execution changes; database uniqueness and the processed marker
+make redelivery idempotent; excessive Redis plans settle terminally; and terminal
+handling settles the receipt while erasing ciphertext. Run the response API and
+response-processor suites together, plus the Prisma check and migration smoke when
+the schema or migration changes. Verify that a block transition suppresses stale
+Redis effects through the database-to-Lua fence, that aggregate and assessment
+processing remains compatible with pre-existing cache metadata, and that
+invalid-response logs do not serialize submitted answers.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 

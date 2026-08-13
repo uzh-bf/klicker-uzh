@@ -144,35 +144,51 @@ export function validateStudentResponse({
 
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     const choiceCount = parsePositiveInteger(instanceInfo?.choiceCount)
-    if (
-      choiceCount === null ||
-      !hasExactKeys(response, ['choices']) ||
-      !Array.isArray(response.choices) ||
-      response.choices.length === 0 ||
-      response.choices.length !== choiceCount ||
-      !response.choices.every(
-        (choice) =>
-          isRecord(choice) &&
-          (hasExactKeys(choice, ['ix']) ||
-            hasExactKeys(choice, ['ix', 'selected'])) &&
-          Number.isInteger(choice.ix) &&
-          Number(choice.ix) >= 0 &&
-          Number(choice.ix) < choiceCount &&
-          (typeof choice.selected === 'boolean' ||
-            typeof choice.selected === 'undefined')
-      ) ||
-      new Set(response.choices.map((choice) => choice.ix)).size !==
-        response.choices.length
-    ) {
+    const validChoices =
+      instanceInfo === undefined
+        ? Array.isArray(response.choices) &&
+          response.choices.length > 0 &&
+          response.choices.every(
+            (choice) =>
+              isRecord(choice) &&
+              typeof choice.ix === 'number' &&
+              (typeof choice.selected === 'boolean' ||
+                typeof choice.selected === 'undefined')
+          )
+        : choiceCount !== null &&
+          hasExactKeys(response, ['choices']) &&
+          Array.isArray(response.choices) &&
+          response.choices.length > 0 &&
+          response.choices.length === choiceCount &&
+          response.choices.every(
+            (choice) =>
+              isRecord(choice) &&
+              (hasExactKeys(choice, ['ix']) ||
+                hasExactKeys(choice, ['ix', 'selected'])) &&
+              Number.isInteger(choice.ix) &&
+              Number(choice.ix) >= 0 &&
+              Number(choice.ix) < choiceCount &&
+              (typeof choice.selected === 'boolean' ||
+                typeof choice.selected === 'undefined')
+          ) &&
+          new Set(response.choices.map((choice) => choice.ix)).size ===
+            response.choices.length
+
+    if (!validChoices) {
       return {
         valid: false,
         message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
       }
     }
 
+    const choices = response.choices as {
+      ix: number
+      selected?: boolean
+    }[]
+
     if (
       type === 'SC' &&
-      response.choices.filter((choice) => choice.selected).length !== 1
+      choices.filter((choice) => choice.selected).length !== 1
     ) {
       return {
         valid: false,
@@ -182,7 +198,7 @@ export function validateStudentResponse({
 
     if (
       type === 'MC' &&
-      response.choices.filter((choice) => choice.selected).length === 0
+      choices.filter((choice) => choice.selected).length === 0
     ) {
       return {
         valid: false,
@@ -190,7 +206,7 @@ export function validateStudentResponse({
       }
     }
 
-    if (type === 'KPRIM' && response.choices.length !== 4) {
+    if (type === 'KPRIM' && choices.length !== 4) {
       return {
         valid: false,
         message: `Invalid response submitted for KPRIM question ${JSON.stringify(response)}`,
@@ -263,6 +279,24 @@ export function validateStudentResponse({
   }
 
   if (type === 'SELECTION') {
+    if (instanceInfo === undefined) {
+      if (
+        !Array.isArray(response.selection) ||
+        response.selection.length === 0 ||
+        response.selection.filter(
+          (entry) =>
+            entry !== -1 && typeof entry !== 'undefined' && entry !== null
+        ).length === 0
+      ) {
+        return {
+          valid: false,
+          message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+        }
+      }
+
+      return { valid: true }
+    }
+
     const numberOfInputs = parsePositiveInteger(instanceInfo?.numberOfInputs)
     const answerIds = parseNumberArray(instanceInfo?.selectionAnswerIds)
     if (
@@ -298,6 +332,34 @@ export function validateStudentResponse({
   }
 
   if (type === 'CASE_STUDY') {
+    if (instanceInfo === undefined) {
+      if (
+        !hasExactKeys(response, ['assessment']) ||
+        !isRecord(response.assessment) ||
+        Object.keys(response.assessment).length === 0 ||
+        !Object.values(response.assessment).every(
+          (caseObject) =>
+            isRecord(caseObject) &&
+            Object.keys(caseObject).length > 0 &&
+            Object.values(caseObject).every(
+              (itemObject) =>
+                isRecord(itemObject) &&
+                Object.keys(itemObject).length > 0 &&
+                Object.values(itemObject).every(
+                  (criterionResponse) => typeof criterionResponse === 'number'
+                )
+            )
+        )
+      ) {
+        return {
+          valid: false,
+          message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        }
+      }
+
+      return { valid: true }
+    }
+
     const responseShape = parseCaseStudyResponseShape(
       instanceInfo?.caseStudyResponseShape
     )

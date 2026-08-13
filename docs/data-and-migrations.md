@@ -36,7 +36,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks, but defers the respondent-response uniqueness index until the admission writer slice. A standard transactional `CREATE UNIQUE INDEX` on the existing response table could block active response processing; add that index only with the admission rollout and its preflight/verification.
+- The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks. The A4 settlement migration `20260812000000_live_quiz_response_respondent_unique` adds the respondent-response uniqueness boundary with `CREATE UNIQUE INDEX CONCURRENTLY`; keep the capability gate disabled until that migration and the worker are deployed together, and preflight for duplicate respondent responses before applying it.
 - Export-label persistence is owned by the export slice rather than the domain-boundary slice. Do not add a label table to the initial response-collection migration before the export implementation consumes it.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
@@ -131,6 +131,8 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
+- **Correlated live-quiz responses have exclusive owners**: the identity check requires exactly one of `participantId` and `respondentId`, and separate unique indexes protect each nullable owner. Keep the check, both indexes, and the two Prisma compound-unique lookups aligned when changing response identity.
+- **Correlated response acknowledgement uses a transactional outbox and receipt**: `LiveQuizPendingResponse.id` is the stable Hatchet message id and its unique `responseKey` records the first accepted response per respondent and quiz execution. The response API creates the encrypted acceptance snapshot and outbox row before enqueue acknowledgement; the worker loads the authoritative row and settles it after terminal handling.
 
 ## Adjacent: export package (`packages/export`)
 
