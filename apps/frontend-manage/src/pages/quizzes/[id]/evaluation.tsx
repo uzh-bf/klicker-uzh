@@ -3,6 +3,7 @@ import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
+import CorrelatedResponseExport from '../../../components/evaluation/CorrelatedResponseExport'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
 function LiveQuizEvaluation() {
@@ -51,6 +52,11 @@ function LiveQuizEvaluation() {
       isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
       pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
+      toolbarContent={
+        evaluation.canExportCorrelatedResponses ? (
+          <CorrelatedResponseExport liveQuizId={router.query.id as string} />
+        ) : null
+      }
     />
   )
 }

@@ -22,7 +22,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/export/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/export/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|apps/response-api/|apps/hatchet-worker-response-processor/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -149,6 +149,10 @@ jobs:
           pnpm run build
           cd ../../apps/hatchet-worker-general
           pnpm run build
+          cd ../response-api
+          pnpm run build
+          cd ../hatchet-worker-response-processor
+          pnpm run build
 
       - name: Setup database
         run: |
@@ -221,6 +225,12 @@ jobs:
 
           cd packages/graphql
           pnpm vitest run
+
+          cd ../../apps/response-api
+          pnpm run test:run
+
+          cd ../hatchet-worker-response-processor
+          pnpm run test:run
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           HATCHET_CLIENT_TLS_STRATEGY: none

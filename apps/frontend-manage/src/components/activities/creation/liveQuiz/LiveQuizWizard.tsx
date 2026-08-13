@@ -7,6 +7,7 @@ import {
   ElementType,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
+  LiveQuizResponseCollectionMode,
   PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -48,6 +49,7 @@ const acceptedTypes = [
 export interface LiveQuizWizardStepProps {
   editMode: boolean
   duplicationMode?: boolean
+  responseCollectionModeLocked?: boolean
   formRef: any
   formData: LiveQuizFormValues
   continueDisabled: boolean
@@ -81,9 +83,11 @@ interface LiveQuizWizardProps {
     | 'isConfusionFeedbackEnabled'
     | 'isGamificationEnabled'
     | 'isAssessmentEnabled'
+    | 'responseCollectionMode'
     | 'pinCode'
     | 'isLiveQAEnabled'
     | 'isModerationEnabled'
+    | 'status'
     | 'blocks'
   > & { course?: { id: string } | null }
   selection: Record<number, Element>
@@ -137,6 +141,20 @@ function LiveQuizWizard({
     isGamificationEnabled: yup
       .boolean()
       .required(t('manage.activityWizard.liveQuizGamified')),
+    responseCollectionMode: yup
+      .mixed<LiveQuizResponseCollectionMode>()
+      .oneOf(Object.values(LiveQuizResponseCollectionMode))
+      .test(
+        'not-gamified-correlated',
+        t('manage.activityWizard.responseCollectionGamificationConflict'),
+        function (value) {
+          return !(
+            value === LiveQuizResponseCollectionMode.CorrelatedExport &&
+            this.parent.isGamificationEnabled
+          )
+        }
+      )
+      .required(),
     defaultPoints: yup
       .number()
       .required(t('manage.activityWizard.liveQuizDefaultPointsReq'))
@@ -191,6 +209,7 @@ function LiveQuizWizard({
     timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
     isAssessmentEnabled: false,
+    responseCollectionMode: LiveQuizResponseCollectionMode.AggregatedAnonymous,
     isPinProtected: false,
     isConfusionFeedbackEnabled: true,
     isLiveQAEnabled: false,
@@ -267,6 +286,9 @@ function LiveQuizWizard({
     isAssessmentEnabled:
       initialValues?.isAssessmentEnabled ??
       formDefaultValues.isAssessmentEnabled,
+    responseCollectionMode:
+      initialValues?.responseCollectionMode ??
+      formDefaultValues.responseCollectionMode,
     isPinProtected: initialValues?.pinCode ? true : false,
     isConfusionFeedbackEnabled:
       initialValues?.isConfusionFeedbackEnabled ??
@@ -461,6 +483,11 @@ function LiveQuizWizard({
           key="live-quiz-settings-step"
           editMode={editMode}
           duplicationMode={duplicationMode}
+          responseCollectionModeLocked={
+            editMode &&
+            initialValues?.status !== PublicationStatus.Draft &&
+            initialValues?.status !== PublicationStatus.Scheduled
+          }
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

@@ -12,6 +12,7 @@ import {
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
+  LiveQuizResponseCollectionMode,
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -44,23 +45,107 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
+const responseIdentityInitializations = new Map<
+  string,
+  Promise<string | undefined>
+>()
+
+function getResponseApiEndpoint(endpoint: string) {
+  const url = new URL(process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string)
+  const basePath = url.pathname
+    .replace(/\/AddResponse\/?$/, '')
+    .replace(/\/$/, '')
+  url.pathname = `${basePath}/${endpoint}`
+  return url.toString()
+}
+
+function ensureCorrelatedResponseIdentity(
+  liveQuizId: string,
+  allowTokenFallback = false
+) {
+  const cacheKey = `${liveQuizId}:${allowTokenFallback ? 'fallback' : 'cookie'}`
+  if (!allowTokenFallback) {
+    const fallback = responseIdentityInitializations.get(
+      `${liveQuizId}:fallback`
+    )
+    if (fallback) return fallback
+  }
+  const existing = responseIdentityInitializations.get(cacheKey)
+  if (existing) return existing
+
+  const initialization = (async () => {
+    const response = await fetch(
+      getResponseApiEndpoint('InitializeLiveQuizResponseIdentity'),
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          liveQuizId,
+          ...(allowTokenFallback ? { allowTokenFallback: true } : {}),
+        }),
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Live quiz response identity initialization failed')
+    }
+
+    const body: unknown = await response.json()
+    if (
+      typeof body === 'object' &&
+      body !== null &&
+      'respondentToken' in body &&
+      typeof body.respondentToken === 'string'
+    ) {
+      return body.respondentToken
+    }
+
+    return undefined
+  })().catch((error) => {
+    responseIdentityInitializations.delete(cacheKey)
+    throw error
+  })
+
+  responseIdentityInitializations.set(cacheKey, initialization)
+  return initialization
+}
+
 async function handleNewResponse({
   liveQuizId,
   instanceId,
   type,
   answer,
   correlationKey,
+  responseCollectionMode,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  responseCollectionMode: LiveQuizResponseCollectionMode
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
+  let respondentToken: string | undefined
+  if (
+    responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+  ) {
+    try {
+      respondentToken = await ensureCorrelatedResponseIdentity(liveQuizId)
+    } catch {
+      return { statusCode: 1 }
+    }
+  }
+
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(respondentToken
+        ? { Authorization: `Bearer ${respondentToken}` }
+        : {}),
+    },
   }
 
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
@@ -121,10 +206,30 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
   }
 
   try {
-    const response = await fetch(
-      process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
-      requestOptions
+    const responseEndpoint = getResponseApiEndpoint(
+      responseCollectionMode === LiveQuizResponseCollectionMode.CorrelatedExport
+        ? 'AddCorrelatedResponse'
+        : 'AddResponse'
     )
+    let response = await fetch(responseEndpoint, requestOptions)
+    if (
+      responseCollectionMode ===
+        LiveQuizResponseCollectionMode.CorrelatedExport &&
+      response.status === 401 &&
+      !respondentToken
+    ) {
+      respondentToken = await ensureCorrelatedResponseIdentity(liveQuizId, true)
+      if (respondentToken) {
+        requestOptions = {
+          ...requestOptions,
+          headers: {
+            ...(requestOptions.headers as Record<string, string>),
+            Authorization: `Bearer ${respondentToken}`,
+          },
+        }
+        response = await fetch(responseEndpoint, requestOptions)
+      }
+    }
 
     let responseTimestamp: number | undefined
     try {
@@ -373,6 +478,7 @@ function Index({ id }: { id: string }) {
     isConfusionFeedbackEnabled,
     isGamificationEnabled,
     isAssessmentEnabled,
+    responseCollectionMode,
     isPartOfGamifiedCourse,
     course,
   } = data.studentLiveQuiz
@@ -439,7 +545,11 @@ function Index({ id }: { id: string }) {
         selectedBlock={selectedBlock}
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
-        handleNewResponse={handleNewResponse}
+        isAssessmentEnabled={isAssessmentEnabled}
+        responseCollectionMode={responseCollectionMode}
+        handleNewResponse={(params) =>
+          handleNewResponse({ ...params, responseCollectionMode })
+        }
         className={extraClassName}
       />
     )

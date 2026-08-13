@@ -2002,6 +2002,139 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
   })
 
+  test('Create and answer a correlated live quiz when respondent cookies are blocked', async ({
+    page: testPage,
+    browser,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+
+    let correlatedQuizCreated = false
+    let studentContext: Awaited<ReturnType<typeof browser.newContext>> | null =
+      null
+
+    try {
+      await loginLecturer(page)
+      await page.goto(`${env('URL_MANAGE')}/activities`, {
+        waitUntil: 'commit',
+      })
+      await expect(page.getByTestId('create-live-quiz')).toBeVisible()
+      await createLiveQuiz(page, {
+        name: data.correlated.name,
+        displayName: data.correlated.displayName,
+        responseCollectionMode: 'correlated',
+        blocks: [{ elements: [data.SCML.title] }],
+      })
+      correlatedQuizCreated = true
+
+      const liveQuiz = await runTask('getLiveQuizInfo', {
+        name: data.correlated.name,
+      })
+      await openActivitiesListForQuiz(page, data.correlated.name)
+      await page.getByTestId(`start-live-quiz-${data.correlated.name}`).click()
+      await page.getByTestId('next-block-timeline').click()
+
+      studentContext = await browser.newContext()
+      const studentPage = await studentContext.newPage()
+      await loginStudent(studentPage)
+      await studentPage.route(
+        '**/InitializeLiveQuizResponseIdentity',
+        async (route) => {
+          const requestHeaders = route.request().headers()
+          delete requestHeaders.cookie
+          const response = await route.fetch({ headers: requestHeaders })
+          const headers = response.headers()
+          delete headers['set-cookie']
+          await route.fulfill({ response, headers })
+        }
+      )
+      await studentPage.route('**/AddCorrelatedResponse', async (route) => {
+        const requestHeaders = route.request().headers()
+        delete requestHeaders.cookie
+        const response = await route.fetch({ headers: requestHeaders })
+        await route.fulfill({ response })
+      })
+
+      try {
+        await studentPage.goto(`${env('URL_STUDENT')}/session/${liveQuiz.id}`, {
+          waitUntil: 'commit',
+        })
+        await expect(
+          studentPage.getByTestId('live-quiz-response-collection-notice')
+        ).toContainText(
+          messages.pwa.liveQuiz.responseCollectionCorrelatedNotice
+        )
+        await expect(
+          studentPage.getByTestId('student-submit-answer')
+        ).toBeVisible()
+
+        const initializationResponse = studentPage.waitForResponse((response) =>
+          response.url().includes('/InitializeLiveQuizResponseIdentity')
+        )
+        const fallbackInitializationResponse = studentPage.waitForResponse(
+          (response) =>
+            response.url().includes('/InitializeLiveQuizResponseIdentity') &&
+            response.request().postDataJSON()?.allowTokenFallback === true
+        )
+        const firstCorrelatedResponse = studentPage.waitForResponse(
+          (response) =>
+            response.url().includes('/AddCorrelatedResponse') &&
+            !response.request().headers().authorization
+        )
+        const correlatedResponse = studentPage.waitForResponse(
+          (response) =>
+            response.url().includes('/AddCorrelatedResponse') &&
+            response.request().headers().authorization !== undefined
+        )
+        await studentPage.getByTestId('sc-0-answer-option-0').click()
+        await studentPage.getByTestId('student-submit-answer').click()
+
+        const initialResponse = await initializationResponse
+        expect(initialResponse.status()).toBe(200)
+        expect(await initialResponse.json()).not.toHaveProperty(
+          'respondentToken'
+        )
+        const firstResponse = await firstCorrelatedResponse
+        expect(firstResponse.status()).toBe(401)
+        expect(firstResponse.request().headers().authorization).toBeUndefined()
+        const fallbackResponse = await fallbackInitializationResponse
+        expect(fallbackResponse.status()).toBe(200)
+        expect(await fallbackResponse.json()).toHaveProperty('respondentToken')
+        const response = await correlatedResponse
+        expect(response.status()).toBe(200)
+        expect(response.request().headers().authorization).toMatch(
+          /^Bearer \S+$/
+        )
+        expect(
+          (await studentContext.cookies()).some((cookie) =>
+            cookie.name.startsWith('live_quiz_respondent_token_')
+          )
+        ).toBe(false)
+      } finally {
+        await studentContext.close()
+        studentContext = null
+      }
+
+      page = testPage
+      await page.getByTestId('next-block-timeline').click()
+      await page.getByTestId('next-block-timeline').click()
+      await expect(page.getByTestId('evaluation-results-cockpit')).toBeVisible({
+        timeout: 30_000,
+      })
+      await visitEvaluationFromCockpit(page)
+      await expect(
+        page.getByTestId('download-correlated-live-quiz-responses')
+      ).toBeVisible()
+    } finally {
+      if (studentContext) await studentContext.close()
+      if (correlatedQuizCreated) {
+        await runTask('deleteLiveQuiz', { name: data.correlated.name })
+      }
+    }
+  })
+
   test('Create a live quiz with two questions and test all settings', async ({
     page: testPage,
   }, testInfo) => {
@@ -2052,6 +2185,18 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('live-quiz-advanced-settings'),
       'not.exist'
     )
+    await page.getByTestId('set-quiz-response-collection-correlated').click()
+    await expect(
+      page.getByTestId('set-quiz-response-collection-correlated')
+    ).toHaveAttribute('data-state', 'on')
+    await expect(page.getByTestId('set-quiz-gamification')).not.toHaveAttribute(
+      'data-state',
+      'checked'
+    )
+    await page.getByTestId('set-quiz-response-collection-aggregated').click()
+    await expect(
+      page.getByTestId('set-quiz-response-collection-aggregated')
+    ).toHaveAttribute('data-state', 'on')
     await selectOption(page, '[data-cy="select-course"]', data.course1.name)
     await expect(page.getByTestId('select-course')).toContainText(
       data.course1.name

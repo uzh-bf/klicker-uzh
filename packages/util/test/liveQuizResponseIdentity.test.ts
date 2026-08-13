@@ -62,6 +62,50 @@ describe('live quiz response identity', () => {
     ).resolves.toBeNull()
   })
 
+  it('resolves a valid memory-only respondent token and enforces quiz scope', async () => {
+    const token = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      secret,
+      issuer,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: undefined,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken: token,
+      })
+    ).resolves.toMatchObject({
+      kind: 'anonymous',
+      id: respondentId,
+      liveQuizId,
+      token,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: undefined,
+        liveQuizId: '33333333-3333-4333-8333-333333333333',
+        secret,
+        issuer,
+        respondentToken: token,
+      })
+    ).resolves.toBeNull()
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: undefined,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken: `${token}tampered`,
+      })
+    ).resolves.toBeNull()
+  })
+
   it('accepts quiz-scoped and legacy temporary participant tokens', async () => {
     const scopedToken = await signJWT(
       {
@@ -166,6 +210,35 @@ describe('live quiz response identity', () => {
         liveQuizId,
         secret,
         issuer,
+      })
+    ).resolves.toMatchObject({
+      kind: 'participant',
+      id: participantId,
+      token: participantToken,
+    })
+  })
+
+  it('prefers a valid account participant over an explicit respondent token', async () => {
+    const participantId = '44444444-4444-4444-8444-444444444444'
+    const participantToken = await signJWT(
+      { sub: participantId, role: UserRole.PARTICIPANT },
+      secret,
+      { issuer }
+    )
+    const respondentToken = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      secret,
+      issuer,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: `participant_token=${participantToken}`,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken,
       })
     ).resolves.toMatchObject({
       kind: 'participant',

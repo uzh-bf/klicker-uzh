@@ -16,7 +16,7 @@ import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useReducer, useState } from 'react'
+import { ReactNode, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
@@ -46,6 +46,7 @@ interface ActivityEvaluationProps {
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   type?: ActivityEvaluationType
+  toolbarContent?: ReactNode
 }
 
 function ActivityEvaluation({
@@ -61,6 +62,7 @@ function ActivityEvaluation({
   pinCode,
   hideActiveBlockResults = false,
   type = 'Asynchronous',
+  toolbarContent,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -140,23 +142,26 @@ function ActivityEvaluation({
       </Head>
 
       {router.query.hideControls !== 'true' && (
-        <div className="z-20 h-11 flex-none">
-          <EvaluationNavigation
-            courseId={courseId ?? ''}
-            activityId={activityId}
-            stacks={stacks}
-            stackInstanceMap={stackInstanceMap}
-            activeStack={activeStack}
-            setActiveStack={setActiveStack}
-            activeInstance={activeInstance}
-            setActiveInstance={setActiveInstance}
-            numOfInstances={instanceResults.length}
-            type={type}
-            leaderboardAvailable={leaderboard !== null}
-            feedbacksAvailable={
-              feedbacks !== null && confusionFeedbacks !== null
-            }
-          />
+        <div className="z-20 flex-none">
+          <div className="h-11">
+            <EvaluationNavigation
+              courseId={courseId ?? ''}
+              activityId={activityId}
+              stacks={stacks}
+              stackInstanceMap={stackInstanceMap}
+              activeStack={activeStack}
+              setActiveStack={setActiveStack}
+              activeInstance={activeInstance}
+              setActiveInstance={setActiveInstance}
+              numOfInstances={instanceResults.length}
+              type={type}
+              leaderboardAvailable={leaderboard !== null}
+              feedbacksAvailable={
+                feedbacks !== null && confusionFeedbacks !== null
+              }
+            />
+          </div>
+          {toolbarContent}
         </div>
       )}
 

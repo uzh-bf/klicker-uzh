@@ -4,6 +4,7 @@ import {
   ElementBlockStatus,
   ElementType,
   type GetRunningLiveQuizQuery,
+  LiveQuizResponseCollectionMode,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { H2, StepProgress, UserNotification } from '@uzh-bf/design-system'
@@ -24,6 +25,8 @@ interface LiveQuizQuestionColumnProps {
   selectedBlock: number | null
   onSelectBlock: (value: number) => void
   isGamificationEnabled: boolean
+  isAssessmentEnabled: boolean
+  responseCollectionMode: LiveQuizResponseCollectionMode
   handleNewResponse: (params: {
     liveQuizId: string
     instanceId: number
@@ -44,6 +47,8 @@ function LiveQuizQuestionColumn({
   selectedBlock,
   onSelectBlock,
   isGamificationEnabled,
+  isAssessmentEnabled,
+  responseCollectionMode,
   handleNewResponse,
   className,
 }: LiveQuizQuestionColumnProps) {
@@ -96,6 +101,28 @@ function LiveQuizQuestionColumn({
             }
           }}
           className={{ root: 'md:mt-0.25 mt-5 text-sm' }}
+        />
+      ) : null}
+
+      {!isAssessmentEnabled ? (
+        <UserNotification
+          type={
+            responseCollectionMode ===
+            LiveQuizResponseCollectionMode.CorrelatedExport
+              ? 'info'
+              : 'default'
+          }
+          message={
+            responseCollectionMode ===
+            LiveQuizResponseCollectionMode.CorrelatedExport
+              ? t('pwa.liveQuiz.responseCollectionCorrelatedNotice')
+              : t('pwa.liveQuiz.responseCollectionAggregatedNotice')
+          }
+          data={{ cy: 'live-quiz-response-collection-notice' }}
+          className={{
+            root: 'mx-1 mt-2 gap-1.5 p-1.5 text-xs leading-4 md:mx-0',
+            icon: 'h-3.5 w-3.5',
+          }}
         />
       ) : null}
 

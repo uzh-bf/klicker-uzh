@@ -193,6 +193,7 @@ export async function createLiveQuiz(
     multiplier,
     gamificationWithoutCourse,
     pinProtectionWithoutCourse,
+    responseCollectionMode,
     blocks,
   }: {
     name: string
@@ -201,6 +202,7 @@ export async function createLiveQuiz(
     multiplier?: string
     gamificationWithoutCourse?: boolean
     pinProtectionWithoutCourse?: boolean
+    responseCollectionMode?: 'aggregated' | 'correlated'
     blocks: StackType[]
   }
 ) {
@@ -230,6 +232,9 @@ export async function createLiveQuiz(
   }
   if (pinProtectionWithoutCourse) {
     await page.getByTestId('set-quiz-pin-protection').click()
+  }
+  if (responseCollectionMode === 'correlated') {
+    await page.getByTestId('set-quiz-response-collection-correlated').click()
   }
 
   await page.getByTestId('next-or-submit').click()

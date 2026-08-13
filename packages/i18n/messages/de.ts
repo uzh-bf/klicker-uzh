@@ -1121,6 +1121,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
+      responseCollectionAggregatedNotice:
+        'Dieses Quiz erstellt keinen Export von Antworten auf Personenebene. Antworten fliessen in aggregierte Ergebniswerte ein.',
+      responseCollectionCorrelatedNotice:
+        'Antworten in diesem Quiz werden pro Person gespeichert und können mit zufälligen Bezeichnungen (z. B. respondent_001) statt Namen exportiert werden.',
       loginSelectionHint:
         'Sie sind dabei, an einem gamifizierten Live-Quiz teilzunehmen. Bitte wählen Sie zwischen den folgenden Optionen: <ul><li>Login mit <b>KlickerUZH-Konto</b>: Punkte und XP sammeln</li><li>Erstellen Sie ein <b>temporäres Pseudonym</b>: Sammeln Sie Punkte nur in diesem Live-Quiz (Punkte nicht im Kurs verfügbar)</li><li><b>Anonyme</b> Teilnahme: Nicht an den Gamifizierungselementen teilnehmen</li></ul>',
       loginWithAccount: 'Login mit KlickerUZH-Konto',
@@ -1631,6 +1635,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      batchCorrelatedGamificationConflict:
+        'Die ausgewählten Aktivitäten enthalten ein Live Quiz mit korrelierter Antwortspeicherung, das keinem gamifizierten Kurs zugewiesen werden kann.',
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
@@ -2173,6 +2179,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pinProtected: 'PIN-Schutz',
       pinProtectedTooltip:
         'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
+      responseCollectionMode: 'Antwortspeicherung',
+      responseCollectionModeTooltip:
+        'Wählen Sie, ob Antworten nur aggregiert bleiben oder für einen Export pro Person gespeichert werden.',
+      responseCollectionAggregated: 'Nur aggregiert',
+      responseCollectionCorrelated: 'Korrelierter Export',
+      responseCollectionAggregatedSummary:
+        'Antworten fliessen in aggregierte Live-Ergebnisse ein; für den Export werden keine Antwortzeilen auf Personenebene gespeichert.',
+      responseCollectionCorrelatedSummary:
+        'Antworten werden pro Person gespeichert und können mit zufälligen Bezeichnungen statt Namen exportiert werden.',
+      responseCollectionAssessment:
+        'Diese Einstellung gilt nicht: Assessments speichern Antworten immer identifizierbar.',
+      responseCollectionGamificationConflict:
+        'Korrelierte Exporte können nicht mit Gamification kombiniert werden, weil Ranglistenpunkte Rückschlüsse auf Personen ermöglichen könnten.',
+      responseCollectionLockedCourseConflict:
+        'Dieses korrelierte Live Quiz kann nach der Veröffentlichung keinem gamifizierten oder Assessment-Kurs zugewiesen werden.',
+      responseCollectionLocked:
+        'Diese Einstellung kann nach der Veröffentlichung des Live Quiz nicht mehr geändert werden.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',
@@ -2891,6 +2914,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
+      downloadCorrelatedResponses: 'Antworten als CSV herunterladen',
+      responseExportPrivacyWarning:
+        'Die Bezeichnungen in diesem Export werden zufällig vergeben; Namen, Konto-IDs, Benutzernamen, temporäre Pseudonyme, Zeitstempel und Freitextantworten werden nicht aufgenommen.',
+      responseExportFailed:
+        'Der Antwortexport konnte nicht heruntergeladen werden.',
+      responseExportEmpty:
+        'Es sind keine korrelierten Antworten für den Export verfügbar.',
+      responseExportNotReady:
+        'Antworten werden noch verarbeitet. Versuchen Sie den Download in Kürze erneut.',
+      responseExportTooLarge:
+        'Dieser Antwortexport ist für den direkten Download zu gross.',
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:
@@ -3099,6 +3133,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       languageTooltip:
         'Wählen Sie eine Sprache, welche beim Export von Kurs-Links, etc. als Standard verwendet werden soll. Studierende haben nach wie vor die Möglichkeit, die Sprache in der Studierenden-App zu ändern.',
       courseCreationFailed: 'Erstellen des Kurses fehlgeschlagen...',
+      gamificationCorrelatedQuizConflict:
+        'Gamifizierung kann nicht aktiviert werden, solange dieser Kurs ein Live Quiz mit korrelierter Antwortspeicherung enthält. Ändern Sie zuerst die Einstellung zur Antwortspeicherung des Quiz.',
+      assessmentCorrelatedQuizConflict:
+        'Beenden Sie das laufende Live Quiz, bevor Sie den Assessment-Modus aktivieren.',
       groupDeadlineFuture:
         'Die Deadline für die Gruppenbildung muss in der Zukunft liegen.',
       groupDeadlineBeforeEnd:

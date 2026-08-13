@@ -17,6 +17,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Use one contextual primary action and a labelled overflow menu for low-frequency actions; keep visible buttons and the overflow trigger in one action cluster, letting that cluster wrap as a unit across viewports.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
+   - Live Quiz response collection is a persisted enum: keep aggregate anonymous as the default, force it for assessment courses, and keep correlated export incompatible with gamification. Published quizzes must retain their existing mode.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.
@@ -26,6 +27,12 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Capture before/after screenshots of every changed state (including error/empty states you touched); check both locales if strings changed.
    - Iterate on issues you see yourself; hand to the user for manual verification only after your own pass succeeds.
 4. **Pre-PR** — `klicker-testing-verification` checklist; attach the screenshots to the PR description.
+
+For Live Quiz response-mode work, exercise both Manage and PWA surfaces: mode
+selection and its locked published state, the localized student privacy notice,
+and the ended-quiz correlated export warning/download. Keep the response mode
+selection in the wizard and route selection in the PWA aligned with the
+generated `LiveQuizResponseCollectionMode` enum.
 
 ## App boundaries
 

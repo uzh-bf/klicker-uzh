@@ -3,17 +3,34 @@
 Goal: add opt-in standard live quiz mode that stores row-correlatable responses for export while keeping participant-facing UI clear and assessment separate.
 
 Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
-Branch: `codex/live-quiz-correlated-responses`
+Branch: `rs/pr5134-b2-ui` (Stack B, UI layer)
 Target: `v3`
 PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134)
-Status: implementation in progress
+Status: B2 implementation complete locally; draft stacked PR publication is pending the browser runtime gate and CI.
+
+## Current Stack Topology
+
+The original PR #5134 source branch remains preserved. The replacement stack is:
+
+| Layer | Branch | Parent | Responsibility |
+| --- | --- | --- | --- |
+| P0 | `rs/pr5134-rollup` | `v3` | Rollup TypeScript-state prerequisite; draft PR #5362 |
+| Stack A | `rs/pr5134-a1-domain` -> `a2-contracts` -> `a3-admission` -> `a4-settlement` -> `a5-lifecycle` | P0 | schema, contracts, admission, settlement, and lifecycle backend slices |
+| Stack B1 | `rs/pr5134-b1-export` | `rs/pr5134-a5-lifecycle` | correlated export materialization and GraphQL delivery |
+| Stack B2 | `rs/pr5134-b2-ui` | `rs/pr5134-b1-export` | Manage/PWA mode UX, response routing, export action, i18n, and browser contract |
+
+The local B2 worktree is `trees/pr5134-b1-export`; the GitHub PRs for B1 and B2
+are still to be created as drafts. No branch is authorized for merge or ready
+status from this plan.
 
 ## Non-Goals
 
 - No assessment behavior change. Assessment remains identifiable and auditable by design.
 - No backfill for old standard live quizzes. Future quizzes only.
 - No research / DP export in this slice. Later admin workflow.
-- No PII removal from free-text responses yet.
+- Free-text answers are excluded from the correlated teaching export in this
+  slice; broader PII handling for other research/export channels remains future
+  work.
 - No per-respondent live UI. Live/evaluation UI stays aggregate-only.
 
 ## Current Evidence
@@ -41,7 +58,9 @@ Status: implementation in progress
 - Decision: labels are stable across re-exports after the quiz ends. Order internal identities by `HMAC(exportSalt, internalId)` before assigning labels; raw ids, response time, and join order are never exposed.
 - Decision: logged-in users may still use account internally for scoring/leaderboard, but export strips account identity.
 - Decision: temporary pseudonym remains visible on leaderboard, but export strips pseudonym.
-- Decision: free text included verbatim in teaching export for now; warn that free text can contain personal data.
+- Decision: free text is excluded from the correlated teaching export in this
+  slice. The export still carries pseudonymized individual-level data and must
+  not be described as anonymous or differential privacy.
 - Decision: duplicate submissions follow assessment semantics: first response counts; duplicate returns recorded-before.
 - Decision: anonymous correlated id persists per quiz if possible, survives reload/browser close; no cross-quiz reuse.
 - Decision: normal quiz editors can enable mode. No special permission.
@@ -70,7 +89,7 @@ German:
 
 Export warning:
 
-> Export uses random respondent labels and does not include names, emails, account ids, usernames, or temporary pseudonyms. Free-text answers may still contain personal data entered by participants.
+> Export uses random respondent labels and does not include names, emails, account ids, usernames, temporary pseudonyms, or free-text answers.
 
 ## Target Architecture
 
@@ -149,8 +168,8 @@ In `CORRELATED_EXPORT`:
 
 - standard response worker persists `LiveQuizResponse` for all respondents.
 - still updates Redis aggregate path for live/evaluation UI.
-- response-api uses a correlated-mode Redis vote-hash gate so duplicate submissions synchronously return recorded-before.
-- worker-side lookup remains the authoritative first-response-wins gate before insert.
+- response-api derives a quiz-, block-, instance-, and respondent-scoped `responseKey` and reserves it together with the pending outbox row in one transaction.
+- The unique `LiveQuizPendingResponse.responseKey` constraint is the synchronous duplicate gate; PostgreSQL uniqueness returns `duplicate` before a second response is enqueued, while the pending row remains the authoritative delivery record.
 
 In `AGGREGATED_ANONYMOUS`:
 
@@ -174,7 +193,7 @@ Output shape:
 - no email, participant id, username, temporary pseudonym, account type.
 - no submission or join timestamps.
 - unanswered cells are empty; scalar answers are plain text; structured answers use canonical compact JSON in one cell.
-- free text remains verbatim as data, but CSV formula-leading values are neutralized before download so spreadsheet software cannot execute participant input.
+- free-text answers are excluded from this teaching export; remaining scalar and structured values are formula-neutralized before download so spreadsheet software cannot execute participant input.
 - RFC 4180-compatible quoting, CRLF rows, and UTF-8 with BOM so commas, quotes, line breaks, and German text open cleanly in spreadsheet tools.
 - response includes a safe filename, CSV content, and the privacy warning shown by the UI.
 
@@ -299,15 +318,20 @@ Commit:
 Do:
 
 - Create quiz-scoped anonymous correlated respondent when mode is `CORRELATED_EXPORT`.
-- Persist opaque token or `id + secret` in browser/cookie where possible; no cross-quiz reuse.
+- Persist the opaque token in an HttpOnly quiz-scoped cookie where possible. The
+  first initialization response is cookie-only; if a correlated submission
+  returns the missing-identity `401`, retry initialization with an explicit
+  fallback request and return the signed anonymous respondent token for
+  memory-only use by the current page. Never put it in local storage, URLs, or a
+  non-HttpOnly cookie. Do not reuse it across quizzes.
 - Forward respondent token through `response-api`.
-- Add the synchronous correlated-mode Redis vote-hash gate in response-api so duplicates return recorded-before.
+- Derive a quiz-, block-, instance-, and respondent-scoped `responseKey` in response-api and reserve it with the encrypted pending outbox row in one transaction. The unique database constraint returns duplicate submissions synchronously; the outbox row remains the authoritative delivery record.
 - Worker verifies token secret / signature and maps to `LiveQuizRespondent`; respondent id alone is not accepted.
 - Persist `LiveQuizResponse` rows in correlated mode for logged-in and anonymous correlated respondents.
 - Do not persist temporary pseudonym responses through the unified respondent model in this slice unless Slice 5 is moved before Slice 4.
 - Keep aggregate Redis updates unchanged.
 - Keep an authoritative worker-side duplicate lookup before insert.
-- Keep worker changes additive; do not refactor the legacy processor in this feature.
+- Preserve aggregate and assessment behavior while routing mode-specific work through the extracted aggregate, assessment, correlated, and response-effect processor modules. This refactor is intentional: it isolates correlated persistence and shared effect planning from the legacy orchestration path, with existing aggregate/assessment tests retained alongside the correlated suites.
 
 Files:
 
@@ -365,9 +389,11 @@ Do:
 - Use HMAC-sorted stable `respondent_N` labels.
 - Strip all identifiers and respondent type.
 - Use clean, deterministic headers, canonical structured values, formula-injection protection, and RFC 4180-compatible escaping.
-- Include free-text verbatim.
-- Give this export an explicit teaching-matrix privacy mode; do not overload the existing pseudonymized export mode that redacts free text.
-- Show the free-text privacy warning next to the download action and include it in export metadata where applicable.
+- Exclude free-text answers from the teaching export.
+- Keep the export explicitly pseudonymized individual-level data; do not call it
+  anonymous or differential privacy.
+- Show the export contents warning next to the download action and include it in
+  export metadata where applicable.
 - Export unavailable/empty for old or aggregate-only quizzes with clear message.
 - Apply a documented response-size guard and return a clear error rather than truncating.
 
@@ -385,7 +411,7 @@ Files:
 
 Check:
 
-- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text inclusion, authorization, status/mode gating, and size-limit failure.
+- Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text exclusion, authorization, status/mode gating, and size-limit failure.
 - DB-backed export with fixture data across logged-in, temporary, anonymous respondents.
 - Agent-browser download check: correct filename, headers, row shape, warning, and unavailable states.
 
@@ -400,9 +426,12 @@ Do:
 - Full local flow: create correlated LQ, submit as logged-in, temporary pseudonym, anonymous correlated, export.
 - Browser screenshots: manage setting; PWA notices in both modes.
 - Add seed data for a correlated quiz and all respondent types.
-- Add lecturer-facing docs for both modes, export contents, and free-text responsibility.
+- Add lecturer-facing docs for both modes, export contents, and the limits of the pseudonymized export boundary.
 - Add mandatory E2E cases: enable correlated mode; anonymous reload continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
-- Manually test blocked cookies/storage. Expected degradation: quiz remains usable, but anonymous responses may split into multiple export rows.
+- Manually test blocked respondent cookies/storage after the quiz is otherwise
+  admitted. The current page must remain usable through the memory-only signed
+  token; a reload may create another pseudonymous export row. PIN-protected
+  admission still requires its quiz PIN cookie.
 - Security review: token scope, cookie expiry, identifier leakage, export PII warnings.
 - Final branch review.
 - PR/MR body with screenshots and manual verification list.
@@ -422,9 +451,12 @@ Commit:
 
 - Schema change to `LiveQuizResponse` can disturb assessment corrections. Keep assessment tests focused.
 - Replacing `TemporaryLeaderboardEntry` in one slice may be too large. If risky, keep compatibility bridge and migrate later.
-- Token stored in browser can split respondents when cookies/storage blocked. Notice/export should tolerate multiple rows.
-- Browser-stored respondent ids are bearer identifiers. Use a signed token or separate secret and verify it server-side before writing correlated responses.
-- Free text can identify participants despite export pseudonyms. Warning required.
+- Respondent cookies can be blocked. The current page retries initialization for
+  a memory-only signed token only after the cookie-backed submission returns
+  identity `401`; a reload may create another pseudonymous row.
+- Memory-only respondent tokens are bearer credentials for one quiz. Use a signed token and verify it server-side before writing correlated responses.
+- Free text is excluded from the v3.5 correlated teaching export. Other future
+  research/export channels still need their own PII review.
 - Row export can be mistaken for anonymity/DP. Avoid DP language.
 - Live worker has Redis-first design; DB writes must not slow response path enough to harm live quiz UX.
 - Returning CSV through GraphQL is intentionally simple for v1 but needs an explicit size limit; large-export streaming remains a later option.
@@ -460,13 +492,20 @@ Later research:
 - 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks.
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
+- 2026-08-12: The accepted privacy boundary is now reflected here: correlated teaching export excludes free-text answers, matching ADR 0001 and the export tests.
+- 2026-08-12: Cookie-blocked correlated sessions retry identity initialization after the cookie-backed submission returns identity `401`; only that explicit fallback returns a quiz-scoped signed respondent token to current-page memory. Cookie identities retain precedence, and PIN admission remains cookie-based.
+- 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
+- 2026-08-12: Final review found and fixed a legacy temporary-participant continuity gap. Correlated identity resolution now confirms a temporary leaderboard entry for the target quiz before reusing a legacy unscoped temporary cookie; stale cookies fall through to the quiz-scoped anonymous respondent or explicit bearer fallback.
+- 2026-08-12: Final review also required this plan refresh. The stack topology, current B2 status, browser-runtime blocker, and draft-publication next steps are now recorded here.
+- 2026-08-12: Final review found that `test-graphql` did not run the response-api or response-processor integrity suites. The workflow now includes both app paths in its filter and runs their existing `test:run` scripts beside the GraphQL tests; browser runtime verification remains the separate pre-merge blocker.
+- 2026-08-12: Final review follow-up aligned the plan with the implemented responseKey uniqueness and transactional outbox admission, and recorded the intentional processor extraction that preserves aggregate and assessment behavior. The workflow now also builds the response-api and response-processor production bundles before running their source-level suites.
 
 ## Goal Prompt Requirements
 
 If handed to another agent:
 
 - Use this file as current plan.
-- Use branch `codex/live-quiz-correlated-responses`.
+- Use the active stacked branch and topology recorded above; B2 is `rs/pr5134-b2-ui`.
 - Update `Progress` before and after each slice.
 - Work one slice at a time.
 - Run review + simplification subagents after each slice.
@@ -475,7 +514,7 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Commit the accepted Slice 1 review fixes, run the separate simplification review, and finalize Slice 1.
-2. Start Slice 2 with the manage UI setting and assessment-specific disabled state.
-3. Keep temporary-pseudonym response persistence out of Slice 4 until Slice 5 completes the unified respondent path.
-4. Deliver the self-service CSV and evaluation-page action together in Slice 6.
+1. Run the response-api and response-processor production builds plus the focused correlated Playwright journey and repository-mandated Manage/PWA browser checks in the isolated DevPod.
+2. Rerun the integrated final review on the resulting B2 range and record the review report.
+3. Publish `rs/pr5134-b1-export` and `rs/pr5134-b2-ui` as draft stacked PRs with whole-branch descriptions, preserving P0 and Stack A as their parents.
+4. Keep all PRs draft until CI and the browser gate are green; merge, ready-for-review, and cleanup actions remain separately authorized.
