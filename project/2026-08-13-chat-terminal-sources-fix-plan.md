@@ -115,12 +115,16 @@ No new product primitive is needed.
 
 ## Progress
 
-- Status: S1 implemented and simplified; S2 — mixed-abort preservation active.
+- Status: S2 implemented; S3 — documentation and integrated proof active.
 - Completed: base/ref check, planning-stage challenge, plan commit
-  `ba8b1b197`, S1 commit `65ef187d7`, and S1 simplification adjustment.
-- Evidence: repository pre-commit checks passed for S1; focused browser launch
-  remains blocked by the isolated container's incomplete Chromium cache.
-- Remaining: S2, S3, persistence slice review/simplification, integrated
-  verification, and final review.
+  `ba8b1b197`, S1 commit `65ef187d7`, S1 simplification adjustment, mixed-abort
+  content assembly, and the focused/full chat test checks.
+- Evidence: chat tests pass (`32` files, `243` tests), chat typecheck passes,
+  and the isolated devrouter browser visibly shows a terminal tool-only source
+  card after reload. The focused Playwright launch remains blocked by the
+  container's incomplete Chromium cache; the existing paused-stream assertion
+  remains in the suite unchanged.
+- Remaining: commit S2, run its persistence slice review and simplification,
+  complete docs, run integrated checks/build, and complete final review.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.
