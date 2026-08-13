@@ -578,9 +578,19 @@ the report preserves the exact identity that was reviewed.
   package check, root checks, and production build remain unavailable because
   `devrouter ensure . --json` cannot determine process identity for its
   workspace lock.
-- [ ] Integrated verification and final review (initial review found and
-  corrected a provider key-length defect; the correction review remains).
-- [ ] Implement and verify the approved slices.
+- [x] Integrated final review: the initial review found a 96-character
+  provider key, which was corrected to the derived 64-character
+  `klicker:pc:v1:<50-hex-character-digest>` form with a focused length
+  assertion. The allowed correction review approved the exact final commit at
+  `project/_local/reviews/2026-08-13-chat-cache-request-boundary-integrated-final-correction.md`.
+  Full package/root/build verification remains unavailable because the
+  devrouter process-identity lock prevents the authoritative devcontainer and
+  the named worktree has no dependency mount; the package is not presented as
+  fully verified or ready for publication.
+- [x] Implemented and locally verified the approved slices through committed
+  code, focused tests, documentation, and integrated review. Authority ends at
+  these local commits; no push, PR, merge, deployment, live call, measurement,
+  tunnel, cluster access, or cleanup was performed.
 
 ## Next action after user approval
 
