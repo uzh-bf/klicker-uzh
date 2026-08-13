@@ -1,6 +1,6 @@
 # PR #5348 — Biome Tier 1 ratchet
 
-Status: IN PROGRESS — CI regression fixes prepared; exact-head browser gates pending
+Status: IN PROGRESS — exact-head CI green; final review and PR publication pending
 Date: 2026-08-13
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
@@ -545,8 +545,16 @@ is unavailable.
   by `permissionId` before appending the returned permission. It also restores
   the `catalog-object-*` locator to the outer catalog row for objects and
   collections, retaining the semantic inner buttons. Biome check and the
-  `frontend-manage` typecheck pass for all three changed files; the correction
-  is not complete until the committed exact-head CI rerun passes.
+  `frontend-manage` typecheck pass for all three changed files.
+- 2026-08-13: Exact-head GitHub run `31654885823` at `ef5793c7b` passed all
+  eight Playwright shards, including the ownership-transfer assertions in live
+  quiz, microlearning, and practice quiz plus the catalog/template Public-label
+  and click flows. TypeScript, build, GraphQL, lint, format, Gitleaks, Knip,
+  and Syncpack also passed. The fallback slice review raised a theoretical
+  passive-wrapper click concern, but the configured browser run provides direct
+  evidence that the existing locator clicks land on the intended primary
+  control at the repository's test viewport; no further source change is
+  justified.
 
 ## Finish state
 
