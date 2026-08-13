@@ -2,11 +2,11 @@ import Image from 'next/image'
 import type { ReactNode } from 'react'
 
 interface ChatRecoveryCardProps {
-  dataCy: string
-  logoAlt: string
-  title: string
-  message: string
-  children: ReactNode
+  readonly dataCy: string
+  readonly logoAlt: string
+  readonly title: string
+  readonly message: string
+  readonly children: ReactNode
 }
 
 export function ChatRecoveryCard({

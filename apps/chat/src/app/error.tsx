@@ -1,15 +1,14 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { ChatRecoveryCard } from '../components/chat-recovery-card'
 
-export default function Error({
-  unstable_retry,
-}: {
-  error: Error & { digest?: string }
-  unstable_retry: () => void
-}) {
+interface ChatErrorProps {
+  readonly unstable_retry: () => void
+}
+
+export default function ChatError({ unstable_retry }: ChatErrorProps) {
   const t = useTranslations()
   const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
