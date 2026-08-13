@@ -7,10 +7,10 @@ import {
   useSidebar,
 } from '@uzh-bf/design-system'
 import { Plus } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
@@ -41,11 +41,26 @@ interface DisclaimerStatus {
   declined?: boolean
 }
 
-export const Assistant = ({
-  chatbot,
-}: {
-  chatbot: { id: string; name: string; avatar?: string }
-}) => {
+interface AssistantProps {
+  readonly chatbot: { id: string; name: string; avatar?: string }
+}
+
+interface ParticipationRequiredProps {
+  readonly embedded: boolean
+  readonly message: string | null
+}
+
+interface DisclaimerDeclinedProps {
+  readonly embedded: boolean
+  readonly disclaimer: ChatbotDisclaimer | null
+  readonly showDisclaimerModal: boolean
+  readonly actionError: boolean
+  readonly onShowDisclaimer: () => void
+  readonly onAccept: () => Promise<void>
+  readonly onDecline: () => Promise<void>
+}
+
+export function Assistant({ chatbot }: AssistantProps) {
   const t = useTranslations()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
@@ -54,6 +69,74 @@ export const Assistant = ({
   const participationMessage = useChatStore(
     (state) => state.participationMessage
   )
+  const {
+    disclaimer,
+    disclaimerStatus,
+    showDisclaimerModal,
+    isLoading,
+    disclaimerActionError,
+    setShowDisclaimerModal,
+    handleAcceptDisclaimer,
+    handleDeclineDisclaimer,
+  } = useDisclaimerGate(chatbot.id, participationRequired)
+
+  if (participationRequired) {
+    return (
+      <ParticipationRequired
+        embedded={embedded}
+        message={
+          participationMessage ??
+          t('chat.assistant.participationRequiredDefaultMessage')
+        }
+      />
+    )
+  }
+
+  // Show loading state while fetching disclaimer information
+  if (isLoading) {
+    return <ChatLoading embedded={embedded} />
+  }
+
+  // Show blocked message if disclaimer was declined
+  if (disclaimerStatus?.required && disclaimerStatus?.declined) {
+    return (
+      <DisclaimerDeclined
+        embedded={embedded}
+        disclaimer={disclaimer}
+        showDisclaimerModal={showDisclaimerModal}
+        actionError={disclaimerActionError}
+        onShowDisclaimer={() => setShowDisclaimerModal(true)}
+        onAccept={handleAcceptDisclaimer}
+        onDecline={handleDeclineDisclaimer}
+      />
+    )
+  }
+
+  return (
+    <>
+      <ChatUiProvider>
+        <RuntimeProvider chatbotId={chatbot.id}>
+          <AssistantLayout chatbot={chatbot} />
+        </RuntimeProvider>
+      </ChatUiProvider>
+
+      {/* Disclaimer Modal */}
+      {disclaimer && (
+        <DisclaimerModal
+          disclaimer={disclaimer}
+          isOpen={showDisclaimerModal}
+          onAccept={handleAcceptDisclaimer}
+          onDecline={handleDeclineDisclaimer}
+          errorMessage={
+            disclaimerActionError ? t('chat.disclaimer.actionError') : null
+          }
+        />
+      )}
+    </>
+  )
+}
+
+function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
@@ -61,20 +144,15 @@ export const Assistant = ({
   const [isLoading, setIsLoading] = useState(true)
   const [disclaimerActionError, setDisclaimerActionError] = useState(false)
 
-  // Fetch disclaimer information on component mount
   useEffect(() => {
     const fetchDisclaimerInfo = async () => {
       try {
-        const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`)
+        const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`)
         if (response.ok) {
           const data = await response.json()
           setDisclaimer(data.disclaimer)
           setDisclaimerStatus(data.status)
 
-          // Show modal if acceptance missing and user has not previously
-          // declined in this session. The server returns `declined: true`
-          // when the user has explicitly declined, in which case we skip the
-          // modal and let the declined view render immediately.
           if (
             data.status.required &&
             !data.status.accepted &&
@@ -98,8 +176,8 @@ export const Assistant = ({
     }
 
     setIsLoading(true)
-    fetchDisclaimerInfo()
-  }, [chatbot.id, participationRequired])
+    void fetchDisclaimerInfo()
+  }, [chatbotId, participationRequired])
 
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
@@ -107,7 +185,7 @@ export const Assistant = ({
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
+      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +220,7 @@ export const Assistant = ({
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbot.id}/disclaimer`, {
+      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,153 +249,179 @@ export const Assistant = ({
     }
   }
 
+  return {
+    disclaimer,
+    disclaimerStatus,
+    showDisclaimerModal,
+    isLoading,
+    disclaimerActionError,
+    setShowDisclaimerModal,
+    handleAcceptDisclaimer,
+    handleDeclineDisclaimer,
+  }
+}
+
+function ParticipationRequired({
+  embedded,
+  message,
+}: ParticipationRequiredProps) {
+  const t = useTranslations()
   const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
     : 'https://pwa.klicker.uzh.ch'
 
-  if (participationRequired) {
-    return (
+  return (
+    <div
+      data-cy="chat-participation-required"
+      className={twMerge(
+        'bg-muted flex w-full items-center justify-center px-4',
+        embedded ? 'h-full p-4' : 'min-h-screen'
+      )}
+    >
       <div
-        data-cy="chat-participation-required"
         className={twMerge(
-          'bg-muted flex w-full items-center justify-center px-4',
-          embedded ? 'h-full p-4' : 'min-h-screen'
+          'bg-card w-full rounded-lg border text-center shadow-sm',
+          embedded ? 'max-w-sm p-4' : 'max-w-lg p-8'
         )}
       >
-        <div
+        <h1
           className={twMerge(
-            'bg-card w-full rounded-lg border text-center shadow-sm',
-            embedded ? 'max-w-sm p-4' : 'max-w-lg p-8'
+            'text-foreground font-semibold',
+            embedded ? 'text-lg' : 'text-2xl'
           )}
         >
-          <h1
-            className={twMerge(
-              'text-foreground font-semibold',
-              embedded ? 'text-lg' : 'text-2xl'
-            )}
-          >
-            {t('chat.assistant.participationRequiredTitle')}
-          </h1>
-          <p
-            className={twMerge(
-              'text-muted-foreground',
-              embedded ? 'mt-2 text-sm' : 'mt-4 text-base'
-            )}
-          >
-            {participationMessage ??
-              t('chat.assistant.participationRequiredDefaultMessage')}
-          </p>
-          {!embedded && (
-            <Link
-              href={pwaBaseUrl}
-              className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              prefetch={false}
-            >
-              {t('chat.assistant.openKlickerUzh')}
-            </Link>
+          {t('chat.assistant.participationRequiredTitle')}
+        </h1>
+        <p
+          className={twMerge(
+            'text-muted-foreground',
+            embedded ? 'mt-2 text-sm' : 'mt-4 text-base'
           )}
-        </div>
+        >
+          {message}
+        </p>
+        {!embedded && (
+          <Link
+            href={pwaBaseUrl}
+            className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            prefetch={false}
+          >
+            {t('chat.assistant.openKlickerUzh')}
+          </Link>
+        )}
       </div>
-    )
-  }
+    </div>
+  )
+}
 
-  // Show loading state while fetching disclaimer information
-  if (isLoading) {
-    return (
-      <div
-        data-cy="chat-loading"
+function ChatLoading({ embedded }: { readonly embedded: boolean }) {
+  const t = useTranslations()
+
+  return (
+    <output
+      data-cy="chat-loading"
+      aria-live="polite"
+      aria-busy="true"
+      className={twMerge(
+        'bg-muted flex items-center justify-center px-4',
+        embedded ? 'h-full' : 'min-h-screen'
+      )}
+    >
+      <span
         className={twMerge(
-          'flex items-center justify-center',
-          embedded ? 'h-full' : 'h-screen'
+          'bg-card flex w-full items-center gap-4 rounded-xl border p-6 shadow-sm',
+          embedded ? 'max-w-xs p-4' : 'max-w-sm'
         )}
       >
-        <div className={embedded ? 'text-sm' : 'text-lg'}>
-          {t('chat.assistant.loading')}
-        </div>
-      </div>
-    )
-  }
-
-  // Show blocked message if disclaimer was declined
-  if (disclaimerStatus?.required && disclaimerStatus?.declined) {
-    return (
-      <>
-        <div
-          data-cy="chat-disclaimer-declined"
-          className={twMerge(
-            'flex items-center justify-center',
-            embedded ? 'h-full p-4' : 'h-screen'
-          )}
-        >
-          <div
-            className={twMerge(
-              'bg-destructive/10 rounded-lg text-center',
-              embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
-            )}
-          >
-            <h2
-              className={twMerge(
-                'text-foreground font-semibold',
-                embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
-              )}
-            >
-              {t('chat.assistant.disclaimerDeclinedTitle')}
-            </h2>
-            <p className={twMerge('text-foreground', embedded && 'text-sm')}>
-              {t('chat.assistant.disclaimerDeclinedMessage')}
-            </p>
-            {!embedded && (
-              // text-white, not text-destructive-foreground: this app's
-              // theme only defines --color-destructive (see globals.css),
-              // no matching foreground token. White sits ~4.8:1 on the solid
-              // destructive bg, near the 4.5:1 AA floor — so the hover must
-              // darken (brightness-90), not alpha-lighten like the app's
-              // hover:bg-primary/90 pattern, which would drop below AA here.
-              <button
-                type="button"
-                data-cy="chat-show-disclaimer-again"
-                onClick={() => setShowDisclaimerModal(true)}
-                className="bg-destructive mt-4 min-h-11 rounded px-4 py-2 text-white transition-[filter] touch-manipulation hover:brightness-90 fine-pointer:min-h-8"
-              >
-                {t('chat.assistant.showDisclaimerAgain')}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {!embedded && disclaimer && (
-          <DisclaimerModal
-            disclaimer={disclaimer}
-            isOpen={showDisclaimerModal}
-            onAccept={handleAcceptDisclaimer}
-            onDecline={handleDeclineDisclaimer}
-            errorMessage={
-              disclaimerActionError ? t('chat.disclaimer.actionError') : null
-            }
+        <Image
+          src="/KlickerLogo.png"
+          alt=""
+          width={48}
+          height={48}
+          priority
+          className="size-12 shrink-0 object-contain"
+        />
+        <span className="min-w-0 flex-1 space-y-2">
+          <span
+            aria-hidden="true"
+            className="bg-muted block h-3 w-28 animate-pulse rounded-full motion-reduce:animate-none"
           />
-        )}
-      </>
-    )
-  }
+          <span
+            aria-hidden="true"
+            className="bg-muted block h-3 w-full animate-pulse rounded-full motion-reduce:animate-none"
+          />
+          <span className="text-muted-foreground block text-sm">
+            {t('chat.assistant.loading')}
+          </span>
+        </span>
+      </span>
+    </output>
+  )
+}
+
+function DisclaimerDeclined({
+  embedded,
+  disclaimer,
+  showDisclaimerModal,
+  actionError,
+  onShowDisclaimer,
+  onAccept,
+  onDecline,
+}: DisclaimerDeclinedProps) {
+  const t = useTranslations()
 
   return (
     <>
-      <ChatUiProvider>
-        <RuntimeProvider chatbotId={chatbot.id}>
-          <AssistantLayout chatbot={chatbot} />
-        </RuntimeProvider>
-      </ChatUiProvider>
+      <div
+        data-cy="chat-disclaimer-declined"
+        className={twMerge(
+          'flex items-center justify-center',
+          embedded ? 'h-full p-4' : 'h-screen'
+        )}
+      >
+        <div
+          className={twMerge(
+            'bg-destructive/10 rounded-lg text-center',
+            embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
+          )}
+        >
+          <h2
+            className={twMerge(
+              'text-foreground font-semibold',
+              embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
+            )}
+          >
+            {t('chat.assistant.disclaimerDeclinedTitle')}
+          </h2>
+          <p className={twMerge('text-foreground', embedded && 'text-sm')}>
+            {t('chat.assistant.disclaimerDeclinedMessage')}
+          </p>
+          {!embedded && (
+            // text-white, not text-destructive-foreground: this app's
+            // theme only defines --color-destructive (see globals.css),
+            // no matching foreground token. White sits ~4.8:1 on the solid
+            // destructive bg, near the 4.5:1 AA floor — so the hover must
+            // darken (brightness-90), not alpha-lighten like the app's
+            // hover:bg-primary/90 pattern, which would drop below AA here.
+            <button
+              type="button"
+              data-cy="chat-show-disclaimer-again"
+              onClick={onShowDisclaimer}
+              className="bg-destructive mt-4 min-h-11 rounded px-4 py-2 text-white transition-[filter] touch-manipulation hover:brightness-90 fine-pointer:min-h-8"
+            >
+              {t('chat.assistant.showDisclaimerAgain')}
+            </button>
+          )}
+        </div>
+      </div>
 
-      {/* Disclaimer Modal */}
-      {disclaimer && (
+      {!embedded && disclaimer && (
         <DisclaimerModal
           disclaimer={disclaimer}
           isOpen={showDisclaimerModal}
-          onAccept={handleAcceptDisclaimer}
-          onDecline={handleDeclineDisclaimer}
-          errorMessage={
-            disclaimerActionError ? t('chat.disclaimer.actionError') : null
-          }
+          onAccept={onAccept}
+          onDecline={onDecline}
+          errorMessage={actionError ? t('chat.disclaimer.actionError') : null}
         />
       )}
     </>
@@ -413,6 +517,7 @@ function SidebarMain({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(

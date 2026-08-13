@@ -53,6 +53,16 @@ export default {
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot not found',
+      notFoundMessage:
+        'This chat link is no longer available. Return to KlickerUZH to choose another course or chatbot.',
+      errorTitle: 'Chatbot unavailable',
+      errorMessage:
+        'We could not load this chatbot. Try again or return to KlickerUZH.',
+      retry: 'Try again',
+      openKlickerUzh: 'Open KlickerUZH',
+    },
     branchPicker: {
       previous: 'Previous branch',
       next: 'Next branch',
@@ -195,8 +205,7 @@ export default {
       title: 'Login Required',
       message:
         'You need to create a KlickerUZH account or log in before you can access this chatbot.',
-      redirectNotice:
-        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      redirectNotice: 'After logging in, you will return to this chatbot.',
       loginButton: 'Go to KlickerUZH Login',
     },
     response: {

@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
+import { z } from 'zod'
 
 interface ChatLayoutProps {
   children: React.ReactNode
@@ -13,24 +14,21 @@ export default async function ChatLayout({
 }: ChatLayoutProps) {
   const { chatbotId } = await params
 
-  try {
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { id: true, name: true, avatar: true },
-    })
+  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
 
-    if (!chatbot) notFound()
+  const chatbot = await prisma.chatbot.findUnique({
+    where: { id: chatbotId },
+    select: { id: true, name: true, avatar: true },
+  })
 
-    return (
-      <>
-        <Assistant
-          chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
-        />
-        {children}
-      </>
-    )
-  } catch (error) {
-    console.error('Error fetching chatbot:', error)
-    notFound()
-  }
+  if (!chatbot) notFound()
+
+  return (
+    <>
+      <Assistant
+        chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
+      />
+      {children}
+    </>
+  )
 }

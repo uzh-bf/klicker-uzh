@@ -409,6 +409,32 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   performed through the participant UI, and acceptance returned to the German
   composer. The screenshots are retained under the gitignored
   `project/_local/browser/` evidence directory.
+- Current (2026-08-11): layer 02 branded-error-routing is implemented on
+  `rs/chat-ux-error-states` as the next stack slice. The dynamic layout now
+  distinguishes an absent chatbot row with `notFound()` from unexpected
+  failures; root `app/not-found.tsx` and `app/error.tsx` provide the recovery
+  surfaces because a same-segment error boundary cannot catch its layout.
+  Loading, no-login, locale, wiki, E2E guidance, and the focused unknown-link
+  contract are included in this slice.
+- Verified for layer 02 in the real in-app Browser: the missing-chatbot card
+  renders in German at 1440x900 and in English at 390x844, keeps the branded
+  return action, and omits the unknown UUID from visible copy. A temporary
+  throw in the dynamic layout rendered the English mobile error card with
+  retry/return actions and no raw server error; after the throw was removed,
+  clicking Retry refreshed the route back to the authenticated composer. The
+  same fault-injection and retry proof passed in German at 1440x900.
+- Intermediate review of the initial layer-02 commit `c7765925f` returned
+  `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
+  server layout payload. The follow-up fix uses Next 16's `unstable_retry`,
+  and the retry proof above closes that finding.
+- The follow-up review of the corrected layer-02 range found that malformed
+  chatbot IDs still reached Prisma and the retryable error surface. The route
+  now validates UUID shape before lookup, and the E2E contract covers both
+  malformed and well-formed missing IDs as branded 404s.
+- Layer-02 automated verification currently passes chat typecheck, lint with
+  0 errors and the same 5 pre-existing warnings, and 31 files / 231 tests.
+  The focused Playwright journey remains a hosted-CI gate because this
+  container lacks a usable Chromium headless shell.
 - Environment recovery note: the 404s observed during the browser pass were
   caused by a stale Turbopack `.next` route manifest after dependency
   recovery, not by missing source routes. Clearing only generated
