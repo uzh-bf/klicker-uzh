@@ -222,9 +222,144 @@ follow_up_stacks:
 - Pre-open: compute substantive lines excluding generated/plan docs; prove every layer independently functional, reviewable, green, and safe; keep both PRs draft until Gate 3 user approval. Layer 1 is safe because real-data input fails closed; Layer 2 is safe because aggregate input still requires eligibility and every real restricted-export adapter remains inert. Push and draft PR creation need explicit authorization.
 - Real-data pilot, publication, deployment, merge, stack reorder/unstack, and branch/worktree deletion each remain separate explicit gates.
 
+## Pragmatic correction plan — 2026-08-13
+
+This section controls where it conflicts with the original Layer 1 and Layer 2
+instructions above. The user-requested agy review found that the privacy
+primitives are useful, but that unused provenance and a complete inert
+restricted-export object graph make the current package larger than its usable
+outcome. The correction retains the eligibility, exchange, disclosure, and
+aggregate-artifact contracts and makes the aggregate path executable.
+
+### Primitive impact
+
+| Product primitive | Disposition | Correction delta | Evidence |
+| --- | --- | --- | --- |
+| Analysis eligibility | Reuse | No semantic change; missing or mismatched purpose/course/effective-window eligibility remains fail closed | ADR-0005; core tests |
+| Exchange | Reuse | Preserve linked, ambiguous, absent, and outside-window states and the eligibility-sensitive fallback scan | `core.ts`; pragmatic review P3 disposition |
+| Aggregate report | Extend | Retain disclosure-safe JSON/XLSX model and add one bounded executable command/provider seam | Pragmatic review P2 |
+| Restricted export | Retire from this package | Remove the unconsumed implementation; ADR-0005 remains the policy boundary for a future provider-backed package | Pragmatic review P1; ADR-0005 |
+| Artifact provenance | Compose | Keep provenance only in the report artifact; remove the unused duplicate core model | Pragmatic review P4 |
+
+### Data-protection defaults preserved
+
+- Amount: the aggregate artifact still contains no message text, stable
+  identifiers, participant pseudonyms, reasoning, image bytes, or tool results.
+- Processing extent: the only executable path uses purpose/course/effective
+  eligibility and fails closed while no authoritative provider exists.
+- Storage: the aggregate command writes only the versioned disclosure-controlled
+  JSON and XLSX selected by the operator; no durable row-level dataset is added.
+- Accessibility: removing the inert restricted-export subsystem leaves no
+  content-bearing download path. The legacy `--includeMessageContent` flag
+  continues to reject the request.
+- Disclosure: minimum-cell, complementary, cross-table, and additive-partition
+  suppression remain unchanged and covered by the existing report tests.
+
+### W1 — simplify the lower analysis-core pull request
+
+- Branch: `rs/chatbot-analysis-core`; pull request
+  [#5390](https://github.com/uzh-bf/klicker-uzh/pull/5390); target `v3`.
+- Do: remove only `MetricProvenance`, `createMetricProvenance`,
+  `AnalysisCoreResult.provenance`, and the `runAnalysisCore` provenance
+  construction.
+- Preserve: all eligibility, withdrawal, bounded lineage, exchange-state,
+  rating, provider, ordering, and test behavior. Do not remove the fallback
+  scan or export the private comparator.
+- Check: retain 8/8 core tests; strict `check:analysis`; changed-path Biome and
+  Prettier; `git diff --check`; exact removal-only diff audit.
+- Review: W1-specific planning-stage, simplifier, data-integrity slice review,
+  and integrated final review on immutable local ranges.
+- Finish: verified local commits only. Push, pull-request updates, upper-branch
+  propagation, merge, deployment, production access, real-data access, and W2
+  remain withheld.
+
+### W2 — right-size reports and deliver the aggregate execution path
+
+- Dependency: begin only after W1 is accepted. Propagate the corrected lower
+  branch through the existing stack checkpoint procedure before editing the
+  upper branch.
+- Branch: `rs/chatbot-governed-reports`; pull request
+  [#5389](https://github.com/uzh-bf/klicker-uzh/pull/5389); base
+  `rs/chatbot-analysis-core`.
+- Remove: the unconsumed restricted-export eligibility/request/dependency,
+  row, manifest, audit-event, hashing, authorization, and artifact contracts,
+  plus their two synthetic tests and unused crypto imports.
+- Preserve fail-closed content behavior: retain the legacy flag rejection and
+  reword its message to state that no content-bearing export exists and that a
+  governed restricted export is future work under ADR-0005.
+- Clarify signals: accept required numeric counts through a raw exploratory
+  signal input type; construct nullable disclosure output internally; remove
+  the defensive `?? 0` conversions.
+- Simplify report flow: name the linked assistant records `selectedModels`
+  directly. Do not export the core comparator merely to deduplicate four lines.
+- Execute the useful outcome: add one small aggregate command with an injected
+  record-provider seam. The production-shaped provider remains compile-checked
+  and returns no eligibility until an authoritative source exists, so a real
+  invocation fails closed rather than analyzing records. The end-to-end test
+  uses an in-memory synthetic provider and proves JSON and XLSX output without
+  database or production access.
+- Update `docs/chat-platform.md`, this plan, and pull-request-facing wording so
+  restricted export is future work and the bounded aggregate command is the
+  delivered outcome. ADR-0005 and ADR-0006 remain unchanged.
+- Test delta: remove 2 restricted-export tests; retain the aggregate/disclosure
+  suite; adjust the report fixture for W1 and the raw-signal input; add one
+  fail-closed provider test and one synthetic command-level artifact test. The
+  command test may replace the current lower-level artifact-writer test when it
+  protects the same failure class more directly.
+- Check: full prisma-data Vitest; strict `check:analysis`; changed-path format;
+  `git diff --check`; no surviving `RestrictedExport` implementation symbol;
+  synthetic JSON/XLSX contain no text or stable identifier; legacy content flag
+  still throws.
+- Review: one simplifier and one privacy/data-integrity slice review on the
+  immutable W2 range, then one integrated final reviewer across the corrected
+  two-layer stack. The user-requested `CHANGES_REQUESTED` review re-arms these
+  correction reviews; it does not authorize publication.
+- Commits: one removal/simplification commit, one aggregate execution-path
+  commit, and one documentation/Progress commit when needed for reviewable
+  history.
+- Finish: verified local commits. Push/force-push, pull-request updates, ready
+  transitions, merge, production or real-data runs, publication, and cleanup
+  remain separate explicit gates.
+
+### Correction test portfolio
+
+| Risk or behavior | Obligation | Stable seam | Owning work item |
+| --- | --- | --- | --- |
+| Eligibility or lineage changes during simplification | Retain existing 8 tests and exact-diff audit | `core.test.ts` | W1 |
+| Aggregate suppression weakens while reports shrink | Retain current disclosure/cascade tests | `reports.test.ts` | W2 |
+| Legacy content export becomes reachable | Retain explicit rejection test | legacy flag boundary | W2 |
+| New command processes data without eligibility | Add fail-closed provider test | record-provider seam | W2 |
+| Aggregate command is only theoretical | Add synthetic provider-to-JSON/XLSX test and artifact scan | command run function | W2 |
+
+### Correction planning review
+
+- The configured native planner route was unavailable in this runtime. The
+  trusted read-only Claude Fable 5 planner completed the correction challenge
+  as session `1d6284d3-bafe-42ee-9f56-8f0ee7464398` with verdict `DONE`.
+- Accepted: two sequential work items matching the existing stack; W1 is a
+  behavior-preserving deletion; W2 removes the speculative restricted path and
+  delivers one aggregate command; ADR-0005 remains valid; tests use injected
+  synthetic providers and no live database.
+- No material decision blocks W1 or the planned W2. The exact W2 provider query
+  projection remains an implementation detail as long as authoritative
+  eligibility stays fail closed and no production or real-data run occurs.
+
 ## Progress
 
-- Status: integrated package correction in progress on `rs/chatbot-learning-analytics`.
+- Status: pragmatic correction W1 accepted locally; W2 is planned and has not
+  started.
+- W1 result: visible delegated task
+  `019ffcc6-c396-7b23-882e-1836e7cff349` completed range
+  `7e9d8e06c6e8fe5f7e0db17735a4364a873d110b..550a266d2f497cfb8cf1c15b22b9a998d9b24bea`
+  on `rs/chatbot-analysis-core`. The implementation deletes 34 lines from
+  `core.ts`; no tests changed. The coordinator independently reran Node 24
+  Vitest (8/8), strict `check:analysis`, Biome, Prettier, `git diff --check`,
+  and exact test-count/diff checks. Planning, simplifier, slice-review, and
+  integrated-final reports are under `project/_local/reviews/` with the
+  `2026-08-13-pr-5390-analysis-core-pragmatic-simplification` prefix.
+- W1 delivery: verified local commits only. The remote pull-request branch is
+  unchanged, and remote `v3` has advanced by unrelated commits without touching
+  the W1 paths. No rebase was authorized or performed.
 - Evidence: base `v3` was fetched/read-only and matched `5264353ff77afc598ea69f05f262b25f882ca38c`; the repo-local worktree was created; domain/ADR docs committed as `c2c3920bf`; this plan committed as `5fd5b13a8`; no production query or real-data artifact occurred.
 - Active slice: analysis-core implementation complete; the main session owns the eligibility/provider and lineage seams because they are data-integrity boundaries. Executor delegation was attempted but the configured native executor model is unavailable in this runtime, so the bounded test-wiring work remained in the main session.
 - Test delta: added seven focused synthetic tests at the provider/eligibility/exchange/rating seam; no tests removed. The correction adds coverage for participants with no decision and for an in-window reply excluded by an expired eligibility interval. Added strict `check:analysis` coverage without widening the existing seed-data check.
@@ -236,4 +371,8 @@ follow_up_stacks:
 - Layer 2 correction: selected-model suppression now cascades through the linked-response/user-population summary and provenance fields, closing reconstruction through exchange partitions and duplicate unknown-count metadata. The correction also suppresses same-population attachment totals, aligns chat-mode provenance to user messages, expands the regression fixture, and rejects the legacy raw-content flag. Credits suppression is participant-based rather than message-based. The fallback slice review confirmed the original disclosure fix and identified these additional pre-existing gaps; they are addressed in the current correction.
 - Layer 2 verification: 21 focused synthetic tests pass (8 core, 13 reports), strict analysis typecheck passes, and changed-path formatting/diff checks pass. The paired fallback simplifier and slice review completed on `b72294f5a`; both returned `DONE_WITH_CONCERNS` without a privacy defect. The simplifier's dead-parameter reduction and the reviewer's provenance-coverage assertions are applied and reverified.
 - Integrated-final correction disposition: the fallback review confirmed the high-risk withdrawal, cross-table, provider-field, manifest, and legacy-content findings were closed. Its remaining summary-partition concern is closed in this correction by suppressing additive message-role, exchange-status, and rating-outcome partitions before any sibling values can be disclosed. Main-session verification is the closing check because the configured integrated-final review budget is exhausted.
-- Next: wire the aggregate report model to a governed eligible-record provider in a separately reviewed follow-up. That provider must supply effective-dated prospective eligibility and a negative withdrawal decision spanning the retained message interval; a future withdrawal cannot be inferred from a point-in-time query alone. Keep real-data adapters inert until effective eligibility, operator identity, audit sink, encrypted destination, expiry, and deletion/rebuild owners exist; no production query or real-data artifact is authorized in this session.
+- Next: W2 begins only through its own approved execution/delegation boundary.
+  First propagate W1 through the existing stack locally, then remove the inert
+  restricted-export subsystem, deliver the aggregate command/provider seam,
+  and run the named synthetic/privacy checks. No push, pull-request update,
+  production query, or real-data artifact is authorized in this session.
