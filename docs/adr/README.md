@@ -13,3 +13,4 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
+- [0005](./0005-versioned-chat-engine-boundary.md) — Cross chat generation through a versioned internal engine boundary
