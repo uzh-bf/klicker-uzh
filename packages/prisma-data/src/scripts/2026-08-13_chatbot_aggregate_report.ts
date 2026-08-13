@@ -133,7 +133,7 @@ try {
   console.log(`JSON: ${result.files.jsonPath}`)
   console.log(`XLSX: ${result.files.workbookPath}`)
   console.log(
-    'Eligibility: unavailable; all database records were excluded fail closed.'
+    `Eligibility: authoritative decisions are unavailable; ${result.core.eligible.excludedMessageIds.length} selected records were excluded fail closed.`
   )
 } catch (error) {
   console.error(
