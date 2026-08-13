@@ -216,7 +216,7 @@ function ActivityCreation({
   }
 
   return (
-    <div className="print-hidden md:h-73 md:min-h-73 mb-3 flex flex-col justify-center">
+    <div className="print-hidden md:min-h-73 mb-3 flex shrink-0 flex-col justify-center md:h-auto">
       <div className="h-full w-full">
         {creationMode === ActivityType.LiveQuiz && (
           <LiveQuizWizard
