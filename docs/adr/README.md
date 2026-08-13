@@ -13,3 +13,5 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
+- [0005](./0005-purpose-bound-chatbot-learning-analytics.md) — Keep chatbot learning analytics purpose-bound
+- [0006](./0006-federate-chatbot-analysis-sources.md) — Federate chatbot analysis sources
