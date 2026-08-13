@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-11'
+timestamp: '2026-08-12'
 tags:
   - backend
   - prisma
@@ -37,6 +37,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks. The A4 settlement migration `20260812000000_live_quiz_response_respondent_unique` adds the respondent-response uniqueness boundary with `CREATE UNIQUE INDEX CONCURRENTLY`; keep the capability gate disabled until that migration and the worker are deployed together, and preflight for duplicate respondent responses before applying it.
+- The A5 publication migrations `20260812010000_live_quiz_publication_materialization` and `20260812020000_live_quiz_publication_generation` add nullable materialization/retry timestamps, the reconciliation lookup index, and a persisted monotonic generation counter. Publication remains backward-compatible: the database generation is recorded before Redis metadata is written, incomplete rows are retried by the general worker, and an abort tombstone prevents a delayed older publication from recreating its Redis generation without rejecting an immediate republish in the same millisecond.
 - Export-label persistence is owned by the export slice rather than the domain-boundary slice. Do not add a label table to the initial response-collection migration before the export implementation consumes it.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 

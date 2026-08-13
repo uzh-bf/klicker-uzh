@@ -1,7 +1,15 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { Redis } from 'ioredis'
 
-type PublicationSource = 'manual' | 'scheduled'
+type PublicationSource = 'manual' | 'scheduled' | 'reconcile'
+type PublicationRedis = {
+  eval(
+    script: string,
+    numberOfKeys: number,
+    ...args: string[]
+  ): Promise<unknown>
+}
+
+const publicationGenerationTombstoneSuffix = ':aborted-generation'
 
 export async function transitionLiveQuizToPublished({
   prisma,
@@ -18,8 +26,10 @@ export async function transitionLiveQuizToPublished({
   correlatedResponsesEnabled?: boolean
 }) {
   return prisma.$transaction(async (transaction) => {
-    const [lockedQuiz] = await transaction.$queryRaw<Pick<DB.LiveQuiz, 'id'>[]>`
-      SELECT "id"
+    const [lockedQuiz] = await transaction.$queryRaw<
+      Pick<DB.LiveQuiz, 'id' | 'publicationGeneration'>[]
+    >`
+      SELECT "id", "publicationGeneration"
       FROM "public"."LiveQuiz"
       WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
       FOR UPDATE
@@ -32,10 +42,27 @@ export async function transitionLiveQuizToPublished({
     if (!liveQuiz) return null
 
     if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
+      const publishedQuiz =
+        liveQuiz.startedAt === null
+          ? await transaction.liveQuiz.update({
+              where: { id: liveQuiz.id },
+              data: {
+                startedAt: now,
+                publicationGeneration: {
+                  increment: 1,
+                },
+                publicationMetadataMaterializedAt: null,
+                publicationMetadataRetryAt: null,
+              },
+            })
+          : liveQuiz
+      const publishedQuizWithStart = requirePublishedStart(publishedQuiz)
+
       return {
-        quiz: liveQuiz,
+        quiz: publishedQuizWithStart,
         didStart: false,
-        scheduledPublicationTaskId: null,
+        scheduledPublicationTaskId:
+          publishedQuizWithStart.scheduledPublicationTaskId,
       }
     }
 
@@ -44,9 +71,9 @@ export async function transitionLiveQuizToPublished({
         ? liveQuiz.status === DB.PublicationStatus.SCHEDULED &&
           liveQuiz.availableFrom !== null &&
           liveQuiz.availableFrom <= now
-        : liveQuiz.status === DB.PublicationStatus.DRAFT ||
-          liveQuiz.status === DB.PublicationStatus.SCHEDULED
-
+        : source === 'manual' &&
+          (liveQuiz.status === DB.PublicationStatus.DRAFT ||
+            liveQuiz.status === DB.PublicationStatus.SCHEDULED)
     if (!canPublish) return null
     if (
       liveQuiz.responseCollectionMode ===
@@ -63,19 +90,24 @@ export async function transitionLiveQuizToPublished({
       data: {
         status: DB.PublicationStatus.PUBLISHED,
         startedAt: now,
-        scheduledPublicationTaskId: null,
+        publicationGeneration: {
+          increment: 1,
+        },
+        publicationMetadataMaterializedAt: null,
+        publicationMetadataRetryAt: null,
       },
     })
+    const publishedQuizWithStart = requirePublishedStart(publishedQuiz)
 
     return {
-      quiz: publishedQuiz,
+      quiz: publishedQuizWithStart,
       didStart: true,
       scheduledPublicationTaskId: liveQuiz.scheduledPublicationTaskId,
     }
   })
 }
 
-export async function materializeLiveQuizPublication({
+async function writeLiveQuizPublicationMetadata({
   quiz,
   redisExec,
   redisAssessmentExec,
@@ -85,26 +117,326 @@ export async function materializeLiveQuizPublication({
     | 'id'
     | 'namespace'
     | 'startedAt'
+    | 'publicationGeneration'
     | 'isGamificationEnabled'
     | 'isAssessmentEnabled'
   >
-  redisExec: Pick<Redis, 'pipeline'>
-  redisAssessmentExec: Pick<Redis, 'pipeline'>
+  redisExec: PublicationRedis
+  redisAssessmentExec: PublicationRedis
 }) {
   const redis = quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec
-  const pipeline = redis.pipeline()
-  pipeline.hmset(`lq:${quiz.id}:meta`, {
-    namespace: quiz.namespace,
-    startedAt: Number(quiz.startedAt ?? new Date()),
-    isGamificationEnabled: quiz.isGamificationEnabled,
-    isAssessmentEnabled: quiz.isAssessmentEnabled,
-  })
-
-  const results = await pipeline.exec()
-  if (results === null) {
-    throw new Error('Live quiz publication metadata pipeline was aborted')
+  if (quiz.startedAt === null) {
+    throw new Error(
+      `Published live quiz ${quiz.id} has no persisted start timestamp`
+    )
   }
 
-  const commandError = results.find(([error]) => error !== null)?.[0]
-  if (commandError) throw commandError
+  const generation = String(quiz.publicationGeneration)
+  const result = await redis.eval(
+    `
+      local tombstone = redis.call('GET', KEYS[2])
+      if tombstone and tonumber(tombstone) >= tonumber(ARGV[1]) then
+        return 0
+      end
+
+      local currentGeneration = redis.call('HGET', KEYS[1], 'publicationGeneration')
+      if currentGeneration and tonumber(currentGeneration) > tonumber(ARGV[1]) then
+        return 0
+      end
+
+      local currentStartedAt = redis.call('HGET', KEYS[1], 'startedAt')
+      if not currentGeneration and currentStartedAt and tonumber(currentStartedAt) > tonumber(ARGV[2]) then
+        return 0
+      end
+
+      redis.call(
+        'HSET',
+        KEYS[1],
+        'namespace', ARGV[3],
+        'publicationGeneration', ARGV[1],
+        'startedAt', ARGV[2],
+        'isGamificationEnabled', ARGV[4],
+        'isAssessmentEnabled', ARGV[5]
+      )
+      return 1
+    `,
+    2,
+    `lq:${quiz.id}:meta`,
+    `lq:${quiz.id}${publicationGenerationTombstoneSuffix}`,
+    generation,
+    String(quiz.startedAt.getTime()),
+    quiz.namespace,
+    String(quiz.isGamificationEnabled),
+    String(quiz.isAssessmentEnabled)
+  )
+  if (Number(result) !== 1) {
+    throw new Error(
+      `Live quiz ${quiz.id} changed during publication materialization`
+    )
+  }
+}
+
+async function markLiveQuizPublicationMaterialized({
+  prisma,
+  liveQuizId,
+  startedAt,
+  publicationGeneration,
+}: {
+  prisma: DB.PrismaClient
+  liveQuizId: string
+  startedAt: Date
+  publicationGeneration: number
+}) {
+  const result = await prisma.liveQuiz.updateMany({
+    where: {
+      id: liveQuizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      startedAt,
+      publicationGeneration,
+    },
+    data: {
+      publicationMetadataMaterializedAt: new Date(),
+      publicationMetadataRetryAt: null,
+    },
+  })
+  if (result.count !== 1) {
+    throw new Error(
+      `Live quiz ${liveQuizId} changed during publication materialization`
+    )
+  }
+}
+
+export async function materializeLiveQuizPublication({
+  prisma,
+  quiz,
+  redisExec,
+  redisAssessmentExec,
+}: {
+  prisma: DB.PrismaClient
+  quiz: Pick<
+    DB.LiveQuiz,
+    | 'id'
+    | 'namespace'
+    | 'startedAt'
+    | 'publicationGeneration'
+    | 'isGamificationEnabled'
+    | 'isAssessmentEnabled'
+  >
+  redisExec: PublicationRedis
+  redisAssessmentExec: PublicationRedis
+}) {
+  await writeLiveQuizPublicationMetadata({
+    quiz,
+    redisExec,
+    redisAssessmentExec,
+  })
+  if (quiz.startedAt === null) {
+    throw new Error(
+      `Published live quiz ${quiz.id} has no persisted start timestamp`
+    )
+  }
+  await markLiveQuizPublicationMaterialized({
+    prisma,
+    liveQuizId: quiz.id,
+    startedAt: quiz.startedAt,
+    publicationGeneration: quiz.publicationGeneration,
+  })
+}
+
+export async function clearLiveQuizScheduledPublicationTask({
+  prisma,
+  liveQuizId,
+  startedAt,
+  publicationGeneration,
+  scheduledPublicationTaskId,
+}: {
+  prisma: DB.PrismaClient
+  liveQuizId: string
+  startedAt: Date
+  publicationGeneration: number
+  scheduledPublicationTaskId: string
+}) {
+  const result = await prisma.liveQuiz.updateMany({
+    where: {
+      id: liveQuizId,
+      status: DB.PublicationStatus.PUBLISHED,
+      startedAt,
+      publicationGeneration,
+      scheduledPublicationTaskId,
+    },
+    data: { scheduledPublicationTaskId: null },
+  })
+  if (result.count !== 1) {
+    const liveQuiz = await prisma.liveQuiz.findUniqueOrThrow({
+      where: { id: liveQuizId },
+      select: {
+        status: true,
+        startedAt: true,
+        publicationGeneration: true,
+        scheduledPublicationTaskId: true,
+      },
+    })
+    const alreadyCleaned =
+      liveQuiz.status === DB.PublicationStatus.PUBLISHED &&
+      liveQuiz.startedAt?.getTime() === startedAt.getTime() &&
+      liveQuiz.publicationGeneration === publicationGeneration &&
+      liveQuiz.scheduledPublicationTaskId === null
+    if (!alreadyCleaned) {
+      throw new Error(
+        `Live quiz ${liveQuizId} changed during scheduled publication cleanup`
+      )
+    }
+  }
+}
+
+export async function deleteLiveQuizScheduledPublicationTask({
+  prisma,
+  liveQuizId,
+  startedAt,
+  publicationGeneration,
+  scheduledPublicationTaskId,
+  deleteScheduledTask,
+}: {
+  prisma: DB.PrismaClient
+  liveQuizId: string
+  startedAt: Date
+  publicationGeneration: number
+  scheduledPublicationTaskId: string
+  deleteScheduledTask: (taskId: string) => Promise<void>
+}) {
+  try {
+    await deleteScheduledTask(scheduledPublicationTaskId)
+  } catch (error) {
+    if (!isScheduledTaskNotFound(error)) throw error
+  }
+
+  await clearLiveQuizScheduledPublicationTask({
+    prisma,
+    liveQuizId,
+    startedAt,
+    publicationGeneration,
+    scheduledPublicationTaskId,
+  })
+}
+
+export async function reconcileLiveQuizPublications({
+  prisma,
+  redisExec,
+  redisAssessmentExec,
+  deleteScheduledTask,
+  batchSize = 50,
+  now = new Date(),
+  retryDelayMs = 5 * 60_000,
+}: {
+  prisma: DB.PrismaClient
+  redisExec: PublicationRedis
+  redisAssessmentExec: PublicationRedis
+  deleteScheduledTask: (taskId: string) => Promise<void>
+  batchSize?: number
+  now?: Date
+  retryDelayMs?: number
+}) {
+  const pendingQuizzes = await prisma.liveQuiz.findMany({
+    where: {
+      status: DB.PublicationStatus.PUBLISHED,
+      AND: [
+        {
+          OR: [
+            { publicationMetadataMaterializedAt: null },
+            { scheduledPublicationTaskId: { not: null } },
+          ],
+        },
+        {
+          OR: [
+            { publicationMetadataRetryAt: null },
+            { publicationMetadataRetryAt: { lte: now } },
+          ],
+        },
+      ],
+    },
+    orderBy: { updatedAt: 'asc' },
+    take: batchSize,
+  })
+  const failures: unknown[] = []
+
+  for (const pendingQuiz of pendingQuizzes) {
+    let expectedStartedAt = pendingQuiz.startedAt
+    let expectedPublicationGeneration = pendingQuiz.publicationGeneration
+    try {
+      const publication = await transitionLiveQuizToPublished({
+        prisma,
+        liveQuizId: pendingQuiz.id,
+        source: 'reconcile',
+        now,
+      })
+      if (!publication) continue
+      expectedStartedAt = publication.quiz.startedAt
+      expectedPublicationGeneration = publication.quiz.publicationGeneration
+
+      if (publication.quiz.publicationMetadataMaterializedAt === null) {
+        await materializeLiveQuizPublication({
+          prisma,
+          quiz: publication.quiz,
+          redisExec,
+          redisAssessmentExec,
+        })
+      }
+
+      if (publication.scheduledPublicationTaskId) {
+        await deleteLiveQuizScheduledPublicationTask({
+          prisma,
+          liveQuizId: publication.quiz.id,
+          startedAt: expectedStartedAt,
+          publicationGeneration: expectedPublicationGeneration,
+          scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
+          deleteScheduledTask,
+        })
+      }
+    } catch (error) {
+      if (expectedStartedAt) {
+        await prisma.liveQuiz.updateMany({
+          where: {
+            id: pendingQuiz.id,
+            status: DB.PublicationStatus.PUBLISHED,
+            startedAt: expectedStartedAt,
+            publicationGeneration: expectedPublicationGeneration,
+          },
+          data: {
+            publicationMetadataRetryAt: new Date(now.getTime() + retryDelayMs),
+          },
+        })
+      }
+      failures.push(error)
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures,
+      `Failed to reconcile ${failures.length} live quiz publication(s)`
+    )
+  }
+
+  return pendingQuizzes.length
+}
+
+function isScheduledTaskNotFound(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'status' in error.response &&
+    error.response.status === 404
+  )
+}
+
+function requirePublishedStart<T extends Pick<DB.LiveQuiz, 'id' | 'startedAt'>>(
+  liveQuiz: T
+): T & { startedAt: Date } {
+  if (!liveQuiz.startedAt) {
+    throw new Error(`Published live quiz ${liveQuiz.id} has no start timestamp`)
+  }
+  return liveQuiz as T & { startedAt: Date }
 }

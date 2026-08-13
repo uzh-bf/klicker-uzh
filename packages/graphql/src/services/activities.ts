@@ -5,8 +5,8 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
+import { allocateLiveQuizPin, withLiveQuizPinRetry } from './liveQuizPin.js'
 import {
   deriveLiveQuizResponseCollectionMode,
   lockCourseLiveQuizResponseCollectionSettings,
@@ -749,162 +749,139 @@ export async function applyActivityBatchOperations(
 
   // update live quizzes (including gamification / assessment flags & all instances - depending on the required updates)
   for (const liveQuiz of liveQuizzes) {
-    const updatedLiveQuiz = await ctx.prisma.$transaction(async (tx) => {
-      const lockedCourseSettings = newCourse
-        ? await lockCourseLiveQuizResponseCollectionSettings({
-            prisma: tx,
-            courseId: newCourse.id,
-          })
-        : null
-      if (newCourse && !lockedCourseSettings) {
-        throw new Error('Target course no longer exists')
-      }
-
-      const lockedLiveQuiz = await lockLiveQuizResponseCollectionState({
-        prisma: tx,
-        liveQuizId: liveQuiz.id,
-      })
-      if (
-        !lockedLiveQuiz ||
-        (lockedLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
-          lockedLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
-      ) {
-        return null
-      }
-
-      const currentLiveQuiz = await tx.liveQuiz.findUnique({
-        where: { id: lockedLiveQuiz.id },
-        include: { blocks: { include: { elements: true } } },
-      })
-      if (
-        !currentLiveQuiz ||
-        (currentLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
-          currentLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
-      ) {
-        return null
-      }
-
-      const isCourseChanged =
-        !!newCourse && currentLiveQuiz.courseId !== newCourse.id
-      const targetCourse = lockedCourseSettings ?? newCourse
-      const targetResponseCollectionMode =
-        isCourseChanged && targetCourse
-          ? deriveLiveQuizResponseCollectionMode({
-              isGamificationEnabled: targetCourse.isGamificationEnabled,
-              isAssessmentEnabled: targetCourse.isAssessmentEnabled,
-              requestedMode: currentLiveQuiz.responseCollectionMode,
+    const updatedLiveQuiz = await withLiveQuizPinRetry(() =>
+      ctx.prisma.$transaction(async (tx) => {
+        const lockedCourseSettings = newCourse
+          ? await lockCourseLiveQuizResponseCollectionSettings({
+              prisma: tx,
+              courseId: newCourse.id,
             })
-          : currentLiveQuiz.responseCollectionMode
-
-      // if required, find a new pin code for the live quiz that is still available
-      let newPinCode: string | null = null
-      if (isCourseChanged && targetCourse!.isAssessmentEnabled) {
-        let pinValid = false
-
-        for (let attempt = 0; attempt < 10; attempt++) {
-          // generate a new pin code
-          newPinCode = generatePassword.generate({
-            uppercase: true,
-            lowercase: false,
-            numbers: true,
-            symbols: false,
-            length: 6,
-          })
-
-          // check if the pin code is still available
-          const existingLiveQuiz = await tx.liveQuiz.findUnique({
-            where: { pinCode: newPinCode },
-          })
-          if (!existingLiveQuiz) {
-            pinValid = true
-            break
-          }
+          : null
+        if (newCourse && !lockedCourseSettings) {
+          throw new Error('Target course no longer exists')
         }
 
-        // if the pin is still invalid, return null and abort the transaction
-        if (!pinValid) {
-          throw new Error('Could not find available pin code for live quiz')
+        const lockedLiveQuiz = await lockLiveQuizResponseCollectionState({
+          prisma: tx,
+          liveQuizId: liveQuiz.id,
+        })
+        if (
+          !lockedLiveQuiz ||
+          (lockedLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
+            lockedLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
+        ) {
+          return null
         }
-      }
 
-      const modifiedLiveQuiz = await tx.liveQuiz.update({
-        where: { id: currentLiveQuiz.id },
-        data: {
-          // course re-assignment (including update of gamification and assessment flags)
-          course: isCourseChanged
-            ? { connect: { id: targetCourse!.id } }
-            : undefined,
-          isGamificationEnabled: isCourseChanged
-            ? { set: targetCourse!.isGamificationEnabled }
-            : undefined,
-          isAssessmentEnabled: isCourseChanged
-            ? { set: targetCourse!.isAssessmentEnabled }
-            : undefined,
-          responseCollectionMode: isCourseChanged
-            ? { set: targetResponseCollectionMode }
-            : undefined,
-          // if the course is changed to an assessment course, assign a pin
-          pinCode: isCourseChanged ? newPinCode : undefined,
-          // multiplier updates
-          pointsMultiplier: setMultiplier
-            ? { set: Math.max(multiplier, 1) }
-            : undefined,
-          // if defined, set custom grading logic components
-          defaultPoints: setLiveQuizPoints
-            ? { set: Math.max(basePoints, 0) }
-            : undefined,
-          defaultCorrectPoints: setLiveQuizPoints
-            ? { set: Math.max(correctnessPoints, 0) }
-            : undefined,
-          maxBonusPoints: setLiveQuizPoints
-            ? { set: Math.max(bonusPoints, 0) }
-            : undefined,
-          timeToZeroBonus: setLiveQuizPoints
-            ? { set: Math.max(timeToZeroBonus, 1) }
-            : undefined,
-          // if set before, update the review status
-          reviewStatus:
-            currentLiveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-              ? {
-                  set: isCourseChanged
-                    ? DB.ReviewStatus.INCOMPLETE
-                    : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
-                }
+        const currentLiveQuiz = await tx.liveQuiz.findUnique({
+          where: { id: lockedLiveQuiz.id },
+          include: { blocks: { include: { elements: true } } },
+        })
+        if (
+          !currentLiveQuiz ||
+          (currentLiveQuiz.status !== DB.PublicationStatus.DRAFT &&
+            currentLiveQuiz.status !== DB.PublicationStatus.SCHEDULED)
+        ) {
+          return null
+        }
+
+        const isCourseChanged =
+          !!newCourse && currentLiveQuiz.courseId !== newCourse.id
+        const targetCourse = lockedCourseSettings ?? newCourse
+        const targetResponseCollectionMode =
+          isCourseChanged && targetCourse
+            ? deriveLiveQuizResponseCollectionMode({
+                isGamificationEnabled: targetCourse.isGamificationEnabled,
+                isAssessmentEnabled: targetCourse.isAssessmentEnabled,
+                requestedMode: currentLiveQuiz.responseCollectionMode,
+              })
+            : currentLiveQuiz.responseCollectionMode
+
+        // if required, find a new pin code for the live quiz that is still available
+        let newPinCode: string | null = null
+        if (isCourseChanged && targetCourse?.isAssessmentEnabled) {
+          newPinCode = await allocateLiveQuizPin({ database: tx })
+        }
+
+        const modifiedLiveQuiz = await tx.liveQuiz.update({
+          where: { id: currentLiveQuiz.id },
+          data: {
+            // course re-assignment (including update of gamification and assessment flags)
+            course: isCourseChanged
+              ? { connect: { id: targetCourse!.id } }
               : undefined,
-        },
-      })
-
-      // if the multiplier was changed, update the instances of the live quiz accordingly
-      if (setMultiplier) {
-        // get all instances that have a pointsMultiplier defined
-        const instances = currentLiveQuiz.blocks
-          .flatMap((block) => block.elements)
-          .filter(
-            (instance) =>
-              'options' in instance &&
-              instance.options &&
-              'pointsMultiplier' in instance.options
-          )
-
-        await updateInstanceMultipliers(
-          {
-            instances,
-            newActivityMultiplier: modifiedLiveQuiz.pointsMultiplier,
+            isGamificationEnabled: isCourseChanged
+              ? { set: targetCourse!.isGamificationEnabled }
+              : undefined,
+            isAssessmentEnabled: isCourseChanged
+              ? { set: targetCourse!.isAssessmentEnabled }
+              : undefined,
+            responseCollectionMode: isCourseChanged
+              ? { set: targetResponseCollectionMode }
+              : undefined,
+            // if the course is changed to an assessment course, assign a pin
+            pinCode: isCourseChanged ? newPinCode : undefined,
+            // multiplier updates
+            pointsMultiplier: setMultiplier
+              ? { set: Math.max(multiplier, 1) }
+              : undefined,
+            // if defined, set custom grading logic components
+            defaultPoints: setLiveQuizPoints
+              ? { set: Math.max(basePoints, 0) }
+              : undefined,
+            defaultCorrectPoints: setLiveQuizPoints
+              ? { set: Math.max(correctnessPoints, 0) }
+              : undefined,
+            maxBonusPoints: setLiveQuizPoints
+              ? { set: Math.max(bonusPoints, 0) }
+              : undefined,
+            timeToZeroBonus: setLiveQuizPoints
+              ? { set: Math.max(timeToZeroBonus, 1) }
+              : undefined,
+            // if set before, update the review status
+            reviewStatus:
+              currentLiveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+                ? {
+                    set: isCourseChanged
+                      ? DB.ReviewStatus.INCOMPLETE
+                      : DB.ReviewStatus.MODIFIED_AFTER_REVIEW,
+                  }
+                : undefined,
           },
-          tx
-        )
-      }
+        })
 
-      // if the course assignment was changed, update the derived pemissions on the quiz
-      if (newCourse) {
-        await recomputeDerivedPermissions(
-          { liveQuizId: modifiedLiveQuiz.id },
-          tx
-        )
-      }
+        // if the multiplier was changed, update the instances of the live quiz accordingly
+        if (setMultiplier) {
+          // get all instances that have a pointsMultiplier defined
+          const instances = currentLiveQuiz.blocks
+            .flatMap((block) => block.elements)
+            .filter(
+              (instance) =>
+                'options' in instance &&
+                instance.options &&
+                'pointsMultiplier' in instance.options
+            )
 
-      return modifiedLiveQuiz
-    })
+          await updateInstanceMultipliers(
+            {
+              instances,
+              newActivityMultiplier: modifiedLiveQuiz.pointsMultiplier,
+            },
+            tx
+          )
+        }
+
+        // if the course assignment was changed, update the derived pemissions on the quiz
+        if (newCourse) {
+          await recomputeDerivedPermissions(
+            { liveQuizId: modifiedLiveQuiz.id },
+            tx
+          )
+        }
+
+        return modifiedLiveQuiz
+      })
+    )
 
     if (!updatedLiveQuiz) continue
     updatedLiveQuizzes.push(updatedLiveQuiz.id)
