@@ -133,5 +133,21 @@ migration; it does not add the planned long-session history rail or compaction.
   frozen lockfile check passed. The lockfile contains the assistant-ui 0.15
   transitive closure required by the package manager; no release-age override
   is used.
-- Next: commit Slice 1, run the required simplifier, then run browser evidence
-  and the full repository gates.
+- 2026-08-13: The required simplifier reviewed `d20c41376..252e71931` and
+  justified consolidating the duplicate thread/edit composer attachment
+  renderers. The behavior-preserving reduction is committed as `283a1c6`.
+- 2026-08-13: Browser evidence through `agent-browser@0.32.2` verified
+  namespaced login, empty state, disclaimer acceptance, message persistence,
+  copy state, and edit/cancel/attachment controls. The recreated runtime's
+  upstream model execution was unavailable, so successful streaming, abort,
+  source/tool rendering, and ratings remain unproven; see
+  `project/_local/reviews/2026-08-13-assistant-ui-015-upgrade-browser.md`.
+- 2026-08-13: Fresh Node 24 chat gates passed: typecheck, 31 test files with
+  231 tests, lint with five existing warnings and no errors, and production
+  build. The initial integrated final review returned `DONE_WITH_CONCERNS`.
+-  Its stale wiki sentence was corrected. The final root Node 24 build passed
+  all 22 tasks. The final root `check:all` reached the repository checks but
+  stopped in analytics lint because the runtime has no C compiler to rebuild
+  `pandas`; this environment limitation is recorded with the exact command
+  output, while the earlier host pre-commit `check:all` passed after a fresh
+  install. The correction review remains the last gate.

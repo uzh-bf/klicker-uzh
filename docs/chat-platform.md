@@ -240,8 +240,8 @@ tool-only turn, valid completed sources are shown instead of being lost on
 reload. The source component still suppresses the section when normalization
 produces no sources.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
-thread's messages/running state and the actions it calls, while `Thread` keeps a memoized
-`ThreadPrimitive.Messages` component map and passes the chatbot avatar through context. Runtime
+thread's messages/running state and the actions it calls, while `Thread` renders its message rows
+through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
 attachment adapters are memoized as well, so a streamed message or a feedback update does not
 replace every message row's component type or adapter object. Ratings have one owner: the plain
 buttons in `thread.tsx` read the active `ChatMessage.rating` from `chatStore` and call
