@@ -6,21 +6,21 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogCollection,
+  type CatalogCollection,
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
+import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
@@ -73,12 +73,14 @@ function CatalogCollectionListItem({
 
   return (
     <>
-      <div className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100">
+      <div
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
+        data-cy={`catalog-object-${collection.name}`}
+      >
         <button
           type="button"
           className="flex min-w-0 flex-1 flex-row items-center justify-between text-left"
           onClick={handlePrimaryAction}
-          data-cy={`catalog-object-${collection.name}`}
         >
           <span className="flex min-w-0 flex-row items-center gap-2">
             <ObjectAccessLabel

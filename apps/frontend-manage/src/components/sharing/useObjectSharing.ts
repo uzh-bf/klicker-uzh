@@ -6,7 +6,7 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   ObjectType,
-  PermissionLevel,
+  type PermissionLevel,
   ShareObjectDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
@@ -77,12 +77,17 @@ function useObjectSharing({
             },
             (qData) => {
               if (!qData?.getObjectPermissions) return qData
+              const sharedPermission = data.shareObject!
               return {
                 getObjectPermissions: {
                   ...qData.getObjectPermissions,
                   permissions: [
-                    ...qData.getObjectPermissions.permissions,
-                    data.shareObject!,
+                    ...qData.getObjectPermissions.permissions.filter(
+                      (permission) =>
+                        permission.permissionId !==
+                        sharedPermission.permissionId
+                    ),
+                    sharedPermission,
                   ],
                 },
               }

@@ -1,7 +1,7 @@
 # PR #5348 — Biome Tier 1 ratchet
 
-Status: IN PROGRESS — exact-head quality checks green; Playwright build baseline blocker remains
-Date: 2026-08-12
+Status: IN PROGRESS — CI regression fixes prepared; exact-head browser gates pending
+Date: 2026-08-13
 Branch: rs/biome-ratchet-tier1 → target v3
 PR: https://github.com/uzh-bf/klicker-uzh/pull/5348
 Plan artifact: project/2026-08-09-pr-5348-biome-ratchet-tier1-plan.md
@@ -530,6 +530,23 @@ is unavailable.
   `dc216ef24efa28a55cc3eef0b115ece466f17f0a` against live `v3`
   `5264353ff77afc598ea69f05f262b25f882ca38c`. PR #5348 remains draft and
   mergeable; it has not been marked ready or merged.
+- 2026-08-13: GitHub Playwright run `31641899528` at branch head
+  `7d64e21773058ac89cb08a7e989921831b29645b` exposed two deterministic
+  regressions that the earlier non-browser gates could not see. The ownership
+  transfer assertions in the live-quiz, microlearning, and practice-quiz
+  suites observed a stale duplicate lecturer permission row after sharing;
+  the catalog assertions in the collection and template suites could no longer
+  see the visible `Public` label because the test locator had moved onto the
+  inner primary button. A separate shard failed before tests during the
+  `sharp@0.32.6` libvips download with a socket hang-up, which is recorded as
+  CI infrastructure noise rather than an application result.
+- 2026-08-13: The corrective slice preserves the stable permission-row React
+  key and makes the `useObjectSharing` cache updater replace an existing entry
+  by `permissionId` before appending the returned permission. It also restores
+  the `catalog-object-*` locator to the outer catalog row for objects and
+  collections, retaining the semantic inner buttons. Biome check and the
+  `frontend-manage` typecheck pass for all three changed files; the correction
+  is not complete until the committed exact-head CI rerun passes.
 
 ## Finish state
 

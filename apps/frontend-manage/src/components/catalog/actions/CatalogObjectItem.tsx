@@ -8,17 +8,17 @@ import {
   faEllipsisVertical,
   faList,
   faQuestion,
-  IconDefinition,
+  type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogObject,
+  type CatalogObject,
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
@@ -80,7 +80,7 @@ function CatalogObjectItem({
   const handlePrimaryAction = () => {
     if (actionsDisabled) {
       // primary action for users with access: go to corresponding list view and highlight object
-      if (object.objectType === ObjectType.LiveQuiz && !!object.templateId) {
+      if (object.objectType === ObjectType.LiveQuiz && object.templateId) {
         router.push({
           pathname: '/activities',
           query: { highlight: object.objectUuid },
@@ -98,7 +98,7 @@ function CatalogObjectItem({
       // primary action for restricted objects with pending request: open request withdrawal modal
       setRequestCancellationModal(true)
     } else if (object.access === ObjectAccess.Public) {
-      if (object.objectType === ObjectType.LiveQuiz && !!object.templateId) {
+      if (object.objectType === ObjectType.LiveQuiz && object.templateId) {
         // primary action for public templates: create activity with template
         router.push(`/templates/${object.templateId}`)
       } else {
@@ -113,12 +113,14 @@ function CatalogObjectItem({
 
   return (
     <>
-      <div className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100">
+      <div
+        className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
+        data-cy={`catalog-object-${object.name}`}
+      >
         <button
           type="button"
           className="flex min-w-0 flex-1 flex-row items-center justify-between text-left"
           onClick={handlePrimaryAction}
-          data-cy={`catalog-object-${object.name}`}
         >
           <span className="flex min-w-0 flex-row items-center gap-2">
             <ObjectAccessLabel
