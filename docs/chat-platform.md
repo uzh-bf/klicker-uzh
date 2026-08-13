@@ -63,6 +63,41 @@ fixture in `apps/chat/test/openai-chat-streaming.test.ts` covers this boundary
 with injected SSE. A green fixture proves the local provider conversion path;
 it does not replace a real-upstream first-turn staging smoke test.
 
+## Provider request cache boundaries
+
+The chat route keeps two cache mechanisms separate. `getModel` constructs a
+default OpenAI-compatible provider or a chatbot-specific custom provider, and
+`createOpenAIFetch` adds LiteLLM's exact-response bypass only to the default
+provider request: `cache.no-cache` and `cache.no-store` are both `true`.
+Custom endpoints retain their existing request fields. The same fetch boundary
+continues to normalize assistant items for Responses requests.
+
+For default requests, `POST` passes the final `systemPrompt`, requested
+deployment identity, transport family, and MCP tools to
+`buildPromptCacheRequest`. The helper hashes only a versioned canonical
+provider-visible projection with SHA-256, then `getOpenAIPromptCacheOptions`
+passes the key to the OpenAI provider. Tool execution functions, MCP clients,
+participant/user/chatbot/thread/message/request identifiers, and raw tool-call
+identifiers are not identity inputs. The rebuilt tools retain runtime
+execution, and the route supplies their deterministic `toolOrder` to both
+transport families.
+
+Implicit prompt-cache mode is emitted only for the explicit direct GPT-5.6
+deployment allow-list in `supportsImplicitPromptCaching`; older deployments
+and the unresolved `auto-router` identity receive the stable key without that
+mode. The route does not emit an explicit prompt-cache breakpoint. These
+choices preserve a stable-prefix contract without claiming resolved router
+behavior or a provider cache hit.
+
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts` use synthetic, no-network Chat
+Completions and Responses responses. They verify serialized cache fields,
+canonical tool order, privacy-negative identity inputs, and the public AI SDK
+`usage.inputTokenDetails` buckets for uncached, cache-read, and cache-write
+tokens. The tests prove local request shaping and SDK response conversion only;
+they do not prove LiteLLM, Redis, Azure OpenAI, router affinity, production
+cache hits, latency, or cost savings.
+
 ## Auth guard pattern (route handlers)
 
 Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.

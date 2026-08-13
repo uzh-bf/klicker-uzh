@@ -42,7 +42,16 @@ function chatResponse() {
         finish_reason: 'stop',
       },
     ],
-    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    usage: {
+      prompt_tokens: 1536,
+      completion_tokens: 1,
+      total_tokens: 1537,
+      prompt_tokens_details: {
+        cached_tokens: 1024,
+        cache_write_tokens: 256,
+      },
+      completion_tokens_details: { reasoning_tokens: 0 },
+    },
   }
 }
 
@@ -65,10 +74,13 @@ function responsesResponse() {
       },
     ],
     usage: {
-      input_tokens: 1,
+      input_tokens: 1536,
       output_tokens: 1,
-      total_tokens: 2,
-      input_tokens_details: { cached_tokens: 0 },
+      total_tokens: 1537,
+      input_tokens_details: {
+        cached_tokens: 1024,
+        cache_write_tokens: 256,
+      },
       output_tokens_details: { reasoning_tokens: 0 },
     },
   }
@@ -258,7 +270,7 @@ describe('prompt cache identity', () => {
       fetch: captureFetch(chatResponse(), chatCaptures),
     })
 
-    await generateText({
+    const chatResult = await generateText({
       model: chatProvider.chat('gpt-4.1'),
       prompt: 'Synthetic prompt.',
       instructions: 'Synthetic instructions.',
@@ -293,6 +305,11 @@ describe('prompt cache identity', () => {
       'required',
       'type',
     ])
+    expect(chatResult.usage.inputTokenDetails).toEqual({
+      noCacheTokens: 256,
+      cacheReadTokens: 1024,
+      cacheWriteTokens: 256,
+    })
 
     const responsesCaptures: Record<string, unknown>[] = []
     const responsesRequest = await buildPromptCacheRequest({
@@ -307,7 +324,7 @@ describe('prompt cache identity', () => {
       fetch: captureFetch(responsesResponse(), responsesCaptures),
     })
 
-    await generateText({
+    const responseResult = await generateText({
       model: responsesProvider.responses('gpt-5.6-luna'),
       prompt: 'Synthetic prompt.',
       instructions: 'Synthetic instructions.',
@@ -341,6 +358,12 @@ describe('prompt cache identity', () => {
       'required',
       'type',
     ])
+
+    expect(responseResult.usage.inputTokenDetails).toEqual({
+      noCacheTokens: 256,
+      cacheReadTokens: 1024,
+      cacheWriteTokens: 256,
+    })
   })
 
   test('emits prompt options only for the default route and supported deployment', () => {

@@ -19,9 +19,14 @@ function chatResponse() {
       },
     ],
     usage: {
-      prompt_tokens: 1,
+      prompt_tokens: 1536,
       completion_tokens: 2,
-      total_tokens: 3,
+      total_tokens: 1538,
+      prompt_tokens_details: {
+        cached_tokens: 1024,
+        cache_write_tokens: 256,
+      },
+      completion_tokens_details: { reasoning_tokens: 0 },
     },
   }
 }
@@ -45,10 +50,13 @@ function responsesResponse() {
       },
     ],
     usage: {
-      input_tokens: 1,
+      input_tokens: 1536,
       output_tokens: 2,
-      total_tokens: 3,
-      input_tokens_details: { cached_tokens: 0 },
+      total_tokens: 1538,
+      input_tokens_details: {
+        cached_tokens: 1024,
+        cache_write_tokens: 256,
+      },
       output_tokens_details: { reasoning_tokens: 0 },
     },
   }
@@ -88,6 +96,11 @@ describe('OpenAI exact-response cache policy', () => {
       'no-cache': true,
       'no-store': true,
     })
+    expect(result.usage.inputTokenDetails).toEqual({
+      noCacheTokens: 256,
+      cacheReadTokens: 1024,
+      cacheWriteTokens: 256,
+    })
   })
 
   test('adds the bypass and preserves Responses assistant normalization', async () => {
@@ -122,6 +135,11 @@ describe('OpenAI exact-response cache policy', () => {
         }),
       ])
     )
+    expect(result.usage.inputTokenDetails).toEqual({
+      noCacheTokens: 256,
+      cacheReadTokens: 1024,
+      cacheWriteTokens: 256,
+    })
   })
 
   test('preserves custom Responses fields without adding gateway cache policy', async () => {

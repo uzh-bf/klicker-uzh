@@ -567,8 +567,16 @@ the report preserves the exact identity that was reviewed.
   TypeScript, Biome, and whitespace checks passed again. The correction report
   is recorded at
   `project/_local/reviews/2026-08-13-chat-cache-request-boundary-slice-3-simplification-correction.md`.
-- [ ] Slice 4: convert the transport/usage assertions into repository tests,
-  update the chat wiki and verification skill, and run the integrated checks.
+- [x] Slice 4: repository-owned transport fixtures now assert Chat and
+  Responses prompt-cache fields plus public `usage.inputTokenDetails`; the
+  chat wiki, testing guide, verification skill, and dated maintenance log were
+  updated. Focused transport/identity/streaming tests pass 24/24; full chat
+  Vitest reaches 176 passing tests but cannot load 14 suites because the named
+  worktree has no dependency mount. The authoritative devcontainer route,
+  package check, root checks, and production build remain unavailable because
+  `devrouter ensure . --json` cannot determine process identity for its
+  workspace lock.
+- [ ] Integrated verification and final review.
 - [ ] Implement and verify the approved slices.
 
 ## Next action after user approval

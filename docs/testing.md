@@ -31,6 +31,19 @@ index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
 
+For OpenAI-compatible request-policy or prompt-cache changes, also run
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts`. These fixtures capture the
+final synthetic Chat Completions and Responses JSON bodies, verify the default
+exact-response bypass and custom-provider boundary, and assert public
+`usage.inputTokenDetails` values for uncached input, cache reads, and cache
+writes. They use no database, credentials, gateway, Redis, or paid model.
+A passing fixture proves local AI SDK serialization and response conversion;
+it does not prove a LiteLLM/provider cache hit, router resolution, production
+behavior, latency, or cost impact. This is server-side request policy, so it
+does not require browser evidence; add the normal browser path if the change
+also affects UI, auth, redirect, cookie, or user-visible chat behavior.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
