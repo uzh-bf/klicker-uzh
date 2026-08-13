@@ -257,6 +257,8 @@ export function buildAggregateReport(input: {
   const messages = input.messages.filter((message) =>
     eligibleIds.has(message.id)
   )
+  const eligibilityUnavailable =
+    messages.length === 0 && input.core.eligible.excludedMessageIds.length > 0
   const messageById = new Map(messages.map((message) => [message.id, message]))
   const users = messages.filter((message) => message.role === 'user')
   const assistants = messages.filter((message) => message.role === 'assistant')
@@ -314,6 +316,7 @@ export function buildAggregateReport(input: {
     (table) => table.suppressed
   )
   const messagePopulationSuppressed =
+    eligibilityUnavailable ||
     rawDimensionSuppressed ||
     exchangePartitionSuppressed ||
     messageRolePartitionSuppressed

@@ -139,6 +139,30 @@ describe('governed chatbot reports', () => {
     expect(JSON.stringify(report)).not.toContain('participant-1')
   })
 
+  it('suppresses the fail-closed database population', () => {
+    const excluded = message('excluded')
+    const report = buildAggregateReport({
+      core: {
+        eligible: { messages: [], excludedMessageIds: [excluded.id] },
+        exchanges: [],
+        ratingCoverage: {
+          ratedResponses: 0,
+          unratedResponses: 0,
+          up: 0,
+          down: 0,
+          coverage: 0,
+        },
+      },
+      messages: [],
+      purpose: 'learning-analytics',
+      window,
+    })
+
+    expect(report.summary.eligibleMessages).toBeNull()
+    expect(report.provenance[0]?.unknownCount).toBeNull()
+    expect(report.privacy.suppressedTables).toContain('summary.userPopulation')
+  })
+
   it('suppresses a scalar total when a same-population dimension has a hidden cell', () => {
     const users = Array.from({ length: 6 }, (_, index) =>
       message(`user-${index}`, {

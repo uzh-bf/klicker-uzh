@@ -380,8 +380,8 @@ aggregate-artifact contracts and makes the aggregate path executable.
   source exists. The standalone command therefore writes only a fully
   suppressed database-backed report. An injected synthetic provider proves the
   JSON/XLSX path and scans both artifacts for content and stable identifiers.
-- W2 verification before review: 20 focused synthetic tests pass (8 core, 11
-  report, 1 fail-closed provider), strict `check:analysis` passes, changed-path
+- W2 verification before review: 21 focused synthetic tests passed (8 core, 11
+  report, 2 provider), strict `check:analysis` passed, changed-path
   Biome and Prettier pass, `git diff --check` passes, and no `RestrictedExport`
   implementation symbol remains. Both implementation commits also passed the
   repository pre-commit `check:all` hook under host Node 26. Repository-pinned
@@ -389,8 +389,20 @@ aggregate-artifact contracts and makes the aggregate path executable.
   `devrouter exec` fail with `could not determine process identity for workspace
   lifecycle lock` in this session.
 - Integrated-final correction disposition: the fallback review confirmed the high-risk withdrawal, cross-table, provider-field, manifest, and legacy-content findings were closed. Its remaining summary-partition concern is closed in this correction by suppressing additive message-role, exchange-status, and rating-outcome partitions before any sibling values can be disclosed. Main-session verification is the closing check because the configured integrated-final review budget is exhausted.
-- Next: run the W2 simplifier and privacy/data-integrity slice review on the
-  immutable local range, apply any accepted correction once, then run the
-  integrated-final review across both corrected layers. No push, pull-request
-  update, production query, or real-data artifact is authorized in this
-  session.
+- W2 reviews: the configured simplifier returned `DONE` with no justified
+  reduction. The privacy/data-integrity review returned `PASS-WITH-FIXES`; its
+  course/query test and CLI accuracy findings were closed in `5f25c394b`.
+  Reports are at
+  `project/_local/reviews/2026-08-13-chatbot-governed-reports-w2-simplifier.md`
+  and
+  `project/_local/reviews/2026-08-13-chatbot-governed-reports-w2-slice-review.md`.
+- Integrated-final review: `PASS-WITH-FIXES`. The correction suppresses the
+  zero-eligible fail-closed population rather than exposing its selected-record
+  count in artifact provenance or console output, fixes the vacuous
+  cross-course assertion, and updates this progress record. A fresh correction
+  review is the remaining gate. No push, pull-request update, production query,
+  or real-data artifact is authorized in this session.
+- Post-final correction verification: 22 focused tests pass (8 core, 12 report,
+  2 provider), strict `check:analysis`, changed-path Biome/Prettier, and
+  `git diff --check` pass under host Node 26. The correction review remains the
+  final local gate.

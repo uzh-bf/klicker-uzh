@@ -31,7 +31,7 @@ function usage() {
     '  --filePrefix <name>            Default: chatbot-aggregate.',
     '  --minimumCellSize <n>          Default: 5.',
     '',
-    'Database-backed runs currently produce a fully suppressed aggregate because authoritative effective-dated eligibility is not yet configured.',
+    'Database-backed runs currently produce a suppressed aggregate because authoritative effective-dated eligibility is not yet configured.',
   ].join('\n')
 }
 
@@ -133,7 +133,7 @@ try {
   console.log(`JSON: ${result.files.jsonPath}`)
   console.log(`XLSX: ${result.files.workbookPath}`)
   console.log(
-    `Eligibility: authoritative decisions are unavailable; ${result.core.eligible.excludedMessageIds.length} selected records were excluded fail closed.`
+    'Eligibility: authoritative decisions are unavailable; fail closed.'
   )
 } catch (error) {
   console.error(

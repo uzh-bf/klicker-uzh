@@ -365,7 +365,7 @@ purpose, time window, and output directory and writes disclosure-controlled JSON
 and XLSX from the same report model. Its Prisma provider loads only the selected
 window and direct assistant replies needed for lineage. The provider returns no
 eligibility decisions until an authoritative effective-dated source exists, so
-database-backed runs exclude every record and remain fully suppressed. The
+database-backed runs exclude every record and suppress the aggregate. The
 synthetic provider test proves the executable path without database or
 production access. LiteLLM and Langfuse remain authoritative for actual model,
 spend, cache, trace, and latency facts and are not copied into the PostgreSQL

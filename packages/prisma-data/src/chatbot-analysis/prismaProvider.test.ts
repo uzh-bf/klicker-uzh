@@ -81,6 +81,6 @@ describe('Prisma chatbot analysis provider', () => {
         },
       })
     )
-    expect(findMany.mock.calls.flat().join(' ')).not.toContain(OTHER_COURSE_ID)
+    expect(JSON.stringify(findMany.mock.calls)).not.toContain(OTHER_COURSE_ID)
   })
 })
