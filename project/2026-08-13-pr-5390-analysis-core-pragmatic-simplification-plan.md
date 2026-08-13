@@ -124,21 +124,40 @@
 
 ## Progress
 
-- Status: plan reviewed; S1 ready for local execution.
-- Active slice: S1 — remove unused provenance shaping.
-- Completed: takeover verification and planning-stage review.
-- Remaining: plan commit, S1 implementation and verification, paired post-slice
-  specialists, final Progress commit, fresh verification, and integrated final
-  review.
-- Latest verified source: `7e9d8e06c6e8fe5f7e0db17735a4364a873d110b`.
+- Status: S1 implemented, verified, and accepted by both post-slice roles;
+  integrated final review remains.
+- Active slice: final W1 closure.
+- Completed: takeover verification, planning-stage review, plan commit
+  `1398f42fd`, implementation commit `fac726762`, focused verification, and
+  paired post-slice simplification and review.
+- Remaining: commit this Progress update, run fresh final verification, and
+  obtain the integrated final review.
+- Latest verified range:
+  `1398f42fdd81abd97c41ce7c02df7e04a7351d0c..fac726762f915c84d2ad9ac53b623a444343f614`.
+- Verification: Node `v24.16.0`; focused Vitest passed 8/8; strict
+  `check:analysis` passed; changed-path Biome passed; `git diff --check` passed;
+  the implementation commit contains 34 deletions and no additions in
+  `core.ts`. The commit hook also passed `check:all` on host Node 26 with engine
+  warnings and is supporting evidence only.
+- Test delta: no tests added, changed, or removed; all eight existing tests are
+  retained.
 - Planning report:
   `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-planning-stage.md`.
+- Simplifier: done —
+  `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-simplifier.md`.
+- Slice review: done —
+  `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-slice-review.md`.
+- Integrated final review: pending on the final committed range.
 - Active child IDs: none.
 - Delivery: required and achieved layer is verified local commits only; no
   external action is authorized.
-- Blockers: none. The existing DevPod is reachable with Node `v24.16.0` when
-  devrouter runs with host process visibility.
-- Next: commit this plan, implement S1, and run the focused checks.
+- Blockers: none. The runtime lacked the native `slice-reviewer` role, so the
+  documented materially equivalent trusted read-only fallback was used and is
+  recorded in its report. A rejected parallel spawn partially created one
+  extra simplifier; it returned the same no-finding result and was closed
+  without counting as another gate.
+- Next: commit this Progress update, run the final checks, and start the
+  configured integrated final reviewer.
 
 ## Completion evidence
 
