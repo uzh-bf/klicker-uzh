@@ -7,14 +7,26 @@ import {
   getModeDescription,
   getModeIcon,
   isKnownMode,
+  resolveSelectedMode,
 } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-export function ModeSwitcher() {
+export function ModeSwitcher({
+  modeOptions: modeOptionsOverride,
+  testIdPrefix = 'chat-mode',
+}: {
+  modeOptions?: Record<string, string>
+  testIdPrefix?: string
+} = {}) {
   const t = useTranslations()
-  const { modeOptions, selectedMode, setSelectedMode } = useSettingsStore()
+  const storeModeOptions = useSettingsStore((state) => state.modeOptions)
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
+  const modeOptions = modeOptionsOverride ?? storeModeOptions
   const modeKeys = Object.keys(modeOptions)
+  const modeKeysSignature = modeKeys.join('|')
+  const effectiveSelectedMode = resolveSelectedMode(modeOptions, selectedMode)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>())
@@ -26,7 +38,7 @@ export function ModeSwitcher() {
 
   useLayoutEffect(() => {
     const measure = () => {
-      const activeButton = buttonRefs.current.get(selectedMode)
+      const activeButton = buttonRefs.current.get(effectiveSelectedMode)
       if (!activeButton) return
       setThumb({
         left: activeButton.offsetLeft,
@@ -43,7 +55,7 @@ export function ModeSwitcher() {
     const observer = new ResizeObserver(measure)
     buttonRefs.current.forEach((button) => observer.observe(button))
     return () => observer.disconnect()
-  }, [selectedMode, modeKeys.join('|')])
+  }, [effectiveSelectedMode, modeKeysSignature])
 
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
@@ -53,7 +65,7 @@ export function ModeSwitcher() {
       ref={containerRef}
       role="group"
       aria-label={t('chat.modes.switcherLabel')}
-      data-cy="chat-mode-switcher"
+      data-cy={`${testIdPrefix}-switcher`}
       className="bg-muted scrollbar-none relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5"
     >
       {thumb && (
@@ -72,7 +84,7 @@ export function ModeSwitcher() {
           ? t(`chat.modes.${mode}`)
           : mode.charAt(0).toUpperCase() + mode.slice(1)
         const description = getModeDescription(t, mode, modeOptions)
-        const isActive = mode === selectedMode
+        const isActive = mode === effectiveSelectedMode
 
         return (
           <Tooltip key={mode}>
@@ -85,7 +97,7 @@ export function ModeSwitcher() {
                 type="button"
                 aria-pressed={isActive}
                 aria-label={description ? `${label}: ${description}` : label}
-                data-cy={`chat-mode-option-${mode}`}
+                data-cy={`${testIdPrefix}-option-${mode}`}
                 onClick={() => setSelectedMode(mode)}
                 className={twMerge(
                   'relative z-10 inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors touch-manipulation fine-pointer:min-h-8',
@@ -106,7 +118,10 @@ export function ModeSwitcher() {
             <TooltipContent className="max-w-64 text-left text-pretty">
               <p className="font-medium">{label}</p>
               {description ? (
-                <p data-cy={`chat-mode-description-${mode}`} className="mt-1">
+                <p
+                  data-cy={`${testIdPrefix}-description-${mode}`}
+                  className="mt-1"
+                >
                   {description}
                 </p>
               ) : null}

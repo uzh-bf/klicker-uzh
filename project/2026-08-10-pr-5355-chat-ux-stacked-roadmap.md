@@ -457,8 +457,40 @@ evidence; they do not receive redundant implementation-coupled unit tests.
   chatbot name and configured Tutor description. The welcome distinguishes
   genuine configured descriptions, including an intentionally empty value,
   from the synthesized Tutor fallback so fallback copy remains localized.
-- Next: push the reviewed layer-04 head, create or refresh the draft PRs for
-  layers 02–05, then implement and review layer 05 conversation presentation.
+- Current (2026-08-11): layer 05 conversation presentation is implemented on
+  `rs/chat-ux-conversation-polish`. Markdown headings now shift down one
+  semantic level and use conversation-scale typography; branch navigation uses
+  student-facing version copy; and failed assistant turns keep only their
+  dedicated retry callout, without reload/rating actions or relative timestamps.
+- Verification (2026-08-11): the real in-app Browser showed heading-rich,
+  branched, and failed responses in EN and DE on desktop and at 390x844; the
+  focused chat suite passed with 31 files and 239 tests, and the repository
+  `check:all` gate passed. The final `text-pretty` heading refinement is
+  class-only and is covered by those package gates. Focused Playwright could
+  not launch locally because the container lacks Chromium's
+  `headless_shell-1208` executable; hosted CI supplied the browser-runner
+  proof.
+- Review follow-up (2026-08-11): integrated review findings are resolved in
+  `fd1bc9c60` and `c69a38cff`. Silent stream interruptions now use the same
+  localized retry callout as explicit errors, source Markdown h6 uses a
+  distinct `role="heading"`/`aria-level="7"` representation, and source h5
+  retains a distinct mobile size. Focused contracts cover both failure paths,
+  all six shifted heading levels, and desktop plus 390x844 scaling.
+- Verification after the follow-up: chat typecheck, chat Vitest (31 files,
+  239 tests), repository `check:all` (24/24 tasks), Prettier, and gitleaks all
+  passed. The real in-app Browser still showed the branched heading treatment
+  and mobile failed-turn chrome. Focused Playwright launched the global setup
+  but all three selected tests were blocked before execution because
+  `headless_shell-1208` is absent.
+  The configured simplifier could not authenticate because its Claude OAuth
+  token expired, so no simplifier finding is inferred.
+- Hosted CI for [PR #5363](https://github.com/uzh-bf/klicker-uzh/pull/5363)
+  passed all active checks, including all eight Playwright shards and
+  `test-playwright-status`, after the mode-tooltip assertion was scoped to the
+  visible tooltip. The stack workflow skipped the chat test and image-build
+  jobs. The final branch head is `c69364478`.
+- Next: keep all five PRs in draft for layer-by-layer human review. No ready,
+  merge, or deployment action has been taken.
 - Intermediate review of the initial layer-02 commit `c7765925f` returned
   `NEEDS CHANGES`: the boundary used `reset`, which did not refresh a failed
   server layout payload. The follow-up fix uses Next 16's `unstable_retry`,

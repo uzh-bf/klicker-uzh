@@ -76,6 +76,7 @@ import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
+import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
 import { actionBarButtonClassName } from './ui/action-bar-button'
@@ -171,6 +172,11 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   if (message.role === 'assistant' && message.status?.type === 'running') {
     return null
   }
+
+  // A failed turn has its own localized callout and retry action. The normal
+  // answer timestamp and feedback controls would make an incomplete response
+  // look like a finished answer that is ready to rate.
+  if (hasChatError(message)) return null
 
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
@@ -461,11 +467,19 @@ const ThreadWelcome: FC<{
             {modeLabel && (
               <div
                 data-cy="chat-welcome-mode"
-                className="bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl px-4 py-3 text-left text-sm delay-150 duration-300 motion-reduce:animate-none"
+                className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
               >
                 <p className="font-medium">
                   {t('chat.thread.welcomeMode', { mode: modeLabel })}
                 </p>
+                {Object.keys(modeOptions).length > 1 && (
+                  <div className="mt-3 flex justify-center">
+                    <ModeSwitcher
+                      modeOptions={modeOptions}
+                      testIdPrefix="chat-welcome-mode"
+                    />
+                  </div>
+                )}
                 {modeDescription ? (
                   <p className="text-muted-foreground mt-1 text-pretty">
                     {modeDescription}
@@ -513,7 +527,7 @@ const ThreadWelcomeSuggestions: FC<{
             key={suggestion.id}
             data-cy="chat-welcome-suggestion"
             className={twMerge(
-              'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
+              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
               SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
             )}
             prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
@@ -1424,6 +1438,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   if (!showMessageActions) return null
+  const hasError = hasChatError(message)
 
   return (
     <div
@@ -1455,7 +1470,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hasChatError(message) && (
+        {!hasError && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
@@ -1472,7 +1487,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Tooltip>
         )}
 
-        <MessageRatingButtons />
+        {!hasError && <MessageRatingButtons />}
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>

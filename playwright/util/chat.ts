@@ -374,10 +374,12 @@ export type StreamOptions = {
   /** Emits an SSE `error` part after the text. The client stops reading there
    * and renders its error callout instead of finishing normally. */
   errorText?: string
+  /** Closes the stream after its text without emitting a finish event. */
+  omitFinish?: boolean
 }
 
 function makeStreamLines(text: string, options: StreamOptions = {}) {
-  const { metadata, toolCalls = [], errorText } = options
+  const { metadata, toolCalls = [], errorText, omitFinish } = options
 
   const lines = [
     `data: ${JSON.stringify({ type: 'start' })}`,
@@ -415,16 +417,18 @@ function makeStreamLines(text: string, options: StreamOptions = {}) {
     lines.push(`data: ${JSON.stringify({ type: 'error', errorText })}`)
   }
 
-  lines.push(
-    `data: ${JSON.stringify({ type: 'finish-step' })}`,
-    `data: ${JSON.stringify({
-      type: 'finish',
-      ...(metadata ? { messageMetadata: metadata } : {}),
-    })}`,
-    // Trailing line: the client keeps the last (possibly incomplete) line
-    // buffered, so nothing after this point is parsed anyway.
-    'data: [DONE]'
-  )
+  if (!omitFinish) {
+    lines.push(
+      `data: ${JSON.stringify({ type: 'finish-step' })}`,
+      `data: ${JSON.stringify({
+        type: 'finish',
+        ...(metadata ? { messageMetadata: metadata } : {}),
+      })}`,
+      // Trailing line: the client keeps the last (possibly incomplete) line
+      // buffered, so nothing after this point is parsed anyway.
+      'data: [DONE]'
+    )
+  }
 
   return lines
 }

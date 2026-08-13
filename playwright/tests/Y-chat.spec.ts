@@ -1003,6 +1003,12 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect(
       page.getByTestId('chat-branch-indicator').first()
     ).toContainText('/ 2')
+    await expect(
+      page.getByTestId('chat-branch-previous').first()
+    ).toHaveAccessibleName('Previous version')
+    await expect(
+      page.getByTestId('chat-branch-next').first()
+    ).toHaveAccessibleName('Next version')
   })
 
   test('Message tree: branches keep independent continuations and navigation restores them', async ({
@@ -2119,6 +2125,52 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await setDisclaimerState(participantId, 'accepted')
   })
 
+  test('Heading-rich answers keep hierarchy and conversation scale', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: '# Main heading\n\n## Supporting heading\n\n### Detail heading\n\n#### Fourth heading\n\n##### Fifth heading\n\n###### Sixth heading',
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Show me a structured answer')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('h2')).toContainText('Main heading', {
+      timeout: 15_000,
+    })
+    await expect(content.locator('h3')).toContainText('Supporting heading')
+    await expect(content.locator('h4')).toContainText('Detail heading')
+    await expect(content.locator('h5')).toContainText('Fourth heading')
+    await expect(content.locator('h6')).toContainText('Fifth heading')
+    await expect(
+      content.locator('[role="heading"][aria-level="7"]')
+    ).toContainText('Sixth heading')
+
+    const headingSelector =
+      'h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]'
+    const readHeadingSizes = () =>
+      content
+        .locator(headingSelector)
+        .evaluateAll((headings) =>
+          headings.map((heading) =>
+            Number.parseFloat(getComputedStyle(heading).fontSize)
+          )
+        )
+    const assertHeadingScale = (headingSizes: number[]) => {
+      expect(headingSizes).toHaveLength(6)
+      for (let index = 1; index < headingSizes.length; index += 1) {
+        expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+      }
+      expect(Math.max(...headingSizes)).toBeLessThan(36)
+    }
+
+    assertHeadingScale(await readHeadingSizes())
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    assertHeadingScale(await readHeadingSizes())
+  })
+
   test('Caption under a streamed answer shows the mode and credit cost', async ({
     page,
   }) => {
@@ -2180,6 +2232,39 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Partial answer before the failure.')
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
+  })
+
+  test('A silent stream interruption keeps failed-turn actions suppressed', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Partial answer before the connection closed.',
+      omitFinish: true,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Trigger a silent interruption')
+
+    const callout = page.getByTestId('chat-message-error')
+    await expect(callout).toBeVisible({ timeout: 15_000 })
+    await expect(callout).toContainText('Connection interrupted')
+    await expect(callout.getByTestId('chat-retry-message-button')).toBeVisible()
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
   })
 
   test('A length-truncated answer appends the truncation notice', async ({
