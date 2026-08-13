@@ -543,8 +543,22 @@ the report preserves the exact identity that was reviewed.
   cache bypass while preserving Responses normalization, and the focused
   synthetic transport/image tests pass. The executor returned `NEEDS_CONTEXT`
   without edits, so the main session retained provider-boundary integration.
-- [ ] Slice 2 review gate: commit the immutable slice, then run one
-  `slice-reviewer` and one `simplifier` in parallel before Slice 3.
+- [x] Slice 2 review gate: the immutable commit was approved by the
+  slice-reviewer at
+  `project/_local/reviews/2026-08-12-chat-cache-request-boundary-slice-2-slice-review.md`.
+  The simplifier returned `KEEP` at
+  `project/_local/reviews/2026-08-12-chat-cache-request-boundary-slice-2-simplification-correction.md`;
+  its malformed initial dispatch and correction are retained in the register.
+- [x] Slice 3 implemented: the default route now derives a versioned SHA-256
+  prompt-prefix key from requested deployment/transport, final instructions,
+  and canonical provider-visible tools; it preserves executable tool behavior,
+  uses explicit stable tool order, and gates implicit mode to the explicit
+  GPT-5.6 deployment allow-list. Focused identity/transport tests pass 18/18;
+  helper-only TypeScript and Biome checks pass. The full package check still
+  requires the validated devcontainer, which is unavailable because of the
+  devrouter process-identity lock.
+- [ ] Slice 3 review gate: commit the immutable slice, then run one
+  read-only `slice-reviewer` and one `simplifier` in parallel before Slice 4.
 - [ ] Implement and verify the approved slices.
 
 ## Next action after user approval

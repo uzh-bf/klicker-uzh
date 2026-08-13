@@ -18,6 +18,10 @@ import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
+  buildPromptCacheRequest,
+  getOpenAIPromptCacheOptions,
+} from '@/src/lib/server/promptCacheIdentity'
+import {
   mapAssistantStepContent,
   type PersistedAssistantContentPart,
 } from '@/src/lib/server/persistedAssistantContent'
@@ -865,6 +869,24 @@ export async function POST(
       : undefined
 
   const { model, routing } = getModel(chatbot, selectedModelConfig)
+  const promptCacheRequest =
+    routing.source === 'default'
+      ? await buildPromptCacheRequest({
+          deploymentId: selectedModelConfig.deploymentId,
+          transport: selectedModelConfig.supportsReasoning
+            ? 'responses'
+            : 'chat',
+          instructions: systemPrompt,
+          tools: mcpTools,
+        })
+      : null
+  const promptCacheOptions = promptCacheRequest
+    ? getOpenAIPromptCacheOptions({
+        deploymentId: selectedModelConfig.deploymentId,
+        promptCacheKey: promptCacheRequest.promptCacheKey,
+        routingSource: routing.source,
+      })
+    : {}
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1181,6 +1203,7 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
+          ...promptCacheOptions,
           ...(selectedModelConfig.usesResponsesApi && {
             store: getOpenAIResponsesStore(),
           }),
@@ -1191,7 +1214,8 @@ export async function POST(
         },
       },
       messages: modelMessages as ModelMessage[],
-      tools: mcpTools,
+      tools: promptCacheRequest?.tools ?? mcpTools,
+      toolOrder: promptCacheRequest?.toolOrder,
       toolChoice: 'auto',
       stopWhen: isStepCount(5),
       instructions: systemPrompt,

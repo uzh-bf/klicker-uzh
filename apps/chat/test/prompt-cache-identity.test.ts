@@ -1,0 +1,377 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText, tool } from 'ai'
+import { describe, expect, test } from 'vitest'
+import { z } from 'zod'
+import {
+  buildPromptCacheRequest,
+  getOpenAIPromptCacheOptions,
+  supportsImplicitPromptCaching,
+} from '../src/lib/server/promptCacheIdentity'
+
+function createTools(order: 'first' | 'second' = 'first') {
+  const first = tool({
+    description: 'Search the synthetic corpus.',
+    inputSchema: z.object({
+      query: z.string().describe('Search query'),
+      limit: z.number().int().optional(),
+    }),
+    strict: true,
+    execute: async () => ({ ok: true }),
+  })
+  const second = tool({
+    description: 'Read one synthetic result.',
+    inputSchema: z.object({ resultId: z.string() }),
+    execute: async () => ({ ok: true }),
+  })
+
+  return order === 'first'
+    ? { search: first, read: second }
+    : { read: second, search: first }
+}
+
+function chatResponse() {
+  return {
+    id: 'chatcmpl-prompt-cache-identity',
+    object: 'chat.completion',
+    created: 1,
+    model: 'gpt-4.1',
+    choices: [
+      {
+        index: 0,
+        message: { role: 'assistant', content: 'Synthetic answer.' },
+        finish_reason: 'stop',
+      },
+    ],
+    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+  }
+}
+
+function responsesResponse() {
+  return {
+    id: 'response-prompt-cache-identity',
+    object: 'response',
+    created_at: 1,
+    status: 'completed',
+    model: 'gpt-5.6-luna',
+    output: [
+      {
+        type: 'message',
+        role: 'assistant',
+        id: 'message-prompt-cache-identity',
+        status: 'completed',
+        content: [
+          { type: 'output_text', text: 'Synthetic answer.', annotations: [] },
+        ],
+      },
+    ],
+    usage: {
+      input_tokens: 1,
+      output_tokens: 1,
+      total_tokens: 2,
+      input_tokens_details: { cached_tokens: 0 },
+      output_tokens_details: { reasoning_tokens: 0 },
+    },
+  }
+}
+
+function captureFetch(
+  responseBody: unknown,
+  captures: Record<string, unknown>[]
+) {
+  return async (_input: RequestInfo | URL, init?: RequestInit) => {
+    captures.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+    return new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+}
+
+describe('prompt cache identity', () => {
+  test('is stable across tool insertion order and returns one provider order', async () => {
+    const first = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: createTools('first'),
+    })
+    const second = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: createTools('second'),
+    })
+
+    expect(first.promptCacheKey).toBe(second.promptCacheKey)
+    expect(first.toolOrder).toEqual(['read', 'search'])
+    expect(second.toolOrder).toEqual(first.toolOrder)
+    expect(first.providerTools).toEqual(second.providerTools)
+  })
+
+  test.each([
+    ['instructions', { instructions: 'Changed instructions.' }],
+    ['deployment', { deploymentId: 'auto-router' }],
+    ['transport', { transport: 'chat' as const }],
+  ])('changes the key when the stable prefix %s changes', async (_, change) => {
+    const base = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: createTools(),
+    })
+    const changed = await buildPromptCacheRequest({
+      deploymentId: change.deploymentId ?? 'gpt-5.6-luna',
+      transport: change.transport ?? 'responses',
+      instructions: change.instructions ?? 'Synthetic instructions.',
+      tools: createTools(),
+    })
+
+    expect(changed.promptCacheKey).not.toBe(base.promptCacheKey)
+  })
+
+  test('changes the key for provider-visible tool changes but not runtime functions', async () => {
+    const baseTools = createTools()
+    const base = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: baseTools,
+    })
+    const changed = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: {
+        ...createTools(),
+        search: tool({
+          description: 'Changed search description.',
+          inputSchema: z.object({ query: z.string() }),
+          execute: async () => ({ differentRuntime: true }),
+        }),
+      },
+    })
+
+    expect(changed.promptCacheKey).not.toBe(base.promptCacheKey)
+    expect(changed.tools.search.execute).not.toBeUndefined()
+    expect(base.tools.search.execute).toBe(baseTools.search.execute)
+  })
+
+  test('changes the key for provider-visible tool options', async () => {
+    const base = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: {
+        search: tool({
+          description: 'Search the synthetic corpus.',
+          inputSchema: z.object({ query: z.string() }),
+          strict: true,
+          inputExamples: [{ query: 'base' }],
+          providerOptions: { openai: { strictJsonSchema: true } },
+          execute: async () => ({ ok: true }),
+        }),
+      },
+    })
+    const changed = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: {
+        search: tool({
+          description: 'Search the synthetic corpus.',
+          inputSchema: z.object({ query: z.string() }),
+          strict: false,
+          inputExamples: [{ query: 'changed' }],
+          providerOptions: { openai: { strictJsonSchema: false } },
+          execute: async () => ({ ok: true }),
+        }),
+      },
+    })
+
+    expect(changed.promptCacheKey).not.toBe(base.promptCacheKey)
+  })
+
+  test('ignores runtime-only changes while retaining the executable tool', async () => {
+    const firstTools = createTools()
+    const secondTools = createTools()
+    secondTools.search.execute = async () => ({ runtime: 'changed' })
+
+    const first = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: firstTools,
+    })
+    const second = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: secondTools,
+    })
+
+    expect(second.promptCacheKey).toBe(first.promptCacheKey)
+    expect(second.tools.search.execute).toBe(secondTools.search.execute)
+  })
+
+  test.each([
+    ['userId', 'synthetic-user'],
+    ['participantId', 'synthetic-participant'],
+    ['chatbotId', 'synthetic-chatbot'],
+    ['threadId', 'synthetic-thread'],
+    ['assistantMessageId', 'synthetic-assistant'],
+    ['messageId', 'synthetic-message'],
+    ['requestId', 'synthetic-request'],
+    ['toolCallId', 'synthetic-tool-call'],
+    ['mcpServerId', 'synthetic-mcp-server'],
+  ])('does not accept %s as a stable identity input', async (field, value) => {
+    const base = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: createTools(),
+    })
+    const inputWithRequestIdentifier = {
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses' as const,
+      instructions: 'Synthetic instructions.',
+      tools: createTools(),
+      [field]: value,
+    }
+
+    const withRequestIdentifiers = await buildPromptCacheRequest(
+      inputWithRequestIdentifier
+    )
+
+    expect(withRequestIdentifiers.promptCacheKey).toBe(base.promptCacheKey)
+  })
+
+  test('serializes the same canonical tool projection on Chat and Responses', async () => {
+    const chatCaptures: Record<string, unknown>[] = []
+    const chatRequest = await buildPromptCacheRequest({
+      deploymentId: 'gpt-4.1',
+      transport: 'chat',
+      instructions: 'Synthetic instructions.',
+      tools: createTools(),
+    })
+    const chatProvider = createOpenAI({
+      apiKey: 'test-key',
+      baseURL: 'https://example.test/v1',
+      fetch: captureFetch(chatResponse(), chatCaptures),
+    })
+
+    await generateText({
+      model: chatProvider.chat('gpt-4.1'),
+      prompt: 'Synthetic prompt.',
+      instructions: 'Synthetic instructions.',
+      tools: chatRequest.tools,
+      toolOrder: chatRequest.toolOrder,
+      providerOptions: {
+        openai: getOpenAIPromptCacheOptions({
+          deploymentId: 'gpt-4.1',
+          promptCacheKey: chatRequest.promptCacheKey,
+          routingSource: 'default',
+        }),
+      },
+      maxRetries: 0,
+    })
+
+    const chatBody = chatCaptures[0]
+    const chatTools = chatBody?.tools as Record<string, unknown>[]
+    expect(chatBody?.prompt_cache_key).toBe(chatRequest.promptCacheKey)
+    expect(chatBody?.prompt_cache_options).toBeUndefined()
+    expect(
+      chatTools.map((entry) => (entry.function as Record<string, unknown>).name)
+    ).toEqual(['read', 'search'])
+    expect(
+      Object.keys(
+        ((chatTools[1]?.function as Record<string, unknown>)?.parameters ??
+          {}) as Record<string, unknown>
+      )
+    ).toEqual([
+      '$schema',
+      'additionalProperties',
+      'properties',
+      'required',
+      'type',
+    ])
+
+    const responsesCaptures: Record<string, unknown>[] = []
+    const responsesRequest = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: createTools(),
+    })
+    const responsesProvider = createOpenAI({
+      apiKey: 'test-key',
+      baseURL: 'https://example.test/v1',
+      fetch: captureFetch(responsesResponse(), responsesCaptures),
+    })
+
+    await generateText({
+      model: responsesProvider.responses('gpt-5.6-luna'),
+      prompt: 'Synthetic prompt.',
+      instructions: 'Synthetic instructions.',
+      tools: responsesRequest.tools,
+      toolOrder: responsesRequest.toolOrder,
+      providerOptions: {
+        openai: getOpenAIPromptCacheOptions({
+          deploymentId: 'gpt-5.6-luna',
+          promptCacheKey: responsesRequest.promptCacheKey,
+          routingSource: 'default',
+        }),
+      },
+      maxRetries: 0,
+    })
+
+    const responsesBody = responsesCaptures[0]
+    const responseTools = responsesBody?.tools as Record<string, unknown>[]
+    expect(responsesBody?.prompt_cache_key).toBe(
+      responsesRequest.promptCacheKey
+    )
+    expect(responsesBody?.prompt_cache_options).toEqual({ mode: 'implicit' })
+    expect(responseTools.map((entry) => entry.name)).toEqual(['read', 'search'])
+    expect(
+      Object.keys(
+        (responseTools[1]?.parameters ?? {}) as Record<string, unknown>
+      )
+    ).toEqual([
+      '$schema',
+      'additionalProperties',
+      'properties',
+      'required',
+      'type',
+    ])
+  })
+
+  test('emits prompt options only for the default route and supported deployment', () => {
+    expect(supportsImplicitPromptCaching('gpt-5.6-luna')).toBe(true)
+    expect(supportsImplicitPromptCaching('gpt-5.6')).toBe(true)
+    expect(supportsImplicitPromptCaching('gpt-4.1')).toBe(false)
+    expect(supportsImplicitPromptCaching('auto-router')).toBe(false)
+    expect(
+      getOpenAIPromptCacheOptions({
+        deploymentId: 'gpt-5.6-luna',
+        promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test',
+        routingSource: 'default',
+      })
+    ).toEqual({
+      promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test',
+      promptCacheOptions: { mode: 'implicit' },
+    })
+    expect(
+      getOpenAIPromptCacheOptions({
+        deploymentId: 'auto-router',
+        promptCacheKey: 'synthetic-key',
+        routingSource: 'default',
+      })
+    ).toEqual({ promptCacheKey: 'synthetic-key' })
+    expect(
+      getOpenAIPromptCacheOptions({
+        deploymentId: 'gpt-5.6-luna',
+        promptCacheKey: 'synthetic-key',
+        routingSource: 'custom',
+      })
+    ).toEqual({})
+  })
+})
