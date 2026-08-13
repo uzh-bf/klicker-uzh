@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/chatbot-analysis/**/*.ts"]
+  "include": [
+    "src/chatbot-analysis/**/*.ts",
+    "src/scripts/2026-08-13_chatbot_aggregate_report.ts"
+  ]
 }
