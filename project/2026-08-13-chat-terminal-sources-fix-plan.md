@@ -115,7 +115,8 @@ No new product primitive is needed.
 
 ## Progress
 
-- Status: S2 implemented; S3 — documentation and integrated proof active.
+- Status: implementation and documentation complete; integrated proof and final
+  review active.
 - Completed: base/ref check, planning-stage challenge, plan commit
   `ba8b1b197`, S1 commit `65ef187d7`, S1 simplification adjustment, S2 commit
   `cdf779703`, mixed-abort content assembly, and the focused/full chat test
@@ -129,7 +130,7 @@ No new product primitive is needed.
   slice-reviewer role was unavailable, so the required persistence review used
   the documented read-only Sol fallback and found no runtime, sanitization,
   ordering, ADR, product-primitive, or least-surprise finding.
-- Remaining: complete docs, run integrated checks/build, and complete final
-  review.
+- Remaining: run the chat production build, complete the integrated final
+  review, and close the local goal. No publication or PR action is authorized.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.
