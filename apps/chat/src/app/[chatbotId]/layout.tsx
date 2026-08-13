@@ -1,6 +1,10 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
+import {
+  hasConfiguredModeDescriptions,
+  resolveModeDescriptions,
+} from '../../lib/config/modes'
 import { z } from 'zod'
 
 interface ChatLayoutProps {
@@ -18,15 +22,26 @@ export default async function ChatLayout({
 
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId },
-    select: { id: true, name: true, avatar: true },
+    select: { id: true, name: true, avatar: true, systemPrompts: true },
   })
 
   if (!chatbot) notFound()
 
+  const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
+  const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(
+    chatbot.systemPrompts
+  )
+
   return (
     <>
       <Assistant
-        chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
+        chatbot={{
+          id: chatbot.id,
+          name: chatbot.name,
+          avatar: chatbot.avatar ?? undefined,
+        }}
+        initialModeOptions={initialModeOptions}
+        initialModeOptionsAreFallback={initialModeOptionsAreFallback}
       />
       {children}
     </>

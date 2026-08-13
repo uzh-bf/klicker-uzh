@@ -223,11 +223,14 @@ rather than a stringified `ProgressEvent`. A cached thread list intentionally re
 The welcome view contains localized, mode-aware starter suggestions: Tutor offers interactive
 practice prompts for a specific topic or pasted problem, while Explainer offers source-oriented
 explanations of a specific concept or comparisons between two concepts. The prompts are inserted
-into the composer without sending, so students can replace the bracketed placeholders before
-retrieval. Broad whole-course summaries and study plans are intentionally not offered here; a
-reliable planner needs a separate structured planning flow and tool/result budget. Starters remain
-hidden until the current chatbot's mode options have loaded, because the selected mode is
-persisted across chatbots. Message action bars
+into the composer without sending and use complete, editable wording rather than raw bracket
+templates. The starter panel tells students to adjust the wording before sending. Broad
+whole-course summaries and study plans are intentionally not offered here; a reliable planner
+needs a separate structured planning flow and tool/result budget. Chatbot-scoped mode descriptions
+are supplied with the initial shell, so the welcome view and starters do not wait for the settings
+request or briefly render the wrong persisted mode. A genuine configured description, including an
+empty one, overrides the localized generic mode explanation; the synthesized Tutor fallback keeps
+the localized generic copy. Message action bars
 remain mounted for touch users rather than relying on hover. An unavailable image edit uses
 `aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
 Each thread row shows the thread's last chat mode as an icon plus localized label under the title

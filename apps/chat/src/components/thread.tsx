@@ -62,7 +62,12 @@ import {
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
-import { isKnownMode } from '../lib/config/modes'
+import {
+  formatModeLabel,
+  getModeDescription,
+  isKnownMode,
+  resolveSelectedMode,
+} from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
 import { getThreadSuggestions } from '../lib/config/suggestions'
 import { BranchPicker } from './branch-picker'
@@ -82,7 +87,12 @@ import { useParams } from 'next/navigation'
 import { useFormatter, useNow, useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
-type ThreadProps = { chatbotAvatar: string }
+type ThreadProps = {
+  chatbotAvatar: string
+  chatbotName: string
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
+}
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 const ChatbotAvatarContext = createContext('')
@@ -248,7 +258,12 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   )
 }
 
-export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
+export const Thread: FC<ThreadProps> = ({
+  chatbotAvatar,
+  chatbotName,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+}) => {
   const { embedded } = useChatUi()
   const messageComponents = useMemo(
     () => ({
@@ -275,7 +290,12 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
-        <ThreadWelcome chatbotAvatar={chatbotAvatar} />
+        <ThreadWelcome
+          chatbotAvatar={chatbotAvatar}
+          chatbotName={chatbotName}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
           <ThreadPrimitive.Messages components={messageComponents} />
@@ -351,12 +371,62 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
+const useWelcomeModeOptions = (
+  initialModeOptions: Record<string, string>,
+  initialModeOptionsAreFallback = false
+) => {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const modeOptionsChatbotId = useSettingsStore(
+    (state) => state.modeOptionsChatbotId
+  )
+  const modeOptionsAreFallback = useSettingsStore(
+    (state) => state.modeOptionsAreFallback
+  )
+
+  const hasCurrentChatbotModeOptions =
+    modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
+
+  return {
+    modeOptions: hasCurrentChatbotModeOptions
+      ? modeOptions
+      : initialModeOptions,
+    modeOptionsAreFallback: hasCurrentChatbotModeOptions
+      ? modeOptionsAreFallback
+      : initialModeOptionsAreFallback,
+  }
+}
+
+const ThreadWelcome: FC<{
+  chatbotAvatar: string
+  chatbotName: string
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
+}> = ({
+  chatbotAvatar,
+  chatbotName,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+}) => {
   const t = useTranslations()
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
+    initialModeOptions,
+    initialModeOptionsAreFallback
+  )
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
+  const modeDescription = activeMode
+    ? !modeOptionsAreFallback &&
+      Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
+      ? (modeOptions[activeMode]?.trim() ?? '')
+      : getModeDescription(t, activeMode, modeOptions)
+    : null
+
   return (
     <ThreadPrimitive.Empty>
-      <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="aui-thread-welcome-center relative flex w-full flex-grow flex-col items-center justify-center">
+      <div className="aui-thread-welcome-root mx-auto my-0 flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col sm:my-auto">
+        <div className="aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0">
           {/* Faint branded accent behind the greeting — restrained, no new assets. */}
           <div
             aria-hidden
@@ -376,15 +446,36 @@ const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
                 className="ring-border animate-in fade-in slide-in-from-bottom-2 mb-4 rounded-full bg-white ring-1 duration-300 motion-reduce:animate-none"
               />
             )}
-            <div className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold duration-300 motion-reduce:animate-none sm:text-4xl">
+            <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
               {t('chat.thread.welcomeTitle')}
-            </div>
-            <div className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 text-lg delay-100 duration-300 motion-reduce:animate-none">
+            </h2>
+            <p
+              data-cy="chat-welcome-chatbot"
+              className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none"
+            >
+              {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
+            </p>
+            <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
               {t('chat.thread.welcomeSubtitle')}
-            </div>
+            </p>
+            {modeLabel && (
+              <div
+                data-cy="chat-welcome-mode"
+                className="bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl px-4 py-3 text-left text-sm delay-150 duration-300 motion-reduce:animate-none"
+              >
+                <p className="font-medium">
+                  {t('chat.thread.welcomeMode', { mode: modeLabel })}
+                </p>
+                {modeDescription ? (
+                  <p className="text-muted-foreground mt-1 text-pretty">
+                    {modeDescription}
+                  </p>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions />
+        <ThreadWelcomeSuggestions initialModeOptions={initialModeOptions} />
       </div>
     </ThreadPrimitive.Empty>
   )
@@ -392,45 +483,48 @@ const ThreadWelcome: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
 
 const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
-const ThreadWelcomeSuggestions: FC = () => {
+const ThreadWelcomeSuggestions: FC<{
+  initialModeOptions: Record<string, string>
+}> = ({ initialModeOptions }) => {
   const t = useTranslations()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const modeOptions = useSettingsStore((state) => state.modeOptions)
-  const modeOptionsChatbotId = useSettingsStore(
-    (state) => state.modeOptionsChatbotId
-  )
   const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
 
-  // `selectedMode` is persisted globally, while mode options arrive after the
-  // current chatbot mounts. Hide starters until the current chatbot's
-  // options have replaced that persisted value.
-  if (
-    modeOptionsChatbotId !== chatbotId ||
-    Object.keys(modeOptions).length === 0
-  ) {
-    return null
-  }
+  if (Object.keys(modeOptions).length === 0) return null
 
-  const suggestions = getThreadSuggestions(selectedMode)
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const suggestions = getThreadSuggestions(activeMode)
 
   return (
-    <div className="mt-4 grid w-full grid-cols-1 gap-3 px-8 sm:grid-cols-2">
-      {suggestions.map((suggestion, index) => (
-        <ThreadPrimitive.Suggestion
-          key={suggestion.id}
-          data-cy="chat-welcome-suggestion"
-          className={twMerge(
-            'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
-            SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
-          )}
-          prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
-          send={false}
-          clearComposer
-        >
-          {t(`chat.suggestions.${suggestion.id}`)}
-        </ThreadPrimitive.Suggestion>
-      ))}
-    </div>
+    <section
+      aria-label={t('chat.suggestions.sectionLabel')}
+      data-cy="chat-welcome-suggestions"
+      className="mt-4 w-full px-8"
+    >
+      <p
+        data-cy="chat-welcome-suggestion-hint"
+        className="text-muted-foreground mb-2 text-center text-xs"
+      >
+        {t('chat.suggestions.editHint')}
+      </p>
+      <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+        {suggestions.map((suggestion, index) => (
+          <ThreadPrimitive.Suggestion
+            key={suggestion.id}
+            data-cy="chat-welcome-suggestion"
+            className={twMerge(
+              'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
+              SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
+            )}
+            prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
+            send={false}
+            clearComposer
+          >
+            {t(`chat.suggestions.${suggestion.id}`)}
+          </ThreadPrimitive.Suggestion>
+        ))}
+      </div>
+    </section>
   )
 }
 

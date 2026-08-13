@@ -448,8 +448,35 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'How can I help you'
+    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
+      'You are chatting with E2E Chatbot.'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Tutor mode.'
+    )
+    await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Starter prompt is editable and contains no raw placeholder', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-welcome-suggestion').first().click()
+
+    const input = page.getByTestId('chat-composer-input')
+    await expect(input).toHaveValue(/.+/)
+    const starter = await input.inputValue()
+    expect(starter.length).toBeGreaterThan(0)
+    expect(starter).not.toMatch(/\[[^\]]+\]/)
+    await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
+    await input.fill('My own question about a specific topic')
+    await expect(input).toHaveValue('My own question about a specific topic')
+    await expect(page.getByTestId('chat-send-button')).toBeEnabled()
+
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'My own question about a specific topic'
     )
   })
 
