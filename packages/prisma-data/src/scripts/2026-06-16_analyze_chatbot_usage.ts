@@ -595,7 +595,7 @@ function usage() {
     '  --filePrefix <prefix>       Output filename prefix. Default: date + scope.',
     '  --minTopicMessages <n>      Minimum user messages for topic labels. Default: 5.',
     '  --minTopicParticipants <n>  Minimum participants for topic labels. Default: 3.',
-    '  --includeMessageContent     Rejected with a migration error; use the governed restricted-export action for content.',
+    '  --includeMessageContent     Rejected; no content-bearing export exists. See ADR-0005 for future governance.',
   ].join('\n')
 }
 

@@ -1,17 +1,17 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
-import type { AnalysisCoreResult } from './core.js'
+import type {
+  AnalysisCoreResult,
+  AnalysisRecordProvider,
+  EligibilityDecision,
+} from './core.js'
 import {
   assertLegacyMessageContentExportDisabled,
-  authorizeRestrictedExport,
   buildAggregateReport,
   buildDisclosureTable,
   type ReportMessage,
-  type RestrictedExportAuditEvent,
-  type RestrictedExportDependencies,
-  type RestrictedExportMessage,
-  writeAggregateReportFiles,
+  runAggregateReport,
 } from './reports.js'
 
 const window = {
@@ -21,8 +21,8 @@ const window = {
 
 function message(
   id: string,
-  overrides: Partial<RestrictedExportMessage> = {}
-): RestrictedExportMessage {
+  overrides: Partial<ReportMessage> = {}
+): ReportMessage {
   return {
     id,
     threadId: `thread-${id}`,
@@ -37,6 +37,20 @@ function message(
     attachmentCount: 0,
     creditsUsed: 1,
     ...overrides,
+  }
+}
+
+function eligible(
+  participantId: string,
+  courseId = 'course-1'
+): EligibilityDecision {
+  return {
+    participantId,
+    purpose: 'learning-analytics',
+    courseId,
+    effectiveFrom: window.from,
+    effectiveTo: window.to,
+    eligible: true,
   }
 }
 
@@ -62,7 +76,6 @@ function core(messages: ReportMessage[]): AnalysisCoreResult {
       down: assistant?.rating === 'DOWN' ? 1 : 0,
       coverage: assistant?.rating ? 1 : 0,
     },
-    provenance: {},
   }
 }
 
@@ -450,147 +463,43 @@ describe('governed chatbot reports', () => {
     )
   })
 
-  it('writes JSON and workbook artifacts from the same aggregate model', async () => {
-    const report = buildAggregateReport({
-      core: core([message('user')]),
-      messages: [message('user')],
+  it('runs the aggregate path from a synthetic provider to JSON and XLSX', async () => {
+    const messages = Array.from({ length: 5 }, (_, index) =>
+      message(`synthetic-user-${index}`, {
+        participantId: `synthetic-participant-${index}`,
+        threadId: `synthetic-thread-${index}`,
+        chatMode: 'tutor',
+      })
+    )
+    const provider: AnalysisRecordProvider = {
+      loadMessages: async () => messages,
+      loadEligibility: async () =>
+        messages.map((value) => eligible(value.participantId)),
+    }
+    const output = await mkdtemp(`${tmpdir()}/chatbot-learning-analytics-`)
+    const result = await runAggregateReport({
+      provider,
       purpose: 'learning-analytics',
       window,
-    })
-    const output = await mkdtemp(`${tmpdir()}/chatbot-learning-analytics-`)
-    const files = await writeAggregateReportFiles({
       outDir: output,
       filePrefix: 'synthetic-aggregate',
-      report,
     })
 
-    expect(files.jsonPath).toMatch(/synthetic-aggregate\.json$/)
-    expect(files.workbookPath).toMatch(/synthetic-aggregate\.xlsx$/)
-    expect(await readFile(files.jsonPath, 'utf8')).toContain(
-      '"reportKind": "aggregate"'
-    )
-  })
-
-  it('denies restricted exports unless every gate is satisfied', async () => {
-    const events: RestrictedExportAuditEvent[] = []
-    const request = {
-      purpose: 'learning-analytics' as const,
-      courseId: 'course-1',
-      operatorId: 'operator-1',
-      from: window.from,
-      to: window.to,
-      expiresAt: new Date('2026-08-03T00:00:00.000Z'),
+    expect(result.files.jsonPath).toMatch(/synthetic-aggregate\.json$/)
+    expect(result.files.workbookPath).toMatch(/synthetic-aggregate\.xlsx$/)
+    expect(result.report.summary.eligibleMessages).toBe(5)
+    const jsonText = await readFile(result.files.jsonPath, 'utf8')
+    expect(JSON.parse(jsonText)).toEqual(result.report)
+    expect((await stat(result.files.workbookPath)).size).toBeGreaterThan(0)
+    const workbookText = await readFile(result.files.workbookPath, 'latin1')
+    for (const sensitiveValue of [
+      messages[0]!.text,
+      messages[0]!.id,
+      messages[0]!.threadId,
+      messages[0]!.participantId,
+    ]) {
+      expect(jsonText).not.toContain(sensitiveValue)
+      expect(workbookText).not.toContain(sensitiveValue)
     }
-    const dependencies = {
-      eligibility: {
-        available: false,
-        filterApplied: false,
-        purpose: 'learning-analytics' as const,
-        courseId: 'course-1',
-        from: window.from,
-        to: window.to,
-        populationDescription: 'synthetic eligible cohort',
-        authority: 'synthetic eligibility provider',
-        eligibleMessageIds: new Set<string>(),
-      },
-      operator: { authoritative: false },
-      destination: { encrypted: false, verified: false, descriptor: '' },
-      deletion: { owner: '', rebuildKey: '' },
-      audit: {
-        append: async (event: RestrictedExportAuditEvent): Promise<void> => {
-          events.push(event)
-        },
-      },
-    }
-
-    await expect(
-      authorizeRestrictedExport({
-        messages: [message('user')],
-        request,
-        dependencies,
-        pseudonymSecret: 'synthetic-secret',
-        now: new Date('2026-08-01T00:00:00.000Z'),
-      })
-    ).rejects.toThrow('Restricted export denied')
-    expect(events).toEqual([])
-  })
-
-  it('pseudonymizes restricted rows and audits only metadata', async () => {
-    const events: RestrictedExportAuditEvent[] = []
-    const user = message('user', {
-      participantId: 'participant-1',
-      threadId: 'thread-1',
-      text: 'student content',
-      attachmentDescriptions: ['graph image'],
-    })
-    const assistant = message('assistant', {
-      participantId: 'participant-1',
-      threadId: 'thread-1',
-      role: 'assistant',
-      parentId: 'user',
-      text: 'tutor content',
-    })
-    const dependencies: RestrictedExportDependencies = {
-      eligibility: {
-        available: true,
-        filterApplied: true,
-        purpose: 'learning-analytics',
-        courseId: 'course-1',
-        from: window.from,
-        to: window.to,
-        populationDescription: 'synthetic eligible cohort',
-        authority: 'synthetic eligibility provider',
-        eligibleMessageIds: new Set(['user', 'assistant']),
-      },
-      operator: { authoritative: true },
-      destination: {
-        encrypted: true,
-        verified: true,
-        descriptor: 'synthetic-encrypted-destination',
-      },
-      deletion: { owner: 'owner-1', rebuildKey: 'rebuild-1' },
-      audit: {
-        append: async (event) => {
-          events.push(event)
-        },
-      },
-    }
-    const artifact = await authorizeRestrictedExport({
-      messages: [user, assistant],
-      request: {
-        purpose: 'learning-analytics',
-        courseId: 'course-1',
-        operatorId: 'operator-1',
-        from: window.from,
-        to: window.to,
-        expiresAt: new Date('2026-08-03T00:00:00.000Z'),
-      },
-      dependencies,
-      pseudonymSecret: 'synthetic-secret',
-      now: new Date('2026-08-01T00:00:00.000Z'),
-    })
-
-    expect(artifact.rows).toHaveLength(2)
-    expect(artifact.rows[0]?.participantPseudonym).toMatch(/^[0-9a-f]{24}$/)
-    expect(artifact.rows[0]?.participantPseudonym).not.toBe('participant-1')
-    expect(artifact.rows.find((row) => row.role === 'user')?.text).toBe(
-      'student content'
-    )
-    expect(artifact.rows[0]).not.toHaveProperty('reasoningContent')
-    expect(artifact.manifest.excludedFields).toContain('rawImageBytes')
-    expect(artifact.manifest).toMatchObject({
-      eligibilityFrom: window.from.toISOString(),
-      eligibilityTo: window.to.toISOString(),
-      populationDescription: 'synthetic eligible cohort',
-      eligibilityAuthority: 'synthetic eligibility provider',
-      outputTier: 'restricted',
-    })
-    expect(events).toHaveLength(1)
-    expect(events[0]).not.toHaveProperty('text')
-    expect(events[0]?.destinationDescriptor).toBe(
-      'synthetic-encrypted-destination'
-    )
-    expect(events[0]?.artifactSha256).toBe(artifact.manifest.artifactSha256)
-    expect(events[0]?.eligibilityFrom).toBe(window.from.toISOString())
   })
 })
