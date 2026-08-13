@@ -119,7 +119,7 @@ function getOpenAIModel(
   provider: ReturnType<typeof createOpenAI>,
   modelConfig: ChatModelConfig
 ) {
-  return modelConfig.supportsReasoning
+  return modelConfig.usesResponsesApi
     ? provider.responses(modelConfig.deploymentId)
     : provider.chat(modelConfig.deploymentId)
 }
@@ -1214,7 +1214,7 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
-          ...(selectedModelConfig.supportsReasoning && {
+          ...(selectedModelConfig.usesResponsesApi && {
             store: getOpenAIResponsesStore(),
           }),
           ...(providerReasoningEffort && {

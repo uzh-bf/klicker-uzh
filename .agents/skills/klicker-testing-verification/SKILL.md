@@ -34,6 +34,11 @@ intermediate state until the test releases it. Use that seam to test the assista
 row while it is still streaming, and capture DOM identity around feedback clicks
 when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
+For message-presentation changes, include a heading-rich answer and both explicit
+and silent streamed failures in the focused browser contract: headings should
+remain hierarchical and proportional, while failed assistant turns should not
+expose reload, rating, or relative-time metadata alongside their dedicated retry
+callout.
 
 Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa` generate ignored Next route types first through each app's `check` script. Do not hand-edit or commit `next-env.d.ts`; keep it ignored and included by `tsconfig.json`. The three PWA apps use `tsconfig.check.json` only for raw package checks so stale `.next/dev/types` cannot duplicate fresh Pages Router validators. Next builds use the canonical `tsconfig.json`; Next 16 filters development validators on its production typecheck path. Auth and Chat use their main config for both checks and builds.
 
@@ -52,11 +57,30 @@ CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
 separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
 chat credits payload before browser interaction. The local Auto Mode maps to
-LiteLLM's `complexity-router` and routes through the GPT-5.6 Luna/Sol aliases —
-a local-only tier map that the deployments do not ship, so never report local
-routing as production behaviour ([docs/chat-platform.md](../../../docs/chat-platform.md)).
+LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
+probes, then inspect logs for the expected `semantic_keyword_match` or
+`llm_classifier` cause and routed model. A successful answer after a classifier
+or embedding failure is only heuristic fallback and does not prove Auto V2.
+The local aliases and generic upstream differ from deployment infrastructure,
+so never report local routing as live production behaviour
+([docs/chat-platform.md](../../../docs/chat-platform.md)).
+For Auto reasoning, use the Responses endpoint and omit a request-level effort:
+require the routed target alias to retain its configured effort, a reasoning
+summary part to reach the Chat stream, and the reasoning-effort selector to
+remain absent for Auto. Staging/production compatibility remains unproven until
+an authorized staging smoke covers Responses storage, tool continuation, and
+reasoning against the deployed LiteLLM router.
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
+
+For the seeded local MCP smoke test, verify
+`http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
+the prompt recorded in `AGENTS.md`. Require a completed
+`KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
+card in a non-empty final answer both before and after reloading the thread.
+During the live stream, a completed tool chip may precede answer text, but the
+source section must stay absent until the first non-whitespace answer delta.
+Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
 ## Pre-PR verification checklist
 

@@ -89,57 +89,63 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
-  // Rendered as h2: the chatbot name is the page's single h1, so message
-  // headings must not compete at the same rank (visual size unchanged).
+  // Shift Markdown headings down one level because the chatbot shell owns the
+  // page's h1. The smaller scale keeps answer structure readable without
+  // making a chat bubble look like a document title page.
   h1: ({ className, ...props }) => (
     <h2
       className={cn(
-        'mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0',
+        'mb-4 scroll-m-20 text-2xl font-extrabold tracking-tight text-pretty last:mb-0 sm:text-3xl',
         className
       )}
       {...props}
     />
   ),
   h2: ({ className, ...props }) => (
-    <h2
+    <h3
       className={cn(
-        'mb-4 mt-8 scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-2xl',
         className
       )}
       {...props}
     />
   ),
   h3: ({ className, ...props }) => (
-    <h3
+    <h4
       className={cn(
-        'mb-4 mt-6 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-3 mt-5 scroll-m-20 text-lg font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-xl',
         className
       )}
       {...props}
     />
   ),
   h4: ({ className, ...props }) => (
-    <h4
+    <h5
       className={cn(
-        'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-3 mt-4 scroll-m-20 text-base font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-lg',
         className
       )}
       {...props}
     />
   ),
   h5: ({ className, ...props }) => (
-    <h5
+    <h6
       className={cn(
-        'my-4 text-lg font-semibold first:mt-0 last:mb-0',
+        'my-3 text-[15px] font-semibold text-pretty first:mt-0 last:mb-0 sm:text-base',
         className
       )}
       {...props}
     />
   ),
   h6: ({ className, ...props }) => (
-    <h6
-      className={cn('my-4 font-semibold first:mt-0 last:mb-0', className)}
+    <div
       {...props}
+      role="heading"
+      aria-level={7}
+      className={cn(
+        'my-3 text-sm font-semibold text-pretty first:mt-0 last:mb-0',
+        className
+      )}
     />
   ),
   p: ({ className, ...props }) => (

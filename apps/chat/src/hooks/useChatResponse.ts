@@ -589,12 +589,15 @@ export function useChatResponse(
               text: `\n\n_(${t('chat.response.truncated')})_`,
             })
           } else if (!hasFinishEvent && !hasStreamError) {
-            // only append the interrupted-connection suffix when the stream
-            // just cut out silently; a stream 'error' part already added its
-            // own error bubble above, so don't stack this on top of it
+            // Treat a silent stream cutoff like an explicit stream error so
+            // the incomplete answer keeps the same retry-only presentation.
             orderedContentParts.push({
-              type: 'text',
-              text: `\n\n_(${t('chat.response.connectionInterrupted')})_`,
+              type: 'data',
+              name: 'chat-error',
+              data: {
+                errorLabel: t('chat.response.errorLabel'),
+                message: t('chat.response.connectionInterrupted'),
+              },
             })
           }
 

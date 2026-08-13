@@ -20,6 +20,9 @@ import {
 } from '../util/chat.js'
 import { selectOption } from '../util/workflow.js'
 
+const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
+const MALFORMED_CHATBOT_ID = 'not-a-chatbot-id'
+
 /**
  * Chatbot (apps/chat) E2E
  *
@@ -74,6 +77,47 @@ test.describe('Chatbot Authentication & Access Control', () => {
     await expect(page.getByTestId('chat-no-login-link')).toContainText(
       'Go to KlickerUZH Login'
     )
+    await expect(page.getByTestId('chat-no-login')).not.toContainText(
+      CHATBOT_ID
+    )
+    await expect(page.getByTestId('chat-no-login')).toContainText(
+      'After logging in, you will return to this chatbot.'
+    )
+  })
+
+  test('Unknown chatbot link shows branded not-found recovery', async ({
+    page,
+  }) => {
+    await setParticipantToken(page, await getEnrolledParticipantId())
+
+    const response = await page.goto(`${chatUrl()}/${UNKNOWN_CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    expect(response?.status()).toBe(404)
+    await expect(page.getByTestId('chat-not-found')).toBeVisible()
+    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+      'Chatbot not found'
+    )
+    await expect(page.getByTestId('chat-not-found-home')).toContainText(
+      'Open KlickerUZH'
+    )
+  })
+
+  test('Malformed chatbot link shows branded not-found recovery', async ({
+    page,
+  }) => {
+    await setParticipantToken(page, await getEnrolledParticipantId())
+
+    const response = await page.goto(`${chatUrl()}/${MALFORMED_CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    expect(response?.status()).toBe(404)
+    await expect(page.getByTestId('chat-not-found')).toBeVisible()
+    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+      'Chatbot not found'
+    )
   })
 
   test('Authenticated user with valid participation can access chatbot', async ({
@@ -124,6 +168,30 @@ test.describe('Chatbot Disclaimer Flow', () => {
     await expect(content).toContainText('Student Responsibility')
     await expect(content).toContainText('Data Protection')
     await expect(content).toContainText('What happens after your choice')
+  })
+
+  test('Disclaimer explains consequences before the explicit actions', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    const consequences = page.getByTestId('chat-disclaimer-consequences')
+    const actions = page.getByTestId('chat-disclaimer-actions')
+    const dialog = page.getByRole('dialog')
+
+    await expect(consequences).toBeVisible()
+    await expect(actions).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /^close$/i })).toHaveCount(
+      0
+    )
+    await expect(
+      consequences.locator(
+        'xpath=following-sibling::*[@data-cy="chat-disclaimer-actions"]'
+      )
+    ).toHaveCount(1)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
   })
 
   test('Accepting disclaimer closes modal and enables chat', async ({
@@ -380,8 +448,35 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'How can I help you'
+    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
+      'You are chatting with E2E Chatbot.'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Tutor mode.'
+    )
+    await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Starter prompt is editable and contains no raw placeholder', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-welcome-suggestion').first().click()
+
+    const input = page.getByTestId('chat-composer-input')
+    await expect(input).toHaveValue(/.+/)
+    const starter = await input.inputValue()
+    expect(starter.length).toBeGreaterThan(0)
+    expect(starter).not.toMatch(/\[[^\]]+\]/)
+    await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
+    await input.fill('My own question about a specific topic')
+    await expect(input).toHaveValue('My own question about a specific topic')
+    await expect(page.getByTestId('chat-send-button')).toBeEnabled()
+
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'My own question about a specific topic'
     )
   })
 
@@ -908,6 +1003,12 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect(
       page.getByTestId('chat-branch-indicator').first()
     ).toContainText('/ 2')
+    await expect(
+      page.getByTestId('chat-branch-previous').first()
+    ).toHaveAccessibleName('Previous version')
+    await expect(
+      page.getByTestId('chat-branch-next').first()
+    ).toHaveAccessibleName('Next version')
   })
 
   test('Message tree: branches keep independent continuations and navigation restores them', async ({
@@ -1253,6 +1354,20 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
+  test('Mode switcher explains what each mode is for', async ({ page }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-mode-option-tutor').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
+    ).toContainText('patient')
+
+    await page.getByTestId('chat-mode-option-explainer').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
+    ).toContainText('difficult concepts')
+  })
+
   test('AI model section displays current model (automatic mode)', async ({
     page,
   }) => {
@@ -1288,6 +1403,27 @@ test.describe('Chatbot Settings Panel', () => {
     )
     await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
       'You have used up all your credits'
+    )
+
+    await openSettings(page)
+    await expect(page.getByTestId('chat-model-selection')).toContainText(
+      'GPT-4.1 Mini'
+    )
+  })
+
+  test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
+    page,
+  }) => {
+    await setCredits(participantId, 0, 100)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await visitChat(page)
+
+    await expect(page.getByTestId('chat-mobile-credits-bar')).toBeVisible()
+    await expect(page.getByTestId('chat-mobile-credits-display')).toContainText(
+      '0 / 100'
+    )
+    await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
+      'New messages use the smaller model'
     )
   })
 
@@ -1331,6 +1467,23 @@ test.describe('Chatbot Settings Panel', () => {
       'assistant reply #1',
       { timeout: 15_000 }
     )
+  })
+
+  test('Model descriptions explain capabilities without provider jargon', async ({
+    page,
+  }) => {
+    await setModelSelection(participantId, true)
+    await visitChat(page)
+    await openSettings(page)
+
+    const modelSection = page.getByTestId('chat-model-selection')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+
+    await expect(modelSection).toContainText(
+      'Built for difficult, multi-step questions'
+    )
+    await expect(modelSection).not.toContainText('LiteLLM')
+    await expect(modelSection).not.toContainText('OpenAI reasoning model')
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1831,6 +1984,8 @@ test.describe('Chatbot Source Citations', () => {
   }) => {
     await mockChatStream(page, {
       text: 'Live answer citing [1] and also [2].',
+      chunkDelayMs: 20,
+      pauseAfterToolOutput: true,
       toolCalls: [
         {
           toolCallId: 'live-call-1',
@@ -1858,6 +2013,20 @@ test.describe('Chatbot Source Citations', () => {
     await sendMessage(page, 'Search the course materials')
 
     const section = page.getByTestId('chat-sources-section')
+    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveText(
+      'Searched course materials',
+      { timeout: 15_000 }
+    )
+    await expect(section).toHaveCount(0)
+    await expect(page.getByText('Live answer citing')).toHaveCount(0)
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
     await expect(section).toBeVisible({ timeout: 15_000 })
     await expect(section).toContainText('Sources · 2')
     await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
@@ -1972,6 +2141,52 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await setDisclaimerState(participantId, 'accepted')
   })
 
+  test('Heading-rich answers keep hierarchy and conversation scale', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: '# Main heading\n\n## Supporting heading\n\n### Detail heading\n\n#### Fourth heading\n\n##### Fifth heading\n\n###### Sixth heading',
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Show me a structured answer')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('h2')).toContainText('Main heading', {
+      timeout: 15_000,
+    })
+    await expect(content.locator('h3')).toContainText('Supporting heading')
+    await expect(content.locator('h4')).toContainText('Detail heading')
+    await expect(content.locator('h5')).toContainText('Fourth heading')
+    await expect(content.locator('h6')).toContainText('Fifth heading')
+    await expect(
+      content.locator('[role="heading"][aria-level="7"]')
+    ).toContainText('Sixth heading')
+
+    const headingSelector =
+      'h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]'
+    const readHeadingSizes = () =>
+      content
+        .locator(headingSelector)
+        .evaluateAll((headings) =>
+          headings.map((heading) =>
+            Number.parseFloat(getComputedStyle(heading).fontSize)
+          )
+        )
+    const assertHeadingScale = (headingSizes: number[]) => {
+      expect(headingSizes).toHaveLength(6)
+      for (let index = 1; index < headingSizes.length; index += 1) {
+        expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+      }
+      expect(Math.max(...headingSizes)).toBeLessThan(36)
+    }
+
+    assertHeadingScale(await readHeadingSizes())
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    assertHeadingScale(await readHeadingSizes())
+  })
+
   test('Caption under a streamed answer shows the mode and credit cost', async ({
     page,
   }) => {
@@ -2033,6 +2248,39 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Partial answer before the failure.')
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
+  })
+
+  test('A silent stream interruption keeps failed-turn actions suppressed', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Partial answer before the connection closed.',
+      omitFinish: true,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Trigger a silent interruption')
+
+    const callout = page.getByTestId('chat-message-error')
+    await expect(callout).toBeVisible({ timeout: 15_000 })
+    await expect(callout).toContainText('Connection interrupted')
+    await expect(callout.getByTestId('chat-retry-message-button')).toBeVisible()
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
   })
 
   test('A length-truncated answer appends the truncation notice', async ({

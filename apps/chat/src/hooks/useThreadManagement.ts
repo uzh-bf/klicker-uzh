@@ -36,7 +36,8 @@ export function useThreadManagement(
     messages: ExtendedThreadMessageLike[],
     threadId: string
   ) => Promise<void>,
-  abortControllerRef: React.MutableRefObject<AbortController | null>
+  abortControllerRef: React.MutableRefObject<AbortController | null>,
+  selectedModeOverride?: string
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
@@ -44,7 +45,8 @@ export function useThreadManagement(
   const createThread = useChatStore((state) => state.createThread)
   const addMessage = useChatStore((state) => state.addMessage)
   const setIsRunning = useChatStore((state) => state.setIsRunning)
-  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const storedSelectedMode = useSettingsStore((state) => state.selectedMode)
+  const selectedMode = selectedModeOverride ?? storedSelectedMode
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort

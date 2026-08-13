@@ -11,6 +11,7 @@ const chatModelSchema = z
     description: z.string().default(''),
     fallback: z.boolean().default(false),
     supportsReasoning: z.boolean().default(false),
+    usesResponsesApi: z.boolean().optional(),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().positive().optional(),
     apiVersion: z.string().min(1).optional(),
@@ -37,8 +38,9 @@ const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
 type ChatModelCapability = Omit<
   RawChatModelConfig,
-  'supportedReasoningEfforts'
+  'supportedReasoningEfforts' | 'usesResponsesApi'
 > & {
+  usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
 }
 type ChatbotReasoningConfigEntry = {
@@ -54,6 +56,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'Automatic model selection through the LiteLLM auto router',
     fallback: false,
     supportsReasoning: false,
+    usesResponsesApi: true,
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
@@ -65,6 +68,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'OpenAI reasoning model',
     fallback: false,
     supportsReasoning: true,
+    usesResponsesApi: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
     apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
@@ -76,6 +80,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
@@ -87,6 +92,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
@@ -98,11 +104,14 @@ let cachedChatModelRegistry: ChatModelCapability[] | null = null
 const dedupeStrings = (values: readonly string[]) => Array.from(new Set(values))
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
+  const usesResponsesApi = model.usesResponsesApi ?? model.supportsReasoning
+
   if (!model.supportsReasoning) {
-    return { ...model, supportedReasoningEfforts: [] }
+    return { ...model, usesResponsesApi, supportedReasoningEfforts: [] }
   }
   return {
     ...model,
+    usesResponsesApi,
     supportedReasoningEfforts: dedupeStrings(
       model.supportedReasoningEfforts ?? []
     ),

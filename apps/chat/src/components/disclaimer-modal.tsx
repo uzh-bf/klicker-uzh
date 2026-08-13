@@ -91,10 +91,12 @@ export const DisclaimerModal = ({
           'min-h-content max-h-[95%] w-full min-w-[60%] max-w-[95%] overflow-y-auto xl:max-w-5xl',
       }}
       open={isOpen}
-      onClose={() => {}} // Prevent closing the modal
+      onClose={() => {}}
+      hideCloseButton
+      escapeDisabled
     >
       <div data-cy="chat-disclaimer-content" className="space-y-6">
-        <div className="flex flex-row space-x-12">
+        <div className="flex flex-col gap-6 md:flex-row md:gap-12">
           {/* Custom Introduction */}
           {disclaimer.introText && (
             <Markdown
@@ -130,6 +132,20 @@ export const DisclaimerModal = ({
           </div>
         </div>
 
+        {/* Consequence Information */}
+        <div
+          data-cy="chat-disclaimer-consequences"
+          className="prose prose-sm max-w-none rounded-lg bg-yellow-50 p-4"
+        >
+          <p className="font-medium text-yellow-800">
+            {t('chat.disclaimer.consequenceTitle')}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 text-yellow-700">
+            <li>{t('chat.disclaimer.consequenceAccept')}</li>
+            <li>{t('chat.disclaimer.consequenceDecline')}</li>
+          </ul>
+        </div>
+
         {/* Action Error */}
         {errorMessage && (
           <p
@@ -142,7 +158,10 @@ export const DisclaimerModal = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <div
+          data-cy="chat-disclaimer-actions"
+          className="flex flex-col gap-3 sm:flex-row sm:justify-end"
+        >
           <Button
             data-cy="chat-disclaimer-decline"
             onClick={handleDecline}
@@ -151,6 +170,7 @@ export const DisclaimerModal = ({
             {t('chat.disclaimer.decline')}
           </Button>
           <Button
+            primary
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}
             disabled={isLoading}
@@ -159,17 +179,6 @@ export const DisclaimerModal = ({
               ? t('chat.disclaimer.saving')
               : t('chat.disclaimer.acceptAndContinue')}
           </Button>
-        </div>
-
-        {/* Consequence Information */}
-        <div className="prose prose-sm max-w-none rounded-lg bg-yellow-50 p-4">
-          <p className="font-medium text-yellow-800">
-            {t('chat.disclaimer.consequenceTitle')}
-          </p>
-          <ul className="mt-2 list-disc space-y-1 text-yellow-700">
-            <li>{t('chat.disclaimer.consequenceAccept')}</li>
-            <li>{t('chat.disclaimer.consequenceDecline')}</li>
-          </ul>
         </div>
       </div>
     </Modal>
