@@ -115,9 +115,10 @@ No new product primitive is needed.
 
 ## Progress
 
-- Status: plan drafted and reviewed; isolated worktree created.
-- Completed: base/ref check and planning-stage challenge.
-- Active: commit this plan, then execute S1.
+- Status: plan committed; isolated worktree created.
+- Completed: base/ref check, planning-stage challenge, and plan commit
+  `ba8b1b197`.
+- Active: S1 — terminal-aware source visibility.
 - Remaining: S1, S2, S3, simplification/reviews, integrated verification.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.
