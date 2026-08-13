@@ -71,18 +71,10 @@ export type RatingCoverage = {
   coverage: number
 }
 
-export type MetricProvenance = {
-  source: 'postgresql'
-  definition: string
-  denominator: string
-  unknownCount: number
-}
-
 export type AnalysisCoreResult = {
   eligible: EligibleAnalysis
   exchanges: AnalysisExchange[]
   ratingCoverage: RatingCoverage
-  provenance: Record<string, MetricProvenance>
 }
 
 function isWithinWindow(date: Date, window: AnalysisWindow) {
@@ -226,28 +218,6 @@ export function calculateRatingCoverage(
   }
 }
 
-export function createMetricProvenance(
-  ratingCoverage: RatingCoverage,
-  excludedMessageIds: string[]
-): Record<string, MetricProvenance> {
-  return {
-    ratingCoverage: {
-      source: 'postgresql',
-      definition:
-        'Rated linked tutor responses divided by linked tutor responses',
-      denominator: 'linked tutor responses',
-      unknownCount: ratingCoverage.unratedResponses,
-    },
-    eligibilityExclusions: {
-      source: 'postgresql',
-      definition:
-        'Messages excluded because purpose eligibility did not match exactly once',
-      denominator: 'selected message records',
-      unknownCount: excludedMessageIds.length,
-    },
-  }
-}
-
 export async function runAnalysisCore(
   provider: AnalysisRecordProvider,
   input: {
@@ -293,9 +263,5 @@ export async function runAnalysisCore(
     eligible,
     exchanges,
     ratingCoverage,
-    provenance: createMetricProvenance(
-      ratingCoverage,
-      eligible.excludedMessageIds
-    ),
   }
 }
