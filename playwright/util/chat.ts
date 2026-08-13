@@ -367,6 +367,8 @@ export type StreamOptions = {
   chunkDelayMs?: number
   /** Pauses after this many text deltas until the test releases the stream. */
   pauseAfterTextChunk?: number
+  /** Pauses after the first tool output, before answer text starts. */
+  pauseAfterToolOutput?: boolean
   /** Payload of the `finish` part; omitted entirely when not given. */
   metadata?: StreamFinishMetadata
   /** Tool calls emitted before the answer text. */
@@ -447,7 +449,13 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
     const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
 
     await page.addInitScript(
-      ({ chatbotPath, lines: streamLines, delayMs, pauseAfterTextChunk }) => {
+      ({
+        chatbotPath,
+        lines: streamLines,
+        delayMs,
+        pauseAfterTextChunk,
+        pauseAfterToolOutput,
+      }) => {
         const originalFetch = window.fetch.bind(window)
         let releasePausedStream: (() => void) | undefined
         ;(
@@ -507,6 +515,14 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
                   })
                 }
               }
+              if (
+                pauseAfterToolOutput &&
+                eventType === 'tool-output-available'
+              ) {
+                await new Promise<void>((resolve) => {
+                  releasePausedStream = resolve
+                })
+              }
             },
           })
 
@@ -521,6 +537,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         lines,
         delayMs: options.chunkDelayMs,
         pauseAfterTextChunk: options.pauseAfterTextChunk,
+        pauseAfterToolOutput: options.pauseAfterToolOutput,
       }
     )
     return

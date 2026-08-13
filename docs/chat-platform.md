@@ -84,6 +84,13 @@ direct GPT-5.6 picker option; the router's tier targets are internal.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
+Model registry capabilities separate the student-facing reasoning-effort
+selector from the provider protocol: `supportsReasoning` controls whether the
+effort picker is offered, while `usesResponsesApi` selects OpenAI Responses so
+reasoning summary parts can stream. When `usesResponsesApi` is omitted it
+inherits `supportsReasoning`, preserving older registry JSON and existing
+reasoning models. Auto sets only `usesResponsesApi: true`, so its routed tier
+keeps ownership of effort instead of accepting a participant override.
 
 The local devcontainer simulation in `util/litellm/config.yaml` mirrors the
 deployed Klicker Auto V2 policy and semantic corpus with local, unprefixed model
@@ -110,6 +117,13 @@ usage cost. A model call still requires the operator's local
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
+
+Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
+That maps each routed alias's fixed `reasoning_effort` to a visible summary
+without adding a request-level effort that would flatten Auto's Luna/Sol tier
+policy. The deployed LiteLLM configuration is external; a local summary proves
+the development path only, and staging still needs a Responses + tool-loop
+smoke test before a production compatibility claim.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
@@ -169,6 +183,11 @@ composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: a
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
+The source-card section is derived from completed `doc_query` tool results but
+stays hidden until the same assistant message contains non-whitespace answer
+text. This keeps tool activity in stream order while preventing a result card
+from appearing as if it were the answer during the gap between tool completion
+and the model's next text step.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` keeps a memoized
 `ThreadPrimitive.Messages` component map and passes the chatbot avatar through context. Runtime

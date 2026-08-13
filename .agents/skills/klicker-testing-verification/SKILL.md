@@ -64,6 +64,12 @@ or embedding failure is only heuristic fallback and does not prove Auto V2.
 The local aliases and generic upstream differ from deployment infrastructure,
 so never report local routing as live production behaviour
 ([docs/chat-platform.md](../../../docs/chat-platform.md)).
+For Auto reasoning, use the Responses endpoint and omit a request-level effort:
+require the routed target alias to retain its configured effort, a reasoning
+summary part to reach the Chat stream, and the reasoning-effort selector to
+remain absent for Auto. Staging/production compatibility remains unproven until
+an authorized staging smoke covers Responses storage, tool continuation, and
+reasoning against the deployed LiteLLM router.
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
@@ -72,6 +78,8 @@ For the seeded local MCP smoke test, verify
 the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.
+During the live stream, a completed tool chip may precede answer text, but the
+source section must stay absent until the first non-whitespace answer delta.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
 ## Pre-PR verification checklist

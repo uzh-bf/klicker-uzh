@@ -126,6 +126,9 @@ services:
       - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
       - UPSTREAM_OPENAI_BASE_URL=${UPSTREAM_OPENAI_BASE_URL:-https://api.openai.com/v1}
       - LITELLM_LOG=INFO
+      # Responses API callers opt into a visible reasoning summary while each
+      # routed alias keeps its own fixed reasoning effort.
+      - LITELLM_REASONING_AUTO_SUMMARY=true
     healthcheck:
       test:
         - CMD

@@ -187,6 +187,7 @@ chat:
       name: Auto
       description: Automatic model selection (routes to the best model per request)
       supportsImageAttachments: true
+      usesResponsesApi: true
       fallback: false
       cost:
         input: 1.25

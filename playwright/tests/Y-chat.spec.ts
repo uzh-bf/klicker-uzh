@@ -1984,6 +1984,8 @@ test.describe('Chatbot Source Citations', () => {
   }) => {
     await mockChatStream(page, {
       text: 'Live answer citing [1] and also [2].',
+      chunkDelayMs: 20,
+      pauseAfterToolOutput: true,
       toolCalls: [
         {
           toolCallId: 'live-call-1',
@@ -2011,6 +2013,20 @@ test.describe('Chatbot Source Citations', () => {
     await sendMessage(page, 'Search the course materials')
 
     const section = page.getByTestId('chat-sources-section')
+    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveText(
+      'Searched course materials',
+      { timeout: 15_000 }
+    )
+    await expect(section).toHaveCount(0)
+    await expect(page.getByText('Live answer citing')).toHaveCount(0)
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
     await expect(section).toBeVisible({ timeout: 15_000 })
     await expect(section).toContainText('Sources · 2')
     await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
