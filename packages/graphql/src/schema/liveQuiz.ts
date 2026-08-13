@@ -186,6 +186,24 @@ export const LiveQuizInfo = LiveQuizInfoRef.implement({
   }),
 })
 
+export interface ICorrelatedLiveQuizResponseExport {
+  filename: string
+  content: string
+  warning: string
+}
+export const CorrelatedLiveQuizResponseExportRef =
+  builder.objectRef<ICorrelatedLiveQuizResponseExport>(
+    'CorrelatedLiveQuizResponseExport'
+  )
+export const CorrelatedLiveQuizResponseExport =
+  CorrelatedLiveQuizResponseExportRef.implement({
+    fields: (t) => ({
+      filename: t.exposeString('filename'),
+      content: t.exposeString('content'),
+      warning: t.exposeString('warning'),
+    }),
+  })
+
 interface ILiveQuizMeta {
   id: string
   name: string

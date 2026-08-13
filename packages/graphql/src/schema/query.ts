@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import { getCorrelatedLiveQuizResponseExport } from '../services/correlatedLiveQuizResponseExport.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -70,6 +71,7 @@ import {
   GroupActivitySummary,
 } from './groupActivity.js'
 import {
+  CorrelatedLiveQuizResponseExport,
   Feedback,
   LiveQuiz,
   LiveQuizEmbeddingInfo,
@@ -695,6 +697,19 @@ export const Query = builder.queryType({
 
           return await LiveQuizService.getLiveQuizEvaluation(args, ctx)
         },
+      }),
+
+      correlatedLiveQuizResponseExport: t.withAuth(asUser).field({
+        nullable: true,
+        type: CorrelatedLiveQuizResponseExport,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await getCorrelatedLiveQuizResponseExport(args, ctx)
+          }
+        ),
       }),
 
       studentLiveQuiz: t.field({

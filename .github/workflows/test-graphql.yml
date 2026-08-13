@@ -22,7 +22,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/export/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -140,6 +140,8 @@ jobs:
           cd ../grading
           pnpm run build
           cd ../util
+          pnpm run build
+          cd ../export
           pnpm run build
           cd ../graphql
           pnpm run build

@@ -2,6 +2,7 @@ query GetSingleLiveQuiz($quizId: String!) {
   liveQuiz(id: $quizId) {
     id
     name
+    status
     displayName
     description
     blocks {
