@@ -124,14 +124,12 @@
 
 ## Progress
 
-- Status: S1 implemented, verified, and accepted by both post-slice roles;
-  integrated final review remains.
-- Active slice: final W1 closure.
+- Status: W1 complete at the verified local-commit boundary.
+- Active slice: none.
 - Completed: takeover verification, planning-stage review, plan commit
   `1398f42fd`, implementation commit `fac726762`, focused verification, and
   paired post-slice simplification and review.
-- Remaining: commit this Progress update, run fresh final verification, and
-  obtain the integrated final review.
+- Remaining: none inside W1. Return the local result to the coordinator.
 - Latest verified range:
   `1398f42fdd81abd97c41ce7c02df7e04a7351d0c..fac726762f915c84d2ad9ac53b623a444343f614`.
 - Verification: Node `v24.16.0`; focused Vitest passed 8/8; strict
@@ -147,7 +145,12 @@
   `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-simplifier.md`.
 - Slice review: done —
   `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-slice-review.md`.
-- Integrated final review: pending on the final committed range.
+- Integrated final review: `DONE_WITH_CONCERNS`, approved —
+  `project/_local/reviews/2026-08-13-pr-5390-analysis-core-pragmatic-simplification-integrated-final.md`.
+  The only concern was a mistyped full SHA in the review prompt; the reviewer
+  inspected the actual range
+  `7e9d8e06c6e8fe5f7e0db17735a4364a873d110b..d560537a9a5cd2685f5eeb0b419a40cb95a2556f`,
+  and this record closes that metadata issue without a code change.
 - Active child IDs: none.
 - Delivery: required and achieved layer is verified local commits only; no
   external action is authorized.
@@ -156,8 +159,10 @@
   recorded in its report. A rejected parallel spawn partially created one
   extra simplifier; it returned the same no-finding result and was closed
   without counting as another gate.
-- Next: commit this Progress update, run the final checks, and start the
-  configured integrated final reviewer.
+- Next: commit this final Progress metadata, rerun its formatting and diff
+  checks, and return the exact local commit range. Push, pull-request updates,
+  rebase, upper-branch propagation, merge, deployment, production or real-data
+  access, external messages, cleanup, and W2 remain withheld.
 
 ## Completion evidence
 
