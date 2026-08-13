@@ -122,15 +122,18 @@ No new product primitive is needed.
   `cdf779703`, mixed-abort content assembly, and the focused/full chat test
   checks.
 - Evidence: chat tests pass (`32` files, `243` tests), chat typecheck passes,
-  and the isolated devrouter browser visibly shows a terminal tool-only source
-  card after reload. The focused Playwright launch remains blocked by the
-  container's incomplete Chromium cache; the existing paused-stream assertion
-  remains in the suite unchanged.
+  the chat production build passes, and the isolated devrouter browser visibly
+  shows a terminal tool-only source card after reload. The focused Playwright
+  launch remains blocked by the container's incomplete Chromium cache; the
+  existing paused-stream assertion remains in the suite unchanged.
 - Review: S2 simplification passed with no reduction justified. The configured
   slice-reviewer role was unavailable, so the required persistence review used
   the documented read-only Sol fallback and found no runtime, sanitization,
   ordering, ADR, product-primitive, or least-surprise finding.
-- Remaining: run the chat production build, complete the integrated final
-  review, and close the local goal. No publication or PR action is authorized.
+- Review: integrated final Sol fallback passed for `3581246d1..fa7e21c35` with
+  no findings at the reporting threshold. The configured final-reviewer role
+  was unavailable in this runtime; the fallback and the live-stream evidence
+  limitation are recorded in `project/_local/reviews/`.
+- Remaining: close the local goal. No publication or PR action is authorized.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.
