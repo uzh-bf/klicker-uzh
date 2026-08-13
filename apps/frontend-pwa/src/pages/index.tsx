@@ -62,7 +62,7 @@ function Index() {
         { shallow: true }
       )
     }
-  }, [router.query.error])
+  }, [router.pathname, router.query, router.replace, t])
 
   // redirect to stored locale if different
   useEffect(() => {
@@ -78,7 +78,13 @@ function Index() {
         { locale: selfData.self.locale }
       )
     }
-  }, [selfData?.self?.locale, router.locale])
+  }, [
+    router.locale,
+    router.pathname,
+    router.push,
+    router.query,
+    selfData?.self?.locale,
+  ])
 
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
   //   useStickyState('hasSeenSurvey', 'false')

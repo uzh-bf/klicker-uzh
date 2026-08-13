@@ -11,6 +11,7 @@
     "remeda": "2.15.0"
   },
   "devDependencies": {
+    "@klicker-uzh/build-config": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",

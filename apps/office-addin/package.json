@@ -3,6 +3,7 @@
   "version": "3.4.0-alpha.68",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "@klicker-uzh/build-config": "workspace:*",
     "@rollup/plugin-terser": "~0.4.4",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/office-js": "^1.0.599",

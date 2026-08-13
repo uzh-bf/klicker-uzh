@@ -40,9 +40,9 @@ function PointsCard({
       >
         {meta}
       </div>
-      {extraContent?.map((content, index) => (
+      {extraContent?.map((content) => (
         <div
-          key={`${label}-${index}`}
+          key={`${label}-${content}`}
           className={twMerge(
             variant === 'summary'
               ? 'mt-0.5 text-xs text-emerald-700'

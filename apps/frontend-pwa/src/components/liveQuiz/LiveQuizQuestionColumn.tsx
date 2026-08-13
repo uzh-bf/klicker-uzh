@@ -114,13 +114,14 @@ function LiveQuizQuestionColumn({
             >
               {t.rich('pwa.liveQuiz.noActiveQuestion', {
                 reload: (text) => (
-                  <span
+                  <button
+                    type="button"
                     className="cursor-pointer underline"
                     onClick={() => router.reload()}
                     data-cy="reload-live-quiz"
                   >
                     {text}
-                  </span>
+                  </button>
                 ),
               })}
             </UserNotification>

@@ -330,15 +330,16 @@ function LiveQuizSettingsStep({
                                 : 'text-red-600'
                             )}
                           />
-                          <span
-                            className="text-primary-100 cursor-pointer hover:underline"
+                          <button
+                            type="button"
+                            className="text-primary-100 cursor-pointer border-0 bg-transparent p-0 hover:underline"
                             onClick={() => setCustomizedGradingModal(true)}
                             data-cy="live-quiz-advanced-settings"
                           >
                             {t(
                               'manage.activityWizard.liveQuizCustomizedGrading'
                             )}
-                          </span>
+                          </button>
                         </div>
                       </>
                     ) : (

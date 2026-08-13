@@ -93,17 +93,12 @@ function LiveQuizBlock({
           <Link
             href={`/instances/${instance.id}`}
             className="text-sm hover:text-slate-700"
-            legacyBehavior
-            passHref
+            data-cy={`open-question-live-quiz-${instance.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <a
-              data-cy={`open-question-live-quiz-${instance.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {instance.elementData!.name}{' '}
-              <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
-            </a>
+            {instance.elementData!.name}{' '}
+            <FontAwesomeIcon className="ml-1 text-xs" icon={faExternalLink} />
           </Link>
         </div>
       ))}

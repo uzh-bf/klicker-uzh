@@ -22,7 +22,7 @@ export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
       )
 
-    case CreditResetPeriod.WEEKLY:
+    case CreditResetPeriod.WEEKLY: {
       // Start of current week (Monday 00:00 UTC)
       const startOfWeek = new Date(now)
       const dayOfWeek = startOfWeek.getUTCDay()
@@ -35,8 +35,9 @@ export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
           startOfWeek.getUTCDate()
         )
       )
+    }
 
-    case CreditResetPeriod.BIWEEKLY:
+    case CreditResetPeriod.BIWEEKLY: {
       // Start of current biweekly period (every other Monday)
       // Use a reference date to ensure consistent biweekly periods
       const referenceDate = new Date('2025-09-15T00:00:00.000Z') // Semester Start 2025
@@ -50,10 +51,12 @@ export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
         referenceDate.getTime() + biweeklyPeriod * 2 * 7 * 24 * 60 * 60 * 1000
       )
       return biweeklyStart
+    }
 
-    case CreditResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY: {
       // Start of current month (1st day 00:00 UTC)
       return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+    }
 
     case CreditResetPeriod.NONE:
     default:
@@ -78,13 +81,14 @@ export function getNextResetTime(resetPeriod: CreditResetPeriod): Date | null {
     case CreditResetPeriod.BIWEEKLY:
       return new Date(currentPeriodStart.getTime() + 14 * 24 * 60 * 60 * 1000)
 
-    case CreditResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY: {
       // Handle month-end dates properly (e.g., Jan 31 + 1 month = Feb 28/29, not Mar 3)
       const year = currentPeriodStart.getUTCFullYear()
       const month = currentPeriodStart.getUTCMonth() + 1
       const nextYear = month > 11 ? year + 1 : year
       const nextMonth = month > 11 ? 0 : month
       return new Date(Date.UTC(nextYear, nextMonth, 1))
+    }
 
     case CreditResetPeriod.NONE:
     default:
@@ -135,13 +139,14 @@ export function getPeriodsElapsed(
       return Math.floor(timeDiff / (7 * 24 * 60 * 60 * 1000))
     case CreditResetPeriod.BIWEEKLY:
       return Math.floor(timeDiff / (14 * 24 * 60 * 60 * 1000))
-    case CreditResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY: {
       // Calculate full months between dates
       const sinceDate = new Date(since)
       const currentDate = new Date(currentPeriodStart)
       const yearDiff = currentDate.getUTCFullYear() - sinceDate.getUTCFullYear()
       const monthDiff = currentDate.getUTCMonth() - sinceDate.getUTCMonth()
       return yearDiff * 12 + monthDiff
+    }
     default:
       return 0
   }

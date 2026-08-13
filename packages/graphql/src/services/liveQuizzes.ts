@@ -1591,7 +1591,7 @@ function aggregateLiveQuizResponses({
                         criterionId
                       ] === 'undefined'
                     ) {
-                      return acc
+                      return
                     }
 
                     // compute the hash of the response
@@ -2220,7 +2220,7 @@ export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
 ) {
-  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac === '') {
     return null
   }
 

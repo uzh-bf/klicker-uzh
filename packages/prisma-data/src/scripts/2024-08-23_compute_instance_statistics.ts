@@ -147,7 +147,7 @@ async function run() {
         anonymousCorrectCount = instance.anonymousResults['total']
         break
 
-      case ElementType.SC:
+      case ElementType.SC: {
         const correctAnswerIndex =
           instance.elementData.options.choices.findIndex(
             (choice) => choice.correct
@@ -175,9 +175,10 @@ async function run() {
         anonymousCorrectCount = tempCorrect1
         anonymousWrongCount = tempIncorrect1
         break
+      }
 
       case ElementType.NUMERICAL:
-      case ElementType.FREE_TEXT:
+      case ElementType.FREE_TEXT: {
         const { tempCorrect2, tempIncorrect2 } = Object.entries(
           instance.anonymousResults.responses
         ).reduce(
@@ -192,6 +193,7 @@ async function run() {
         anonymousCorrectCount = tempCorrect2
         anonymousWrongCount = tempIncorrect2
         break
+      }
 
       case ElementType.MC:
       case ElementType.KPRIM:

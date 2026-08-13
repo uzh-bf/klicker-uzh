@@ -154,7 +154,7 @@ function aggregateLiveQuizResponses({
                       ] === 'undefined'
                     ) {
                       console.log('INVALID RESPONSE:', submission.response)
-                      return acc
+                      return
                     }
 
                     // compute the hash of the response

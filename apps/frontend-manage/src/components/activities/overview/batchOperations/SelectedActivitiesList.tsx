@@ -76,8 +76,8 @@ function SelectedActivitiesList({
                           {t('manage.activities.batchNotApplicableExplanation')}
                         </div>
                         <ul className="list-disc pl-4">
-                          {activity.reasons.map((reason, idx) => (
-                            <li key={idx} className="mt-0.5">
+                          {activity.reasons.map((reason) => (
+                            <li key={reason} className="mt-0.5">
                               {reason}
                             </li>
                           ))}

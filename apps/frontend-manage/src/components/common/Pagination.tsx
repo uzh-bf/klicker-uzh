@@ -100,23 +100,33 @@ function Pagination({
               />
             </PaginationItem>
 
-            {pageNumbers.map((page, index) => (
-              <PaginationItem key={index}>
-                {page === 'ellipsis' ? (
-                  <PaginationEllipsis />
-                ) : (
-                  <PaginationLink
-                    size="default"
-                    onClick={() => setCurrentPage(page)}
-                    isActive={currentPage === page}
-                    className="cursor-pointer"
-                    data-cy={`pagination-page-${page}`}
-                  >
-                    {page}
-                  </PaginationLink>
-                )}
-              </PaginationItem>
-            ))}
+            {(() => {
+              let ellipsisCount = 0
+              return pageNumbers.map((page) => {
+                const key =
+                  page === 'ellipsis'
+                    ? `ellipsis-${ellipsisCount++}`
+                    : `page-${page}`
+
+                return (
+                  <PaginationItem key={key}>
+                    {page === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        size="default"
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                        data-cy={`pagination-page-${page}`}
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                )
+              })
+            })()}
 
             <PaginationItem>
               <PaginationNext

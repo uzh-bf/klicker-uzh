@@ -33,6 +33,7 @@ function FeatureSection({ title, description, features }: FeatureSectionProps) {
       <div className="flex flex-row justify-between gap-8">
         <dl className="max-w-xl flex-1 space-y-6 text-base text-gray-600 lg:max-w-none">
           {features.map((feature, ix) => (
+            /* biome-ignore lint/a11y/noStaticElementInteractions: Hover-only preview selector without activation behavior. */
             <div
               key={feature.title}
               className={twMerge(

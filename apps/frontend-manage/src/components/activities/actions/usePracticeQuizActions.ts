@@ -25,7 +25,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo } from 'react'
 import { ActivityAction } from './useAvailableActions'
 
 function usePracticeQuizActions({
@@ -52,12 +52,15 @@ function usePracticeQuizActions({
   )
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${practiceQuiz.courseLanguage ? `/${practiceQuiz.courseLanguage}` : ''}/course/${practiceQuiz.courseId}/practiceQuizzes/${practiceQuiz.id}/`
 
-  const onSuccessToast = () =>
-    toast({
-      type: 'success',
-      message: t('manage.course.linkAccessCopied'),
-      options: { duration: 4000 },
-    })
+  const onSuccessToast = useCallback(
+    () =>
+      toast({
+        type: 'success',
+        message: t('manage.course.linkAccessCopied'),
+        options: { duration: 4000 },
+      }),
+    [t]
+  )
 
   const actions = useMemo(
     () => [
@@ -237,6 +240,9 @@ function usePracticeQuizActions({
       unpublishPracticeQuiz,
       setDeletionModal,
       setActivityLogOpen,
+      onSuccessToast,
+      refetchActivities,
+      unpublishing,
     ]
   )
 

@@ -311,6 +311,7 @@ function CSTwoDimScatterPlot({
                       style={{ pointerEvents: 'none' }}
                     />
                     {/* invisible hover area to trigger tooltip and error bars */}
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: Pointer hover only drives the chart tooltip; the point is not an activation target. */}
                     <circle
                       cx={props.cx}
                       cy={props.cy}

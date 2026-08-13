@@ -80,7 +80,7 @@ function ElementEvaluation({
     if (!requireShowResultsConfirmation) {
       setShowResults(true)
     }
-  }, [currentInstance.id, requireShowResultsConfirmation])
+  }, [requireShowResultsConfirmation, setShowResults])
 
   if (!showResults && currentInstance.type !== ElementType.Content) {
     return (

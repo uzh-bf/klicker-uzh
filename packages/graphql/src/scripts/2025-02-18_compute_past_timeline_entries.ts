@@ -54,7 +54,7 @@ async function run() {
 
       const day = new Date(detail.createdAt).toISOString().split('T')[0]
       const courseId =
-        detail.microLearning?.courseId ?? detail.practiceQuiz?.courseId!
+        detail.microLearning?.courseId ?? detail.practiceQuiz?.courseId
       const key = `${day}-${courseId}`
 
       // initialize empty day entry

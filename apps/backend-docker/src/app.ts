@@ -1,7 +1,7 @@
 // import { useSentry } from '@envelop/sentry'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
-import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
-import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
+import { useCSRFPrevention as createCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
+import { usePersistedOperations as createPersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
@@ -131,10 +131,10 @@ function prepareApp({
       //     return req.body?.locals?.user?.sub ?? null
       //   },
       // }),
-      useCSRFPrevention({
+      createCSRFPrevention({
         requestHeaders: ['x-graphql-yoga-csrf'], // default
       }),
-      usePersistedOperations({
+      createPersistedOperations({
         allowArbitraryOperations:
           process.env.NODE_ENV === 'development' ||
           process.env.NODE_ENV === 'test',

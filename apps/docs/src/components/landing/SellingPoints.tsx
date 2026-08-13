@@ -33,6 +33,7 @@ function SellingPoints() {
     <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
       {data.map((entry) => (
         <Button
+          key={entry.title}
           className={{
             root: 'hover:text-primary-80 bg-uzh-grey-20 flex cursor-pointer flex-col items-center justify-center rounded p-2 pt-4 hover:scale-[103%]',
           }}

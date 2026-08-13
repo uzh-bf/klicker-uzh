@@ -33,7 +33,7 @@ const usePWAInstall = ({
       // We assume users are on iOS (for now)
       setOniOS(true)
     }
-  }, [])
+  }, [deferredPrompt, setOnChrome, setOniOS])
 }
 
 export default usePWAInstall

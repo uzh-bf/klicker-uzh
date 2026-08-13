@@ -13,15 +13,15 @@ function useStackInstanceUpdates({
 }: UseStackInstanceUpdatesProps) {
   useEffect(() => {
     if (activeInstance !== -1) {
-      Object.entries(stackInstanceMap).find(([stackIx, instances]) => {
+      for (const [stackIx, instances] of Object.entries(stackInstanceMap)) {
         const instanceIndices = instances.map((instance) => instance.value)
         if (instanceIndices.includes(activeInstance)) {
           setActiveStack(Number(stackIx))
+          break
         }
-      })
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInstance])
+  }, [activeInstance, setActiveStack, stackInstanceMap])
 }
 
 export default useStackInstanceUpdates

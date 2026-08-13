@@ -6,6 +6,7 @@ import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationCaseStudyResults from '../hooks/useEvaluationCaseStudyResults'
+import createOccurrenceKeyFactory from '../utils/createOccurrenceKeyFactory'
 
 function CSEvaluation({
   evaluation,
@@ -46,6 +47,7 @@ function CSEvaluation({
                 const length = criterion.max - shift
                 const lowerSolution = evaluationValue.solutionMin - shift
                 const upperSolution = evaluationValue.solutionMax - shift
+                const answerKey = createOccurrenceKeyFactory()
 
                 return (
                   <div
@@ -81,15 +83,18 @@ function CSEvaluation({
                             ],
                           }}
                         />
-                        {evaluationValue.answers.map((answer, ix) => (
-                          <div
-                            key={`answer-${ix}`}
-                            className="absolute top-0 h-full w-0.5 bg-red-500 bg-opacity-70"
-                            style={{
-                              left: `${((answer - shift) / length) * 100}%`,
-                            }}
-                          />
-                        ))}
+                        {evaluationValue.answers.map((answer) => {
+                          const key = answerKey(`answer-${answer}`)
+                          return (
+                            <div
+                              key={key}
+                              className="absolute top-0 h-full w-0.5 bg-red-500 bg-opacity-70"
+                              style={{
+                                left: `${((answer - shift) / length) * 100}%`,
+                              }}
+                            />
+                          )
+                        })}
                       </div>
                     </div>
                   </div>

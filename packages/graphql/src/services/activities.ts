@@ -401,6 +401,7 @@ async function updateInstanceMultipliers(
           },
         })
       }
+      return undefined
     })
   )
 }

@@ -36,7 +36,7 @@ function sanitizeXmlText(value: string) {
   return value.replace(
     // XML 1.0 valid characters: tab, LF, CR, U+20-D7FF, E000-FFFD
     // eslint-disable-next-line no-control-regex
-    /[^\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd]/g,
+    /[^\t\n\r\x20-\ud7ff\ue000-\ufffd]/g,
     ''
   )
 }

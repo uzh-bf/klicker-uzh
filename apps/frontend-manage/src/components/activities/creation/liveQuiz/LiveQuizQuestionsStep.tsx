@@ -98,7 +98,7 @@ function LiveQuizQuestionsStep({
                   >
                     {values.blocks.map((block, index) => (
                       <LiveQuizCreationBlock
-                        key={`stack-${index}`}
+                        key={block.clientId}
                         blockIx={index}
                         block={block}
                         numOfBlocks={values.blocks.length}

@@ -160,6 +160,7 @@ export const WeeklyCourseActivities = builder.objectType(
 // ------ Performance & Progress Analytics ------
 // #region
 interface IActivityProgress {
+  activityId: string
   activityName: string
   activityType: ActivityTypeEnum
   startedCount: number
@@ -170,6 +171,7 @@ export const ActivityProgressRef =
   builder.objectRef<IActivityProgress>('ActivityProgress')
 export const ActivityProgress = builder.objectType(ActivityProgressRef, {
   fields: (t) => ({
+    activityId: t.exposeString('activityId'),
     activityName: t.exposeString('activityName'),
     activityType: t.expose('activityType', { type: ActivityType }),
     startedCount: t.exposeInt('startedCount'),

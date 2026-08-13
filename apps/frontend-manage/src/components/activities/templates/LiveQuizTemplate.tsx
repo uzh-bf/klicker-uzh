@@ -14,6 +14,7 @@ import { Button, H3, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { createElementBlockClientId } from '../creation/WizardLayout'
 import goToNextTemplateElement from './goToNextTemplateElement'
 import LiveQuizTemplateSettings from './liveQuiz/LiveQuizTemplateSettings'
 import LiveQuizTemplateSubmissionButton from './liveQuiz/LiveQuizTemplateSubmissionButton'
@@ -99,11 +100,35 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     undefined
   )
 
+  // Older local-storage data may not have a client id. Keep its fallback id
+  // stable while the legacy object is being edited, then persist it on update.
+  const [legacyBlockClientIds] = useState(() => new WeakMap<object, string>())
+  const getBlockClientId = (
+    block: LiveQuizTemplateFormValues['blocks'][number]
+  ) => {
+    if (block.clientId) {
+      return block.clientId
+    }
+
+    const existingClientId = legacyBlockClientIds.get(block)
+    if (existingClientId) {
+      return existingClientId
+    }
+
+    const clientId = createElementBlockClientId()
+    legacyBlockClientIds.set(block, clientId)
+    return clientId
+  }
+
   // helper function to initialize quiz data from template
   const initialTemplateFormData = useInitialLiveQuizTemplateFormData({
     liveQuiz,
   })
 
+  // `liveQuiz` is the lifecycle trigger for this one-time initialization. The
+  // other values are read at that point; including persisted `quizData` would
+  // replay the recovery toast and reset collapsible state on every edit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initialization intentionally runs only when the live quiz arrives
   useEffect(() => {
     // if live quiz template has not been loaded yet, return early
     if (liveQuiz === null || typeof liveQuiz === 'undefined') {
@@ -129,7 +154,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         setQuizData(initialTemplateFormData)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveQuiz])
 
   if (!liveQuiz) {
@@ -184,7 +208,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
         </SectionCollapsible>
 
         {quizData?.blocks?.map((block, blockIx) => (
-          <div key={`live-quiz-template-block-${blockIx}`} className="mt-4">
+          <div key={getBlockClientId(block)} className="mt-4">
             <div className="flex flex-row items-center justify-between">
               <H3>{`${t('shared.generic.block')} ${blockIx + 1}`}</H3>
               <Button
@@ -204,7 +228,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
             </div>
             {block.elements?.map((element, elementIx) => (
               <SectionCollapsible
-                key={`live-quiz-template-element-${blockIx}-${elementIx}`}
+                key={`live-quiz-template-element-${element.instance.id}`}
                 title={
                   element.useTemplateInstance ||
                   element.useExistingElement ||
@@ -256,6 +280,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -294,6 +319,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -331,6 +357,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                       }
                       blocks[blockIx] = {
                         ...blocks[blockIx],
+                        clientId: getBlockClientId(blocks[blockIx]),
                         elements,
                       }
 
@@ -374,6 +401,7 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
                     const blocks = [...prev.blocks]
                     blocks[blockIx] = {
                       ...blocks[blockIx],
+                      clientId: getBlockClientId(blocks[blockIx]),
                       timeLimit: newValue,
                     }
 

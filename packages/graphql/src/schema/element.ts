@@ -720,7 +720,7 @@ export const InstanceEvaluation = builder.unionType('InstanceEvaluation', {
 
 // ----- ELEMENT INTERFACE -----
 // #region
-interface IBaseElementProps extends Omit<DB.Element, 'ownerId'> {
+interface IBaseElementProps extends Omit<DB.Element, 'ownerId' | 'options'> {
   tags?: ITag[] | null
   permissionLevel?: DB.PermissionLevel
   derivedAccess?: boolean // = derived from other object => removal disabled

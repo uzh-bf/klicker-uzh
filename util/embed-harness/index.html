@@ -245,7 +245,7 @@
         background: rgba(2, 6, 23, 0.9);
         border: 1px solid rgba(148, 163, 184, 0.18);
         color: #c4f1ff;
-        font-family: 'SFMono-Regular', SFMono-Regular, Consolas,
+        font-family: 'SFMono-Regular', Consolas,
           'Liberation Mono', Menlo, monospace;
         font-size: 12px;
         line-height: 1.5;
@@ -725,7 +725,8 @@
         }
 
         setInitState(false)
-        elements.quizFrame.src = elements.quizFrame.src
+        const currentSrc = elements.quizFrame.src
+        elements.quizFrame.src = currentSrc
         appendLog('outbound', 'Reloaded iframe.', {
           iframeUrl: elements.quizFrame.src,
         })

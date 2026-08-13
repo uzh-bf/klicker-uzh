@@ -42,6 +42,13 @@ function PropagatedPermissionsTable({
   const activeColumnIndex = activePermissionLevel
     ? permissionLevelToColumnIndex[activePermissionLevel]
     : -1
+  const permissionColumns = [
+    PermissionLevel.Read,
+    ...(showExecution ? [PermissionLevel.Execute] : []),
+    PermissionLevel.Write,
+    PermissionLevel.Admin,
+    PermissionLevel.Owner,
+  ]
 
   if (!propagatedPermissions) {
     return null
@@ -102,7 +109,7 @@ function PropagatedPermissionsTable({
               </td>
               {permissions.map((permissionLevel, index) => (
                 <td
-                  key={index}
+                  key={permissionColumns[index]}
                   className={twMerge(
                     'px-4 py-3 text-center text-sm',
                     index + 1 === activeColumnIndex ? 'bg-blue-50' : ''

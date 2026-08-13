@@ -88,6 +88,7 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             data-cy="chat-branch-previous"
             disabled={!hasPrevious}
             onClick={goToPrevious}
@@ -110,6 +111,7 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             data-cy="chat-branch-next"
             disabled={!hasNext}
             onClick={goToNext}

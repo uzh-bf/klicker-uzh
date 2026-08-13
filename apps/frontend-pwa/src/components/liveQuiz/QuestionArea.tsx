@@ -88,6 +88,9 @@ function QuestionArea({
     latestStudentResponseRef.current = studentResponse
   }, [studentResponse])
 
+  // The instance id is the intentional lifecycle key. The object is passed to
+  // the loader, but response updates for the same instance must not restart it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: current instance object is intentionally keyed by its stable id
   useEffect(() => {
     // load the stored student response from the temporary or submission storage
     // guard against race conditions by cancelling stale async completions
@@ -111,11 +114,12 @@ function QuestionArea({
     return () => {
       cancelled = true
     }
-
-    // re-run when quizId/execution/instance changes
   }, [quizId, execution, currentInstance?.id])
 
   // periodically store the in-progress response in a temporary key
+  // The temporary-response interval is also keyed by the stable instance id;
+  // changing the response object must not create another interval.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: current instance object is intentionally keyed by its stable id
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined
 

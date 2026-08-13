@@ -31,47 +31,72 @@ function Participant({
   level,
 }: PropsWithChildren<ParticipantProps>) {
   const t = useTranslations()
+  const participantInfo = (
+    <>
+      {rank && <span className="ml-1 w-3 text-lg font-bold">{rank}</span>}
+      {withAvatar && (
+        <span className="relative flex w-[30px] justify-center">
+          <Image
+            src={
+              typeof avatar !== 'undefined' && avatar !== null
+                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
+                : '/user-solid.svg'
+            }
+            alt=""
+            height={avatar ? 25 : 20}
+            width={avatar ? 30 : 20}
+          />
+          {level && (
+            <span className="border-uzh-grey-80 absolute bottom-0 right-0 -mb-1 flex h-3 w-3 items-center justify-center rounded-full border border-solid bg-white text-xs font-bold text-slate-600">
+              {level}
+            </span>
+          )}
+        </span>
+      )}
+      <span className="text-slate-700 first:ml-2">
+        {isTemporary && pseudonym
+          ? `${pseudonym}*`
+          : (pseudonym ?? t('shared.generic.free'))}
+      </span>
+    </>
+  )
+  const participantDataCy = `leaderboard-entry-${pseudonym}`
 
   return (
     <div
       className={twMerge(
         'flex flex-row items-center gap-1 rounded border border-slate-200',
         isHighlighted && 'bg-uzh-grey-20',
-        onClick && 'hover:cursor-pointer hover:border-orange-200',
+        onClick && 'hover:border-orange-200',
         className
       )}
-      onClick={onClick}
-      data-cy={`leaderboard-entry-${pseudonym}`}
+      data-cy={onClick ? undefined : participantDataCy}
     >
-      <div className="flex flex-1 flex-row items-center gap-2">
-        {rank && <div className="ml-1 w-3 text-lg font-bold">{rank}</div>}
-        {withAvatar && (
-          <div className="relative flex w-[30px] justify-center">
-            <Image
-              src={
-                typeof avatar !== 'undefined' && avatar !== null
-                  ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${avatar}.svg`
-                  : '/user-solid.svg'
-              }
-              alt=""
-              height={avatar ? 25 : 20}
-              width={avatar ? 30 : 20}
-            />
-            {level && (
-              <div className="border-uzh-grey-80 absolute bottom-0 right-0 -mb-1 flex h-3 w-3 items-center justify-center rounded-full border border-solid bg-white text-xs font-bold text-slate-600">
-                {level}
-              </div>
-            )}
-          </div>
-        )}
-        <div className="text-slate-700 first:ml-2">
-          {isTemporary && pseudonym
-            ? `${pseudonym}*`
-            : (pseudonym ?? t('shared.generic.free'))}
+      {onClick ? (
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 flex-row items-stretch text-left hover:cursor-pointer"
+          onClick={onClick}
+          data-cy={participantDataCy}
+        >
+          <span className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            {participantInfo}
+          </span>
+          {typeof points === 'number' && (
+            <span className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r-lg bg-slate-700 px-3 py-1 font-bold text-white">
+              {points}
+            </span>
+          )}
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 flex-row items-center gap-2">
+          {participantInfo}
         </div>
-        <div className="flex-1 text-right">{children}</div>
-      </div>
-      {typeof points === 'number' && (
+      )}
+      {children ? (
+        <div className="flex flex-row items-center text-right">{children}</div>
+      ) : null}
+      {!onClick && typeof points === 'number' && (
         <div className="flex flex-initial flex-col items-end justify-center self-stretch rounded-r-lg bg-slate-700 px-3 py-1 font-bold text-white">
           {points}
         </div>

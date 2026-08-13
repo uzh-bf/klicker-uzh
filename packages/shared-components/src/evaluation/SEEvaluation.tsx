@@ -17,11 +17,14 @@ function SEEValuation({
   options: SelectionElementOptions
 }) {
   const t = useTranslations()
+  const answerSolutionIds = evaluation.answerSolutionIds
+  const numberOfInputs = options.numberOfInputs
+  const answerCollectionEntries = options.answerCollection?.entries
 
   // the number of answer options for which statistics are shown
   const numberOfShownResponses = Math.max(
-    options.numberOfInputs! + 1,
-    evaluation.answerSolutionIds?.length ?? 0
+    numberOfInputs! + 1,
+    answerSolutionIds?.length ?? 0
   )
 
   const sortedResponses = useMemo<
@@ -30,8 +33,8 @@ function SEEValuation({
     if (
       typeof evaluation?.selectionResponses === 'undefined' ||
       evaluation?.selectionResponses === null ||
-      options.numberOfInputs === null ||
-      typeof options.numberOfInputs === 'undefined'
+      numberOfInputs === null ||
+      typeof numberOfInputs === 'undefined'
     ) {
       return []
     }
@@ -42,33 +45,38 @@ function SEEValuation({
     ]).slice(0, numberOfShownResponses)
 
     if (
-      evaluation?.answerSolutionIds === null ||
-      typeof evaluation?.answerSolutionIds === 'undefined'
+      answerSolutionIds === null ||
+      typeof answerSolutionIds === 'undefined'
     ) {
       return sorted
     }
 
     return sorted.map((entry) => ({
       ...entry,
-      correct: evaluation.answerSolutionIds!.includes(entry.answerId),
+      correct: answerSolutionIds.includes(entry.answerId),
     }))
-  }, [evaluation?.selectionResponses])
+  }, [
+    answerSolutionIds,
+    evaluation.selectionResponses,
+    numberOfInputs,
+    numberOfShownResponses,
+  ])
 
   // get the values of the correct options
   const correctOptions = useMemo(() => {
     if (
-      options.answerCollection?.entries === null ||
-      typeof options.answerCollection?.entries === 'undefined' ||
-      evaluation?.answerSolutionIds === null ||
-      typeof evaluation?.answerSolutionIds === 'undefined'
+      answerCollectionEntries === null ||
+      typeof answerCollectionEntries === 'undefined' ||
+      answerSolutionIds === null ||
+      typeof answerSolutionIds === 'undefined'
     ) {
       return []
     }
 
-    return options.answerCollection.entries
-      .filter((entry) => evaluation?.answerSolutionIds!.includes(entry.id))
+    return answerCollectionEntries
+      .filter((entry) => answerSolutionIds.includes(entry.id))
       .map((entry) => entry.value)
-  }, [options.answerCollection])
+  }, [answerCollectionEntries, answerSolutionIds])
 
   return (
     <>
@@ -77,8 +85,8 @@ function SEEValuation({
           {t('pwa.practiceQuiz.correctAnswerOptions')}
         </div>
         <ul className="list-disc pl-4">
-          {correctOptions.map((option, index) => (
-            <li key={`correct-answer-${index}`}>{option}</li>
+          {correctOptions.map((option) => (
+            <li key={`correct-answer-${option}`}>{option}</li>
           ))}
         </ul>
       </div>

@@ -23,6 +23,9 @@ function useStudentResponse({
   setStudentResponse,
   defaultRead = false,
 }: UseStudentResponseProps) {
+  // `currentStep` intentionally retriggers initialization when the active
+  // stack step changes, even though it is not read inside the reducer.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: current step is an intentional lifecycle trigger for stack responses
   useEffect(() => {
     const newStudentResponse =
       stack.elements?.reduce<StackStudentResponseType>((acc, element) => {
@@ -103,7 +106,7 @@ function useStudentResponse({
       }, {}) || {}
 
     setStudentResponse(newStudentResponse)
-  }, [currentStep, stack.elements])
+  }, [currentStep, defaultRead, setStudentResponse, stack.elements])
 }
 
 export default useStudentResponse

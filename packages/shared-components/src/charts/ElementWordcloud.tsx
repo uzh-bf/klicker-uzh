@@ -5,7 +5,7 @@ import {
 import type { LayoutWord } from '@klicker-uzh/word-cloud'
 import { Select, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   removeStopwords,
   deu as stopwordsDeu,
@@ -162,17 +162,14 @@ function ElementWordCloud({
     DEFAULT_WORD_CLOUD_MAX_WORDS
   )
 
-  // ensure min and max respect constraints
-  useEffect(() => {
-    if (minTextSize > maxTextSize) {
-      setMaxTextSize(minTextSize)
-    }
-  }, [minTextSize, setMaxTextSize])
-  useEffect(() => {
-    if (maxTextSize < minTextSize) {
-      setMinTextSize(maxTextSize)
-    }
-  }, [maxTextSize, setMinTextSize])
+  const updateMinTextSize = (size: number) => {
+    setMinTextSize(size)
+    setMaxTextSize((currentMax) => Math.max(currentMax, size))
+  }
+  const updateMaxTextSize = (size: number) => {
+    setMaxTextSize(size)
+    setMinTextSize((currentMin) => Math.min(currentMin, size))
+  }
 
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
 
@@ -416,14 +413,14 @@ function ElementWordCloud({
             )}
             <FontSizeButtons
               textSize={minTextSize}
-              setTextSize={setMinTextSize}
+              setTextSize={updateMinTextSize}
               minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
               maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
               labelPrefix={t('shared.generic.minimum')}
             />
             <FontSizeButtons
               textSize={maxTextSize}
-              setTextSize={setMaxTextSize}
+              setTextSize={updateMaxTextSize}
               minTextSize={MIN_TEXT_SIZE_WORD_CLOUD}
               maxTextSize={MAX_TEXT_SIZE_WORD_CLOUD}
               labelPrefix={t('shared.generic.maximum')}

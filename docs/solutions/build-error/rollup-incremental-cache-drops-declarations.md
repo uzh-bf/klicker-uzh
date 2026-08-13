@@ -36,14 +36,16 @@ The downstream compiler reported missing exports such as `AppliedPointCorrection
 
 ## Solution
 
-Keep Prisma's declaration-emitting config non-incremental: remove both `incremental` and `tsBuildInfoFile` from `packages/prisma/tsconfig.json`. The Rollup build still emits declarations, but each invocation computes them from the generated source instead of consulting state stored in the directory it cleans.
+Keep Prisma's declaration-emitting Rollup build non-incremental. The shared `withNonIncrementalTypescriptOptions` helper in `packages/build-config/rollup-typescript-options.cjs` forces `incremental: false` and clears `tsBuildInfoFile` for every Rollup TypeScript plugin invocation, including both targets in `packages/export/rollup.config.js`. Every Rollup consumer declares the dependency explicitly, so Turbo's Docker-pruned workspace contains the helper as well as the retained config. The Rollup build still emits declarations, but each invocation computes them from the generated source instead of consulting state stored in the directory it cleans. The declaration settings remain in `packages/prisma/tsconfig.json`.
 
-The relevant cleanup is `packages/prisma/rollup.config.js:16`, and the declaration settings remain in `packages/prisma/tsconfig.json:24`. [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) contains the sequential production and all-Turbopack build evidence.
+The relevant cleanup is the `del({ targets: ['dist'] })` plugin in `packages/prisma/rollup.config.js`; the TypeScript mitigation is applied through the shared helper loaded by that config. [PR #5167](https://github.com/uzh-bf/klicker-uzh/pull/5167) contains the sequential production and all-Turbopack build evidence.
 
 ## Why This Works
 
-Rollup plugin `buildStart` hooks can overlap. The TypeScript plugin's incremental program and the delete plugin therefore must not share state in the directory being removed. Disabling incremental mode for this one build makes declaration emission independent of hook timing; Turbo remains the outer build cache.
+Rollup plugin `buildStart` hooks can overlap. The TypeScript plugin's incremental program and the delete plugin therefore must not share state in the directory being removed. Disabling incremental mode for every Rollup build makes declaration emission independent of hook timing and avoids sharing host/DevPod compiler state; Turbo remains the outer build cache. Package-level `tsc` checks retain their own configured incremental state.
+
+The same rule applies when builds alternate between the host and the DevPod. Their TypeScript incremental state contains different absolute workspace paths. Sharing `.rollup.cache` or `dist/tsconfig.tsbuildinfo` can make Rollup skip TypeScript emission and hand raw syntax such as `export type` or `as string` to Rollup's JavaScript parser. The shared helper now applies the non-incremental contract to every TypeScript plugin invocation, including Export's library and CLI targets. Package-level `tsc` checks retain their own configured incremental state; Turbo owns Rollup's reusable package-output cache.
 
 ## Prevention
 
-For Rollup packages that delete their output directory, verify two consecutive uncached builds and inspect required declaration artifacts after the second. Enable TypeScript incremental state only when the build owner preserves or recreates the matching outputs and compiler state atomically. Give every compiler invocation its own build-info file; for example, Export's library, CLI, and no-output check each use separate state.
+For Rollup packages that delete their output directory, verify two consecutive builds and inspect required declaration artifacts after the second. Keep Rollup's TypeScript plugin non-incremental unless a future build owner can preserve compiler state atomically across every supported runtime. Let Turbo cache the resulting package outputs, and keep separate incremental build-info files for independent package-level `tsc` checks.

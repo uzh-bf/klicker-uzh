@@ -14,7 +14,7 @@ import type { GetServerSidePropsContext } from 'next'
 import { useLocale, useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/
 const REPORT_TIME_ZONE = 'Europe/Zurich'
@@ -391,7 +391,7 @@ export default function VerifyAssessmentReportPage() {
   }, [verify])
 
   const verification = data?.assessmentReportVerification
-  let content
+  let content: ReactNode
   if (tokenState === 'reading' || (tokenState === 'ready' && loading)) {
     content = (
       <div className="flex min-h-64 items-center justify-center" role="status">

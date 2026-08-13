@@ -58,7 +58,7 @@ function MagicLogin() {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
     }
-  }, [router.query.token])
+  }, [fetchSelf, loginWithMagicLink, router.push, t, token])
 
   return (
     <div className="m-auto">

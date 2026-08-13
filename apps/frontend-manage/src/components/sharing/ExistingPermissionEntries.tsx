@@ -148,7 +148,7 @@ function ExistingPermissionEntries({
         )
         .map((permission, index) => (
           <PermissionListEntry
-            key={index}
+            key={permission.permissionId}
             index={index}
             permission={permission}
             permissionLevelSelectItems={permissionLevelSelectItems}

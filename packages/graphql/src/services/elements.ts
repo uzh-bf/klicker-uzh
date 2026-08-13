@@ -27,11 +27,19 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import {
+  getElementOptions,
+  validateAndProcessElementOptions,
+} from '../lib/elementOptions.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+
+const elementInclude = {
+  tags: { orderBy: { order: 'asc' } },
+  answerCollectionItems: true,
+} satisfies DB.Prisma.ElementInclude
 
 export async function getUserElements(
   {
@@ -312,17 +320,12 @@ export async function getSingleElement(
       permission!.permissionLevel === DB.PermissionLevel.OWNER ||
       permission!.permissionLevel === DB.PermissionLevel.ADMIN ||
       permission!.permissionLevel === DB.PermissionLevel.WRITE,
-    options: {
-      ...element.options,
-      // SE elements
-      answerCollection: { id: element.answerCollectionId, entries: [] },
-      // SE elements
-      answerCollectionSolutionIds: selectedItemIds,
-      // CS elements
-      answerCollectionId: element.answerCollectionId,
-      // CS elements
-      collectionItemIds: selectedItemIds,
-    },
+    options: getElementOptions(
+      element.type,
+      element.options,
+      element.answerCollectionId,
+      selectedItemIds
+    ),
   }
 }
 
@@ -612,14 +615,7 @@ export async function manipulateElement(
             }
           : undefined,
     },
-    include: {
-      tags: {
-        orderBy: {
-          order: 'asc',
-        },
-      },
-      answerCollectionItems: true,
-    },
+    include: elementInclude,
   })
 
   // compute derived permissions as required for this question
@@ -692,19 +688,12 @@ export async function manipulateElement(
 
   return {
     ...element,
-    options: {
-      ...element.options,
-      // SE elements
-      answerCollection: { id: element.answerCollectionId, entries: [] },
-      // SE elements
-      answerCollectionSolutionIds: element.answerCollectionItems.map(
-        (sol) => sol.id
-      ),
-      // CS elements
-      answerCollectionId: element.answerCollectionId,
-      // CS elements
-      collectionItemIds: element.answerCollectionItems.map((item) => item.id),
-    },
+    options: getElementOptions(
+      element.type,
+      element.options,
+      element.answerCollectionId,
+      element.answerCollectionItems.map((item) => item.id)
+    ),
   }
 }
 

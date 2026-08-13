@@ -23,6 +23,7 @@ import { OutdatedInstancesRefetchFunction } from '../InstanceUpdateOption'
 import PasteSelectionButton from '../PasteSelectionButton'
 import WizardElementList from '../WizardElementList'
 import {
+  createElementInstanceClientId,
   ElementBlockErrorValues,
   ElementBlockFormValues,
 } from '../WizardLayout'
@@ -70,6 +71,7 @@ function LiveQuizCreationBlock({
           elements: [
             ...block.elements,
             {
+              clientId: createElementInstanceClientId(),
               id: item.id,
               title: item.title,
               type: item.questionType,

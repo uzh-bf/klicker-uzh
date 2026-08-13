@@ -17,8 +17,7 @@ function CreationFormValidator({
       newValidity[activeStep] = isValid
       return newValidity
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isValid])
+  }, [activeStep, isValid, setStepValidity])
 
   return null
 }

@@ -71,6 +71,7 @@ function CreationButton({
           link: () => (
             <a
               target="_blank"
+              rel="noopener"
               href="https://www.klicker.uzh.ch/catalyst"
               className="underline"
             >

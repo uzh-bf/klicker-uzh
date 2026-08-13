@@ -1,8 +1,13 @@
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import serve from 'rollup-plugin-serve'
+
+const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
+  '@klicker-uzh/build-config'
+)
 
 const isDev = process.env.NODE_ENV === 'development'
 const urlDev = 'https://localhost:3020/'
@@ -79,14 +84,12 @@ async function createConfig() {
       sourcemap: true,
     },
     plugins: [
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-        compilerOptions: {
-          incremental: false,
-          tsBuildInfoFile: undefined,
-        },
-      }),
+      typescript(
+        withNonIncrementalTypescriptOptions({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+        })
+      ),
       officeAddinPlugin(),
       !isDev && terser(),
       isDev &&

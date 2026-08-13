@@ -15,7 +15,7 @@ const UserForm = () => {
       'https://www.bf-tools.uzh.ch/applications/easyforms/static_files/js/form.widget.js'
     s.onload = s.onreadystatechange = function () {
       var rs = this.readyState
-      if (rs) if (rs != 'complete') if (rs != 'loaded') return
+      if (rs) if (rs !== 'complete') if (rs !== 'loaded') return
       try {
         //@ts-ignore
         new window.EasyForms().initialize(options).display()

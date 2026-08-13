@@ -199,7 +199,6 @@ function LiveQuizActions({
     }
   }, [
     user?.privatePreview,
-    liveQuiz.id,
     liveQuiz.status,
     liveQuiz.isAssessmentEnabled,
     liveQuiz.isActivityReviewer,

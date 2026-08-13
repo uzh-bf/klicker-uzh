@@ -53,6 +53,16 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
+  if (!data.coursePracticeQuiz.course) {
+    return (
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('pwa.practiceQuiz.notFound')}
+        />
+      </Layout>
+    )
+  }
 
   const handleNextQuestion = () => {
     scrollTo(0, 0)
@@ -70,7 +80,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
           description: t('pwa.courses.coursePracticeArea', {
             courseName: data?.coursePracticeQuiz.course?.displayName ?? 0,
           }),
-          course: data?.coursePracticeQuiz.course!,
+          course: data.coursePracticeQuiz.course,
         }}
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}

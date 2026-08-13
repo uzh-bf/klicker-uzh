@@ -17,6 +17,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { CHART_SOLUTION_COLORS } from '../constants'
 import useEvaluationHistogramData from '../hooks/useEvaluationHistogramData'
+import createOccurrenceKeyFactory from '../utils/createOccurrenceKeyFactory'
 
 interface ElementHistogramProps {
   type: ElementType
@@ -62,6 +63,8 @@ function ElementHistogram({
   const [numBins, setNumBins] = useState('20')
   const [lowerLimit, setLowerLimit] = useState<number | null>(minValue ?? null)
   const [upperLimit, setUpperLimit] = useState<number | null>(maxValue ?? null)
+  const solutionRangeKey = createOccurrenceKeyFactory()
+  const exactSolutionKey = createOccurrenceKeyFactory()
 
   const showSolutionRanges = showSolution && solutionRanges
   const showExactSolutions =
@@ -234,12 +237,11 @@ function ElementHistogram({
 
           {showSolutionRanges &&
             solutionRanges.map(
-              (
-                solutionRange: { min?: number | null; max?: number | null },
-                index: number
-              ) => (
+              (solutionRange: { min?: number | null; max?: number | null }) => (
                 <ReferenceArea
-                  key={index}
+                  key={solutionRangeKey(
+                    `range-${solutionRange.min}-${solutionRange.max}`
+                  )}
                   x1={solutionRange.min ?? undefined}
                   x2={solutionRange.max ?? undefined}
                   stroke={CHART_SOLUTION_COLORS.correct}
@@ -261,9 +263,9 @@ function ElementHistogram({
             )}
 
           {showExactSolutions &&
-            exactSolutions.map((solution, idx) => (
+            exactSolutions.map((solution) => (
               <ReferenceLine
-                key={`exact-solution-${idx}`}
+                key={exactSolutionKey(`exact-solution-${solution}`)}
                 x={parseFloat(String(solution))}
                 stroke={CHART_SOLUTION_COLORS.correct}
                 label={{

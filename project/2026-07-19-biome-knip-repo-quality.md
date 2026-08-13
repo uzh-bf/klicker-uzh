@@ -133,11 +133,18 @@ Generated/vendored — keep exclusions narrow + documented:
 
 Flip Biome lint and Knip CI jobs from advisory to blocking once their findings
 reach zero (or an agreed, documented allowlist) on `v3`. Track remaining
-findings in Progress. Each flip is its own small PR referencing this plan.
+findings in Progress. The user later ruled that the complete current Biome
+error baseline belongs in one PR rather than a sequence of rule-sized PRs:
+PR #5348 owns the full Tier 1 Biome error ratchet and its enforcement flip.
+Warnings, infos, and the noise-heavy Knip backlog remain advisory follow-up
+work.
 
 ### Biome lint backlog (baseline 2026-07-19, after `noNonNullAssertion` off)
 
-Post-disable totals: **519 errors, 2456 warnings, 434 infos** (~3.4k), across 1604 files. Suggested ratchet order (each its own small PR, verify in-container/CI):
+Post-disable totals from the original migration remain the historical baseline.
+PR #5348 refreshes this baseline against the current v3 and packages all
+current error-severity diagnostics together. The suggested ratchet order below
+is now the in-PR execution order, not a set of PR boundaries:
 
 | Tier | Rule(s) | ~Count | Fix approach |
 |---|---|---|---|

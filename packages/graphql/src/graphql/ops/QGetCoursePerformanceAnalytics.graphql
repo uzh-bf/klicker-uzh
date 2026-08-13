@@ -3,6 +3,7 @@ query GetCoursePerformanceAnalytics($courseId: String!) {
     name
     totalParticipants
     activityProgresses {
+      activityId
       activityName
       activityType
       startedCount

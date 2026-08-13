@@ -34,7 +34,7 @@ function ImgWithModal({
           <div className="relative">
             <img
               src={src}
-              alt="Image"
+              alt={alt ?? ''}
               height="0"
               width="0"
               className={twMerge(
@@ -65,7 +65,7 @@ function ImgWithModal({
       }}
     >
       <div className="relative h-full w-full">
-        <img src={src} alt="Image" className="object-contain" />
+        <img src={src} alt={alt ?? ''} className="object-contain" />
       </div>
     </Modal>
   )

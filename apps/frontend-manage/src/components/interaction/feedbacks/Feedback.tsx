@@ -60,19 +60,23 @@ function Feedback({
 
   return (
     <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div
-        className="cursor-pointer p-4 pb-2.5 transition-colors hover:bg-gray-50"
-        onClick={() => setIsEditingActive((prev) => !prev)}
-        data-cy={`open-feedback-${content}`}
-      >
+      <div className="p-4 pb-2.5">
         <div className="flex w-full flex-row items-start justify-between">
-          <div className="flex-1 pr-4">
-            <p className="mb-2 text-base text-gray-900">{content}</p>
-            <div className="flex flex-row flex-wrap items-center gap-3 text-sm text-gray-500">
-              <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-expanded={isEditingActive}
+            className="flex-1 cursor-pointer pr-4 text-left transition-colors hover:bg-gray-50"
+            onClick={() => setIsEditingActive((prev) => !prev)}
+            data-cy={`open-feedback-${content}`}
+          >
+            <span className="mb-2 block text-base text-gray-900">
+              {content}
+            </span>
+            <span className="flex flex-row flex-wrap items-center gap-3 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
                 <span>{dayjs(createdAt).format('DD.MM.YYYY HH:mm')}</span>
-              </div>
-              <div className="flex items-center gap-1">
+              </span>
+              <span className="flex items-center gap-1">
                 {resolved ? (
                   <>
                     <FontAwesomeIcon
@@ -94,9 +98,9 @@ function Feedback({
                     </span>
                   </>
                 )}
-              </div>
+              </span>
               {pinned && (
-                <div className="flex items-center gap-1">
+                <span className="flex items-center gap-1">
                   <FontAwesomeIcon
                     icon={faThumbTack}
                     className="text-primary-100"
@@ -104,19 +108,19 @@ function Feedback({
                   <span className="text-primary-100">
                     {t('manage.cockpit.filterPinned')}
                   </span>
-                </div>
+                </span>
               )}
               {responses && responses.length > 0 && (
-                <div className="hidden items-center gap-1 md:flex">
+                <span className="hidden items-center gap-1 md:flex">
                   <span>
                     {t('manage.cockpit.answersGiven', {
                       number: responses.length,
                     })}
                   </span>
-                </div>
+                </span>
               )}
-            </div>
-          </div>
+            </span>
+          </button>
 
           <div className="-mt-1 flex h-full flex-col items-end justify-between print:hidden">
             <div className="flex flex-row items-center gap-3">

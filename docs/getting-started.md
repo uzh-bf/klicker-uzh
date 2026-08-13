@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-03'
+timestamp: '2026-08-10'
 tags:
   - environment
   - onboarding
@@ -18,7 +18,7 @@ Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, includi
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
-Code-quality tooling (config-derived) runs on the host and in CI, never baked into the devcontainer image. **Biome** (`biome.json`) is the formatter and general linter for code (TS/JS/JSON/CSS) with the house style (no semicolons, single quotes, `es5` trailing commas, 2-space indent, line width 80) and import organization via its assist; it **excludes** `playwright/` (Biome mangles Playwright `test.describe.serial()` chains), which **Prettier** formats along with all Markdown/YAML. **ESLint** stays only as the Next.js safety net (`pnpm run lint` via Turbo, per-app `eslint .`). **Knip** (`knip.json`) reports unused files/deps/exports; **Gitleaks** (`.gitleaks.toml`) scans for secrets. In CI, formatting, types, syncpack, and Gitleaks are **blocking**; Biome lint and Knip are **advisory** during the migration.
+Code-quality tooling (config-derived) runs on the host and in CI, never baked into the devcontainer image. **Biome** (`biome.json`) is the formatter and general linter for code (TS/JS/JSON/CSS) with the house style (no semicolons, single quotes, `es5` trailing commas, 2-space indent, line width 80) and import organization via its assist; it **excludes** `playwright/` (Biome mangles Playwright `test.describe.serial()` chains), which **Prettier** formats along with all Markdown/YAML. The error-severity Biome lint tier is now **blocking** through `pnpm run lint:biome`, both in `pnpm run check:all` and CI. Biome warnings and infos remain advisory. **ESLint** stays in parallel as the Next.js safety net (`pnpm run lint` via Turbo, per-app `eslint .`); **Prettier** retains Markdown/YAML and Playwright ownership. **Knip** (`knip.json`) reports unused files/deps/exports and remains advisory until its per-workspace entry model is tuned; **Gitleaks** (`.gitleaks.toml`) scans for secrets.
 
 Compiler settings follow the code's runtime and build owner:
 
@@ -30,7 +30,7 @@ Compiler settings follow the code's runtime and build owner:
 | Node-only script source                    | `module: NodeNext` with `noEmit`; the runtime transpiler owns execution                                                                                                             |
 | Check-only config extending an emit config | `noEmit`; disable inherited declarations when declaration portability is outside the check's purpose, and keep incremental state separate from the emitting build                   |
 
-The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; Prisma's Rollup build deliberately does not because it deletes `dist` while TypeScript's parallel build-start hook may read its cache. Separate compiler invocations also use separate build-info files: no-output checks cannot overwrite emit state, and Export's library and CLI Rollup builds own distinct caches. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
+The workspace does not use TypeScript project references or `tsc -b`, so `composite` is not a package-role marker. Emitted packages use `incremental` only when their build preserves outputs and matching state atomically; all Rollup TypeScript plugin invocations deliberately run non-incrementally because build hooks may delete output directories and host/DevPod compiler state is not portable. Turbo owns reusable Rollup package-output caching. Package-level `tsc` invocations use separate build-info files, so no-output checks cannot overwrite emit state. Do not choose `NodeNext` or `Bundler` by package location alone: choose it based on whether TypeScript/Node must resolve the emitted runtime imports or another bundler owns that job.
 
 ## Onboarding Paths
 

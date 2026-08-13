@@ -109,7 +109,7 @@ function StackCreationStep({
                     {values.stacks.map(
                       (stack: ElementStackFormValues, index: number) => (
                         <StackBlockCreation
-                          key={`stack-${index}`}
+                          key={stack.clientId}
                           highlightFTNoSL
                           stackIx={index}
                           stack={stack}

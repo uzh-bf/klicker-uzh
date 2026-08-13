@@ -2,6 +2,11 @@ import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import del from 'rollup-plugin-delete'
+import { createRequire } from 'node:module'
+
+const withNonIncrementalTypescriptOptions = createRequire(import.meta.url)(
+  '@klicker-uzh/build-config'
+)
 
 const config = defineConfig([
   {
@@ -17,17 +22,15 @@ const config = defineConfig([
         targets: ['dist'],
       }),
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-        declaration: true,
-        declarationDir: 'dist',
-        outputToFilesystem: true,
-        compilerOptions: {
-          incremental: false,
-          tsBuildInfoFile: undefined,
-        },
-      }),
+      typescript(
+        withNonIncrementalTypescriptOptions({
+          tsconfig: './tsconfig.json',
+          rootDir: 'src',
+          declaration: true,
+          declarationDir: 'dist',
+          outputToFilesystem: true,
+        })
+      ),
       // copy({
       //   targets: [
       //     {

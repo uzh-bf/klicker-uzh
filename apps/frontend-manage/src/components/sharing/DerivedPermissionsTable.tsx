@@ -77,9 +77,9 @@ function DerivedPermissionsTable({
               </td>
             </tr>
           ) : (
-            derivedPermissions.map((permission, index) => (
+            derivedPermissions.map((permission) => (
               <tr
-                key={index}
+                key={permission.permissionId}
                 className="border-t border-gray-200 hover:bg-gray-50"
                 data-cy={`derived-permission-${permission.username}`}
               >
@@ -93,8 +93,9 @@ function DerivedPermissionsTable({
                         }`
                       : '-'}
                   </div>
-                  <div
-                    className="text-primary-100 flex cursor-pointer flex-row items-center gap-1.5 hover:underline"
+                  <button
+                    type="button"
+                    className="text-primary-100 flex cursor-pointer flex-row items-center gap-1.5 border-0 bg-transparent p-0 hover:underline"
                     onClick={() => {
                       setDerivedPermissionOriginAlert({
                         open: true,
@@ -107,7 +108,7 @@ function DerivedPermissionsTable({
                     <span>
                       {t('manage.sharing.whereDoesThisPermissionOriginate')}
                     </span>
-                  </div>
+                  </button>
                 </td>
                 <td className="px-4 py-1.5 text-sm text-gray-900">
                   {t(`manage.sharing.permissions${permission.permissionLevel}`)}

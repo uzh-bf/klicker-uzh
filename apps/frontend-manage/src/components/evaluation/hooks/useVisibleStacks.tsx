@@ -52,7 +52,7 @@ function useVisibleStacks({
 
     // if the selected item is too close to the beginning for width on both sides, return the first 2 * width + 1 items
     return items.slice(0, 2 * width + 1)
-  }, [stacks, width, activeStack, t])
+  }, [activeStack, stacks, t, type, width])
 
   return visibleStacks
 }

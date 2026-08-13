@@ -120,8 +120,10 @@ function AnswerCollectionItem({
 
         <div className="flex items-center gap-4">
           {collection.isManager && (collection.numSharedUsers ?? 0) > 0 && (
-            <div
-              className="hover:text-primary-100 flex cursor-pointer items-center text-sm text-gray-600"
+            <button
+              type="button"
+              aria-label={`${t(`manage.sharing.share${ObjectType.AnswerCollection}`)} (${collection.numSharedUsers} ${t('shared.generic.users')})`}
+              className="hover:text-primary-100 flex cursor-pointer items-center border-0 bg-transparent p-0 text-sm text-gray-600"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -131,7 +133,7 @@ function AnswerCollectionItem({
             >
               <span className="mr-1">{collection.numSharedUsers}</span>
               <FontAwesomeIcon icon={faUserGroup} />
-            </div>
+            </button>
           )}
 
           {dropdownItems.length > 0 && (

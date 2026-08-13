@@ -757,6 +757,7 @@ export default {
       activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
+      selectLeaderboardParticipant: 'View leaderboard participant {number}',
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 

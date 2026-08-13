@@ -17,7 +17,7 @@ function ObjectAccessLabel({
 
   if (accessType === ObjectAccess.Public) {
     return (
-      <div
+      <span
         className={twMerge(
           'flex flex-row items-center gap-2 text-green-700',
           className
@@ -25,12 +25,12 @@ function ObjectAccessLabel({
       >
         <FontAwesomeIcon icon={faLockOpen} />
         {!iconOnly ? t(`manage.catalog.access${ObjectAccess.Public}`) : null}
-      </div>
+      </span>
     )
   }
 
   return (
-    <div
+    <span
       className={twMerge(
         'flex flex-row items-center gap-2 text-orange-600',
         className
@@ -38,7 +38,7 @@ function ObjectAccessLabel({
     >
       <FontAwesomeIcon icon={faUserLock} />
       {!iconOnly ? t(`manage.catalog.access${ObjectAccess.Restricted}`) : null}
-    </div>
+    </span>
   )
 }
 

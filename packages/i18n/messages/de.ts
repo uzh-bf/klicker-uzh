@@ -763,6 +763,8 @@ export default {
       activePracticeQuizzesInCourse: 'Aktive Übungs-Quizzes in {name}',
       noMicroLearningsActive: 'Keine Microlearnings aktiv.',
       activeMicroLearningsInCourse: 'Aktive Microlearnings in {name}',
+      selectLeaderboardParticipant:
+        'Teilnehmende Person {number} der Rangliste anzeigen',
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 

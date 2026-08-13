@@ -29,7 +29,9 @@ function SignInOutButton() {
     return (
       <>
         <UserNotification
-          message={t('auth.signedInAs', { username: session?.user?.email! })}
+          message={t('auth.signedInAs', {
+            username: session.user?.email ?? '',
+          })}
           type="info"
           className={{ root: '-mt-4 mb-4' }}
         />

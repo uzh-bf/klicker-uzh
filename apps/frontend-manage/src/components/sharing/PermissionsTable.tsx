@@ -39,6 +39,13 @@ function PermissionsTable({
   const activeColumnIndex = activePermissionLevel
     ? permissionLevelToColumnIndex[activePermissionLevel]
     : -1
+  const permissionColumns = [
+    PermissionLevel.Read,
+    ...(showExecution ? [PermissionLevel.Execute] : []),
+    PermissionLevel.Write,
+    PermissionLevel.Admin,
+    PermissionLevel.Owner,
+  ]
 
   return (
     <table className="w-full border-collapse overflow-hidden rounded-lg border-b shadow-sm">
@@ -72,7 +79,10 @@ function PermissionsTable({
           >
             <td className="px-4 py-3 text-sm text-gray-900">{action}</td>
             {permissions.map((hasPermission, index) => (
-              <td key={index} className="px-4 py-3 text-center">
+              <td
+                key={permissionColumns[index]}
+                className="px-4 py-3 text-center"
+              >
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}
                   className={`text-lg ${

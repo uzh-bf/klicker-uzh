@@ -24,6 +24,7 @@ export function TitleImage() {
                       href="https://community.klicker.uzh.ch/t/klickeruzh-v3-2-release-information/388"
                       className="whitespace-nowrap font-semibold"
                       target="_blank"
+                      rel="noopener"
                       style={{ marginLeft: '0.75rem' }}
                     >
                       <span className="absolute inset-0" aria-hidden="true" />
@@ -32,12 +33,20 @@ export function TitleImage() {
                   </div>
                 </div>
 
-                <img className="-ml-2 w-80" src="/img/logos/KlickerLogo.png" />
+                <img
+                  className="-ml-2 w-80"
+                  src="/img/logos/KlickerLogo.png"
+                  alt="KlickerUZH logo"
+                />
                 <p className="mt-1 text-2xl leading-8 text-gray-600">
                   Enhance your classroom experience.
                 </p>
                 <div className="mt-10 flex items-center gap-x-6">
-                  <a href="https://manage.klicker.uzh.ch" target="_blank">
+                  <a
+                    href="https://manage.klicker.uzh.ch"
+                    target="_blank"
+                    rel="noopener"
+                  >
                     <Button primary className={{ root: 'border-none text-lg' }}>
                       Sign Up / Login
                     </Button>
@@ -54,6 +63,7 @@ export function TitleImage() {
                   Central IT. For more details see{' '}
                   <a
                     target="_blank"
+                    rel="noopener"
                     href="https://community.klicker.uzh.ch/t/2024-01-10-2024-02-08-klickeruzh-v3-0-introduction-and-didactic-use-cases/257"
                   >
                     the following page

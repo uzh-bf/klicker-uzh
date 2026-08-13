@@ -38,6 +38,7 @@ function UseCase({ slug }: UseCaseProps) {
       <img
         className="h-32 w-full object-cover sm:h-48 md:h-64 lg:h-80"
         src={useCase.headerImgSrc}
+        alt={`${useCase.title} header`}
       />
       <div className="grid grid-cols-1 gap-4 md:p-4 lg:grid-cols-3 lg:gap-8 lg:p-0 lg:pt-8">
         <div className="col-span-1 lg:col-span-3">
@@ -52,15 +53,18 @@ function UseCase({ slug }: UseCaseProps) {
         <div className="prose sticky top-4 order-1 col-span-1 h-fit bg-slate-100 p-4 shadow-sm md:order-2 lg:rounded-lg">
           <H2 className={{ root: 'mb-2 text-slate-600' }}>Goals</H2>
           <div className="space-y-2 text-sm">
-            {useCase.goals?.map((goal, index) => {
+            {useCase.goals?.map((goal) => {
               // Check if the goal is a nested structure
               if (Array.isArray(goal)) {
                 const [category, subgoals] = goal
                 return (
-                  <div key={index} className="space-y-2">
+                  <div key={`goal-${category}`} className="space-y-2">
                     <div className="font-bold text-slate-600">{category}</div>
-                    {subgoals.map((subgoal, subIndex) => (
-                      <div key={subIndex} className="flex items-start gap-3">
+                    {subgoals.map((subgoal) => (
+                      <div
+                        key={`subgoal-${category}-${subgoal}`}
+                        className="flex items-start gap-3"
+                      >
                         <FontAwesomeIcon
                           icon={faCircleCheck}
                           className="mt-1 text-slate-400"
@@ -73,7 +77,7 @@ function UseCase({ slug }: UseCaseProps) {
               }
               // Handle flat goal structure
               return (
-                <div key={index} className="flex items-start gap-3">
+                <div key={`goal-${goal}`} className="flex items-start gap-3">
                   <FontAwesomeIcon
                     icon={faCircleCheck}
                     className="mt-1 text-slate-400"
@@ -88,8 +92,11 @@ function UseCase({ slug }: UseCaseProps) {
             <div className="mt-8">
               <H2 className={{ root: 'mb-2 text-slate-600' }}>References</H2>
               <div className="space-y-2 text-sm">
-                {useCase.references?.map((reference, index) => (
-                  <div key={index} className="flex items-start gap-3">
+                {useCase.references?.map((reference) => (
+                  <div
+                    key={`reference-${reference}`}
+                    className="flex items-start gap-3"
+                  >
                     <FontAwesomeIcon
                       icon={faBook}
                       className="mt-1 text-slate-400"

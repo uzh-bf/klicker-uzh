@@ -112,8 +112,7 @@ function ElementStack({
     } else {
       return false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentResponse])
+  }, [stackStorage, studentResponse])
 
   // initialize student responses
   useStudentResponse({

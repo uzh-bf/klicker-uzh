@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-04'
+timestamp: '2026-08-10'
 tags:
   - ci
   - deployment
@@ -20,7 +20,8 @@ Per-commit workflows: `check` (consolidated check job combining format, lint, sy
 - **Required status contexts**: To safely mark path-filtered workflows as required in branch protection, they include dedicated status checkers (e.g. `test-graphql-status`, `test-playwright-status`) that always execute and fail-open. They fail open for two distinct cases: a dependency **skipped** by the path filter, and a dependency **cancelled** by `cancel-in-progress`. The second matters because a push that produces two `pull_request` events seconds apart (an atomic multi-branch push, or a quick re-push) starts two runs of the same workflow; the older is cancelled, and without the explicit `cancelled` guard its gate concluded `failure` and left a red check on the PR that only a manual re-run cleared.
 - **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
 - **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.
-- **Format + lint**: `check-format` runs Biome (code) + Prettier (Markdown/YAML and `playwright/`) and is **blocking**. `check-lint` runs an **advisory** Biome lint step (non-blocking during the migration) before the blocking Turbo/ESLint pass (the Next.js safety net), plus `check:prisma-sync` and `check:agents-md`.
+- **Format + lint**: `check-format` runs Biome (code) + Prettier (Markdown/YAML and `playwright/`) and is **blocking**. `check-lint` runs the blocking Biome error tier before the separate blocking Turbo/ESLint pass (the Next.js safety net), plus `check:prisma-sync` and `check:agents-md`. Biome warnings and infos remain advisory, and the two tools retain separate ownership.
+- **Rollup build state**: TypeScript incremental compilation is disabled inside Rollup configs; Turbo remains the cache for package build outputs, so host and DevPod builds do not share compiler state with absolute paths.
 - **Unused code**: `check-knip` runs Knip **advisory** (non-blocking); ratchets to blocking once the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.

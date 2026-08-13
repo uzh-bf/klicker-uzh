@@ -52,6 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     data-cy="chat-new-thread-button"
                     onClick={handleNewThread}
                     disabled={participationRequired}

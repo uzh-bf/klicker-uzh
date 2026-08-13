@@ -277,6 +277,10 @@ function useLiveQuizActions({
       setRemovalModal,
       setDeletionModal,
       setActivityLogOpen,
+      quiz.courseId,
+      setSchedulingModal,
+      setResetModal,
+      unpublishLiveQuiz,
     ]
   )
 

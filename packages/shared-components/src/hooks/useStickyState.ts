@@ -29,7 +29,7 @@ function useStickyState(key: string, defaultValue: any) {
       }
     }
     get()
-  }, [])
+  }, [defaultValue, key])
 
   useEffect(() => {
     try {

@@ -28,7 +28,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction, useMemo } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo } from 'react'
 import { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
@@ -57,12 +57,15 @@ function useMicroLearningActions({
   const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument
   )
-  const onSuccessToast = () =>
-    toast({
-      type: 'success',
-      message: t('manage.course.linkAccessCopied'),
-      options: { duration: 4000 },
-    })
+  const onSuccessToast = useCallback(
+    () =>
+      toast({
+        type: 'success',
+        message: t('manage.course.linkAccessCopied'),
+        options: { duration: 4000 },
+      }),
+    [t]
+  )
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${microLearning.courseLanguage ? `/${microLearning.courseLanguage}` : ''}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
   const actions = useMemo(
@@ -275,6 +278,9 @@ function useMicroLearningActions({
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,
+      onSuccessToast,
+      refetchActivities,
+      unpublishing,
     ]
   )
 

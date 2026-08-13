@@ -62,7 +62,7 @@ report the live-answer gap explicitly.
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:
 
-1. `pnpm run check:all` — typecheck + format + lint + syncpack + AGENTS.md validation + Prisma-sync validation (same as pre-commit hook). The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
+1. `pnpm run check:all` — typecheck + format + blocking Biome error-tier lint + ESLint/Turbo lint + syncpack + AGENTS.md validation + Prisma-sync validation (same as pre-commit hook). Biome warnings and infos remain advisory; Prettier continues to own Markdown/YAML and `playwright/`, while ESLint remains the Next.js safety net. The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
 2. `pnpm run build` — same as pre-push hook; also refreshes generated artifacts.
 3. Targeted tests per the routing table above — quote failures exactly; never delete/weaken a test to pass.
 4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).

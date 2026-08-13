@@ -47,7 +47,7 @@
     "build:test": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
     "check:agents-md": "node ./util/check-agents-md.mjs",
-    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:prisma-sync",
+    "check:all": "run-p --npm-path pnpm check check:format check:lint lint:biome check:syncpack check:agents-md check:prisma-sync",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",

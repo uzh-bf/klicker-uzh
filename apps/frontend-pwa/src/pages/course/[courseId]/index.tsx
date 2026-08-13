@@ -515,7 +515,7 @@ function CourseOverview({
                   </div>
 
                   {/* // TODO: update the translation strings as well, once this hard-coded content has been updated with a flexible implementation */}
-                  {course.awards && course.awards?.length != 0 && (
+                  {course.awards && course.awards.length !== 0 && (
                     <div className="mt-4 rounded border border-orange-200 bg-orange-100 px-4 py-3 shadow md:mt-6">
                       <H3 className={{ root: 'mb-2 text-base' }}>
                         {t('pwa.courses.awards')}

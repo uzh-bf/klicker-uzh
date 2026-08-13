@@ -27,6 +27,9 @@ function LiveQuizCountdown({
 }) {
   // compute the time until expiration (student-visible time) and
   // the time until the block is closed (including cooldown)
+  // `inCooldown` intentionally retriggers this memo after the visible countdown
+  // expires so the component enters the fixed-duration save/cooldown phase.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: inCooldown is an intentional lifecycle trigger for the cooldown transition
   const { endDuration, endTimestamp, cooldown } = useMemo(() => {
     // if the block is already closed, return early
     if (block.status === ElementBlockStatus.Executed) {
@@ -78,7 +81,7 @@ function LiveQuizCountdown({
       setInCooldown(cooldown)
       onExpiration()
     }
-  }, [endTimestamp, cooldown])
+  }, [cooldown, inCooldown, onExpiration, setInCooldown])
 
   const isStatic = !endTimestamp || block.status === ElementBlockStatus.Executed
   const isActiveCooldown = inCooldown && !isStatic

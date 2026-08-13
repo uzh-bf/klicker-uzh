@@ -5,6 +5,9 @@ function useFindShortcutFocus({
 }: {
   ref: RefObject<HTMLDivElement | null>
 }) {
+  // The ref is mutable and the document listener is intentionally installed
+  // once; it reads the current search container when the shortcut fires.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutable ref is intentionally read by a once-installed document listener
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // listen for Cmd+F (Mac) or Ctrl+F (Windows/Linux)

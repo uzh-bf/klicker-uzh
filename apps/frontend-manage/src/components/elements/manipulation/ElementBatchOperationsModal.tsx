@@ -124,7 +124,7 @@ function ElementBatchOperationsModal({
     })
 
     setAffectedElements(updatedAffectedElements)
-  }, [selectedElements, selectedActions])
+  }, [selectedElements, selectedActions, t])
 
   const numOfUpdatedElements = useMemo(() => {
     return affectedElements.filter((element) => element.actionsApplied).length

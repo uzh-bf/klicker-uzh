@@ -83,6 +83,7 @@ function PracticeQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/use_cases/practice_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -101,6 +102,7 @@ function PracticeQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/tutorials/practice_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}
@@ -119,6 +121,7 @@ function PracticeQuizInformationStep({
                             <a
                               href="https://www.klicker.uzh.ch/student_tutorials/practice_quiz/"
                               target="_blank"
+                              rel="noopener"
                               className="underline"
                             >
                               {text}

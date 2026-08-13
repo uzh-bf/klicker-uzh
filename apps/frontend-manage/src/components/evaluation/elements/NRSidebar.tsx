@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import createOccurrenceKeyFactory from '@klicker-uzh/shared-components/src/utils/createOccurrenceKeyFactory'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
 import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
@@ -44,6 +45,8 @@ function NRSidebar({
 }: NRSidebarProps) {
   const t = useTranslations()
   const router = useRouter()
+  const solutionRangeKey = createOccurrenceKeyFactory()
+  const exactSolutionKey = createOccurrenceKeyFactory()
 
   return (
     <div
@@ -114,8 +117,12 @@ function NRSidebar({
             <div className="mt-4 font-bold">
               {t('manage.evaluation.correctSolutionRanges')}:
             </div>
-            {instance.results.solutionRanges.map((range, innerIndex) => (
-              <div key={`solution-range-${innerIndex}`}>
+            {instance.results.solutionRanges.map((range) => (
+              <div
+                key={solutionRangeKey(
+                  `solution-range-${range?.min}-${range?.max}`
+                )}
+              >
                 [{range?.min ?? '-∞'},{range?.max ?? '+∞'}]
               </div>
             ))}
@@ -127,8 +134,10 @@ function NRSidebar({
               {t('manage.evaluation.correctExactSolutions')}:
             </div>
             <ul>
-              {instance.results.exactSolutions.map((solution, innerIndex) => (
-                <li key={`innerIndex-${innerIndex}`}>{solution}</li>
+              {instance.results.exactSolutions.map((solution) => (
+                <li key={exactSolutionKey(`solution-${solution}`)}>
+                  {solution}
+                </li>
               ))}
             </ul>
           </div>

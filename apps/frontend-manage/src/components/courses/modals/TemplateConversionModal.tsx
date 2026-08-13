@@ -19,7 +19,7 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import ConfirmationItem from '../../common/ConfirmationItem'
 import ConversionTypeMonitor from './ConversionTypeMonitor'
@@ -50,6 +50,12 @@ function TemplateConversionModal({
     questionAccess: false,
     resourceAccess: false,
   })
+  const setActivityConversionConfirmation = useCallback((value: boolean) => {
+    setConfirmations((prev) => ({
+      ...prev,
+      activityConversion: value,
+    }))
+  }, [])
 
   // query if any question in the activity requires additional resources and if these exist
   const { data, loading } = useQuery(CheckTemplateInfoAvailableDocument, {
@@ -68,10 +74,10 @@ function TemplateConversionModal({
   // set corresponding confirmation to true if no resources are required
   useEffect(() => {
     if (templateInfo?.noResourcesRequired) {
-      setConfirmations({
-        ...confirmations,
+      setConfirmations((prev) => ({
+        ...prev,
         resourceAccess: true,
-      })
+      }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateInfo])
@@ -172,12 +178,7 @@ function TemplateConversionModal({
             <Form className="flex flex-col gap-2">
               <ConversionTypeMonitor
                 conversionType={values.conversionType}
-                setConversionConfirmation={(value) =>
-                  setConfirmations((prev) => ({
-                    ...prev,
-                    activityConversion: value,
-                  }))
-                }
+                setConversionConfirmation={setActivityConversionConfirmation}
               />
               {currentStep === 0 && (
                 <div>

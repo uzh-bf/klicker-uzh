@@ -595,8 +595,9 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
-export interface ElementOptionsFlashcard {}
-export interface ElementOptionsContent {}
+export type EmptyElementOptions = Record<PropertyKey, never>
+export type ElementOptionsFlashcard = EmptyElementOptions
+export type ElementOptionsContent = EmptyElementOptions
 
 export type ElementOptions =
   | ElementOptionsChoices

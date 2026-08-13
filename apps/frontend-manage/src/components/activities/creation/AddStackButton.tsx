@@ -8,7 +8,13 @@ import { useDrop } from 'react-dnd'
 import { isEmpty } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import { ElementDragDropTypes } from '../../elements/Element'
-import { ElementBlockFormValues, ElementStackFormValues } from './WizardLayout'
+import {
+  createElementBlockClientId,
+  createElementInstanceClientId,
+  createElementStackClientId,
+  ElementBlockFormValues,
+  ElementStackFormValues,
+} from './WizardLayout'
 
 interface AddStackButtonProps {
   type: 'stack'
@@ -40,6 +46,7 @@ function AddStackButton({
       drop: (item: ElementDragDropTypes) => {
         const initialElements = [
           {
+            clientId: createElementInstanceClientId(),
             id: item.id,
             title: item.title,
             type: item.questionType,
@@ -51,11 +58,13 @@ function AddStackButton({
 
         if (type === 'block') {
           push({
+            clientId: createElementBlockClientId(),
             timeLimit: undefined,
             elements: initialElements,
           })
         } else {
           push({
+            clientId: createElementStackClientId(),
             displayName: '',
             description: '',
             elements: initialElements,
@@ -80,6 +89,7 @@ function AddStackButton({
             }}
             onClick={() => {
               const elements = Object.values(selection).map((question) => ({
+                clientId: createElementInstanceClientId(),
                 id: question.id,
                 title: question.name,
                 type: question.type,
@@ -93,11 +103,13 @@ function AddStackButton({
 
               if (type === 'block') {
                 push({
+                  clientId: createElementBlockClientId(),
                   timeLimit: undefined,
                   elements,
                 })
               } else {
                 push({
+                  clientId: createElementStackClientId(),
                   displayName: '',
                   description: '',
                   elements,
@@ -128,6 +140,7 @@ function AddStackButton({
               Object.values(selection).forEach((question) => {
                 const elements = [
                   {
+                    clientId: createElementInstanceClientId(),
                     id: question.id,
                     title: question.name,
                     type: question.type,
@@ -142,11 +155,13 @@ function AddStackButton({
 
                 if (type === 'block') {
                   push({
+                    clientId: createElementBlockClientId(),
                     timeLimit: undefined,
                     elements,
                   })
                 } else {
                   push({
+                    clientId: createElementStackClientId(),
                     displayName: '',
                     description: '',
                     elements,
@@ -177,19 +192,22 @@ function AddStackButton({
         </div>
       )}
       {drop(
-        <div
+        <button
+          type="button"
           className={twMerge(
-            'hover:bg-accent flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid p-2 text-center md:w-16',
+            'hover:bg-accent flex w-full cursor-pointer flex-col items-center justify-center rounded border border-solid bg-transparent p-2 text-center md:w-16',
             isOver && 'bg-primary-20'
           )}
           onClick={() => {
             if (type === 'block') {
               push({
+                clientId: createElementBlockClientId(),
                 timeLimit: undefined,
                 elements: [],
               })
             } else {
               push({
+                clientId: createElementStackClientId(),
                 displayName: '',
                 description: '',
                 elements: [],
@@ -199,12 +217,12 @@ function AddStackButton({
           data-cy={`drop-elements-add-${type}`}
         >
           <FontAwesomeIcon icon={faPlus} size="lg" />
-          <div>
+          <span className="max-w-full whitespace-normal">
             {type === 'block'
               ? t('manage.activityWizard.newBlock')
               : t('manage.activityWizard.newStack')}
-          </div>
-        </div>
+          </span>
+        </button>
       )}
     </div>
   )

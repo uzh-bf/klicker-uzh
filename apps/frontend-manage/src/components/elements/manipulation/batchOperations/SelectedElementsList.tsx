@@ -78,8 +78,8 @@ function SelectedElementsList({
                           )}
                         </div>
                         <ul className="list-disc pl-4">
-                          {element.reasons.map((reason, idx) => (
-                            <li key={idx} className="mt-0.5">
+                          {element.reasons.map((reason) => (
+                            <li key={reason} className="mt-0.5">
                               {reason}
                             </li>
                           ))}

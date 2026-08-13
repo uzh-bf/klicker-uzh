@@ -657,7 +657,7 @@ export async function POST(
       .optional()
       .default([]),
   })
-  let parsed
+  let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {

@@ -26,9 +26,7 @@ function CarouselMonitor({
     api.on('select', () => {
       setFieldValue('avatar', avatars[api.selectedScrollSnap() ?? 0])
     })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api])
+  }, [api, avatars, setFieldValue])
 
   return null
 }

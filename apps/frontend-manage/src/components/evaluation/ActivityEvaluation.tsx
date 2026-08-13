@@ -117,7 +117,6 @@ function ActivityEvaluation({
   useChartTypeUpdate({
     activeInstance,
     activeElementType: instanceResults[activeInstance]?.type,
-    chartType,
     setChartType,
   })
 

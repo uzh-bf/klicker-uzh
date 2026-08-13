@@ -18,7 +18,10 @@ import * as yup from 'yup'
 import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
+import WizardLayout, {
+  createElementStackClientId,
+  PracticeQuizFormValues,
+} from '../WizardLayout'
 import PracticeQuizDescriptionStep from './PracticeQuizDescriptionStep'
 import PracticeQuizInformationStep from './PracticeQuizInformationStep'
 import PracticeQuizSettingsStep from './PracticeQuizSettingsStep'
@@ -173,6 +176,7 @@ function PracticeQuizWizard({
     description: '',
     stacks: [
       {
+        clientId: createElementStackClientId(),
         displayName: '',
         description: '',
         elements: [],
@@ -216,12 +220,14 @@ function PracticeQuizWizard({
     description: initialValues?.description || formDefaultValues.description,
     stacks: initialValues?.stacks
       ? initialValues.stacks.map((stack) => ({
+          clientId: createElementStackClientId(),
           displayName: stack.displayName ?? '',
           description: stack.description ?? '',
           elements: stack.elements!.map((instance) => {
             const [elementId, _] = instance.elementData.id.split('-v')
 
             return {
+              clientId: `existing-${instance.id}`,
               id: parseInt(elementId),
               title: instance.elementData.name,
               type: instance.elementData.type,
@@ -281,7 +287,14 @@ function PracticeQuizWizard({
           }),
       })
     },
-    [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
+    [
+      createPracticeQuiz,
+      editMode,
+      editPracticeQuiz,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const activityId =

@@ -137,6 +137,9 @@ export function RuntimeProvider({
   }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
 
   // sync active thread with URL params
+  // Retry state intentionally triggers this synchronization effect without
+  // being read by its callback after a failed thread switch.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: syncRetryTrigger is an intentional retry-only lifecycle trigger
   useEffect(() => {
     if (!threadsLoaded) return
 

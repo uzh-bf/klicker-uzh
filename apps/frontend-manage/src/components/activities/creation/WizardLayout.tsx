@@ -7,6 +7,7 @@ import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 export type GroupActivityClueFormValues = {
+  clientId: string
   name: string
   displayName: string
   type: ParameterType.String | ParameterType.Number
@@ -26,6 +27,7 @@ interface CommonFormValues {
 }
 
 export interface ElementInstanceFormInput {
+  clientId: string
   id: number
   title: string
   type: ElementType
@@ -34,13 +36,36 @@ export interface ElementInstanceFormInput {
   duplicateInstance: boolean
 }
 
+let nextElementInstanceClientId = 0
+let nextElementBlockClientId = 0
+let nextElementStackClientId = 0
+let nextGroupActivityClueClientId = 0
+
+export function createElementInstanceClientId(): string {
+  return `new-${nextElementInstanceClientId++}`
+}
+
+export function createElementBlockClientId(): string {
+  return `block-${nextElementBlockClientId++}`
+}
+
+export function createElementStackClientId(): string {
+  return `stack-${nextElementStackClientId++}`
+}
+
+export function createGroupActivityClueClientId(): string {
+  return `clue-${nextGroupActivityClueClientId++}`
+}
+
 export interface ElementBlockFormValues {
+  clientId: string
   timeLimit?: number
   randomSelection?: number | null
   elements: ElementInstanceFormInput[]
 }
 
 export interface ElementStackFormValues {
+  clientId: string
   displayName?: string
   description?: string
   elements: ElementInstanceFormInput[]

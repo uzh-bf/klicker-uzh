@@ -57,7 +57,7 @@ function GroupActivitySubscriber({
         return { groupActivityDetails: updatedActivity }
       },
     })
-  }, [activityId, subscribeToMore])
+  }, [activityId, groupActivityName, setActivityEnded, subscribeToMore, t])
 
   return null
 }

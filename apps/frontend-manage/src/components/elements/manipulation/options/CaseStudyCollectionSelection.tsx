@@ -71,35 +71,40 @@ function CaseStudyCollectionSelection({
     setSelectedItems,
   })
 
+  const caseValues = casesField.value
+  const selectedItemIds = itemsField.value
+
   // update the solutions stored on the cases to be consistent with the selected items
   useEffect(() => {
     // map over the cases and remove any solutions that do not belong to one of the selected items
-    const newCases = casesField.value?.map((caseItem) => {
+    const newCases = caseValues?.map((caseItem) => {
       // if no solutions are set, skip this case
       if (!('solutions' in caseItem) || !caseItem.solutions) {
         return caseItem
       }
 
       // filter out all solution entries that do not belong to one of the selected items
-      const newSolutions = Object.fromEntries(
-        Object.entries(caseItem.solutions).filter(([itemIdString]) =>
-          (itemsField.value ?? []).includes(
-            parseInt(itemIdString.split('-')[1])
-          )
-        )
+      const solutionEntries = Object.entries(caseItem.solutions)
+      const filteredSolutionEntries = solutionEntries.filter(([itemIdString]) =>
+        (selectedItemIds ?? []).includes(parseInt(itemIdString.split('-')[1]))
       )
+
+      // keep the existing object when no solution was removed to avoid a Formik update loop
+      if (filteredSolutionEntries.length === solutionEntries.length) {
+        return caseItem
+      }
 
       return {
         ...caseItem,
-        solutions: newSolutions,
+        solutions: Object.fromEntries(filteredSolutionEntries),
       }
     })
 
-    // update the cases field with the new cases
-    casesHelpers.setValue(newCases)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsField.value, casesHelpers])
+    // update the cases field only when at least one solution was removed
+    if (newCases?.some((caseItem, index) => caseItem !== caseValues?.[index])) {
+      casesHelpers.setValue(newCases)
+    }
+  }, [caseValues, casesHelpers, selectedItemIds])
 
   // locally store the selected answer collection
   const selectedCollection = useMemo(() => {
@@ -117,7 +122,8 @@ function CaseStudyCollectionSelection({
       <UserNotification type="warning" className={{ root: 'text-sm' }}>
         {t.rich('manage.elements.CSAnswerCollectionRequired', {
           link: (text) => (
-            <span
+            <button
+              type="button"
               className="cursor-pointer font-bold underline"
               onClick={() => {
                 // switch to the creation mode for new answer collection options
@@ -129,7 +135,7 @@ function CaseStudyCollectionSelection({
               data-cy="create-inline-answer-collection"
             >
               {text}
-            </span>
+            </button>
           ),
           link2: (text) => (
             <Link

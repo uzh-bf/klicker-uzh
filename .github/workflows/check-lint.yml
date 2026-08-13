@@ -48,12 +48,10 @@ jobs:
           version: 11.5.0
           run_install: true
 
-      # Advisory during the Biome migration (D4): surfaces Biome lint findings in
-      # the logs but never blocks the PR. The turbo/eslint step below stays the
-      # blocking linter (Next.js safety net). Ratchet to blocking later.
-      - name: Check linting (Biome, advisory)
+      # Biome owns the blocking error tier. ESLint remains a separate blocking
+      # Next.js safety net; warnings and infos stay outside this gate.
+      - name: Check linting (Biome, blocking error tier)
         if: steps.filter.outputs.should_run == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           pnpm run lint:biome

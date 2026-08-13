@@ -20,6 +20,8 @@ import CompletionStep from '../CompletionStep'
 import WizardLayout, {
   GroupActivityClueFormValues,
   GroupActivityFormValues,
+  createElementStackClientId,
+  createGroupActivityClueClientId,
 } from '../WizardLayout'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
 import GroupActivityInformationStep from './GroupActivityInformationStep'
@@ -205,6 +207,7 @@ function GroupActivityWizard({
     description: '',
     clues: [],
     stack: {
+      clientId: createElementStackClientId(),
       displayName: '',
       description: '',
       elements: [],
@@ -252,6 +255,8 @@ function GroupActivityWizard({
     },
   ]
 
+  const initialStack = initialValues?.stacks?.[0]
+
   const [formData, setFormData] = useState<GroupActivityFormValues>({
     name: initialValues?.name || formDefaultValues.name,
     displayName: initialValues?.displayName || formDefaultValues.displayName,
@@ -259,6 +264,7 @@ function GroupActivityWizard({
     clues:
       initialValues?.clues?.map((clue) => {
         return {
+          clientId: createGroupActivityClueClientId(),
           name: clue.name,
           displayName: clue.displayName,
           type: clue.type,
@@ -266,22 +272,25 @@ function GroupActivityWizard({
           unit: clue.unit ?? undefined,
         }
       }) ?? formDefaultValues.clues,
-    stack: initialValues?.stacks
+    stack: initialStack
       ? {
-          displayName: initialValues?.stacks[0].displayName ?? '',
-          description: initialValues?.stacks[0].description ?? '',
-          elements: initialValues?.stacks[0].elements!.map((instance) => {
-            const [elementId, _] = instance.elementData.id.split('-v')
+          clientId: createElementStackClientId(),
+          displayName: initialStack.displayName ?? '',
+          description: initialStack.description ?? '',
+          elements:
+            initialStack.elements?.map((instance) => {
+              const [elementId, _] = instance.elementData.id.split('-v')
 
-            return {
-              id: parseInt(elementId),
-              title: instance.elementData.name,
-              type: instance.elementData.type,
-              hasSampleSolution: false,
-              existingInstanceId: instance.id,
-              duplicateInstance: duplicationMode,
-            }
-          }),
+              return {
+                clientId: `existing-${instance.id}`,
+                id: parseInt(elementId),
+                title: instance.elementData.name,
+                type: instance.elementData.type,
+                hasSampleSolution: false,
+                existingInstanceId: instance.id,
+                duplicateInstance: duplicationMode,
+              }
+            }) ?? [],
         }
       : formDefaultValues.stack,
 
@@ -333,7 +342,14 @@ function GroupActivityWizard({
           }),
       })
     },
-    [createGroupActivity, editGroupActivity, initialValues?.id]
+    [
+      createGroupActivity,
+      editGroupActivity,
+      editMode,
+      initialValues?.course?.id,
+      initialValues?.id,
+      t,
+    ]
   )
 
   const selectedCourseId =

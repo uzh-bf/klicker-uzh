@@ -54,7 +54,7 @@ function MicroLearningSubscriber({
         return { microLearning: updatedMicroLearning }
       },
     })
-  }, [activityId, subscribeToMore])
+  }, [activityId, microLearningName, subscribeToMore, t])
 
   return null
 }

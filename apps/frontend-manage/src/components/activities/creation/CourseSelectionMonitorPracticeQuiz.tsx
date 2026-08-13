@@ -55,8 +55,14 @@ function CourseSelectionMonitorPracticeQuiz({
         true
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.courseId])
+  }, [
+    gamifiedCourses,
+    nonGamifiedCourses,
+    setCourseGamified,
+    setTouched,
+    setValues,
+    values.courseId,
+  ])
 
   return null
 }

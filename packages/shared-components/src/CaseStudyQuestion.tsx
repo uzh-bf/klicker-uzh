@@ -105,22 +105,23 @@ function CaseStudyQuestion({
         {sequential && options.cases.length > 1 ? (
           <div>
             <div className="-mb-2 mt-4 flex w-full flex-row flex-wrap gap-4">
-              {options.cases.map((_, index) => {
+              {options.cases.map((currentCase, index) => {
                 return (
-                  <div
+                  <button
+                    type="button"
                     onClick={() => setCaseIndex(index)}
                     className={twMerge(
-                      'bg-uzh-grey-60 rounded-full px-2.5 py-0.5 text-sm font-bold hover:cursor-pointer',
+                      'bg-uzh-grey-60 rounded-full border-0 px-2.5 py-0.5 text-sm font-bold hover:cursor-pointer',
                       caseIndex === index && 'bg-uzh-blue-80 text-white',
                       caseValidity[index] && 'bg-green-700 text-white'
                     )}
-                    key={`case-breadcrumb-${index}`}
+                    key={`case-breadcrumb-${currentCase.id}`}
                   >
                     {caseValidity[index] ? (
                       <span className="mr-1">✓</span>
                     ) : null}
                     <span>{`${t('shared.generic.case')} ${index + 1}`}</span>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -199,7 +200,7 @@ function CaseStudyQuestion({
           </div>
         ) : (
           options.cases.map((currentCase, index) => (
-            <div key={`case-${index}`}>
+            <div key={`case-${currentCase.id}`}>
               <CSCase
                 elementIx={elementIx}
                 caseIndex={index}

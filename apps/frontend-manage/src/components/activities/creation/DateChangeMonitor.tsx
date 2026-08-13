@@ -16,11 +16,12 @@ function DateChangeMonitor({
     MicroLearningFormValues | GroupActivityFormValues
   >>
 }) {
+  // The dates are trigger-only dependencies: this Formik monitor intentionally
+  // touches both fields whenever either date changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: date values intentionally trigger this Formik touch effect
   useEffect(() => {
     setTouched({ startDate: true, endDate: true })
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.startDate, values.endDate])
+  }, [setTouched, values.startDate, values.endDate])
 
   return null
 }

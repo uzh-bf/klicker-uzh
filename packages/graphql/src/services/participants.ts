@@ -608,16 +608,20 @@ export async function flagElement(
     },
   })
 
+  const elementStack = elementInstance?.elementStack
+  if (!elementStack) {
+    return elementFeedback
+  }
   if (
-    !elementInstance?.elementStack!.practiceQuiz?.course?.notificationEmail &&
-    !elementInstance?.elementStack!.microLearning?.course?.notificationEmail
+    !elementStack?.practiceQuiz?.course?.notificationEmail &&
+    !elementStack?.microLearning?.course?.notificationEmail
   ) {
     // return early if no notification email has been specified -> only set database entry
     return elementFeedback
   }
 
-  const practiceQuiz = elementInstance.elementStack.practiceQuiz
-  const microLearning = elementInstance.elementStack.microLearning
+  const practiceQuiz = elementStack.practiceQuiz
+  const microLearning = elementStack.microLearning
 
   await fetch(process.env.NOTIFICATION_URL as string, {
     method: 'POST',

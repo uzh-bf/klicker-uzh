@@ -68,5 +68,36 @@
       "enabled": true,
       "quoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/frontend-manage/src/components/activities/creation/microLearning/MicroLearningWizard.tsx",
+        "apps/frontend-manage/src/components/activities/creation/practiceQuiz/PracticeQuizWizard.tsx",
+        "apps/frontend-manage/src/components/catalog/administration/AddObjectToCatalogModal.tsx",
+        "apps/frontend-manage/src/components/courses/PointCorrectionsModal.tsx",
+        "apps/frontend-manage/src/components/courses/modals/CourseManipulationModal.tsx",
+        "apps/frontend-manage/src/components/elements/manipulation/useValidationSchema.ts",
+        "apps/frontend-pwa/src/components/forms/CreateAccountForm.tsx",
+        "apps/frontend-pwa/src/components/forms/UpdateAccountInfoForm.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noThenProperty": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["email/23FS Beta Notification.html"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnknownProperty": "warn"
+          }
+        }
+      }
+    }
+  ]
 }

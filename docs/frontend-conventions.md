@@ -65,6 +65,10 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 
 **Formik + Yup** (not react-hook-form). Design-system `Formik*` field components bind by `name`. Existing modals (e.g. `apps/frontend-manage/src/components/sharing/TransferOwnershipModal.tsx`) are the template.
 
+- Dynamic activity-wizard element rows carry a client-only occurrence ID in addition to the domain element ID. Preserve that ID through edits and reordering, and use it for React keys; do not derive keys from titles or array positions.
+- Effects that reconcile Formik arrays should call `setValue` only when normalization changes an item reference. Rewriting an equivalent array on every render can create an update loop.
+- Rows that contain child controls use a neutral container with a dedicated primary button for the row action. Do not put access selectors, menus, feedback actions, or join/leave controls inside a `role="button"` or native button.
+
 ## Gotchas absorbed from experience
 
 - **Feature flags gate alone.** Don't combine a flag with data-dependent counts (`flag && count > 0`) — that creates chicken-and-egg visibility problems.

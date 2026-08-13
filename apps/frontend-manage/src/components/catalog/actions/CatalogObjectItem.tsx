@@ -8,19 +8,18 @@ import {
   faEllipsisVertical,
   faList,
   faQuestion,
-  IconDefinition,
+  type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogObject,
+  type CatalogObject,
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import useCatalogObjectActionsDropdown from '../../../lib/hooks/useCatalogObjectActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import ObjectAccessSelection from '../administration/ObjectAccessSelection'
@@ -78,91 +77,88 @@ function CatalogObjectItem({
     setRemovalModal,
   })
 
+  const handlePrimaryAction = () => {
+    if (actionsDisabled) {
+      // primary action for users with access: go to corresponding list view and highlight object
+      if (object.objectType === ObjectType.LiveQuiz && object.templateId) {
+        router.push({
+          pathname: '/activities',
+          query: { highlight: object.objectUuid },
+        })
+      } else if (object.objectType === ObjectType.AnswerCollection) {
+        router.push({
+          pathname: '/resources/answerCollections',
+          query: { highlight: object.objectId },
+        })
+      }
+    } else if (
+      object.isRequested &&
+      object.access === ObjectAccess.Restricted
+    ) {
+      // primary action for restricted objects with pending request: open request withdrawal modal
+      setRequestCancellationModal(true)
+    } else if (object.access === ObjectAccess.Public) {
+      if (object.objectType === ObjectType.LiveQuiz && object.templateId) {
+        // primary action for public templates: create activity with template
+        router.push(`/templates/${object.templateId}`)
+      } else {
+        // primary action for public objects: import the object to the user's account
+        setImportModal(true)
+      }
+    } else {
+      // primary action for restricted objects: request access
+      setRequestModal(true)
+    }
+  }
+
   return (
     <>
       <div
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
-        onClick={() => {
-          if (actionsDisabled) {
-            // primary action for users with access: go to corresponding list view and highlight object
-            if (
-              object.objectType === ObjectType.LiveQuiz &&
-              !!object.templateId
-            ) {
-              router.push({
-                pathname: '/activities',
-                query: { highlight: object.objectUuid },
-              })
-            } else if (object.objectType === ObjectType.AnswerCollection) {
-              router.push({
-                pathname: '/resources/answerCollections',
-                query: { highlight: object.objectId },
-              })
-            }
-          } else if (
-            object.isRequested &&
-            object.access === ObjectAccess.Restricted
-          ) {
-            // primary action for restricted objects with pending request: open request withdrawal modal
-            setRequestCancellationModal(true)
-          } else if (object.access === ObjectAccess.Public) {
-            if (
-              object.objectType === ObjectType.LiveQuiz &&
-              !!object.templateId
-            ) {
-              // primary action for public templates: create activity with template
-              router.push(`/templates/${object.templateId}`)
-            } else {
-              // primary action for public objects: import the object to the user's account
-              setImportModal(true)
-            }
-          } else {
-            // primary action for restricted objects: request access
-            setRequestModal(true)
-          }
-        }}
         data-cy={`catalog-object-${object.name}`}
       >
-        <div className="flex flex-row items-center gap-2">
-          <ObjectAccessLabel
-            iconOnly
-            accessType={object.access}
-            className="mr-2 w-3 text-sm"
-          />
-          {typeof objectTypeIcons[object.objectType] !== 'undefined' && (
-            <FontAwesomeIcon
-              icon={objectTypeIcons[object.objectType]!}
-              className="h-4 w-4"
-            />
-          )}
-          <div>{object.name}</div>
-          {object.ownerShortname ? (
-            <div className="text-xs text-slate-500">
-              {t('manage.resources.byOwner', {
-                owner: object.ownerShortname,
-              })}
-            </div>
-          ) : null}
-        </div>
-        <div
-          className={twMerge(
-            'flex flex-row items-center gap-2',
-            dropdownItems.length === 0 && 'mr-9'
-          )}
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 flex-row items-center justify-between text-left"
+          onClick={handlePrimaryAction}
         >
-          {object.isRequested ? (
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faClock} />
-              <div>{t('manage.catalog.accessRequested')}</div>
-            </div>
-          ) : null}
-          {object.isShared ? (
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faCheck} />
-              <div>{t('manage.catalog.accessGranted')}</div>
-            </div>
-          ) : null}
-
+          <span className="flex min-w-0 flex-row items-center gap-2">
+            <ObjectAccessLabel
+              iconOnly
+              accessType={object.access}
+              className="mr-2 w-3 text-sm"
+            />
+            {typeof objectTypeIcons[object.objectType] !== 'undefined' && (
+              <FontAwesomeIcon
+                icon={objectTypeIcons[object.objectType]!}
+                className="h-4 w-4"
+              />
+            )}
+            <span>{object.name}</span>
+            {object.ownerShortname ? (
+              <span className="text-xs text-slate-500">
+                {t('manage.resources.byOwner', {
+                  owner: object.ownerShortname,
+                })}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex flex-row items-center gap-2">
+            {object.isRequested ? (
+              <span className="flex flex-row items-center gap-1.5">
+                <FontAwesomeIcon icon={faClock} />
+                <span>{t('manage.catalog.accessRequested')}</span>
+              </span>
+            ) : null}
+            {object.isShared ? (
+              <span className="flex flex-row items-center gap-1.5">
+                <FontAwesomeIcon icon={faCheck} />
+                <span>{t('manage.catalog.accessGranted')}</span>
+              </span>
+            ) : null}
+          </span>
+        </button>
+        <div className="flex flex-row items-center gap-2">
           {managedAccess ? (
             <div className="ml-2">
               <ObjectAccessSelection

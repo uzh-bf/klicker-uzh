@@ -6,21 +6,21 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  CatalogCollection,
+  type CatalogCollection,
   ObjectAccess,
   ObjectType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Dropdown, toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import useCatalogCollectionActionsDropdown from '../../../lib/hooks/useCatalogCollectionActionsDropdown'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
-import ObjectAccessLabel from '../ObjectAccessLabel'
 import CatalogChangeAccessModal from '../actions/CatalogChangeAccessModal'
 import CatalogRequestModal from '../actions/CatalogRequestModal'
 import CatalogCollectionDeletionModal from '../collections/CatalogCollectionDeletionModal'
 import CatalogCollectionNameChangeModal from '../collections/CatalogCollectionNameChangeModal'
+import ObjectAccessLabel from '../ObjectAccessLabel'
 import ObjectAccessSelection from './ObjectAccessSelection'
 
 function CatalogCollectionListItem({
@@ -56,75 +56,75 @@ function CatalogCollectionListItem({
     setRequestModal,
   })
 
+  const handlePrimaryAction = () => {
+    if (
+      collection.access === ObjectAccess.Public ||
+      collection.isShared ||
+      collection.isManager
+    ) {
+      router.push(`/resources/catalog/${collection.id}`)
+    } else if (
+      collection.access === ObjectAccess.Restricted ||
+      !collection.isRequested
+    ) {
+      setRequestModal(true)
+    }
+  }
+
   return (
     <>
       <div
         className="flex h-9 flex-row items-center justify-between border-b border-solid px-3 py-6 text-sm hover:cursor-pointer hover:bg-slate-100"
-        onClick={(e) => {
-          e?.stopPropagation()
-          if (
-            (e.target as HTMLElement).closest(
-              '[data-catalog-collection-actions]'
-            )
-          ) {
-            return
-          }
-
-          if (
-            collection.access === ObjectAccess.Public ||
-            collection.isShared ||
-            collection.isManager
-          ) {
-            router.push(`/resources/catalog/${collection.id}`)
-          } else if (
-            collection.access === ObjectAccess.Restricted ||
-            !collection.isRequested
-          ) {
-            setRequestModal(true)
-          }
-        }}
         data-cy={`catalog-object-${collection.name}`}
       >
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 flex-row items-center justify-between text-left"
+          onClick={handlePrimaryAction}
+        >
+          <span className="flex min-w-0 flex-row items-center gap-2">
+            <ObjectAccessLabel
+              iconOnly
+              accessType={collection.access}
+              className="mr-2 w-3 text-sm"
+            />
+            <FontAwesomeIcon icon={faFolder} className="h-4 w-4" />
+            <span>{collection.name}</span>
+            {collection.ownerShortname ? (
+              <span className="text-xs text-slate-500">
+                {t('manage.resources.byOwner', {
+                  owner: collection.ownerShortname,
+                })}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex flex-row items-center gap-2">
+            {collection.isRequested ? (
+              <span className="flex flex-row items-center gap-1.5">
+                <FontAwesomeIcon icon={faClock} />
+                <span>{t('manage.catalog.accessRequested')}</span>
+              </span>
+            ) : null}
+            {collection.isShared ? (
+              <span className="flex flex-row items-center gap-1.5">
+                <FontAwesomeIcon icon={faCheck} />
+                <span>{t('manage.catalog.accessGranted')}</span>
+              </span>
+            ) : null}
+          </span>
+        </button>
         <div className="flex flex-row items-center gap-2">
-          <ObjectAccessLabel
-            iconOnly
-            accessType={collection.access}
-            className="mr-2 w-3 text-sm"
-          />
-          <FontAwesomeIcon icon={faFolder} className="h-4 w-4" />
-          <div>{collection.name}</div>
           {collection.isEditor && (
-            <FontAwesomeIcon
-              icon={faPencil}
-              onClick={(e) => {
-                e.stopPropagation()
-                setNameChangeModal(true)
-              }}
+            <button
+              type="button"
+              aria-label={t('shared.generic.edit')}
+              onClick={() => setNameChangeModal(true)}
               className="hover:cursor-pointer"
               data-cy={`change-catalog-collection-name-${collection.name}`}
-            />
+            >
+              <FontAwesomeIcon icon={faPencil} />
+            </button>
           )}
-          {collection.ownerShortname ? (
-            <div className="text-xs text-slate-500">
-              {t('manage.resources.byOwner', {
-                owner: collection.ownerShortname,
-              })}
-            </div>
-          ) : null}
-        </div>
-        <div className="flex flex-row items-center gap-2">
-          {collection.isRequested ? (
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faClock} />
-              <div>{t('manage.catalog.accessRequested')}</div>
-            </div>
-          ) : null}
-          {collection.isShared ? (
-            <div className="flex flex-row items-center gap-1.5">
-              <FontAwesomeIcon icon={faCheck} />
-              <div>{t('manage.catalog.accessGranted')}</div>
-            </div>
-          ) : null}
           {collection.isManager ? (
             <div className="ml-2">
               <ObjectAccessSelection

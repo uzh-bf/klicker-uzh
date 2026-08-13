@@ -58,12 +58,13 @@ function ActivityList({
             t('manage.activities.noActivitiesWarning')}{' '}
           {t.rich('manage.activities.activeFiltersWarning', {
             reset: (text) => (
-              <span
-                className="cursor-pointer font-bold underline"
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 font-bold underline"
                 onClick={handleFilterReset}
               >
                 {text}
-              </span>
+              </button>
             ),
           })}
         </UserNotification>

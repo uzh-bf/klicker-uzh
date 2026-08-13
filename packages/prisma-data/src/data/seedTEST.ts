@@ -526,7 +526,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const startedAtLiveQuiz = new Date()
   const endedAtLiveQuiz = new Date(startedAtLiveQuiz.getTime() + 60 * 60 * 1000)
   for (const data of DATA_TEST.LIVE_QUIZZES) {
-    const isEnded = data.status == Prisma.PublicationStatus.ENDED
+    const isEnded = data.status === Prisma.PublicationStatus.ENDED
 
     const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: data.id },
@@ -1517,7 +1517,11 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   const selectionResponse =
     selectionQuestion?.answerCollectionItems?.map((sol) => sol.id) ?? []
 
-  const groupActivityDecisions = groupActivityCompleted.stacks[0]!.elements.map(
+  const groupActivityDecisionElements =
+    groupActivityCompleted.stacks[0]!.elements.filter(
+      (element) => element.elementType !== Prisma.ElementType.FLASHCARD
+    )
+  const groupActivityDecisions = groupActivityDecisionElements.map(
     (element) => {
       const baseDecisions = {
         instanceId: element.id,
@@ -1576,11 +1580,15 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           caseStudyResponse,
         }
       }
+
+      throw new Error(
+        `Unsupported group activity element type: ${element.elementType}`
+      )
     }
   )
 
-  const groupActivityDecisions2 =
-    groupActivityCompleted.stacks[0]!.elements.map((element) => {
+  const groupActivityDecisions2 = groupActivityDecisionElements.map(
+    (element) => {
       const baseDecisions = {
         instanceId: element.id,
         type: element.elementType,
@@ -1640,10 +1648,19 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           caseStudyResponse,
         }
       }
-    })
 
-  const groupActivityDecisionsGraded =
-    groupActivityGraded.stacks[0]!.elements.map((element) => {
+      throw new Error(
+        `Unsupported group activity element type: ${element.elementType}`
+      )
+    }
+  )
+
+  const groupActivityGradedDecisionElements =
+    groupActivityGraded.stacks[0]!.elements.filter(
+      (element) => element.elementType !== Prisma.ElementType.FLASHCARD
+    )
+  const groupActivityDecisionsGraded = groupActivityGradedDecisionElements.map(
+    (element) => {
       const baseDecisions = {
         instanceId: element.id,
         type: element.elementType,
@@ -1701,7 +1718,12 @@ async function seedTest(prisma: Prisma.PrismaClient) {
           caseStudyResponse,
         }
       }
-    })
+
+      throw new Error(
+        `Unsupported group activity element type: ${element.elementType}`
+      )
+    }
+  )
 
   // seed multiple group activity instance with decisions
   const groupActivityInstanceId = 1

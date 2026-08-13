@@ -49,9 +49,7 @@ function CourseChangeMonitor({
       }),
       true
     )
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.courseId])
+  }, [courses, setTouched, setValues, values.courseId])
 
   return null
 }

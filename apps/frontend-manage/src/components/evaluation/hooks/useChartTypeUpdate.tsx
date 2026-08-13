@@ -8,35 +8,21 @@ import { useEffect } from 'react'
 interface UseChartTypeUpdateProps {
   activeInstance: number
   activeElementType?: ElementType
-  chartType?: ChartType
   setChartType: (newType: ChartType) => void
 }
 
 function useChartTypeUpdate({
   activeInstance,
   activeElementType,
-  chartType,
   setChartType,
 }: UseChartTypeUpdateProps) {
   useEffect(() => {
-    if (
-      activeInstance !== -1 &&
-      typeof chartType !== 'undefined' &&
-      typeof activeElementType !== 'undefined'
-    ) {
-      const possibleChartTypes = ACTIVE_CHART_TYPES[activeElementType].map(
-        (type) => type.value
-      )
-
+    if (activeInstance !== -1 && typeof activeElementType !== 'undefined') {
       // always set the chart type to the standard chart type for this question type
-      // (do not keep previous selection when switching between questions - as logic below does)
+      // (do not keep previous selection when switching between questions)
       setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
-      // if (!possibleChartTypes.includes(chartType)) {
-      //   setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
-      // }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeInstance, activeElementType])
+  }, [activeElementType, activeInstance, setChartType])
 }
 
 export default useChartTypeUpdate

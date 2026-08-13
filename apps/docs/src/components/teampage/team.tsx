@@ -16,10 +16,10 @@ function Team({ teamMembers }: { teamMembers: TeamMember[] }) {
           </h2>
         </div>
         <div className="flex flex-wrap justify-center gap-8">
-          {teamMembers.map((item, index) => (
+          {teamMembers.map((item) => (
             <div
               className="w-16 overflow-hidden rounded-lg shadow-lg sm:w-1/2 md:w-1/3 lg:w-1/4"
-              key={index}
+              key={item.name}
             >
               <div className="h-52 overflow-hidden bg-white p-2 pt-3">
                 <img

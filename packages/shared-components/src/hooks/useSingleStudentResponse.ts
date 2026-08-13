@@ -79,7 +79,7 @@ function useSingleStudentResponse({
         valid: false,
       })
     }
-  }, [instance])
+  }, [defaultRead, instance, setStudentResponse])
 }
 
 export default useSingleStudentResponse
