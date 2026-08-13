@@ -111,10 +111,12 @@ receive only provider-visible stable-prefix inputs:
 - canonical provider-visible tool descriptions and JSON schemas.
 
 The helper will serialize that structure deterministically and hash it with
-SHA-256. The emitted OpenAI prompt-cache key will contain the version and hash,
-for example `klicker:prompt-prefix:v1:sha256:<digest>`. The raw effective
-prompt and tool schemas remain local inputs to hashing and are never logged or
-sent as identity metadata.
+SHA-256. The emitted OpenAI prompt-cache key will use the provider-safe
+64-character form `klicker:pc:v1:<50-hex-character-digest>`; the full versioned
+fingerprint remains the hash input, while the wire key stays within the
+provider's key-length contract. The raw effective prompt and tool schemas
+remain local inputs to hashing and are never logged or sent as identity
+metadata.
 
 The canonical tool representation must use the provider-visible schema rather
 than executable functions or MCP client instances. It should resolve each
@@ -576,7 +578,8 @@ the report preserves the exact identity that was reviewed.
   package check, root checks, and production build remain unavailable because
   `devrouter ensure . --json` cannot determine process identity for its
   workspace lock.
-- [ ] Integrated verification and final review.
+- [ ] Integrated verification and final review (initial review found and
+  corrected a provider key-length defect; the correction review remains).
 - [ ] Implement and verify the approved slices.
 
 ## Next action after user approval

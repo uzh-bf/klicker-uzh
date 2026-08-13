@@ -115,6 +115,7 @@ describe('prompt cache identity', () => {
     })
 
     expect(first.promptCacheKey).toBe(second.promptCacheKey)
+    expect(first.promptCacheKey).toHaveLength(64)
     expect(first.toolOrder).toEqual(['read', 'search'])
     expect(second.toolOrder).toEqual(first.toolOrder)
   })

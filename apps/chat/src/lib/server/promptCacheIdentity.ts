@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto'
 import { asSchema, type FlexibleSchema, jsonSchema, type ToolSet } from 'ai'
 
-const PROMPT_CACHE_KEY_VERSION = 'klicker:prompt-prefix:v1'
+const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v1'
+const PROMPT_CACHE_KEY_MAX_LENGTH = 64
+const PROMPT_CACHE_KEY_DIGEST_LENGTH =
+  PROMPT_CACHE_KEY_MAX_LENGTH - PROMPT_CACHE_KEY_VERSION.length - 1
 const IMPLICIT_PROMPT_CACHE_DEPLOYMENTS = new Set([
   'gpt-5.6',
   'gpt-5.6-luna',
@@ -191,7 +194,10 @@ export async function buildPromptCacheRequest(
     .digest('hex')
 
   return {
-    promptCacheKey: `${PROMPT_CACHE_KEY_VERSION}:sha256:${digest}`,
+    promptCacheKey: `${PROMPT_CACHE_KEY_VERSION}:${digest.slice(
+      0,
+      PROMPT_CACHE_KEY_DIGEST_LENGTH
+    )}`,
     toolOrder,
     tools,
   }
