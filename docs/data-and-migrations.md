@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-11'
 tags:
   - backend
   - prisma
@@ -36,6 +36,8 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+- The correlated LiveQuiz response migration is intentionally expand-only: it adds response-collection enums, quiz-scoped respondents, nullable participant linkage, and identity checks, but defers the respondent-response uniqueness index until the admission writer slice. A standard transactional `CREATE UNIQUE INDEX` on the existing response table could block active response processing; add that index only with the admission rollout and its preflight/verification.
+- Export-label persistence is owned by the export slice rather than the domain-boundary slice. Do not add a label table to the initial response-collection migration before the export implementation consumes it.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations

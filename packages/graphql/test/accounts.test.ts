@@ -4,6 +4,7 @@ import {
   Locale,
   PermissionLevel,
   PrismaClient,
+  PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import type {
   CaseStudyElementData,
@@ -15,9 +16,18 @@ import type {
 } from '@klicker-uzh/types'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { changeInitialSettings } from '../src/services/accounts.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  changeInitialSettings,
+  loginTemporaryParticipant,
+} from '../src/services/accounts.js'
+import {
+  initializePrisma,
+  seedLiveQuiz,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 import { userOne, userTwo } from './userData.js'
+import { v4 as uuid } from 'uuid'
 
 const COLLECTION_ENTRIES = [
   'Live poll',
@@ -641,6 +651,63 @@ describe('Account demo element seeding', () => {
     ])
     await expect(
       prisma.liveQuiz.count({ where: { ownerId: userOne.id } })
+    ).resolves.toBe(1)
+  })
+})
+
+describe('Temporary participant admission', () => {
+  let prisma: PrismaClient
+  let hatchet: Hatchet
+  let emitter: EventEmitter
+  let userOneCtx: ContextWithUser
+
+  beforeAll(async () => {
+    const initialized = await initializePrisma()
+    prisma = initialized.prisma
+    hatchet = initialized.hatchet
+    emitter = initialized.emitter
+  })
+
+  afterAll(async () => {
+    await testCleanup(prisma)
+    await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const initialized = await testInitialization(prisma, hatchet, emitter)
+    userOneCtx = initialized.userOneCtx
+  })
+
+  afterEach(async () => testCleanup(prisma))
+
+  it('serializes duplicate temporary admission for one quiz and pseudonym', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.PUBLISHED },
+      userOneCtx
+    )
+    const pseudonym = `temporary-${uuid()}`
+    const context = {
+      ...userOneCtx,
+      res: { cookie: () => undefined } as any,
+    }
+
+    const results = await Promise.all([
+      loginTemporaryParticipant(
+        { liveQuizId: liveQuiz.id, pseudonym },
+        context
+      ),
+      loginTemporaryParticipant(
+        { liveQuizId: liveQuiz.id, pseudonym },
+        context
+      ),
+    ])
+
+    expect(results.filter((result) => result !== null)).toHaveLength(1)
+    expect(results.filter((result) => result === null)).toHaveLength(1)
+    await expect(
+      prisma.temporaryLeaderboardEntry.count({
+        where: { quizId: liveQuiz.id, username: pseudonym },
+      })
     ).resolves.toBe(1)
   })
 })

@@ -167,7 +167,12 @@ export async function calculateAssessmentCourseScores(
           courseAcc.numberOfCorrections += instance._count.corrections
 
           for (const response of instance.liveQuizResponses) {
-            if (response.elementBlockExecution !== block.execution) continue
+            if (
+              response.elementBlockExecution !== block.execution ||
+              response.participantId === null
+            ) {
+              continue
+            }
 
             const result = (courseAcc.studentResults[response.participantId] ??=
               {

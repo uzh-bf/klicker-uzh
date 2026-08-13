@@ -13,6 +13,7 @@ query GetActivityTemplate($templateId: String!) {
       isModerationEnabled
       isGamificationEnabled
       isAssessmentEnabled
+      responseCollectionMode
       accessMode
 
       name
