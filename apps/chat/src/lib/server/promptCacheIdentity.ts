@@ -32,11 +32,6 @@ export type PromptCacheIdentityInput = {
   tools: ToolSet
 }
 
-export type PromptCacheProviderOptionsInput = {
-  promptCacheKey: string
-  routingSource: 'custom' | 'default'
-}
-
 export type PromptCacheRequest = {
   promptCacheKey: string
   toolOrder: string[]
@@ -200,13 +195,4 @@ export async function buildPromptCacheRequest(
     toolOrder,
     tools,
   }
-}
-
-export function getOpenAIPromptCacheOptions({
-  promptCacheKey,
-  routingSource,
-}: PromptCacheProviderOptionsInput): { promptCacheKey?: string } {
-  if (routingSource !== 'default') return {}
-
-  return { promptCacheKey }
 }

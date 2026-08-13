@@ -2,10 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, type ToolSet, tool } from 'ai'
 import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
-import {
-  buildPromptCacheRequest,
-  getOpenAIPromptCacheOptions,
-} from '../src/lib/server/promptCacheIdentity'
+import { buildPromptCacheRequest } from '../src/lib/server/promptCacheIdentity'
 
 type StablePrefixChange = {
   deploymentId?: string
@@ -283,10 +280,7 @@ describe('prompt cache identity', () => {
       tools: chatRequest.tools,
       toolOrder: chatRequest.toolOrder,
       providerOptions: {
-        openai: getOpenAIPromptCacheOptions({
-          promptCacheKey: chatRequest.promptCacheKey,
-          routingSource: 'default',
-        }),
+        openai: { promptCacheKey: chatRequest.promptCacheKey },
       },
       maxRetries: 0,
     })
@@ -298,9 +292,12 @@ describe('prompt cache identity', () => {
     expect(
       chatTools.map((entry) => (entry.function as Record<string, unknown>).name)
     ).toEqual(['read', 'search'])
+    const searchChatTool = chatTools.find(
+      (entry) => (entry.function as Record<string, unknown>)?.name === 'search'
+    )
     expect(
       Object.keys(
-        ((chatTools[1]?.function as Record<string, unknown>)?.parameters ??
+        ((searchChatTool?.function as Record<string, unknown>)?.parameters ??
           {}) as Record<string, unknown>
       )
     ).toEqual([
@@ -336,10 +333,7 @@ describe('prompt cache identity', () => {
       tools: responsesRequest.tools,
       toolOrder: responsesRequest.toolOrder,
       providerOptions: {
-        openai: getOpenAIPromptCacheOptions({
-          promptCacheKey: responsesRequest.promptCacheKey,
-          routingSource: 'default',
-        }),
+        openai: { promptCacheKey: responsesRequest.promptCacheKey },
       },
       maxRetries: 0,
     })
@@ -351,9 +345,12 @@ describe('prompt cache identity', () => {
     )
     expect(responsesBody?.prompt_cache_options).toBeUndefined()
     expect(responseTools.map((entry) => entry.name)).toEqual(['read', 'search'])
+    const searchResponseTool = responseTools.find(
+      (entry) => entry.name === 'search'
+    )
     expect(
       Object.keys(
-        (responseTools[1]?.parameters ?? {}) as Record<string, unknown>
+        (searchResponseTool?.parameters ?? {}) as Record<string, unknown>
       )
     ).toEqual([
       '$schema',
@@ -368,20 +365,5 @@ describe('prompt cache identity', () => {
       cacheReadTokens: 1024,
       cacheWriteTokens: 256,
     })
-  })
-
-  test('emits the prompt cache key only for the default route', () => {
-    expect(
-      getOpenAIPromptCacheOptions({
-        promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test',
-        routingSource: 'default',
-      })
-    ).toEqual({ promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test' })
-    expect(
-      getOpenAIPromptCacheOptions({
-        promptCacheKey: 'synthetic-key',
-        routingSource: 'custom',
-      })
-    ).toEqual({})
   })
 })

@@ -29,15 +29,9 @@ replace a real-upstream staging smoke test.
 
 For OpenAI-compatible request-policy or prompt-cache changes, run
 `apps/chat/test/openai-cache-policy.test.ts` and
-`apps/chat/test/prompt-cache-identity.test.ts` after the streaming fixture.
-They capture synthetic Chat Completions and Responses requests, verify the
-default/custom exact-cache boundary and deterministic prompt identity, and
-assert public `usage.inputTokenDetails` buckets for uncached, cache-read, and
-cache-write input. The fixtures are no-network local proof only: they do not
-establish LiteLLM, provider, router, production, latency, or cost behavior.
-These changes are server-side and need no browser run; use the browser gate if
-the same change reaches UI, auth, redirect, cookie, or user-visible chat
-behavior.
+`apps/chat/test/prompt-cache-identity.test.ts` after the streaming fixture;
+see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
+for contract details and evidence boundaries.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser

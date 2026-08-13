@@ -77,8 +77,7 @@ deployment identity, transport family, and MCP tools to
 `buildPromptCacheRequest`. The helper hashes only a versioned canonical
 provider-visible projection with SHA-256, then emits the provider-safe
 `klicker:pc:v1:<50-hex-character-digest>` key and
-`getOpenAIPromptCacheOptions` passes it to the OpenAI provider. Tool execution
-functions, MCP clients,
+passes it to the OpenAI provider. Tool execution functions, MCP clients,
 participant/user/chatbot/thread/message/request identifiers, and raw tool-call
 identifiers are not identity inputs. The rebuilt tools retain runtime
 execution, and the route supplies their deterministic `toolOrder` to both

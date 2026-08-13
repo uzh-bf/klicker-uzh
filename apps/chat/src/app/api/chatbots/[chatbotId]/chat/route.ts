@@ -17,10 +17,7 @@ import {
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import {
-  buildPromptCacheRequest,
-  getOpenAIPromptCacheOptions,
-} from '@/src/lib/server/promptCacheIdentity'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   mapAssistantStepContent,
   type PersistedAssistantContentPart,
@@ -880,12 +877,6 @@ export async function POST(
           tools: mcpTools,
         })
       : null
-  const promptCacheOptions = promptCacheRequest
-    ? getOpenAIPromptCacheOptions({
-        promptCacheKey: promptCacheRequest.promptCacheKey,
-        routingSource: routing.source,
-      })
-    : {}
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1202,7 +1193,9 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
-          ...promptCacheOptions,
+          ...(promptCacheRequest
+            ? { promptCacheKey: promptCacheRequest.promptCacheKey }
+            : {}),
           ...(selectedModelConfig.usesResponsesApi && {
             store: getOpenAIResponsesStore(),
           }),
