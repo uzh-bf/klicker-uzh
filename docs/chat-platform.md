@@ -184,10 +184,14 @@ reasoning parts share one disclosure, adjacent tool calls share one group when t
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
-stays hidden until the same assistant message contains non-whitespace answer
-text. This keeps tool activity in stream order while preventing a result card
-from appearing as if it were the answer during the gap between tool completion
-and the model's next text step.
+stays hidden while the same assistant message is actively running without
+non-whitespace answer text. This keeps tool activity in stream order and
+prevents a result card from appearing as if it were the answer during the gap
+between tool completion and the model's next text step. If the turn becomes
+terminal before producing answer text, including an incomplete or aborted
+tool-only turn, valid completed sources are shown instead of being lost on
+reload. The source component still suppresses the section when normalization
+produces no sources.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` keeps a memoized
 `ThreadPrimitive.Messages` component map and passes the chatbot avatar through context. Runtime

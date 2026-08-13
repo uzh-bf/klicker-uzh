@@ -117,14 +117,19 @@ No new product primitive is needed.
 
 - Status: S2 implemented; S3 — documentation and integrated proof active.
 - Completed: base/ref check, planning-stage challenge, plan commit
-  `ba8b1b197`, S1 commit `65ef187d7`, S1 simplification adjustment, mixed-abort
-  content assembly, and the focused/full chat test checks.
+  `ba8b1b197`, S1 commit `65ef187d7`, S1 simplification adjustment, S2 commit
+  `cdf779703`, mixed-abort content assembly, and the focused/full chat test
+  checks.
 - Evidence: chat tests pass (`32` files, `243` tests), chat typecheck passes,
   and the isolated devrouter browser visibly shows a terminal tool-only source
   card after reload. The focused Playwright launch remains blocked by the
   container's incomplete Chromium cache; the existing paused-stream assertion
   remains in the suite unchanged.
-- Remaining: commit S2, run its persistence slice review and simplification,
-  complete docs, run integrated checks/build, and complete final review.
+- Review: S2 simplification passed with no reduction justified. The configured
+  slice-reviewer role was unavailable, so the required persistence review used
+  the documented read-only Sol fallback and found no runtime, sanitization,
+  ordering, ADR, product-primitive, or least-surprise finding.
+- Remaining: complete docs, run integrated checks/build, and complete final
+  review.
 - Delivery layer: local committed branch only.
 - Blockers: none known; do not publish without explicit authorization.
