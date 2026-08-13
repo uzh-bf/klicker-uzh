@@ -1,0 +1,386 @@
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function parsePositiveInteger(value: string | undefined) {
+  if (!value) return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseNumberArray(value: string | undefined): number[] | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) &&
+      parsed.length > 0 &&
+      parsed.every((entry) => Number.isInteger(entry)) &&
+      new Set(parsed).size === parsed.length
+      ? (parsed as number[])
+      : null
+  } catch {
+    return null
+  }
+}
+
+type CaseStudyResponseShape = {
+  cases: string[]
+  items: number[]
+  criteria: { id: string; min: number; max: number }[]
+}
+
+function parseCaseStudyResponseShape(
+  value: string | undefined
+): CaseStudyResponseShape | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (
+      !isRecord(parsed) ||
+      !Array.isArray(parsed.cases) ||
+      !parsed.cases.every(
+        (entry) => typeof entry === 'string' && entry.length > 0
+      ) ||
+      new Set(parsed.cases).size !== parsed.cases.length ||
+      !Array.isArray(parsed.items) ||
+      !parsed.items.every((entry) => Number.isInteger(entry) && entry > 0) ||
+      new Set(parsed.items).size !== parsed.items.length ||
+      !Array.isArray(parsed.criteria) ||
+      !parsed.criteria.every(
+        (entry) =>
+          isRecord(entry) &&
+          typeof entry.id === 'string' &&
+          entry.id.length > 0 &&
+          typeof entry.min === 'number' &&
+          Number.isFinite(entry.min) &&
+          typeof entry.max === 'number' &&
+          Number.isFinite(entry.max) &&
+          entry.min <= entry.max
+      ) ||
+      new Set(
+        parsed.criteria.map((entry) =>
+          isRecord(entry) && typeof entry.id === 'string' ? entry.id : ''
+        )
+      ).size !== parsed.criteria.length
+    ) {
+      return null
+    }
+
+    return parsed as CaseStudyResponseShape
+  } catch {
+    return null
+  }
+}
+
+function hasExactKeys(record: Record<string, unknown>, expected: string[]) {
+  const actual = Object.keys(record).sort()
+  const expectedKeys = [...expected].sort()
+  return (
+    actual.length === expectedKeys.length &&
+    actual.every((key, index) => key === expectedKeys[index])
+  )
+}
+
+function hasOnlyKeys(record: Record<string, unknown>, allowed: string[]) {
+  return Object.keys(record).every((key) => allowed.includes(key))
+}
+
+function validateRestrictions(type: string | undefined, restrictions: unknown) {
+  if (typeof restrictions === 'undefined') return true
+  if (!isRecord(restrictions)) return false
+
+  if (type === 'NUMERICAL') {
+    if (!hasOnlyKeys(restrictions, ['min', 'max'])) return false
+    const min = restrictions.min
+    const max = restrictions.max
+    if (
+      (typeof min !== 'undefined' &&
+        (typeof min !== 'number' || !Number.isFinite(min))) ||
+      (typeof max !== 'undefined' &&
+        (typeof max !== 'number' || !Number.isFinite(max)))
+    ) {
+      return false
+    }
+    return !(typeof min === 'number' && typeof max === 'number' && min > max)
+  }
+
+  if (type === 'FREE_TEXT') {
+    return (
+      hasOnlyKeys(restrictions, ['maxLength']) &&
+      (!('maxLength' in restrictions) ||
+        (typeof restrictions.maxLength === 'number' &&
+          Number.isInteger(restrictions.maxLength) &&
+          restrictions.maxLength >= 0))
+    )
+  }
+
+  return false
+}
+
+export function validateStudentResponse({
+  type,
+  response,
+  restrictions,
+  instanceInfo,
+}: {
+  type: string | undefined
+  response: unknown
+  restrictions?: unknown
+  instanceInfo?: Record<string, string>
+}): { valid: boolean; message?: string } {
+  if (!isRecord(response)) {
+    return {
+      valid: false,
+      message: `Invalid response object ${JSON.stringify(response)}`,
+    }
+  }
+
+  if (!validateRestrictions(type, restrictions)) {
+    return {
+      valid: false,
+      message: `Invalid restrictions submitted for ${type} question`,
+    }
+  }
+
+  if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
+    const choiceCount = parsePositiveInteger(instanceInfo?.choiceCount)
+    if (
+      choiceCount === null ||
+      !hasExactKeys(response, ['choices']) ||
+      !Array.isArray(response.choices) ||
+      response.choices.length === 0 ||
+      response.choices.length !== choiceCount ||
+      !response.choices.every(
+        (choice) =>
+          isRecord(choice) &&
+          (hasExactKeys(choice, ['ix']) ||
+            hasExactKeys(choice, ['ix', 'selected'])) &&
+          Number.isInteger(choice.ix) &&
+          Number(choice.ix) >= 0 &&
+          Number(choice.ix) < choiceCount &&
+          (typeof choice.selected === 'boolean' ||
+            typeof choice.selected === 'undefined')
+      ) ||
+      new Set(response.choices.map((choice) => choice.ix)).size !==
+        response.choices.length
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (
+      type === 'SC' &&
+      response.choices.filter((choice) => choice.selected).length !== 1
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for single choice question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (
+      type === 'MC' &&
+      response.choices.filter((choice) => choice.selected).length === 0
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for multiple choice question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (type === 'KPRIM' && response.choices.length !== 4) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for KPRIM question ${JSON.stringify(response)}`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  if (type === 'NUMERICAL') {
+    const parsedResponse =
+      typeof response.value === 'string' && response.value.trim()
+        ? Number(response.value.trim())
+        : Number.NaN
+    if (
+      !hasExactKeys(response, ['value']) ||
+      typeof response.value !== 'string' ||
+      !Number.isFinite(parsedResponse)
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for numerical question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (
+      isRecord(restrictions) &&
+      (('min' in restrictions &&
+        typeof restrictions.min === 'number' &&
+        parsedResponse < restrictions.min) ||
+        ('max' in restrictions &&
+          typeof restrictions.max === 'number' &&
+          parsedResponse > restrictions.max))
+    ) {
+      return {
+        valid: false,
+        message: `Numerical response ${parsedResponse} out of bounds for numerical question with restrictions ${JSON.stringify(restrictions)}`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  if (type === 'FREE_TEXT') {
+    if (
+      !hasExactKeys(response, ['value']) ||
+      !response.value ||
+      typeof response.value !== 'string'
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
+      }
+    }
+
+    const trimmedResponse = response.value.trim()
+    if (
+      isRecord(restrictions) &&
+      'maxLength' in restrictions &&
+      typeof restrictions.maxLength === 'number' &&
+      trimmedResponse.length > restrictions.maxLength
+    ) {
+      return {
+        valid: false,
+        message: `Free text response exceeds maximum length of ${restrictions.maxLength} characters for free text question`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  if (type === 'SELECTION') {
+    const numberOfInputs = parsePositiveInteger(instanceInfo?.numberOfInputs)
+    const answerIds = parseNumberArray(instanceInfo?.selectionAnswerIds)
+    if (
+      numberOfInputs === null ||
+      answerIds === null ||
+      !hasExactKeys(response, ['selection']) ||
+      !Array.isArray(response.selection) ||
+      response.selection.length === 0 ||
+      response.selection.length !== numberOfInputs ||
+      !response.selection.every((entry) => Number.isInteger(entry)) ||
+      !response.selection.every(
+        (entry) => entry === -1 || answerIds.includes(entry)
+      )
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+      }
+    }
+
+    const selectedAnswerIds = response.selection.filter((entry) => entry !== -1)
+    if (
+      selectedAnswerIds.length === 0 ||
+      new Set(selectedAnswerIds).size !== selectedAnswerIds.length
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  if (type === 'CASE_STUDY') {
+    const responseShape = parseCaseStudyResponseShape(
+      instanceInfo?.caseStudyResponseShape
+    )
+    if (!responseShape) {
+      return {
+        valid: false,
+        message: `Invalid case study response metadata`,
+      }
+    }
+
+    if (
+      !hasExactKeys(response, ['assessment']) ||
+      !isRecord(response.assessment) ||
+      Object.keys(response.assessment).length === 0 ||
+      !Object.values(response.assessment).every(
+        (caseObject) =>
+          isRecord(caseObject) &&
+          Object.keys(caseObject).length > 0 &&
+          Object.values(caseObject).every(
+            (itemObject) =>
+              isRecord(itemObject) &&
+              Object.keys(itemObject).length > 0 &&
+              Object.values(itemObject).every(
+                (criterionResponse) => typeof criterionResponse === 'number'
+              )
+          )
+      )
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+      }
+    }
+
+    const expectedCases = [...responseShape.cases].sort()
+    const expectedItems = responseShape.items.map(String).sort()
+    const expectedCriteria = responseShape.criteria
+      .map((criterion) => criterion.id)
+      .sort()
+    if (
+      !hasExactKeys(response.assessment, expectedCases) ||
+      !Object.values(response.assessment).every(
+        (caseObject) =>
+          isRecord(caseObject) &&
+          hasExactKeys(caseObject, expectedItems) &&
+          Object.values(caseObject).every(
+            (itemObject) =>
+              isRecord(itemObject) &&
+              hasExactKeys(itemObject, expectedCriteria) &&
+              responseShape.criteria.every((criterion) => {
+                const value = itemObject[criterion.id]
+                return (
+                  typeof value === 'number' &&
+                  Number.isFinite(value) &&
+                  value >= criterion.min &&
+                  value <= criterion.max
+                )
+              })
+          )
+      )
+    ) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  if (type === 'CONTENT') {
+    if (!hasExactKeys(response, ['viewed']) || response.viewed !== true) {
+      return {
+        valid: false,
+        message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
+      }
+    }
+
+    return { valid: true }
+  }
+
+  return {
+    valid: false,
+    message: `Provided invalid question type in answer submission: ${type}`,
+  }
+}
