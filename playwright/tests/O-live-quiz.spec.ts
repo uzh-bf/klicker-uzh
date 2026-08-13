@@ -3158,20 +3158,20 @@ test.describe.serial('Different live-quiz workflows', () => {
         .locator('xpath=..')
       const counts = elementRow.getByTestId(/^live-quiz-response-counts-/)
 
-      await expect(counts).toContainText(
+      const responseCountLabel = [
         messages.manage.cockpit.responsesReceived.replace(
           '{number}',
           String(expected)
         ),
-        { timeout: 30_000 }
-      )
-      await expect(counts).toContainText(
         messages.manage.cockpit.responsesProcessed.replace(
           '{number}',
           String(expected)
         ),
-        { timeout: 30_000 }
-      )
+      ].join(' · ')
+
+      await expect(counts).toHaveAttribute('aria-label', responseCountLabel, {
+        timeout: 30_000,
+      })
     }
   })
 

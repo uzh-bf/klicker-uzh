@@ -1,7 +1,10 @@
 import {
+  faArrowRight,
   faCalendar,
   faCheck,
+  faCheckDouble,
   faExternalLink,
+  faInbox,
   faSync,
   faUserGroup,
 } from '@fortawesome/free-solid-svg-icons'
@@ -98,6 +101,13 @@ function LiveQuizBlock({
             typeof numOfResponsesReceived !== 'undefined' &&
             numOfResponsesProcessed !== null &&
             typeof numOfResponsesProcessed !== 'undefined'
+          const responseCountLabel = hasResponseCounts
+            ? `${t('manage.cockpit.responsesReceived', {
+                number: numOfResponsesReceived,
+              })} · ${t('manage.cockpit.responsesProcessed', {
+                number: numOfResponsesProcessed,
+              })}`
+            : undefined
 
           return (
             <div key={instance.id} className="contents">
@@ -116,16 +126,29 @@ function LiveQuizBlock({
               </Link>
               {hasResponseCounts ? (
                 <span
-                  className="whitespace-nowrap text-right text-xs text-gray-600"
+                  aria-label={responseCountLabel}
+                  className="inline-flex items-center justify-end gap-1 whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5 text-xs text-gray-700 tabular-nums"
                   data-cy={`live-quiz-response-counts-${instance.id}`}
+                  role="img"
+                  title={responseCountLabel}
                 >
-                  {t('manage.cockpit.responsesReceived', {
-                    number: numOfResponsesReceived,
-                  })}
-                  <span aria-hidden="true"> · </span>
-                  {t('manage.cockpit.responsesProcessed', {
-                    number: numOfResponsesProcessed,
-                  })}
+                  <FontAwesomeIcon
+                    aria-hidden="true"
+                    className="w-3 text-gray-500"
+                    icon={faInbox}
+                  />
+                  <span aria-hidden="true">{numOfResponsesReceived}</span>
+                  <FontAwesomeIcon
+                    aria-hidden="true"
+                    className="mx-0.5 w-2 text-gray-400"
+                    icon={faArrowRight}
+                  />
+                  <FontAwesomeIcon
+                    aria-hidden="true"
+                    className="w-3 text-gray-500"
+                    icon={faCheckDouble}
+                  />
+                  <span aria-hidden="true">{numOfResponsesProcessed}</span>
                 </span>
               ) : (
                 <span aria-hidden="true" />
