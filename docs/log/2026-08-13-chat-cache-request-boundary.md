@@ -12,7 +12,7 @@ tags:
 
 - **Update**: [chat-platform](../chat-platform.md) documents the separate
   default/custom exact-response boundary, the stable prompt-prefix identity,
-  privacy exclusions, capability-gated implicit mode, and local synthetic
+  privacy exclusions, provider-managed implicit caching, and local synthetic
   proof limits.
 - **Update**: [testing](../testing.md) names the focused cache-policy and
   prompt-identity fixtures, their public usage-bucket assertions, and the
@@ -20,3 +20,7 @@ tags:
 - **Update**: the
   [Klicker testing-verification skill](../../.agents/skills/klicker-testing-verification/SKILL.md)
   adds the focused request-policy checks and their evidence boundary.
+- **Decision**: removed the redundant GPT-5.6 deployment allow-list and
+  `promptCacheOptions.mode: 'implicit'` override. Provider-managed implicit
+  caching remains enabled by default; the stable prompt-cache key and exact
+  response-cache bypass remain separate concerns.

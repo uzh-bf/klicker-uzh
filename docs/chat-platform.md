@@ -84,12 +84,11 @@ identifiers are not identity inputs. The rebuilt tools retain runtime
 execution, and the route supplies their deterministic `toolOrder` to both
 transport families.
 
-Implicit prompt-cache mode is emitted only for the explicit direct GPT-5.6
-deployment allow-list in `supportsImplicitPromptCaching`; older deployments
-and the unresolved `auto-router` identity receive the stable key without that
-mode. The route does not emit an explicit prompt-cache breakpoint. These
-choices preserve a stable-prefix contract without claiming resolved router
-behavior or a provider cache hit.
+The provider's implicit prompt-cache behavior remains the default; the route
+does not override it with a deployment allow-list or an explicit
+`promptCacheOptions.mode`. The route does not emit an explicit prompt-cache
+breakpoint. The stable key is an optimization for provider cache matching, not
+evidence of resolved router behavior or a provider cache hit.
 
 `apps/chat/test/openai-cache-policy.test.ts` and
 `apps/chat/test/prompt-cache-identity.test.ts` use synthetic, no-network Chat

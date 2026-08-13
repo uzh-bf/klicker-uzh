@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto'
-import { asSchema, type FlexibleSchema, jsonSchema, type ToolSet } from 'ai'
+import {
+  asSchema,
+  type FlexibleSchema,
+  type JSONSchema7,
+  jsonSchema,
+  type ToolSet,
+} from 'ai'
 
 const PROMPT_CACHE_KEY_VERSION = 'klicker:pc:v1'
 const PROMPT_CACHE_KEY_MAX_LENGTH = 64
 const PROMPT_CACHE_KEY_DIGEST_LENGTH =
   PROMPT_CACHE_KEY_MAX_LENGTH - PROMPT_CACHE_KEY_VERSION.length - 1
-const IMPLICIT_PROMPT_CACHE_DEPLOYMENTS = new Set([
-  'gpt-5.6',
-  'gpt-5.6-luna',
-  'gpt-5.6-sol',
-  'gpt-5.6-terra',
-])
 
 export type JsonValue =
   | null
@@ -33,7 +33,6 @@ export type PromptCacheIdentityInput = {
 }
 
 export type PromptCacheProviderOptionsInput = {
-  deploymentId: string
   promptCacheKey: string
   routingSource: 'custom' | 'default'
 }
@@ -135,7 +134,7 @@ async function canonicalizeTool(
   const schema = asSchema(inputSchema as FlexibleSchema<unknown>)
   const schemaJson = canonicalizeJson(await schema.jsonSchema)
   const canonicalSchema = jsonSchema(
-    schemaJson ?? {},
+    (schemaJson ?? {}) as JSONSchema7,
     schema.validate ? { validate: schema.validate } : undefined
   )
   const description = getDescription(rawTool)
@@ -203,21 +202,11 @@ export async function buildPromptCacheRequest(
   }
 }
 
-export function supportsImplicitPromptCaching(deploymentId: string): boolean {
-  return IMPLICIT_PROMPT_CACHE_DEPLOYMENTS.has(deploymentId)
-}
-
 export function getOpenAIPromptCacheOptions({
-  deploymentId,
   promptCacheKey,
   routingSource,
-}: PromptCacheProviderOptionsInput): Record<string, unknown> {
+}: PromptCacheProviderOptionsInput): { promptCacheKey?: string } {
   if (routingSource !== 'default') return {}
 
-  return {
-    promptCacheKey,
-    ...(supportsImplicitPromptCaching(deploymentId)
-      ? { promptCacheOptions: { mode: 'implicit' } }
-      : {}),
-  }
+  return { promptCacheKey }
 }

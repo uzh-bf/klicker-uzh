@@ -1,14 +1,19 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText, tool } from 'ai'
+import { generateText, type ToolSet, tool } from 'ai'
 import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
 import {
   buildPromptCacheRequest,
   getOpenAIPromptCacheOptions,
-  supportsImplicitPromptCaching,
 } from '../src/lib/server/promptCacheIdentity'
 
-function createTools(order: 'first' | 'second' = 'first') {
+type StablePrefixChange = {
+  deploymentId?: string
+  instructions?: string
+  transport?: 'chat' | 'responses'
+}
+
+function createTools(order: 'first' | 'second' = 'first'): ToolSet {
   const first = tool({
     description: 'Search the synthetic corpus.',
     inputSchema: z.object({
@@ -120,7 +125,7 @@ describe('prompt cache identity', () => {
     expect(second.toolOrder).toEqual(first.toolOrder)
   })
 
-  test.each([
+  test.each<[string, StablePrefixChange]>([
     ['instructions', { instructions: 'Changed instructions.' }],
     ['deployment', { deploymentId: 'auto-router' }],
     ['transport', { transport: 'chat' as const }],
@@ -155,10 +160,10 @@ describe('prompt cache identity', () => {
       instructions: 'Synthetic instructions.',
       tools: {
         ...createTools(),
-        search: tool({
+        search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
           description: 'Changed search description.',
           inputSchema: z.object({ query: z.string() }),
-          execute: async () => ({ differentRuntime: true }),
+          execute: async (_input) => ({ ok: true }),
         }),
       },
     })
@@ -174,11 +179,11 @@ describe('prompt cache identity', () => {
       transport: 'responses',
       instructions: 'Synthetic instructions.',
       tools: {
-        search: tool({
+        search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
           description: 'Search the synthetic corpus.',
           inputSchema: z.object({ query: z.string() }),
           strict: true,
-          inputExamples: [{ query: 'base' }],
+          inputExamples: [{ input: { query: 'base' } }],
           providerOptions: { openai: { strictJsonSchema: true } },
           execute: async () => ({ ok: true }),
         }),
@@ -189,11 +194,11 @@ describe('prompt cache identity', () => {
       transport: 'responses',
       instructions: 'Synthetic instructions.',
       tools: {
-        search: tool({
+        search: tool<{ query: string }, { ok: boolean }, Record<never, never>>({
           description: 'Search the synthetic corpus.',
           inputSchema: z.object({ query: z.string() }),
           strict: false,
-          inputExamples: [{ query: 'changed' }],
+          inputExamples: [{ input: { query: 'changed' } }],
           providerOptions: { openai: { strictJsonSchema: false } },
           execute: async () => ({ ok: true }),
         }),
@@ -206,7 +211,7 @@ describe('prompt cache identity', () => {
   test('ignores runtime-only changes while retaining the executable tool', async () => {
     const firstTools = createTools()
     const secondTools = createTools()
-    secondTools.search.execute = async () => ({ runtime: 'changed' })
+    secondTools.search.execute = async () => ({ ok: true })
 
     const first = await buildPromptCacheRequest({
       deploymentId: 'gpt-5.6-luna',
@@ -279,7 +284,6 @@ describe('prompt cache identity', () => {
       toolOrder: chatRequest.toolOrder,
       providerOptions: {
         openai: getOpenAIPromptCacheOptions({
-          deploymentId: 'gpt-4.1',
           promptCacheKey: chatRequest.promptCacheKey,
           routingSource: 'default',
         }),
@@ -333,7 +337,6 @@ describe('prompt cache identity', () => {
       toolOrder: responsesRequest.toolOrder,
       providerOptions: {
         openai: getOpenAIPromptCacheOptions({
-          deploymentId: 'gpt-5.6-luna',
           promptCacheKey: responsesRequest.promptCacheKey,
           routingSource: 'default',
         }),
@@ -346,7 +349,7 @@ describe('prompt cache identity', () => {
     expect(responsesBody?.prompt_cache_key).toBe(
       responsesRequest.promptCacheKey
     )
-    expect(responsesBody?.prompt_cache_options).toEqual({ mode: 'implicit' })
+    expect(responsesBody?.prompt_cache_options).toBeUndefined()
     expect(responseTools.map((entry) => entry.name)).toEqual(['read', 'search'])
     expect(
       Object.keys(
@@ -367,31 +370,15 @@ describe('prompt cache identity', () => {
     })
   })
 
-  test('emits prompt options only for the default route and supported deployment', () => {
-    expect(supportsImplicitPromptCaching('gpt-5.6-luna')).toBe(true)
-    expect(supportsImplicitPromptCaching('gpt-5.6')).toBe(true)
-    expect(supportsImplicitPromptCaching('gpt-4.1')).toBe(false)
-    expect(supportsImplicitPromptCaching('auto-router')).toBe(false)
+  test('emits the prompt cache key only for the default route', () => {
     expect(
       getOpenAIPromptCacheOptions({
-        deploymentId: 'gpt-5.6-luna',
         promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test',
         routingSource: 'default',
       })
-    ).toEqual({
-      promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test',
-      promptCacheOptions: { mode: 'implicit' },
-    })
+    ).toEqual({ promptCacheKey: 'klicker:prompt-prefix:v1:sha256:test' })
     expect(
       getOpenAIPromptCacheOptions({
-        deploymentId: 'auto-router',
-        promptCacheKey: 'synthetic-key',
-        routingSource: 'default',
-      })
-    ).toEqual({ promptCacheKey: 'synthetic-key' })
-    expect(
-      getOpenAIPromptCacheOptions({
-        deploymentId: 'gpt-5.6-luna',
         promptCacheKey: 'synthetic-key',
         routingSource: 'custom',
       })

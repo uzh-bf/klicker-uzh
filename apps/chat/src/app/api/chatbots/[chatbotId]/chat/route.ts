@@ -882,7 +882,6 @@ export async function POST(
       : null
   const promptCacheOptions = promptCacheRequest
     ? getOpenAIPromptCacheOptions({
-        deploymentId: selectedModelConfig.deploymentId,
         promptCacheKey: promptCacheRequest.promptCacheKey,
         routingSource: routing.source,
       })

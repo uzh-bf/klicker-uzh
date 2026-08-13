@@ -145,16 +145,12 @@ values may continue to serve their existing authentication, persistence, and
 telemetry roles but cannot partition a reusable stable prefix.
 
 For the default route, `providerOptions.openai` will carry the stable
-`promptCacheKey`. The `promptCacheOptions: { mode: 'implicit' }` field is
-capability-gated: the first implementation may emit it only for an explicit
-allow-list of direct GPT-5.6-or-later deployment identities supported by the
-installed provider contract. Older direct deployments and unresolved
-`auto-router` requests must omit that mode until their compatibility is
-explicitly established. The fingerprint still includes the requested
-deployment identity, including `auto-router`, but serialization or a key is
-not evidence of a resolved model or a provider cache hit. Keep the key and
-mode as separate options so a supported stable key does not imply unsupported
-implicit-mode behavior. The route will not carry an explicit breakpoint.
+`promptCacheKey`. The provider's implicit prompt-cache behavior remains the
+default; the route does not override it with a deployment allow-list or an
+explicit `promptCacheOptions.mode`. The fingerprint still includes the
+requested deployment identity, including `auto-router`, but serialization or a
+key is not evidence of a resolved model or a provider cache hit. The route will
+not carry an explicit breakpoint.
 
 For custom endpoints, preserve the provider options already emitted by the
 route—Responses `store` and any applicable reasoning fields—and omit only the
@@ -168,7 +164,7 @@ The package keeps these mechanisms independent:
 | Mechanism | This package changes | Identity/policy owner |
 | --- | --- | --- |
 | LiteLLM exact-response cache | Default personalized request bypass only | Request fetch boundary |
-| Provider prompt-prefix cache | Versioned stable-prefix key, implicit mode | OpenAI provider options |
+| Provider prompt-prefix cache | Versioned stable-prefix key; provider-managed implicit mode | OpenAI provider options |
 | Router classification affinity | No change | Gateway/deployment policy |
 | Retrieval, embedding, and rerank caches | No change | Their existing services |
 
@@ -197,8 +193,8 @@ evidence, not live provider or production proof.
   LiteLLM, Redis, Azure OpenAI, Langfuse, or a paid model.
 - The installed AI SDK source documents `toolOrder` as the stable ordering
   boundary and resolves tool schemas through `asSchema(...).jsonSchema`.
-- The installed OpenAI provider source serializes `promptCacheKey` and
-  `promptCacheOptions` for both transport families. Its usage conversion maps
+- The installed OpenAI provider source serializes `promptCacheKey` for both
+  transport families. Its usage conversion maps
   provider cached and cache-write counts to the public AI SDK
   `inputTokenDetails` shape.
 - `docs/chat-platform.md`, `docs/testing.md`, and
@@ -234,7 +230,7 @@ where the existing suite does not already protect the named failure.
 | User, participant, chatbot, thread, assistant-message, message/content, request, tool-call, and raw MCP identifiers do not affect identity | Existing route has all values in scope, but no negative test | Separate privacy-negative fixtures for each identifier class and an assertion that only the stable-prefix input is accepted | `apps/chat/test/prompt-cache-identity.test.ts` |
 | Both transports preserve prompt-cache fields and public usage buckets | Disposable no-network probe | Repository-owned synthetic Chat/Responses fixtures assert serialized fields and public `usage.inputTokenDetails` | `apps/chat/test/openai-chat-streaming.test.ts` and a focused Responses fixture |
 | Image-description requests bypass exact cache but do not receive chat-prefix identity | Route calls `generateText` through the selected provider at `route.ts:915-930`; no test currently protects the policy | Synthetic `generateText` capture through a default provider asserts the two bypass flags and absence of `prompt_cache_key` | `apps/chat/test/openai-cache-policy.test.ts` |
-| Direct older models and unresolved auto-router do not receive unsupported implicit mode | Installed provider docs scope `promptCacheOptions` to GPT-5.6+; registry contains older and auto-router deployments | Provider-options matrix asserts stable key separation and mode omission for unsupported/unknown capability identities | `apps/chat/test/prompt-cache-identity.test.ts` and provider-options test |
+| Provider-managed implicit caching remains the default while the stable key stays default-route-only | The provider supports implicit caching and stable `promptCacheKey` matching; this package does not need a deployment allow-list | Both transports assert the stable key is serialized and no explicit `prompt_cache_options` override is emitted | `apps/chat/test/prompt-cache-identity.test.ts` |
 | Existing chat behavior remains green | Current package test suite and typecheck | Run focused transport tests, full chat tests, chat typecheck, root checks, and build | Package/root verification |
 | Operators can understand the boundary and its proof limits | Existing docs describe the route but not this contract | Update chat platform, testing documentation, and chat testing skill with source-linked facts | Documentation review |
 
@@ -341,19 +337,19 @@ provider-facing canonical tool projection for both the fingerprint and the
 request, preserving runtime execution behavior and all provider-visible
 fields. Pass an explicit stable `toolOrder` to the model request and use the
 same canonical ordering for the fingerprint. Attach `promptCacheKey` for the
-default gateway path; attach implicit mode only for the explicit supported
-direct-model capability set. Omit explicit breakpoints.
+default gateway path and rely on the provider's implicit mode by default. Omit
+explicit breakpoints.
 
 **Tests:** Add
 `apps/chat/test/prompt-cache-identity.test.ts` for determinism, meaningful
-changes, deployment/transport partitioning, capability-gated implicit mode,
+changes, deployment/transport partitioning, provider-managed implicit mode,
 canonical tool order/schema/provider-visible-field changes, and separate
 privacy-negative inputs for user, participant, chatbot, thread,
 assistant-message, message/content, request, tool-call, and raw MCP identifiers.
 Extend
 `apps/chat/test/openai-chat-streaming.test.ts` or add a focused Responses
 fixture to assert that both transports serialize the key, canonical tools, and
-only the supported implicit options.
+leave implicit-mode selection to the provider default.
 
 **Acceptance:**
 
@@ -504,14 +500,15 @@ finding materially changes the architecture, scope, or acceptance contract,
 stop and reassess rather than silently expanding the plan.
 
 Planning-stage result: `DONE_WITH_CONCERNS`, with the report recorded at the
-path above. The parent verified and accepted all five required corrections:
-capability-gated implicit mode, one canonical provider-tool projection for
-hashing and wire submission, the real custom-provider option invariant, direct
-image/privacy-negative test seams, and per-slice route/commit/verification
-contracts including the parallel simplifier/reviewer gate. The corrected plan
-remains within the settled architecture and planning authority. Its final
-working-tree hash is intentionally different from the frozen pre-review hash;
-the report preserves the exact identity that was reviewed.
+path above. The parent verified and accepted the five original corrections,
+including the then-proposed capability gate, canonical provider-tool
+projection, custom-provider invariant, direct image/privacy-negative seams,
+and per-slice route/commit/verification contracts. The later user-approved
+simplification removed the redundant implicit-mode deployment allow-list and
+relies on provider-managed implicit caching while retaining the stable key.
+The plan remains within the settled architecture and planning authority. Its
+final working-tree hash is intentionally different from the frozen pre-review
+hash; the report preserves the exact identity that was reviewed.
 
 ### Post-approval implementation reviews
 
@@ -554,8 +551,8 @@ the report preserves the exact identity that was reviewed.
 - [x] Slice 3 implemented: the default route now derives a versioned SHA-256
   prompt-prefix key from requested deployment/transport, final instructions,
   and canonical provider-visible tools; it preserves executable tool behavior,
-  uses explicit stable tool order, and gates implicit mode to the explicit
-  GPT-5.6 deployment allow-list. Focused identity/transport tests pass 18/18;
+  uses explicit stable tool order, and leaves implicit mode to the provider
+  default. Focused identity/transport tests pass 18/18;
   helper-only TypeScript and Biome checks pass. The full package check still
   requires the validated devcontainer, which is unavailable because of the
   devrouter process-identity lock.
@@ -588,9 +585,18 @@ the report preserves the exact identity that was reviewed.
   the named worktree has no dependency mount; the package is not presented as
   fully verified or ready for publication.
 - [x] Implemented and locally verified the approved slices through committed
-  code, focused tests, documentation, and integrated review. Authority ends at
-  these local commits; no push, PR, merge, deployment, live call, measurement,
+  code, focused tests, documentation, and integrated review. A later
+  simplification removed the redundant implicit-mode deployment allow-list and
+  retained provider-managed implicit caching plus the stable key. The draft PR
+  is the delivery boundary; no merge, deployment, live call, measurement,
   tunnel, cluster access, or cleanup was performed.
+- [x] User-approved final simplification: removed the explicit implicit-mode
+  override and deployment allow-list from the provider options. Focused
+  request-shape verification passes 23/23 focused tests, plus Biome, Prettier,
+  and whitespace checks. The existing integrated-final and Claude Opus reports
+  remain the review record; full package/root/build checks still remain
+  unavailable because generated workspace outputs are missing and the host is
+  running Node 26 instead of the repository's pinned Node 24.
 
 ## Next action after user approval
 
