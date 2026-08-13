@@ -37,7 +37,6 @@ export type PromptCacheProviderOptionsInput = {
 
 export type PromptCacheRequest = {
   promptCacheKey: string
-  providerTools: JsonObject[]
   toolOrder: string[]
   tools: ToolSet
 }
@@ -193,7 +192,6 @@ export async function buildPromptCacheRequest(
 
   return {
     promptCacheKey: `${PROMPT_CACHE_KEY_VERSION}:sha256:${digest}`,
-    providerTools,
     toolOrder,
     tools,
   }

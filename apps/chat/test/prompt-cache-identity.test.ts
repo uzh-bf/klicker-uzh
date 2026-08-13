@@ -105,7 +105,6 @@ describe('prompt cache identity', () => {
     expect(first.promptCacheKey).toBe(second.promptCacheKey)
     expect(first.toolOrder).toEqual(['read', 'search'])
     expect(second.toolOrder).toEqual(first.toolOrder)
-    expect(first.providerTools).toEqual(second.providerTools)
   })
 
   test.each([

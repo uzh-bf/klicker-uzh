@@ -557,8 +557,18 @@ the report preserves the exact identity that was reviewed.
   helper-only TypeScript and Biome checks pass. The full package check still
   requires the validated devcontainer, which is unavailable because of the
   devrouter process-identity lock.
-- [ ] Slice 3 review gate: commit the immutable slice, then run one
-  read-only `slice-reviewer` and one `simplifier` in parallel before Slice 4.
+- [x] Slice 3 review gate: the immutable commit was approved by the generic
+  `slice-reviewer` fallback at
+  `project/_local/reviews/2026-08-13-chat-cache-request-boundary-slice-3-slice-review.md`.
+  The native `simplifier` initially stopped on a malformed dispatch envelope;
+  its correction returned `DONE_WITH_CONCERNS` and identified an unused
+  `providerTools` result field. All repository callers were checked, the field
+  and its coupled test assertion were removed, and the focused identity,
+  TypeScript, Biome, and whitespace checks passed again. The correction report
+  is recorded at
+  `project/_local/reviews/2026-08-13-chat-cache-request-boundary-slice-3-simplification-correction.md`.
+- [ ] Slice 4: convert the transport/usage assertions into repository tests,
+  update the chat wiki and verification skill, and run the integrated checks.
 - [ ] Implement and verify the approved slices.
 
 ## Next action after user approval
