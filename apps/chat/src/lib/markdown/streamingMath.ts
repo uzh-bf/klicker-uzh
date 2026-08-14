@@ -205,7 +205,3 @@ export function hideIncompleteMath(input: string) {
     ? input
     : input.slice(0, incompleteMathStart)
 }
-
-export function preprocessStreamingMath(input: string, isRunning: boolean) {
-  return isRunning ? hideIncompleteMath(input) : input
-}

@@ -21,8 +21,8 @@ import {
   remarkCitationMarkers,
 } from '../lib/markdown/remarkCitationMarkers'
 import {
+  hideIncompleteMath,
   inspectStreamingMath,
-  preprocessStreamingMath,
 } from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
 import { CitationChip } from './citation-chip'
@@ -39,7 +39,7 @@ const MarkdownTextImpl = () => {
   const { hasMathOpener } = inspectStreamingMath(text)
   const preprocess = useCallback(
     (input: string) =>
-      normalizeCustomMathTags(preprocessStreamingMath(input, isRunning)),
+      normalizeCustomMathTags(isRunning ? hideIncompleteMath(input) : input),
     [isRunning]
   )
 

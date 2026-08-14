@@ -3,7 +3,6 @@ import { describe, expect, test } from 'vitest'
 import {
   hideIncompleteMath,
   inspectStreamingMath,
-  preprocessStreamingMath,
 } from '../src/lib/markdown/streamingMath'
 
 describe('streaming math scanner', () => {
@@ -46,22 +45,15 @@ describe('streaming math scanner', () => {
   })
 
   test.each([
-    ['escaped dollar', String.raw`Use \$5 without math`, 0],
-    ['currency', 'The price is $5 today', 0],
-    ['inline code', '`$x without a closing dollar`', 0],
-    ['fenced code', '```\n$ x without math\n```', 0],
-  ])('does not treat %s as math', (_, input, expectedStart) => {
+    ['escaped dollar', String.raw`Use \$5 without math`],
+    ['currency', 'The price is $5 today'],
+    ['inline code', '`$x without a closing dollar`'],
+    ['fenced code', '```\n$ x without math\n```'],
+  ])('does not treat %s as math', (_, input) => {
     expect(inspectStreamingMath(input)).toEqual({
       hasMathOpener: false,
-      incompleteMathStart: expectedStart === 0 ? null : expectedStart,
+      incompleteMathStart: null,
     })
     expect(hideIncompleteMath(input)).toBe(input)
-  })
-
-  test('keeps the streaming mask only for a running part', () => {
-    const input = 'before \\[x'
-
-    expect(preprocessStreamingMath(input, true)).toBe('before ')
-    expect(preprocessStreamingMath(input, false)).toBe(input)
   })
 })
