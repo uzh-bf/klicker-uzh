@@ -364,12 +364,10 @@ realistic trigger. The suffix length lives in `lib/config/toolNames.ts` and is i
 the side that builds the name and the regex that matches it, so bumping it cannot silently break
 recognition — `mcpClients.ts` is `'use server'` and therefore cannot export the constant itself.
 
-One known edge, not currently handled: `withHashSuffix` truncates the whole `server_tool` string
-to 55 characters **from the end** before appending the hash. A server name longer than about 45
-characters pushes `doc_query` out of the kept prefix entirely, and the predicate then matches
-nothing — sources, citations, the activity chip and the prompt contract all switch off silently
-for that server. No such server name exists today; fix by truncating the server name rather than
-the combined string if one ever appears.
+When a namespaced `doc_query` name exceeds the 64-character cap or collides, `withHashSuffix`
+truncates only the readable prefix and appends `_doc_query_<8 hex characters>`. The alias therefore
+remains at the end of the model-facing name and continues to satisfy `isDocQueryToolName`; the
+long-name regression case lives in `test/mcp-clients.test.ts`.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
