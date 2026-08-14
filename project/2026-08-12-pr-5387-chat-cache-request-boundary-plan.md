@@ -610,8 +610,8 @@ hash; the report preserves the exact identity that was reviewed.
   removed machine-local plan references; replaced SDK-internal schema key
   lists with ordering and cross-transport semantic assertions; documented the
   key-only custom route and function-description context contract. Focused
-  tests pass 24/24 after the review correction, the full chat suite passes
-  289/289 after generating local workspace outputs, the chat package check
+  tests pass 26/26 after the final-review correction, the full chat suite passes
+  291/291 after generating local workspace outputs, the chat package check
   passes, root `check:all` passes, and the production build passes 22/22 tasks.
   The host uses Node 26 instead of the required Node 24, so current-head CI
   remains the Node 24 release gate.
@@ -631,8 +631,8 @@ hash; the report preserves the exact identity that was reviewed.
   and schema regressions, and removes the duplicate usage assertions. Focused
   tests pass 26/26. The initial report is
   `project/_local/reviews/2026-08-14-chat-cache-request-boundary-integrated-final.md`.
-- [ ] PR closeout: commit and verify the final-review correction, run the one
-  allowed correction review, push, and update
+- [ ] PR closeout: run the one allowed correction review on the exact verified
+  head, push, and update
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action
