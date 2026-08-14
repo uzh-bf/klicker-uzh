@@ -12,7 +12,7 @@ tags:
 # Chat Platform (`apps/chat`)
 
 > **Framework status (2026-08-03):** the AI-SDK route-handler layer described
-> here **is** the current production path — the AI SDK 7 / assistant-ui 0.14
+> here **is** the current production path — the AI SDK 7 / assistant-ui 0.15
 > upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
 > A Mastra-based `apps/chat-api` service split remains an open exploration in the
 > draft PRs #5126 / #5129 (tutor architecture in #5129) with no landing date, so
@@ -225,7 +225,7 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 
 ## Runtime and student-visible states
 
-The chat branch uses `@assistant-ui/react` 0.14's stable `GroupedParts` primitive. Local
+The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
@@ -240,8 +240,8 @@ tool-only turn, valid completed sources are shown instead of being lost on
 reload. The source component still suppresses the section when normalization
 produces no sources.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
-thread's messages/running state and the actions it calls, while `Thread` keeps a memoized
-`ThreadPrimitive.Messages` component map and passes the chatbot avatar through context. Runtime
+thread's messages/running state and the actions it calls, while `Thread` renders its message rows
+through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
 attachment adapters are memoized as well, so a streamed message or a feedback update does not
 replace every message row's component type or adapter object. Ratings have one owner: the plain
 buttons in `thread.tsx` read the active `ChatMessage.rating` from `chatStore` and call

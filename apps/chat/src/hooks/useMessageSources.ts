@@ -1,9 +1,9 @@
-import { useMessage } from '@assistant-ui/react'
+import { useAuiState } from '@assistant-ui/react'
 import { useMemo } from 'react'
 
 import {
-  normalizeSourcesFromParts,
   type ChatSourcePart,
+  normalizeSourcesFromParts,
 } from '@/src/lib/sources/normalizeSources'
 import type { ChatSource } from '@/src/lib/sources/types'
 
@@ -30,7 +30,7 @@ export interface MessageSources {
  * distributed via `MessageSourcesProvider`/`useMessageSourcesContext`.
  */
 export function useMessageSources(): MessageSources {
-  const message = useMessage() as MessageWithSourceParts
+  const message = useAuiState((s) => s.message) as MessageWithSourceParts
   const parts = message.content ?? []
 
   // The message store re-renders on every streamed token and rebuilds

@@ -1,23 +1,14 @@
 import {
-  ATTACHMENT_ERROR_CODE,
-  AttachmentAdapterError,
-  imageAttachmentAdapter,
-} from '@/src/lib/attachments/imageAttachmentAdapter'
-import {
   ActionBarPrimitive,
   AttachmentPrimitive,
+  AuiIf,
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
-  useComposer,
-  useComposerRuntime,
-  useEditComposer,
-  useEditComposerAttachment,
-  useMessage,
-  useMessageRuntime,
-  useThread,
-  useThreadComposerAttachment,
+  useAui,
+  useAuiState,
 } from '@assistant-ui/react'
+import { Button } from '@uzh-bf/design-system'
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -33,18 +24,20 @@ import {
   ThumbsUpIcon,
   XIcon,
 } from 'lucide-react'
+import Image from 'next/image'
+import { useParams } from 'next/navigation'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
 import {
+  createContext,
   type FC,
   type PropsWithChildren,
   type ReactNode,
-  createContext,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
-
+import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -52,6 +45,11 @@ import {
   parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
+import {
+  ATTACHMENT_ERROR_CODE,
+  AttachmentAdapterError,
+  imageAttachmentAdapter,
+} from '@/src/lib/attachments/imageAttachmentAdapter'
 import {
   type ExtendedThreadMessageLike,
   useChatStore,
@@ -61,7 +59,6 @@ import {
   useComposerStore,
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
-import { Button } from '@uzh-bf/design-system'
 import {
   formatModeLabel,
   getModeDescription,
@@ -81,12 +78,6 @@ import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
-
-import Image from 'next/image'
-import { useParams } from 'next/navigation'
-
-import { useFormatter, useNow, useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = {
   chatbotAvatar: string
@@ -150,10 +141,10 @@ const useSupportsImageAttachments = () => {
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
 }) => {
-  const message = useMessage() as MessageWithCustomMetadata & {
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata & {
     role: string
     status?: { type: string }
-    // `useMessage()` already returns `createdAt` at runtime (assistant-ui's
+    // `useAuiState()` already returns `createdAt` at runtime (assistant-ui's
     // `ThreadMessage`); declared here only to widen the local cast, like
     // `role`/`status` above.
     createdAt: Date
@@ -271,14 +262,6 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback,
 }) => {
   const { embedded } = useChatUi()
-  const messageComponents = useMemo(
-    () => ({
-      UserMessage,
-      EditComposer,
-      AssistantMessage,
-    }),
-    []
-  )
 
   return (
     <ThreadPrimitive.Root
@@ -304,7 +287,13 @@ export const Thread: FC<ThreadProps> = ({
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
-          <ThreadPrimitive.Messages components={messageComponents} />
+          <ThreadPrimitive.Messages>
+            {({ message }) => {
+              if (message.composer.isEditing) return <EditComposer />
+              if (message.role === 'user') return <UserMessage />
+              return <AssistantMessage />
+            }}
+          </ThreadPrimitive.Messages>
         </ChatbotAvatarContext.Provider>
       </ThreadPrimitive.Viewport>
 
@@ -430,7 +419,7 @@ const ThreadWelcome: FC<{
     : null
 
   return (
-    <ThreadPrimitive.Empty>
+    <AuiIf condition={(s) => s.thread.isEmpty}>
       <div className="aui-thread-welcome-root mx-auto my-0 flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col sm:my-auto">
         <div className="aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0">
           {/* Faint branded accent behind the greeting — restrained, no new assets. */}
@@ -491,7 +480,7 @@ const ThreadWelcome: FC<{
         </div>
         <ThreadWelcomeSuggestions initialModeOptions={initialModeOptions} />
       </div>
-    </ThreadPrimitive.Empty>
+    </AuiIf>
   )
 }
 
@@ -637,8 +626,8 @@ const useComposerAttachmentLimit = ({
   currentCount?: number
 }) => {
   const t = useTranslations()
-  const composerRuntime = useComposerRuntime()
-  const attachments = useComposer((s) => s.attachments ?? [])
+  const aui = useAui()
+  const attachments = useAuiState((s) => s.composer.attachments)
   const composerAttachmentCount = attachments.length
   const existingAttachmentCount =
     currentCount == null
@@ -663,10 +652,10 @@ const useComposerAttachmentLimit = ({
 
     void Promise.all(
       overflowAttachmentIndexes.map((index) =>
-        composerRuntime.getAttachmentByIndex(index).remove()
+        aui.composer.attachment({ index }).remove()
       )
     )
-  }, [attachments, composerRuntime, maxComposerAttachmentCount, setError, t])
+  }, [attachments, aui, maxComposerAttachmentCount, setError, t])
 }
 
 const ComposerDropzone: FC<
@@ -713,25 +702,16 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   )
 }
 
-const ThreadComposerImageAttachment: FC = () => {
-  const imageSrc = useThreadComposerAttachment(selectAttachmentImageSrc)
-  const attachmentName = useThreadComposerAttachment(selectAttachmentName)
+const ComposerImageAttachment: FC<{
+  variant?: 'thread' | 'edit'
+}> = ({ variant }) => {
+  const imageSrc = useAuiState((s) => selectAttachmentImageSrc(s.attachment))
+  const attachmentName = useAuiState((s) => selectAttachmentName(s.attachment))
   return (
     <ComposerAttachmentView
       imageSrc={imageSrc}
       attachmentName={attachmentName}
-    />
-  )
-}
-
-const EditComposerImageAttachment: FC = () => {
-  const imageSrc = useEditComposerAttachment(selectAttachmentImageSrc)
-  const attachmentName = useEditComposerAttachment(selectAttachmentName)
-  return (
-    <ComposerAttachmentView
-      imageSrc={imageSrc}
-      attachmentName={attachmentName}
-      variant="edit"
+      variant={variant}
     />
   )
 }
@@ -740,19 +720,10 @@ const ComposerAttachments: FC<{
   source?: 'thread' | 'edit'
   inline?: boolean
 }> = ({ source = 'thread', inline = false }) => {
-  const Component =
-    source === 'edit'
-      ? EditComposerImageAttachment
-      : ThreadComposerImageAttachment
   const primitive = (
-    <ComposerPrimitive.Attachments
-      components={{
-        Image: Component,
-        Document: Component,
-        File: Component,
-        Attachment: Component,
-      }}
-    />
+    <ComposerPrimitive.Attachments>
+      {() => <ComposerImageAttachment variant={source} />}
+    </ComposerPrimitive.Attachments>
   )
 
   if (inline) {
@@ -877,8 +848,10 @@ const ComposerAttachButton: FC<{
 }> = ({ setError, currentCount, dataCy }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
-  const composerRuntime = useComposerRuntime()
-  const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
+  const aui = useAui()
+  const composerAttachmentCount = useAuiState(
+    (s) => s.composer.attachments.length
+  )
   const attachmentCount = currentCount ?? composerAttachmentCount
   const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages = useSupportsImageAttachments()
@@ -896,7 +869,7 @@ const ComposerAttachButton: FC<{
     let lastAdapterError: string | null = null
     for (const file of accepted) {
       try {
-        await composerRuntime.addAttachment(file)
+        await aui.composer.addAttachment(file)
       } catch (e) {
         // the adapter rejects with a typed error + stable code for failures
         // that need a localized message (e.g. FileReader errors, which
@@ -964,7 +937,7 @@ const ComposerAction: FC = () => {
   // running/empty for Send, disabled when not running for Cancel — see
   // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
   // drives which one is *visible*; it never duplicates that disabled logic.
-  const isRunning = useThread((state) => state.isRunning)
+  const isRunning = useAuiState((s) => s.thread.isRunning)
 
   const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
@@ -1041,7 +1014,7 @@ const getMessageAttachments = (
 }
 
 const UserMessage: FC = () => {
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
 
   return (
@@ -1074,7 +1047,7 @@ const UserMessage: FC = () => {
 const UserActionBar: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
 
   if (!showMessageActions) return null
@@ -1127,12 +1100,12 @@ const UserActionBar: FC = () => {
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
             <button className={actionBarButtonClassName}>
-              <MessagePrimitive.If copied>
+              <AuiIf condition={(s) => s.message.isCopied}>
                 <CheckIcon />
-              </MessagePrimitive.If>
-              <MessagePrimitive.If copied={false}>
+              </AuiIf>
+              <AuiIf condition={(s) => !s.message.isCopied}>
                 <CopyIcon />
-              </MessagePrimitive.If>
+              </AuiIf>
               <span className="sr-only">{t('chat.message.copy')}</span>
             </button>
           </ActionBarPrimitive.Copy>
@@ -1148,7 +1121,7 @@ const UserActionBar: FC = () => {
 const EditComposer: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
   const removedAttachmentKeys = useComposerStore(
@@ -1162,10 +1135,12 @@ const EditComposer: FC = () => {
   const clearEditRemovedAttachmentKeys = useComposerStore(
     (state) => state.clearEditRemovedAttachmentKeys
   )
-  const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
-  const composerText = useEditComposer((s) => s.text)
+  const pendingAttachmentCount = useAuiState(
+    (s) => s.message.composer.attachments.length
+  )
+  const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
-  const messageRuntime = useMessageRuntime()
+  const aui = useAui()
 
   useEffect(() => {
     return () => {
@@ -1215,7 +1190,7 @@ const EditComposer: FC = () => {
       // (`editRemovedAttachmentKeysByMessageId`), and would silently
       // no-op a kept-attachment-only edit. `canSubmit` above is the real
       // change gate; once it passes, the run should start unconditionally.
-      messageRuntime.composer.send({ startRun: true })
+      aui.message.composer().send({ startRun: true })
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : String(error))
     }
@@ -1284,7 +1259,7 @@ const EditComposer: FC = () => {
               data-cy="chat-edit-cancel-button"
               onClick={() => {
                 clearEditRemovedAttachmentKeys(message.id)
-                messageRuntime.composer.cancel()
+                aui.message.composer().cancel()
               }}
               className={{ root: 'rounded-full font-semibold' }}
             >
@@ -1326,7 +1301,7 @@ const EditComposer: FC = () => {
  */
 const ImageAnalyzedChip: FC = () => {
   const t = useTranslations()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const hasImageAttachment = useChatStore((state) => {
     const activeThread = state.threads.find(
       (thread) => thread.id === state.activeThreadId
@@ -1357,17 +1332,18 @@ const AssistantMessage: FC = () => {
   const { embedded } = useChatUi()
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
-  const isPendingEmpty = useMessage(
-    (m) =>
-      m.role === 'assistant' &&
-      m.status?.type === 'running' &&
-      m.content.length === 0
+  const isPendingEmpty = useAuiState(
+    (s) =>
+      s.message.role === 'assistant' &&
+      s.message.status?.type === 'running' &&
+      s.message.content.length === 0
   )
   // Sources stay hidden only while the assistant message is actively running
   // and no non-whitespace answer text has streamed yet. Once the turn is
   // terminal (e.g. a completed tool call with no answer text), completed
   // source-bearing tool results must become visible.
-  const showSources = useMessage((message) => {
+  const showSources = useAuiState((s) => {
+    const message = s.message
     const hasAnswerText = message.content.some(
       (part) => part.type === 'text' && part.text.trim().length > 0
     )
@@ -1446,7 +1422,7 @@ const AssistantMessage: FC = () => {
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   if (!showMessageActions) return null
   const hasError = hasChatError(message)
 
@@ -1468,12 +1444,12 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
                 data-cy="chat-copy-message-button"
                 className={actionBarButtonClassName}
               >
-                <MessagePrimitive.If copied>
+                <AuiIf condition={(s) => s.message.isCopied}>
                   <CheckIcon />
-                </MessagePrimitive.If>
-                <MessagePrimitive.If copied={false}>
+                </AuiIf>
+                <AuiIf condition={(s) => !s.message.isCopied}>
                   <CopyIcon />
-                </MessagePrimitive.If>
+                </AuiIf>
                 <span className="sr-only">{t('chat.message.copy')}</span>
               </button>
             </ActionBarPrimitive.Copy>
@@ -1507,7 +1483,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
 
 const MessageRatingButtons: FC = () => {
   const t = useTranslations()
-  const message = useMessage()
+  const message = useAuiState((s) => s.message)
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const rateMessage = useChatStore((state) => state.rateMessage)
   const submittedRating = useChatStore((state) => {
@@ -1575,6 +1551,6 @@ const MessageRatingButtons: FC = () => {
 }
 
 const BranchPickerWrapper: FC = () => {
-  const message = useMessage()
+  const message = useAuiState((s) => s.message)
   return <BranchPicker messageId={message.id} />
 }
