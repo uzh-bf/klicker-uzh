@@ -18,7 +18,7 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 - Branch: `rs/informatik-und-wirtschaft-klicker`
 - Target: `v3`
 - Base: `origin/v3` at `d76c13a3f28dcdbddac46ed8cc3fcb70fad42924`
-- PR/MR: draft PR to be opened after the recorded local verification
+- PR/MR: draft PR #5404 — https://github.com/uzh-bf/klicker-uzh/pull/5404
 - History: [previous cross-repository plan](../../../ai/klicker-uzh-video-ai/project/2026-08-14-informatik-und-wirtschaft-klicker-chatbot-migration-plan.md) and its handoff remain background evidence, not the current execution contract.
 
 ## Research
@@ -131,7 +131,7 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 - Remaining gate: no further local implementation gate. Live MCP evidence remains unavailable because no live MCP credential or active production-like route was supplied. The current task authorizes push and a draft PR; merge, STG apply, activation, deployment, and production remain withheld.
 - Active children: none.
 - Delivery layer: local branch commits only until the authorized push and draft PR. Achieved layer: local code, documentation, disposable-database proof, and bounded browser execution complete; the full browser suite remains blocked by the unchanged baseline recovery test. Merge, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: push the branch and open the draft PR with the recorded verification boundary; no local database receipt or operational credential is retained.
+- Next action: review draft PR #5404 and separately repair the baseline chat recovery E2E contract if desired; no local database receipt or operational credential is retained.
 
 ## Next steps
 
