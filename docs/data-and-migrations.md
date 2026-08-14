@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-14'
 tags:
   - backend
   - prisma
@@ -90,6 +90,24 @@ Two independent seed paths — changing one does NOT update the other:
 2. **Playwright**: its own `seedDatabase()` in `playwright/global-setup.ts` with its own fixtures.
 
 Prisma 7 does not seed after migrate/reset automatically. `pnpm run prisma:reset` therefore resets without fixtures. On the legacy host stack with Infisical, use `pnpm run prisma:setup` for the explicit reset/push/seed composite or `pnpm --filter @klicker-uzh/prisma prisma:seed` for seed-only. In the self-contained DevPod, use the environment-ready raw sequence from `.devcontainer/post-create.sh`: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw`. Reset/setup is destructive — run only against demonstrably test-seeded databases.
+
+### Course chatbot provisioner
+
+The Informatik-und-Wirtschaft chatbot path is a separate, one-shot maintenance script:
+`packages/prisma-data/src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts:main`.
+It consumes only the ignored local input file, creates the disclaimer, chatbot, one inactive
+MCP server, and exactly two strict tutor/explainer bindings, and never activates or deploys
+anything. Unknown input fields, owner/course mismatches, competing rows, partial state, and
+wildcard tool bindings fail before a write. The raw video tool is fixed as
+`informatik_und_wirtschaft_video_expert` and the model-facing alias is `doc_query`.
+
+The script is dry-run by default. The dry run stores only payload/state hashes and operation
+counts in the ignored lock file; `DRY_RUN=false` requires that lock to match, reads a named
+credential environment variable only when needed, rechecks the state inside a Serializable
+transaction, verifies the resulting rows, and writes an after-state replay lock. Credentials,
+headers, user/course names, emails, and full database rows must never appear in receipts or
+logs. `--validate-only` validates the synthetic local template without importing the database
+runtime (**verified** on 2026-08-14); it does not prove a database dry run or MCP retrieval.
 
 ### First-login demo content
 
