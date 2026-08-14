@@ -1342,7 +1342,8 @@ const AssistantMessage: FC = () => {
   // and no non-whitespace answer text has streamed yet. Once the turn is
   // terminal (e.g. a completed tool call with no answer text), completed
   // source-bearing tool results must become visible.
-  const showSources = useMessage((message) => {
+  const showSources = useAuiState((s) => {
+    const message = s.message
     const hasAnswerText = message.content.some(
       (part) => part.type === 'text' && part.text.trim().length > 0
     )
