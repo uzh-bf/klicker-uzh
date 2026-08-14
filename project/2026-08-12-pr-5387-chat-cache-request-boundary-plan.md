@@ -1,4 +1,4 @@
-# Chat cache request boundary and stable prompt-prefix identity
+# PR #5387: Chat cache request boundary and stable prompt-prefix identity
 
 ## Goal
 
@@ -43,21 +43,27 @@ The package owns two separate request contracts:
 
 ## Plan identity and authority
 
-- Status: approved; implementation in progress on the named branch.
-- Plan: `project/2026-08-12-chat-cache-request-boundary-plan.md`
-- Repository: `/Users/rschlae/Git/klicker/klicker-uzh`
+- Status: approved; PR review correction and closeout in progress.
+- Plan: `project/2026-08-12-pr-5387-chat-cache-request-boundary-plan.md`
+- Repository: `klicker-uzh`
 - Branch: `rs/chat-cache-request-boundary`
-- Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/chat-cache-request-boundary`
+- Worktree: `trees/chat-cache-request-boundary`
 - Target/base: `v3` / `origin/v3`
-- Base SHA validated on 2026-08-12: `5264353ff77afc598ea69f05f262b25f882ca38c`
-- Existing reference worktree:
-  `/Users/rschlae/Git/klicker/klicker-uzh/trees/chat-turn-affinity-cache`
-- Existing reference PR: #5365, closed, unmerged, draft; reference only.
+- Current base after the 2026-08-14 rebase:
+  `6ff729ad0f01429108537f47f4cf4d1d437cc29a`.
+- Initial base validated on 2026-08-12:
+  `5264353ff77afc598ea69f05f262b25f882ca38c`.
+- Existing reference worktree: `trees/chat-turn-affinity-cache`.
+- Delivery PR: [#5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
+- Existing reference PR:
+  [#5365](https://github.com/uzh-bf/klicker-uzh/pull/5365), closed,
+  unmerged, draft; reference only.
 - Project artifact root: `project/`
 - Local review artifacts: `project/_local/reviews/` (ignored, never staged).
 - First post-approval commit: this plan only, before implementation.
-- No implementation, commit, push, PR, merge, deployment, cluster/tunnel
-  access, measurement, or production mutation is authorized by this plan.
+- The 2026-08-14 closeout authorizes edits, commits, branch push, and PR
+  finalization. Merge, deployment, cluster/tunnel access, measurement, paid
+  calls, and production mutation remain outside this package.
 
 The primary checkout contains unrelated user changes. It is not an execution
 surface and must remain untouched. The reference worktree contains one
@@ -185,8 +191,8 @@ evidence, not live provider or production proof.
 - `apps/chat/src/services/mcpClients.ts`: priority-based aggregation and
   deterministic namespacing of MCP tools.
 - `apps/chat/package.json`: AI SDK `7.0.52` and OpenAI provider `4.0.30`.
-- `/tmp/klicker-cache-contract-prototype/README.md` and `probe.mjs`: a
-  no-network synthetic capture passed for both Chat Completions and Responses.
+- A discarded no-network synthetic prototype captured both Chat Completions
+  and Responses request shapes.
   It showed `prompt_cache_key`, `prompt_cache_options`, the top-level LiteLLM
   bypass field injected by an application fetch wrapper, and normalized
   `usage.inputTokenDetails` buckets. It intentionally did not contact
@@ -537,7 +543,8 @@ hash; the report preserves the exact identity that was reviewed.
 - [x] Incorporate verified review corrections and independently recheck them.
 - [x] Present the reviewed plan for user approval; approval received on
   2026-08-12.
-- [x] Commit the approved plan as the branch's first commit (`1c8ff5bf0`).
+- [x] Commit the approved plan as the branch's first commit (`5064ff88c`
+  after the 2026-08-14 rebase).
 - [x] Slice 2 implemented: the default-provider fetch boundary adds the exact
   cache bypass while preserving Responses normalization, and the focused
   synthetic transport/image tests pass. The executor returned `NEEDS_CONTEXT`
@@ -592,15 +599,22 @@ hash; the report preserves the exact identity that was reviewed.
   tunnel, cluster access, or cleanup was performed.
 - [x] User-approved final simplification: removed the explicit implicit-mode
   override and deployment allow-list from the provider options. Focused
-  request-shape verification passes 23/23 focused tests, plus Biome, Prettier,
+  request-shape verification passed 22/22 focused tests, plus Biome, Prettier,
   and whitespace checks. The existing integrated-final and Claude Opus reports
   remain the review record; full package/root/build checks still remain
   unavailable because generated workspace outputs are missing and the host is
   running Node 26 instead of the repository's pinned Node 24.
+- [ ] PR review correction and closeout: rebased onto current `v3`; align the
+  prompt-cache transport with `usesResponsesApi`, clear the Sonar findings,
+  remove machine-local plan references, avoid SDK-internal schema key lists,
+  run fresh verification and integrated final review, then push and update
+  [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
-## Next action after user approval
+## Current closeout authority and next action
 
-Approval has now been received. Commit this plan as the first branch commit,
-then execute the slices in order. A generic approval here does not
-authorize push, PR creation, merge, deployment, measurement, tunnel use, paid
-calls, or production mutation; those remain separate named gates.
+The user authorized this correction package, its commits, a force-with-lease
+push after the approved rebase, and finalization of the existing PR. The next
+action is fresh focused and package verification followed by the required
+simplification, risk-selected slice review, and integrated final review on the
+exact committed range. Merge, deployment, measurement, tunnel use, paid calls,
+and production mutation remain separate gates.
