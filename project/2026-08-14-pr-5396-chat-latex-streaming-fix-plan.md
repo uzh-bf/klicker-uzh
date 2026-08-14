@@ -1,4 +1,4 @@
-# Chat LaTeX streaming fix
+# PR #5396 — Chat LaTeX streaming fix
 
 ## Goal
 
@@ -20,7 +20,7 @@
 - Worktree: `trees/chat-latex-streaming-fix`
 - Target: `v3`
 - Target SHA at planning: `3581246d12d0a9a19f15c8f7f9b92b5efc150569`
-- PR: not created yet
+- PR: https://github.com/uzh-bf/klicker-uzh/pull/5396 (draft)
 - Related history: [source-terminal fix PR](https://github.com/uzh-bf/klicker-uzh/pull/5393); the unpublished `rs/chat-latex-display-fences` branch is preserved as reference only.
 
 ## Research
@@ -109,14 +109,14 @@ S0 and S3 stay in the main session because they own the critical-path seam, inte
 
 ## Progress
 
-- Status: S3 in progress; implementation and required correction evidence are complete, with draft-PR publication remaining.
-- Completed: Sol planning pass; clean target worktree; plan commit `df8ab28a4`; implementation commit `a89784072`; simplifier reduction commit `f96d37dc8`; documentation commit `9498cf3bc`; split-delimiter correction commit `81a071f37`; fence-scanner correction and review evidence commit `758a00e4f`; split-opener correction is verified locally.
+- Status: S3 in progress; the verified implementation is published in draft PR #5396. Hosted CI and review remain open; the PR is not ready and has not been merged.
+- Completed: Sol planning pass; clean target worktree; plan commit `df8ab28a4`; implementation commit `a89784072`; simplifier reduction commit `f96d37dc8`; documentation commit `9498cf3bc`; split-delimiter correction commit `81a071f37`; fence-scanner correction and review evidence commit `758a00e4f`; split-opener correction commit `30225b775`; draft PR #5396 publication.
 - Evidence: scanner suite passes with 25 tests; the full Chat Vitest suite passes with 266 tests; Chat typecheck and production build pass; the monorepo build before the prior correction completed with 22 successful tasks; targeted Biome and Prettier checks pass for the new scanner/test and Playwright files. The full `Y-chat.spec.ts` suite passes with 80/80 tests, including the paused bracket-math stream, split-dollar stream, split-backslash stream, persisted display-math, source, tool, reasoning, and failure-state coverage. A full Biome check of the existing `markdown-text.tsx` also reports two pre-existing accessibility findings outside the changed hunk. `check:all` remains blocked by the pre-existing generated Chat route-validator syntax error at `.next/dev/types/validator.ts:161` and the container's missing compiler for the analytics pandas build. The real in-app Browser loads the isolated chat and visually shows rendered display formulas, prose between formulas, and a source link in `project/_local/screenshots/chat-latex-browser-success.png`. The live upstream response check remains blocked by the clean container's missing upstream credential: local LiteLLM rejects the request with an authentication error before streaming begins.
-- Remaining: create a draft PR and rename this plan with its PR number. The live upstream response check should be repeated once `UPSTREAM_OPENAI_API_KEY` is supplied to the local environment.
+- Remaining: keep PR #5396 in draft while hosted CI and review are assessed. The live upstream response check should be repeated once `UPSTREAM_OPENAI_API_KEY` is supplied to the local environment; no ready-for-review or merge action is authorized by this plan.
 - Review reports: planning pass complete; initial simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-s1-simplification.md`; initial final review at `project/_local/reviews/2026-08-14-chat-latex-streaming-final.md`; correction simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-correction-simplification.md`; correction final review at `project/_local/reviews/2026-08-14-chat-latex-streaming-correction-final.md`.
 - Active children: none; correction final review is persisted at `project/_local/reviews/2026-08-14-chat-latex-streaming-correction-final.md`.
-- Achieved layer: local implementation branch with the review-driven scanner corrections, simplification review, documentation, full Chat tests, full Playwright suite, Chat build verification, and real Browser visual proof; no PR or hosted proof yet.
-- Next action: publish the draft PR and keep the upstream-credential limitation explicit in the PR evidence.
+- Achieved layer: draft PR #5396 with the review-driven scanner corrections, simplification review, documentation, full Chat tests, full Playwright suite, Chat build verification, and real Browser visual proof; hosted CI and live upstream response remain explicitly unverified.
+- Next action: assess hosted CI and reviewer feedback on PR #5396; keep it draft until a separate explicit ready-for-review decision.
 
 ## Expected PR evidence
 
@@ -126,6 +126,6 @@ S0 and S3 stay in the main session because they own the critical-path seam, inte
 
 ## Next steps
 
-- Implement S1 only after the plan commit.
-- Run simplification and main-session verification before S2/S3.
-- Publish a draft PR when the integrated branch and required review are complete.
+- Assess hosted CI and reviewer feedback on draft PR #5396.
+- Repeat the live upstream response check once the local environment has the required upstream credential.
+- Request a separate ready-for-review decision only after those remaining gates are addressed.
