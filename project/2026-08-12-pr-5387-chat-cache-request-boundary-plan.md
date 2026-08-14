@@ -127,12 +127,14 @@ metadata.
 The canonical tool representation must use the provider-visible schema rather
 than executable functions or MCP client instances. It should resolve each
 tool's `inputSchema` through the installed AI SDK schema boundary, retain the
-tool name and description, include every provider-visible function-tool field
-that the installed SDK forwards (`strict`, `inputExamples`, and
-`providerOptions` where present), sort tools by canonical name, and recursively
-sort object keys. Array order remains meaningful unless the provider-visible
-schema contract proves that a particular array is set-like; the helper must not
-silently reorder semantic arrays.
+tool name, description, and `strict` field, and exclude `inputExamples` because
+neither OpenAI transport serializes them. Chat tool provider options are
+excluded. Responses identity includes only the forwarded OpenAI tool options:
+`allowedCallers`, `deferLoading`, `namespace`, and `outputSchema`. Tools are
+sorted by canonical name and object keys are sorted recursively. Array order
+remains meaningful unless the provider-visible schema contract proves that a
+particular array is set-like; the helper must not silently reorder semantic
+arrays.
 
 The canonical provider-tool projection must be used twice: first as the input
 to the fingerprint, and second as the provider-facing tool object passed to
@@ -232,9 +234,9 @@ where the existing suite does not already protect the named failure.
 | Stable identity changes when effective instructions change | No current protection | Pure helper table cases for prompt version and instruction changes | `apps/chat/test/prompt-cache-identity.test.ts` |
 | Stable identity partitions requested deployment/transport compatibility | Registry exposes deployment and reasoning transport | Pure helper cases for deployment, `auto-router`, and Chat/Responses changes | `apps/chat/test/prompt-cache-identity.test.ts` |
 | Tool insertion order does not change identity or request order | MCP aggregation is priority/insertion based; AI SDK defaults to object order | Canonical tool-name/schema fixtures with reordered input objects and explicit `toolOrder` assertions | `apps/chat/test/prompt-cache-identity.test.ts` and `apps/chat/test/openai-chat-streaming.test.ts` |
-| Tool schema, description, strictness, examples, or provider-visible options change the identity and wire contract | AI SDK schema conversion exists; no package contract | Pure synthetic tool definitions with changed provider-visible fields; compare canonical wire projections for both transports | `apps/chat/test/prompt-cache-identity.test.ts` and `apps/chat/test/openai-chat-streaming.test.ts` |
+| Tool schema, description, strictness, or transport-visible options change the identity; examples and non-OpenAI options do not | AI SDK schema conversion exists; no package contract | Vary wire and non-wire fields separately; compare canonical wire projections for both transports | `apps/chat/test/prompt-cache-identity.test.ts` and `apps/chat/test/openai-chat-streaming.test.ts` |
 | User, participant, chatbot, thread, assistant-message, message/content, request, tool-call, and raw MCP identifiers do not affect identity | Existing route has all values in scope, but no negative test | Separate privacy-negative fixtures for each identifier class and an assertion that only the stable-prefix input is accepted | `apps/chat/test/prompt-cache-identity.test.ts` |
-| Both transports preserve prompt-cache fields and public usage buckets | Disposable no-network probe | Repository-owned synthetic Chat/Responses fixtures assert serialized fields and public `usage.inputTokenDetails` | `apps/chat/test/openai-chat-streaming.test.ts` and a focused Responses fixture |
+| Both transports preserve prompt-cache fields and public usage buckets | Disposable no-network probe | Identity fixtures assert serialized prompt-cache fields; exact-cache transport fixtures assert public `usage.inputTokenDetails` once | `apps/chat/test/prompt-cache-identity.test.ts` and `apps/chat/test/openai-cache-policy.test.ts` |
 | Image-description requests bypass exact cache but do not receive chat-prefix identity | Route calls `generateText` through the selected provider at `route.ts:915-930`; no test currently protects the policy | Synthetic `generateText` capture through a default provider asserts the two bypass flags and absence of `prompt_cache_key` | `apps/chat/test/openai-cache-policy.test.ts` |
 | Provider-managed implicit caching remains the default while the stable key stays default-route-only | The provider supports implicit caching and stable `promptCacheKey` matching; this package does not need a deployment allow-list | Both transports assert the stable key is serialized and no explicit `prompt_cache_options` override is emitted | `apps/chat/test/prompt-cache-identity.test.ts` |
 | Existing chat behavior remains green | Current package test suite and typecheck | Run focused transport tests, full chat tests, chat typecheck, root checks, and build | Package/root verification |
@@ -631,15 +633,20 @@ hash; the report preserves the exact identity that was reviewed.
   and schema regressions, and removes the duplicate usage assertions. Focused
   tests pass 26/26. The initial report is
   `project/_local/reviews/2026-08-14-chat-cache-request-boundary-integrated-final.md`.
-- [ ] PR closeout: run the one allowed correction review on the exact verified
-  head, push, and update
+- [x] Integrated-final correction review: confirmed all executable findings
+  were closed without a correctness, security, privacy, architecture, or
+  data-flow regression. Its two closeout findings are addressed by correcting
+  the stale plan contract and isolating non-wire from wire-visible changes in
+  the regression test. Per policy, these non-behavioral edits close through
+  main-session verification without a third final review. The report is
+  `project/_local/reviews/2026-08-14-chat-cache-request-boundary-integrated-final-correction.md`.
+- [ ] PR closeout: commit the closeout corrections, push, and update
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action
 
 The user authorized this correction package, its commits, a force-with-lease
 push after the approved rebase, and finalization of the existing PR. The next
-action is fresh verification and the one allowed integrated-final correction
-review on the exact committed range, followed by the push and PR update. Merge,
-deployment, measurement, tunnel use, paid calls, and production mutation remain
-separate gates.
+action is the authorized force-with-lease push and PR update after committing
+the verified closeout corrections. Merge, deployment, measurement, tunnel use,
+paid calls, and production mutation remain separate gates.

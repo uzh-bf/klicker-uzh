@@ -197,11 +197,18 @@ describe('prompt cache identity', () => {
 
   test('hashes only transport-visible OpenAI tool options', async () => {
     const baseTools = createTools()
-    baseTools.search.inputExamples = [{ input: { query: 'base' } }]
-    baseTools.search.providerOptions = { openai: { deferLoading: false } }
-    const changedTools = createTools()
-    changedTools.search.inputExamples = [{ input: { query: 'changed' } }]
-    changedTools.search.providerOptions = { openai: { deferLoading: true } }
+    const inputExampleTools = createTools()
+    inputExampleTools.search.inputExamples = [{ input: { query: 'changed' } }]
+    const unrelatedProviderTools = createTools()
+    unrelatedProviderTools.search.providerOptions = {
+      synthetic: { marker: 'changed' },
+    }
+    const wireChangedTools = createTools()
+    wireChangedTools.search.inputExamples = [{ input: { query: 'changed' } }]
+    wireChangedTools.search.providerOptions = {
+      synthetic: { marker: 'changed' },
+      openai: { deferLoading: true },
+    }
 
     const baseChat = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
@@ -209,11 +216,17 @@ describe('prompt cache identity', () => {
       instructions: 'Synthetic instructions.',
       tools: baseTools,
     })
-    const changedChat = await buildPromptCacheRequest({
+    const inputExampleChat = await buildPromptCacheRequest({
       deploymentId: 'gpt-4.1',
       transport: 'chat',
       instructions: 'Synthetic instructions.',
-      tools: changedTools,
+      tools: inputExampleTools,
+    })
+    const unrelatedProviderChat = await buildPromptCacheRequest({
+      deploymentId: 'gpt-4.1',
+      transport: 'chat',
+      instructions: 'Synthetic instructions.',
+      tools: unrelatedProviderTools,
     })
     const baseResponses = await buildPromptCacheRequest({
       deploymentId: 'gpt-5.6-luna',
@@ -221,15 +234,34 @@ describe('prompt cache identity', () => {
       instructions: 'Synthetic instructions.',
       tools: baseTools,
     })
-    const changedResponses = await buildPromptCacheRequest({
+    const inputExampleResponses = await buildPromptCacheRequest({
       deploymentId: 'gpt-5.6-luna',
       transport: 'responses',
       instructions: 'Synthetic instructions.',
-      tools: changedTools,
+      tools: inputExampleTools,
+    })
+    const unrelatedProviderResponses = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: unrelatedProviderTools,
+    })
+    const wireChangedResponses = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: wireChangedTools,
     })
 
-    expect(changedChat.promptCacheKey).toBe(baseChat.promptCacheKey)
-    expect(changedResponses.promptCacheKey).not.toBe(
+    expect(inputExampleChat.promptCacheKey).toBe(baseChat.promptCacheKey)
+    expect(unrelatedProviderChat.promptCacheKey).toBe(baseChat.promptCacheKey)
+    expect(inputExampleResponses.promptCacheKey).toBe(
+      baseResponses.promptCacheKey
+    )
+    expect(unrelatedProviderResponses.promptCacheKey).toBe(
+      baseResponses.promptCacheKey
+    )
+    expect(wireChangedResponses.promptCacheKey).not.toBe(
       baseResponses.promptCacheKey
     )
 
@@ -242,8 +274,8 @@ describe('prompt cache identity', () => {
     await generateText({
       model: provider.responses('gpt-5.6-luna'),
       prompt: 'Synthetic prompt.',
-      tools: changedResponses.tools,
-      toolOrder: changedResponses.toolOrder,
+      tools: wireChangedResponses.tools,
+      toolOrder: wireChangedResponses.toolOrder,
       maxRetries: 0,
     })
 
