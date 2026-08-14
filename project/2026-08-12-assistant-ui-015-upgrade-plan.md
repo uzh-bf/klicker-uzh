@@ -10,9 +10,9 @@ migration; it does not add the planned long-session history rail or compaction.
 ## Plan identity
 
 - Branch: `rs/assistant-ui-015-upgrade`
-- Target: `v3` (`5264353ff77afc598ea69f05f262b25f882ca38c`)
+- Target: `v3` (`b1ea5ecba8aa835d6639ae3717a2aa456f470fc9`)
 - Plan: `project/2026-08-12-assistant-ui-015-upgrade-plan.md`
-- PR: none
+- PR: [#5382](https://github.com/uzh-bf/klicker-uzh/pull/5382)
 - Related history: `project/plans_wip/PLAN-chat-assistant-ui-upgrade-v0.11.md`
   and `project/2026-07-23-student-chat-v3-production-readiness-plan.md` record
   the earlier 0.11 and 0.14 upgrades; they are historical context, not active
@@ -150,4 +150,27 @@ migration; it does not add the planned long-session history rail or compaction.
   stopped in analytics lint because the runtime has no C compiler to rebuild
   `pandas`; this environment limitation is recorded with the exact command
   output, while the earlier host pre-commit `check:all` passed after a fresh
-  install. The correction review remains the last gate.
+  install. That correction review is retained as earlier evidence; the
+  current exact-range review is recorded below.
+- 2026-08-14: Rebased the implementation onto current `v3` at
+  `b1ea5ecba8aa835d6639ae3717a2aa456f470fc9`, which includes the merged
+  self-hosted application fonts and the recent chat UX changes. The rebase
+  preserved the current mode-aware welcome/thread surface and added the
+  assistant-ui 0.15 source-visibility compatibility fix in
+  `b41e6c299d4d935216b438d315723fd10290fccb`.
+- Current-head evidence at `b41e6c299`: Node 24 chat typecheck passed, the
+  chat suite passed with 35 files and 295 tests, the chat production build
+  passed, and the no-cache Docker chat installer build passed. The build only
+  emitted existing middleware, missing-local-model-env, and Dockerfile-format
+  warnings.
+- The two required current-head source-card Playwright cases reached database
+  cleanup and seeding but could not launch because the devcontainer lacked
+  Playwright's pinned Chromium headless-shell executable. Installing that
+  artifact was attempted but did not complete in the available runtime;
+  canonical CI browser evidence remains required. No test or application code
+  was changed for this environment limitation.
+- 2026-08-14: The exact-range integrated final review of
+  `b1ea5ecba..b41e6c299` found no actionable source, maintainability,
+  dependency-security, architecture, or data-flow defect. It requested only
+  current-head evidence and this progress update; the review is recorded in
+  `project/_local/reviews/2026-08-14-assistant-ui-015-upgrade-integrated-final-rebase.md`.
