@@ -640,7 +640,10 @@ hash; the report preserves the exact identity that was reviewed.
   the regression test. Per policy, these non-behavioral edits close through
   main-session verification without a third final review. The report is
   `project/_local/reviews/2026-08-14-chat-cache-request-boundary-integrated-final-correction.md`.
-- [ ] PR closeout: commit the closeout corrections, push, and update
+- [x] Local PR closeout: committed the closeout corrections and reran the full
+  chat suite at 291/291 on the exact head.
+- [ ] PR delivery: force-with-lease push the rebased branch, update the PR, and
+  confirm current-head Node 24 checks
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action
