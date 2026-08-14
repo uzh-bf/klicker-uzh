@@ -18,7 +18,7 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 - Stack branches: `rs/informatik-und-wirtschaft-chat-runtime` (bottom), `rs/informatik-und-wirtschaft-chatbot-provisioner` (optional top)
 - Target: `v3`
 - Base: `origin/v3` at `d76c13a3f28dcdbddac46ed8cc3fcb70fad42924`
-- Replacement stack: bottom PR #5405 — https://github.com/uzh-bf/klicker-uzh/pull/5405; optional top PR #5406 — https://github.com/uzh-bf/klicker-uzh/pull/5406; GitHub stack #5407 — https://github.com/uzh-bf/klicker-uzh/stacks/5407. Source safety PR #5404 — https://github.com/uzh-bf/klicker-uzh/pull/5404
+- Replacement stack: bottom PR #5405 — https://github.com/uzh-bf/klicker-uzh/pull/5405; optional top PR #5406 — https://github.com/uzh-bf/klicker-uzh/pull/5406; GitHub stack #5407. Source safety PR #5404 — https://github.com/uzh-bf/klicker-uzh/pull/5404
 - History: [previous cross-repository plan](../../../ai/klicker-uzh-video-ai/project/2026-08-14-informatik-und-wirtschaft-klicker-chatbot-migration-plan.md) and its handoff remain background evidence, not the current execution contract.
 
 ## Stack topology
