@@ -6,7 +6,7 @@
  * course editing/archiving, deletion, and course sharing permissions.
  */
 
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
 import {
   chooseActivityAction,
@@ -56,6 +56,7 @@ import {
   attachCourseCompetencyTree,
   createCourseDuplicationFailureFixture,
   createCourseRecord,
+  createParticipantInvitationRecord,
   createDeletedCourseActivities,
   deleteCourseWithActivitiesByName,
   deleteLiveQuizDirectPermission,
@@ -2310,6 +2311,114 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId(`element-item-${DELETION.qTitle}`)
     ).not.toBeVisible()
+  })
+})
+
+// ===========================================================================
+// Part 4b: Assessment participant invitations
+// ===========================================================================
+test.describe('Part 4b: Assessment participant invitations', () => {
+  test('Imports participant invitations and deletes pending invitations', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Course'
+    const acceptedEmail = 'accepted-assessment-invitation@example.org'
+    const pendingEmail = 'pending-assessment-invitation@example.org'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+    await createParticipantInvitationRecord({
+      courseId: course.id,
+      email: acceptedEmail,
+      matriculationNumber: '11-111-111',
+      status: InvitationStatus.ACCEPTED,
+      participantUsername: STUDENT_USERNAME,
+    })
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(
+        page.getByRole('heading', {
+          name: messages.manage.assessment.participantInvitations,
+          level: 1,
+        })
+      ).toBeVisible()
+      const acceptedRow = page.getByRole('row').filter({
+        hasText: acceptedEmail,
+      })
+      await expect(acceptedRow).toContainText(
+        messages.manage.assessment.invitationStatusAccepted
+      )
+      await expect(acceptedRow.getByRole('button')).toHaveCount(0)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'invalid-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('email\ninvalid@example.org'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvMissingHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'assessment-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          `email;matriculationNumber\n${pendingEmail};12-345-678\nnot-an-email;98-765-432`
+        ),
+      })
+      await expect(
+        page.getByText(
+          messages.manage.assessment.invitationCsvReady.replace('{count}', '2')
+        )
+      ).toBeVisible()
+      await page.getByTestId('assessment-invitations-import').click()
+
+      const importResult = page.getByTestId(
+        'assessment-invitations-import-result'
+      )
+      await expect(importResult).toContainText('1 pending')
+      await expect(importResult).toContainText('1 errors')
+      await expect(importResult).toContainText('not-an-email')
+
+      const pendingRow = page.getByRole('row').filter({ hasText: pendingEmail })
+      await expect(pendingRow).toContainText('12-345-678')
+      await expect(pendingRow).toContainText(
+        messages.manage.assessment.invitationStatusPending
+      )
+      await pendingRow.getByRole('button').click()
+      await expect(page.getByRole('dialog')).toContainText(pendingEmail)
+      await page.getByTestId('assessment-invitation-confirm-delete').click()
+      await expect(pendingRow).not.toBeAttached()
+      await expect(acceptedRow).toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
   })
 })
 
