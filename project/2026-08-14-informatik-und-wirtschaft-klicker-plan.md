@@ -17,7 +17,7 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/informatik-und-wirtschaft-klicker`
 - Branch: `rs/informatik-und-wirtschaft-klicker`
 - Target: `v3`
-- Base: `origin/v3` at `b1ea5ecba8aa835d6639ae3717a2aa456f470fc9`
+- Base: `origin/v3` at `f0c858a2e2ed0ffd8b5fb9297072518bbd1a9be487`
 - PR/MR: none
 - History: [previous cross-repository plan](../../../ai/klicker-uzh-video-ai/project/2026-08-14-informatik-und-wirtschaft-klicker-chatbot-migration-plan.md) and its handoff remain background evidence, not the current execution contract.
 
@@ -115,21 +115,21 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 
 ## Progress
 
-- Status: S2 is complete through its correction review. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
-- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections; guarded S2 provisioner, its simplifier/slice-review corrections, and wiki update.
-- Latest committed slice: `3eaa36f22` (`fix(prisma-data): make chatbot provisioner replay-safe`), correcting the initial S2 implementation in `f59333483`. S1 remains at `5376b8d62` (`fix(chat): harden required MCP validation`), correcting `b9b160ed8`. Working-tree evidence: focused chat suite `36/36` passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
+- Status: S3 verification is in progress after rebasing the unpublished branch onto the current `origin/v3`. The plan is committed as the branch's first commit. The base now includes `f0c858a2e` (`deps(chat): upgrade assistant-ui to 0.15`), which touches the chat surface and lockfile.
+- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections; guarded S2 provisioner, its simplifier/slice-review corrections, and wiki update; base rebase; type-only MCP tool-set correction.
+- Latest committed implementation correction: `115c22bbf` (`fix(chat): type MCP tools as AI SDK tool set`). The focused chat suite passed `36/36` from the package directory. The package chat typecheck reaches the changed route without errors but is blocked by four unrelated `thread.tsx` assistant-ui API diagnostics introduced by the rebased `0.15` dependency upgrade (`attachment`, `addAttachment`, and `composer` members).
 - Planning review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-simplified-planning.md`.
 - Simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-simplifier.md`; accepted redundant-default and in-process classifier reductions.
 - Slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-slice-review.md`; accepted unsafe-header, collision-order, and wildcard-validation corrections.
 - S1 correction review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-correction-review.md`; no findings at 100% confidence.
-- S2 implementation evidence: synthetic `--validate-only` input validation passed; unknown top-level and secret-bearing fields were rejected; `check:scripts` and formatting passed. A full Prisma Data check attempted dependency installation but was blocked by the pre-existing offline sharp native-build failure; no disposable DB was available, so DB dry-run/apply/idempotence remains unverified.
+- S2 implementation evidence: synthetic `--validate-only` input validation passed; unknown top-level and secret-bearing fields were rejected; `check:data` and `check:scripts` passed. Full workspace checks remain environment-blocked: the worktree has no complete root `node_modules` after the offline setup, and the attempted install is blocked by the pre-existing `sharp` native build requiring `vips-cpp.42`; no disposable DB was available, so DB dry-run/apply/idempotence remains unverified.
 - S2 simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s2-simplifier.md`; accepted two behavior-preserving reductions.
 - S2 slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s2-slice-review.md`; accepted exact second-apply no-op correction.
 - S2 correction review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s2-correction-review.md`; static contract passed with the database-backed replay run still unverified.
-- Remaining: S3 integrated verification/final review.
+- Remaining: S3 integrated verification/final review. Browser and live MCP evidence remain unavailable because `devrouter ensure` cannot determine the workspace process identity.
 - Active children: none.
 - Delivery layer: local branch commits only. Achieved layer: none yet. Push, PR, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: run S3 integrated verification, then obtain the required final review before presenting the package as complete.
+- Next action: record the final verification evidence, obtain the required final review, and commit the final Progress update before presenting the local package as complete.
 
 ## Next steps
 
