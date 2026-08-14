@@ -109,14 +109,14 @@ S0 and S3 stay in the main session because they own the critical-path seam, inte
 
 ## Progress
 
-- Status: S3 in progress; S0, S1, and S2 are committed.
-- Completed: Sol planning pass; clean target worktree; plan commit `df8ab28a4`; implementation commit `a89784072`; simplifier reduction commit `f96d37dc8`; documentation commit `9498cf3bc`.
-- Evidence: scanner suite passes with 17 tests; the full Chat Vitest suite passes with 258 tests; the monorepo build completes with 22 successful tasks; targeted Biome and Prettier checks pass. `check:all` remains blocked by the pre-existing generated Chat route-validator syntax error at `.next/dev/types/validator.ts:161` and the container's missing compiler for the analytics pandas build. The container Playwright run remains blocked because Chromium is not installed. The real in-app Browser loads the isolated chat and accepts the local test-user login, but the live response check is blocked by the clean container's missing upstream credential: local LiteLLM rejects the request with an authentication error before streaming begins.
-- Remaining: obtain the integrated final review, create a draft PR, and rename this plan with its PR number. The live upstream response check should be repeated once `UPSTREAM_OPENAI_API_KEY` is supplied to the local environment.
-- Review reports: planning pass complete; simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-s1-simplification.md`; integrated final review pending.
+- Status: S3 in progress; S0, S1, and S2 are committed, with one review-driven correction committed.
+- Completed: Sol planning pass; clean target worktree; plan commit `df8ab28a4`; implementation commit `a89784072`; simplifier reduction commit `f96d37dc8`; documentation commit `9498cf3bc`; split-delimiter correction commit `81a071f37`.
+- Evidence: scanner suite passes with 21 tests; the full Chat Vitest suite passes with 262 tests; the Chat production build passes; the monorepo build before the correction completed with 22 successful tasks; targeted Biome and Prettier checks pass. `check:all` remains blocked by the pre-existing generated Chat route-validator syntax error at `.next/dev/types/validator.ts:161` and the container's missing compiler for the analytics pandas build. The deterministic container Playwright contract is being retried after installing its browser dependencies. The real in-app Browser loads the isolated chat and accepts the local test-user login, but the live response check is blocked by the clean container's missing upstream credential: local LiteLLM rejects the request with an authentication error before streaming begins.
+- Remaining: complete the correction review, create a draft PR, and rename this plan with its PR number. The live upstream response check should be repeated once `UPSTREAM_OPENAI_API_KEY` is supplied to the local environment.
+- Review reports: planning pass complete; initial simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-s1-simplification.md`; initial final review at `project/_local/reviews/2026-08-14-chat-latex-streaming-final.md`; correction simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-correction-simplification.md`; correction final review pending.
 - Active children: none.
-- Achieved layer: local implementation branch with immutable S1, simplification review, documentation, full Chat tests, and build verification; no PR or hosted proof yet.
-- Next action: obtain the integrated final review, publish the draft PR, and keep the upstream-credential limitation explicit in the PR evidence.
+- Achieved layer: local implementation branch with the review-driven scanner correction, simplification review, documentation, full Chat tests, and Chat build verification; no PR or hosted proof yet.
+- Next action: run the deterministic browser contract, obtain the correction final review, publish the draft PR, and keep the upstream-credential limitation explicit in the PR evidence.
 
 ## Expected PR evidence
 
