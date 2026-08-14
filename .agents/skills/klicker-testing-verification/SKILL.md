@@ -27,6 +27,12 @@ fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
 and proves public tool-call/finish conversion without a model key; it does not
 replace a real-upstream staging smoke test.
 
+For OpenAI-compatible request-policy or prompt-cache changes, run
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts` after the streaming fixture;
+see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
+for contract details and evidence boundaries.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic

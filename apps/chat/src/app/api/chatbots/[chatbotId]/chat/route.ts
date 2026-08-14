@@ -15,7 +15,9 @@ import {
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
+import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
@@ -75,40 +77,6 @@ const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-/**
- * Custom fetch that patches Responses API request body to add
- * `status: "completed"` and `type: "message"` on assistant messages.
- * AI SDK omits these fields but some strict Responses API providers require them.
- *
- * Workaround for: https://github.com/vercel/ai/issues/12754
- */
-const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
-  if (init?.body && typeof init.body === 'string') {
-    try {
-      const body = JSON.parse(init.body)
-      if (Array.isArray(body.input)) {
-        body.input = body.input.map((item: Record<string, unknown>) =>
-          item.role === 'assistant'
-            ? { ...item, type: 'message', status: 'completed' }
-            : item
-        )
-        init = { ...init, body: JSON.stringify(body) }
-      }
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        // not JSON, pass through
-      } else {
-        console.error(
-          '[responsesApiFetch] Unexpected error patching body:',
-          error
-        )
-        throw error
-      }
-    }
-  }
-  return globalThis.fetch(input, init)
-}
-
 type ModelRouting = {
   source: 'custom' | 'default'
   hasCustomKey: boolean
@@ -163,7 +131,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
         createOpenAI({
           baseURL: baseUrl,
           apiKey: apiKey || 'no-key',
-          fetch: responsesApiFetch,
+          fetch: createOpenAIFetch('custom'),
         }),
         modelConfig
       ),
@@ -183,7 +151,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
       createOpenAI({
         baseURL: process.env.OPENAI_BASE_URL,
         apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: responsesApiFetch,
+        fetch: createOpenAIFetch('default'),
       }),
       modelConfig
     ),
@@ -901,6 +869,17 @@ export async function POST(
       : undefined
 
   const { model, routing } = getModel(chatbot, selectedModelConfig)
+  const promptCacheRequest =
+    routing.source === 'default'
+      ? await buildPromptCacheRequest({
+          deploymentId: selectedModelConfig.deploymentId,
+          transport: selectedModelConfig.usesResponsesApi
+            ? 'responses'
+            : 'chat',
+          instructions: systemPrompt,
+          tools: mcpTools,
+        })
+      : null
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1217,6 +1196,9 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
+          ...(promptCacheRequest
+            ? { promptCacheKey: promptCacheRequest.promptCacheKey }
+            : {}),
           ...(selectedModelConfig.usesResponsesApi && {
             store: getOpenAIResponsesStore(),
           }),
@@ -1227,7 +1209,8 @@ export async function POST(
         },
       },
       messages: modelMessages as ModelMessage[],
-      tools: mcpTools,
+      tools: promptCacheRequest?.tools ?? mcpTools,
+      toolOrder: promptCacheRequest?.toolOrder,
       toolChoice: 'auto',
       stopWhen: isStepCount(5),
       instructions: systemPrompt,
