@@ -25,7 +25,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
     "@uidotdev/usehooks": "2.4.1",
-    "@uzh-bf/design-system": "4.1.6",
+    "@uzh-bf/design-system": "4.1.8",
     "body-parser": "1.20.3",
     "dayjs": "1.11.20",
     "deepmerge": "4.3.1",

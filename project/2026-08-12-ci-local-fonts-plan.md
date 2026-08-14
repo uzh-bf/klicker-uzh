@@ -19,7 +19,8 @@ complete its required image matrix.
 ## Non-goals
 
 - No font-family, typography, or visual redesign.
-- No package dependency.
+- No additional package dependency; the existing design-system consumer update
+  is only advanced to the published patch release used for validation.
 - No changes to staging promotion, SonarCloud, Prisma, or Playwright.
 - No push, PR creation, merge, manual promotion, release cut, or deployment
   without separate authorization.
@@ -108,3 +109,21 @@ promote the failed alpha.68 commit.
   bundling; the wiki now does so.
 - Current: implementation and verification complete; branch is ready for a
   separately authorized push and PR.
+
+## Release-consumption verification
+
+- 2026-08-14: The design-system release workflow published
+  `@uzh-bf/design-system@4.1.8`; the existing nine-package consumer update is
+  being advanced from `4.1.7` to `4.1.8` for branch verification.
+- Acceptance: all direct consumers resolve `4.1.8`, the lockfile resolves the
+  published package, affected package checks/builds pass, and the existing
+  local-font browser/build verification remains intact.
+- 2026-08-14: The frozen DevPod install resolved `4.1.8` in all nine direct
+  consumers. Shared-components and Playwright typechecks passed, and the
+  production build completed with 22 successful tasks.
+- 2026-08-14: Chromium smoke verification passed on PWA, Manage, Control, and
+  Auth. Each app served both package-local WOFF2 assets, exposed Source Sans 3,
+  and made no Google font requests. The full stateful Playwright suite was not
+  run because the existing DevPod backend refused connections on port 3000;
+  the runner nevertheless enumerated all 862 tests in 29 files. The full Turbo
+  typecheck currently has one unrelated failure in `packages/util`.
