@@ -16,6 +16,15 @@ type MathState = {
   start: number
 }
 
+const MULTI_CHARACTER_OPENERS = [
+  '[/math]',
+  '[/inline]',
+  '\\\\[',
+  '\\[',
+  '\\\\(',
+  '\\(',
+] as const
+
 export type StreamingMathScan = {
   hasMathOpener: boolean
   incompleteMathStart: number | null
@@ -121,6 +130,15 @@ function findOpening(input: string, index: number): MathOpening | null {
   return null
 }
 
+function isOpeningPrefix(input: string, index: number) {
+  const suffix = input.slice(index)
+  if (suffix.length === 0) return false
+
+  return MULTI_CHARACTER_OPENERS.some(
+    (opener) => suffix.length < opener.length && opener.startsWith(suffix)
+  )
+}
+
 function findClosingLength(input: string, index: number, kind: MathKind) {
   switch (kind) {
     case 'display-tag':
@@ -191,7 +209,14 @@ export function inspectStreamingMath(input: string): StreamingMathScan {
     }
 
     const opening = findOpening(input, index)
-    if (!opening) continue
+    if (!opening) {
+      if (isOpeningPrefix(input, index)) {
+        hasMathOpener = true
+        math = { kind: 'bracket', start: index }
+        break
+      }
+      continue
+    }
 
     hasMathOpener = true
     math = { kind: opening.kind, start: index }

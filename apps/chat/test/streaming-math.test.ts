@@ -19,6 +19,21 @@ describe('streaming math scanner', () => {
   })
 
   test.each([
+    ['backslash', '\\'],
+    ['double-backslash', '\\\\'],
+    ['inline-tag prefix', '[/in'],
+    ['display-tag prefix', '[/ma'],
+  ])('hides a trailing %s opener prefix', (_, expression) => {
+    const input = `before ${expression}`
+
+    expect(hideIncompleteMath(input)).toBe('before ')
+    expect(inspectStreamingMath(input)).toEqual({
+      hasMathOpener: true,
+      incompleteMathStart: 'before '.length,
+    })
+  })
+
+  test.each([
     '$x$',
     '$$x$$',
     String.raw`\(x\)`,
