@@ -34,6 +34,16 @@ intermediate state until the test releases it. Use that seam to test the assista
 row while it is still streaming, and capture DOM identity around feedback clicks
 when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
+
+For chat Markdown or KaTeX streaming changes, `apps/chat/src/components/markdown-text.tsx`
+uses the dependency-free `src/lib/markdown/streamingMath.ts` scanner to hide only unmatched
+math tails while a text part is running. The browser contract must pause before a closing
+delimiter, assert that preceding prose remains visible while raw delimiters, partial formula
+text, and `.katex-error` remain absent, then release the stream and assert the complete KaTeX
+node, surrounding Markdown, and stable assistant-row identity. Keep persisted multiline display
+math coverage as well: a final formula count alone does not prove that prose or links after the
+formula were not consumed by malformed fences.
+
 For message-presentation changes, include a heading-rich answer and both explicit
 and silent streamed failures in the focused browser contract: headings should
 remain hierarchical and proportional, while failed assistant turns should not

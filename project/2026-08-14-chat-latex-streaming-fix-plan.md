@@ -109,13 +109,14 @@ S0 and S3 stay in the main session because they own the critical-path seam, inte
 
 ## Progress
 
-- Status: S0 in progress; clean worktree and plan file are next.
-- Completed: Sol planning pass; target SHA and clean worktree established; old unpublished branch preserved.
-- Remaining: commit S0, implement S1, document S2, verify/review/publish S3.
-- Review reports: planning pass complete; simplifier and integrated final review pending.
-- Active children: none after the planning pass.
-- Achieved layer: local branch and plan only; no PR or hosted proof yet.
-- Next action: commit this plan, then dispatch S1 to the configured executor.
+- Status: S2 in progress; S0 and S1 are committed.
+- Completed: Sol planning pass; clean target worktree; plan commit `df8ab28a4`; implementation commit `a89784072`; simplifier reduction commit `f96d37dc8`.
+- Evidence: scanner suite passes with 17 tests; targeted Biome and Prettier checks pass; container Playwright remains blocked because Chromium is not installed; the full hook is blocked by the pre-existing generated Chat route-validator syntax error at `.next/dev/types/validator.ts:161`.
+- Remaining: finish documentation, run integrated checks and browser verification, obtain final review, create a draft PR, and rename this plan with its PR number.
+- Review reports: planning pass complete; simplifier report at `project/_local/reviews/2026-08-14-chat-latex-streaming-s1-simplification.md`; integrated final review pending.
+- Active children: none.
+- Achieved layer: local implementation branch with immutable S1 and simplification review; no PR or hosted proof yet.
+- Next action: commit S2 documentation, then run integrated verification and review.
 
 ## Expected PR evidence
 

@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-12'
+timestamp: '2026-08-14'
 tags:
   - frontend
   - chat
@@ -390,6 +390,24 @@ model's search query (parsed defensively from the possibly-streaming args JSON b
 state. The raw tool-name/args/result path is preserved wherever the friendly panel would lie or be
 empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
 unreadable-args combination (which would otherwise render a blank panel).
+
+## Streamed Markdown math
+
+`src/components/markdown-text.tsx:MarkdownTextImpl` reads the current text-part status before
+rendering Markdown. While a text part is running, `src/lib/markdown/streamingMath.ts` removes only
+the unmatched tail of a supported math span (`$`, `$$`, `\\(...\\)`, `\\[...\\]`, `[/inline]`, or
+`[/math]`); ordinary prose before that span continues to stream. The scanner ignores escaped
+dollars, currency-like `$5`, inline code, and fenced code. Once a supported opener appears, the
+component disables assistant-ui's smooth text replay for that part, so the closing delimiter adds
+the complete formula in one render rather than exposing raw LaTeX or a partial KaTeX parse. A
+terminal or persisted message renders its full text normally, including an incomplete span from an
+aborted turn.
+
+`normalizeCustomMathTags` keeps custom and bracketed display-math fences on separate Markdown lines.
+Without those boundaries, a multiline formula can consume the prose or links that follow it. The
+streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closing delimiter,
+observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
+formula, surrounding Markdown, and assistant-row identity.
 
 ## Localization
 
