@@ -1,0 +1,22 @@
+mutation CreateAssessmentParticipantInvitations(
+  $courseId: String!
+  $invitations: [AssessmentParticipantInvitationInput!]!
+) {
+  createAssessmentParticipantInvitations(
+    courseId: $courseId
+    invitations: $invitations
+  ) {
+    totalProcessed
+    created
+    autoAccepted
+    duplicates
+    errors
+    results {
+      email
+      status
+      invitationId
+      participantId
+      error
+    }
+  }
+}
