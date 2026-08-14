@@ -343,13 +343,15 @@ export function parseProvisionInput(raw: unknown): ProvisionInput {
     if (
       !['http:', 'https:'].includes(parsedUrl.protocol) ||
       parsedUrl.username !== '' ||
-      parsedUrl.password !== ''
+      parsedUrl.password !== '' ||
+      parsedUrl.search !== '' ||
+      parsedUrl.hash !== ''
     ) {
       throw new Error('unsupported URL')
     }
   } catch {
     throw new Error(
-      'input.mcpServer.url must be an HTTP(S) URL without credentials'
+      'input.mcpServer.url must be an HTTP(S) URL without credentials, query, or fragment'
     )
   }
 
@@ -876,6 +878,13 @@ async function main() {
         'The applied state has drifted from the after-state receipt'
       )
     }
+    await verifyExistingSecret(
+      prisma,
+      input,
+      current,
+      authSecret(input),
+      decrypt
+    )
     console.log('Already applied: exact state verified; 0 writes executed')
     return
   }
@@ -909,6 +918,30 @@ async function main() {
     return
   }
 
+  const secret = authSecret(input)
+  if (
+    savedReceipt?.stage === 'before' &&
+    savedReceipt.status === 'dry-run' &&
+    savedReceipt.payloadHash === payloadHash &&
+    savedReceipt.beforeStateHash !== beforeStateHash &&
+    beforeMode === 'noop'
+  ) {
+    await verifyExistingSecret(prisma, input, before, secret, decrypt)
+    writeReceipt({
+      version: 1,
+      stage: 'after',
+      status: 'applied',
+      payloadHash,
+      beforeStateHash: savedReceipt.beforeStateHash,
+      afterStateHash: beforeStateHash,
+      plannedCreates: savedReceipt.plannedCreates,
+    })
+    console.log(
+      'Recovered after-state receipt: exact state verified; 0 writes executed'
+    )
+    return
+  }
+
   if (
     !savedReceipt ||
     savedReceipt.status !== 'dry-run' ||
@@ -920,7 +953,6 @@ async function main() {
     )
   }
 
-  const secret = authSecret(input)
   const after = await prisma.$transaction(
     async (tx) => {
       const transactionBefore = await readSnapshot(tx, input)

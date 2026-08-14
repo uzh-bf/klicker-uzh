@@ -85,7 +85,6 @@ describe('MCP runtime policy', () => {
     )
 
     expect(Object.keys(tools)).toEqual(['IW_doc_query'])
-    expect(isDocQueryToolName('IW_doc_query')).toBe(true)
   })
 
   test('fails closed when a strict tool is missing or the server is inactive', async () => {
@@ -194,6 +193,45 @@ describe('MCP runtime policy', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects a malformed strict allowedTools value before discovery', async () => {
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: 'x' as unknown as string[],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        'chatbot-1'
+      )
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+  })
+
+  test('preserves doc_query source recognition when names are truncated', async () => {
+    setTools({ video_expert: {} })
+
+    const tools = await getAggregatedMCPTools(
+      [
+        createServer(
+          { name: 'a'.repeat(55) },
+          {
+            allowedTools: ['video_expert'],
+            parameters: { required: true, toolAlias: 'doc_query' },
+          }
+        ),
+      ],
+      'chatbot-1'
+    )
+
+    const [toolName] = Object.keys(tools)
+    expect(toolName).toMatch(/_doc_query_[0-9a-f]{8}$/)
+    expect(isDocQueryToolName(toolName)).toBe(true)
   })
 
   test('rejects aggregate collisions regardless of priority order', async () => {

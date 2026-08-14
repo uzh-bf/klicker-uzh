@@ -43,7 +43,7 @@ import {
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
 
-function createRequest() {
+function createRequest(selectedMode?: string) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -52,6 +52,7 @@ function createRequest() {
         { id: 'message-1', role: 'user', content: 'Find the relevant video.' },
       ],
       selectedModel: 'gpt-4.1',
+      ...(selectedMode ? { selectedMode } : {}),
       assistantMessageId: 'assistant-1',
     }),
   })
@@ -70,6 +71,7 @@ describe('required MCP chat preflight', () => {
       systemPrompts: { tutor: { prompt: 'Use course material.' } },
       mcpConfigurations: [
         {
+          chatMode: 'tutor',
           priority: 0,
           allowedTools: ['informatik_und_wirtschaft_video_expert'],
           parameters: { required: true, toolAlias: 'doc_query' },
@@ -110,6 +112,47 @@ describe('required MCP chat preflight', () => {
       ],
       'chatbot-1'
     )
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('rejects an unsupported mode before MCP and thread work', async () => {
+    const response = await POST(createRequest('unsupported'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: unsupported',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('rejects a mode without its required MCP binding', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      systemPrompts: {
+        tutor: { prompt: 'Use course material.' },
+        explainer: { prompt: 'Explain course material.' },
+      },
+      mcpConfigurations: [
+        {
+          chatMode: 'explainer',
+          parameters: { required: true, toolAlias: 'doc_query' },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Required MCP tool unavailable',
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 })

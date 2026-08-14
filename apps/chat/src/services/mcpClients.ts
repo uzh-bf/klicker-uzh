@@ -53,10 +53,15 @@ function normalizeToolName(rawName: string): string {
   return normalized.length > 0 ? normalized : 'tool'
 }
 
-function withHashSuffix(baseName: string, hash: string): string {
-  const maxBaseLength = MAX_TOOL_NAME_LENGTH - TOOL_NAME_SUFFIX_LENGTH - 1
-  const trimmedBase = baseName.slice(0, maxBaseLength) || 'tool'
-  return `${trimmedBase}_${hash}`
+function withHashSuffix(
+  baseName: string,
+  hash: string,
+  preservedSuffix?: string
+): string {
+  const suffix = preservedSuffix ? `_${preservedSuffix}_${hash}` : `_${hash}`
+  const maxBaseLength = MAX_TOOL_NAME_LENGTH - suffix.length
+  const trimmedBase = baseName.slice(0, maxBaseLength).replace(/_+$/, '')
+  return `${trimmedBase || 'tool'}${suffix}`
 }
 
 function toSafeToolName(
@@ -72,7 +77,12 @@ function toSafeToolName(
     return baseName
   }
 
-  let candidate = withHashSuffix(baseName, toToolNameHash(rawName))
+  const preservedSuffix = toolName === 'doc_query' ? 'doc_query' : undefined
+  let candidate = withHashSuffix(
+    baseName,
+    toToolNameHash(rawName),
+    preservedSuffix
+  )
   if (!usedNames.has(candidate)) {
     return candidate
   }
@@ -82,7 +92,8 @@ function toSafeToolName(
   while (usedNames.has(candidate)) {
     candidate = withHashSuffix(
       baseName,
-      toToolNameHash(`${rawName}:${attempt}`)
+      toToolNameHash(`${rawName}:${attempt}`),
+      preservedSuffix
     )
     attempt += 1
   }
@@ -234,6 +245,7 @@ async function loadServerTools(
   if (runtimePolicy.required) {
     const configuredTool = config.allowedTools?.[0]
     if (
+      !Array.isArray(config.allowedTools) ||
       config.allowedTools?.length !== 1 ||
       typeof configuredTool !== 'string' ||
       configuredTool.length === 0 ||

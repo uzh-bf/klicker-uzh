@@ -169,6 +169,12 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>
 }
 
+function getSupportedChatModes(systemPrompts: unknown): Set<string> {
+  const configuredModes = asObject(systemPrompts)
+  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
+  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
+}
+
 function truncateString(
   value: string,
   maxLength = MAX_LOG_STRING_LENGTH
@@ -691,7 +697,6 @@ export async function POST(
       include: {
         mcpConfigurations: {
           where: {
-            chatMode: selectedMode,
             isEnabled: true,
           },
           include: {
@@ -716,27 +721,6 @@ export async function POST(
       } else {
         systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
       }
-
-      // Prepare MCP server configurations
-      mcpServersWithConfigs =
-        chatbot.mcpConfigurations?.map((config) => ({
-          server: {
-            id: config.mcpServer.id,
-            name: config.mcpServer.name,
-            url: config.mcpServer.url,
-            authType: config.mcpServer.authType,
-            authSecret: config.mcpServer.authSecret ?? '',
-            parameters: config.mcpServer.parameters,
-            isActive: config.mcpServer.isActive,
-            passChatbotId: config.mcpServer.passChatbotId,
-            chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-          },
-          config: {
-            allowedTools: config.allowedTools as string[] | undefined,
-            parameters: config.parameters,
-            priority: config.priority,
-          },
-        })) || []
     }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
@@ -748,6 +732,52 @@ export async function POST(
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
+
+  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+    return NextResponse.json(
+      { error: `Unsupported chat mode: ${selectedMode}` },
+      { status: 400 }
+    )
+  }
+
+  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
+  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
+    (config) => config.chatMode === selectedMode
+  )
+  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
+  }
+
+  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
+    server: {
+      id: config.mcpServer.id,
+      name: config.mcpServer.name,
+      url: config.mcpServer.url,
+      authType: config.mcpServer.authType,
+      authSecret: config.mcpServer.authSecret ?? '',
+      parameters: config.mcpServer.parameters,
+      isActive: config.mcpServer.isActive,
+      passChatbotId: config.mcpServer.passChatbotId,
+      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+    },
+    config: {
+      allowedTools: config.allowedTools as string[] | undefined,
+      parameters: config.parameters,
+      priority: config.priority,
+    },
+  }))
 
   // MCP availability is checked before creating a thread or doing any model,
   // credit, image-generation, or message-persistence work.
