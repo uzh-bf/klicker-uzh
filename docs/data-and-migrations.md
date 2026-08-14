@@ -104,7 +104,8 @@ wildcard tool bindings fail before a write. The raw video tool is fixed as
 The script is dry-run by default. The dry run stores only payload/state hashes and operation
 counts in the ignored lock file; `DRY_RUN=false` requires that lock to match, reads a named
 credential environment variable only when needed, rechecks the state inside a Serializable
-transaction, verifies the resulting rows, and writes an after-state replay lock. Credentials,
+transaction, verifies the resulting rows, and writes an after-state replay lock. A second exact
+apply verifies that after-state and returns with zero writes; drift fails closed. Credentials,
 headers, user/course names, emails, and full database rows must never appear in receipts or
 logs. `--validate-only` validates the synthetic local template without importing the database
 runtime (**verified** on 2026-08-14); it does not prove a database dry run or MCP retrieval.

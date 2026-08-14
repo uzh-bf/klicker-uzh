@@ -466,10 +466,6 @@ function serverState(row: {
   }
 }
 
-function configState(row: ConfigState): ConfigState {
-  return row
-}
-
 async function readSnapshot(
   db: Database,
   input: ProvisionInput
@@ -585,7 +581,7 @@ async function readSnapshot(
     input.mcpConfigIds.explainer,
   ].map((id) => {
     const row = configsById.find((candidate) => candidate.id === id)
-    return row ? configState(row) : null
+    return row ?? null
   })
 
   return {
@@ -596,7 +592,7 @@ async function readSnapshot(
     server: server ? serverState(server) : null,
     serverNameId: serverByName?.id ?? null,
     configsById: configById,
-    chatbotConfigs: chatbotConfigs.map(configState),
+    chatbotConfigs,
     competingChatbots,
     competingDisclaimers,
   }
@@ -868,7 +864,20 @@ async function main() {
 
   const savedReceipt = receipt()
   if (savedReceipt?.stage === 'after') {
-    throw new Error('The provisioner already has an after-state receipt')
+    if (savedReceipt.payloadHash !== payloadHash) {
+      throw new Error('The after-state receipt does not match the payload')
+    }
+    const current = await readSnapshot(prisma, input)
+    if (
+      savedReceipt.afterStateHash !== hash(current) ||
+      mode(current, input) !== 'noop'
+    ) {
+      throw new Error(
+        'The applied state has drifted from the after-state receipt'
+      )
+    }
+    console.log('Already applied: exact state verified; 0 writes executed')
+    return
   }
   const before = await readSnapshot(prisma, input)
   const beforeStateHash = hash(before)
@@ -919,9 +928,6 @@ async function main() {
         throw new Error(
           'The transaction starting state differs from the dry-run lock'
         )
-      }
-      if (mode(transactionBefore, input) !== beforeMode) {
-        throw new Error('The transaction mode differs from the dry-run lock')
       }
       await verifyExistingSecret(tx, input, transactionBefore, secret, decrypt)
       if (beforeMode === 'create') await createRows(tx, input, secret, encrypt)

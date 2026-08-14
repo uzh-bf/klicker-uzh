@@ -115,18 +115,18 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 
 ## Progress
 
-- Status: S2 provisioner implementation is complete and awaiting its slice review. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
-- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections; guarded S2 provisioner and wiki update.
+- Status: S2 review corrections are implemented and awaiting the one correction review. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
+- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections; guarded S2 provisioner, its simplifier/slice-review corrections, and wiki update.
 - Latest committed slice: `5376b8d62` (`fix(chat): harden required MCP validation`), correcting the initial S1 implementation in `b9b160ed8`. Working-tree evidence: focused chat suite `36/36` passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
 - Planning review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-simplified-planning.md`.
 - Simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-simplifier.md`; accepted redundant-default and in-process classifier reductions.
 - Slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-slice-review.md`; accepted unsafe-header, collision-order, and wildcard-validation corrections.
 - S1 correction review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-correction-review.md`; no findings at 100% confidence.
 - S2 implementation evidence: synthetic `--validate-only` input validation passed; unknown top-level and secret-bearing fields were rejected; `check:scripts` and formatting passed. A full Prisma Data check attempted dependency installation but was blocked by the pre-existing offline sharp native-build failure; no disposable DB was available, so DB dry-run/apply/idempotence remains unverified.
-- Remaining: S2 commit, S2 review/simplification, S3 integrated verification/final review.
+- Remaining: S2 correction review, S3 integrated verification/final review.
 - Active children: none.
 - Delivery layer: local branch commits only. Achieved layer: none yet. Push, PR, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: stage the S2 provisioner, docs, and Progress changes, inspect the staged data boundary, commit them, then run the required S2 simplifier and slice review.
+- Next action: stage the accepted S2 corrections and Progress changes, commit them, then run the one correction slice review before S3.
 
 ## Next steps
 
