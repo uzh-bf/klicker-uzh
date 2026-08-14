@@ -6,9 +6,9 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 
 ## Non-goals and authority
 
-- No deployment-route, LiteLLM, pipeline, corpus, secret, STG, production, activation, push, PR, merge, or cleanup work in this package.
+- No deployment-route, LiteLLM, pipeline, corpus, secret, STG, production, activation, merge, or cleanup work in this package. The current task additionally authorizes pushing this branch and opening a draft PR only.
 - Package B remains a separate operational step. It supplies reviewed course/chatbot IDs, model/route/auth policy, disclaimer, credit policy, and credential ownership before any provisioning or deployment apply.
-- This branch may edit and commit local repository code and project artifacts only. No external state change is authorized.
+- This branch may edit and commit local repository code and project artifacts only. The current task separately authorizes the external Git push and draft PR creation described below; no other external state change is authorized.
 
 ## Plan identity
 
@@ -17,8 +17,8 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/informatik-und-wirtschaft-klicker`
 - Branch: `rs/informatik-und-wirtschaft-klicker`
 - Target: `v3`
-- Base: `origin/v3` at `f0c858a2e2ed0ffd8b5fb9297072518bbd1a9be487`
-- PR/MR: none
+- Base: `origin/v3` at `d76c13a3f28dcdbddac46ed8cc3fcb70fad42924`
+- PR/MR: draft PR to be opened after the recorded local verification
 - History: [previous cross-repository plan](../../../ai/klicker-uzh-video-ai/project/2026-08-14-informatik-und-wirtschaft-klicker-chatbot-migration-plan.md) and its handoff remain background evidence, not the current execution contract.
 
 ## Research
@@ -109,15 +109,15 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 ### S3 — Integrate and verify locally
 
 - Route: main session.
-- Do: integrate accepted review findings, update Progress, run the relevant chat and Prisma Data suites, `pnpm run check:all`, and `pnpm run build`; use `npx agent-browser@0.32.2` against the local devrouter URL only if a local runtime is already available. Verify the required-MCP failure path leaves no thread/message/credit writes. Do not push, open a PR, apply STG, activate, or deploy.
+- Do: integrate accepted review findings, update Progress, run the relevant chat and Prisma Data suites, `pnpm run check:all`, and `pnpm run build`; use `npx agent-browser@0.32.2` against the local devrouter URL only if a local runtime is already available. Verify the required-MCP failure path leaves no thread/message/credit writes. Do not apply STG, activate, or deploy during local verification; the current task separately authorizes a branch push and draft PR after this check.
 - Check: fresh command output and exact diff against `origin/v3`; final review covers correctness/plan compliance, maintainability, security, architecture, and applicable data-integrity seams.
-- Commit: any accepted review/Progress adjustment as a conventional follow-up commit.
+- Commit: any accepted review/Progress adjustment as a conventional follow-up commit. The current task permits a branch push and draft PR after this check; merge and deployment remain withheld.
 
 ## Progress
 
-- Status: local implementation is complete through the integrated correction review after rebasing the unpublished branch onto the current `origin/v3`. The base now includes `f0c858a2e` (`deps(chat): upgrade assistant-ui to 0.15`), which touches the chat surface and lockfile.
+- Status: local implementation is complete through the integrated correction review after rebasing the unpublished branch onto the current `origin/v3` at `d76c13a3f`. The base promotion changes deployment values only; it does not contain an alternative implementation of this feature.
 - Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections; guarded S2 provisioner, its simplifier/slice-review corrections, and wiki update; base rebase; type-only MCP tool-set correction; final-review corrections for mode enforcement, URL credential rejection, credential replay verification, receipt recovery, strict allowedTools shape, long-name source recognition, and duplicate test coverage.
-- Latest committed implementation correction: `a0223bc5c` (`fix(chat): close required MCP policy gaps`). The focused chat suite passed `40/40`. Provisioner `--validate-only`, Prisma Data `check:data`, Prisma Data `check:scripts`, and the synthetic query-bearing URL rejection passed. The package chat typecheck remains blocked by the incomplete linked-worktree dependency setup; no changed-file type error was isolated after the focused route tests.
+- Latest committed implementation correction: `2e1de1749` (`fix(chat): close required MCP policy gaps`). The focused chat suite passed `40/40`. Provisioner `--validate-only`, Prisma Data `check:data`, Prisma Data `check:scripts`, and the synthetic query-bearing URL rejection passed. The package chat typecheck remains blocked by the incomplete linked-worktree dependency setup; no changed-file type error was isolated after the focused route tests.
 - Planning review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-simplified-planning.md`.
 - Simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-simplifier.md`; accepted redundant-default and in-process classifier reductions.
 - Slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-slice-review.md`; accepted unsafe-header, collision-order, and wildcard-validation corrections.
@@ -127,12 +127,14 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 - S2 slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s2-slice-review.md`; accepted exact second-apply no-op correction.
 - S2 correction review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s2-correction-review.md`; static contract passed, and the disposable database proof now covers dry run, serializable apply, and exact second-run no-op. Drift refusal and post-commit receipt recovery remain unexercised.
 - Final review: initial findings were recorded in `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-combined-final.md`; the correction review closed all seven code findings in `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-combined-final-correction.md`. The wiki caveat identified by that review is corrected in the working tree.
-- Remaining gate: no further local implementation gate. Browser and live MCP evidence remain unavailable because no live MCP credential or active production-like route was supplied; push, PR, STG apply, activation, deployment, and production remain outside this package.
+- Browser E2E: the linked feature worktree was proved with devrouter, and the missing Chromium headless-shell, ffmpeg artifact, and container libraries were installed in the disposable runtime. The full `Y-chat.spec.ts` Chromium run started against the real local apps: tests 1 and 2 passed, then the unknown-chatbot recovery test failed at `playwright/tests/Y-chat.spec.ts:98` because it expects `data-testid="chat-not-found"`. The unchanged base implementation uses `data-cy="chat-not-found"`; the response was HTTP 404, but the browser DOM contained no matching recovery marker. The changed-file diff confirms that the recovery page and E2E spec are outside this branch, so this baseline/runtime failure is not attributed to the feature. No application-level full-suite pass is claimed.
+- Remaining gate: no further local implementation gate. Live MCP evidence remains unavailable because no live MCP credential or active production-like route was supplied. The current task authorizes push and a draft PR; merge, STG apply, activation, deployment, and production remain withheld.
 - Active children: none.
-- Delivery layer: local branch commits only. Achieved layer: local code, documentation, and disposable-database proof complete. Push, PR, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: hand off the branch for the separately authorized Package B operational values and activation decision; no local database receipt or operational credential is retained.
+- Delivery layer: local branch commits only until the authorized push and draft PR. Achieved layer: local code, documentation, disposable-database proof, and bounded browser execution complete; the full browser suite remains blocked by the unchanged baseline recovery test. Merge, STG apply, activation, deployment, and production remain explicitly withheld.
+- Next action: push the branch and open the draft PR with the recorded verification boundary; no local database receipt or operational credential is retained.
 
 ## Next steps
 
 - Keep the existing cross-repository handoff and deployment route read-only.
+- Review the draft PR and separately repair the baseline chat recovery E2E contract if desired.
 - Reconfirm operational values and authority separately before any Package B apply.
