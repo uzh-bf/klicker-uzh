@@ -384,6 +384,12 @@ identity are built. Missing, inactive, unavailable, malformed, or colliding stri
 `503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
+The matching course setup is a local maintenance operation, not a runtime activation switch:
+`packages/prisma-data/src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts:main`
+creates an inactive MCP server and two strict mode bindings from an ignored, operator-supplied
+payload. The script is dry-run-first and its apply path is separately locked to the reviewed
+course/owner IDs and exact database state; it does not deploy the MCP route or publish secrets.
+
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
 - A source returned again by a later search keeps its original number; no second index is ever
