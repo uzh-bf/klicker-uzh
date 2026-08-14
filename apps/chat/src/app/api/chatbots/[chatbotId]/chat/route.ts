@@ -45,6 +45,7 @@ import {
   streamText,
   type ModelMessage,
   type StepResult,
+  type ToolSet,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -750,7 +751,7 @@ export async function POST(
 
   // MCP availability is checked before creating a thread or doing any model,
   // credit, image-generation, or message-persistence work.
-  let mcpTools: Record<string, unknown>
+  let mcpTools: ToolSet
   try {
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
   } catch (error) {
