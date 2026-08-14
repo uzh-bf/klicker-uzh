@@ -115,16 +115,17 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 
 ## Progress
 
-- Status: S1 review corrections are implemented and ready for the correction commit. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
+- Status: S1 is complete through its correction review. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
 - Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections.
-- Latest committed slice: `b9b160ed8` (`enhance(chat): require configured MCP tools before chat generation`). Working-tree evidence: focused chat suite `36/36` passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
+- Latest committed slice: `5376b8d62` (`fix(chat): harden required MCP validation`), correcting the initial S1 implementation in `b9b160ed8`. Working-tree evidence: focused chat suite `36/36` passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
 - Planning review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-simplified-planning.md`.
 - Simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-simplifier.md`; accepted redundant-default and in-process classifier reductions.
 - Slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-slice-review.md`; accepted unsafe-header, collision-order, and wildcard-validation corrections.
-- Remaining: S1 correction commit, S2 provisioner, S2 review/simplification, S3 integrated verification/final review.
+- S1 correction review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-correction-review.md`; no findings at 100% confidence.
+- Remaining: S2 provisioner, S2 review/simplification, S3 integrated verification/final review.
 - Active children: none.
 - Delivery layer: local branch commits only. Achieved layer: none yet. Push, PR, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: stage only the accepted S1 correction and Progress changes, commit them, then dispatch the bounded S2 provisioner executor.
+- Next action: dispatch the bounded S2 provisioner executor.
 
 ## Next steps
 
