@@ -6,19 +6,19 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 
 ## Non-goals and authority
 
-- No deployment-route, LiteLLM, pipeline, corpus, secret, STG, production, activation, merge, or cleanup work in this package. The current task additionally authorizes pushing this branch and opening a draft PR only.
+- No deployment-route, LiteLLM, pipeline, corpus, secret, STG, production, activation, merge, or cleanup work in this package. The current task additionally authorizes pushing these stack branches and opening draft PRs only.
 - Package B remains a separate operational step. It supplies reviewed course/chatbot IDs, model/route/auth policy, disclaimer, credit policy, and credential ownership before any provisioning or deployment apply.
-- This branch may edit and commit local repository code and project artifacts only. The current task separately authorizes the external Git push and draft PR creation described below; no other external state change is authorized.
+- These stack branches may edit and commit local repository code and project artifacts only. The current task separately authorizes the external Git push and draft PR creation described below; no other external state change is authorized.
 
 ## Plan identity
 
 - Plan path: `project/2026-08-14-informatik-und-wirtschaft-klicker-plan.md`
 - Repository: `/Users/rschlae/Git/klicker/klicker-uzh`
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/informatik-und-wirtschaft-klicker`
-- Branch: `rs/informatik-und-wirtschaft-klicker`
+- Stack branches: `rs/informatik-und-wirtschaft-chat-runtime` (bottom), `rs/informatik-und-wirtschaft-chatbot-provisioner` (optional top)
 - Target: `v3`
 - Base: `origin/v3` at `d76c13a3f28dcdbddac46ed8cc3fcb70fad42924`
-- Replacement stack PRs: pending; source safety PR #5404 — https://github.com/uzh-bf/klicker-uzh/pull/5404
+- Replacement stack: bottom PR #5405 — https://github.com/uzh-bf/klicker-uzh/pull/5405; optional top PR #5406 — https://github.com/uzh-bf/klicker-uzh/pull/5406; GitHub stack #5407 — https://github.com/uzh-bf/klicker-uzh/stacks/5407. Source safety PR #5404 — https://github.com/uzh-bf/klicker-uzh/pull/5404
 - History: [previous cross-repository plan](../../../ai/klicker-uzh-video-ai/project/2026-08-14-informatik-und-wirtschaft-klicker-chatbot-migration-plan.md) and its handoff remain background evidence, not the current execution contract.
 
 ## Stack topology
