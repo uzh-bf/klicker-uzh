@@ -272,6 +272,94 @@ item only for `scopeType === 'instance'`:
 - [x] Prepare the conventional implementation commit and draft PR body against
       `v3`, including verification results and browser screenshots.
 
+### Task 7: Qualify the two element participation labels
+
+**Files:**
+
+- Modify
+  `apps/frontend-manage/src/components/courses/pointCorrections/PointCorrectionsAudienceStep.tsx`.
+- Modify
+  `apps/frontend-manage/src/components/courses/pointCorrections/PointCorrectionsSummaryStep.tsx`.
+- Modify `packages/i18n/messages/en.ts`.
+- Modify `packages/i18n/messages/de.ts`.
+- Refresh
+  `docs/images/2026-08-14-element-point-correction/element-audience-options.png`.
+- Refresh
+  `docs/images/2026-08-14-element-point-correction/quiz-audience-options.png`.
+
+**Interface produced:** element corrections display scope-qualified labels in
+the audience selector and summary, while quiz corrections retain the existing
+unqualified participating-user label. Persisted enum values and mutation input
+stay unchanged.
+
+- [x] Add the English keys and exact values:
+
+  ```ts
+  audienceOptionParticipatingElement:
+    'All participating users (this element)',
+  audienceOptionParticipatingQuiz:
+    'All participating users (entire quiz)',
+  participantScopeParticipatingElement:
+    'All participating users (this element)',
+  participantScopeParticipatingQuiz:
+    'All participating users (entire quiz)',
+  ```
+
+  Add the German equivalents:
+
+  ```ts
+  audienceOptionParticipatingElement:
+    'Alle teilnehmenden Nutzer (dieses Element)',
+  audienceOptionParticipatingQuiz:
+    'Alle teilnehmenden Nutzer (gesamtes Quiz)',
+  participantScopeParticipatingElement:
+    'Alle teilnehmenden Nutzer (dieses Element)',
+  participantScopeParticipatingQuiz:
+    'Alle teilnehmenden Nutzer (gesamtes Quiz)',
+  ```
+
+- [x] Make the existing `PARTICIPATING` selector label scope-aware:
+
+  ```tsx
+  label:
+    scopeField.value === 'instance'
+      ? t(
+          'manage.pointCorrections.audienceOptionParticipatingElement'
+        )
+      : t('manage.pointCorrections.audienceOptionParticipating'),
+  ```
+
+  Continue rendering `PARTICIPATING_QUIZ` only for instance scope, using the
+  updated `audienceOptionParticipatingQuiz` translation.
+
+- [x] Make the summary label for `PARTICIPATING` scope-aware:
+
+  ```tsx
+  [PointCorrectionType.Participating]:
+    values.scopeType === 'instance'
+      ? t(
+          'manage.pointCorrections.participantScopeParticipatingElement'
+        )
+      : t('manage.pointCorrections.participantScopeParticipating'),
+  ```
+
+  Keep `PARTICIPATING_QUIZ` mapped to the updated
+  `participantScopeParticipatingQuiz` translation.
+
+- [x] Run
+  `pnpm --filter @klicker-uzh/frontend-manage check` inside the managed
+  DevPod. Expected result: exit 0 with TypeScript validation successful.
+- [x] Use `npx agent-browser@0.32.2` with delegated login against the real
+  Manage route. Verify English and German element scope show the two qualified
+  labels, whole-quiz scope still shows the unqualified label, and refresh both
+  existing screenshots.
+- [x] Run Prettier/Biome checks for the changed files, `git diff --check`, and
+  changed-file OpenGrep. Expected result: all format/type checks pass and no
+  new actionable static-analysis findings.
+- [x] Move this plan back to `project/plans_archive/` after implementation,
+  browser verification, and final branch review; prepare the copy-only change
+  for draft PR #5395.
+
 ## Progress
 
 - **2026-08-14:** Traced the existing four correction audiences through the
@@ -304,3 +392,10 @@ item only for `scopeType === 'instance'`:
 - **2026-08-14:** The requester approved parallel scope-qualified labels for
   the two participation audiences shown for an element. This is a copy-only
   refinement; persisted enum values and correction eligibility stay unchanged.
+- **2026-08-14:** Implemented the refined English and German labels and made
+  the selector and confirmation summary scope-aware. The focused Manage check
+  passes. Browser verification on the real seeded assessment page confirmed
+  five qualified element audiences, four unchanged quiz audiences, and the
+  German element-audience summary; both PR screenshots were refreshed.
+- **2026-08-14:** Biome and Prettier checks pass, `git diff --check` is clean,
+  and OpenGrep reports zero findings across the four changed TypeScript files.

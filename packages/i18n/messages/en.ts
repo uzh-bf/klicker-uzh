@@ -3369,7 +3369,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       audienceOptionSingle: 'Single participant',
       audienceOptionMultiple: 'Multiple participants',
       audienceOptionParticipating: 'All participating users',
-      audienceOptionParticipatingQuiz: 'All quiz participants',
+      audienceOptionParticipatingElement:
+        'All participating users (this element)',
+      audienceOptionParticipatingQuiz: 'All participating users (entire quiz)',
       audienceOptionCourse: 'All assessment course participants',
       participantLabel: 'Participant',
       participantsLabel: 'Participants',
@@ -3378,8 +3380,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       participantScopeSingle: 'Selected participant',
       participantScopeMultiple: 'Selected participants',
       participantScopeParticipating: 'All participating users',
+      participantScopeParticipatingElement:
+        'All participating users (this element)',
       participantScopeParticipatingQuiz:
-        'All users with at least one answer in the quiz',
+        'All participating users (entire quiz)',
       participantScopeCourse: 'All assessment course participants',
       adjustmentsTitle: 'Adjust Points',
       adjustmentsDescription:

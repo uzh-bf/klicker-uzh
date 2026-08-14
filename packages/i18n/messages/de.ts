@@ -3423,7 +3423,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       audienceOptionSingle: 'Einzelne Person',
       audienceOptionMultiple: 'Mehrere Personen',
       audienceOptionParticipating: 'Alle teilnehmenden Nutzer',
-      audienceOptionParticipatingQuiz: 'Alle Quizteilnehmenden',
+      audienceOptionParticipatingElement:
+        'Alle teilnehmenden Nutzer (dieses Element)',
+      audienceOptionParticipatingQuiz:
+        'Alle teilnehmenden Nutzer (gesamtes Quiz)',
       audienceOptionCourse: 'Alle Teilnehmer des Assessment-Kurses',
       participantLabel: 'Teilnehmende Person',
       participantsLabel: 'Teilnehmende Personen',
@@ -3432,8 +3435,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       participantScopeSingle: 'Ausgewählte Person',
       participantScopeMultiple: 'Ausgewählte Personen',
       participantScopeParticipating: 'Alle teilnehmenden Nutzer',
+      participantScopeParticipatingElement:
+        'Alle teilnehmenden Nutzer (dieses Element)',
       participantScopeParticipatingQuiz:
-        'Alle Personen mit mindestens einer Antwort im Quiz',
+        'Alle teilnehmenden Nutzer (gesamtes Quiz)',
       participantScopeCourse: 'Alle Teilnehmer des Assessment-Kurses',
       adjustmentsTitle: 'Punkte anpassen',
       adjustmentsDescription:

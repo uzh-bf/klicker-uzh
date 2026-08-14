@@ -61,7 +61,12 @@ function PointCorrectionsAudienceStep({
               },
               {
                 value: PointCorrectionType.Participating,
-                label: t('manage.pointCorrections.audienceOptionParticipating'),
+                label:
+                  scopeField.value === 'instance'
+                    ? t(
+                        'manage.pointCorrections.audienceOptionParticipatingElement'
+                      )
+                    : t('manage.pointCorrections.audienceOptionParticipating'),
               },
               ...(scopeField.value === 'instance'
                 ? [
