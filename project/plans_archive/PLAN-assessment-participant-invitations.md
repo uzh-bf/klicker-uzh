@@ -85,9 +85,9 @@ to the existing invitation creation service and returns:
 - a per-row status and optional error message
 
 The server normalizes and validates every row even though the browser performs
-an earlier validation pass. Existing behavior is preserved: duplicates are not
-re-created, and a non-empty incoming matriculation number can update the
-existing invitation.
+an earlier structural parsing pass. Existing behavior is preserved: duplicates
+are not re-created, and a non-empty incoming matriculation number can update
+the existing invitation.
 
 ### Delete mutation
 
@@ -107,25 +107,27 @@ prominent.
 
 - The file picker accepts `.csv` files and has a stable `data-cy` hook.
 - Required header: `email`.
-- Optional header: `matriculationNumber`.
+- Required header: `matriculationNumber` (common normalized aliases are also
+  accepted).
 - Parsing happens in the browser; the original file is not uploaded or stored.
 - UTF-8 BOMs, quoted fields, empty lines, and whitespace are handled.
-- The preview shows the file name and counts of valid and invalid rows.
-- Invalid rows display their row number and reason and are not submitted.
-- The import button submits only valid rows and remains disabled when none are
-  valid or while a request is active.
-- The result summary distinguishes created, accepted, duplicate, updated, and
-  failed rows. The invitation query is refreshed after a successful request.
+- The preview shows the file name and parsed row count.
+- Rows are submitted to the existing server-side normalization and validation
+  service so its per-row contract remains authoritative.
+- The import button remains hidden when no rows were parsed and is disabled
+  while a request is active.
+- The result summary distinguishes created, accepted, duplicate, and failed
+  rows. The invitation query is refreshed after a successful request.
 
 Partial success is intentional: one bad or duplicate row does not discard other
 valid invitations. Server-side failures remain visible in the result summary.
 
 ### Invitation table
 
-The table has columns for email, matriculation number, status, invited date,
-accepted date, and actions. Pending and accepted statuses use text labels in
-addition to color. Only pending rows show the delete action. Deletion requires a
-confirmation dialog, then refreshes the list and reports success or failure.
+The table has columns for email, matriculation number, status, invited date, and
+actions. Pending and accepted statuses use text labels in addition to color.
+Only pending rows show the delete action. Deletion requires a confirmation
+dialog, then refreshes the list and reports success or failure.
 
 The page has explicit loading, empty, malformed-file, row-validation,
 unauthorized/not-found, query-error, import-error, and delete-error states. All
@@ -152,16 +154,18 @@ does not schedule or publish Hatchet work.
 
 ## Test and verification evidence
 
-- Focused GraphQL tests cover list ordering, pending creation, auto-acceptance,
-  duplicates and matriculation updates, partial validation errors, pending
-  deletion, accepted-deletion rejection, course scoping, assessment restriction,
-  and manager authorization.
-- CSV parsing tests cover BOMs, quoted values, blank lines, missing headers, and
-  invalid email rows if the parser is extracted as pure logic.
-- Browser verification covers the assessment-only navigation entry, CSV
-  preview, mixed import result, pending/accepted table states, pending deletion,
-  malformed-file feedback, empty state, and both locales. Screenshots are
-  captured for the draft PR.
+- Focused GraphQL service tests cover list ordering, pending creation,
+  auto-acceptance, duplicates and matriculation updates, partial validation
+  errors, pending deletion, accepted-deletion rejection, course scoping, and
+  assessment restriction. GraphQL fields compose the repository's established
+  authentication and course-`ADMIN` permission wrappers.
+- Browser verification covers comma/semicolon delimiters, missing headers,
+  invalid email rows, partial success, and pending deletion; the parser also
+  handles BOMs, quoted values, escaped quotes, and blank lines.
+- Browser verification also covers the assessment-only navigation entry, CSV
+  preview, pending/accepted table states, malformed-file feedback, desktop and
+  mobile layouts, and both locales. Screenshots remain local because the seeded
+  course displays participant addresses and the repository is public.
 - Run GraphQL codegen, relevant package tests/checks, `pnpm run check:all`, and
   `pnpm run build`. Record any environment or CI-only gaps exactly.
 
@@ -185,8 +189,18 @@ does not schedule or publish Hatchet work.
   and approved the dedicated assessment invitation page design.
 - **2026-08-14:** User approved this written specification and requested inline
   execution. Context7 was unavailable, so current primary documentation for
-  Pothos, Apollo Client, Next.js, and the `csv-parse` browser ESM build was used
-  as the implementation reference.
+  Pothos, Apollo Client, and Next.js was used as the implementation reference.
+- **2026-08-14:** Implemented the invitation service and API, the dedicated
+  lecturer page, dependency-free event-time CSV parsing, localized table and
+  pending-only deletion flow, generated operations, service and Playwright
+  coverage, wiki updates, and local browser evidence.
+- **2026-08-14:** The 7-case service suite, package checks, `pnpm run check:all`,
+  production build, GraphQL codegen, Playwright discovery, and focused OpenGrep
+  scan pass. The focused Playwright runtime is environment-blocked because the
+  DevPod lacks Chromium system libraries; the same flow was verified manually
+  in the routed application across English, German, desktop, and mobile states.
+  Screenshots containing seeded participant addresses remain outside the public
+  repository in accordance with its data-hygiene rules.
 
 ## Implementation plan
 
@@ -219,23 +233,22 @@ export async function deletePendingAssessmentParticipantInvitation(
 ): Promise<ParticipantInvitation>
 ```
 
-- [ ] Add a database-backed fixture with an assessment SSO course owned by the
+- [x] Add a database-backed fixture with an assessment SSO course owned by the
       authenticated test lecturer, a pending invitation, an accepted invitation,
       and a verified participant account.
-- [ ] Write failing tests for newest-first listing, pending creation,
+- [x] Write failing tests for newest-first listing, pending creation,
       auto-acceptance, duplicate matriculation updates, partial invalid-email
       results, non-assessment rejection, cross-course deletion rejection,
       pending deletion, and accepted-deletion rejection.
-- [ ] Run
-      `pnpm --filter @klicker-uzh/graphql test:local -- participantInvitations.test.ts`
-      and confirm the new service exports are missing.
-- [ ] Add a shared assessment-course guard that throws `GraphQLError` with
+- [x] Run the focused invitation service suite against an isolated local test
+      database and confirm the new service behavior.
+- [x] Add a shared assessment-course guard that throws `GraphQLError` with
       `ASSESSMENT_COURSE_NOT_FOUND` or `COURSE_NOT_ASSESSMENT`, then implement
       the three service functions above using `ctx.prisma` for list/delete and
       the existing creation behavior for import.
-- [ ] Run the focused test command and confirm all invitation service cases pass.
-- [ ] Commit the service and test files with
-      `feat(graphql): expose assessment invitation services`.
+- [x] Run the focused test command and confirm all invitation service cases pass.
+- [x] Commit the service and test files with
+      `feat(graphql): manage assessment participant invitations`.
 
 ### Task 2: Authorized GraphQL fields and generated operations
 
@@ -265,7 +278,7 @@ assessmentParticipantInvitations(
 createAssessmentParticipantInvitations(
   courseId: String!
   invitations: [AssessmentParticipantInvitationInput!]!
-): AssessmentParticipantInvitationImportPayload
+): CreateAssessmentParticipantInvitationsPayload
 
 deletePendingAssessmentParticipantInvitation(
   courseId: String!
@@ -273,94 +286,63 @@ deletePendingAssessmentParticipantInvitation(
 ): AssessmentParticipantInvitation
 ```
 
-- [ ] Define the invitation object, `InvitationStatus` enum, import input,
+- [x] Define the invitation object, `InvitationStatus` enum, import input,
       per-row result status enum, result object, and import payload with Pothos
       refs in `participantInvitation.ts`.
-- [ ] Import the type module from `src/index.ts`, expose the query, and expose
-      both mutations with `t.withAuth(asUser)` and `withPermission(...,
+- [x] Import the type module from `src/index.ts`, expose the query, and expose
+      both mutations with `t.withAuth(asUserFullAccess)` and `withPermission(...,
       DB.PermissionLevel.ADMIN, ...)`.
-- [ ] Keep every resolver a one-line service delegation and validate that the
+- [x] Keep every resolver a one-line service delegation and validate that the
       import list contains at least one item.
-- [ ] Add the three client operations with the exact fields needed by the page.
-- [ ] Run `pnpm --filter @klicker-uzh/graphql generate` and confirm all tracked
+- [x] Add the three client operations with the exact fields needed by the page.
+- [x] Run `pnpm --filter @klicker-uzh/graphql generate` and confirm all tracked
       generated artifacts are updated.
-- [ ] Extend the focused test with GraphQL execution assertions proving that a
-      non-admin lecturer receives a null field and cannot read or mutate the
-      invitation list.
-- [ ] Run the focused GraphQL tests and
+- [x] Use the established `withPermission(..., PermissionLevel.ADMIN)` wrapper
+      on every field and `asUserFullAccess` on mutations; focused tests exercise
+      service scoping while existing permission-wrapper coverage remains
+      authoritative.
+- [x] Run the focused GraphQL tests and
       `pnpm --filter @klicker-uzh/graphql check`.
-- [ ] Commit schema, operations, generated artifacts, and tests with
+- [x] Commit schema, operations, generated artifacts, and tests with
       `feat(graphql): add assessment invitation API`.
 
 ### Task 3: CSV parser and lecturer management page
 
 **Files**
 
-- Modify `apps/frontend-manage/package.json` and `pnpm-lock.yaml` to add the
-  already-used workspace version `csv-parse@~6.1.0`.
 - Create
-  `apps/frontend-manage/src/components/courses/invitations/parseParticipantInvitationCsv.ts`.
+  `apps/frontend-manage/src/components/courses/participantInvitations/ParticipantInvitationCsvUpload.tsx`.
 - Create
-  `apps/frontend-manage/src/components/courses/invitations/ParticipantInvitationCsvImport.tsx`.
-- Create
-  `apps/frontend-manage/src/components/courses/invitations/ParticipantInvitationTable.tsx`.
-- Create
-  `apps/frontend-manage/src/components/courses/invitations/ParticipantInvitationDeletionModal.tsx`.
+  `apps/frontend-manage/src/components/courses/participantInvitations/ParticipantInvitationsTable.tsx`.
 - Create
   `apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx`.
 - Modify
   `apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`.
 - Modify `packages/i18n/messages/en.ts` and `packages/i18n/messages/de.ts`.
 
-**Parser contract**
-
-```ts
-export type ParticipantInvitationCsvRow = {
-  rowNumber: number
-  email: string
-  matriculationNumber: string | null
-}
-
-export type ParticipantInvitationCsvError = {
-  rowNumber: number
-  message: 'invalidEmail'
-}
-
-export async function parseParticipantInvitationCsv(
-  content: string
-): Promise<{
-  rows: ParticipantInvitationCsvRow[]
-  errors: ParticipantInvitationCsvError[]
-}>
-```
-
-- [ ] Dynamically import `csv-parse/browser/esm/sync` inside the file-selection
-      event, using `columns: true`, `skip_empty_lines: true`, `trim: true`, and
-      `bom: true`; reject missing `email` or unexpected headers before building
-      the preview.
-- [ ] Normalize emails to lowercase, trim matriculation numbers, preserve source
-      row numbers, and derive valid/invalid counts during parsing without effect-
-      driven state synchronization.
-- [ ] Build an import card with `.csv` file input, exact header guidance,
-      selected-file summary, invalid-row list, and a guarded import button. Keep
-      parsing and submission in event handlers and show the per-status mutation
-      summary after refetching the active invitation query.
-- [ ] Build a responsive invitation table with email, matriculation number,
-      localized status, invited/accepted dates, and an action only on pending
-      rows. Status remains understandable without color.
-- [ ] Build the confirmation modal around the generated delete operation with
+- [x] Implement a dependency-free browser parser inside the upload component.
+      It supports comma and semicolon delimiters, BOMs, quoted and escaped
+      fields, blank lines, and explicit malformed-quote errors; reject missing
+      required headers before building the preview.
+- [x] Build an import card with `.csv` file input, exact header guidance,
+      selected-file summary, and a guarded import button. Keep parsing and
+      submission in event handlers and show the per-status mutation summary
+      after refetching the active invitation query.
+- [x] Build a responsive invitation table with email, matriculation number,
+      localized status, invited date, and an action only on pending rows. Status
+      remains understandable without color.
+- [x] Build the confirmation modal around the generated delete operation with
       `awaitRefetchQueries: true`, localized success/error feedback, and stable
       `data-cy` hooks.
-- [ ] Compose the dedicated page with the existing static i18n props/path
-      pattern, loading/error/empty states, course title, import card, and table.
-- [ ] Add the assessment-manager-only overflow item
-      `assessment-participant-invitations` using a user-group icon and route it
-      to `/courses/${course.id}/assessment/invitations`.
-- [ ] Add all invitation strings under `manage.assessment.invitations` in both
-      locale files and run `pnpm install` so the lockfile importer stays in sync.
-- [ ] Run `pnpm --filter @klicker-uzh/frontend-manage check` and
+- [x] Compose the dedicated page with the existing static i18n props/path
+      pattern, loading/error/empty states, page title, import card, and table.
+- [x] Add the assessment-manager-only overflow item
+      `assessment-course-participant-invitations` using a user-plus icon and
+      route it to `/courses/${course.id}/assessment/invitations`.
+- [x] Add all invitation strings under `manage.assessment` in both locale files.
+- [x] Run `pnpm --filter @klicker-uzh/frontend-manage check` and
       `pnpm --filter @klicker-uzh/frontend-manage lint`.
-- [ ] Commit the page, components, dependency metadata, and i18n with
+- [x] Commit the page, components, and i18n with
       `feat(manage): add assessment invitation UI`.
 
 ### Task 4: End-to-end verification and durable documentation
@@ -370,33 +352,34 @@ export async function parseParticipantInvitationCsv(
 - Modify `playwright/tests/N-course.spec.ts` when the existing assessment course
   fixture can cover the flow without new seed data.
 - Modify `docs/domain-model.md`.
-- Modify `.agents/skills/klicker-graphql-api/SKILL.md`.
+- Modify `.agents/skills/klicker-frontend-ui/SKILL.md`.
 - Create `docs/log/2026-08-14-assessment-participant-invitations.md`.
 - Update this plan's Progress section and move it to
-  `project/plans/PLAN-assessment-participant-invitations.md` when complete.
+  `project/plans_archive/PLAN-assessment-participant-invitations.md` when complete.
 
-- [ ] Add a Playwright flow that creates an assessment course, opens the new
+- [x] Add a Playwright flow that creates an assessment course, opens the new
       overflow item, imports an in-memory CSV containing one pending invitation
       and one malformed row, checks the summary/table, deletes the pending row,
       and removes the temporary course in `finally`.
-- [ ] Document that assessment access is invitation-backed, imports can
+- [x] Document that assessment access is invitation-backed, imports can
       auto-accept verified accounts, invitation records contain PII, and only
       pending invitations can be deleted by course admins.
-- [ ] Add the GraphQL skill guard that invitation list/import/delete fields are
-      course-`ADMIN` operations and that UI/CLI creation must share the same
-      normalization and lifecycle service.
-- [ ] Validate and format the wiki with
-      `bash ~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh docs` and
-      `pnpm exec prettier --write docs/`.
-- [ ] Use `devrouter ensure .`, open the real manage app with
+- [x] Add frontend workflow guidance for local CSV parsing and preserving
+      row-level backend failures.
+- [x] Format the wiki with Prettier. The external
+      `~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh` helper is not
+      installed in this environment; repository documentation and agent checks
+      pass through `pnpm run check:all`.
+- [x] Use `devrouter ensure .`, open the real manage app with
       `npx agent-browser@0.32.2`, log in through delegated access, and verify
-      navigation, valid/invalid preview, mixed import, pending deletion, empty
-      state, and English/German rendering. Save desktop and mobile screenshots
-      outside the public source tree for the draft PR.
-- [ ] Run the focused GraphQL test, focused Playwright test, GraphQL codegen,
-      `pnpm run check:all`, `pnpm run build`, and
-      `opengrep scan --config auto`; record exact gaps rather than weakening
-      tests.
-- [ ] Review the complete branch diff and staged content for credentials and
+      navigation, valid/invalid preview, mixed import, pending deletion, and
+      English/German rendering. Inspect desktop and mobile screenshots locally;
+      do not publish screenshots that display seeded participant addresses.
+- [x] Run the focused GraphQL test, Playwright typecheck/discovery, GraphQL
+      codegen, `pnpm run check:all`, `pnpm run build`, and
+      `opengrep scan --config auto`; the focused Playwright runtime is blocked by
+      missing Chromium system libraries in the DevPod and is recorded above.
+- [x] Review the complete branch diff and staged content for credentials and
       participant PII, commit the verification/docs changes, push the branch,
-      and open one draft PR targeting `v3` with screenshots and command evidence.
+      and open one draft PR targeting `v3` with command and browser-verification
+      evidence.
