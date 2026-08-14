@@ -1,5 +1,10 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { CourseAuthType, InvitationStatus } from '@klicker-uzh/prisma/client'
+import {
+  CourseAuthType,
+  InvitationStatus,
+  type ParticipantInvitation,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import {
   InvitationEmailMode,
   InvitationEmailMode as InvitationEmailModeValue,
@@ -7,6 +12,8 @@ import {
   normalizeMatriculationNumber,
 } from '@klicker-uzh/util'
 import * as R from 'remeda'
+import { GraphQLError } from 'graphql'
+import type { ContextWithUser } from '../lib/context.js'
 
 export interface InvitationResult {
   email: string
@@ -46,14 +53,15 @@ export interface CreateInvitationsOptions {
 export async function createParticipantInvitations(
   courseId: string,
   invitations: CreateParticipantInvitationInput[],
-  options: CreateInvitationsOptions = {}
+  options: CreateInvitationsOptions = {},
+  prismaClient: PrismaClient = prisma
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
 
   const emailMode = options.emailMode ?? InvitationEmailMode.AffiliationsOnly
 
   // Validate course exists and has SSO enabled
-  const course = await prisma.course.findUnique({
+  const course = await prismaClient.course.findUnique({
     where: { id: courseId },
   })
 
@@ -86,14 +94,15 @@ export async function createParticipantInvitations(
 
     try {
       // Check for existing invitation
-      const existingInvitation = await prisma.participantInvitation.findUnique({
-        where: {
-          email_courseId: {
-            email: normalizedEmail,
-            courseId,
+      const existingInvitation =
+        await prismaClient.participantInvitation.findUnique({
+          where: {
+            email_courseId: {
+              email: normalizedEmail,
+              courseId,
+            },
           },
-        },
-      })
+        })
 
       if (existingInvitation) {
         const matriculationUpdated =
@@ -102,7 +111,7 @@ export async function createParticipantInvitations(
             normalizedMatriculationNumber
 
         if (matriculationUpdated) {
-          await prisma.participantInvitation.update({
+          await prismaClient.participantInvitation.update({
             where: { id: existingInvitation.id },
             data: {
               matriculationNumber: normalizedMatriculationNumber,
@@ -119,18 +128,19 @@ export async function createParticipantInvitations(
       }
 
       // Check for existing verified ParticipantAccount with matching email
-      const participantAccount = await prisma.participantAccount.findFirst({
-        where: {
-          ssoEmail: normalizedEmail,
-          isVerified: true,
-          ...(emailMode === InvitationEmailModeValue.AffiliationsOnly
-            ? { type: 'affiliation' }
-            : {}),
-        },
-        include: {
-          participant: true,
-        },
-      })
+      const participantAccount =
+        await prismaClient.participantAccount.findFirst({
+          where: {
+            ssoEmail: normalizedEmail,
+            isVerified: true,
+            ...(emailMode === InvitationEmailModeValue.AffiliationsOnly
+              ? { type: 'affiliation' }
+              : {}),
+          },
+          include: {
+            participant: true,
+          },
+        })
 
       if (participantAccount?.participant) {
         // Auto-accept invitation for existing verified user
@@ -138,7 +148,8 @@ export async function createParticipantInvitations(
           normalizedEmail,
           courseId,
           participantAccount.participant.id,
-          normalizedMatriculationNumber
+          normalizedMatriculationNumber,
+          prismaClient
         )
 
         results.push({
@@ -149,7 +160,7 @@ export async function createParticipantInvitations(
         })
       } else {
         // Create pending invitation
-        const invitation = await prisma.participantInvitation.create({
+        const invitation = await prismaClient.participantInvitation.create({
           data: {
             email: normalizedEmail,
             courseId,
@@ -195,10 +206,11 @@ async function autoAcceptInvitation(
   email: string,
   courseId: string,
   participantId: string,
-  matriculationNumber: string | null
+  matriculationNumber: string | null,
+  prismaClient: PrismaClient
 ): Promise<{ invitationId: number; participationId: number }> {
   // Use transaction to ensure data consistency
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prismaClient.$transaction(async (tx) => {
     // Create the invitation as ACCEPTED
     const invitation = await tx.participantInvitation.create({
       data: {
@@ -236,4 +248,97 @@ async function autoAcceptInvitation(
   })
 
   return result
+}
+
+async function requireAssessmentCourse(
+  courseId: string,
+  prismaClient: PrismaClient
+) {
+  const course = await prismaClient.course.findUnique({
+    where: { id: courseId },
+    select: { id: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Assessment course not found', {
+      extensions: { code: 'ASSESSMENT_COURSE_NOT_FOUND' },
+    })
+  }
+
+  if (!course.isAssessmentEnabled) {
+    throw new GraphQLError('Course is not assessment-enabled', {
+      extensions: { code: 'COURSE_NOT_ASSESSMENT' },
+    })
+  }
+}
+
+export async function getAssessmentParticipantInvitations(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+): Promise<ParticipantInvitation[]> {
+  await requireAssessmentCourse(courseId, ctx.prisma)
+
+  return await ctx.prisma.participantInvitation.findMany({
+    where: { courseId },
+    orderBy: [{ invitedAt: 'desc' }, { id: 'desc' }],
+  })
+}
+
+export async function createAssessmentParticipantInvitations(
+  {
+    courseId,
+    invitations,
+  }: {
+    courseId: string
+    invitations: CreateParticipantInvitationInput[]
+  },
+  ctx: ContextWithUser
+): Promise<CreateInvitationsResponse> {
+  await requireAssessmentCourse(courseId, ctx.prisma)
+
+  return await createParticipantInvitations(
+    courseId,
+    invitations,
+    {},
+    ctx.prisma
+  )
+}
+
+export async function deletePendingAssessmentParticipantInvitation(
+  { courseId, invitationId }: { courseId: string; invitationId: number },
+  ctx: ContextWithUser
+): Promise<ParticipantInvitation> {
+  await requireAssessmentCourse(courseId, ctx.prisma)
+
+  const invitation = await ctx.prisma.participantInvitation.findFirst({
+    where: { id: invitationId, courseId },
+  })
+
+  if (!invitation) {
+    throw new GraphQLError('Participant invitation not found', {
+      extensions: { code: 'INVITATION_NOT_FOUND' },
+    })
+  }
+
+  if (invitation.status !== InvitationStatus.PENDING) {
+    throw new GraphQLError('Only pending invitations can be deleted', {
+      extensions: { code: 'INVITATION_NOT_PENDING' },
+    })
+  }
+
+  const deleted = await ctx.prisma.participantInvitation.deleteMany({
+    where: {
+      id: invitationId,
+      courseId,
+      status: InvitationStatus.PENDING,
+    },
+  })
+
+  if (deleted.count === 0) {
+    throw new GraphQLError('Only pending invitations can be deleted', {
+      extensions: { code: 'INVITATION_NOT_PENDING' },
+    })
+  }
+
+  return invitation
 }
