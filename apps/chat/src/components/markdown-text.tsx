@@ -1,24 +1,29 @@
 'use client'
 
 import '@assistant-ui/react-markdown/styles/dot.css'
-import rehypeKatex from 'rehype-katex'
-import remarkMath from 'remark-math'
 
+import { useMessagePartText } from '@assistant-ui/react'
 import {
-  CodeHeaderProps,
+  type CodeHeaderProps,
   MarkdownTextPrimitive,
   unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { FC, memo, useState } from 'react'
+import { type FC, memo, useCallback, useState } from 'react'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 
 import {
   parseCitationHref,
   remarkCitationMarkers,
 } from '../lib/markdown/remarkCitationMarkers'
+import {
+  inspectStreamingMath,
+  preprocessStreamingMath,
+} from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
 import { CitationChip } from './citation-chip'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -26,13 +31,24 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
 const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+const rehypePlugins = [rehypeKatex]
 
 const MarkdownTextImpl = () => {
+  const { text, status } = useMessagePartText()
+  const isRunning = status.type === 'running'
+  const { hasMathOpener } = inspectStreamingMath(text)
+  const preprocess = useCallback(
+    (input: string) =>
+      normalizeCustomMathTags(preprocessStreamingMath(input, isRunning)),
+    [isRunning]
+  )
+
   return (
     <MarkdownTextPrimitive
       remarkPlugins={remarkPlugins}
-      rehypePlugins={[rehypeKatex]}
-      preprocess={normalizeCustomMathTags}
+      rehypePlugins={rehypePlugins}
+      preprocess={preprocess}
+      smooth={isRunning && !hasMathOpener}
       className="aui-md"
       components={defaultComponents}
     />
@@ -267,10 +283,11 @@ const defaultComponents = memoizeMarkdownComponents({
 export function normalizeCustomMathTags(input: string): string {
   return (
     input
-      // Convert [/math]...[/math] to $$...$$
+      // Keep display-math fences on their own lines so multiline formulas
+      // cannot consume the Markdown that follows them.
       .replace(
         /\[\/math\]([\s\S]*?)\[\/math\]/g,
-        (_, content) => `$$${content.trim()}$$`
+        (_, content) => `\n\n$$\n${content.trim()}\n$$\n\n`
       )
       // Convert [/inline]...[/inline] to $...$
       .replace(
@@ -285,7 +302,7 @@ export function normalizeCustomMathTags(input: string): string {
       // Convert \[ ... \] to $$...$$ (block math) - handles both single and double backslashes
       .replace(
         /\\{1,2}\[([\s\S]*?)\\{1,2}\]/g,
-        (_, content) => `$$${content.trim()}$$`
+        (_, content) => `\n\n$$\n${content.trim()}\n$$\n\n`
       )
   )
 }
