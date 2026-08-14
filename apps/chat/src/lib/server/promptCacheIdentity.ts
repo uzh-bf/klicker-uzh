@@ -25,6 +25,13 @@ type UnknownObject = Record<string, unknown>
 
 type PromptCacheTransport = 'chat' | 'responses'
 
+const OPENAI_RESPONSES_TOOL_OPTION_KEYS = [
+  'allowedCallers',
+  'deferLoading',
+  'namespace',
+  'outputSchema',
+] as const
+
 function compareStrings(left: string, right: string) {
   return left.localeCompare(right, 'en-US')
 }
@@ -67,7 +74,12 @@ function canonicalizeJson(value: unknown): JsonValue | undefined {
   for (const key of Object.keys(value).sort(compareStrings)) {
     const canonicalValue = canonicalizeJson(value[key])
     if (canonicalValue !== undefined) {
-      result[key] = canonicalValue
+      Object.defineProperty(result, key, {
+        value: canonicalValue,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      })
     }
   }
   return result
@@ -86,7 +98,8 @@ function getProviderFunctionTool(
   name: string,
   tool: UnknownObject,
   inputSchema: JsonValue | undefined,
-  description: string | undefined
+  description: string | undefined,
+  transport: PromptCacheTransport
 ): JsonObject {
   const providerTool: JsonObject = {
     type: 'function',
@@ -96,9 +109,23 @@ function getProviderFunctionTool(
 
   if (description !== undefined) providerTool.description = description
 
-  for (const key of ['inputExamples', 'providerOptions', 'strict'] as const) {
-    const value = canonicalizeJson(tool[key])
-    if (value !== undefined) providerTool[key] = value
+  const strict = canonicalizeJson(tool.strict)
+  if (strict !== undefined) providerTool.strict = strict
+
+  const providerOptions = tool.providerOptions
+  const openAIOptions =
+    isObject(providerOptions) && isObject(providerOptions.openai)
+      ? providerOptions.openai
+      : undefined
+  if (transport === 'responses' && openAIOptions) {
+    const responsesOptions: JsonObject = {}
+    for (const key of OPENAI_RESPONSES_TOOL_OPTION_KEYS) {
+      const value = canonicalizeJson(openAIOptions[key])
+      if (value !== undefined) responsesOptions[key] = value
+    }
+    if (Object.keys(responsesOptions).length > 0) {
+      providerTool.responsesOptions = responsesOptions
+    }
   }
 
   return providerTool
@@ -106,7 +133,8 @@ function getProviderFunctionTool(
 
 async function canonicalizeTool(
   name: string,
-  rawTool: unknown
+  rawTool: unknown,
+  transport: PromptCacheTransport
 ): Promise<{ providerTool: JsonObject; tool: unknown }> {
   if (!isObject(rawTool)) {
     throw new Error(`Invalid tool definition for ${name}`)
@@ -154,7 +182,8 @@ async function canonicalizeTool(
       name,
       rawTool,
       schemaJson,
-      description
+      description,
+      transport
     ),
     tool: canonicalTool,
   }
@@ -168,7 +197,7 @@ export async function buildPromptCacheRequest(
   )
   const canonicalEntries = await Promise.all(
     entries.map(async ([name, tool]) => {
-      const canonicalTool = await canonicalizeTool(name, tool)
+      const canonicalTool = await canonicalizeTool(name, tool, input.transport)
       return [name, canonicalTool] as const
     })
   )

@@ -1,5 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText, type ToolSet, tool } from 'ai'
+import { asSchema, generateText, jsonSchema, type ToolSet, tool } from 'ai'
 import { describe, expect, test } from 'vitest'
 import { z } from 'zod'
 import { buildPromptCacheRequest } from '../src/lib/server/promptCacheIdentity'
@@ -48,11 +48,6 @@ function chatResponse() {
       prompt_tokens: 1536,
       completion_tokens: 1,
       total_tokens: 1537,
-      prompt_tokens_details: {
-        cached_tokens: 1024,
-        cache_write_tokens: 256,
-      },
-      completion_tokens_details: { reasoning_tokens: 0 },
     },
   }
 }
@@ -80,8 +75,7 @@ function responsesResponse() {
       output_tokens: 1,
       total_tokens: 1537,
       input_tokens_details: {
-        cached_tokens: 1024,
-        cache_write_tokens: 256,
+        cached_tokens: 0,
       },
       output_tokens_details: { reasoning_tokens: 0 },
     },
@@ -170,7 +164,7 @@ describe('prompt cache identity', () => {
     expect(base.tools.search.execute).toBe(baseTools.search.execute)
   })
 
-  test('changes the key for provider-visible tool options', async () => {
+  test('changes the key for serialized tool strictness', async () => {
     const base = await buildPromptCacheRequest({
       deploymentId: 'gpt-5.6-luna',
       transport: 'responses',
@@ -180,8 +174,6 @@ describe('prompt cache identity', () => {
           description: 'Search the synthetic corpus.',
           inputSchema: z.object({ query: z.string() }),
           strict: true,
-          inputExamples: [{ input: { query: 'base' } }],
-          providerOptions: { openai: { strictJsonSchema: true } },
           execute: async () => ({ ok: true }),
         }),
       },
@@ -195,14 +187,95 @@ describe('prompt cache identity', () => {
           description: 'Search the synthetic corpus.',
           inputSchema: z.object({ query: z.string() }),
           strict: false,
-          inputExamples: [{ input: { query: 'changed' } }],
-          providerOptions: { openai: { strictJsonSchema: false } },
           execute: async () => ({ ok: true }),
         }),
       },
     })
 
     expect(changed.promptCacheKey).not.toBe(base.promptCacheKey)
+  })
+
+  test('hashes only transport-visible OpenAI tool options', async () => {
+    const baseTools = createTools()
+    baseTools.search.inputExamples = [{ input: { query: 'base' } }]
+    baseTools.search.providerOptions = { openai: { deferLoading: false } }
+    const changedTools = createTools()
+    changedTools.search.inputExamples = [{ input: { query: 'changed' } }]
+    changedTools.search.providerOptions = { openai: { deferLoading: true } }
+
+    const baseChat = await buildPromptCacheRequest({
+      deploymentId: 'gpt-4.1',
+      transport: 'chat',
+      instructions: 'Synthetic instructions.',
+      tools: baseTools,
+    })
+    const changedChat = await buildPromptCacheRequest({
+      deploymentId: 'gpt-4.1',
+      transport: 'chat',
+      instructions: 'Synthetic instructions.',
+      tools: changedTools,
+    })
+    const baseResponses = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: baseTools,
+    })
+    const changedResponses = await buildPromptCacheRequest({
+      deploymentId: 'gpt-5.6-luna',
+      transport: 'responses',
+      instructions: 'Synthetic instructions.',
+      tools: changedTools,
+    })
+
+    expect(changedChat.promptCacheKey).toBe(baseChat.promptCacheKey)
+    expect(changedResponses.promptCacheKey).not.toBe(
+      baseResponses.promptCacheKey
+    )
+
+    const captures: Record<string, unknown>[] = []
+    const provider = createOpenAI({
+      apiKey: 'test-key',
+      baseURL: 'https://example.test/v1',
+      fetch: captureFetch(responsesResponse(), captures),
+    })
+    await generateText({
+      model: provider.responses('gpt-5.6-luna'),
+      prompt: 'Synthetic prompt.',
+      tools: changedResponses.tools,
+      toolOrder: changedResponses.toolOrder,
+      maxRetries: 0,
+    })
+
+    const responseTools = captures[0]?.tools as Record<string, unknown>[]
+    expect(
+      responseTools.find((entry) => entry.name === 'search')
+    ).toMatchObject({ defer_loading: true })
+  })
+
+  test('retains a __proto__ property in canonical tool schemas', async () => {
+    const request = await buildPromptCacheRequest({
+      deploymentId: 'gpt-4.1',
+      transport: 'chat',
+      instructions: 'Synthetic instructions.',
+      tools: {
+        inspect: tool({
+          inputSchema: jsonSchema(
+            JSON.parse(
+              '{"type":"object","properties":{"__proto__":{"type":"string"}}}'
+            )
+          ),
+          execute: async () => ({ ok: true }),
+        }),
+      },
+    })
+
+    const schema = await asSchema(request.tools.inspect.inputSchema).jsonSchema
+    const properties = schema.properties as Record<string, unknown>
+    expect(Object.hasOwn(properties, '__proto__')).toBe(true)
+    expect(
+      Object.getOwnPropertyDescriptor(properties, '__proto__')?.value
+    ).toEqual({ type: 'string' })
   })
 
   test('ignores runtime-only changes while retaining the executable tool', async () => {
@@ -273,7 +346,7 @@ describe('prompt cache identity', () => {
       fetch: captureFetch(chatResponse(), chatCaptures),
     })
 
-    const chatResult = await generateText({
+    await generateText({
       model: chatProvider.chat('gpt-4.1'),
       prompt: 'Synthetic prompt.',
       instructions: 'Synthetic instructions.',
@@ -308,12 +381,6 @@ describe('prompt cache identity', () => {
       type: 'object',
       properties: expect.any(Object),
     })
-    expect(chatResult.usage.inputTokenDetails).toEqual({
-      noCacheTokens: 256,
-      cacheReadTokens: 1024,
-      cacheWriteTokens: 256,
-    })
-
     const responsesCaptures: Record<string, unknown>[] = []
     const responsesRequest = await buildPromptCacheRequest({
       deploymentId: 'gpt-5.6-luna',
@@ -327,7 +394,7 @@ describe('prompt cache identity', () => {
       fetch: captureFetch(responsesResponse(), responsesCaptures),
     })
 
-    const responseResult = await generateText({
+    await generateText({
       model: responsesProvider.responses('gpt-5.6-luna'),
       prompt: 'Synthetic prompt.',
       instructions: 'Synthetic instructions.',
@@ -360,11 +427,5 @@ describe('prompt cache identity', () => {
       )
     )
     expect(responseParameters).toEqual(chatParameters)
-
-    expect(responseResult.usage.inputTokenDetails).toEqual({
-      noCacheTokens: 256,
-      cacheReadTokens: 1024,
-      cacheWriteTokens: 256,
-    })
   })
 })

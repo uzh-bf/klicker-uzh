@@ -84,9 +84,11 @@ provider-visible projection with SHA-256, then emits the provider-safe
 `klicker:pc:v1:<50-hex-character-digest>` key and
 passes it to the OpenAI provider. Tool execution functions, MCP clients,
 participant/user/chatbot/thread/message/request identifiers, and raw tool-call
-identifiers are not identity inputs. The rebuilt tools retain runtime
-execution, and the route supplies their deterministic `toolOrder` to both
-transport families.
+identifiers are not identity inputs. Tool input examples are excluded because
+neither OpenAI transport serializes them. Tool provider options are excluded
+for Chat Completions and limited to the OpenAI Responses options that reach the
+request. The rebuilt tools retain runtime execution, and the route supplies
+their deterministic `toolOrder` to both transport families.
 
 Function-valued tool descriptions are resolved with an undefined tool context
 for both the fingerprint and the provider request because this route does not

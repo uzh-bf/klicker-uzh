@@ -623,15 +623,23 @@ hash; the report preserves the exact identity that was reviewed.
   `project/_local/reviews/2026-08-14-chat-cache-request-boundary-closeout-simplification.md`
   and
   `project/_local/reviews/2026-08-14-chat-cache-request-boundary-closeout-slice-review.md`.
-- [ ] PR closeout: run fresh integrated final review on the exact verified head,
-  push, and update
+- [x] Integrated final review: the initial final review found that fingerprint
+  projection included non-wire tool fields, canonicalization lost an own
+  `__proto__` schema key, and the identity suite duplicated usage-conversion
+  assertions. The correction makes tool options transport-aware, preserves
+  reserved property names with own-property definitions, adds paired key/wire
+  and schema regressions, and removes the duplicate usage assertions. Focused
+  tests pass 26/26. The initial report is
+  `project/_local/reviews/2026-08-14-chat-cache-request-boundary-integrated-final.md`.
+- [ ] PR closeout: commit and verify the final-review correction, run the one
+  allowed correction review, push, and update
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action
 
 The user authorized this correction package, its commits, a force-with-lease
 push after the approved rebase, and finalization of the existing PR. The next
-action is fresh focused and package verification followed by the required
-simplification, risk-selected slice review, and integrated final review on the
-exact committed range. Merge, deployment, measurement, tunnel use, paid calls,
-and production mutation remain separate gates.
+action is fresh verification and the one allowed integrated-final correction
+review on the exact committed range, followed by the push and PR update. Merge,
+deployment, measurement, tunnel use, paid calls, and production mutation remain
+separate gates.
