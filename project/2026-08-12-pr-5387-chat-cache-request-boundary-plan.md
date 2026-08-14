@@ -610,13 +610,21 @@ hash; the report preserves the exact identity that was reviewed.
   removed machine-local plan references; replaced SDK-internal schema key
   lists with ordering and cross-transport semantic assertions; documented the
   key-only custom route and function-description context contract. Focused
-  tests pass 23/23, the full chat suite passes 288/288 after generating local
+  tests pass 24/24 after the review correction, the full chat suite passes
+  288/288 before that correction after generating local
   workspace outputs, the chat package check passes, root `check:all` passes,
   and the production build passes 22/22 tasks. The host uses Node 26 instead
   of the required Node 24, so current-head CI remains the Node 24 release gate.
-- [ ] PR closeout: complete the corrective slice simplification and
-  risk-selected review, record their dispositions, run fresh integrated final
-  review, push, and update
+- [x] Corrective-slice review: the simplifier approved the committed correction
+  without another reduction. The slice reviewer found that the fetch wrapper
+  could retry a request if the fetch implementation threw a synchronous
+  `SyntaxError`; the parse-only error boundary and a one-call regression test
+  correct that issue. Reports are in
+  `project/_local/reviews/2026-08-14-chat-cache-request-boundary-closeout-simplification.md`
+  and
+  `project/_local/reviews/2026-08-14-chat-cache-request-boundary-closeout-slice-review.md`.
+- [ ] PR closeout: commit and verify the review correction, run fresh integrated
+  final review, push, and update
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action

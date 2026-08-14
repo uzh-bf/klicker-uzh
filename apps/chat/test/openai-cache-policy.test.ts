@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { createOpenAIFetch } from '../src/lib/server/openaiCachePolicy'
 
 type JsonObject = Record<string, unknown>
@@ -215,5 +215,22 @@ describe('OpenAI exact-response cache policy', () => {
     await fetch('https://custom.example/v1', { method: 'POST', body })
 
     expect(receivedInit).toEqual({ method: 'POST', body })
+  })
+
+  test('propagates a synchronous fetch SyntaxError without retrying', async () => {
+    const fetchError = new SyntaxError('synthetic fetch failure')
+    const fetchImpl = vi.fn(() => {
+      throw fetchError
+    }) as unknown as typeof globalThis.fetch
+    const fetch = createOpenAIFetch('default', fetchImpl)
+
+    await expect(
+      fetch('https://example.test/v1', {
+        method: 'POST',
+        body: JSON.stringify({ messages: [] }),
+      })
+    ).rejects.toBe(fetchError)
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 })

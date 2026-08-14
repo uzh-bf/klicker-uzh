@@ -11,6 +11,16 @@ function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function parseJsonObject(body: string): JsonObject | undefined {
+  try {
+    const value = JSON.parse(body)
+    return isJsonObject(value) ? value : undefined
+  } catch (error) {
+    if (error instanceof SyntaxError) return undefined
+    throw error
+  }
+}
+
 function patchResponsesInput(body: JsonObject) {
   if (!Array.isArray(body.input)) return
 
@@ -38,25 +48,21 @@ export function createOpenAIFetch(
       return fetchImpl(input, init)
     }
 
-    try {
-      const body = JSON.parse(init.body)
-      if (!isJsonObject(body)) return fetchImpl(input, init)
-
-      patchResponsesInput(body)
-
-      if (routingSource === 'default') {
-        body.cache = {
-          ...(isJsonObject(body.cache) ? body.cache : {}),
-          ...EXACT_RESPONSE_CACHE_BYPASS,
-        }
-      }
-
-      return fetchImpl(input, { ...init, body: JSON.stringify(body) })
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error
+    const body = parseJsonObject(init.body)
+    if (!body) {
       // Non-JSON request bodies pass through unchanged.
+      return fetchImpl(input, init)
     }
 
-    return fetchImpl(input, init)
+    patchResponsesInput(body)
+
+    if (routingSource === 'default') {
+      body.cache = {
+        ...(isJsonObject(body.cache) ? body.cache : {}),
+        ...EXACT_RESPONSE_CACHE_BYPASS,
+      }
+    }
+
+    return fetchImpl(input, { ...init, body: JSON.stringify(body) })
   }
 }
