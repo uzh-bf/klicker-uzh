@@ -34,28 +34,27 @@ export function createOpenAIFetch(
   fetchImpl: typeof globalThis.fetch = globalThis.fetch
 ): typeof globalThis.fetch {
   return async (input, init) => {
-    if (init?.body && typeof init.body === 'string') {
-      try {
-        const body = JSON.parse(init.body)
-        if (isJsonObject(body)) {
-          patchResponsesInput(body)
+    if (!init?.body || typeof init.body !== 'string') {
+      return fetchImpl(input, init)
+    }
 
-          if (routingSource === 'default') {
-            body.cache = {
-              ...(isJsonObject(body.cache) ? body.cache : {}),
-              ...EXACT_RESPONSE_CACHE_BYPASS,
-            }
-          }
+    try {
+      const body = JSON.parse(init.body)
+      if (!isJsonObject(body)) return fetchImpl(input, init)
 
-          init = { ...init, body: JSON.stringify(body) }
-        }
-      } catch (error) {
-        if (error instanceof SyntaxError) {
-          // Non-JSON request bodies pass through unchanged.
-        } else {
-          throw error
+      patchResponsesInput(body)
+
+      if (routingSource === 'default') {
+        body.cache = {
+          ...(isJsonObject(body.cache) ? body.cache : {}),
+          ...EXACT_RESPONSE_CACHE_BYPASS,
         }
       }
+
+      return fetchImpl(input, { ...init, body: JSON.stringify(body) })
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      // Non-JSON request bodies pass through unchanged.
     }
 
     return fetchImpl(input, init)

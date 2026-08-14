@@ -604,10 +604,19 @@ hash; the report preserves the exact identity that was reviewed.
   remain the review record; full package/root/build checks still remain
   unavailable because generated workspace outputs are missing and the host is
   running Node 26 instead of the repository's pinned Node 24.
-- [ ] PR review correction and closeout: rebased onto current `v3`; align the
-  prompt-cache transport with `usesResponsesApi`, clear the Sonar findings,
-  remove machine-local plan references, avoid SDK-internal schema key lists,
-  run fresh verification and integrated final review, then push and update
+- [x] PR review correction implementation: rebased onto current `v3`; aligned
+  prompt-cache transport with `usesResponsesApi`; reduced the two Sonar
+  maintainability findings and supplied an explicit locale-aware comparator;
+  removed machine-local plan references; replaced SDK-internal schema key
+  lists with ordering and cross-transport semantic assertions; documented the
+  key-only custom route and function-description context contract. Focused
+  tests pass 23/23, the full chat suite passes 288/288 after generating local
+  workspace outputs, the chat package check passes, root `check:all` passes,
+  and the production build passes 22/22 tasks. The host uses Node 26 instead
+  of the required Node 24, so current-head CI remains the Node 24 release gate.
+- [ ] PR closeout: complete the corrective slice simplification and
+  risk-selected review, record their dispositions, run fresh integrated final
+  review, push, and update
   [PR #5387](https://github.com/uzh-bf/klicker-uzh/pull/5387).
 
 ## Current closeout authority and next action

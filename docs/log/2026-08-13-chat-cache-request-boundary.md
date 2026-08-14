@@ -24,3 +24,11 @@ tags:
   `promptCacheOptions.mode: 'implicit'` override. Provider-managed implicit
   caching remains enabled by default; the stable prompt-cache key and exact
   response-cache bypass remain separate concerns.
+
+## 2026-08-14
+
+- **Correction**: prompt-cache transport identity now follows
+  `usesResponsesApi`, matching the actual provider transport for Auto routing.
+- **Clarification**: [chat-platform](../chat-platform.md) documents the
+  key-only custom-routing residual and the current undefined-context contract
+  for function-valued tool descriptions.

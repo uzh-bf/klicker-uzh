@@ -72,6 +72,11 @@ provider request: `cache.no-cache` and `cache.no-store` are both `true`.
 Custom endpoints retain their existing request fields. The same fetch boundary
 continues to normalize assistant items for Responses requests.
 
+A chatbot with a custom API key is treated as custom routing even when it has
+no custom base URL and therefore still reaches the shared gateway. That
+key-only path intentionally receives neither the default exact-response bypass
+nor the default prompt-cache identity.
+
 For default requests, `POST` passes the final `systemPrompt`, requested
 deployment identity, transport family, and MCP tools to
 `buildPromptCacheRequest`. The helper hashes only a versioned canonical
@@ -82,6 +87,11 @@ participant/user/chatbot/thread/message/request identifiers, and raw tool-call
 identifiers are not identity inputs. The rebuilt tools retain runtime
 execution, and the route supplies their deterministic `toolOrder` to both
 transport families.
+
+Function-valued tool descriptions are resolved with an undefined tool context
+for both the fingerprint and the provider request because this route does not
+pass AI SDK `toolsContext`. Introducing context-dependent descriptions would
+require extending this identity contract before they can participate safely.
 
 The provider's implicit prompt-cache behavior remains the default; the route
 does not override it with a deployment allow-list or an explicit

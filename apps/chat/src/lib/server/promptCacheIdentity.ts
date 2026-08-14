@@ -25,6 +25,10 @@ type UnknownObject = Record<string, unknown>
 
 type PromptCacheTransport = 'chat' | 'responses'
 
+function compareStrings(left: string, right: string) {
+  return left.localeCompare(right, 'en-US')
+}
+
 export type PromptCacheIdentityInput = {
   deploymentId: string
   transport: PromptCacheTransport
@@ -60,7 +64,7 @@ function canonicalizeJson(value: unknown): JsonValue | undefined {
   if (!isObject(value)) return undefined
 
   const result: JsonObject = {}
-  for (const key of Object.keys(value).sort()) {
+  for (const key of Object.keys(value).sort(compareStrings)) {
     const canonicalValue = canonicalizeJson(value[key])
     if (canonicalValue !== undefined) {
       result[key] = canonicalValue
@@ -160,7 +164,7 @@ export async function buildPromptCacheRequest(
   input: PromptCacheIdentityInput
 ): Promise<PromptCacheRequest> {
   const entries = Object.entries(input.tools).sort(([left], [right]) =>
-    left < right ? -1 : left > right ? 1 : 0
+    compareStrings(left, right)
   )
   const canonicalEntries = await Promise.all(
     entries.map(async ([name, tool]) => {

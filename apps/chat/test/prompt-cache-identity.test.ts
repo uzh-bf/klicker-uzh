@@ -295,18 +295,19 @@ describe('prompt cache identity', () => {
     const searchChatTool = chatTools.find(
       (entry) => (entry.function as Record<string, unknown>)?.name === 'search'
     )
-    expect(
-      Object.keys(
-        ((searchChatTool?.function as Record<string, unknown>)?.parameters ??
-          {}) as Record<string, unknown>
+    const chatParameters = ((
+      searchChatTool?.function as Record<string, unknown>
+    )?.parameters ?? {}) as Record<string, unknown>
+    const chatParameterKeys = Object.keys(chatParameters)
+    expect(chatParameterKeys).toEqual(
+      [...chatParameterKeys].sort((left, right) =>
+        left.localeCompare(right, 'en-US')
       )
-    ).toEqual([
-      '$schema',
-      'additionalProperties',
-      'properties',
-      'required',
-      'type',
-    ])
+    )
+    expect(chatParameters).toMatchObject({
+      type: 'object',
+      properties: expect.any(Object),
+    })
     expect(chatResult.usage.inputTokenDetails).toEqual({
       noCacheTokens: 256,
       cacheReadTokens: 1024,
@@ -348,17 +349,17 @@ describe('prompt cache identity', () => {
     const searchResponseTool = responseTools.find(
       (entry) => entry.name === 'search'
     )
-    expect(
-      Object.keys(
-        (searchResponseTool?.parameters ?? {}) as Record<string, unknown>
+    const responseParameters = (searchResponseTool?.parameters ?? {}) as Record<
+      string,
+      unknown
+    >
+    const responseParameterKeys = Object.keys(responseParameters)
+    expect(responseParameterKeys).toEqual(
+      [...responseParameterKeys].sort((left, right) =>
+        left.localeCompare(right, 'en-US')
       )
-    ).toEqual([
-      '$schema',
-      'additionalProperties',
-      'properties',
-      'required',
-      'type',
-    ])
+    )
+    expect(responseParameters).toEqual(chatParameters)
 
     expect(responseResult.usage.inputTokenDetails).toEqual({
       noCacheTokens: 256,

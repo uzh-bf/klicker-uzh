@@ -870,7 +870,7 @@ export async function POST(
     routing.source === 'default'
       ? await buildPromptCacheRequest({
           deploymentId: selectedModelConfig.deploymentId,
-          transport: selectedModelConfig.supportsReasoning
+          transport: selectedModelConfig.usesResponsesApi
             ? 'responses'
             : 'chat',
           instructions: systemPrompt,
