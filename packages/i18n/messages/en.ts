@@ -1599,6 +1599,50 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     assessment: {
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant invitations',
+      participantInvitationsDescription:
+        'Invite participants to this assessment course and track whether they have accepted their invitation.',
+      invitationBackToCourse: 'Back to course',
+      invitationImportTitle: 'Import invitations',
+      invitationImportDescription:
+        'Select a CSV file containing the participant email addresses and matriculation numbers. The file is parsed in your browser before the invitations are submitted.',
+      invitationCsvPrompt: 'Select a participant CSV file',
+      invitationCsvHeaders:
+        'Required headers: email and matriculationNumber (comma or semicolon separated).',
+      invitationCsvReady: '{count} rows ready to import',
+      invitationSelectCsv: 'Select CSV file',
+      invitationImportButton: 'Import {count} invitations',
+      invitationCsvMissingHeaders:
+        'The CSV must contain email and matriculationNumber columns.',
+      invitationCsvEmpty: 'The CSV does not contain any participant rows.',
+      invitationCsvParseError:
+        'The CSV could not be read. Check its format and try again.',
+      invitationImportCompleted: 'The invitation import has completed.',
+      invitationImportFailed:
+        'The invitations could not be imported. Please try again.',
+      invitationImportSummary:
+        'Processed {total}: {created} pending, {accepted} accepted, {duplicates} already present, {errors} errors.',
+      invitationListTitle: 'Invitations',
+      invitationListDescription:
+        'Accepted invitations remain visible as a record. Pending invitations can be deleted.',
+      invitationCount: '{count} invitations',
+      invitationEmail: 'Email',
+      invitationMatriculationNumber: 'Matriculation number',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Invited',
+      invitationActions: 'Actions',
+      invitationStatusPending: 'Pending',
+      invitationStatusAccepted: 'Accepted',
+      invitationDeleteLabel: 'Delete pending invitation for {email}',
+      invitationDeleteTitle: 'Delete pending invitation',
+      invitationDeleteDescription:
+        'Delete the pending invitation for {email}? The participant will no longer be able to accept it.',
+      invitationDeleteSuccess: 'The pending invitation has been deleted.',
+      invitationDeleteFailed:
+        'The pending invitation could not be deleted. Refresh the page and try again.',
+      invitationEmpty: 'No participant invitations have been created yet.',
+      invitationLoadingError:
+        'The participant invitations could not be loaded. Check your permissions and try again.',
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
@@ -3107,6 +3151,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant Invitations',
       appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
