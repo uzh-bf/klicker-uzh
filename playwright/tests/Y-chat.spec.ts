@@ -578,6 +578,178 @@ test.describe('Chatbot Messaging Interface', () => {
     expect(stayedMounted).toBe(true)
   })
 
+  test('Streaming hides incomplete LaTeX until the formula closes', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '\\[x^2 + 1',
+        '\\]',
+        '\n\nThe answer is complete. See [Reference](https://example.com/reference).',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a formula without flicker')
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('x^2')
+    await expect(assistantContent.locator('.katex')).toHaveCount(0)
+
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeMathRelease?: Element
+        __mathStreamSnapshots?: Array<{
+          hasRawDelimiter: boolean
+          hasUnrenderedFormula: boolean
+          hasKatexError: boolean
+        }>
+        __mathStreamObserver?: MutationObserver
+      }
+      state.__assistantMessageBeforeMathRelease = node
+      state.__mathStreamSnapshots = []
+      state.__mathStreamObserver = new MutationObserver(() => {
+        const text = node.textContent ?? ''
+        state.__mathStreamSnapshots?.push({
+          hasRawDelimiter: text.includes('\\[') || text.includes('\\]'),
+          hasUnrenderedFormula:
+            text.includes('x^2 + 1') && !node.querySelector('.katex'),
+          hasKatexError: Boolean(node.querySelector('.katex-error')),
+        })
+      })
+      state.__mathStreamObserver.observe(node, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      })
+    })
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex-display')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The answer is complete.')
+    await expect(
+      assistantContent.getByRole('link', { name: 'Reference' })
+    ).toBeVisible()
+
+    const streamSnapshots = await page.evaluate(() => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeMathRelease?: Element
+        __mathStreamSnapshots?: Array<{
+          hasRawDelimiter: boolean
+          hasUnrenderedFormula: boolean
+          hasKatexError: boolean
+        }>
+        __mathStreamObserver?: MutationObserver
+      }
+      state.__mathStreamObserver?.disconnect()
+      return {
+        stayedMounted:
+          state.__assistantMessageBeforeMathRelease ===
+          document.querySelector('[data-cy="chat-assistant-message"]'),
+        snapshots: state.__mathStreamSnapshots ?? [],
+      }
+    })
+
+    expect(streamSnapshots.stayedMounted).toBe(true)
+    expect(
+      streamSnapshots.snapshots.filter(
+        ({ hasRawDelimiter, hasUnrenderedFormula, hasKatexError }) =>
+          hasRawDelimiter || hasUnrenderedFormula || hasKatexError
+      )
+    ).toEqual([])
+  })
+
+  test('Streaming hides a dollar delimiter split across chunks', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '$',
+        'x^2 + 1',
+        '$',
+        '\n\nThe formula is complete.',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a dollar-delimited formula')
+
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('$')
+    await expect(assistantContent).not.toContainText('x^2')
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
+  test('Streaming hides a backslash delimiter split across chunks', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '\\',
+        '[x^2 + 1',
+        '\\]',
+        '\n\nThe formula is complete.',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a backslash-delimited formula')
+
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('\\')
+    await expect(assistantContent).not.toContainText('x^2')
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {
@@ -622,6 +794,59 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Photosynthesis is the process')
+  })
+
+  test('Separate LaTeX display blocks do not absorb the prose between them', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Display math boundaries',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain perpendicular slopes.' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: [
+                'First formula:',
+                '',
+                '\\[',
+                'm_g \\cdot m_n',
+                '=',
+                '\\frac{\\Delta y}{\\Delta x}',
+                '\\cdot',
+                '\\left(-\\frac{\\Delta x}{\\Delta y}\\right)',
+                '=-1',
+                '\\]',
+                '',
+                'The prose between the formulas must remain ordinary text.',
+                '',
+                '[/math]',
+                '\\boxed{m_g \\cdot m_n = -1}',
+                '[/math]',
+                '',
+                'The source remains readable: [Course script](https://example.com/course-script.pdf)',
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('.katex-display')).toHaveCount(2)
+    await expect(content).toContainText(
+      'The prose between the formulas must remain ordinary text.'
+    )
+    await expect(
+      content.getByRole('link', { name: 'Course script' })
+    ).toBeVisible()
   })
 
   test('Reasoning and adjacent tool calls use predictable disclosures', async ({
