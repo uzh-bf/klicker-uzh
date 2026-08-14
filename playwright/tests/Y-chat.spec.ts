@@ -1988,6 +1988,46 @@ test.describe('Chatbot Source Citations', () => {
     )
   })
 
+  // Regression guard: a terminal assistant turn whose only content is a
+  // completed source-bearing tool call (no answer text) must still surface
+  // its source cards once the persisted thread is loaded.
+  test('Completed tool-only turn shows source cards after thread selection', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Tool-only sources',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Summarize the sources' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-tool-only',
+              sources: [
+                {
+                  file_name: 'Terminal Only.pdf',
+                  source_url: 'https://example.com/docs/terminal-only.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(1)
+    await expect(section).toContainText('Terminal Only.pdf')
+  })
+
   test('Two doc_query calls with an overlapping source dedupe into contiguous 1..N numbering', async ({
     page,
   }) => {

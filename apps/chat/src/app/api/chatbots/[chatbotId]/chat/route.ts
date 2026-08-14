@@ -17,8 +17,8 @@ import {
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
+  buildAbortedAssistantContent,
   mapAssistantStepContent,
-  type PersistedAssistantContentPart,
 } from '@/src/lib/server/persistedAssistantContent'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
@@ -795,6 +795,9 @@ export async function POST(
   // track partial content for cancelled streams
   let partialContent = ''
   let partialReasoningContent = ''
+  let currentStepContent: Array<
+    { type: 'text'; text: string } | { type: 'reasoning'; text: string }
+  > = []
   let assistantReasoningContent: string | null = null
 
   const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
@@ -1242,9 +1245,24 @@ export async function POST(
 
         if (chunk.type === 'text-delta' && chunk.text) {
           partialContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'text') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({ type: 'text', text: chunk.text })
+          }
         }
         if (chunk.type === 'reasoning-delta' && chunk.text) {
           partialReasoningContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'reasoning') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({
+              type: 'reasoning',
+              text: chunk.text,
+            })
+          }
         }
       },
 
@@ -1463,21 +1481,15 @@ export async function POST(
           }
         }
 
-        const abortedReasoningContent =
-          normalizeReasoningContent(
-            Array.isArray(steps?.steps)
-              ? joinReasoningFromSteps(steps.steps)
-              : ''
-          ) ??
-          normalizeReasoningContent(
-            Array.isArray(steps?.steps)
-              ? steps.steps
-                  .map((step) => step.reasoningText || '')
-                  .filter((value) => value.length > 0)
-                  .join('\n\n')
-              : ''
-          ) ??
-          normalizeReasoningContent(partialReasoningContent)
+        const abortedAssistantContent = buildAbortedAssistantContent(
+          Array.isArray(steps?.steps) ? steps.steps : undefined,
+          currentStepContent
+        )
+        const abortedReasoningContent = normalizeReasoningContent(
+          abortedAssistantContent
+            .flatMap((part) => (part.type === 'reasoning' ? [part.text] : []))
+            .join('\n\n')
+        )
         assistantReasoningContent = abortedReasoningContent
 
         logEvent('stream.abort', {
@@ -1488,43 +1500,13 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // A pure tool-call abort has no partial text or reasoning, but the
-        // completed steps still carry persistable tool calls — without them a
-        // cancelled tool-only turn is charged yet leaves no assistant row.
-        // Only used when nothing streamed, since partialContent already
-        // contains the completed steps' text.
-        const completedStepContent =
-          !partialContent.trim() && !abortedReasoningContent
-            ? mapAssistantStepContent(
-                Array.isArray(steps?.steps) ? steps.steps : undefined
-              )
-            : []
-
         // save partial message
         if (
           currentThreadId &&
           owningThread &&
-          (partialContent.trim() ||
-            abortedReasoningContent ||
-            completedStepContent.length > 0)
+          abortedAssistantContent.length > 0
         ) {
           try {
-            const partialAssistantContent: PersistedAssistantContentPart[] = [
-              ...completedStepContent,
-            ]
-            if (partialContent.trim()) {
-              partialAssistantContent.push({
-                type: 'text',
-                text: partialContent,
-              })
-            }
-            if (abortedReasoningContent) {
-              partialAssistantContent.push({
-                type: 'reasoning',
-                text: abortedReasoningContent,
-              })
-            }
-
             const metadata = {
               chatMode: selectedMode,
               modelId: selectedModelConfig.id,
@@ -1535,7 +1517,7 @@ export async function POST(
             const updated = await prisma.chatMessage.updateMany({
               where: { id: assistantMessageId, threadId: currentThreadId },
               data: {
-                content: partialAssistantContent,
+                content: abortedAssistantContent,
                 ...metadata,
               },
             })
@@ -1563,7 +1545,7 @@ export async function POST(
                     threadId: currentThreadId,
                     parentId: userMessageId,
                     role: 'assistant',
-                    content: partialAssistantContent,
+                    content: abortedAssistantContent,
                     ...metadata,
                   },
                 })
@@ -1585,7 +1567,7 @@ export async function POST(
         } else if (
           currentThreadId &&
           !owningThread &&
-          (partialContent.trim() || abortedReasoningContent)
+          abortedAssistantContent.length > 0
         ) {
           console.warn(
             'Skipping assistant message save: thread ownership mismatch',
@@ -1605,6 +1587,7 @@ export async function POST(
       },
 
       onStepEnd: async (step) => {
+        currentStepContent = []
         const diagnostics = collectStepToolDiagnostics(step)
         const toolCallNames = Array.from(
           new Set(diagnostics.map((diagnostic) => diagnostic.toolName))

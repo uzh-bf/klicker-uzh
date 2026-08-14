@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import { mapAssistantStepContent } from '../src/lib/server/persistedAssistantContent'
+import {
+  buildAbortedAssistantContent,
+  mapAssistantStepContent,
+} from '../src/lib/server/persistedAssistantContent'
 
 describe('persisted assistant content', () => {
   test('sanitizes a thrown error attached to an existing tool call', () => {
@@ -139,6 +142,84 @@ describe('persisted assistant content', () => {
         result: { content: [{ type: 'text', text: 'Safe result' }] },
       },
       { type: 'text', text: 'Final answer.' },
+    ])
+  })
+
+  test('preserves finished steps and appends only unfinished text and reasoning', () => {
+    expect(
+      buildAbortedAssistantContent(
+        [
+          {
+            content: [
+              {
+                type: 'tool-call',
+                toolCallId: 'call-finished',
+                toolName: 'KB_doc_query',
+                input: { query: 'alpha' },
+              },
+              {
+                type: 'tool-result',
+                toolCallId: 'call-finished',
+                toolName: 'KB_doc_query',
+                output: { sources_used: 1 },
+              },
+              { type: 'text', text: 'Finished step text.' },
+            ],
+          },
+        ],
+        [
+          { type: 'reasoning', text: 'Unfinished reasoning.' },
+          { type: 'text', text: 'Unfinished answer text.' },
+        ]
+      )
+    ).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'call-finished',
+        toolName: 'KB_doc_query',
+        args: { query: 'alpha' },
+        result: { sources_used: 1 },
+      },
+      { type: 'text', text: 'Finished step text.' },
+      { type: 'reasoning', text: 'Unfinished reasoning.' },
+      { type: 'text', text: 'Unfinished answer text.' },
+    ])
+  })
+
+  test('does not add whitespace-only unfinished content', () => {
+    expect(
+      buildAbortedAssistantContent(
+        [
+          {
+            content: [
+              {
+                type: 'tool-call',
+                toolCallId: 'call-only',
+                toolName: 'KB_doc_query',
+                input: {},
+              },
+              {
+                type: 'tool-result',
+                toolCallId: 'call-only',
+                toolName: 'KB_doc_query',
+                output: { sources_used: 1 },
+              },
+            ],
+          },
+        ],
+        [
+          { type: 'text', text: ' \n' },
+          { type: 'reasoning', text: '\t' },
+        ]
+      )
+    ).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'call-only',
+        toolName: 'KB_doc_query',
+        args: {},
+        result: { sources_used: 1 },
+      },
     ])
   })
 })

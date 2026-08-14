@@ -1363,11 +1363,16 @@ const AssistantMessage: FC = () => {
       m.status?.type === 'running' &&
       m.content.length === 0
   )
-  const hasAnswerText = useMessage((message) =>
-    message.content.some(
+  // Sources stay hidden only while the assistant message is actively running
+  // and no non-whitespace answer text has streamed yet. Once the turn is
+  // terminal (e.g. a completed tool call with no answer text), completed
+  // source-bearing tool results must become visible.
+  const showSources = useMessage((message) => {
+    const hasAnswerText = message.content.some(
       (part) => part.type === 'text' && part.text.trim().length > 0
     )
-  )
+    return !(message.status?.type === 'running' && !hasAnswerText)
+  })
   // Computed once here (not inside SourcesSection/MarkdownText) and shared
   // via context, so the sources grid and the inline `[n]` citation chips
   // read the same normalized list instead of each re-parsing the tool JSON.
@@ -1428,7 +1433,7 @@ const AssistantMessage: FC = () => {
         <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
-          {hasAnswerText && <SourcesSection />}
+          {showSources && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
       </div>
