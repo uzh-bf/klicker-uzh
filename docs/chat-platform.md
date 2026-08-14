@@ -378,6 +378,14 @@ file/page/url and numbers what survives **1..N in first-appearance order across 
 call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
 to break independently:
 
+Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
+runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
+one matching raw tool. Klicker exposes that tool under the configured alias (for example, the
+course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
+identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
+`503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
+configs without the reserved keys retain the existing optional/fail-open behavior.
+
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
 - A source returned again by a later search keeps its original number; no second index is ever

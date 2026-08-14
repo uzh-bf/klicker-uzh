@@ -15,6 +15,10 @@ import {
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
+import {
+  isRequiredMCPUnavailableError,
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+} from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
@@ -714,25 +718,24 @@ export async function POST(
 
       // Prepare MCP server configurations
       mcpServersWithConfigs =
-        chatbot.mcpConfigurations
-          ?.filter((config) => config.mcpServer?.isActive === true)
-          ?.map((config) => ({
-            server: {
-              id: config.mcpServer.id,
-              name: config.mcpServer.name,
-              url: config.mcpServer.url,
-              authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret ?? '',
-              parameters: config.mcpServer.parameters,
-              passChatbotId: config.mcpServer.passChatbotId,
-              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-            },
-            config: {
-              allowedTools: config.allowedTools as string[] | undefined,
-              parameters: config.parameters,
-              priority: config.priority,
-            },
-          })) || []
+        chatbot.mcpConfigurations?.map((config) => ({
+          server: {
+            id: config.mcpServer.id,
+            name: config.mcpServer.name,
+            url: config.mcpServer.url,
+            authType: config.mcpServer.authType,
+            authSecret: config.mcpServer.authSecret ?? '',
+            parameters: config.mcpServer.parameters,
+            isActive: config.mcpServer.isActive,
+            passChatbotId: config.mcpServer.passChatbotId,
+            chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+          },
+          config: {
+            allowedTools: config.allowedTools as string[] | undefined,
+            parameters: config.parameters,
+            priority: config.priority,
+          },
+        })) || []
     }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
@@ -740,6 +743,41 @@ export async function POST(
       error,
     })
   }
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  // MCP availability is checked before creating a thread or doing any model,
+  // credit, image-generation, or message-persistence work.
+  let mcpTools: Record<string, unknown>
+  try {
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  } catch (error) {
+    if (isRequiredMCPUnavailableError(error)) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
+
+  const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -772,25 +810,6 @@ export async function POST(
     role: msg.role,
     content: msg.content,
   }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
-
-  // Append the citation contract only when a doc_query-style RAG tool is
-  // actually available; mutating `systemPrompt` here (rather than deriving a
-  // separate `instructions` variable) keeps the `systemPromptLength` /
-  // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model. The language-style contract applies unconditionally: stored
-  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
-  // orthography must be enforced here, not in the default prompt text.
-  systemPrompt = withLanguageStyleContract(
-    withCitationContract(systemPrompt, toolNames)
-  )
-
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
-  }
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
