@@ -44,12 +44,3 @@ export function parseMCPRuntimePolicy(parameters: unknown): MCPRuntimePolicy {
 
   return { required: true, toolAlias: parameters.toolAlias }
 }
-
-export function isRequiredMCPUnavailableError(
-  error: unknown
-): error is RequiredMCPUnavailableError {
-  return (
-    error instanceof RequiredMCPUnavailableError ||
-    (isRecord(error) && error.code === REQUIRED_MCP_UNAVAILABLE_CODE)
-  )
-}

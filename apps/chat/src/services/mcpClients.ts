@@ -9,7 +9,6 @@ import {
   TOOL_NAME_SUFFIX_LENGTH,
 } from '../lib/config/toolNames'
 import {
-  isRequiredMCPUnavailableError,
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '../lib/server/mcpRuntimePolicy'
@@ -98,9 +97,9 @@ function createAuthHeaders(
   server: MCPServerConfig,
   chatbotId: string
 ): Record<string, string> {
-  const baseHeaders: Record<string, string> = {
+  const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
-  }
+  }) as Record<string, string>
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -133,7 +132,14 @@ function createAuthHeaders(
         }
 
         for (const [name, value] of Object.entries(parsed.headers)) {
-          if (typeof value !== 'string') {
+          if (
+            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+            name === '__proto__' ||
+            name === 'constructor' ||
+            name === 'prototype' ||
+            typeof value !== 'string' ||
+            /[\r\n]/.test(value)
+          ) {
             throw new Error('Invalid custom MCP header value')
           }
           baseHeaders[name] = value
@@ -223,6 +229,20 @@ async function loadServerTools(
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
+  let requiredRawToolName: string | undefined
+
+  if (runtimePolicy.required) {
+    const configuredTool = config.allowedTools?.[0]
+    if (
+      config.allowedTools?.length !== 1 ||
+      typeof configuredTool !== 'string' ||
+      configuredTool.length === 0 ||
+      /[*?]/.test(configuredTool)
+    ) {
+      throw new RequiredMCPUnavailableError()
+    }
+    requiredRawToolName = configuredTool
+  }
 
   if (server.isActive === false) {
     if (runtimePolicy.required) {
@@ -235,13 +255,8 @@ async function loadServerTools(
     const client = await createMCPClient(server, chatbotId)
     const rawTools = await client.tools()
 
-    if (runtimePolicy.required) {
-      const allowedTools = config.allowedTools ?? []
-      if (allowedTools.length !== 1 || typeof allowedTools[0] !== 'string') {
-        throw new RequiredMCPUnavailableError()
-      }
-
-      const rawToolName = allowedTools[0]
+    if (runtimePolicy.required && requiredRawToolName) {
+      const rawToolName = requiredRawToolName
       if (
         !Object.hasOwn(rawTools, rawToolName) ||
         (rawToolName !== runtimePolicy.toolAlias &&
@@ -257,7 +272,7 @@ async function loadServerTools(
 
     Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
       const allowed = runtimePolicy.required
-        ? toolName === config.allowedTools?.[0]
+        ? toolName === requiredRawToolName
         : isToolAllowed(toolName, config.allowedTools || [])
 
       if (allowed) {
@@ -280,7 +295,10 @@ async function loadServerTools(
     )
     return filteredTools
   } catch (error) {
-    if (isRequiredMCPUnavailableError(error) || runtimePolicy.required) {
+    if (
+      error instanceof RequiredMCPUnavailableError ||
+      runtimePolicy.required
+    ) {
       console.error('Required MCP tools unavailable', { server: server.name })
       throw new RequiredMCPUnavailableError()
     }
@@ -311,6 +329,7 @@ export async function getAggregatedMCPTools(
   )
 
   const aggregatedTools: Record<string, any> = {}
+  const requiredToolNames = new Set<string>()
 
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
@@ -322,12 +341,13 @@ export async function getAggregatedMCPTools(
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
-        } else if (runtimePolicy.required) {
+          if (runtimePolicy.required) requiredToolNames.add(name)
+        } else if (runtimePolicy.required || requiredToolNames.has(name)) {
           throw new RequiredMCPUnavailableError()
         }
       }
     } catch (error) {
-      if (isRequiredMCPUnavailableError(error)) throw error
+      if (error instanceof RequiredMCPUnavailableError) throw error
 
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
@@ -363,7 +383,6 @@ export async function getMCPTools(chatbotId: string) {
     url: mcpUrl,
     authType: mcpKey ? 'bearer' : 'none',
     authSecret: mcpKey,
-    isActive: true,
   }
 
   const legacyConfig: MCPConfigSettings = {

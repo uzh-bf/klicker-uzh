@@ -177,4 +177,85 @@ describe('MCP runtime policy', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
   })
+
+  test('rejects strict wildcard bindings before MCP discovery', async () => {
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: ['informatik_*'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        'chatbot-1'
+      )
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+  })
+
+  test('rejects aggregate collisions regardless of priority order', async () => {
+    const optional = createServer(
+      { id: 'optional', url: 'https://optional.example.test' },
+      { allowedTools: ['doc_query'], priority: 0 }
+    )
+    const required = createServer(
+      { id: 'required', url: 'https://required.example.test' },
+      {
+        allowedTools: ['video_expert'],
+        parameters: { required: true, toolAlias: 'doc_query' },
+        priority: 1,
+      }
+    )
+
+    createSDKMCPClientMock
+      .mockResolvedValueOnce({
+        tools: vi.fn().mockResolvedValue({ doc_query: {} }),
+      })
+      .mockResolvedValueOnce({
+        tools: vi.fn().mockResolvedValue({ video_expert: {} }),
+      })
+    await expect(
+      getAggregatedMCPTools([optional, required], 'chatbot-1')
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+
+    vi.clearAllMocks()
+    optional.config.priority = 1
+    required.config.priority = 0
+    createSDKMCPClientMock
+      .mockResolvedValueOnce({
+        tools: vi.fn().mockResolvedValue({ video_expert: {} }),
+      })
+      .mockResolvedValueOnce({
+        tools: vi.fn().mockResolvedValue({ doc_query: {} }),
+      })
+    await expect(
+      getAggregatedMCPTools([optional, required], 'chatbot-1')
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+  })
+
+  test('rejects unsafe strict custom headers before creating an MCP client', async () => {
+    const headers = JSON.parse('{"__proto__":"unexpected"}')
+
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {
+              authType: 'custom',
+              authSecret: JSON.stringify({ headers }),
+            },
+            {
+              allowedTools: ['video_expert'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        'chatbot-1'
+      )
+    ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
+  })
 })

@@ -16,8 +16,8 @@ import {
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import {
-  isRequiredMCPUnavailableError,
   REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
@@ -754,7 +754,7 @@ export async function POST(
   try {
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
   } catch (error) {
-    if (isRequiredMCPUnavailableError(error)) {
+    if (error instanceof RequiredMCPUnavailableError) {
       return NextResponse.json(
         {
           error: 'Required MCP tool unavailable',

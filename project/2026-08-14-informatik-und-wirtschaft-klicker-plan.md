@@ -115,15 +115,16 @@ No new user-facing lifecycle or authorization state is introduced. If the existi
 
 ## Progress
 
-- Status: S1 implementation is ready for its immutable slice commit and required review pair. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
-- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation.
-- Latest committed baseline: `24a807b1f` (`docs(project): add Informatik und Wirtschaft chatbot plan`). Working-tree evidence: focused chat suite `33/33` passed and Prettier passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
+- Status: S1 review corrections are implemented and ready for the correction commit. The plan is committed as the branch's first commit. Remote `origin/v3` was fetched and still resolves to the recorded base.
+- Completed: handoff takeover; current-base reconciliation; synthetic alias/source probe; simplified planning review; product-primitive and DPbDD pass; branch/worktree reuse; S0 plan commit; strict MCP runtime implementation; S1 simplifier and slice review; all accepted S1 review corrections.
+- Latest committed slice: `b9b160ed8` (`enhance(chat): require configured MCP tools before chat generation`). Working-tree evidence: focused chat suite `36/36` passed. The package chat typecheck is currently blocked by pre-existing repository/dependency errors, including missing generated/workspace modules and unrelated i18n/model-registry diagnostics; no new error was reported in the changed production files.
 - Planning review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-simplified-planning.md`.
-- Slice review: not required for S0 — documentation-only plan commit.
-- Remaining: S1 commit/review/simplification, S2 provisioner, S2 review/simplification, S3 integrated verification/final review.
+- Simplifier: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-simplifier.md`; accepted redundant-default and in-process classifier reductions.
+- Slice review: done — `project/_local/reviews/2026-08-14-informatik-und-wirtschaft-s1-slice-review.md`; accepted unsafe-header, collision-order, and wildcard-validation corrections.
+- Remaining: S1 correction commit, S2 provisioner, S2 review/simplification, S3 integrated verification/final review.
 - Active children: none.
 - Delivery layer: local branch commits only. Achieved layer: none yet. Push, PR, STG apply, activation, deployment, and production remain explicitly withheld.
-- Next action: stage only the S1 runtime, test, documentation, and Progress changes, commit them, then run the required simplifier and slice-reviewer pair on that immutable range.
+- Next action: stage only the accepted S1 correction and Progress changes, commit them, then dispatch the bounded S2 provisioner executor.
 
 ## Next steps
 
