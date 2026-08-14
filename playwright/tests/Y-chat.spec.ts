@@ -674,6 +674,44 @@ test.describe('Chatbot Messaging Interface', () => {
     ).toEqual([])
   })
 
+  test('Streaming hides a dollar delimiter split across chunks', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '$',
+        'x^2 + 1',
+        '$',
+        '\n\nThe formula is complete.',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a dollar-delimited formula')
+
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('$')
+    await expect(assistantContent).not.toContainText('x^2')
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {

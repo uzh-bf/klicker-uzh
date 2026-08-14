@@ -47,6 +47,7 @@ function countRun(input: string, index: number, character: string) {
 type Fence = {
   character: '`' | '~'
   length: number
+  start: number
 }
 
 function readFence(input: string, index: number): Fence | null {
@@ -65,7 +66,7 @@ function readFence(input: string, index: number): Fence | null {
   const length = countRun(input, cursor, character)
   if (length < 3) return null
 
-  return { character, length }
+  return { character, length, start: cursor }
 }
 
 function isFenceClose(input: string, index: number, fence: Fence) {
@@ -80,7 +81,7 @@ function isFenceClose(input: string, index: number, fence: Fence) {
 
   const lineEnd = input.indexOf('\n', index)
   const end = lineEnd === -1 ? input.length : lineEnd
-  const markerEnd = index + candidate.length
+  const markerEnd = candidate.start + candidate.length
   return input.slice(markerEnd, end).trim().length === 0
 }
 
@@ -88,7 +89,7 @@ function isDollarOpening(input: string, index: number) {
   if (isEscaped(input, index) || input[index + 1] === '$') return false
 
   const next = input[index + 1]
-  return next !== undefined && !/\s|\d/.test(next)
+  return next === undefined || !/\s|\d/.test(next)
 }
 
 function findOpening(input: string, index: number): MathOpening | null {
@@ -154,8 +155,12 @@ export function inspectStreamingMath(input: string): StreamingMathScan {
 
   for (let index = 0; index < input.length; index++) {
     if (fence) {
-      if (isLineStart(input, index) && isFenceClose(input, index, fence)) {
+      const candidate = isLineStart(input, index)
+        ? readFence(input, index)
+        : null
+      if (candidate && isFenceClose(input, index, fence)) {
         fence = null
+        index = candidate.start + candidate.length - 1
       }
       continue
     }

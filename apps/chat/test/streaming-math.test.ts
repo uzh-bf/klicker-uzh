@@ -13,6 +13,7 @@ describe('streaming math scanner', () => {
     ['backslash-bracket', String.raw`\[x`, 'before '],
     ['inline tag', '[/inline]x', 'before '],
     ['display tag', '[/math]x', 'before '],
+    ['trailing single-dollar', '$', 'before '],
   ])('hides an incomplete %s expression', (_, expression, prefix) => {
     expect(hideIncompleteMath(`${prefix}${expression}`)).toBe(prefix)
   })
@@ -55,5 +56,20 @@ describe('streaming math scanner', () => {
       incompleteMathStart: null,
     })
     expect(hideIncompleteMath(input)).toBe(input)
+  })
+
+  test.each([
+    ' ',
+    '  ',
+    '   ',
+  ])('recognizes a closing fence with %s indentation before later math', (indentation) => {
+    const input = `\`\`\`\ncode\n${indentation}\`\`\`\n\\[y`
+    const mathStart = input.indexOf(String.raw`\[y`)
+
+    expect(inspectStreamingMath(input)).toEqual({
+      hasMathOpener: true,
+      incompleteMathStart: mathStart,
+    })
+    expect(hideIncompleteMath(input)).toBe(input.slice(0, mathStart))
   })
 })
