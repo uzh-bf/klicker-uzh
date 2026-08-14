@@ -3689,6 +3689,7 @@ export enum PointCorrectionType {
   AllCourse = 'ALL_COURSE',
   Multiple = 'MULTIPLE',
   Participating = 'PARTICIPATING',
+  ParticipatingQuiz = 'PARTICIPATING_QUIZ',
   Single = 'SINGLE'
 }
 

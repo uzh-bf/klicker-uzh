@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-11'
+timestamp: '2026-08-14'
 tags:
   - backend
   - prisma
@@ -48,6 +48,29 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Assessment point corrections
+
+Assessment point corrections persist their audience as
+`PointCorrectionType`
+(`packages/prisma/src/prisma/schema/response.prisma:PointCorrectionType`). An
+instance correction distinguishes two participation audiences:
+
+- `PARTICIPATING` targets participants with a genuine response to the selected
+  `ElementInstance`.
+- `PARTICIPATING_QUIZ` targets participants with at least one genuine response
+  anywhere in the parent `LiveQuiz`, while applying the correction only to the
+  selected `ElementInstance`.
+
+A response created solely by an earlier correction (`correctionOnly = true`)
+does not establish quiz participation. Participants who qualify through another
+question but did not answer the selected instance receive a correction-only
+response for that instance. The shared audience selection is implemented by
+`packages/graphql/src/services/courses.ts:getLiveQuizParticipantResponseMap`
+and applied by
+`packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
+Whole-quiz corrections intentionally retain the four original audiences and
+reject `PARTICIPATING_QUIZ`.
 
 ## Course duplication
 

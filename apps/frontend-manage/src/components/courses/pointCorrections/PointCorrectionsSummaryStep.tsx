@@ -31,6 +31,9 @@ function PointCorrectionsSummaryStep({
     [PointCorrectionType.Participating]: t(
       'manage.pointCorrections.participantScopeParticipating'
     ),
+    [PointCorrectionType.ParticipatingQuiz]: t(
+      'manage.pointCorrections.participantScopeParticipatingQuiz'
+    ),
     [PointCorrectionType.AllCourse]: t(
       'manage.pointCorrections.participantScopeCourse'
     ),

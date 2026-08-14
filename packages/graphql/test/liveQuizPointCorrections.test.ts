@@ -184,6 +184,28 @@ describe('Unit tests covering point corrections for live quizzes', () => {
     expect(res2).toBeNull()
   })
 
+  it('[Live Quiz Point Updates] Rejects the element-only quiz participant audience', async () => {
+    const { liveQuiz } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
+
+    const result = await correctAssessmentPointsLiveQuiz(
+      {
+        liveQuizId: liveQuiz.id,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    expect(result).toBeNull()
+  })
+
   it('[Live Quiz Point Updates] Verify that only course admins can modify points', async () => {
     const { liveQuiz, participant2 } = await seedLiveQuizWithResponses({
       userOneCtx,
