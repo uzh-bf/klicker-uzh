@@ -64,7 +64,13 @@ Alternatives considered:
   Changing back to quiz scope clears `PARTICIPATING_QUIZ` so it cannot be
   submitted invisibly. The summary and previous-correction history render an
   explicit quiz-participant label. All new copy is available in English and
-  German.
+  German. To distinguish the two participation audiences without changing
+  their behavior, the instance selector and summary use the parallel English
+  labels "All participating users (this element)" and "All participating users
+  (entire quiz)". German uses "Alle teilnehmenden Nutzer (dieses Element)" and
+  "Alle teilnehmenden Nutzer (gesamtes Quiz)". The whole-quiz selector keeps
+  the unqualified "All participating users" label because only one
+  participation audience is available there.
 - **Validation and errors:** the instance mutation accepts the new enum value;
   the quiz mutation rejects it by returning `null`, matching the existing
   mutation failure contract. `SINGLE` and `MULTIPLE` argument validation is
@@ -295,3 +301,6 @@ item only for `scopeType === 'instance'`:
   security, secret, PII, or behavioral issues. Applied its change-log heading
   and completed-plan archival cleanups; deliberately deferred broader service
   transaction and history-rendering refactors as out of scope.
+- **2026-08-14:** The requester approved parallel scope-qualified labels for
+  the two participation audiences shown for an element. This is a copy-only
+  refinement; persisted enum values and correction eligibility stay unchanged.
