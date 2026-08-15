@@ -48,6 +48,8 @@ jobs:
           pnpm run build
           cd ../types
           pnpm run build
+          cd ../grading
+          pnpm run build
           cd ../util
           pnpm run build
 
