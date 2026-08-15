@@ -21,6 +21,7 @@ import {
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import { getHistoryRailPartAnchor } from '@/src/lib/history-rail'
 import { resolveDisclosureOpen } from './message-parts-state'
 import { ToolFallback } from './tool-fallback'
 
@@ -181,46 +182,79 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   )
 }
 
-export const AssistantMessageParts: FC = () => (
-  <MessagePrimitive.GroupedParts
-    indicator="never"
-    groupBy={groupPartByType({
-      reasoning: ['group-reasoning'],
-      'tool-call': ['group-tool'],
-    })}
-  >
-    {({ part, children }) => {
-      switch (part.type) {
-        case 'group-reasoning':
-          return (
-            <ReasoningGroup active={part.status.type === 'running'}>
-              {children}
-            </ReasoningGroup>
-          )
-        case 'group-tool':
-          return part.indices.length <= 1 ? (
-            <>{children}</>
-          ) : (
-            <ToolGroup
-              active={part.status.type === 'running'}
-              count={part.indices.length}
-            >
-              {children}
-            </ToolGroup>
-          )
-        case 'text':
-          return <MarkdownText />
-        case 'reasoning':
-          return <ReasoningPart {...part} />
-        case 'tool-call':
-          return part.toolUI ?? <ToolFallback {...part} />
-        case 'data':
-          return part.name === 'chat-error' ? (
-            <ChatErrorPart data={part.data as ChatErrorPartData} />
-          ) : null
-        default:
-          return null
-      }
-    }}
-  </MessagePrimitive.GroupedParts>
-)
+export const AssistantMessageParts: FC = () => {
+  const messageId = useAuiState((s) => s.message.id)
+
+  return (
+    <MessagePrimitive.GroupedParts
+      indicator="never"
+      groupBy={groupPartByType({
+        reasoning: ['group-reasoning'],
+        'tool-call': ['group-tool'],
+      })}
+    >
+      {({ part, children }) => {
+        switch (part.type) {
+          case 'group-reasoning':
+            return (
+              <div
+                data-history-rail-anchor={getHistoryRailPartAnchor(
+                  messageId,
+                  `reasoning:${part.indices[0]}`
+                )}
+                tabIndex={-1}
+                className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                <ReasoningGroup active={part.status.type === 'running'}>
+                  {children}
+                </ReasoningGroup>
+              </div>
+            )
+          case 'group-tool':
+            return part.indices.length <= 1 ? (
+              <>{children}</>
+            ) : (
+              <ToolGroup
+                active={part.status.type === 'running'}
+                count={part.indices.length}
+              >
+                {children}
+              </ToolGroup>
+            )
+          case 'text':
+            return <MarkdownText />
+          case 'reasoning':
+            return <ReasoningPart {...part} />
+          case 'tool-call':
+            return (
+              <div
+                data-history-rail-anchor={getHistoryRailPartAnchor(
+                  messageId,
+                  `tool:${part.toolCallId}`
+                )}
+                tabIndex={-1}
+                className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                {part.toolUI ?? <ToolFallback {...part} />}
+              </div>
+            )
+          case 'data':
+            return part.name === 'chat-error' ? (
+              <div
+                data-history-rail-anchor={getHistoryRailPartAnchor(
+                  messageId,
+                  'error'
+                )}
+                tabIndex={-1}
+                className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                <ChatErrorPart data={part.data as ChatErrorPartData} />
+              </div>
+            ) : null
+          default:
+            return null
+        }
+      }}
+    </MessagePrimitive.GroupedParts>
+  )
+}

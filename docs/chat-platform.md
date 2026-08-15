@@ -33,6 +33,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.
 - `src/components/thread.tsx`, `src/components/message-parts.tsx`, and `src/hooks/` — assistant-ui composition and transport.
+- `src/components/history-rail.tsx` and `src/lib/history-rail.ts` — the read-only active-path history projection, transcript anchors, and responsive navigation rail.
 - `src/components/ui/` — the app's own shadcn-style primitives (`tooltip.tsx`, `action-bar-button.ts`), separate from `@uzh-bf/design-system`.
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
@@ -251,6 +252,16 @@ without a second runtime-owned feedback state competing with it. AI SDK 7 powers
 (`ai`, `@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client
 transport because the spike-gated `useAISDKRuntime` replacement could not be live-verified without
 an LLM key.
+
+The history rail is a derived navigation view over `activeThread.messages`, which is the current
+branch path reconstructed by `chatStore.switchToBranch`. It never reads `allMessages`, persists
+anything, or renders sibling branches. User and assistant message entries use the assistant-ui
+`data-message-id` boundary plus a rail-specific focus target; grouped reasoning, tool calls, and
+client error parts get deterministic part anchors from the message id and part identity. The desktop
+rail is a vertical `nav`; mobile collapses it into a horizontal, numbered control. Entry activation
+scrolls and focuses the matching transcript target, while a scroll spy highlights the entry at the
+current reading position. The projection normalizes running, partial, and error states so loading,
+aborted, and incomplete turns remain navigable without duplicating message rows.
 
 ## Participant entry points (course page)
 
@@ -525,6 +536,8 @@ from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
+
+`history-rail.test.ts` pins active-path ordering, stable message/tool/error anchors, reasoning-group collapse, duplicate tool-call suppression, and running/partial/error states. Browser verification must additionally exercise desktop and mobile entry activation, focus, current-entry highlighting, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
 The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 

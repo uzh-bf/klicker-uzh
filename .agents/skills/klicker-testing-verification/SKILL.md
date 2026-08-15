@@ -41,6 +41,13 @@ row while it is still streaming, and capture DOM identity around feedback clicks
 when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
 
+For the active-branch chat history rail, keep the projection contract in
+`apps/chat/test/history-rail.test.ts` and verify navigation in the browser at
+desktop and mobile widths. The browser check must cover click/focus behavior,
+current-entry highlighting, and the matching EN/DE labels; a local environment
+without an upstream model key can still prove the rail's error-state rendering
+and navigation, but not model-backed reasoning or tool content.
+
 For chat Markdown or KaTeX streaming changes, `apps/chat/src/components/markdown-text.tsx`
 uses the dependency-free `src/lib/markdown/streamingMath.ts` scanner to hide only unmatched
 math tails while a text part is running. The browser contract must pause before a closing

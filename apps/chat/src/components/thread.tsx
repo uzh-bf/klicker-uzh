@@ -34,6 +34,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -67,8 +68,13 @@ import {
 } from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
 import { getThreadSuggestions } from '../lib/config/suggestions'
+import {
+  getHistoryRailEntries,
+  getHistoryRailMessageAnchor,
+} from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
+import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError } from './message-parts-state'
@@ -262,6 +268,14 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptionsAreFallback,
 }) => {
   const { embedded } = useChatUi()
+  const activeThread = useChatStore((state) =>
+    state.threads.find((thread) => thread.id === state.activeThreadId)
+  )
+  const historyEntries = useMemo(
+    () => getHistoryRailEntries(activeThread?.messages ?? EMPTY_MESSAGES),
+    [activeThread?.messages]
+  )
+  const showHistoryRail = !embedded && historyEntries.length > 0
 
   return (
     <ThreadPrimitive.Root
@@ -271,12 +285,17 @@ export const Thread: FC<ThreadProps> = ({
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
     >
+      {!embedded && <HistoryRail entries={historyEntries} />}
       <ThreadPrimitive.Viewport
+        data-cy="chat-thread-viewport"
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
+          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit motion-reduce:scroll-auto',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
-            : 'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
+            : twMerge(
+                'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8',
+                showHistoryRail && 'pt-14 sm:pl-10 sm:pt-8'
+              )
         )}
       >
         <ThreadWelcome
@@ -1020,7 +1039,9 @@ const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       data-cy="chat-user-message"
-      className="animate-in fade-in slide-in-from-bottom-2 flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none sm:py-4"
+      data-history-rail-anchor={getHistoryRailMessageAnchor(message.id)}
+      tabIndex={-1}
+      className="animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4"
     >
       <div
         data-cy="chat-user-message-content"
@@ -1330,6 +1351,7 @@ const ImageAnalyzedChip: FC = () => {
 const AssistantMessage: FC = () => {
   const chatbotAvatar = useContext(ChatbotAvatarContext)
   const { embedded } = useChatUi()
+  const messageId = useAuiState((s) => s.message.id)
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
   const isPendingEmpty = useAuiState(
@@ -1357,8 +1379,10 @@ const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       data-cy="chat-assistant-message"
+      data-history-rail-anchor={getHistoryRailMessageAnchor(messageId)}
+      tabIndex={-1}
       className={twMerge(
-        'animate-in fade-in slide-in-from-bottom-2 relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none sm:py-4',
+        'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
         embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
