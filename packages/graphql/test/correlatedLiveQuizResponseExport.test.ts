@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import {
   ElementBlockStatus,
   ElementType,
@@ -12,19 +11,26 @@ import { getCorrelatedLiveQuizResponseExport } from '../src/services/correlatedL
 
 interface LiveQuizFixture {
   displayName: string
-  exportSalt: string
   isAssessmentEnabled: boolean
+  publicationGeneration: number
   responseCollectionMode: LiveQuizResponseCollectionMode
   status: PublicationStatus
 }
 
 const defaultLiveQuiz: LiveQuizFixture = {
   displayName: 'Correlated Quiz',
-  exportSalt: 'quiz-salt',
   isAssessmentEnabled: false,
+  publicationGeneration: 4,
   responseCollectionMode: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
   status: PublicationStatus.ENDED,
 }
+
+const finalizedAt = new Date('2026-08-15T18:00:00.000Z')
+
+const defaultRespondents = [
+  { id: 'respondent-id', exportLabel: 1, finalizedAt },
+  { id: 'second-respondent-id', exportLabel: 2, finalizedAt },
+]
 
 const defaultBlocks = [
   {
@@ -43,8 +49,7 @@ const defaultResponses = [
     correctnessPoints: 5,
     elementBlockExecution: 0,
     instanceId: 10,
-    participantId: 'participant-id',
-    respondentId: null,
+    respondentId: 'respondent-id',
     response: { value: 'answer' },
   },
   {
@@ -54,36 +59,35 @@ const defaultResponses = [
     correctnessPoints: 0,
     elementBlockExecution: 0,
     instanceId: 10,
-    participantId: null,
-    respondentId: 'respondent-id',
+    respondentId: 'second-respondent-id',
     response: { value: 'another answer' },
   },
 ]
-
-function hashIdentity(identityKey: string) {
-  return createHmac('sha256', defaultLiveQuiz.exportSalt)
-    .update(identityKey)
-    .digest('hex')
-}
 
 function createContext({
   liveQuiz = defaultLiveQuiz,
   blocks = defaultBlocks,
   responses = defaultResponses,
-  labels = [],
+  respondents = defaultRespondents,
   pendingResponseCount = 0,
   responseBytes,
   responseCount,
   respondentCount,
+  invalidResponseCount = 0n,
 }: {
   liveQuiz?: typeof defaultLiveQuiz | null
   blocks?: any[]
   responses?: any[]
-  labels?: { identityHash: string; label: number }[]
+  respondents?: {
+    id: string
+    exportLabel: number | null
+    finalizedAt: Date | null
+  }[]
   pendingResponseCount?: number
   responseBytes?: bigint
   responseCount?: bigint
   respondentCount?: bigint
+  invalidResponseCount?: bigint
 } = {}) {
   const queryRaw = vi
     .fn()
@@ -103,30 +107,23 @@ function createContext({
         respondentCount:
           respondentCount ??
           BigInt(
-            new Set(
-              responses.map((response) =>
-                response.participantId
-                  ? `participant:${response.participantId}`
-                  : `respondent:${response.respondentId}`
-              )
-            ).size
+            new Set(responses.map((response) => response.respondentId)).size
           ),
+        invalidResponseCount,
       },
     ])
   const blockFindMany = vi.fn().mockResolvedValue(blocks)
   const responseFindMany = vi.fn().mockResolvedValue(responses)
-  const labelFindMany = vi.fn().mockResolvedValue(labels)
-  const labelCreateMany = vi.fn().mockResolvedValue({ count: 0 })
+  const respondentFindMany = vi.fn().mockResolvedValue(respondents)
+  const bindingCount = vi.fn().mockResolvedValue(0)
   const pendingResponseCountFn = vi.fn().mockResolvedValue(pendingResponseCount)
   const transactionPrisma = {
     $queryRaw: queryRaw,
     elementBlock: { findMany: blockFindMany },
     liveQuizResponse: { findMany: responseFindMany },
+    liveQuizRespondent: { findMany: respondentFindMany },
+    liveQuizRespondentBinding: { count: bindingCount },
     liveQuizPendingResponse: { count: pendingResponseCountFn },
-    liveQuizResponseExportLabel: {
-      findMany: labelFindMany,
-      createMany: labelCreateMany,
-    },
   }
   const transaction = vi
     .fn()
@@ -136,7 +133,7 @@ function createContext({
 
   return {
     blockFindMany,
-    labelCreateMany,
+    respondentFindMany,
     responseFindMany,
     ctx: {
       user: { sub: 'lecturer-id' },
@@ -147,7 +144,7 @@ function createContext({
 
 describe('getCorrelatedLiveQuizResponseExport', () => {
   it('returns a respondent-row CSV without source identities', async () => {
-    const { ctx, blockFindMany, labelCreateMany, responseFindMany } =
+    const { ctx, blockFindMany, respondentFindMany, responseFindMany } =
       createContext()
 
     const result = await getCorrelatedLiveQuizResponseExport(
@@ -162,11 +159,9 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     expect(result.content).not.toContain('participant-id')
     expect(result.content).not.toContain('respondent-id')
     expect(result.content.match(/^respondent_\d{3},/gm)).toHaveLength(2)
-    expect(labelCreateMany).toHaveBeenCalledWith({
-      data: expect.arrayContaining([
-        expect.objectContaining({ label: 1, liveQuizId: 'quiz-id' }),
-        expect.objectContaining({ label: 2, liveQuizId: 'quiz-id' }),
-      ]),
+    expect(respondentFindMany).toHaveBeenCalledWith({
+      where: { liveQuizId: 'quiz-id', publicationGeneration: 4 },
+      select: { id: true, exportLabel: true, finalizedAt: true },
     })
     expect(blockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -222,23 +217,17 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     expect(result.content).not.toContain('private free-text answer')
   })
 
-  it('keeps existing labels when a late response is added', async () => {
+  it('uses persisted finalized labels without lazy assignment', async () => {
     const lateResponse = {
       ...defaultResponses[1]!,
       respondentId: 'late-respondent-id',
       response: { value: 'late answer' },
     }
-    const { ctx, labelCreateMany } = createContext({
+    const { ctx, respondentFindMany } = createContext({
       responses: [...defaultResponses, lateResponse],
-      labels: [
-        {
-          identityHash: hashIdentity('participant:participant-id'),
-          label: 1,
-        },
-        {
-          identityHash: hashIdentity('respondent:respondent-id'),
-          label: 2,
-        },
+      respondents: [
+        ...defaultRespondents,
+        { id: 'late-respondent-id', exportLabel: 3, finalizedAt },
       ],
     })
 
@@ -257,14 +246,20 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     expect(rows.find((row) => row.includes(',late answer,'))).toMatch(
       /^respondent_003,/
     )
-    expect(labelCreateMany).toHaveBeenCalledWith({
-      data: [
-        expect.objectContaining({
-          identityHash: hashIdentity('respondent:late-respondent-id'),
-          label: 3,
-        }),
+    expect(respondentFindMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits until every respondent has a finalized label', async () => {
+    const { ctx, responseFindMany } = createContext({
+      respondents: [
+        { id: 'respondent-id', exportLabel: null, finalizedAt: null },
       ],
     })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY')
+    expect(responseFindMany).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -313,6 +308,17 @@ describe('getCorrelatedLiveQuizResponseExport', () => {
     await expect(
       getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
     ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY')
+    expect(responseFindMany).not.toHaveBeenCalled()
+  })
+
+  it('fails closed for response rows outside the finalized correlated owner set', async () => {
+    const { ctx, responseFindMany } = createContext({
+      invalidResponseCount: 1n,
+    })
+
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: 'quiz-id' }, ctx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE')
     expect(responseFindMany).not.toHaveBeenCalled()
   })
 

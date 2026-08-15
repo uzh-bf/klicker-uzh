@@ -119,14 +119,6 @@ describe('Live quiz abort cleanup', () => {
         settledAt: new Date(),
       },
     })
-    await prisma.liveQuizResponseExportLabel.create({
-      data: {
-        liveQuizId: liveQuiz.id,
-        identityHash: 'test-identity-hash',
-        label: 1,
-      },
-    })
-
     let receivedStartedAt: string | undefined
     let receivedPublicationGeneration: string | undefined
     let receivedTombstoneKey: string | undefined
@@ -176,11 +168,6 @@ describe('Live quiz abort cleanup', () => {
     ).resolves.toBe(0)
     await expect(
       prisma.liveQuizPendingResponse.count({
-        where: { liveQuizId: liveQuiz.id },
-      })
-    ).resolves.toBe(0)
-    await expect(
-      prisma.liveQuizResponseExportLabel.count({
         where: { liveQuizId: liveQuiz.id },
       })
     ).resolves.toBe(0)

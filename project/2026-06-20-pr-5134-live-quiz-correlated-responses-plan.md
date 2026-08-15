@@ -9,11 +9,11 @@ Branch: `rs/pr5134-a1-domain` for this ADR/domain update; implementation continu
 Target: `v3`
 Original PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134), preserved while the replacement stack validates.
 Status: the full A1-A5/B1-B2 slices already exist in the replacement draft
-stack. The A1-A5 ADR adaptation is now applied locally through the lifecycle
-finalization boundary; the remaining work is to cascade A5 into the existing
-B1/B2 slices, verify the integrated stack, and clear the retention, browser, and
-delivery gates. This is an in-place adaptation of existing slices, not a new
-feature build or a new topology.
+stack. The A1-A5 ADR adaptation and B1 export-source adaptation are now applied
+locally; the remaining work is to cascade the existing B2 slice, verify the
+integrated stack, and clear the retention, browser, and delivery gates. This is
+an in-place adaptation of existing slices, not a new feature build or a new
+topology.
 
 ## Current Stack Topology
 
@@ -46,13 +46,12 @@ topology divergence or changed PR attribution. An unchanged layer requires
 verification, not a synthetic repair commit. No layer is authorized for merge
 or ready status by this plan.
 
-Current adaptation gap: B1 still contains the interim
-`LiveQuizResponseExportLabel` migration, retains HMAC-derived identity hashes,
-and assigns labels during export. A1-A5 now persist generation-scoped
-respondents and active bindings, settle under the shared/exclusive quiz locks,
-and allocate labels transactionally only after settlement. Cascade that
-contract into B1 so it removes HMAC identity storage and lazy label assignment
-while rendering only finalized respondent labels; then verify B2 and the
+Current adaptation gap: B1 now reads only generation-scoped finalized
+respondent labels, rejects incomplete settlement and invalid owners, and has no
+interim export-label table or lazy HMAC assignment. A1-A5 persist
+generation-scoped respondents and active bindings, settle under the
+shared/exclusive quiz locks, and allocate labels transactionally only after
+settlement. The remaining work is B2, finite retention, integrated checks, and
 browser/delivery gates.
 
 ## Non-Goals
@@ -81,10 +80,9 @@ Current interim-stack evidence:
 - The existing A1-A5/B1-B2 slices contain mode wiring, respondent routing,
   transactional response admission, worker processing, lifecycle generation,
   CSV delivery, notices, and cookie-blocked fallback behavior.
-- The remaining implementation gap is the accepted identity/finalization
-  delta: B1 still uses the interim `LiveQuizResponseExportLabel` HMAC/lazy
-  label shape, and A1/A3/A4/A5 still need to converge on active bindings,
-  respondent ownership, settlement-gated cleanup, and persisted labels.
+- The remaining implementation gap is the accepted delivery delta: B2 and the
+  finite-retention policy still need to converge with the adapted A1-A5/B1
+  identity and finalization contract.
 - Source checks are recorded as green; browser proof remains blocked by the
   shared DevPod PWA font resolver failure and lifecycle lock.
 
@@ -678,6 +676,16 @@ Later research:
   transitional identity fields, deletes bindings and settled receipt metadata,
   and removes the salt. New finalization tests and the affected publication and
   abort suites pass locally; B1 still needs the export-source adaptation.
+- 2026-08-15: B1 was rebased onto A5 and adapted in place. The exporter now
+  reads only persisted finalized respondent labels, filters the current
+  publication generation, rejects incomplete receipts and invalid owners before
+  row materialization, and no longer stores HMAC identity hashes or assigns
+  labels lazily. The interim export-label schema and migration were removed.
+  Focused export tests (14), export-package tests (36), GraphQL typecheck, and
+  the A5 finalization/publication regressions (14) pass. The combined abort
+  suite remains environment-blocked because the seeded DevPod contains 11 users
+  while its existing fixture asserts exactly 6; the abort behavior itself was
+  already covered on A5 before this source-only B1 adaptation.
 
 ## Goal Prompt Requirements
 
@@ -697,9 +705,8 @@ If handed to another agent:
 
 1. Record the finite retention period, deletion trigger, and enforcement owner;
    until then, keep correlated publication disabled.
-2. Cascade the adapted A5 contract through the existing B1 export and B2
-   Manage/PWA branches; remove the interim export-label table and verify
-   unchanged B2 layers instead of creating synthetic commits.
+2. Cascade the adapted A5/B1 contract through the existing B2 Manage/PWA
+   branch; verify unchanged layers instead of creating synthetic commits.
 3. Run response-api/worker builds and source checks, execute the existing
    Playwright journey and mandatory Manage/PWA browser checks, then run the
    integrated final review.

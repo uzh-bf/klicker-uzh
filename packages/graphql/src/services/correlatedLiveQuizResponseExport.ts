@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import {
   CorrelatedLiveQuizExportSizeError,
   createCorrelatedLiveQuizResponseCsv,
@@ -6,7 +5,6 @@ import {
   getCorrelatedLiveQuizResponseCsvHeaderByteLength,
 } from '@klicker-uzh/export/correlated-live-quiz-responses'
 import * as DB from '@klicker-uzh/prisma/client'
-import { buildLiveQuizResponseIdentityKey } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -36,16 +34,16 @@ export async function getCorrelatedLiveQuizResponseExport(
           Pick<
             DB.LiveQuiz,
             | 'displayName'
-            | 'exportSalt'
             | 'isAssessmentEnabled'
+            | 'publicationGeneration'
             | 'responseCollectionMode'
             | 'status'
           >[]
         >`
           SELECT
             "displayName",
-            "exportSalt",
             "isAssessmentEnabled",
+            "publicationGeneration",
             "responseCollectionMode"::text AS "responseCollectionMode",
             "status"::text AS "status"
           FROM "public"."LiveQuiz"
@@ -66,17 +64,62 @@ export async function getCorrelatedLiveQuizResponseExport(
         if (
           liveQuiz.isAssessmentEnabled ||
           liveQuiz.responseCollectionMode !==
-            DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT ||
-          !liveQuiz.exportSalt
+            DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
         ) {
           throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_UNAVAILABLE', {
             extensions: { code: 'BAD_USER_INPUT' },
           })
         }
 
+        const respondents = await prisma.liveQuizRespondent.findMany({
+          where: {
+            liveQuizId: id,
+            publicationGeneration: liveQuiz.publicationGeneration,
+          },
+          select: { id: true, exportLabel: true, finalizedAt: true },
+        })
+        if (
+          respondents.some(
+            (respondent) =>
+              respondent.exportLabel === null || respondent.finalizedAt === null
+          )
+        ) {
+          throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          })
+        }
+        const respondentLabelById = new Map(
+          respondents.map((respondent) => [
+            respondent.id,
+            respondent.exportLabel!,
+          ])
+        )
+
+        const activeBindingCount = await prisma.liveQuizRespondentBinding.count(
+          {
+            where: {
+              liveQuizId: id,
+              publicationGeneration: liveQuiz.publicationGeneration,
+            },
+          }
+        )
+        if (activeBindingCount > 0) {
+          throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          })
+        }
+
         const pendingResponseCount = await prisma.liveQuizPendingResponse.count(
           {
-            where: { liveQuizId: id, settledAt: null },
+            where: {
+              liveQuizId: id,
+              publicationGeneration: liveQuiz.publicationGeneration,
+              OR: [
+                { settledAt: null },
+                { eventPayload: { not: null } },
+                { nextDeliveryAt: { not: null } },
+              ],
+            },
           }
         )
         if (pendingResponseCount > 0) {
@@ -135,20 +178,44 @@ export async function getCorrelatedLiveQuizResponseExport(
             responseBytes: bigint
             responseCount: bigint
             respondentCount: bigint
+            invalidResponseCount: bigint
           }[]
         >`
           SELECT
-            COALESCE(SUM(octet_length(response."response"::text)), 0)::bigint AS "responseBytes",
-            COUNT(*)::bigint AS "responseCount",
-            (
-              COUNT(DISTINCT response."participantId") +
-              COUNT(DISTINCT response."respondentId")
-            )::bigint AS "respondentCount"
+            COALESCE(
+              SUM(octet_length(response."response"::text)) FILTER (
+                WHERE response."participantId" IS NULL
+                  AND response."respondentId" IS NOT NULL
+                  AND respondent."id" IS NOT NULL
+              ),
+              0
+            )::bigint AS "responseBytes",
+            COUNT(*) FILTER (
+              WHERE response."participantId" IS NULL
+                AND response."respondentId" IS NOT NULL
+                AND respondent."id" IS NOT NULL
+            )::bigint AS "responseCount",
+            COUNT(DISTINCT response."respondentId") FILTER (
+              WHERE response."participantId" IS NULL
+                AND response."respondentId" IS NOT NULL
+                AND respondent."id" IS NOT NULL
+            )::bigint AS "respondentCount",
+            COUNT(*) FILTER (
+              WHERE response."participantId" IS NOT NULL
+                OR response."respondentId" IS NULL
+                OR respondent."id" IS NULL
+            )::bigint AS "invalidResponseCount"
           FROM "public"."LiveQuizResponse" AS response
           INNER JOIN "public"."ElementInstance" AS instance
             ON instance."id" = response."instanceId"
           INNER JOIN "public"."ElementBlock" AS block
             ON block."id" = instance."elementBlockId"
+          LEFT JOIN "public"."LiveQuizRespondent" AS respondent
+            ON respondent."id" = response."respondentId"
+            AND respondent."liveQuizId" = ${id}::uuid
+            AND respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
+            AND respondent."exportLabel" IS NOT NULL
+            AND respondent."finalizedAt" IS NOT NULL
           WHERE
             block."liveQuizId" = ${id}::uuid
             AND response."correctionOnly" = false
@@ -171,6 +238,12 @@ export async function getCorrelatedLiveQuizResponseExport(
             responseSize.responseBytes * MAX_CSV_BYTES_PER_RESPONSE_MULTIPLIER +
             responseSize.responseCount * MAX_CSV_BYTES_PER_RESPONSE_OVERHEAD
           : 0n
+        if (responseSize && responseSize.invalidResponseCount > 0n) {
+          throw new GraphQLError(
+            'LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE',
+            { extensions: { code: 'INTERNAL_SERVER_ERROR' } }
+          )
+        }
         if (
           !responseSize ||
           responseSize.responseCount > MAX_CORRELATED_EXPORT_RESPONSE_COUNT ||
@@ -187,6 +260,8 @@ export async function getCorrelatedLiveQuizResponseExport(
         const responses = await prisma.liveQuizResponse.findMany({
           where: {
             correctionOnly: false,
+            participantId: null,
+            respondentId: { in: respondents.map(({ id }) => id) },
             instance: {
               elementBlock: { liveQuizId: id },
               elementType: { not: DB.ElementType.FREE_TEXT },
@@ -198,7 +273,6 @@ export async function getCorrelatedLiveQuizResponseExport(
             correctness: true,
             correctnessPoints: true,
             elementBlockExecution: true,
-            participantId: true,
             respondentId: true,
             response: true,
             instanceId: true,
@@ -217,18 +291,10 @@ export async function getCorrelatedLiveQuizResponseExport(
         }
 
         const mappedResponses = responses.map((response) => {
-          const identityKey = response.participantId
-            ? buildLiveQuizResponseIdentityKey({
-                kind: 'participant',
-                id: response.participantId,
-              })
-            : response.respondentId
-              ? buildLiveQuizResponseIdentityKey({
-                  kind: 'anonymous',
-                  id: response.respondentId,
-                })
-              : null
-          if (!identityKey) {
+          const respondentLabel = response.respondentId
+            ? respondentLabelById.get(response.respondentId)
+            : undefined
+          if (respondentLabel === undefined) {
             throw new GraphQLError(
               'LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE',
               {
@@ -238,7 +304,7 @@ export async function getCorrelatedLiveQuizResponseExport(
           }
 
           return {
-            identityKey,
+            respondentLabel,
             instanceId: response.instanceId,
             blockExecution: response.elementBlockExecution,
             response: response.response,
@@ -248,67 +314,11 @@ export async function getCorrelatedLiveQuizResponseExport(
             bonusPoints: response.bonusPoints,
           }
         })
-        const identities = [
-          ...new Set(mappedResponses.map((response) => response.identityKey)),
-        ].map((identityKey) => ({
-          identityKey,
-          identityHash: createHmac('sha256', liveQuiz.exportSalt!)
-            .update(identityKey)
-            .digest('hex'),
-        }))
-        const identityHashByIdentityKey = new Map(
-          identities.map(({ identityKey, identityHash }) => [
-            identityKey,
-            identityHash,
-          ])
-        )
-
-        const existingLabels =
-          await prisma.liveQuizResponseExportLabel.findMany({
-            where: { liveQuizId: id },
-            select: { identityHash: true, label: true },
-          })
-        const labelByIdentityHash = new Map(
-          existingLabels.map(({ identityHash, label }) => [identityHash, label])
-        )
-        let nextLabel = existingLabels.reduce(
-          (maximum, { label }) => Math.max(maximum, label),
-          0
-        )
-        const newLabels = identities
-          .filter(({ identityHash }) => !labelByIdentityHash.has(identityHash))
-          .sort((left, right) =>
-            left.identityHash.localeCompare(right.identityHash)
-          )
-          .map(({ identityHash }) => ({
-            liveQuizId: id,
-            identityHash,
-            label: ++nextLabel,
-          }))
-
-        if (newLabels.length > 0) {
-          await prisma.liveQuizResponseExportLabel.createMany({
-            data: newLabels,
-          })
-          for (const { identityHash, label } of newLabels) {
-            labelByIdentityHash.set(identityHash, label)
-          }
-        }
 
         return {
           displayName: liveQuiz.displayName,
           questions,
-          responses: mappedResponses.map((response) => {
-            const identityHash = identityHashByIdentityKey.get(
-              response.identityKey
-            )!
-            const { identityKey: _, ...exportResponse } = response
-
-            return {
-              ...exportResponse,
-              respondentLabel: labelByIdentityHash.get(identityHash)!,
-            }
-          }),
+          responses: mappedResponses,
         }
       },
       { timeout: 60000 }

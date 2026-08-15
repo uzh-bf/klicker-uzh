@@ -33,7 +33,7 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
 
-The correlated live-quiz export query is a heavier protected boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires an authenticated user with `WRITE` permission and delegates to `services/correlatedLiveQuizResponseExport.ts`. The service locks the ended quiz, blocks exports while acknowledged responses remain unsettled, excludes free-text rows before size checks, and removes source identity keys before calling `packages/export`. Evaluation metadata exposes the mode and a capability flag for the later Manage action.
+The correlated live-quiz export query is a heavier protected boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires an authenticated user with `WRITE` permission and delegates to `services/correlatedLiveQuizResponseExport.ts`. The service locks the ended quiz, requires settlement-complete receipts, removed active bindings, and A5-finalized respondent labels, excludes free-text rows before size checks, and passes only label-owned response rows to `packages/export`; it never creates export identity state. Evaluation metadata exposes the mode and sets its capability flag only after the same finalization checks pass for the later Manage action.
 
 ## Client operations and codegen
 

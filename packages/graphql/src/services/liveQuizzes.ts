@@ -2221,9 +2221,6 @@ export async function cancelLiveQuiz(
         await prisma.liveQuizRespondent.deleteMany({
           where: { liveQuizId: id },
         })
-        await prisma.liveQuizResponseExportLabel.deleteMany({
-          where: { liveQuizId: id },
-        })
       }
 
       const updatedQuiz = await prisma.liveQuiz.update({
@@ -2417,7 +2414,7 @@ export async function getLiveQuizEvaluation(
           select: { permissionLevel: true },
         })
       : null
-  const canExportCorrelatedResponses =
+  const hasCorrelatedExportPermission =
     (permission?.permissionLevel === DB.PermissionLevel.OWNER ||
       permission?.permissionLevel === DB.PermissionLevel.ADMIN ||
       permission?.permissionLevel === DB.PermissionLevel.WRITE) &&
@@ -2425,6 +2422,43 @@ export async function getLiveQuizEvaluation(
     !liveQuiz.isAssessmentEnabled &&
     liveQuiz.responseCollectionMode ===
       DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  let canExportCorrelatedResponses = false
+  if (hasCorrelatedExportPermission) {
+    const [
+      unfinalizedRespondentCount,
+      activeBindingCount,
+      pendingResponseCount,
+    ] = await Promise.all([
+      ctx.prisma.liveQuizRespondent.count({
+        where: {
+          liveQuizId: id,
+          publicationGeneration: liveQuiz.publicationGeneration,
+          OR: [{ exportLabel: null }, { finalizedAt: null }],
+        },
+      }),
+      ctx.prisma.liveQuizRespondentBinding.count({
+        where: {
+          liveQuizId: id,
+          publicationGeneration: liveQuiz.publicationGeneration,
+        },
+      }),
+      ctx.prisma.liveQuizPendingResponse.count({
+        where: {
+          liveQuizId: id,
+          publicationGeneration: liveQuiz.publicationGeneration,
+          OR: [
+            { settledAt: null },
+            { eventPayload: { not: null } },
+            { nextDeliveryAt: { not: null } },
+          ],
+        },
+      }),
+    ])
+    canExportCorrelatedResponses =
+      unfinalizedRespondentCount === 0 &&
+      activeBindingCount === 0 &&
+      pendingResponseCount === 0
+  }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
   const redis = liveQuiz.isAssessmentEnabled
