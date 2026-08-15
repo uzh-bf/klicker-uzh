@@ -643,14 +643,22 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
 
     let frame: number | undefined
     const updateCurrentAnchor = () => {
+      const anchorElements = new Map<string, HTMLElement>()
+      for (const element of viewport.querySelectorAll<HTMLElement>(
+        '[data-history-rail-anchor]'
+      )) {
+        const anchor = element.dataset.historyRailAnchor
+        if (anchor) anchorElements.set(anchor, element)
+      }
+
       const scrollBottom =
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
       const firstVisibleEntry = entries.find((entry) =>
-        findAnchor(viewport, entry.anchor)
+        anchorElements.has(entry.anchor)
       )
       const lastVisibleEntry = [...entries]
         .reverse()
-        .find((entry) => findAnchor(viewport, entry.anchor))
+        .find((entry) => anchorElements.has(entry.anchor))
       let nextAnchor = firstVisibleEntry?.anchor ?? null
 
       if (scrollBottom <= 2) {
@@ -661,7 +669,7 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
           Math.min(160, Math.max(80, viewport.clientHeight * 0.32))
 
         for (const entry of entries) {
-          const element = findAnchor(viewport, entry.anchor)
+          const element = anchorElements.get(entry.anchor)
           if (!element) continue
           if (element.getBoundingClientRect().top <= marker) {
             nextAnchor = entry.anchor

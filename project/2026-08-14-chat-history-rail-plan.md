@@ -103,11 +103,14 @@ external side effects are in scope.
 - [x] Run local verification; final branch review is scheduled against the
   immutable committed range before PR handoff.
 - [x] Implement and verify the long-thread collapse refinement.
+- [x] Address Agy's low-severity scroll-spy performance finding and rerun the
+  focused chat verification.
 
 ## Verification evidence
 
 - `pnpm --filter @klicker-uzh/chat check` passed after the final code changes.
-- `pnpm --filter @klicker-uzh/chat test:run` passed: 36 files and 297 tests.
+- Latest `pnpm --filter @klicker-uzh/chat test:run` passed: 38 files and 310
+  tests.
 - `pnpm run check` passed: 24 workspace check tasks.
 - `pnpm --filter @klicker-uzh/chat build` passed with Turbopack.
 - Focused Biome and Prettier checks passed; `git diff --check` passed.
@@ -150,3 +153,9 @@ external side effects are in scope.
 - The pre-commit mutable-tree review gate was deferred because no commit was
   authorized at that stage; the final review is scheduled against the exact
   pushed PR range.
+- Agy reviewed the public PR range with Gemini 3.7 Flash at high effort and
+  returned `APPROVE`. It identified one low-severity O(N²) scroll-spy query
+  pattern; the follow-up change builds one anchor map per animation frame,
+  and the current chat tests, typecheck, and build pass afterward. Agy also
+  noted outside-click dismissal as optional UX and an informational redundant
+  screen-reader span; neither changes behavior or blocks this PR.
