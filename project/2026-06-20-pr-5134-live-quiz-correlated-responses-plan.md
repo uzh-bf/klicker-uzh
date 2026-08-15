@@ -1,16 +1,30 @@
 # PR #5134 - Live Quiz Correlated Responses Plan
 
-Goal: add opt-in standard live quiz mode that stores row-correlatable responses for export while keeping participant-facing UI clear and assessment separate.
+Goal: adapt the existing A1-A5/B1-B2 draft implementation in place to the
+accepted correlated-response contract, preserving row-correlatable export,
+clear participant-facing UI, and the separate assessment boundary.
 
 Plan path: `project/2026-06-20-pr-5134-live-quiz-correlated-responses-plan.md`
 Branch: `rs/pr5134-a1-domain` for this ADR/domain update; implementation continues through the stack below.
 Target: `v3`
 Original PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134), preserved while the replacement stack validates.
-Status: implementation exists in draft stacks; ADR-driven identity and finalization redesign is not yet implemented.
+Status: the full A1-A5/B1-B2 slices already exist in the replacement draft
+stack, with source checks recorded and browser proof still blocked. The
+remaining work is an in-place adaptation of those slices to the accepted ADR
+identity/finalization contract, followed by the required cascade, verification,
+and delivery gates; this is not a new feature build or a new topology.
 
 ## Current Stack Topology
 
-This is the only execution topology. The capability sections below are owned by these layers and do not create additional branches.
+This is the only execution topology. The capability sections below are owned by
+these existing layers and do not create additional branches. The work is
+already represented by two stack objects:
+
+- Stack A: `v3 -> A1 -> A2 -> A3 -> A4 -> A5`
+- Stack B: `A5 -> B1 -> B2`
+
+Cascade each existing stack object in order. This is not a new seven-layer
+stack, and it does not create replacement feature slices.
 
 | Layer | Branch / PR | Responsibility for the accepted ADRs |
 | --- | --- | --- |
@@ -22,9 +36,22 @@ This is the only execution topology. The capability sections below are owned by 
 | B1 | `rs/pr5134-b1-export` / #5376 | Render CSV only from finalized respondent labels and retained response fields; never lazily assign labels or require the deleted salt. |
 | B2 | `rs/pr5134-b2-ui` / #5368 | Manage/PWA notices, mode selection, response routing, export action, i18n, and browser verification. |
 
-The stack is implemented and reviewed bottom-up. Updating A1 requires a cascading local rebase through A5 and then B1-B2 before publication. No layer is authorized for merge or ready status by this plan.
+The full slices are implemented and reviewed bottom-up. Adapt A1 in place,
+then cascade the resulting contract through the existing A2-A5 and B1-B2
+branches with local rebases and focused repairs. Preserve this topology,
+existing commits, authorship, PR attribution, and recovery refs. Before each
+cascade, require clean worktrees and record the current SHA and PR URL; stop on
+topology divergence or changed PR attribution. An unchanged layer requires
+verification, not a synthetic repair commit. No layer is authorized for merge
+or ready status by this plan.
 
-Current-state gap: B1 still contains the interim `LiveQuizResponseExportLabel` migration, retains HMAC-derived identity hashes, and assigns labels during export. Before readiness, A1 must persist a nullable immutable label on `LiveQuizRespondent`; A5 must allocate that label transactionally during settlement-gated finalization and delete the active bindings, settled receipts, and salt; B1 must remove HMAC identity storage and lazy label assignment and render only finalized respondent labels.
+Current adaptation gap: B1 still contains the interim
+`LiveQuizResponseExportLabel` migration, retains HMAC-derived identity hashes,
+and assigns labels during export. Adapt the existing slices so A1 persists a
+nullable immutable label on `LiveQuizRespondent`, A5 allocates that label
+transactionally during settlement-gated finalization and deletes active
+bindings, settled receipts, and salt, and B1 removes HMAC identity storage and
+lazy label assignment while rendering only finalized respondent labels.
 
 ## Non-Goals
 
@@ -34,7 +61,10 @@ Current-state gap: B1 still contains the interim `LiveQuizResponseExportLabel` m
 - Free-text answers are excluded from the correlated teaching export.
 - No per-respondent live UI. Live/evaluation UI stays aggregate-only.
 
-## Current Evidence
+## Historical baseline and current interim evidence
+
+The following baseline records why the existing slices were needed; it is
+historical context, not a description of the current stack.
 
 - `LiveQuiz` already has mode-like booleans: `isGamificationEnabled`, `isAssessmentEnabled`, pin protection derived from `pinCode`.
 - Standard live quiz response path goes through `apps/response-api/src/index.ts`, then Hatchet events `response-received:anonymous` or `response-received:authenticated`.
@@ -43,6 +73,18 @@ Current-state gap: B1 still contains the interim `LiveQuizResponseExportLabel` m
 - `LiveQuizResponse` is currently hard-linked to `Participant`, so it cannot store anonymous / temporary leaderboard respondents without schema change.
 - `TemporaryLeaderboardEntry` already models quiz-scoped non-account identity for gamified temporary pseudonyms. The row identity is `TemporaryLeaderboardEntry.id`; browser continuity is carried by the signed `temporary_participant_token` cookie/JWT created in `accounts.ts`.
 - Current export package reads `LiveQuizResponse` and emits one row per response, not one row per respondent.
+
+Current interim-stack evidence:
+
+- The existing A1-A5/B1-B2 slices contain mode wiring, respondent routing,
+  transactional response admission, worker processing, lifecycle generation,
+  CSV delivery, notices, and cookie-blocked fallback behavior.
+- The remaining implementation gap is the accepted identity/finalization
+  delta: B1 still uses the interim `LiveQuizResponseExportLabel` HMAC/lazy
+  label shape, and A1/A3/A4/A5 still need to converge on active bindings,
+  respondent ownership, settlement-gated cleanup, and persisted labels.
+- Source checks are recorded as green; browser proof remains blocked by the
+  shared DevPod PWA font resolver failure and lifecycle lock.
 
 ## Resolved Grill Decisions
 
@@ -90,26 +132,33 @@ Export warning:
 
 > Export uses random respondent labels and does not include names, emails, account ids, usernames, temporary pseudonyms, or free-text answers.
 
-## Target Architecture
+## Accepted adaptation contract
 
-### Live Quiz Response Mode
+The following is the accepted target contract for adapting the existing slices.
+It is not a request to recreate the feature or add another topology.
 
-Add enum on `LiveQuiz`, likely `responseCollectionMode`:
+### Existing Live Quiz Response Mode
+
+Preserve the existing `LiveQuiz.responseCollectionMode` enum and its wiring:
 
 - `AGGREGATED_ANONYMOUS`
 - `CORRELATED_EXPORT`
 
 Default: `AGGREGATED_ANONYMOUS`.
 
-Add a random `exportSalt` on `LiveQuiz`, created for each correlated publication generation. Use it only to allocate stable export-label ordering during finalization, then delete it.
+Retain the existing random `exportSalt` for each correlated publication
+generation. Use it only to allocate stable export-label ordering during
+finalization, then delete it.
 
 Assessment: keep `isAssessmentEnabled` separate. If assessment true, disable this setting and explain that assessments always store identifiable responses.
 
 The service layer rejects mode changes unless the quiz is `DRAFT` or `SCHEDULED`. The manage UI mirrors this lock and disables the setting for assessments with an explanation.
 
-### Quiz-Scoped Respondent
+### Replace the interim Quiz-Scoped Respondent shape
 
-Introduce a minimal pseudonymous response owner, `LiveQuizRespondent`, for one publication generation of a standard correlated quiz.
+Replace the interim compatibility shape with a minimal pseudonymous response
+owner, `LiveQuizRespondent`, for one publication generation of a standard
+correlated quiz.
 
 Fields:
 
@@ -127,7 +176,7 @@ Purpose:
 - Preserve answer grouping after the re-identification binding is destroyed.
 - Remain separate from `TemporaryLeaderboardEntry`, which owns visible gamification state.
 
-Add an active-only respondent binding:
+Adapt the existing identity path to use an active-only respondent binding:
 
 - `respondentId`
 - exactly one of `participantId` or `verificationSecretHash`
@@ -138,15 +187,19 @@ The database enforces one binding per respondent and at most one respondent for 
 
 Migration strategy:
 
-- Use an expand-contract migration: A1 adds the binding, generation, nullable label, finalization, and receipt-generation fields plus new owner invariants; later layers switch writers/readers; remove the compatibility shape only after old writers are gone.
+- Use an expand-contract migration: A1 adapts the existing schema to carry the
+  binding, generation, nullable label, finalization, and receipt-generation
+  fields plus new owner invariants; later existing layers switch writers and
+  readers; remove the compatibility shape only after old writers are gone.
 - Keep `TemporaryLeaderboardEntry` and its token flow unchanged for gamification.
 - Do not trust a browser-stored respondent id by itself. Anonymous correlated identity needs an opaque token or `id + random secret`; the server stores/verifies the secret, preferably hashed.
 - Scope the token to one quiz generation and align browser and token expiry. Do not copy the current temporary-participant mismatch between a 30-day cookie and two-week JWT.
 - Delete active bindings after an ended quiz has no unsettled receipts. Delete the respondent, label, and responses together only when the correlated dataset reaches its retention deadline.
 
-### Durable Responses
+### Adapt Existing Durable Responses
 
-Adjust `LiveQuizResponse` so response can belong to one of:
+Adapt the existing `LiveQuizResponse` ownership so a response can belong to one
+of:
 
 - `participantId` for assessment evidence
 - `respondentId` for standard correlated collection, including logged-in browsers
@@ -194,9 +247,12 @@ Correlated finalization:
 
 Admission takes a shared lock on the quiz row from the status-and-generation check through receipt insertion. Ending/finalization takes an exclusive lock on that row, which waits for in-flight admissions and prevents new ones before the settlement predicate is evaluated.
 
-### Export
+### Preserve Existing Export Delivery
 
-Add an authenticated self-service CSV export for correlated standard LQs. The operation must verify that the current user can manage the live quiz and that the quiz has ended.
+Preserve the existing authenticated self-service CSV export for correlated
+standard live quizzes. The operation must verify that the current user can
+manage the live quiz and that the quiz has ended; the adaptation changes only
+the finalized-label source and the lifecycle gating.
 
 Output shape:
 
@@ -221,11 +277,16 @@ Research export:
 
 ## Stack-owned capability work
 
-### Planning gate
+The sections below describe adaptation work on the already-existing slices.
+They are not instructions to create new feature slices. Work bottom-up on the
+named branches, preserve the existing implementation where it already matches
+the ADRs, and cascade only the contract changes and the repairs they require.
+
+### Planning gate for the adaptation
 
 Do:
 
-- Independent review of this plan before implementation.
+- Independent review of this adaptation plan before ADR repair work.
 - Check schema naming, migration risk, export semantics, token/security risk.
 
 Check:
@@ -234,21 +295,26 @@ Check:
 
 Commit:
 
-- `docs(project): add live quiz correlated responses plan`
+- `docs(project): align existing correlated response plan with accepted ADRs`
 
-### A1 - Domain schema and mode wiring
+### A1 - Adapt existing domain slice to the accepted contract
 
 Do:
 
-- Add Prisma enum + `LiveQuiz.responseCollectionMode` + `exportSalt`.
-- Add generation-scoped `LiveQuizRespondent` and active-only respondent binding models, nullable immutable export label, finalization state, and receipt generation.
-- Add `LiveQuizResponse.respondentId`, make `participantId` nullable, model both ordinary Prisma unique constraints, and append the two raw SQL checks before applying the migration.
-- Patch existing response-level export in the same slice so nullable `participant` cannot break compile/runtime. At minimum, guard `row.participant`, remove participant-email-only ordering assumptions, and keep assessment rows unchanged.
-- Update generated schema flow.
-- Expose mode through GraphQL `LiveQuiz`.
-- Add create/update inputs and service writes.
-- Create `exportSalt` when correlated mode is enabled; never expose it through GraphQL.
-- Enforce the mode lock in the service layer after draft/scheduled state, not only in the UI.
+- Adapt the existing Prisma mode/schema work to carry the generation-scoped
+  respondent, active-only binding, nullable immutable export label,
+  finalization state, and receipt-generation fields required by ADR-0005/0006.
+- Adapt the existing `LiveQuizResponse.respondentId` compatibility path so
+  correlated responses use respondent ownership while assessment rows retain
+  `participantId`; preserve the existing dual uniqueness and owner checks.
+- Keep the existing GraphQL mode wiring, salt creation, generated contracts,
+  and service-level mode lock where they already satisfy the contract; repair
+  only the affected readers/writers.
+- Patch existing response-level export compatibility so nullable
+  `participant` cannot break compile/runtime, while leaving assessment
+  ordering and ownership unchanged.
+- Keep the migration expand-contract compatible with old writers until the
+  next cascaded slices replace them.
 
 Files:
 
@@ -268,135 +334,134 @@ Check:
 
 Commit:
 
-- `feat(live-quiz): add response collection mode`
+- `fix(live-quiz): align domain slice with correlated identity contract`
 
-### B2 - Manage UI setting
+### A2 - Existing contract slice: adapt generation-bearing contracts
 
 Do:
 
-- Add setting in live quiz wizard near gamification / pin protection.
-- Default `AGGREGATED_ANONYMOUS`.
-- Disable with an explanation for assessment.
-- Lock in edit mode when quiz is no longer draft/scheduled, with a tooltip.
-- Show a compact inline consequence summary when correlated mode is selected.
-- Add `data-cy="set-quiz-response-collection-mode"`.
-- Add EN/DE i18n.
+- Preserve the existing token, event, cache, and validation contracts where
+  they already carry the accepted response mode.
+- Adapt the remaining contract fields and generated types so every correlated
+  token, event, cache entry, and validation path carries
+  `publicationGeneration` and respondent ownership.
 
 Files:
 
-- `apps/frontend-manage/src/components/activities/creation/liveQuiz/*`
-- `packages/i18n/messages/en.ts`
-- `packages/i18n/messages/de.ts`
-- GraphQL ops generated imports as needed
+- `packages/util/src/liveQuizResponseIdentity.ts`
+- `packages/util/src/liveQuizResponseMetadata.ts`
+- `packages/types/src/hatchet.ts`
+- existing A2 contract tests and generated outputs
 
 Check:
 
-- Typecheck affected app/package.
-- Mandatory agent-browser check with the manage wizard in EN/DE, including assessment and locked states.
+- Generated contracts have no diff after regeneration.
+- Stale-generation and forged-token contract cases remain rejected.
 
 Commit:
 
-- `feat(manage): add live quiz response export mode setting`
+- `fix(live-quiz): align generation-bearing response contracts`
 
-### B2 - Participant notice
+### A3 - Existing admission slice: adapt locked respondent bindings
 
 Do:
 
-- Add persistent compact notice to PWA live quiz question area.
-- Show before first block and during active blocks.
-- Use mode-specific text.
-- Keep assessment messaging separate.
-- Reuse the existing notification treatment; keep aggregate mode visually quiet.
-- Put optional detail in an expandable popover so active-question space stays usable.
+- Adapt the existing admission flow to resolve one generation-scoped respondent
+  from a participant account or anonymous credential through the active
+  binding.
+- Preserve the existing cookie-first fallback, token verification, duplicate
+  response-key reservation, and temporary-pseudonym exclusion.
+- Hold the shared quiz lock through receipt insertion and persist the receipt
+  generation.
 
 Files:
 
-- `apps/frontend-pwa/src/pages/session/[id].tsx`
-- `apps/frontend-pwa/src/components/liveQuiz/LiveQuizQuestionColumn.tsx`
-- `packages/graphql/src/graphql/ops/QGetRunningLiveQuiz.graphql`
-- `packages/i18n/messages/en.ts`
-- `packages/i18n/messages/de.ts`
+- `apps/response-api/src/correlatedResponseAdmission.ts`
+- `apps/response-api/src/correlatedResponseHandler.ts`
+- `apps/response-api/src/correlatedResponseOutbox.ts`
+- existing A3 admission tests
 
 Check:
 
-- Typecheck PWA.
-- Agent-browser screenshots on desktop and 375px mobile for both modes and EN/DE.
-- Verify the notice does not push answer options below the fold on mobile.
+- Concurrent inverse uniqueness resolves to one respondent per credential.
+- Stale-generation and forged-token credentials are rejected.
+- Shared-lock coverage extends through receipt insertion.
 
 Commit:
 
-- `feat(pwa): show live quiz response privacy notice`
+- `fix(live-quiz): align locked respondent admission`
 
-### A2-A4 - Respondent contract, admission, and persistence
+### A4 - Existing settlement slice: adapt respondent persistence and receipts
 
 Do:
 
-- Create or resolve a generation-scoped correlated respondent for logged-in and anonymous credentials when mode is `CORRELATED_EXPORT`.
-- Persist an opaque anonymous token in an HttpOnly quiz-generation-scoped cookie where possible; no cross-quiz or cross-generation reuse.
-- Forward respondent token through `response-api`.
-- Add the synchronous correlated-mode Redis vote-hash gate in response-api so duplicates return recorded-before.
-- Admission verifies the account or anonymous token and maps both to `LiveQuizRespondent`; respondent id alone is not accepted.
-- Persist `LiveQuizResponse` rows in correlated mode for logged-in and anonymous correlated respondents.
-- Do not admit temporary-pseudonym identity to the correlated path. Temporary pseudonyms remain bound to gamification and continue through `TemporaryLeaderboardEntry` only.
-- Keep aggregate Redis updates unchanged.
-- Keep an authoritative worker-side duplicate lookup before insert.
-- Keep worker changes additive; do not refactor the legacy processor in this feature.
+- Preserve the existing correlated worker and transactional outbox flow.
+- Adapt durable response writes to use `respondentId` and settle receipts only
+  after durable apply or durable non-retryable rejection.
+- Leave transient failures pending with their payload and retry schedule.
 
 Files:
 
-- `apps/response-api/src/index.ts`
-- `apps/hatchet-worker-response-processor/src/processors/processor.ts`
-- `apps/hatchet-worker-response-processor/src/processors/helpers.ts`
-- `apps/frontend-pwa/src/pages/session/[id].tsx`
+- `apps/hatchet-worker-response-processor/src/processors/correlatedProcessor.ts`
+- `apps/hatchet-worker-response-processor/src/processors/correlatedResponse.ts`
+- existing A4 settlement tests
 
 Check:
 
-- Unit/focused tests for token parsing, duplicate handling, persistence branch.
-- Negative test: forged respondent id without valid secret/signature is rejected.
-- Test aligned token/browser expiry and quiz scoping.
-- Manual or browser E2E: anonymous correlated reload keeps same respondent row.
+- Retryable failures do not set `settledAt` or clear `eventPayload`.
+- Durable non-retryable outcomes settle and clear receipt delivery metadata.
+- Assessment and aggregate processor paths remain unchanged.
 
 Commit:
 
-- `feat(live-quiz): persist correlated respondent responses`
+- `fix(live-quiz): align respondent settlement semantics`
 
-### A5 - Correlated identity finalization
+### A5 - Adapt existing lifecycle slice for correlated finalization
 
 Do:
 
-- Route logged-in and anonymous correlated browsers through `LiveQuizRespondent` and an active-only binding.
-- Keep `TemporaryLeaderboardEntry` unchanged and reject any correlated/gamified combination.
-- Finalize identity after the quiz is ended and every admitted response has settled.
-- Delete all account and credential bindings and settled receipt metadata, allocate immutable respondent labels, remove `exportSalt`, and mark the generation finalized.
-- Reject reopening under the same publication generation.
+- Adapt the existing lifecycle and publication implementation so logged-in and
+  anonymous correlated browsers use `LiveQuizRespondent` plus an active-only
+  binding.
+- Preserve the existing gamification exclusion and temporary-pseudonym path.
+- Adapt existing A5 lifecycle behavior to perform the settlement-gated
+  finalization and cleanup required by ADR-0006:
+  delete account/credential bindings and settled receipt metadata, allocate
+  immutable labels, remove `exportSalt`, mark the generation finalized, and
+  reject reopening under the same generation.
+- Do not begin retention-expiry implementation until the finite retention rule
+  and enforcement owner are recorded. Until then, keep correlated publication
+  disabled and mark A5 blocked at that gate.
 
 Files:
 
-- Prisma schema/migration
-- response API admission and identity resolution
-- response worker
-- live-quiz end/reset lifecycle
-- correlated export service
+- `packages/graphql/src/services/liveQuizzes.ts`
+- `packages/graphql/src/services/liveQuizPublication.ts`
+- existing A5 lifecycle/finalization tests
 
 Check:
 
 - Assessment response attribution and point-correction audit remain unchanged.
-- Logged-in and anonymous correlated responses retain grouping but no binding after finalization.
+- Logged-in and anonymous correlated responses retain grouping but no binding
+  after finalization.
 - Pending receipts block finalization; repeated finalization is idempotent.
+- Bindings, settled receipts, and salt are absent after finalization while
+  persisted respondent labels remain stable.
 - Existing gamified temporary-pseudonym workflows remain unchanged.
 
 Commit:
 
-- `feat(live-quiz): finalize correlated identities`
+- `fix(live-quiz): adapt lifecycle to settlement-gated finalization`
 
-### B1 - Correlated export matrix
+### B1 - Adapt existing correlated export matrix
 
 Do:
 
-- Add the authenticated, authorized correlated matrix GraphQL operation.
-- Add a CSV download action to the live quiz evaluation page for ended correlated quizzes.
-- Generate the browser download from returned CSV content, matching existing client-generated download behavior.
-- Consume finalized stable `respondent_N` labels; do not lazily assign labels or require `exportSalt`.
+- Preserve the existing authenticated matrix operation, evaluation-page
+  download, browser-generated file behavior, and settled CSV formatting.
+- Adapt the exporter to consume finalized stable `respondent_N` labels from
+  the respondent rows; remove the interim HMAC identity table, lazy label
+  creation, and `exportSalt` dependency.
 - Strip all identifiers and respondent type.
 - Use clean, deterministic headers, canonical structured values, formula-injection protection, and RFC 4180-compatible escaping.
 - Exclude free-text questions and answers.
@@ -418,25 +483,94 @@ Files:
 Check:
 
 - Unit tests for label stability, header order, CSV escaping, structured values, formula-injection protection, no identifiers/timestamps, free-text exclusion, authorization, status/mode gating, and size-limit failure.
-- DB-backed export with fixture data across logged-in and anonymous respondents before and after binding finalization.
+- DB-backed export is rejected before finalization and succeeds afterward using
+  persisted labels, with bindings, settled receipts, and salt absent.
 - Agent-browser download check: correct filename, headers, row shape, warning, and unavailable states.
 
 Commit:
 
-- `feat(export): add correlated live quiz response matrix`
+- `fix(export): consume finalized correlated respondent labels`
 
-### Integrated end-to-end verification and security review
+### B2 - Existing Manage UI setting: preserve, then repair only regressions
 
 Do:
 
-- Full local flow: create a correlated LQ, submit as logged-in and anonymous correlated respondents, settle and finalize it, then export. Verify assessment ownership and gamified temporary-pseudonym behavior as regressions.
+- Preserve the existing setting, default, assessment explanation, lifecycle
+  lock, consequence summary, selector, and EN/DE copy.
+- After the A1-A5/B1 cascade, repair generated-contract or form-shape
+  regressions only where the accepted identity contract requires it.
+
+Files:
+
+- `apps/frontend-manage/src/components/activities/creation/liveQuiz/*`
+- `packages/i18n/messages/en.ts`
+- `packages/i18n/messages/de.ts`
+- GraphQL ops generated imports as needed
+
+Check:
+
+- Typecheck affected app/package.
+- Mandatory agent-browser check with the manage wizard in EN/DE, including
+  assessment and locked states.
+
+Commit:
+
+- Only if a contract regression requires a focused repair; otherwise record
+  verification without a synthetic commit.
+
+### B2 - Existing participant notice: preserve, then repair only regressions
+
+Do:
+
+- Preserve the existing persistent notice, mode-specific text, assessment
+  separation, notification treatment, and responsive layout.
+- After the A1-A5/B1 cascade, repair only response-routing or generated-op
+  regressions; do not redesign settled participant copy.
+
+Files:
+
+- `apps/frontend-pwa/src/pages/session/[id].tsx`
+- `apps/frontend-pwa/src/components/liveQuiz/LiveQuizQuestionColumn.tsx`
+- `packages/graphql/src/graphql/ops/QGetRunningLiveQuiz.graphql`
+- `packages/i18n/messages/en.ts`
+- `packages/i18n/messages/de.ts`
+
+Check:
+
+- Typecheck PWA.
+- Agent-browser screenshots on desktop and 375px mobile for both modes and
+  EN/DE.
+- Verify the notice does not push answer options below the fold on mobile.
+
+Commit:
+
+- Only if a contract regression requires a focused repair; otherwise record
+  verification without a synthetic commit.
+
+### Integrated verification and delivery gates for the adapted stack
+
+Do:
+
+- Re-run the existing full local flow against the adapted stack: create a
+  correlated LQ, submit as logged-in and anonymous respondents, settle and
+  finalize it, then export. Verify assessment ownership and gamified
+  temporary-pseudonym behavior as regressions.
 - Browser screenshots: manage setting; PWA notices in both modes.
-- Add seed data for a correlated quiz and all respondent types.
-- Add lecturer-facing docs for both modes, export contents, finalization, retention, and field-minimization responsibilities.
-- Add mandatory E2E cases: enable correlated mode; anonymous reload continuity; correlated notice; aggregate quiz unchanged; successful CSV download.
-- Manually test blocked cookies/storage. Expected degradation: quiz remains usable, but anonymous responses may split into multiple export rows.
-- Security review: token scope, cookie expiry, identifier leakage, export PII warnings.
-- Final branch review.
+- Reuse existing fixtures/seed data where possible; add only the fixture
+  delta needed to exercise finalization, retention expiry, and all respondent
+  types.
+- Update existing lecturer-facing docs only where the accepted contract changes
+  mode behavior, export contents, finalization, retention, or
+  field-minimization responsibilities.
+- Re-run the existing mandatory E2E cases: enable correlated mode; anonymous
+  reload continuity; correlated notice; aggregate quiz unchanged; successful
+  CSV download.
+- Manually test blocked respondent cookies/storage after the quiz is otherwise
+  admitted. The current page must remain usable through the memory-only signed
+  token; a reload may create another pseudonymous export row. PIN-protected
+  admission still requires its quiz PIN cookie.
+- One integrated final review covering correctness, plan compliance,
+  maintainability, security, data integrity, and architecture as applicable.
 - PR/MR body with screenshots and manual verification list.
 
 Check:
@@ -444,7 +578,7 @@ Check:
 - `pnpm --filter @klicker-uzh/graphql check`
 - `pnpm --filter @klicker-uzh/export test`
 - app checks where touched
-- Cypress/Playwright where appropriate plus mandatory agent-browser verification
+- Playwright plus mandatory agent-browser verification
 
 Commit:
 
@@ -474,10 +608,12 @@ Later research:
 
 ## Review Plan
 
-- Plan review before implementation. Preferred: independent agent/model.
-- Per-layer risk review and simplification where required before each stack-layer commit.
-- Final security review before PR/MR.
-- Final branch review before PR/MR.
+- Review this adaptation plan before ADR repair work.
+- Run per-layer risk review and simplification where required before each
+  focused repair commit.
+- Run one integrated final review before PR/MR, covering correctness, plan
+  compliance, maintainability, security, data integrity, and architecture as
+  applicable.
 
 ## Progress
 
@@ -492,8 +628,15 @@ Later research:
 - 2026-07-23: Slice 1 verification passed: fresh Prisma migration reset; 6 focused GraphQL integration tests; 23 export tests; Prisma schema sync; GraphQL code generation; all 24 monorepo typecheck tasks; and touched-file Prettier checks.
 - 2026-07-23: Independent Slice 1 review found a publish/edit race, an assessment export ordering regression, and avoidable migration lock duration. All three findings were accepted and fixed with a transaction row lock and recheck, legacy email-first ordering plus respondent fallback, and `NOT VALID` followed by explicit constraint validation.
 - 2026-07-23: Review-fix verification passed: fresh migration reset; 7 focused GraphQL integration tests including the race; 24 export tests; GraphQL typecheck; Prisma schema sync; and touched-file Prettier checks. Simplification review remains before Slice 1 is finalized.
-- 2026-08-12: The replacement A1-A5 and B1-B2 stack is published as drafts. ADR review replaced the compatibility identity with generation-scoped respondents and active-only bindings, moved immutable label persistence into A1/A5, defined receipt settlement and locking, and kept B1 as rendering only. These changes are documented but not yet implemented or pushed.
+- 2026-08-12: The existing A1-A5 and B1-B2 slices are published as drafts. ADR review identified the deltas from the interim compatibility identity to generation-scoped respondents and active-only bindings, moved immutable label persistence into A1/A5, defined receipt settlement and locking, and kept B1 as rendering only. The slices already contain the feature implementation; only these ADR deltas remain to be repaired and cascaded, and no push has occurred.
 - 2026-08-12: The correlated teaching-export boundary excludes free-text answers, matching [ADR-0007](../docs/adr/0007-correlated-live-quiz-response-boundary.md). The interim B1 export-label migration does not yet satisfy ADR-0006 and is assigned to A1, A5, and B1 above.
+- 2026-08-12: Cookie-blocked correlated sessions retry identity initialization after the cookie-backed submission returns identity `401`; only that explicit fallback returns a quiz-scoped signed respondent token to current-page memory. Cookie identities retain precedence, and PIN admission remains cookie-based.
+- 2026-08-12: B2 integrated review fix added explicit bearer fallback, `Authorization` CORS support, no-store initialization responses, identity-scope tests, and a focused Playwright journey that discards respondent cookies. Source checks are green; the local browser gate remains blocked by the shared DevPod's PWA font resolver failure and lifecycle lock.
+- 2026-08-12: Final review found and fixed a legacy temporary-participant continuity gap. Correlated identity resolution now confirms a temporary leaderboard entry for the target quiz before reusing a legacy unscoped temporary cookie; stale cookies fall through to the quiz-scoped anonymous respondent or explicit bearer fallback.
+- 2026-08-12: Final review also required this plan refresh. The stack topology, current B2 status, browser-runtime blocker, and draft-publication next steps are now recorded here.
+- 2026-08-12: Final review found that `test-graphql` did not run the response-api or response-processor integrity suites. The workflow now includes both app paths in its filter and runs their existing `test:run` scripts beside the GraphQL tests; browser runtime verification remains the separate pre-merge blocker.
+- 2026-08-12: Final review follow-up aligned the plan with the implemented responseKey uniqueness and transactional outbox admission, and recorded the intentional processor extraction that preserves aggregate and assessment behavior. The workflow now also builds the response-api and response-processor production bundles before running their source-level suites.
+- 2026-08-12: User clarified that A1-A5/B1-B2 are already complete sliced PRs. The plan now treats the remaining work as in-place ADR adaptation and a two-stack cascade, preserving existing implementation, authorship, attribution, and unchanged-layer verification. The Sol planning challenge tightened layer ownership, stop conditions, and no-op B2 handling.
 
 ## Goal Prompt Requirements
 
@@ -504,13 +647,22 @@ If handed to another agent:
 - Update `Progress` before and after each layer.
 - Work one layer at a time, bottom-up, and cascade lower-layer changes before continuing.
 - Run risk-selected review and simplification after each substantive layer.
-- Run final security review and final branch review before PR/MR.
+- Run one integrated final review covering applicable correctness, plan,
+  maintainability, security, data-integrity, and architecture lenses before
+  PR/MR.
 - Use `$rs-mr-description-writer` for the PR body.
 
 ## Next Steps
 
-1. Treat ADR 0005 and ADR 0006 as the identity and lifecycle contract for the existing A1-A5 stack.
-2. Amend A1 schema ownership, A3 admission, A4 settlement, and A5 lifecycle behavior to use active respondent bindings and settlement-gated finalization while the feature remains disabled.
-3. Keep gamified temporary pseudonyms on `TemporaryLeaderboardEntry`; verify that assessment responses retain participant ownership.
-4. Resolve the finite retention period and field-level necessity of timestamps, time spent, and free-text payloads before correlated publication is enabled.
-5. Re-run integrated stack verification and review before updating or marking any draft PR ready.
+1. Record the finite retention period, deletion trigger, and enforcement owner;
+   until then, keep correlated publication disabled.
+2. Adapt the existing A1 schema/domain slice to ADR-0005/0006 and verify its
+   migration, generated contracts, and assessment compatibility.
+3. Cascade the A1 contract through the existing A2, A3, A4, and A5 branches,
+   preserving existing behavior where it already matches and making only
+   focused repair commits.
+4. Cascade A5 through the existing B1 export and B2 Manage/PWA branches;
+   verify unchanged B2 layers instead of creating synthetic commits.
+5. Run response-api/worker builds and source checks, repair the shared DevPod
+   lifecycle/font blocker, execute the existing Playwright journey and
+   mandatory Manage/PWA browser checks, then run the integrated final review.
