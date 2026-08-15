@@ -57,7 +57,7 @@ SET "status" = 'FAILED',
       "statusMessage",
       'This KB graph build predates cost accounting and requires review.'
     ),
-    "errorCode" = COALESCE("errorCode", 'KB_GRAPH_MIGRATION_REVIEW_REQUIRED'),
+    "errorCode" = 'KB_GRAPH_MIGRATION_REVIEW_REQUIRED',
     "costStatus" = 'NEEDS_HUMAN_REVIEW',
     "finishedAt" = COALESCE("finishedAt", CURRENT_TIMESTAMP)
 WHERE "costStatus" IS NULL

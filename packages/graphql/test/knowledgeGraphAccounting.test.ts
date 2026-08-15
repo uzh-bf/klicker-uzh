@@ -250,7 +250,7 @@ describe('KB graph cost accounting', () => {
     })
   })
 
-  it('holds the reservation and clears publication eligibility for an invalid result', async () => {
+  it('holds invalid results until a valid late success reconciles the reservation', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
         ownerId,
@@ -319,29 +319,6 @@ describe('KB graph cost accounting', () => {
         where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
       })
     ).resolves.toMatchObject({ reservedMinorUnits: 100, settledMinorUnits: 0 })
-  })
-
-  it('allows a late valid success to reconcile a held reservation once', async () => {
-    await prisma.$transaction((tx) =>
-      reserveKBGraphCost(tx, {
-        ownerId,
-        qualityTier: KBGraphQualityTier.STANDARD,
-        env: costEnv,
-        now: NOW,
-      })
-    )
-    const { build, runId, graphmlBlobName } = await createBuild()
-    await prisma.$transaction((tx) =>
-      settleKBGraphBuildCost(tx, {
-        buildId: build.id,
-        result: {
-          ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
-          owner_id: randomUUID(),
-        },
-        finishedAt: NOW,
-      })
-    )
-
     await expect(
       prisma.$transaction((tx) =>
         settleKBGraphBuildCost(tx, {

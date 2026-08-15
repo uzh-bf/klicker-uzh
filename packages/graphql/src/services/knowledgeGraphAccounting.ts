@@ -364,6 +364,19 @@ export async function settleKBGraphBuildCost(
         finishedAt
       )
     }
+    const componentTotal = result.metered_cost.components.reduce(
+      (total, component) => total + component.amount_minor_units,
+      0
+    )
+    if (componentTotal !== result.metered_cost.amount_minor_units) {
+      return markCostNeedsHumanReview(
+        prisma,
+        build,
+        'The KB graph result metering components did not add up.',
+        'KB_GRAPH_RESULT_METERING_INVALID',
+        finishedAt
+      )
+    }
     const usage = result.metered_cost.components.reduce(
       (totals, component) => ({
         inputTokens: totals.inputTokens + component.input_tokens,
