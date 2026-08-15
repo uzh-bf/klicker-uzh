@@ -1,6 +1,9 @@
 -- Extend the existing respondent row without dropping compatibility columns.
 -- Downstream admission and settlement slices remove those columns after all
 -- old writers have been migrated to LiveQuizRespondentBinding.
+ALTER TABLE "public"."LiveQuiz"
+ADD COLUMN "publicationGeneration" INTEGER NOT NULL DEFAULT 0;
+
 ALTER TABLE "public"."LiveQuizRespondent"
 ALTER COLUMN "type" DROP NOT NULL,
 ADD COLUMN "publicationGeneration" INTEGER NOT NULL DEFAULT 0,

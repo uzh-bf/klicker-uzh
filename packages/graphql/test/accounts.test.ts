@@ -747,4 +747,29 @@ describe('Temporary participant admission', () => {
       prisma.temporaryLeaderboardEntry.count({ where: { quizId: liveQuiz.id } })
     ).resolves.toBe(0)
   })
+
+  it('rejects temporary pseudonym admission for non-gamified quizzes', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.PUBLISHED },
+      userOneCtx
+    )
+    const context = {
+      ...userOneCtx,
+      res: { cookie: () => undefined } as any,
+    }
+
+    await expect(
+      loginTemporaryParticipant(
+        { liveQuizId: liveQuiz.id, pseudonym: `temporary-${uuid()}` },
+        context
+      )
+    ).resolves.toBeNull()
+
+    await expect(
+      prisma.liveQuizRespondent.count({ where: { liveQuizId: liveQuiz.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.temporaryLeaderboardEntry.count({ where: { quizId: liveQuiz.id } })
+    ).resolves.toBe(0)
+  })
 })

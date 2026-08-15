@@ -108,6 +108,7 @@ model LiveQuiz {
   displayName          String
   description          String?
   startedAt            DateTime?
+  publicationGeneration Int      @default(0)
   finishedAt           DateTime?
   pointsMultiplier     Int       @default(1)
   defaultPoints        Int       @default(10)
