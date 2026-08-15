@@ -85,6 +85,130 @@ Each layer is independently functional, independently reviewable, green at its o
 - The W8 security review was skipped by explicit user choice; that is not authority for a broad W9 security assessment. Ask first.
 - Public repo: no credentials, no real lecturer or student data.
 
+## M1 continuation — W2 package
+
+This section extends the existing W9 plan for the approved M1 package. It is
+not a second plan or a new stack. The five W9 layers remain the topology; this
+continuation adds the production-base reconciliation, graph-cost seams, and
+current contract acceptance required by the roadmap.
+
+### Identity and current boundary
+
+- Branch: `feat/kb-graph-lifecycle` in `trees/kb-graph-stack`.
+- Target: current GitHub `v3` ref `3c64c9726fec8db89dcdcddfc701949be480cd25`.
+- Current tip: `b348adeea6139e3281b965aaca7c1553a1e53e90`.
+- Current comparison: 133 commits ahead and 60 behind the current target.
+- Local `origin/v3` is stale at `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`;
+  shared Git metadata currently rejects `FETCH_HEAD` writes. Read-only
+  `git ls-remote` is the current target evidence. Do not rebase or merge until
+  a writable Git metadata path is available; preserve the dirty primary
+  checkout and this worktree's intentional docs/ADR changes.
+- W1 graph contract: provider-side schema and metered result identity come from
+  Catalyst W1. W2 owns Klicker consumer fixtures, reservation/settlement
+  behavior, and lecturer cost presentation. This is separate from Catalyst's
+  public chat-engine contract gate.
+- Credential boundary: non-credential work may proceed. Credential-facing UI,
+  provider-bearing/model-backed runs, and beta activation remain blocked on the
+  generic credential architecture.
+
+### Goal and non-goals
+
+- Problem: W9 graph lifecycle and viewers exist locally, but current-base
+  compatibility, disposable migration proof, cost settlement, and complete
+  non-credential UX evidence remain open.
+- Decision: Reconcile the current target before implementation, retain the
+  five-layer topology, and land quota state in the model/reader layer,
+  reservation/settlement in lifecycle, and cost presentation in the lecturer
+  layer. Do not create a sixth quota package.
+- Non-goals: no credential UI or custody, paid model call, cluster/runtime
+  mutation, merge, push, PR update, production activation, or cleanup of
+  parked branches/dirty files.
+
+### Delegation map
+
+| Workstream | Owner | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| W2-R active-plan and stack refresh | main | writable Git metadata | current target/base ledger, recovery ref, five-layer ownership and no duplicate plan |
+| W2-A lifecycle and quota state | executor | W2-R and W1 graph fixtures | migrations, kill switch, opt-in, atomic reservation, idempotent settlement, focused tests |
+| W2-B non-credential UI | executor | W2-A | cost/quota states and lecturer/student browser evidence without credential controls |
+| W2-C five-layer integration | main | W1-B, W2-A, W2-B | contract conformance, union verification, and independently green layers |
+
+### Feature-wide test portfolio
+
+| Risk or behavior | Existing evidence | Test obligation | Primary seam | Distinct failure | Owner |
+| --- | --- | --- | --- | --- | --- |
+| Current base breaks W9 behavior | W9 focused tests and review evidence | extend existing | target-base revalidation and union diff | stale branch silently regresses current v3 behavior | W2-R |
+| Migration or rollback is unsafe | Prisma migrations exist; application unverified | add new | disposable PostgreSQL migration and compatibility smoke | deployment migration fails or old app crashes on new schema | W2-A |
+| Graph dispatch ignores kill switch or per-KB opt-in | lifecycle code and focused tests exist | extend existing | GraphQL mutation/dispatch boundary | disabled or non-opted-in KB starts a build | W2-A |
+| Quota is oversubscribed or settled twice | no graph-cost ledger proof | add new | transactional reservation and terminal reconciliation | concurrent builds overrun quota or duplicate result double-charges | W2-A |
+| Cost display misleads lecturer | partial UI cost label exists | add new | lecturer card with synthetic reservation/settlement states | estimate, balance, billing label, or actual cost is absent/wrong | W2-B |
+| Unauthorized graph access | focused auth tests exist | extend existing | GraphQL and chat route auth seams | graph leaks across KB, owner, chatbot, or participant | W2-C |
+| Patrick presentation regresses | component tests and parked provenance exist | extend existing | routed browser at mobile/desktop | Cytoscape or accessible fallback is unusable | W2-B/C |
+| Graph archive is purged with serving cleanup | retention code exists | add new | maintenance policy over graph names and GraphML keys | durable GraphML is deleted while KB retention is active | W2-A/C |
+
+### Approved slices
+
+#### W2-R — Reconcile the current target and active W9 plan
+
+- Route: `main`.
+- Do: Obtain writable shared Git metadata or an equivalent approved runtime;
+  create a recovery ref before any rebase/merge; compare current target to W9
+  layers and parked provenance; classify new target changes touching W2 paths.
+  Keep this existing plan as the single W2 plan.
+- Check: exact target ref, merge base, dirty-state ledger, no unrelated file
+  staged, and no topology mutation beyond the approved branch.
+- Commit: plan/progress update first; no implementation before it.
+
+#### W2-A — Complete lifecycle, quota, and contract acceptance
+
+- Route: `executor` for bounded model/lifecycle changes after W2-R; main owns
+  schema and cross-repository seams.
+- Do: Add/verify the graph-build kill switch and per-KB opt-in; apply the
+  W1-versioned fixtures; atomically reserve estimated maximum cost in integer
+  minor units; deny unaffordable dispatch; settle valid actual cost exactly
+  once by build ID; fail closed on duplicate, malformed, mismatched, or
+  over-reservation results; release unused reservation in the same transition.
+- Check: disposable migration, rollback compatibility, concurrency and
+  duplicate/invalid terminal tests, graph publication/retention tests, and
+  focused GraphQL checks.
+- Commit: `enhance(kb-graph): complete quota and lifecycle seams`.
+
+#### W2-B — Complete non-credential lecturer and student evidence
+
+- Route: `executor` for bounded UI changes; main owns browser evidence and
+  contract integration.
+- Do: Render pre-dispatch estimate, remaining semester quota, worst-case
+  balance, billing label, post-settlement actual usage and cost; keep provider
+  credential controls absent; preserve stale lecturer-only state and student
+  graph availability semantics.
+- Check: `agent-browser` against the current live branch at mobile and desktop
+  widths for empty, building, published, stale, failure, available, and
+  unavailable states; screenshots contain synthetic data only.
+- Commit: `enhance(kb-graph): present quota and settlement state`.
+
+#### W2-C — Revalidate the five-layer integration
+
+- Route: `main`.
+- Do: Regenerate affected Prisma/GraphQL artifacts, run union verification
+  against Patrick's parked range, and account for every deliberate difference.
+  Keep W5 parity/harness retirement outside W2.
+- Check: focused GraphQL/knowledge-graph/chat/component suites, workspace
+  check/lint/build as available, migration evidence, browser screenshots, and
+  contract fixture readback.
+- Commit: `test(kb-graph): verify integrated graph stack` for test-only deltas,
+  or the smallest accurate type for actual integration changes.
+
+### Review and finish gates
+
+- W2-A crosses data integrity and cross-system seams: run one simplifier and
+  one risk-selected slice reviewer in parallel on its exact committed range.
+- W2-B is a substantive UI slice: run the simplifier and mandatory browser
+  verification; add the slice reviewer if it changes authorization or data
+  exposure.
+- W2-C receives one integrated final reviewer after fresh verification.
+- No PR/stack readiness claim, push, merge, deployment, or production proof is
+  made in this package until the pre-open gate is explicitly authorized.
+
 ## Progress
 
 - 2026-07-31: Design grill complete (14 rulings). Gate 1 approved. Worktree `trees/kb-graph-stack` created from `kb-poc` @ `38625cbbf` on `feat/kb-ingestion-refresh-event`. ADR 0001 written, `docs/domain-model.md` KB section rewritten to the rulings, roadmap W9 row revised.
