@@ -65,6 +65,12 @@ describe('parseTimestampSeconds', () => {
 })
 
 describe('getSourceTimestamp', () => {
+  test('reads a structured video start timestamp', () => {
+    expect(
+      getSourceTimestamp(source({ type: 'video', startSec: 754, endSec: 800 }))
+    ).toBe('12:34')
+  })
+
   test('reads a clock-valued labeled page', () => {
     expect(
       getSourceTimestamp(source({ type: 'video', labeledPage: '12:34' }))

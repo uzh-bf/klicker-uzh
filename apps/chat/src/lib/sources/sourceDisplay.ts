@@ -74,15 +74,16 @@ function parseLabeledTimestampSeconds(value: string): number | undefined {
 /**
  * A video position for the card and the hover preview.
  *
- * doc_query has no timestamp field (its source shape is `source_url`,
- * `source_type`, `file_name`, `page_number`, `labeled_page_number`), so this
- * reads the two channels a timestamp can actually arrive in today: a free-form
- * `labeled_page_number` the ingestion side may set to a clock value, and the
- * time parameter a course video URL usually carries. A dedicated field is
- * phase-2 work in the doc-query service; until then a video without either
- * simply shows its type label.
+ * Structured video results provide `startSec` (and optionally `endSec`), while
+ * legacy results may still carry a clock-valued `labeledPage` or a time
+ * parameter in the video URL. The structured start wins so a compatibility
+ * label cannot disagree with the canonical range metadata.
  */
 export function getSourceTimestamp(source: ChatSource): string | undefined {
+  if (source.startSec !== undefined) {
+    return formatTimestamp(source.startSec)
+  }
+
   if (source.labeledPage) {
     const labeled = parseLabeledTimestampSeconds(source.labeledPage)
     if (labeled !== undefined) return formatTimestamp(labeled)

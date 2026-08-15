@@ -182,6 +182,74 @@ describe('normalizeSourcesFromParts', () => {
     ])
   })
 
+  test('documents mode preserves structured video citation metadata', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
+            reference_type: 'url',
+            source_type: 'video',
+            expert_id: 'IuW Video',
+            title: 'Lecture 1 — 0:42–0:59',
+            video_name: 'lecture-01.mp4',
+            display_name: 'Lecture 1',
+            chunks: [
+              {
+                content: 'Video context',
+                start_sec: 42,
+                end_sec: 59,
+                representative_frame_sec: 50,
+                labeled_page_number: '0:42',
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      id: 'title:Lecture 1 — 0:42–0:59||0:42|42|59',
+      index: 1,
+      type: 'video',
+      title: 'Lecture 1 — 0:42–0:59',
+      labeledPage: '0:42',
+      startSec: 42,
+      endSec: 59,
+    })
+  })
+
+  test('structured video ranges participate in source deduplication', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'First', start_sec: 42, end_sec: 59 }],
+          },
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,75.0',
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [{ content: 'Second', start_sec: 42, end_sec: 75 }],
+          },
+        ],
+      }),
+    ])
+
+    expect(
+      result.map(({ startSec, endSec }) => ({ startSec, endSec }))
+    ).toEqual([
+      { startSec: 42, endSec: 59 },
+      { startSec: 42, endSec: 75 },
+    ])
+  })
+
   test('documents mode truncates a long excerpt to ~240 chars', () => {
     const longContent = 'x'.repeat(300)
     const result = normalizeSourcesFromParts([

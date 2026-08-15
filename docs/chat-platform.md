@@ -428,14 +428,14 @@ The line under a source's name is per-type, chosen by `getSourceSecondaryLine` i
 documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
 and fall back to a cleaned display URL when they carry no page; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. **doc_query has no timestamp
-field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
-`labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
-`labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
-(`getSourceTimestamp`). A bare numeric `labeled_page_number` remains a publisher page label,
-never seconds; bare seconds are accepted only from URL time parameters, where their meaning is
-unambiguous. Other labels such as `Kapitel IV` also remain page text. A dedicated timestamp
-field is phase-2 work in the doc-query service. Each card's index badge mirrors the inline chip —
+lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
+`labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
+and prefers the structured start for the card and citation preview. Legacy results remain
+supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
+or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
+such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
 zero-padded `01` — so the number on the card and the `[n]` in the answer read as the same
 token. Card titles clamp at two lines with the
