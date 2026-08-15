@@ -9,11 +9,10 @@ Branch: `rs/pr5134-a1-domain` for this ADR/domain update; implementation continu
 Target: `v3`
 Original PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134), preserved while the replacement stack validates.
 Status: the full A1-A5/B1-B2 slices already exist in the replacement draft
-stack. The A1-A5 ADR adaptation and B1 export-source adaptation are now applied
-locally; the remaining work is to cascade the existing B2 slice, verify the
-integrated stack, and clear the retention, browser, and delivery gates. This is
-an in-place adaptation of existing slices, not a new feature build or a new
-topology.
+stack. The A1-A5 ADR adaptation, B1 export-source adaptation, and B2 cascade
+are now applied locally; the remaining work is to clear the retention,
+participant-browser, integrated-review, and delivery gates. This is an in-place
+adaptation of existing slices, not a new feature build or a new topology.
 
 ## Current Stack Topology
 
@@ -80,9 +79,9 @@ Current interim-stack evidence:
 - The existing A1-A5/B1-B2 slices contain mode wiring, respondent routing,
   transactional response admission, worker processing, lifecycle generation,
   CSV delivery, notices, and cookie-blocked fallback behavior.
-- The remaining implementation gap is the accepted delivery delta: B2 and the
-  finite-retention policy still need to converge with the adapted A1-A5/B1
-  identity and finalization contract.
+- The accepted B2 delivery slice has been cascaded onto the adapted A5/B1
+  identity and finalization contract. The remaining gap is the finite-retention
+  policy and runtime proof of the participant journey.
 - Source checks are recorded as green; browser proof remains blocked by the
   shared DevPod PWA font resolver failure and lifecycle lock.
 
@@ -704,6 +703,15 @@ Later research:
   util (76) test suites pass, and the response-api, response-processor,
   Manage, PWA, and Playwright typechecks pass in the isolated DevPod. Browser
   runtime verification and the final integrated review remain pending.
+- 2026-08-15: Manage browser verification passed for the correlated response
+  storage selector in both English and German: aggregate-only is the default,
+  correlated export can be selected, and the settings wizard remains usable.
+  The PWA runtime journey is still blocked by the running DevPod returning 404
+  for the dynamic `/session/:id` route even though the API returns the started
+  correlated quiz; the isolated Playwright journey also could not launch because
+  its Chromium runtime is missing the headless shell and required system
+  libraries. No browser-run result is claimed for the participant notice or
+  response submission until that environment issue is resolved.
 
 ## Goal Prompt Requirements
 
@@ -723,8 +731,10 @@ If handed to another agent:
 
 1. Record the finite retention period, deletion trigger, and enforcement owner;
    until then, keep correlated publication disabled.
-2. Cascade the adapted A5/B1 contract through the existing B2 Manage/PWA
-   branch; verify unchanged layers instead of creating synthetic commits.
-3. Run response-api/worker builds and source checks, execute the existing
-   Playwright journey and mandatory Manage/PWA browser checks, then run the
-   integrated final review.
+2. Resolve the isolated DevPod runtime blockers, then execute the existing
+   participant Playwright journey and mandatory PWA notice checks. Manage EN/DE
+   mode-selection verification is already green; no participant notice or
+   response-submission browser result is claimed yet.
+3. Run the integrated final review. Only after the retention and runtime gates
+   are clear should the existing draft PR stack be prepared for remote update;
+   this plan does not authorize push, merge, or ready status.
