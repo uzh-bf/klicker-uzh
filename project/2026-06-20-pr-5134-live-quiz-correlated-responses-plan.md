@@ -733,6 +733,13 @@ Later research:
   response-api handler (9) tests pass, followed by the full precommit (24/24
   tasks). Redis connection-refused warnings and the host Node 26 versus the
   repository Node 24 warning remain environment-only.
+- 2026-08-15: Follow-up slice review passed after adding explicit same-generation
+  cookie-first, temporary-participant precedence, and null-salt pending-receipt
+  coverage. The simplifier removed incidental aggregate-error cardinality
+  assertions from the respondent anomaly test. The expanded util identity
+  suite (13) and GraphQL finalization suite (6) pass, and the latest full
+  precommit remains green (24/24 tasks); the integrated final review and the
+  retention and participant-browser gates are still outstanding.
 
 ## Goal Prompt Requirements
 
