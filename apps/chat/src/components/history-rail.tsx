@@ -26,7 +26,10 @@ import type {
   HistoryRailEntryKind,
   HistoryRailTickRange,
 } from '../lib/history-rail'
-import { getHistoryRailTickRanges } from '../lib/history-rail'
+import {
+  getHistoryRailMessageAnchor,
+  getHistoryRailTickRanges,
+} from '../lib/history-rail'
 
 type HistoryRailProps = {
   entries: readonly HistoryRailEntry[]
@@ -46,6 +49,20 @@ const findAnchor = (
   Array.from(
     viewport.querySelectorAll<HTMLElement>('[data-history-rail-anchor]')
   ).find((element) => element.dataset.historyRailAnchor === anchor)
+
+const revealCollapsedToolGroups = (
+  viewport: HTMLElement,
+  messageId: string
+): void => {
+  const message = findAnchor(viewport, getHistoryRailMessageAnchor(messageId))
+  if (!message) return
+
+  for (const button of message.querySelectorAll<HTMLButtonElement>(
+    '[data-cy="chat-tool-group-toggle"][aria-expanded="false"]'
+  )) {
+    button.click()
+  }
+}
 
 const revealCurrentEntry = (
   container: HTMLElement,
@@ -722,22 +739,36 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
     )
     if (!viewport) return
 
-    const target = findAnchor(viewport, anchor)
-    if (!target) return
+    const navigateToTarget = (): boolean => {
+      const target = findAnchor(viewport, anchor)
+      if (!target) return false
 
-    returnFocusRef.current = false
-    setIsHistoryOpen(false)
-    setCurrentAnchor(anchor)
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches
-    const viewportRect = viewport.getBoundingClientRect()
-    const targetRect = target.getBoundingClientRect()
-    viewport.scrollTo({
-      top: Math.max(0, viewport.scrollTop + targetRect.top - viewportRect.top),
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-    })
-    target.focus({ preventScroll: true })
+      returnFocusRef.current = false
+      setIsHistoryOpen(false)
+      setCurrentAnchor(anchor)
+      const prefersReducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)'
+      ).matches
+      const viewportRect = viewport.getBoundingClientRect()
+      const targetRect = target.getBoundingClientRect()
+      viewport.scrollTo({
+        top: Math.max(
+          0,
+          viewport.scrollTop + targetRect.top - viewportRect.top
+        ),
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      })
+      target.focus({ preventScroll: true })
+      return true
+    }
+
+    if (navigateToTarget()) return
+
+    const entry = entries.find((candidate) => candidate.anchor === anchor)
+    if (entry?.kind !== 'tool') return
+
+    revealCollapsedToolGroups(viewport, entry.messageId)
+    window.requestAnimationFrame(navigateToTarget)
   }
 
   const currentEntry = entries[currentIndex] ?? entries[0]
