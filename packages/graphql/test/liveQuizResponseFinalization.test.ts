@@ -561,18 +561,14 @@ describe('Live quiz correlated response finalization', () => {
       },
     })
 
-    let failure: unknown
-    try {
-      await reconcileCorrelatedLiveQuizFinalizations({ prisma })
-    } catch (error) {
-      failure = error
-    }
-
-    expect(failure).toBeInstanceOf(AggregateError)
-    if (!(failure instanceof AggregateError)) return
-    expect(failure.errors).toHaveLength(1)
-    expect(failure.errors[0]).toMatchObject({
-      message: `Cannot finalize correlated live quiz ${anomalousQuiz.id} without an export salt`,
+    await expect(
+      reconcileCorrelatedLiveQuizFinalizations({ prisma })
+    ).rejects.toMatchObject({
+      errors: expect.arrayContaining([
+        expect.objectContaining({
+          message: `Cannot finalize correlated live quiz ${anomalousQuiz.id} without an export salt`,
+        }),
+      ]),
     })
   })
 
