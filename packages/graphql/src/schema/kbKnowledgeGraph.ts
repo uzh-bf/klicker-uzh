@@ -16,11 +16,16 @@ export const KBGraphQualityTier = builder.enumType('KBGraphQualityTier', {
   values: Object.values(DB.KBGraphQualityTier),
 })
 
+export const KBGraphCostStatus = builder.enumType('KBGraphCostStatus', {
+  values: Object.values(DB.KBGraphCostStatus),
+})
+
 export const KBKnowledgeGraphConfigRef =
   builder.objectRef<KBKnowledgeGraphConfig>('KBKnowledgeGraphConfig')
 export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
   fields: (t) => ({
     kbId: t.exposeID('kbId'),
+    isEnabled: t.exposeBoolean('isEnabled'),
     buildId: t.exposeID('buildId', { nullable: true }),
     status: t.expose('status', { type: KBGraphBuildStatus, nullable: true }),
     statusMessage: t.exposeString('statusMessage', { nullable: true }),
@@ -38,6 +43,51 @@ export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
     finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+    costConfigurationReady: t.exposeBoolean('costConfigurationReady'),
+    costCurrency: t.exposeString('costCurrency', { nullable: true }),
+    billingLabel: t.exposeString('billingLabel', { nullable: true }),
+    standardEstimateMinorUnits: t.exposeInt('standardEstimateMinorUnits', {
+      nullable: true,
+    }),
+    highEstimateMinorUnits: t.exposeInt('highEstimateMinorUnits', {
+      nullable: true,
+    }),
+    estimatedCostMinorUnits: t.exposeInt('estimatedCostMinorUnits', {
+      nullable: true,
+    }),
+    actualCostMinorUnits: t.exposeInt('actualCostMinorUnits', {
+      nullable: true,
+    }),
+    actualInputTokens: t.exposeInt('actualInputTokens', { nullable: true }),
+    actualOutputTokens: t.exposeInt('actualOutputTokens', { nullable: true }),
+    actualEmbeddingTokens: t.exposeInt('actualEmbeddingTokens', {
+      nullable: true,
+    }),
+    actualRequestCount: t.exposeInt('actualRequestCount', {
+      nullable: true,
+    }),
+    maxCostMinorUnits: t.exposeInt('maxCostMinorUnits', { nullable: true }),
+    costStatus: t.expose('costStatus', {
+      type: KBGraphCostStatus,
+      nullable: true,
+    }),
+    semesterKey: t.exposeString('semesterKey', { nullable: true }),
+    semesterQuotaMinorUnits: t.exposeInt('semesterQuotaMinorUnits', {
+      nullable: true,
+    }),
+    semesterReservedMinorUnits: t.exposeInt('semesterReservedMinorUnits', {
+      nullable: true,
+    }),
+    semesterSettledMinorUnits: t.exposeInt('semesterSettledMinorUnits', {
+      nullable: true,
+    }),
+    remainingSemesterQuotaMinorUnits: t.exposeInt(
+      'remainingSemesterQuotaMinorUnits',
+      { nullable: true }
+    ),
+    worstCaseRemainingMinorUnits: t.exposeInt('worstCaseRemainingMinorUnits', {
+      nullable: true,
+    }),
   }),
 })
 

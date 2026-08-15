@@ -13,6 +13,22 @@ import type {
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
 
+type KBGraphMeteredCost = {
+  currency: string
+  amount_minor_units: number
+  components: Array<{
+    provider: string
+    model: string
+    amount_minor_units: number
+    pricing_version: string
+    embedding_tokens: number
+    input_tokens: number
+    output_tokens: number
+    request_count: number
+  }>
+  metering_source: 'provider_reported' | 'configured_pricing'
+}
+
 export type PrismaMigrationClient = Omit<
   InstanceType<typeof PrismaClient>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -43,6 +59,7 @@ declare global {
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshotV1
+    type PrismaKBGraphMeteredCost = KBGraphMeteredCost
   }
 }
 // #endregion

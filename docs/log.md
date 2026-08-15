@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-15
+
+- **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the M1 knowledge-graph lifecycle: per-KB opt-in, the graph kill switch, integer minor-unit reservation and settlement, W1 terminal-result validation, fail-closed provider reconciliation, human-review holds, and lecturer cost/quota states. Matching `klicker-*` skills carry the schema, GraphQL, UI, and verification rules.
+
 ## 2026-08-01
 
 - **Update**: [domain-model](./domain-model.md) and `klicker-data-model` document KB-owned graph builds: a reader trusts only a successful build belonging to the requested KB, each completed build has its own graph name, and retired graphs plus GraphML share bounded retention while the active and published graphs remain protected. `turbo.json` now passes the matching `KB_FALKORDB_*` configuration through task runs.

@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-01'
+timestamp: '2026-08-15'
 tags:
   - backend
   - graphql
@@ -52,6 +52,8 @@ The resource connection includes only the run identified by each row's stored `i
 Knowledge-base/chatbot binding uses `getKbChatbotBindings`, `attachKbToChatbot`, and `detachKbFromChatbot`. The query and mutations are owner-scoped, attach/detach require full-access scope, and `packages/graphql/src/services/knowledge.ts` locks both owner rows before replacing a binding. Attach atomically enables the one selected link and reconciles exactly the `tutor` and `explainer` KB MCP configurations; detach disables those configurations when no enabled link remains.
 
 Every knowledge-base service entry point starts with `packages/graphql/src/services/knowledge.ts:assertKbPreviewAccess`, which reads the current `User.privatePreview` value by primary key on each request and returns `KB_PREVIEW_ACCESS_REQUIRED` when disabled. This is an interim per-account gate, independent of the login token. The separate `assertKbIngestionEnabled` kill switch reads `KB_INGESTION_DISABLED` at call time and blocks only upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest with `KB_INGESTION_DISABLED`; reads, upload confirmation, deletion, and chatbot binding remain available.
+
+The graph lifecycle has two additional gates. `KB_GRAPH_DISABLED=true` blocks graph opt-in and rebuild mutations, while `KB.knowledgeGraphEnabled` is required before a build can reserve quota or be served to chatbot students. `setKbKnowledgeGraphEnabled` validates the cost configuration before enabling a KB. Rebuild reserves the configured estimate in minor currency units under the owner-semester quota lock, and the external monitor never publishes from provider status alone: `settleKbKnowledgeGraphResult` accepts only a W1-versioned terminal result whose build, KB, owner, run, source digest, graph name, artifact, currency, and metering match the reservation. Settlement is fenced by `KBGraphBuild.costStatus`; invalid results become `NEEDS_HUMAN_REVIEW` and retain the reservation for manual reconciliation.
 
 Knowledge-base deletion is an immediate visibility change, not synchronous storage removal. Resource and whole-KB delete mutations lock the parent KB first, retain owner-attributed tombstones, create explicit `DELETE` runs, and queue external deletion after commit. Whole-KB deletion also disables its chatbot links and KB MCP configurations. Upload-ticket issue, confirmation, URL creation, and deletion use the same parent lock so no live child can appear beneath a tombstoned KB; queue failure records only an opaque retry state and never restores visibility.
 

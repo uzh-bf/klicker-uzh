@@ -1,6 +1,7 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export { settleKbKnowledgeGraphResult } from './services/knowledge.js'
 export {
   handleKBSourceGateway,
   type KBSourceGatewayResult,

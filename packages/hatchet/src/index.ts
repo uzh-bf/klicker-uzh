@@ -45,6 +45,8 @@ export function prepareHatchetTasks({
   redisAssessmentExec,
   redisCache,
   handlers,
+  getKBGraphTerminalResult,
+  settleKBGraphTerminalResult,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -53,6 +55,12 @@ export function prepareHatchetTasks({
   redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
+  getKBGraphTerminalResult?: (runId: string) => Promise<unknown>
+  settleKBGraphTerminalResult?: (input: {
+    buildId: string
+    result: unknown
+    finishedAt: Date
+  }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }) {
   const globalContext = {
     hatchet,
@@ -396,7 +404,12 @@ export function prepareHatchetTasks({
       limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
     },
     fn: async (_, ctx) =>
-      monitorActiveKBGraphBuilds({ prisma, logger: ctx.logger }),
+      monitorActiveKBGraphBuilds({
+        prisma,
+        logger: ctx.logger,
+        getTerminalResult: getKBGraphTerminalResult,
+        settleTerminalResult: settleKBGraphTerminalResult,
+      }),
   })
 
   const maintainKBResourcesTask = hatchet.task({

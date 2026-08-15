@@ -75,7 +75,7 @@ export async function getPublishedKnowledgeGraphForChatbot(
     where: {
       chatbotId,
       isEnabled: true,
-      kb: { deletedAt: null },
+      kb: { deletedAt: null, knowledgeGraphEnabled: true },
     },
     select: { kbId: true },
     orderBy: { updatedAt: 'desc' },

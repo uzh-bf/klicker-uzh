@@ -1,9 +1,7 @@
-import {
-  computeKBContentDigest,
-  getKnowledgeGraphName,
-} from '@klicker-uzh/knowledge-graph'
+import { getKnowledgeGraphName } from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphBuildStatus,
+  KBGraphCostStatus,
   type KBGraphBuildSource,
   type Prisma,
   type PrismaClient,
@@ -31,7 +29,12 @@ const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
 
 type KBGraphPrisma = Pick<
   PrismaClient,
-  '$queryRaw' | '$transaction' | 'kB' | 'kBGraphBuild' | 'kBResource'
+  | '$queryRaw'
+  | '$transaction'
+  | 'kB'
+  | 'kBGraphBuild'
+  | 'kBGraphQuota'
+  | 'kBResource'
 >
 
 type KBGraphDispatchRecord = {
@@ -71,6 +74,12 @@ export type MonitorKBGraphBuildsDependencies = {
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBGraphLogger
+  getTerminalResult?: (runId: string) => Promise<unknown>
+  settleTerminalResult?: (input: {
+    buildId: string
+    result: unknown
+    finishedAt: Date
+  }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }
 
 function graphIdentifiers(build: Pick<KBGraphDispatchRecord, 'id' | 'kbId'>) {
@@ -106,6 +115,60 @@ function isActiveBuildStatus(status: KBGraphBuildStatus) {
     status === KBGraphBuildStatus.QUEUED ||
     status === KBGraphBuildStatus.PROCESSING
   )
+}
+
+async function releaseKBGraphReservationInTransaction(
+  prisma: Prisma.TransactionClient,
+  buildId: string
+): Promise<void> {
+  const build = await prisma.kBGraphBuild.findUnique({
+    where: { id: buildId },
+    select: {
+      quotaId: true,
+      estimatedCostMinorUnits: true,
+      costStatus: true,
+    },
+  })
+  if (
+    !build ||
+    (build.costStatus !== KBGraphCostStatus.RESERVED &&
+      build.costStatus !== KBGraphCostStatus.NEEDS_HUMAN_REVIEW) ||
+    build.estimatedCostMinorUnits === null
+  ) {
+    return
+  }
+
+  if (build.quotaId) {
+    await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "public"."KBGraphQuota"
+      WHERE "id" = CAST(${build.quotaId} AS UUID)
+      FOR UPDATE
+    `
+  }
+  const updated = await prisma.kBGraphBuild.updateMany({
+    where: {
+      id: buildId,
+      costStatus: {
+        in: [KBGraphCostStatus.RESERVED, KBGraphCostStatus.NEEDS_HUMAN_REVIEW],
+      },
+    },
+    data: { costStatus: KBGraphCostStatus.RELEASED },
+  })
+  if (updated.count !== 1 || !build.quotaId) return
+
+  const quotaUpdated = await prisma.kBGraphQuota.updateMany({
+    where: {
+      id: build.quotaId,
+      reservedMinorUnits: { gte: build.estimatedCostMinorUnits },
+    },
+    data: {
+      reservedMinorUnits: { decrement: build.estimatedCostMinorUnits },
+    },
+  })
+  if (quotaUpdated.count !== 1) {
+    throw new Error('KB graph quota reservation could not be released')
+  }
 }
 
 function getGraphMonitorBatchOffset(total: number, now: Date) {
@@ -346,7 +409,6 @@ async function finishKBGraphBuild({
   errorCode,
   prisma,
   finishedAt,
-  publish,
 }: {
   build: {
     id: string
@@ -358,7 +420,6 @@ async function finishKBGraphBuild({
   errorCode: string | null
   prisma: KBGraphPrisma
   finishedAt: Date
-  publish: boolean
 }) {
   await prisma.$transaction(async (tx) => {
     const updated = await tx.kBGraphBuild.updateMany({
@@ -381,23 +442,18 @@ async function finishKBGraphBuild({
       return
     }
 
-    if (publish) {
-      const published = await tx.kB.updateMany({
-        where: {
-          id: build.kbId,
-          deletedAt: null,
-          activeGraphBuildId: build.id,
+    await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        costStatus: {
+          in: [
+            KBGraphCostStatus.RESERVED,
+            KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+          ],
         },
-        data: {
-          activeGraphBuildId: null,
-          publishedGraphBuildId: build.id,
-        },
-      })
-      if (published.count !== 1) {
-        throw new Error('KB graph build lost its active publication slot')
-      }
-      return
-    }
+      },
+      data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+    })
 
     await tx.kB.updateMany({
       where: { id: build.kbId, activeGraphBuildId: build.id },
@@ -437,117 +493,6 @@ async function recordIneligibleLateSuccess(
   })
 }
 
-async function acceptLateKBGraphSuccess(
-  build: TimedOutKBGraphBuild,
-  prisma: KBGraphPrisma,
-  finishedAt: Date
-): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    const lockedKb = await tx.$queryRaw<
-      Array<{
-        id: string
-        activeGraphBuildId: string | null
-        deletedAt: Date | null
-      }>
-    >`
-      SELECT "id", "activeGraphBuildId", "deletedAt"
-      FROM "public"."KB"
-      WHERE "id" = CAST(${build.kbId} AS UUID)
-      FOR UPDATE
-    `
-    const currentKb = lockedKb[0]
-    if (
-      lockedKb.length !== 1 ||
-      !currentKb ||
-      currentKb.deletedAt !== null ||
-      currentKb.activeGraphBuildId !== null
-    ) {
-      await recordIneligibleLateSuccess(
-        build,
-        tx,
-        KBGraphBuildStatus.SUPERSEDED,
-        'A newer KB graph build replaced this timed-out build.',
-        'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
-      )
-      return
-    }
-
-    const newerBuild = await tx.kBGraphBuild.findFirst({
-      where: { kbId: build.kbId, createdAt: { gt: build.createdAt } },
-      select: { id: true },
-    })
-    if (newerBuild) {
-      await recordIneligibleLateSuccess(
-        build,
-        tx,
-        KBGraphBuildStatus.SUPERSEDED,
-        'A newer KB graph build replaced this timed-out build.',
-        'KB_GRAPH_LATE_SUCCESS_SUPERSEDED'
-      )
-      return
-    }
-
-    // Resource refresh webhooks lock only their resource row. Lock every
-    // current resource after the KB row so a serving hash cannot change while
-    // the pinned digest is checked. Resource creation/deletion already takes
-    // the KB row lock, so the set cannot change around this snapshot.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT resource."id"
-      FROM "public"."KBResource" AS resource
-      WHERE resource."kbId" = CAST(${build.kbId} AS UUID)
-        AND resource."deletedAt" IS NULL
-      ORDER BY resource."id" ASC
-      FOR UPDATE OF resource
-    `
-
-    const currentDigest = await computeKBContentDigest(tx, build.kbId)
-    if (currentDigest !== build.sourceContentDigest) {
-      await recordIneligibleLateSuccess(
-        build,
-        tx,
-        KBGraphBuildStatus.FAILED,
-        'The KB changed before the timed-out build completed.',
-        'KB_GRAPH_LATE_SUCCESS_STALE'
-      )
-      return
-    }
-
-    const updated = await tx.kBGraphBuild.updateMany({
-      where: {
-        id: build.id,
-        kbId: build.kbId,
-        externalOperationId: build.externalOperationId,
-        status: KBGraphBuildStatus.FAILED,
-        errorCode: 'KB_GRAPH_TIMEOUT',
-        cleanedAt: null,
-        cleanupStartedAt: null,
-      },
-      data: {
-        status: KBGraphBuildStatus.SUCCEEDED,
-        statusMessage:
-          'The external KB graph workflow completed after timeout.',
-        errorCode: null,
-        finishedAt,
-      },
-    })
-    if (updated.count !== 1) {
-      return
-    }
-
-    const published = await tx.kB.updateMany({
-      where: {
-        id: build.kbId,
-        deletedAt: null,
-        activeGraphBuildId: null,
-      },
-      data: { publishedGraphBuildId: build.id },
-    })
-    if (published.count !== 1) {
-      throw new Error('KB graph build changed while accepting late success')
-    }
-  })
-}
-
 async function monitorTimedOutKBGraphBuilds(
   builds: TimedOutKBGraphBuild[],
   dependencies: MonitorKBGraphBuildsDependencies,
@@ -564,9 +509,24 @@ async function monitorTimedOutKBGraphBuilds(
         continue
       }
 
-      // R5: a late completion can recover a timeout only when it still
-      // represents the current KB revision and no newer build has taken over.
-      await acceptLateKBGraphSuccess(build, dependencies.prisma, now())
+      if (dependencies.getTerminalResult && dependencies.settleTerminalResult) {
+        const terminalResult = await dependencies.getTerminalResult(
+          build.externalOperationId
+        )
+        await dependencies.settleTerminalResult({
+          buildId: build.id,
+          result: terminalResult,
+          finishedAt: now(),
+        })
+      } else {
+        await recordIneligibleLateSuccess(
+          build,
+          dependencies.prisma,
+          KBGraphBuildStatus.FAILED,
+          'The external workflow completed after timeout without a versioned terminal result.',
+          'KB_GRAPH_RESULT_REQUIRED'
+        )
+      }
     } catch {
       await logErrorBestEffort(
         dependencies.logger,
@@ -639,41 +599,40 @@ export async function monitorActiveKBGraphBuilds(
         build.externalOperationId
       )
       const observedAt = now()
-      if (externalStatus === 'COMPLETED') {
-        // R1: a build may publish the digest it pinned even if the KB changed
-        // meanwhile. The UI marks it stale instead of replacing serving data.
-        await finishKBGraphBuild({
-          build: {
-            ...build,
-            externalOperationId: build.externalOperationId,
-          },
-          status: KBGraphBuildStatus.SUCCEEDED,
-          statusMessage: null,
-          errorCode: null,
-          prisma: dependencies.prisma,
+      if (
+        externalStatus === 'COMPLETED' ||
+        externalStatus === 'FAILED' ||
+        externalStatus === 'CANCELLED'
+      ) {
+        if (
+          !dependencies.getTerminalResult ||
+          !dependencies.settleTerminalResult
+        ) {
+          const statusMessage =
+            externalStatus === 'COMPLETED'
+              ? 'The external workflow completed without a versioned terminal result.'
+              : `The external workflow ended with ${externalStatus.toLowerCase()} without a versioned terminal result.`
+          await finishKBGraphBuild({
+            build: {
+              ...build,
+              externalOperationId: build.externalOperationId,
+            },
+            status: KBGraphBuildStatus.FAILED,
+            statusMessage,
+            errorCode: 'KB_GRAPH_RESULT_REQUIRED',
+            prisma: dependencies.prisma,
+            finishedAt: observedAt,
+          })
+          continue
+        }
+
+        const terminalResult = await dependencies.getTerminalResult(
+          build.externalOperationId
+        )
+        await dependencies.settleTerminalResult({
+          buildId: build.id,
+          result: terminalResult,
           finishedAt: observedAt,
-          publish: true,
-        })
-        continue
-      }
-      if (externalStatus === 'FAILED' || externalStatus === 'CANCELLED') {
-        await finishKBGraphBuild({
-          build: {
-            ...build,
-            externalOperationId: build.externalOperationId,
-          },
-          status: KBGraphBuildStatus.FAILED,
-          statusMessage:
-            externalStatus === 'FAILED'
-              ? 'External KB graph workflow failed.'
-              : 'External KB graph workflow was cancelled.',
-          errorCode:
-            externalStatus === 'FAILED'
-              ? 'KB_GRAPH_EXTERNAL_FAILED'
-              : 'KB_GRAPH_EXTERNAL_CANCELLED',
-          prisma: dependencies.prisma,
-          finishedAt: observedAt,
-          publish: false,
         })
         continue
       }
@@ -698,7 +657,6 @@ export async function monitorActiveKBGraphBuilds(
           errorCode: 'KB_GRAPH_TIMEOUT',
           prisma: dependencies.prisma,
           finishedAt: observedAt,
-          publish: false,
         })
         continue
       }
@@ -767,6 +725,7 @@ export async function markKBGraphBuildDispatchFailed(
       },
     })
     if (failed.count === 1) {
+      await releaseKBGraphReservationInTransaction(tx, build.id)
       await tx.kB.updateMany({
         where: { id: build.kbId, activeGraphBuildId: build.id },
         data: { activeGraphBuildId: null },

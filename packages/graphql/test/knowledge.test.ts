@@ -2,6 +2,7 @@ import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
+  KBGraphBuildStatus,
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
@@ -33,7 +34,9 @@ import {
   getKbResourcesConnection,
   getUserKbsConnection,
   ingestKbResource,
+  rebuildKbKnowledgeGraph,
   requestKbFileUpload,
+  setKbKnowledgeGraphEnabled,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
@@ -164,6 +167,19 @@ describe('Integration tests for knowledge base CRUD', () => {
   let deleteBlobIfExists: ReturnType<typeof vi.fn>
   let getBlobClient: ReturnType<typeof vi.fn>
   let blobServiceUrl: string
+  const graphCostEnvironmentKeys = [
+    'KB_GRAPH_DISABLED',
+    'KB_GRAPH_COST_CURRENCY',
+    'KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS',
+    'KB_GRAPH_HIGH_ESTIMATE_MINOR_UNITS',
+    'KB_GRAPH_MAX_COST_MINOR_UNITS',
+    'KB_GRAPH_SEMESTER_QUOTA_MINOR_UNITS',
+    'KB_GRAPH_COST_PRICING_VERSION',
+    'KB_GRAPH_SEMESTER_KEY',
+  ] as const
+  let previousGraphCostEnvironment: Partial<
+    Record<(typeof graphCostEnvironmentKeys)[number], string | undefined>
+  >
 
   beforeAll(async () => {
     prisma = prismaClient
@@ -215,6 +231,19 @@ describe('Integration tests for knowledge base CRUD', () => {
     process.env.BLOB_STORAGE_ACCESS_KEY = Buffer.alloc(32).toString('base64')
     delete process.env.BLOB_STORAGE_ACCOUNT_URL
     delete process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL
+
+    previousGraphCostEnvironment = Object.fromEntries(
+      graphCostEnvironmentKeys.map((key) => [key, process.env[key]])
+    )
+    Object.assign(process.env, {
+      KB_GRAPH_COST_CURRENCY: 'CHF',
+      KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS: '100',
+      KB_GRAPH_HIGH_ESTIMATE_MINOR_UNITS: '200',
+      KB_GRAPH_MAX_COST_MINOR_UNITS: '200',
+      KB_GRAPH_SEMESTER_QUOTA_MINOR_UNITS: '500',
+      KB_GRAPH_COST_PRICING_VERSION: 'test-v1',
+      KB_GRAPH_SEMESTER_KEY: '2026-H2',
+    })
 
     containerName = ''
     requestedBlobName = ''
@@ -278,7 +307,52 @@ describe('Integration tests for knowledge base CRUD', () => {
       process.env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL =
         previousBlobInternalAccountUrl
     }
+    for (const key of graphCostEnvironmentKeys) {
+      const value = previousGraphCostEnvironment[key]
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
     await testCleanup(prisma)
+  })
+
+  it('requires graph opt-in and the kill switch before dispatching a build', async () => {
+    const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
+
+    await expect(
+      rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_NOT_ENABLED' },
+    })
+
+    process.env.KB_GRAPH_DISABLED = 'true'
+    await expect(
+      setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DISABLED' },
+    })
+
+    process.env.KB_GRAPH_DISABLED = 'false'
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Graph source',
+        sourceUrl: 'https://example.com/graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'a'.repeat(64),
+      },
+    })
+
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+
+    expect(config).toMatchObject({
+      status: KBGraphBuildStatus.QUEUED,
+      costConfigurationReady: true,
+      estimatedCostMinorUnits: 100,
+      semesterReservedMinorUnits: 100,
+    })
   })
 
   it('creates and lists only the current users knowledge bases', async () => {

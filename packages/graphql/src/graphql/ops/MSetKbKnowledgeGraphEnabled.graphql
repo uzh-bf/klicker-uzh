@@ -1,5 +1,5 @@
-query GetKbKnowledgeGraphConfig($kbId: ID!) {
-  getKbKnowledgeGraphConfig(kbId: $kbId) {
+mutation SetKbKnowledgeGraphEnabled($kbId: ID!, $enabled: Boolean!) {
+  setKbKnowledgeGraphEnabled(kbId: $kbId, enabled: $enabled) {
     kbId
     isEnabled
     buildId

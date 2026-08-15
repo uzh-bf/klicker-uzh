@@ -1,6 +1,7 @@
 import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphBuildStatus,
+  KBGraphCostStatus,
   KBGraphQualityTier,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
@@ -30,8 +31,6 @@ const CONTENT_SHA256 =
 const SOURCE_DIGEST = hashKBContentDigestEntries([
   { resourceId: RESOURCE_ID, contentSha256: CONTENT_SHA256 },
 ])
-const STALE_SOURCE_DIGEST =
-  'c2d01b6fd94f7a792b00401922865f76da84d5206a2c6940a009456f5e2f1a15'
 const SOURCE_URL = 'https://content.example.org/public-paper.pdf?version=1'
 
 const externalEnv = {
@@ -366,7 +365,7 @@ describe('KB graph external dispatch', () => {
 })
 
 describe('KB graph external reconciliation', () => {
-  it('publishes a completed build and releases its active slot', async () => {
+  it('fails closed when a completed build has no versioned terminal result', async () => {
     const prisma = createMonitorPrisma([
       {
         id: BUILD_ID,
@@ -389,22 +388,54 @@ describe('KB graph external reconciliation', () => {
       expect.objectContaining({
         where: expect.objectContaining({ id: BUILD_ID }),
         data: expect.objectContaining({
-          status: KBGraphBuildStatus.SUCCEEDED,
+          status: KBGraphBuildStatus.FAILED,
+          errorCode: 'KB_GRAPH_RESULT_REQUIRED',
           finishedAt: NOW,
         }),
       })
     )
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
+    )
     expect(prisma.kB.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: KB_ID,
-        deletedAt: null,
-        activeGraphBuildId: BUILD_ID,
-      },
-      data: {
-        activeGraphBuildId: null,
-        publishedGraphBuildId: BUILD_ID,
-      },
+      where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
+      data: { activeGraphBuildId: null },
     })
+  })
+
+  it('hands a completed build to the versioned terminal-result settlement path', async () => {
+    const prisma = createMonitorPrisma([
+      {
+        id: BUILD_ID,
+        kbId: KB_ID,
+        externalOperationId: 'external-run-id',
+        externalStartedAt: new Date('2026-08-01T11:59:00.000Z'),
+      },
+    ])
+    const client = createClient()
+    vi.mocked(client.runs.get_status).mockResolvedValue('COMPLETED')
+    const getTerminalResult = vi.fn().mockResolvedValue({ status: 'SUCCEEDED' })
+    const settleTerminalResult = vi.fn().mockResolvedValue('SETTLED')
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => NOW,
+      getTerminalResult,
+      settleTerminalResult,
+    })
+
+    expect(getTerminalResult).toHaveBeenCalledWith('external-run-id')
+    expect(settleTerminalResult).toHaveBeenCalledWith({
+      buildId: BUILD_ID,
+      result: { status: 'SUCCEEDED' },
+      finishedAt: NOW,
+    })
+    expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
   })
 
   it('times out a running build, cancels it, and releases its active slot', async () => {
@@ -437,6 +468,11 @@ describe('KB graph external reconciliation', () => {
         }),
       })
     )
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
+    )
     expect(prisma.kB.updateMany).toHaveBeenCalledWith({
       where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
       data: { activeGraphBuildId: null },
@@ -462,16 +498,13 @@ describe('KB graph external reconciliation', () => {
     )
   })
 
-  it('accepts a late completion only when the pinned source digest still matches', async () => {
-    const matchingDigest = hashKBContentDigestEntries([
-      { resourceId: RESOURCE_ID, contentSha256: CONTENT_SHA256 },
-    ])
+  it('does not publish a late completion without a versioned terminal result', async () => {
     const prisma = createMonitorPrisma([], {
       timedOutBuilds: [
         {
           id: BUILD_ID,
           kbId: KB_ID,
-          sourceContentDigest: matchingDigest,
+          sourceContentDigest: SOURCE_DIGEST,
           createdAt: CREATED_AT,
           externalOperationId: 'external-run-id',
         },
@@ -499,24 +532,21 @@ describe('KB graph external reconciliation', () => {
           cleanupStartedAt: null,
         }),
         data: expect.objectContaining({
-          status: KBGraphBuildStatus.SUCCEEDED,
-          errorCode: null,
+          status: KBGraphBuildStatus.FAILED,
+          errorCode: 'KB_GRAPH_RESULT_REQUIRED',
         }),
       })
     )
-    expect(prisma.kB.updateMany).toHaveBeenCalledWith({
-      where: { id: KB_ID, deletedAt: null, activeGraphBuildId: null },
-      data: { publishedGraphBuildId: BUILD_ID },
-    })
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
   })
 
-  it('keeps a late completion failed when the KB source digest has moved on', async () => {
+  it('settles a late completion through the versioned terminal-result handoff', async () => {
     const prisma = createMonitorPrisma([], {
       timedOutBuilds: [
         {
           id: BUILD_ID,
           kbId: KB_ID,
-          sourceContentDigest: STALE_SOURCE_DIGEST,
+          sourceContentDigest: SOURCE_DIGEST,
           createdAt: CREATED_AT,
           externalOperationId: 'external-run-id',
         },
@@ -527,23 +557,25 @@ describe('KB graph external reconciliation', () => {
     })
     const client = createClient()
     vi.mocked(client.runs.get_status).mockResolvedValue('COMPLETED')
+    const getTerminalResult = vi.fn().mockResolvedValue({ status: 'SUCCEEDED' })
+    const settleTerminalResult = vi.fn().mockResolvedValue('SETTLED')
 
     await monitorActiveKBGraphBuilds({
       prisma: prisma as never,
       client,
       env: externalEnv,
       now: () => NOW,
+      getTerminalResult,
+      settleTerminalResult,
     })
 
-    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: {
-          status: KBGraphBuildStatus.FAILED,
-          statusMessage: 'The KB changed before the timed-out build completed.',
-          errorCode: 'KB_GRAPH_LATE_SUCCESS_STALE',
-        },
-      })
-    )
+    expect(getTerminalResult).toHaveBeenCalledWith('external-run-id')
+    expect(settleTerminalResult).toHaveBeenCalledWith({
+      buildId: BUILD_ID,
+      result: { status: 'SUCCEEDED' },
+      finishedAt: NOW,
+    })
+    expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalled()
     expect(prisma.kB.updateMany).not.toHaveBeenCalled()
   })
 })

@@ -130,6 +130,7 @@ model User {
   deletedKbs                 KB[]                   @relation("KBDeletedBy")
   deletedKbResources         KBResource[]           @relation("KBResourceDeletedBy")
   requestedKbGraphBuilds     KBGraphBuild[]
+  kbGraphQuotas               KBGraphQuota[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")

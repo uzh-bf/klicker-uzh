@@ -1723,6 +1723,13 @@ enum KBGraphBuildStatus {
   SUPERSEDED
 }
 
+enum KBGraphCostStatus {
+  NEEDS_HUMAN_REVIEW
+  RELEASED
+  RESERVED
+  SETTLED
+}
+
 enum KBGraphQualityTier {
   HIGH
   STANDARD
@@ -1751,18 +1758,38 @@ enum KBIngestionStatus {
 
 type KBKnowledgeGraphConfig {
   activeBuildId: ID
+  actualCostMinorUnits: Int
+  actualEmbeddingTokens: Int
+  actualInputTokens: Int
+  actualOutputTokens: Int
+  actualRequestCount: Int
+  billingLabel: String
   buildId: ID
+  costConfigurationReady: Boolean!
+  costCurrency: String
+  costStatus: KBGraphCostStatus
   createdAt: Date
+  estimatedCostMinorUnits: Int
   finishedAt: Date
+  highEstimateMinorUnits: Int
+  isEnabled: Boolean!
   isStale: Boolean!
   kbId: ID!
+  maxCostMinorUnits: Int
   publishedBuildId: ID
   qualityTier: KBGraphQualityTier
+  remainingSemesterQuotaMinorUnits: Int
+  semesterKey: String
+  semesterQuotaMinorUnits: Int
+  semesterReservedMinorUnits: Int
+  semesterSettledMinorUnits: Int
   sourceContentDigest: String
+  standardEstimateMinorUnits: Int
   startedAt: Date
   status: KBGraphBuildStatus
   statusMessage: String
   updatedAt: Date
+  worstCaseRemainingMinorUnits: Int
 }
 
 type KBMetrics {
@@ -2157,6 +2184,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-07-27'
+timestamp: '2026-08-15'
 tags:
   - testing
   - ci
@@ -23,6 +23,8 @@ tags:
 The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
 
 KB quota coverage must use real PostgreSQL for parent-row lock serialization, exact count/byte boundaries, pending tickets, tombstones, confirmation conversion, and cleanup release. Hatchet unit coverage owns persisted KB-scope rejection plus URL-size replacement arithmetic and the no-dispatch `KB_STORAGE_LIMIT_REACHED` transition.
+
+KB graph accounting coverage also uses real PostgreSQL: `packages/graphql/test/knowledgeGraphAccounting.test.ts` proves same-owner semester-quota lock serialization, one-time settlement, actual token/request aggregation, publication only after contract validation, and reservation hold on an invalid result. Pure W1 terminal-result and cost-configuration validation remains in `kbGraphContract.test.ts` and `knowledgeGraphCost.test.ts`; `packages/hatchet/test/kbGraphIngestion.test.ts` proves provider-status-only reconciliation fails closed and hands versioned results to the settlement callback.
 
 KB scale coverage uses real PostgreSQL for tied keyset traversal, cursor/filter binding, owner isolation, tombstone hiding, immutable resource-page order during status changes, exact derived metrics, and all-or-nothing bounded bulk deletion. UI appearance and interaction have no component-test layer in this repository: verify the generated-operation typechecks, then exercise catalog/detail search, filters, inspector, selection/confirmation, active polling, EN/DE, and desktop/390 px layouts through the real delegated-login browser path.
 

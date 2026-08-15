@@ -46,6 +46,8 @@ Do not nest full history under a frequently polled parent list. The KB detail qu
 
 Every KB service query and mutation must start with `assertKbPreviewAccess(ctx)`, which reads the current `User.privatePreview` value instead of trusting a JWT claim. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
 
+Knowledge-graph mutations add a distinct `KB_GRAPH_DISABLED` generation switch and require the persisted per-KB `knowledgeGraphEnabled` opt-in. Before dispatch, reserve the configured estimate in the owner-semester `KBGraphQuota`; expose cost and quota state without credentials. Provider status is not a GraphQL success proof: wire a versioned terminal result through `settleKbKnowledgeGraphResult`, validate build/KB/owner/run/digest/artifact/metering identity, and let `KBGraphBuild.costStatus` make settlement idempotent.
+
 KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
 
 KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.

@@ -1769,6 +1769,18 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      setKbKnowledgeGraphEnabled: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.setKbKnowledgeGraphEnabled(args, ctx)
+        },
+      }),
+
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

@@ -32,6 +32,17 @@ import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  getKBGraphRemainingQuota,
+  releaseKBGraphCostReservation,
+  reserveKBGraphCost,
+  settleKBGraphBuildCost,
+} from './knowledgeGraphAccounting.js'
+import {
+  getKBGraphBillingLabel,
+  getKBGraphCostConfiguration,
+  requireKBGraphCostConfiguration,
+} from './knowledgeGraphCost.js'
 
 const MAX_KB_FILE_SIZE_BYTES = MAX_KB_SOURCE_SIZE_BYTES
 const KB_DELETE_QUEUE_CONCURRENCY = 8
@@ -323,6 +334,14 @@ function assertKbIngestionEnabled() {
   if (process.env.KB_INGESTION_DISABLED === 'true') {
     throw new GraphQLError('KB ingestion is currently disabled', {
       extensions: { code: 'KB_INGESTION_DISABLED' },
+    })
+  }
+}
+
+function assertKbGraphGenerationEnabled() {
+  if (process.env.KB_GRAPH_DISABLED === 'true') {
+    throw new GraphQLError('KB graph generation is currently disabled', {
+      extensions: { code: 'KB_GRAPH_DISABLED' },
     })
   }
 }
@@ -1777,6 +1796,7 @@ export async function ingestKbResource(
 
 export interface KBKnowledgeGraphConfig {
   kbId: string
+  isEnabled: boolean
   buildId: string | null
   status: DB.KBGraphBuildStatus | null
   statusMessage: string | null
@@ -1789,6 +1809,25 @@ export interface KBKnowledgeGraphConfig {
   finishedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
+  costConfigurationReady: boolean
+  costCurrency: string | null
+  billingLabel: string | null
+  standardEstimateMinorUnits: number | null
+  highEstimateMinorUnits: number | null
+  estimatedCostMinorUnits: number | null
+  actualCostMinorUnits: number | null
+  actualInputTokens: number | null
+  actualOutputTokens: number | null
+  actualEmbeddingTokens: number | null
+  actualRequestCount: number | null
+  maxCostMinorUnits: number | null
+  costStatus: DB.KBGraphCostStatus | null
+  semesterKey: string | null
+  semesterQuotaMinorUnits: number | null
+  semesterReservedMinorUnits: number | null
+  semesterSettledMinorUnits: number | null
+  remainingSemesterQuotaMinorUnits: number | null
+  worstCaseRemainingMinorUnits: number | null
 }
 
 function getKBGraphArtifactBlobName(buildId: string): string {
@@ -1805,11 +1844,29 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   finishedAt: true,
   createdAt: true,
   updatedAt: true,
+  estimatedCostMinorUnits: true,
+  actualCostMinorUnits: true,
+  actualInputTokens: true,
+  actualOutputTokens: true,
+  actualEmbeddingTokens: true,
+  actualRequestCount: true,
+  costCurrency: true,
+  costStatus: true,
+  quotaId: true,
+  quota: {
+    select: {
+      currency: true,
+      limitMinorUnits: true,
+      reservedMinorUnits: true,
+      settledMinorUnits: true,
+    },
+  },
 } satisfies DB.Prisma.KBGraphBuildSelect
 
 function getKBGraphBuildConfig(
   kb: {
     id: string
+    knowledgeGraphEnabled: boolean
     activeGraphBuildId: string | null
     publishedGraphBuildId: string | null
   },
@@ -1823,11 +1880,43 @@ function getKBGraphBuildConfig(
     finishedAt: Date | null
     createdAt: Date
     updatedAt: Date
+    estimatedCostMinorUnits: number | null
+    actualCostMinorUnits: number | null
+    actualInputTokens: number | null
+    actualOutputTokens: number | null
+    actualEmbeddingTokens: number | null
+    actualRequestCount: number | null
+    costCurrency: string | null
+    costStatus: DB.KBGraphCostStatus | null
+    quotaId: string | null
+    quota: {
+      currency: string
+      limitMinorUnits: number
+      reservedMinorUnits: number
+      settledMinorUnits: number
+    } | null
   } | null,
-  isStale: boolean
+  isStale: boolean,
+  quota: {
+    currency: string
+    limitMinorUnits: number
+    reservedMinorUnits: number
+    settledMinorUnits: number
+  } | null,
+  costConfiguration: ReturnType<typeof getKBGraphCostConfiguration>
 ): KBKnowledgeGraphConfig {
+  const remainingSemesterQuotaMinorUnits = getKBGraphRemainingQuota(
+    quota,
+    costConfiguration
+  )
+  const worstCaseRemainingMinorUnits =
+    remainingSemesterQuotaMinorUnits !== null &&
+    costConfiguration.maxCostMinorUnits !== null
+      ? remainingSemesterQuotaMinorUnits - costConfiguration.maxCostMinorUnits
+      : null
   return {
     kbId: kb.id,
+    isEnabled: kb.knowledgeGraphEnabled,
     buildId: build?.id ?? null,
     status: build?.status ?? null,
     statusMessage: build?.statusMessage ?? null,
@@ -1840,6 +1929,28 @@ function getKBGraphBuildConfig(
     finishedAt: build?.finishedAt ?? null,
     createdAt: build?.createdAt ?? null,
     updatedAt: build?.updatedAt ?? null,
+    costConfigurationReady: costConfiguration.ready,
+    costCurrency: build?.costCurrency ?? costConfiguration.currency,
+    billingLabel: getKBGraphBillingLabel(costConfiguration),
+    standardEstimateMinorUnits: costConfiguration.standardEstimateMinorUnits,
+    highEstimateMinorUnits: costConfiguration.highEstimateMinorUnits,
+    estimatedCostMinorUnits:
+      build?.estimatedCostMinorUnits ??
+      costConfiguration.standardEstimateMinorUnits,
+    actualCostMinorUnits: build?.actualCostMinorUnits ?? null,
+    actualInputTokens: build?.actualInputTokens ?? null,
+    actualOutputTokens: build?.actualOutputTokens ?? null,
+    actualEmbeddingTokens: build?.actualEmbeddingTokens ?? null,
+    actualRequestCount: build?.actualRequestCount ?? null,
+    maxCostMinorUnits: costConfiguration.maxCostMinorUnits,
+    costStatus: build?.costStatus ?? null,
+    semesterKey: costConfiguration.semesterKey,
+    semesterQuotaMinorUnits:
+      quota?.limitMinorUnits ?? costConfiguration.semesterQuotaMinorUnits,
+    semesterReservedMinorUnits: quota?.reservedMinorUnits ?? 0,
+    semesterSettledMinorUnits: quota?.settledMinorUnits ?? 0,
+    remainingSemesterQuotaMinorUnits,
+    worstCaseRemainingMinorUnits,
   }
 }
 
@@ -1849,6 +1960,7 @@ export async function getKbKnowledgeGraphConfig(
 ): Promise<KBKnowledgeGraphConfig> {
   await assertKbPreviewAccess(ctx)
   const kb = await getOwnedKbOrThrow(ctx, kbId)
+  const costConfiguration = getKBGraphCostConfiguration()
   const preferredBuildId = kb.activeGraphBuildId ?? kb.publishedGraphBuildId
   const build = preferredBuildId
     ? await ctx.prisma.kBGraphBuild.findFirst({
@@ -1860,12 +1972,26 @@ export async function getKbKnowledgeGraphConfig(
         select: KB_GRAPH_BUILD_CONFIG_SELECT,
         orderBy: { createdAt: 'desc' },
       })
+  const quota = await ctx.prisma.kBGraphQuota.findUnique({
+    where: {
+      ownerId_semesterKey: {
+        ownerId: kb.ownerId,
+        semesterKey: costConfiguration.semesterKey,
+      },
+    },
+    select: {
+      currency: true,
+      limitMinorUnits: true,
+      reservedMinorUnits: true,
+      settledMinorUnits: true,
+    },
+  })
   const isStale =
     build?.status === DB.KBGraphBuildStatus.SUCCEEDED
       ? build.sourceContentDigest !==
         (await computeKBContentDigest(ctx.prisma, kb.id))
       : false
-  return getKBGraphBuildConfig(kb, build, isStale)
+  return getKBGraphBuildConfig(kb, build, isStale, quota, costConfiguration)
 }
 
 async function readOwnedPublishedKBGraph(
@@ -1912,6 +2038,37 @@ export async function getKbKnowledgeGraphNeighbors(
   )
 }
 
+export async function setKbKnowledgeGraphEnabled(
+  { kbId, enabled }: { kbId: string; enabled: boolean },
+  ctx: ContextWithUser
+): Promise<KBKnowledgeGraphConfig> {
+  await assertKbPreviewAccess(ctx)
+  if (enabled) {
+    assertKbGraphGenerationEnabled()
+    requireKBGraphCostConfiguration()
+  }
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    await prisma.kB.update({
+      where: { id: kbId },
+      data: { knowledgeGraphEnabled: enabled },
+    })
+  })
+
+  return getKbKnowledgeGraphConfig({ kbId }, ctx)
+}
+
+export async function settleKbKnowledgeGraphResult(
+  prisma: DB.PrismaClient,
+  { buildId, result }: { buildId: string; result: unknown },
+  finishedAt = new Date()
+) {
+  return prisma.$transaction((transaction) =>
+    settleKBGraphBuildCost(transaction, { buildId, result, finishedAt })
+  )
+}
+
 type GraphBuildSnapshotResource = {
   id: string
   title: string
@@ -1948,16 +2105,24 @@ export async function rebuildKbKnowledgeGraph(
 ): Promise<KBKnowledgeGraphConfig> {
   const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
   await assertKbPreviewAccess(ctx)
+  assertKbGraphGenerationEnabled()
   const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     const kb = await prisma.kB.findUniqueOrThrow({
       where: { id: kbId },
       select: {
         id: true,
+        knowledgeGraphEnabled: true,
         activeGraphBuildId: true,
         publishedGraphBuildId: true,
       },
     })
+
+    if (!kb.knowledgeGraphEnabled) {
+      throw new GraphQLError('KB knowledge graph is not enabled', {
+        extensions: { code: 'KB_GRAPH_NOT_ENABLED' },
+      })
+    }
 
     if (kb.activeGraphBuildId) {
       const activeBuild = await prisma.kBGraphBuild.findFirst({
@@ -2010,6 +2175,10 @@ export async function rebuildKbKnowledgeGraph(
       }))
     )
     const buildId = randomUUID()
+    const reservation = await reserveKBGraphCost(prisma, {
+      ownerId: ctx.user.sub,
+      qualityTier,
+    })
     const build = await prisma.kBGraphBuild.create({
       data: {
         id: buildId,
@@ -2019,6 +2188,12 @@ export async function rebuildKbKnowledgeGraph(
         sourceContentDigest,
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
+        estimatedCostMinorUnits: reservation.estimatedCostMinorUnits,
+        costCurrency: reservation.currency,
+        costPricingVersion: reservation.pricingVersion,
+        costStatus: DB.KBGraphCostStatus.RESERVED,
+        semesterKey: reservation.semesterKey,
+        quotaId: reservation.quotaId,
         sources: {
           create: validatedResources.map(({ resource, contentSha256 }) => ({
             resourceId: resource.id,
@@ -2067,6 +2242,7 @@ export async function rebuildKbKnowledgeGraph(
           },
         })
         if (failed.count === 1) {
+          await releaseKBGraphCostReservation(prisma, result.queueBuildId!)
           await prisma.kB.updateMany({
             where: { id: kbId, activeGraphBuildId: result.queueBuildId! },
             data: { activeGraphBuildId: null },
@@ -2082,5 +2258,26 @@ export async function rebuildKbKnowledgeGraph(
       ? result.build.sourceContentDigest !==
         (await computeKBContentDigest(ctx.prisma, kbId))
       : false
-  return getKBGraphBuildConfig(result.kb, result.build, isStale)
+  const costConfiguration = getKBGraphCostConfiguration()
+  const quota = await ctx.prisma.kBGraphQuota.findUnique({
+    where: {
+      ownerId_semesterKey: {
+        ownerId: ctx.user.sub,
+        semesterKey: costConfiguration.semesterKey,
+      },
+    },
+    select: {
+      currency: true,
+      limitMinorUnits: true,
+      reservedMinorUnits: true,
+      settledMinorUnits: true,
+    },
+  })
+  return getKBGraphBuildConfig(
+    result.kb,
+    result.build,
+    isStale,
+    quota,
+    costConfiguration
+  )
 }

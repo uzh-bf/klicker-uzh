@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-07-30'
+timestamp: '2026-08-15'
 tags:
   - backend
   - prisma
@@ -65,6 +65,7 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 - **KB list order and bulk locks are deterministic**: resource pagination uses immutable `(createdAt DESC, id DESC)` keys, while bulk deletion locks the live parent KB and then the selected resource UUIDs in sorted order. Preserve `createdAt` as an immutable cursor key and the KB-first lock order when extending list operations.
 - **User deletion cannot rely on the KB cascade**: `packages/prisma/src/prisma/schema/knowledge.prisma:KB.owner` has `onDelete: Cascade`, which would remove KB resources and ingestion runs before external and Blob cleanup completes. There is no current user hard-delete path. Any future account-deletion/GDPR implementation must first drive each KB through its tombstone lifecycle and verify cleanup before deleting the User.
 - **The source-gateway key is deliberately tenant-wide**: `packages/graphql/src/services/knowledgeSourceGateway.ts:handleKBSourceGateway` authenticates the ingestion bridge with one shared `KB_SOURCE_GATEWAY_KEY`, then resolves the Blob container from the resource's persisted KB owner. It is not a per-owner credential; a valid key plus exact eligible resource id/version crosses owner containers by design. Preserve the live BLOB/digest/status/tombstone predicate before Blob access, and treat key exposure as all-tenant blast radius.
+- **KB graph cost accounting is integer-only and transactional**: `KBGraphQuota` is unique per owner and semester, and `reserveKBGraphCost` inserts the row with `ON CONFLICT DO NOTHING`, locks it, and increments `reservedMinorUnits` only after checking the configured limit. `KBGraphBuild.costStatus` is the idempotency fence. A valid W1 terminal result moves the reservation to `SETTLED`; a failed result releases it; malformed or mismatched results move it to `NEEDS_HUMAN_REVIEW` without publishing. Keep `meteredCost` aligned with the typed `PrismaKBGraphMeteredCost` declaration and run `prisma:sync` after editing the shared schema.
 
 ## Adjacent: export package (`packages/export`)
 
