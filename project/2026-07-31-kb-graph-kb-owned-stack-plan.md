@@ -290,6 +290,12 @@ current contract acceptance required by the roadmap.
   transfer ledger is committed at `48ba5ff093439b61f5d5165f42ddd8287089c436`;
   its focused suite passes 34/34 with Ruff, Pyrefly, catalog-sync, ShellCheck,
   and shell syntax checks. The W3 repository's four unrelated pre-existing
-  dirty paths remain unstaged. Independent final review of these corrected
-  ranges remains the completion gate; browser proof remains synthetic and no
-  live provider execution, cluster access, merge, push, or deployment occurred.
+  dirty paths remain unstaged. Independent final review of W2 range
+  `eb4c0fd546b94a73068a4ae2e3226682f1103c85..e851e1deb` and W3 range
+  `06d55a4cc7b86bdda86adeab2238d5de56ad16c2..48ba5ff093439b61f5d5165f42ddd8287089c436`
+  passed with no findings. The reviews confirmed the terminal-result wiring,
+  dispatch and ambiguous-acceptance fences, late-success accounting, newest
+  attempt visibility, active-content digest contract, stable named evidence,
+  and mutation/retry semantics. Residual verification limits remain browser
+  proof, live provider execution, worker-process startup, migration
+  application, cluster access, merge, push, and deployment.
