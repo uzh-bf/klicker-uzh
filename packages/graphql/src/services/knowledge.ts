@@ -1969,17 +1969,23 @@ export async function getKbKnowledgeGraphConfig(
   await assertKbPreviewAccess(ctx)
   const kb = await getOwnedKbOrThrow(ctx, kbId)
   const costConfiguration = getKBGraphCostConfiguration()
-  const preferredBuildId = kb.activeGraphBuildId ?? kb.publishedGraphBuildId
-  const build = preferredBuildId
-    ? await ctx.prisma.kBGraphBuild.findFirst({
-        where: { id: preferredBuildId, kbId: kb.id },
-        select: KB_GRAPH_BUILD_CONFIG_SELECT,
-      })
-    : await ctx.prisma.kBGraphBuild.findFirst({
-        where: { kbId: kb.id },
-        select: KB_GRAPH_BUILD_CONFIG_SELECT,
-        orderBy: { createdAt: 'desc' },
-      })
+  const [build, publishedBuild] = await Promise.all([
+    ctx.prisma.kBGraphBuild.findFirst({
+      where: { kbId: kb.id },
+      select: KB_GRAPH_BUILD_CONFIG_SELECT,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    }),
+    kb.publishedGraphBuildId
+      ? ctx.prisma.kBGraphBuild.findFirst({
+          where: {
+            id: kb.publishedGraphBuildId,
+            kbId: kb.id,
+            status: DB.KBGraphBuildStatus.SUCCEEDED,
+          },
+          select: { sourceContentDigest: true },
+        })
+      : Promise.resolve(null),
+  ])
   const quota = await ctx.prisma.kBGraphQuota.findUnique({
     where: {
       ownerId_semesterKey: {
@@ -1995,8 +2001,8 @@ export async function getKbKnowledgeGraphConfig(
     },
   })
   const isStale =
-    build?.status === DB.KBGraphBuildStatus.SUCCEEDED
-      ? build.sourceContentDigest !==
+    publishedBuild !== null
+      ? publishedBuild.sourceContentDigest !==
         (await computeKBContentDigest(ctx.prisma, kb.id))
       : false
   return getKBGraphBuildConfig(kb, build, isStale, quota, costConfiguration)
@@ -2249,6 +2255,7 @@ export async function rebuildKbKnowledgeGraph(
             id: result.queueBuildId!,
             kbId,
             externalOperationId: null,
+            dispatchClaimedAt: null,
             status: DB.KBGraphBuildStatus.QUEUED,
           },
           data: {

@@ -336,6 +336,65 @@ describe('KB graph cost accounting', () => {
     })
   })
 
+  it('validates late-result metering before claiming the active graph slot', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    await prisma.kBResource.create({
+      data: {
+        id: LATE_RESOURCE_ID,
+        kbId,
+        type: KBResourceType.URL,
+        title: 'Late currency mismatch resource',
+        sourceUrl: 'https://content.example.org/currency.pdf',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: LATE_CONTENT_SHA256,
+      },
+    })
+    const { build, runId, graphmlBlobName } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.FAILED,
+      errorCode: 'KB_GRAPH_TIMEOUT',
+      createdAt: new Date(NOW.getTime() - 5 * 60 * 1000),
+      sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+    })
+    const result = successfulResult({
+      buildId: build.id,
+      runId,
+      graphmlBlobName,
+      sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+    })
+    result.metered_cost!.currency = 'EUR'
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result,
+          finishedAt: NOW,
+          allowLateSuccess: true,
+        })
+      )
+    ).resolves.toBe('NEEDS_HUMAN_REVIEW')
+
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.FAILED,
+      costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      errorCode: 'KB_GRAPH_RESULT_CURRENCY_MISMATCH',
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({ activeGraphBuildId: null })
+  })
+
   it('settles a late success without publishing when the KB digest is stale', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {

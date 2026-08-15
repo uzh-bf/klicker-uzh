@@ -73,6 +73,9 @@ export type ExternalKBGraphClient = {
     options: { additionalMetadata: Record<string, string> }
   ) => Promise<{ getWorkflowRunId: () => Promise<string> }>
   runs: {
+    get: (runId: string) => Promise<{
+      run: { output: unknown }
+    }>
     get_status: (runId: string) => Promise<ExternalKBGraphStatus>
     list: (options: {
       workflowNames: string[]
@@ -263,6 +266,14 @@ export function getExternalKBGraphClient(
     ) as ExternalKBGraphClient
   }
   return externalKBGraphClient
+}
+
+export async function getKBGraphTerminalResult(
+  runId: string,
+  client: ExternalKBGraphClient = getExternalKBGraphClient()
+): Promise<unknown> {
+  const details = await client.runs.get(runId)
+  return details.run.output
 }
 
 export function getKBGraphSourceUrl(

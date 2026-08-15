@@ -307,7 +307,8 @@ async function reconcileLateKBGraphSuccess(
   }
 
   // Resource refreshes lock their resource row. Lock the serving set after the
-  // KB row so the digest cannot change between the eligibility check and claim.
+  // KB row so the digest cannot change between the eligibility check and
+  // settlement claim.
   await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT resource."id"
     FROM "public"."KBResource" AS resource
@@ -323,23 +324,6 @@ async function reconcileLateKBGraphSuccess(
       status: DB.KBGraphBuildStatus.FAILED,
       statusMessage: 'The KB changed before the timed-out build completed.',
       errorCode: 'KB_GRAPH_LATE_SUCCESS_STALE',
-    }
-  }
-
-  const claimed = await prisma.kB.updateMany({
-    where: {
-      id: build.kbId,
-      deletedAt: null,
-      activeGraphBuildId: null,
-    },
-    data: { activeGraphBuildId: build.id },
-  })
-  if (claimed.count !== 1) {
-    return {
-      eligible: false,
-      status: DB.KBGraphBuildStatus.SUPERSEDED,
-      statusMessage: 'A newer KB graph build replaced this timed-out build.',
-      errorCode: 'KB_GRAPH_LATE_SUCCESS_SUPERSEDED',
     }
   }
 
@@ -466,14 +450,6 @@ export async function settleKBGraphBuildCost(
     )
   }
 
-  const lateSuccess =
-    allowLateSuccess &&
-    result.status === 'SUCCEEDED' &&
-    build.status === DB.KBGraphBuildStatus.FAILED &&
-    build.errorCode === 'KB_GRAPH_TIMEOUT'
-      ? await reconcileLateKBGraphSuccess(prisma, build)
-      : null
-
   if (result.metered_cost !== null) {
     if (result.metered_cost.currency !== build.costCurrency) {
       return markCostNeedsHumanReview(
@@ -515,9 +491,16 @@ export async function settleKBGraphBuildCost(
       usage.requestCount += component.request_count
     }
 
+    const lateSuccess =
+      allowLateSuccess &&
+      result.status === 'SUCCEEDED' &&
+      build.status === DB.KBGraphBuildStatus.FAILED &&
+      build.errorCode === 'KB_GRAPH_TIMEOUT'
+        ? await reconcileLateKBGraphSuccess(prisma, build)
+        : null
     const succeeded = result.status === 'SUCCEEDED'
     const lateRejection = lateSuccess?.eligible === false ? lateSuccess : null
-    const publishSuccess =
+    let publishSuccess =
       succeeded &&
       lateRejection === null &&
       (build.kb.activeGraphBuildId === build.id ||
@@ -581,6 +564,37 @@ export async function settleKBGraphBuildCost(
     })
     if (quotaUpdated.count !== 1) {
       throw new Error('KB graph quota reservation could not be settled')
+    }
+    if (publishSuccess && lateSuccess?.eligible === true) {
+      const claimed = await prisma.kB.updateMany({
+        where: {
+          id: build.kbId,
+          deletedAt: null,
+          activeGraphBuildId: null,
+        },
+        data: { activeGraphBuildId: build.id },
+      })
+      if (claimed.count !== 1) {
+        publishSuccess = false
+        const superseded = await prisma.kBGraphBuild.updateMany({
+          where: {
+            id: build.id,
+            costStatus: DB.KBGraphCostStatus.SETTLED,
+            status: DB.KBGraphBuildStatus.SUCCEEDED,
+          },
+          data: {
+            status: DB.KBGraphBuildStatus.SUPERSEDED,
+            statusMessage:
+              'A newer KB graph build replaced this timed-out build.',
+            errorCode: 'KB_GRAPH_LATE_SUCCESS_SUPERSEDED',
+          },
+        })
+        if (superseded.count !== 1) {
+          throw new Error(
+            'KB graph late success could not be marked as superseded'
+          )
+        }
+      }
     }
     if (publishSuccess) {
       const published = await prisma.kB.updateMany({

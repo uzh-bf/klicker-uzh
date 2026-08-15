@@ -55,8 +55,8 @@ export function prepareHatchetTasks({
   redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
-  getKBGraphTerminalResult?: (runId: string) => Promise<unknown>
-  settleKBGraphTerminalResult?: (input: {
+  getKBGraphTerminalResult: (runId: string) => Promise<unknown>
+  settleKBGraphTerminalResult: (input: {
     buildId: string
     result: unknown
     finishedAt: Date

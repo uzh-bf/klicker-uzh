@@ -354,6 +354,7 @@ async function failKBGraphBuildBeforeDispatch(
         id: buildId,
         kbId,
         externalOperationId: null,
+        dispatchClaimedAt: null,
         status: {
           in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
         },
@@ -1022,24 +1023,25 @@ export async function markKBGraphBuildDispatchFailed(
   prisma: KBGraphPrisma
 ): Promise<void> {
   const finishedAt = new Date()
-  const build = await prisma.kBGraphBuild.findUnique({
-    where: { id: input.buildId },
-    select: {
-      id: true,
-      kbId: true,
-      dispatchClaimedAt: true,
-      costStatus: true,
-    },
-  })
-  if (!build) {
-    return
-  }
   await prisma.$transaction(async (tx) => {
+    const build = await tx.kBGraphBuild.findUnique({
+      where: { id: input.buildId },
+      select: {
+        id: true,
+        kbId: true,
+        dispatchClaimedAt: true,
+        costStatus: true,
+      },
+    })
+    if (!build) return
+
     const failed = await tx.kBGraphBuild.updateMany({
       where: {
         id: build.id,
         kbId: build.kbId,
         externalOperationId: null,
+        dispatchClaimedAt:
+          build.dispatchClaimedAt === null ? null : { not: null },
         status: {
           in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
         },

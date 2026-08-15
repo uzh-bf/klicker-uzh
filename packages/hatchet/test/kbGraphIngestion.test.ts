@@ -14,6 +14,7 @@ import {
 } from '../src/kbGraphIngestion.js'
 import {
   getKBGraphSourceUrl,
+  getKBGraphTerminalResult,
   KB_GRAPH_BUILD_METADATA_KEY,
   KB_GRAPH_KB_METADATA_KEY,
   validateKBGraphWorkerConfig,
@@ -109,6 +110,7 @@ function createClient({
 } = {}) {
   return {
     runs: {
+      get: vi.fn().mockResolvedValue({ run: { output: null } }),
       get_status: vi.fn().mockResolvedValue('QUEUED'),
       list: vi.fn().mockResolvedValue({ rows }),
       cancel: vi.fn().mockResolvedValue({}),
@@ -196,6 +198,16 @@ function createMonitorPrisma(
 }
 
 describe('KB graph external dispatch', () => {
+  it('reads the versioned terminal payload from the external run output', async () => {
+    const client = createClient()
+    const result = { contract_version: 'klicker-kb-graph/v1' }
+    vi.mocked(client.runs.get).mockResolvedValue({ run: { output: result } })
+
+    await expect(
+      getKBGraphTerminalResult('external-run-id', client)
+    ).resolves.toEqual(result)
+  })
+
   it('allows an unconfigured worker but rejects a partial graph integration', () => {
     expect(() => validateKBGraphWorkerConfig({})).not.toThrow()
     expect(() =>
@@ -489,6 +501,27 @@ describe('KB graph external dispatch', () => {
         data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
       })
     )
+  })
+
+  it('does not release a reservation when gate compensation loses the dispatch claim race', async () => {
+    const prisma = createDispatchPrisma({ updateCount: 0 })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: { ...externalEnv, KB_GRAPH_DISABLED: 'true' },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
   })
 
   it('recovers a matching external build before creating a duplicate run', async () => {
@@ -797,5 +830,14 @@ describe('KB graph build failure guard', () => {
       where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
       data: { activeGraphBuildId: null },
     })
+  })
+
+  it('does not release a reservation when failure compensation loses the dispatch claim race', async () => {
+    const prisma = createDispatchPrisma({ updateCount: 0 })
+
+    await markKBGraphBuildDispatchFailed({ buildId: BUILD_ID }, prisma as never)
+
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
   })
 })
