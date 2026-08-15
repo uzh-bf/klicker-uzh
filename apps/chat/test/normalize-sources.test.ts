@@ -211,7 +211,6 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
-      id: 'title:Lecture 1 — 0:42–0:59||0:42|42|59',
       index: 1,
       type: 'video',
       title: 'Lecture 1 — 0:42–0:59',
@@ -219,6 +218,36 @@ describe('normalizeSourcesFromParts', () => {
       startSec: 42,
       endSec: 59,
     })
+  })
+
+  test('documents mode drops a reversed structured end time', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('IW_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'urn:video-ingestion:sha256:video#t=42.0,41.0',
+            source_type: 'video',
+            title: 'Lecture 1',
+            chunks: [
+              {
+                content: 'Video context',
+                start_sec: 42,
+                end_sec: 41,
+                labeled_page_number: '0:42',
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result[0]).toMatchObject({
+      type: 'video',
+      startSec: 42,
+      labeledPage: '0:42',
+    })
+    expect(result[0]?.endSec).toBeUndefined()
   })
 
   test('structured video ranges participate in source deduplication', () => {

@@ -71,6 +71,19 @@ describe('getSourceTimestamp', () => {
     ).toBe('12:34')
   })
 
+  test('structured video start wins over legacy timestamp channels', () => {
+    expect(
+      getSourceTimestamp(
+        source({
+          type: 'video',
+          startSec: 754,
+          labeledPage: '1:15',
+          url: 'https://example.com/v/abc#t=10',
+        })
+      )
+    ).toBe('12:34')
+  })
+
   test('reads a clock-valued labeled page', () => {
     expect(
       getSourceTimestamp(source({ type: 'video', labeledPage: '12:34' }))

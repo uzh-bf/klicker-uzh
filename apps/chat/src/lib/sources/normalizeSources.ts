@@ -329,7 +329,6 @@ function normalizeAnswerModeSources(
 
     const page = cleanPage(source.page_number)
     const labeledPage = cleanString(source.labeled_page_number)
-    const { startSec, endSec } = cleanVideoRange(source)
     const type = inferSourceType(cleanString(source.source_type), rawUrl)
 
     candidates.push({
@@ -338,16 +337,7 @@ function normalizeAnswerModeSources(
       page,
       labeledPage,
       url,
-      startSec,
-      endSec,
-      dedupeKey: buildDedupeKey({
-        url,
-        title,
-        page,
-        labeledPage,
-        startSec,
-        endSec,
-      }),
+      dedupeKey: buildDedupeKey({ url, title, page, labeledPage }),
     })
   }
 
