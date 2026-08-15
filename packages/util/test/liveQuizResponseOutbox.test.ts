@@ -10,6 +10,7 @@ const message: CorrelatedResponseEventMessage = {
   messageId: '22222222-2222-4222-8222-222222222222',
   sessionId: '11111111-1111-4111-8111-111111111111',
   instanceId: '42',
+  publicationGeneration: 3,
   response: { value: 'accepted answer' },
   responseTimestamp: 1_000,
   instanceInfo: {

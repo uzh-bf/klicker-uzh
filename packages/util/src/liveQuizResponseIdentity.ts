@@ -34,6 +34,7 @@ export type LiveQuizResponseIdentity =
       kind: 'anonymous'
       id: string
       liveQuizId: string
+      publicationGeneration: number
       token: string
       cookieName: string
     }
@@ -52,11 +53,13 @@ export function buildLiveQuizResponseIdentityKey({
 export async function createLiveQuizRespondentToken({
   respondentId,
   liveQuizId,
+  publicationGeneration,
   secret,
   issuer,
 }: {
   respondentId: string
   liveQuizId: string
+  publicationGeneration: number
   secret: string
   issuer: string
 }) {
@@ -65,6 +68,7 @@ export async function createLiveQuizRespondentToken({
       sub: respondentId,
       role: LIVE_QUIZ_RESPONDENT_ROLE,
       liveQuizId,
+      publicationGeneration,
     },
     secret,
     {
@@ -154,16 +158,21 @@ export async function resolveLiveQuizResponseIdentity({
     secret,
     issuer,
   })
+  const publicationGeneration = respondentPayload?.publicationGeneration
   if (
     respondentToken &&
     respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
     respondentPayload.liveQuizId === liveQuizId &&
+    typeof publicationGeneration === 'number' &&
+    Number.isInteger(publicationGeneration) &&
+    publicationGeneration >= 0 &&
     typeof respondentPayload.sub === 'string'
   ) {
     return {
       kind: 'anonymous',
       id: respondentPayload.sub,
       liveQuizId,
+      publicationGeneration,
       token: respondentToken,
       cookieName: respondentCookieName,
     }
@@ -194,6 +203,7 @@ export type CorrelatedResponseEventMessage = Omit<
   LiveQuizResponseEventMessage,
   'cookie'
 > & {
+  publicationGeneration: number
   acceptedIdentity: AcceptedCorrelatedResponseIdentity
   instanceInfo: CorrelatedResponseInstanceInfo
 }
@@ -204,15 +214,17 @@ export type CorrelatedResponseDeliveryMessage = {
 
 export function buildCorrelatedResponseKey({
   liveQuizId,
+  publicationGeneration,
   instanceId,
   blockExecution,
   identityKey,
 }: {
   liveQuizId: string
+  publicationGeneration: number
   instanceId: string
   blockExecution: string
   identityKey: LiveQuizResponseIdentityKey
 }) {
   const identityHash = createHash('sha256').update(identityKey).digest('hex')
-  return `lq:${liveQuizId}:i:${instanceId}:correlatedVotes:${blockExecution}:${identityHash}`
+  return `lq:${liveQuizId}:g:${publicationGeneration}:i:${instanceId}:correlatedVotes:${blockExecution}:${identityHash}`
 }

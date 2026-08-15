@@ -12,12 +12,14 @@ const secret = 'live-quiz-response-test-secret'
 const issuer = 'https://api.klicker.test'
 const liveQuizId = '11111111-1111-4111-8111-111111111111'
 const respondentId = '22222222-2222-4222-8222-222222222222'
+const publicationGeneration = 3
 
 describe('live quiz response identity', () => {
   it('resolves a signed anonymous respondent only for its quiz', async () => {
     const token = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId,
+      publicationGeneration,
       secret,
       issuer,
     })
@@ -123,6 +125,7 @@ describe('live quiz response identity', () => {
     const respondentToken = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId,
+      publicationGeneration,
       secret,
       issuer,
     })
@@ -153,6 +156,7 @@ describe('live quiz response identity', () => {
     const respondentToken = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId,
+      publicationGeneration,
       secret,
       issuer,
     })
@@ -181,12 +185,14 @@ describe('live quiz response identity', () => {
       createLiveQuizRespondentToken({
         respondentId,
         liveQuizId,
+        publicationGeneration,
         secret,
         issuer,
       }),
       createLiveQuizRespondentToken({
         respondentId: otherRespondentId,
         liveQuizId: otherQuizId,
+        publicationGeneration,
         secret,
         issuer,
       }),

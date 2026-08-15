@@ -80,6 +80,7 @@ function normalizeCorrelatedResponseEventMessage(
       'instanceId',
       'instanceInfo',
       'messageId',
+      'publicationGeneration',
       'response',
       'responseTimestamp',
       'sessionId',
@@ -87,6 +88,9 @@ function normalizeCorrelatedResponseEventMessage(
     isNonEmptyString(value.messageId) &&
     isNonEmptyString(value.sessionId) &&
     isNonEmptyString(value.instanceId) &&
+    typeof value.publicationGeneration === 'number' &&
+    Number.isInteger(value.publicationGeneration) &&
+    value.publicationGeneration >= 0 &&
     typeof value.responseTimestamp === 'number' &&
     Number.isFinite(value.responseTimestamp) &&
     value.responseTimestamp >= 0 &&
@@ -112,6 +116,7 @@ function normalizeCorrelatedResponseEventMessage(
           messageId: value.messageId,
           sessionId: value.sessionId,
           instanceId: value.instanceId,
+          publicationGeneration: value.publicationGeneration,
           response: value.response as LiveQuizResponseInput,
           responseTimestamp: value.responseTimestamp,
           acceptedIdentity: {
