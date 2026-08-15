@@ -130,10 +130,12 @@ async function ensureCorrelatedResponseIdentity({
   req,
   res,
   liveQuizId,
+  publicationGeneration,
 }: {
   req: IncomingMessage
   res: ServerResponse
   liveQuizId: string
+  publicationGeneration: number
 }): Promise<LiveQuizResponseIdentity> {
   const { secret, issuer } = getResponseIdentityConfig()
   const cookieHeader =
@@ -144,7 +146,11 @@ async function ensureCorrelatedResponseIdentity({
     secret,
     issuer,
   })
-  if (existingIdentity) {
+  if (
+    existingIdentity &&
+    (existingIdentity.kind !== 'anonymous' ||
+      existingIdentity.publicationGeneration === publicationGeneration)
+  ) {
     return existingIdentity
   }
 
@@ -152,6 +158,7 @@ async function ensureCorrelatedResponseIdentity({
   const token = await createLiveQuizRespondentToken({
     respondentId,
     liveQuizId,
+    publicationGeneration,
     secret,
     issuer,
   })
@@ -159,6 +166,7 @@ async function ensureCorrelatedResponseIdentity({
     kind: 'anonymous',
     id: respondentId,
     liveQuizId,
+    publicationGeneration,
     token,
     cookieName: getLiveQuizRespondentCookieName(liveQuizId),
   }
@@ -195,19 +203,20 @@ async function handleInitializeLiveQuizResponseIdentity(
     cookieHeader:
       typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
   })
-  if (admission === 'not_found') {
+  if (admission.status === 'not_found') {
     return sendJson(req, res, 404, { error: 'Live quiz not found' })
   }
-  if (admission === 'not_required') {
+  if (admission.status === 'not_required') {
     return sendJson(req, res, 200, { status: 'not_required' })
   }
-  if (admission === 'pin_required') {
+  if (admission.status === 'pin_required') {
     return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
   }
   await ensureCorrelatedResponseIdentity({
     req,
     res,
     liveQuizId: payload.liveQuizId,
+    publicationGeneration: admission.publicationGeneration,
   })
   return sendJson(req, res, 200, { status: 'ready' })
 }

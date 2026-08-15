@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
@@ -107,6 +106,7 @@ describe('standard live quiz response handlers', () => {
     const token = await createLiveQuizRespondentToken({
       respondentId: '33333333-3333-4333-8333-333333333333',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       secret,
       issuer,
     })
@@ -145,6 +145,7 @@ describe('standard live quiz response handlers', () => {
     const token = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       secret,
       issuer,
     })
@@ -162,6 +163,7 @@ describe('standard live quiz response handlers', () => {
           pinCode: null,
           responseCollectionMode:
             LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+          publicationGeneration: 3,
           status: PublicationStatus.PUBLISHED,
         }),
       },
@@ -177,15 +179,27 @@ describe('standard live quiz response handlers', () => {
               pinCode: null,
               responseCollectionMode:
                 LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+              publicationGeneration: 3,
               status: PublicationStatus.PUBLISHED,
             },
           ],
-          liveQuizRespondent: {
-            upsert: async () => ({
-              id: respondentId,
+          liveQuizRespondentBinding: {
+            findUnique: async () => null,
+            create: async () => ({
+              respondentId,
               liveQuizId: request.liveQuizId,
-              type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+              publicationGeneration: 3,
+              participantId: null,
               verificationSecretHash: hashLiveQuizRespondentToken(token),
+              expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+            }),
+          },
+          liveQuizRespondent: {
+            create: async () => ({ id: respondentId }),
+            findUnique: async () => ({
+              finalizedAt: null,
+              liveQuizId: request.liveQuizId,
+              publicationGeneration: 3,
             }),
           },
           liveQuizPendingResponse: {

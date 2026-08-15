@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { LiveQuizRespondentType } from '@klicker-uzh/prisma/client'
 import {
   buildCorrelatedResponseKey,
   decryptCorrelatedResponseEvent,
   encryptCorrelatedResponseEvent,
+  hashLiveQuizRespondentToken,
 } from '@klicker-uzh/util'
 import {
   admitCorrelatedResponse,
@@ -25,6 +25,7 @@ describe('correlated response key', () => {
   it('is stable for one identity and block execution', () => {
     const key = buildCorrelatedResponseKey({
       liveQuizId: 'quiz-1',
+      publicationGeneration: 3,
       instanceId: '42',
       blockExecution: '3',
       identityKey: 'respondent:abc',
@@ -32,7 +33,7 @@ describe('correlated response key', () => {
 
     assert.equal(
       key,
-      'lq:quiz-1:i:42:correlatedVotes:3:085bf40ef25fbf989488342d89d5669f7bf03aca4968dc220af108593e093de4'
+      'lq:quiz-1:g:3:i:42:correlatedVotes:3:085bf40ef25fbf989488342d89d5669f7bf03aca4968dc220af108593e093de4'
     )
   })
 })
@@ -161,69 +162,58 @@ describe('correlated response request safeguards', () => {
           pinCode: 'ABC123',
           responseCollectionMode: 'CORRELATED_EXPORT',
           status: 'PUBLISHED',
+          publicationGeneration: 3,
         }),
       },
     } as any
 
-    assert.equal(
+    assert.deepEqual(
       await getCorrelatedResponseAdmission({
         database,
         liveQuizId: 'quiz-1',
         cookieHeader: 'live-quiz-pin-quiz-1=ABC123',
       }),
-      'ready'
+      { status: 'ready', publicationGeneration: 3 }
     )
-    assert.equal(
+    assert.deepEqual(
       await getCorrelatedResponseAdmission({
         database,
         liveQuizId: 'quiz-1',
         cookieHeader: undefined,
       }),
-      'pin_required'
+      { status: 'pin_required' }
     )
   })
 
-  it('atomically bridges an active temporary identity and registers its outbox event', async () => {
+  it('rejects gamification-only temporary identities before persistence', async () => {
     const respondentId = '33333333-3333-4333-8333-333333333333'
-    let respondentCreated = false
-    const createCalls: any[] = []
-    let lockQuery = ''
+    let bindingCreated = false
+    let outboxCreated = false
     const result = await admitCorrelatedResponse({
       database: {
         $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
           callback({
-            $queryRaw: async (strings: TemplateStringsArray) => {
-              lockQuery = strings.join('?')
-              return [
-                {
-                  activeBlockId: 7,
-                  blockExecution: 3,
-                  blockId: 7,
-                  blockStatus: 'ACTIVE',
-                  isAssessmentEnabled: false,
-                  pinCode: null,
-                  responseCollectionMode: 'CORRELATED_EXPORT',
-                  status: 'PUBLISHED',
-                },
-              ]
-            },
-            temporaryLeaderboardEntry: {
-              findUnique: async () => ({ id: respondentId }),
-            },
-            liveQuizRespondent: {
+            $queryRaw: async () => [
+              {
+                activeBlockId: 7,
+                blockExecution: 3,
+                blockId: 7,
+                blockStatus: 'ACTIVE',
+                isAssessmentEnabled: false,
+                pinCode: null,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                publicationGeneration: 3,
+                status: 'PUBLISHED',
+              },
+            ],
+            liveQuizRespondentBinding: {
               upsert: async () => {
-                respondentCreated = true
-                return {
-                  id: respondentId,
-                  liveQuizId: '11111111-1111-4111-8111-111111111111',
-                  type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-                }
+                bindingCreated = true
               },
             },
             liveQuizPendingResponse: {
-              create: async (args: any) => {
-                createCalls.push(args)
-                return args.data
+              create: async () => {
+                outboxCreated = true
               },
             },
           }),
@@ -250,8 +240,90 @@ describe('correlated response request safeguards', () => {
       nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
     })
 
+    assert.deepEqual(result, { status: 'invalid_identity' })
+    assert.equal(bindingCreated, false)
+    assert.equal(outboxCreated, false)
+  })
+
+  it('binds an anonymous identity to the generation-scoped respondent', async () => {
+    const liveQuizId = '11111111-1111-4111-8111-111111111111'
+    const respondentId = '33333333-3333-4333-8333-333333333333'
+    const token = 'signed-token'
+    const createCalls: any[] = []
+    let lockQuery = ''
+    const result = await admitCorrelatedResponse({
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) =>
+          callback({
+            $queryRaw: async (strings: TemplateStringsArray) => {
+              lockQuery = strings.join('?')
+              return [
+                {
+                  activeBlockId: 7,
+                  blockExecution: 3,
+                  blockId: 7,
+                  blockStatus: 'ACTIVE',
+                  isAssessmentEnabled: false,
+                  pinCode: null,
+                  responseCollectionMode: 'CORRELATED_EXPORT',
+                  publicationGeneration: 3,
+                  status: 'PUBLISHED',
+                },
+              ]
+            },
+            liveQuizRespondentBinding: {
+              findUnique: async () => null,
+              create: async () => ({
+                respondentId,
+                liveQuizId,
+                publicationGeneration: 3,
+                participantId: null,
+                verificationSecretHash: hashLiveQuizRespondentToken(token),
+                expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+                respondent: { finalizedAt: null },
+              }),
+            },
+            liveQuizRespondent: {
+              create: async () => ({ id: respondentId }),
+              findUnique: async () => ({
+                finalizedAt: null,
+                liveQuizId,
+                publicationGeneration: 3,
+              }),
+            },
+            liveQuizPendingResponse: {
+              create: async (args: any) => {
+                createCalls.push(args)
+                return args.data
+              },
+            },
+          }),
+      } as any,
+      identity: {
+        kind: 'anonymous',
+        id: respondentId,
+        liveQuizId,
+        publicationGeneration: 3,
+        token,
+        cookieName:
+          'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
+      },
+      liveQuizId,
+      instanceId: '42',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'private response' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      cookieHeader: undefined,
+      secret: 'app-secret',
+      nextDeliveryAt: new Date('2026-07-29T12:00:00.000Z'),
+    })
+
     assert.equal(result.status, 'registered')
-    assert.equal(respondentCreated, true)
     assert.match(lockQuery, /FOR SHARE OF quiz, block/)
     assert.equal(createCalls.length, 1)
     assert.deepEqual(
@@ -261,11 +333,12 @@ describe('correlated response request safeguards', () => {
       }),
       {
         messageId: '22222222-2222-4222-8222-222222222222',
-        sessionId: '11111111-1111-4111-8111-111111111111',
+        sessionId: liveQuizId,
         instanceId: '42',
+        publicationGeneration: 3,
         response: { value: 'private response' },
         responseTimestamp: 1_000,
-        acceptedIdentity: { kind: 'temporary', id: respondentId },
+        acceptedIdentity: { kind: 'anonymous', id: respondentId },
         instanceInfo: {
           type: 'FREE_TEXT',
           blockExecution: '3',
@@ -276,12 +349,14 @@ describe('correlated response request safeguards', () => {
     assert.equal(
       createCalls[0].data.responseKey,
       buildCorrelatedResponseKey({
-        liveQuizId: '11111111-1111-4111-8111-111111111111',
+        liveQuizId,
+        publicationGeneration: 3,
         instanceId: '42',
         blockExecution: '3',
         identityKey: `respondent:${respondentId}`,
       })
     )
+    assert.equal(createCalls[0].data.publicationGeneration, 3)
   })
 
   it('does not create identities or outbox entries after the quiz has ended', async () => {
@@ -319,6 +394,7 @@ describe('correlated response request safeguards', () => {
         kind: 'anonymous',
         id: '33333333-3333-4333-8333-333333333333',
         liveQuizId: '11111111-1111-4111-8111-111111111111',
+        publicationGeneration: 3,
         token: 'signed-token',
         cookieName:
           'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
@@ -349,6 +425,7 @@ describe('correlated response request safeguards', () => {
         kind: 'anonymous',
         id: '33333333-3333-4333-8333-333333333333',
         liveQuizId: '11111111-1111-4111-8111-111111111111',
+        publicationGeneration: 3,
         token: 'signed-token',
         cookieName:
           'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
@@ -419,6 +496,7 @@ describe('correlated response request safeguards', () => {
                 isAssessmentEnabled: false,
                 pinCode: 'ABC123',
                 responseCollectionMode: 'CORRELATED_EXPORT',
+                publicationGeneration: 3,
                 status: 'PUBLISHED',
               },
             ],
@@ -438,6 +516,7 @@ describe('correlated response request safeguards', () => {
         kind: 'anonymous',
         id: '33333333-3333-4333-8333-333333333333',
         liveQuizId: '11111111-1111-4111-8111-111111111111',
+        publicationGeneration: 3,
         token: 'signed-token',
         cookieName:
           'live_quiz_respondent_token_11111111-1111-4111-8111-111111111111',
@@ -466,6 +545,7 @@ describe('correlated response request safeguards', () => {
       messageId: '22222222-2222-4222-8222-222222222222',
       sessionId: '11111111-1111-4111-8111-111111111111',
       instanceId: '42',
+      publicationGeneration: 3,
       response: { value: 'private response' },
       responseTimestamp: 1_000,
       instanceInfo: {
@@ -515,6 +595,7 @@ describe('correlated response request safeguards', () => {
       messageId: '22222222-2222-4222-8222-222222222222',
       sessionId: '11111111-1111-4111-8111-111111111111',
       instanceId: '42',
+      publicationGeneration: 3,
       response: { value: 'response' },
       responseTimestamp: 1_000,
       instanceInfo: {

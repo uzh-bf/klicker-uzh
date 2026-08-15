@@ -52,6 +52,12 @@ export async function handleCorrelatedResponse({
       body: { error: 'Live quiz response identity required' },
     }
   }
+  if (identity.kind === 'temporary') {
+    return {
+      status: 401,
+      body: { error: 'Live quiz response identity is no longer active' },
+    }
+  }
 
   const acceptedInstanceInfo = parseCorrelatedResponseInstanceInfo(instanceInfo)
   if (!acceptedInstanceInfo) {

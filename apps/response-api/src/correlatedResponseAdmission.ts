@@ -1,13 +1,11 @@
 import {
   ElementBlockStatus,
-  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
   buildCorrelatedResponseKey,
-  buildLiveQuizResponseIdentityKey,
   encryptCorrelatedResponseEvent,
   getLiveQuizRespondentCookieName,
   hashLiveQuizRespondentToken,
@@ -17,6 +15,7 @@ import {
   type CorrelatedResponseInstanceInfo,
   type LiveQuizResponseIdentity,
 } from '@klicker-uzh/util'
+import { randomUUID } from 'node:crypto'
 
 const CORRELATED_OUTBOX_RETRY_MS = 30_000
 
@@ -36,18 +35,19 @@ export async function getCorrelatedResponseAdmission({
       pinCode: true,
       responseCollectionMode: true,
       status: true,
+      publicationGeneration: true,
     },
   })
 
   if (!liveQuiz || liveQuiz.status !== PublicationStatus.PUBLISHED) {
-    return 'not_found' as const
+    return { status: 'not_found' as const }
   }
   if (
     liveQuiz.isAssessmentEnabled ||
     liveQuiz.responseCollectionMode !==
       LiveQuizResponseCollectionMode.CORRELATED_EXPORT
   ) {
-    return 'not_required' as const
+    return { status: 'not_required' as const }
   }
   if (
     !hasValidLiveQuizPin({
@@ -56,9 +56,12 @@ export async function getCorrelatedResponseAdmission({
       pinCode: liveQuiz.pinCode,
     })
   ) {
-    return 'pin_required' as const
+    return { status: 'pin_required' as const }
   }
-  return 'ready' as const
+  return {
+    status: 'ready' as const,
+    publicationGeneration: liveQuiz.publicationGeneration,
+  }
 }
 
 export async function admitCorrelatedResponse({
@@ -112,6 +115,7 @@ export async function admitCorrelatedResponse({
           isAssessmentEnabled: boolean
           pinCode: string | null
           responseCollectionMode: LiveQuizResponseCollectionMode
+          publicationGeneration: number
           status: PublicationStatus
         }[]
       >`
@@ -123,6 +127,7 @@ export async function admitCorrelatedResponse({
           quiz."isAssessmentEnabled",
           quiz."pinCode",
           quiz."responseCollectionMode"::text AS "responseCollectionMode",
+          quiz."publicationGeneration",
           quiz."status"::text AS "status"
         FROM "public"."LiveQuiz" AS quiz
         JOIN "public"."ElementBlock" AS block
@@ -159,6 +164,16 @@ export async function admitCorrelatedResponse({
         return { status: 'pin_required' as const }
       }
 
+      if (identity.kind === 'temporary') {
+        return { status: 'invalid_identity' as const }
+      }
+      if (
+        identity.kind === 'anonymous' &&
+        identity.publicationGeneration !== admission.publicationGeneration
+      ) {
+        return { status: 'invalid_identity' as const }
+      }
+
       if (identity.kind === 'participant') {
         const participant = await prisma.participant.findUnique({
           where: { id: identity.id },
@@ -167,73 +182,143 @@ export async function admitCorrelatedResponse({
         if (!participant) {
           return { status: 'invalid_identity' as const }
         }
-      } else if (identity.kind === 'temporary') {
-        const temporaryEntry =
-          await prisma.temporaryLeaderboardEntry.findUnique({
-            where: {
-              id_quizId: {
-                id: identity.id,
-                quizId: liveQuizId,
-              },
-            },
-            select: { id: true },
-          })
-        if (!temporaryEntry) {
-          return { status: 'invalid_identity' as const }
-        }
+      }
 
-        const respondent = await prisma.liveQuizRespondent.upsert({
-          where: { id: identity.id },
-          update: {},
-          create: {
-            id: identity.id,
-            type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-            liveQuiz: { connect: { id: liveQuizId } },
+      const expiresAt = new Date(
+        Date.now() + LIVE_QUIZ_RESPONDENT_TOKEN_MAX_AGE_SECONDS * 1000
+      )
+      const verificationSecretHash =
+        identity.kind === 'anonymous'
+          ? hashLiveQuizRespondentToken(identity.token)
+          : null
+      const bindingSelect = {
+        respondentId: true,
+        liveQuizId: true,
+        publicationGeneration: true,
+        participantId: true,
+        verificationSecretHash: true,
+        expiresAt: true,
+      } as const
+      const existingBinding =
+        identity.kind === 'participant'
+          ? await prisma.liveQuizRespondentBinding.findUnique({
+              where: {
+                liveQuizId_publicationGeneration_participantId: {
+                  liveQuizId,
+                  publicationGeneration: admission.publicationGeneration,
+                  participantId: identity.id,
+                },
+              },
+              select: bindingSelect,
+            })
+          : await prisma.liveQuizRespondentBinding.findUnique({
+              where: {
+                liveQuizId_publicationGeneration_verificationSecretHash: {
+                  liveQuizId,
+                  publicationGeneration: admission.publicationGeneration,
+                  verificationSecretHash: hashLiveQuizRespondentToken(
+                    identity.token
+                  ),
+                },
+              },
+              select: bindingSelect,
+            })
+      const existingRespondent = existingBinding
+        ? await prisma.liveQuizRespondent.findUnique({
+            where: { id: existingBinding.respondentId },
+            select: {
+              finalizedAt: true,
+              liveQuizId: true,
+              publicationGeneration: true,
+            },
+          })
+        : null
+
+      if (
+        existingBinding &&
+        (!existingRespondent ||
+          existingRespondent.liveQuizId !== liveQuizId ||
+          existingRespondent.publicationGeneration !==
+            admission.publicationGeneration ||
+          existingRespondent.finalizedAt !== null)
+      ) {
+        return { status: 'invalid_identity' as const }
+      }
+
+      const binding = existingBinding
+        ? await prisma.liveQuizRespondentBinding.update({
+            where: { respondentId: existingBinding.respondentId },
+            data: { expiresAt },
+            select: bindingSelect,
+          })
+        : await (async () => {
+            const respondentId =
+              identity.kind === 'anonymous' ? identity.id : randomUUID()
+            await prisma.liveQuizRespondent.create({
+              data: {
+                id: respondentId,
+                liveQuizId,
+                publicationGeneration: admission.publicationGeneration,
+              },
+            })
+            return prisma.liveQuizRespondentBinding.create({
+              data: {
+                respondentId,
+                liveQuizId,
+                publicationGeneration: admission.publicationGeneration,
+                participantId:
+                  identity.kind === 'participant' ? identity.id : null,
+                verificationSecretHash,
+                expiresAt,
+              },
+              select: bindingSelect,
+            })
+          })()
+
+      const respondent =
+        existingRespondent ??
+        (await prisma.liveQuizRespondent.findUnique({
+          where: { id: binding.respondentId },
+          select: {
+            finalizedAt: true,
+            liveQuizId: true,
+            publicationGeneration: true,
           },
-        })
-        if (
-          respondent.liveQuizId !== liveQuizId ||
-          respondent.type !== LiveQuizRespondentType.TEMPORARY_PSEUDONYM
-        ) {
-          return { status: 'invalid_identity' as const }
-        }
-      } else {
-        const verificationSecretHash = hashLiveQuizRespondentToken(
-          identity.token
-        )
-        const respondent = await prisma.liveQuizRespondent.upsert({
-          where: { id: identity.id },
-          update: {},
-          create: {
-            id: identity.id,
-            type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-            verificationSecretHash,
-            liveQuiz: { connect: { id: liveQuizId } },
-          },
-        })
-        if (
-          respondent.liveQuizId !== liveQuizId ||
-          respondent.type !== LiveQuizRespondentType.ANONYMOUS_CORRELATED ||
-          respondent.verificationSecretHash !== verificationSecretHash
-        ) {
-          return { status: 'invalid_identity' as const }
-        }
+        }))
+
+      if (
+        binding.liveQuizId !== liveQuizId ||
+        binding.publicationGeneration !== admission.publicationGeneration ||
+        !respondent ||
+        respondent.liveQuizId !== liveQuizId ||
+        respondent.publicationGeneration !== admission.publicationGeneration ||
+        respondent.finalizedAt !== null ||
+        (identity.kind === 'participant' &&
+          binding.participantId !== identity.id) ||
+        (identity.kind === 'anonymous' &&
+          (binding.respondentId !== identity.id ||
+            binding.verificationSecretHash !==
+              hashLiveQuizRespondentToken(identity.token)))
+      ) {
+        return { status: 'invalid_identity' as const }
       }
 
       const acceptedIdentity = {
-        kind: identity.kind,
-        id: identity.id,
+        kind: 'anonymous' as const,
+        id: binding.respondentId,
       }
       const responseKey = buildCorrelatedResponseKey({
         liveQuizId,
+        publicationGeneration: admission.publicationGeneration,
         instanceId,
         blockExecution,
-        identityKey: buildLiveQuizResponseIdentityKey(identity),
+        identityKey: `respondent:${binding.respondentId}`,
       })
       const eventMessage: CorrelatedResponseEventMessage = {
         messageId,
         sessionId: liveQuizId,
         instanceId,
+        publicationGeneration: admission.publicationGeneration,
         response,
         responseTimestamp,
         acceptedIdentity,
@@ -243,6 +328,7 @@ export async function admitCorrelatedResponse({
         data: {
           id: messageId,
           liveQuizId,
+          publicationGeneration: admission.publicationGeneration,
           responseKey,
           eventPayload: encryptCorrelatedResponseEvent({
             message: eventMessage,

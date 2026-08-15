@@ -157,8 +157,10 @@ model LiveQuizPendingResponse {
 
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String   @db.Uuid
+  publicationGeneration Int @default(0)
 
   @@index([liveQuizId])
+  @@index([liveQuizId, publicationGeneration, settledAt])
   @@index([nextDeliveryAt])
 }
 
