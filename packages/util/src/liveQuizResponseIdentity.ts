@@ -211,14 +211,14 @@ export async function resolveLiveQuizResponseIdentity({
       cookieName: respondentCookieName,
     }
 
-    if (
-      cookieIdentity &&
-      cookieIdentity.publicationGeneration !== explicitPublicationGeneration
-    ) {
-      return explicitIdentity
+    if (cookieIdentity) {
+      return cookieIdentity.publicationGeneration >=
+        explicitPublicationGeneration
+        ? cookieIdentity
+        : explicitIdentity
     }
 
-    return cookieIdentity ?? explicitIdentity
+    return explicitIdentity
   }
 
   return cookieIdentity

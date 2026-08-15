@@ -327,4 +327,37 @@ describe('live quiz response identity', () => {
       token: currentRespondentToken,
     })
   })
+
+  it('keeps a current cookie over an older explicit respondent token', async () => {
+    const currentCookieToken = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      publicationGeneration,
+      secret,
+      issuer,
+    })
+    const staleRespondentId = '77777777-7777-4777-8777-777777777777'
+    const staleRespondentToken = await createLiveQuizRespondentToken({
+      respondentId: staleRespondentId,
+      liveQuizId,
+      publicationGeneration: 2,
+      secret,
+      issuer,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${currentCookieToken}`,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken: staleRespondentToken,
+      })
+    ).resolves.toMatchObject({
+      kind: 'anonymous',
+      id: respondentId,
+      publicationGeneration,
+      token: currentCookieToken,
+    })
+  })
 })

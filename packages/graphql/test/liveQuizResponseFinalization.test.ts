@@ -545,6 +545,36 @@ describe('Live quiz correlated response finalization', () => {
       })
     ).resolves.toBeNull()
   })
+
+  it('surfaces incomplete generations even when their export salt is missing', async () => {
+    const anomalousQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    await prisma.liveQuiz.update({
+      where: { id: anomalousQuiz.id },
+      data: { exportSalt: null },
+    })
+    await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: anomalousQuiz.id,
+        publicationGeneration: 4,
+        type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+        verificationSecretHash: 'anomalous-secret-hash',
+      },
+    })
+
+    let failure: unknown
+    try {
+      await reconcileCorrelatedLiveQuizFinalizations({ prisma })
+    } catch (error) {
+      failure = error
+    }
+
+    expect(failure).toBeInstanceOf(AggregateError)
+    if (!(failure instanceof AggregateError)) return
+    expect(failure.errors).toHaveLength(1)
+    expect(failure.errors[0]).toMatchObject({
+      message: `Cannot finalize correlated live quiz ${anomalousQuiz.id} without an export salt`,
+    })
+  })
 })
 
 async function seedCorrelatedQuiz(

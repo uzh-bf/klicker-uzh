@@ -276,17 +276,40 @@ export async function reconcileCorrelatedLiveQuizFinalizations({
   batchSize?: number
   now?: Date
 }) {
-  const quizzes = await prisma.liveQuiz.findMany({
-    where: {
-      status: DB.PublicationStatus.ENDED,
-      isAssessmentEnabled: false,
-      responseCollectionMode: correlatedResponseMode,
-      exportSalt: { not: null },
-    },
-    select: { id: true },
-    orderBy: { updatedAt: 'asc' },
-    take: batchSize,
-  })
+  const quizzes = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT quiz."id"
+    FROM "public"."LiveQuiz" AS quiz
+    WHERE quiz."status"::text = ${DB.PublicationStatus.ENDED}
+      AND quiz."isAssessmentEnabled" = false
+      AND quiz."isDeleted" = false
+      AND quiz."responseCollectionMode"::text = ${correlatedResponseMode}
+      AND (
+        quiz."exportSalt" IS NOT NULL
+        OR EXISTS (
+          SELECT 1
+          FROM "public"."LiveQuizRespondent" AS respondent
+          WHERE respondent."liveQuizId" = quiz."id"
+            AND respondent."publicationGeneration" = quiz."publicationGeneration"
+            AND (
+              respondent."finalizedAt" IS NULL
+              OR respondent."exportLabel" IS NULL
+            )
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM "public"."LiveQuizPendingResponse" AS pending_response
+          WHERE pending_response."liveQuizId" = quiz."id"
+            AND pending_response."publicationGeneration" = quiz."publicationGeneration"
+            AND (
+              pending_response."settledAt" IS NULL
+              OR pending_response."eventPayload" IS NOT NULL
+              OR pending_response."nextDeliveryAt" IS NOT NULL
+            )
+        )
+      )
+    ORDER BY quiz."updatedAt" ASC
+    LIMIT ${batchSize}
+  `
   const failures: unknown[] = []
 
   for (const quiz of quizzes) {
