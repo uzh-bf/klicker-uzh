@@ -96,18 +96,19 @@ current contract acceptance required by the roadmap.
 
 - Branch: `feat/kb-graph-lifecycle` in `trees/kb-graph-stack`.
 - Target: current GitHub `v3` ref `9a82e7fa63ba6b0f6b373470e3d6b77ae265d371`
-  (read-only `git ls-remote` on 2026-08-15).
-- Current implementation tip: `810ce4edb4768403a1326b0e400a1623136f2520`.
-- The plan metadata refresh follows this implementation tip as a docs-only
-  commit; no code changes are implied by that follow-up.
-- Current local comparison: 143 commits ahead and 81 behind the stale local
-  `origin/v3`. The live target has not been fetched because shared Git metadata
-  still rejects `FETCH_HEAD` writes; no rebase or merge is implied.
+  (materialized in the read-only clone `/tmp/klicker-v3-review.THD0dw` on
+  2026-08-16).
+- Current implementation tip: `22a13576e3291428c0d1cac3ccfe4888d8374992`.
+- Current local comparison: 145 commits ahead and 81 behind the stale local
+  `origin/v3`. Shared Git metadata still rejects `FETCH_HEAD` writes, so the
+  exact target was reconciled through the read-only clone without changing
+  refs.
 - Local `origin/v3` is stale at `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`;
-  shared Git metadata currently rejects `FETCH_HEAD` writes. Read-only
-  `git ls-remote` is the current target evidence. Do not rebase or merge until
-  a writable Git metadata path is available; preserve the dirty primary
-  checkout and this worktree's intentional docs/ADR changes.
+  it is an ancestor of the exact target. The target range contains only
+  `9222929ad` (`chat`: structured video citations), and the scoped W2 paths
+  have no target delta. W2 therefore needs no rebase or merge for this target;
+  preserve the dirty primary checkout and this worktree's intentional
+  docs/ADR changes.
 - W1 graph contract: provider-side schema and metered result identity come from
   Catalyst W1. W2 owns Klicker consumer fixtures, reservation/settlement
   behavior, and lecturer cost presentation. This is separate from Catalyst's
@@ -263,3 +264,15 @@ current contract acceptance required by the roadmap.
   boundary. Browser proof remains limited to the previously recorded empty,
   unconfigured synthetic state, and live external execution remains outside
   this package.
+- 2026-08-16: The exact target `v3` ref was reconciled in a read-only clone:
+  stale local `origin/v3` `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f` is an
+  ancestor of target `9a82e7fa63ba6b0f6b373470e3d6b77ae265d371`; its only
+  intervening commit is the chat-only `9222929ad`, with no W2-scoped path
+  delta. W2 correction commit `22a13576e` adds the durable dispatch claim and
+  ambiguous-acceptance hold, locked matching/stale/superseded timeout
+  reconciliation, current-quota-currency presentation, and the disposable
+  migration plus real-PostgreSQL seam tests. The local hook passes 26/26,
+  focused Hatchet passes 80/80 across its four files, focused accounting
+  passes 10/10 on PostgreSQL, and the package checks pass. Browser evidence
+  remains limited to the previously recorded synthetic empty/unconfigured
+  state; no provider run, cluster access, merge, push, or deployment occurred.
