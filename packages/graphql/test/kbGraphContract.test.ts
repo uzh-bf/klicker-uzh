@@ -244,6 +244,29 @@ describe('kbGraphContract', () => {
     }
   })
 
+  it('rejects component counters above the database integer range', () => {
+    const validation = validateKbGraphTerminalResult(
+      {
+        ...validResult,
+        metered_cost: {
+          ...validResult.metered_cost!,
+          components: [
+            {
+              ...validResult.metered_cost!.components[0],
+              input_tokens: 2_147_483_648,
+            },
+          ],
+        },
+      },
+      validExpectation
+    )
+
+    expect(validation.ok).toBe(false)
+    if (!validation.ok) {
+      expect(validation.errors.join(' ')).toContain('input_tokens')
+    }
+  })
+
   it('rejects a result that exceeds the estimated reservation', () => {
     const validation = validateKbGraphTerminalResult(validResult, {
       ...validExpectation,

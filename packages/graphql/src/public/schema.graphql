@@ -1778,6 +1778,7 @@ type KBKnowledgeGraphConfig {
   maxCostMinorUnits: Int
   publishedBuildId: ID
   qualityTier: KBGraphQualityTier
+  quotaCurrency: String
   remainingSemesterQuotaMinorUnits: Int
   semesterKey: String
   semesterQuotaMinorUnits: Int

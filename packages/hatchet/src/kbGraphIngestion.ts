@@ -57,6 +57,24 @@ type KBGraphDispatchRecord = {
   >
 }
 
+type KBGraphReservationRecord = {
+  estimatedCostMinorUnits: number | null
+  costCurrency: string | null
+  costPricingVersion: string | null
+  semesterKey: string | null
+  costStatus: KBGraphCostStatus | null
+  quotaId: string | null
+  quota: {
+    id: string
+    ownerId: string
+    semesterKey: string
+    currency: string
+    limitMinorUnits: number
+    reservedMinorUnits: number
+  } | null
+  kb: { ownerId: string }
+}
+
 export type DispatchKBGraphDependencies = {
   prisma: KBGraphPrisma
   client?: ExternalKBGraphClient
@@ -181,9 +199,16 @@ function isDispatchableBuild(build: {
   id: string
   status: KBGraphBuildStatus
   externalOperationId: string | null
-  costStatus: KBGraphCostStatus | null
   graphmlBlobName: string | null
+  estimatedCostMinorUnits: number | null
+  costCurrency: string | null
+  costPricingVersion: string | null
+  semesterKey: string | null
+  costStatus: KBGraphCostStatus | null
+  quotaId: string | null
+  quota: KBGraphReservationRecord['quota']
   kb: {
+    ownerId: string
     deletedAt: Date | null
     activeGraphBuildId: string | null
     knowledgeGraphEnabled: boolean
@@ -193,12 +218,46 @@ function isDispatchableBuild(build: {
   return (
     isActiveBuildStatus(build.status) &&
     build.externalOperationId === null &&
-    build.costStatus === KBGraphCostStatus.RESERVED &&
+    hasCompleteKBGraphReservation(build) &&
     build.kb.deletedAt === null &&
     build.kb.activeGraphBuildId === build.id &&
     build.kb.knowledgeGraphEnabled &&
     build.sources.length > 0 &&
     build.graphmlBlobName !== null
+  )
+}
+
+function hasCompleteKBGraphReservation(
+  build: Pick<
+    KBGraphReservationRecord,
+    | 'estimatedCostMinorUnits'
+    | 'costCurrency'
+    | 'costPricingVersion'
+    | 'semesterKey'
+    | 'costStatus'
+    | 'quotaId'
+    | 'quota'
+    | 'kb'
+  >
+): boolean {
+  return (
+    build.costStatus === KBGraphCostStatus.RESERVED &&
+    build.estimatedCostMinorUnits !== null &&
+    build.estimatedCostMinorUnits > 0 &&
+    build.costCurrency !== null &&
+    build.costCurrency.length > 0 &&
+    build.costPricingVersion !== null &&
+    build.costPricingVersion.length > 0 &&
+    build.semesterKey !== null &&
+    build.semesterKey.length > 0 &&
+    build.quotaId !== null &&
+    build.quota !== null &&
+    build.quota.id === build.quotaId &&
+    build.quota.ownerId === build.kb.ownerId &&
+    build.quota.semesterKey === build.semesterKey &&
+    build.quota.currency === build.costCurrency &&
+    build.quota.limitMinorUnits > 0 &&
+    build.quota.reservedMinorUnits >= build.estimatedCostMinorUnits
   )
 }
 
@@ -217,9 +276,8 @@ function isUnstartedActiveBuild(build: {
 }
 
 function getDispatchGateFailure(
-  build: {
-    costStatus: KBGraphCostStatus | null
-    kb: { knowledgeGraphEnabled: boolean }
+  build: KBGraphReservationRecord & {
+    kb: KBGraphReservationRecord['kb'] & { knowledgeGraphEnabled: boolean }
   },
   env: NodeJS.ProcessEnv
 ): { statusMessage: string; errorCode: string } | null {
@@ -235,7 +293,7 @@ function getDispatchGateFailure(
       errorCode: 'KB_GRAPH_NOT_ENABLED',
     }
   }
-  if (build.costStatus !== KBGraphCostStatus.RESERVED) {
+  if (!hasCompleteKBGraphReservation(build)) {
     return {
       statusMessage:
         'The KB graph build has no complete cost reservation and requires review.',
@@ -302,11 +360,18 @@ async function failKBGraphBuildBeforeDispatch(
     })
     if (failed.count !== 1) return
 
-    if (current.costStatus === KBGraphCostStatus.RESERVED) {
+    if (
+      current.costStatus === KBGraphCostStatus.RESERVED &&
+      errorCode !== 'KB_GRAPH_RESERVATION_INCOMPLETE'
+    ) {
       await releaseKBGraphReservationInTransaction(tx, buildId)
-    } else if (current.costStatus === null) {
+    } else if (
+      current.costStatus === null ||
+      (current.costStatus === KBGraphCostStatus.RESERVED &&
+        errorCode === 'KB_GRAPH_RESERVATION_INCOMPLETE')
+    ) {
       await tx.kBGraphBuild.updateMany({
-        where: { id: buildId, costStatus: null },
+        where: { id: buildId, costStatus: current.costStatus },
         data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
       })
     }
@@ -389,7 +454,22 @@ export async function dispatchKBGraphBuild(
       qualityTier: true,
       status: true,
       externalOperationId: true,
+      estimatedCostMinorUnits: true,
+      costCurrency: true,
+      costPricingVersion: true,
+      semesterKey: true,
       costStatus: true,
+      quotaId: true,
+      quota: {
+        select: {
+          id: true,
+          ownerId: true,
+          semesterKey: true,
+          currency: true,
+          limitMinorUnits: true,
+          reservedMinorUnits: true,
+        },
+      },
       createdAt: true,
       kb: {
         select: {
@@ -474,9 +554,25 @@ export async function dispatchKBGraphBuild(
           id: true,
           status: true,
           externalOperationId: true,
+          estimatedCostMinorUnits: true,
+          costCurrency: true,
+          costPricingVersion: true,
+          semesterKey: true,
           costStatus: true,
+          quotaId: true,
+          quota: {
+            select: {
+              id: true,
+              ownerId: true,
+              semesterKey: true,
+              currency: true,
+              limitMinorUnits: true,
+              reservedMinorUnits: true,
+            },
+          },
           kb: {
             select: {
+              ownerId: true,
               deletedAt: true,
               activeGraphBuildId: true,
               knowledgeGraphEnabled: true,

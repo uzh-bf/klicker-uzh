@@ -16,6 +16,7 @@ mutation SetKbKnowledgeGraphEnabled($kbId: ID!, $enabled: Boolean!) {
     updatedAt
     costConfigurationReady
     costCurrency
+    quotaCurrency
     billingLabel
     standardEstimateMinorUnits
     highEstimateMinorUnits

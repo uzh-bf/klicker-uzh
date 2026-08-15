@@ -17,7 +17,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
-   - KB graph panel: show the per-KB opt-in and localized billing/quota states before the rebuild control. Keep rebuild disabled when opt-in, cost configuration, or active-build conditions fail; display actual cost and usage only after settlement; keep provider credentials out of the browser; and map billing enums to localized text.
+   - KB graph panel: show the per-KB opt-in and localized billing/quota states before the rebuild control. Format quota values with the persisted quota currency and historical build cost with its recorded currency; treat persisted quota currency/limit drift as unavailable. Keep rebuild disabled when opt-in, cost configuration, or active-build conditions fail; display actual cost and usage only after settlement; keep provider credentials out of the browser; and map billing enums to localized text.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
 
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.

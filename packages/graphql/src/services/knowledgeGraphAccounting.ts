@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import { randomUUID } from 'node:crypto'
 import {
+  KB_GRAPH_DATABASE_INT_MAX,
   validateKbGraphTerminalResult,
   type KbGraphTerminalResult,
 } from './kbGraphContract.js'
@@ -349,28 +350,23 @@ export async function settleKBGraphBuildCost(
     )
   }
 
-  if (result.status === 'SUCCEEDED') {
-    if (build.cleanupStartedAt !== null || build.cleanedAt !== null) {
-      if (build.costStatus === DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW) {
-        return 'NEEDS_HUMAN_REVIEW'
-      }
-      return markCostNeedsHumanReview(
-        prisma,
-        build,
-        'A successful KB graph result arrived after artifact cleanup started.',
-        'KB_GRAPH_RESULT_AFTER_CLEANUP',
-        finishedAt
-      )
+  if (
+    result.status === 'SUCCEEDED' &&
+    (build.cleanupStartedAt !== null || build.cleanedAt !== null)
+  ) {
+    if (build.costStatus === DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW) {
+      return 'NEEDS_HUMAN_REVIEW'
     }
-    if (result.metered_cost === null) {
-      return markCostNeedsHumanReview(
-        prisma,
-        build,
-        'A successful KB graph result did not include metering.',
-        'KB_GRAPH_RESULT_METERING_MISSING',
-        finishedAt
-      )
-    }
+    return markCostNeedsHumanReview(
+      prisma,
+      build,
+      'A successful KB graph result arrived after artifact cleanup started.',
+      'KB_GRAPH_RESULT_AFTER_CLEANUP',
+      finishedAt
+    )
+  }
+
+  if (result.metered_cost !== null) {
     if (result.metered_cost.currency !== build.costCurrency) {
       return markCostNeedsHumanReview(
         prisma,
@@ -380,28 +376,53 @@ export async function settleKBGraphBuildCost(
         finishedAt
       )
     }
-    const usage = result.metered_cost.components.reduce(
-      (totals, component) => ({
-        inputTokens: totals.inputTokens + component.input_tokens,
-        outputTokens: totals.outputTokens + component.output_tokens,
-        embeddingTokens: totals.embeddingTokens + component.embedding_tokens,
-        requestCount: totals.requestCount + component.request_count,
-      }),
-      { inputTokens: 0, outputTokens: 0, embeddingTokens: 0, requestCount: 0 }
-    )
 
+    const usage = {
+      inputTokens: 0,
+      outputTokens: 0,
+      embeddingTokens: 0,
+      requestCount: 0,
+    }
+    for (const component of result.metered_cost.components) {
+      if (
+        usage.inputTokens >
+          KB_GRAPH_DATABASE_INT_MAX - component.input_tokens ||
+        usage.outputTokens >
+          KB_GRAPH_DATABASE_INT_MAX - component.output_tokens ||
+        usage.embeddingTokens >
+          KB_GRAPH_DATABASE_INT_MAX - component.embedding_tokens ||
+        usage.requestCount > KB_GRAPH_DATABASE_INT_MAX - component.request_count
+      ) {
+        return markCostNeedsHumanReview(
+          prisma,
+          build,
+          'The KB graph result metering exceeded the database integer range.',
+          'KB_GRAPH_RESULT_METERING_OVERFLOW',
+          finishedAt
+        )
+      }
+      usage.inputTokens += component.input_tokens
+      usage.outputTokens += component.output_tokens
+      usage.embeddingTokens += component.embedding_tokens
+      usage.requestCount += component.request_count
+    }
+
+    const succeeded = result.status === 'SUCCEEDED'
     await lockQuota(prisma, build.quotaId!)
     const updated = await prisma.kBGraphBuild.updateMany({
       where: {
         id: build.id,
         costStatus: { in: [...SETTLEMENT_HOLD_STATUSES] },
-        cleanupStartedAt: null,
-        cleanedAt: null,
+        ...(succeeded ? { cleanupStartedAt: null, cleanedAt: null } : {}),
       },
       data: {
-        status: DB.KBGraphBuildStatus.SUCCEEDED,
-        statusMessage: null,
-        errorCode: null,
+        status: succeeded
+          ? DB.KBGraphBuildStatus.SUCCEEDED
+          : DB.KBGraphBuildStatus.FAILED,
+        statusMessage: succeeded ? null : terminalResultError(result),
+        errorCode: succeeded
+          ? null
+          : (result.error_code ?? `KB_GRAPH_${result.status}`),
         actualCostMinorUnits: result.metered_cost.amount_minor_units,
         actualInputTokens: usage.inputTokens,
         actualOutputTokens: usage.outputTokens,
@@ -437,18 +458,35 @@ export async function settleKBGraphBuildCost(
     if (quotaUpdated.count !== 1) {
       throw new Error('KB graph quota reservation could not be settled')
     }
-    await prisma.kB.updateMany({
-      where: {
-        id: build.kbId,
-        deletedAt: null,
-        activeGraphBuildId: build.id,
-      },
-      data: {
-        activeGraphBuildId: null,
-        publishedGraphBuildId: build.id,
-      },
-    })
+    if (succeeded) {
+      await prisma.kB.updateMany({
+        where: {
+          id: build.kbId,
+          deletedAt: null,
+          activeGraphBuildId: build.id,
+        },
+        data: {
+          activeGraphBuildId: null,
+          publishedGraphBuildId: build.id,
+        },
+      })
+    } else {
+      await prisma.kB.updateMany({
+        where: { id: build.kbId, activeGraphBuildId: build.id },
+        data: { activeGraphBuildId: null },
+      })
+    }
     return 'SETTLED'
+  }
+
+  if (result.status === 'SUCCEEDED') {
+    return markCostNeedsHumanReview(
+      prisma,
+      build,
+      'A successful KB graph result did not include metering.',
+      'KB_GRAPH_RESULT_METERING_MISSING',
+      finishedAt
+    )
   }
 
   if (build.costStatus === DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW) {

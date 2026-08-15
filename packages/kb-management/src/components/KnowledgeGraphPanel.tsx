@@ -427,7 +427,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                 {formatMinorUnits(
                   format,
                   config.remainingSemesterQuotaMinorUnits,
-                  config.costCurrency
+                  config.quotaCurrency
                 )}
               </p>
               <p>
@@ -437,7 +437,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                 {formatMinorUnits(
                   format,
                   config.worstCaseRemainingMinorUnits,
-                  config.costCurrency
+                  config.quotaCurrency
                 )}
               </p>
               <p>

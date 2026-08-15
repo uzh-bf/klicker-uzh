@@ -45,6 +45,7 @@ export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
     costConfigurationReady: t.exposeBoolean('costConfigurationReady'),
     costCurrency: t.exposeString('costCurrency', { nullable: true }),
+    quotaCurrency: t.exposeString('quotaCurrency', { nullable: true }),
     billingLabel: t.exposeString('billingLabel', { nullable: true }),
     standardEstimateMinorUnits: t.exposeInt('standardEstimateMinorUnits', {
       nullable: true,

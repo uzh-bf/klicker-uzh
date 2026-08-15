@@ -16,6 +16,7 @@ mutation RebuildKbKnowledgeGraph($kbId: ID!, $qualityTier: KBGraphQualityTier) {
     updatedAt
     costConfigurationReady
     costCurrency
+    quotaCurrency
     billingLabel
     standardEstimateMinorUnits
     highEstimateMinorUnits

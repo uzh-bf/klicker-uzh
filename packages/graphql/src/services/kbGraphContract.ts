@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const KB_GRAPH_CONTRACT_VERSION = 'klicker-kb-graph/v1' as const
+export const KB_GRAPH_DATABASE_INT_MAX = 2_147_483_647 as const
 
 const safeIdentifier = z
   .string()
@@ -39,12 +40,32 @@ const meteredCostComponentSchema = z
   .object({
     provider: safeIdentifier,
     model: safeModelIdentifier,
-    amount_minor_units: z.number().int().min(0),
+    amount_minor_units: z.number().int().min(0).max(KB_GRAPH_DATABASE_INT_MAX),
     pricing_version: safeIdentifier,
-    embedding_tokens: z.number().int().min(0).default(0),
-    input_tokens: z.number().int().min(0).default(0),
-    output_tokens: z.number().int().min(0).default(0),
-    request_count: z.number().int().min(0).default(0),
+    embedding_tokens: z
+      .number()
+      .int()
+      .min(0)
+      .max(KB_GRAPH_DATABASE_INT_MAX)
+      .default(0),
+    input_tokens: z
+      .number()
+      .int()
+      .min(0)
+      .max(KB_GRAPH_DATABASE_INT_MAX)
+      .default(0),
+    output_tokens: z
+      .number()
+      .int()
+      .min(0)
+      .max(KB_GRAPH_DATABASE_INT_MAX)
+      .default(0),
+    request_count: z
+      .number()
+      .int()
+      .min(0)
+      .max(KB_GRAPH_DATABASE_INT_MAX)
+      .default(0),
   })
   .strict()
 
@@ -55,16 +76,27 @@ const meteredCostSchema = z
       .trim()
       .regex(/^[A-Z]{3}$/i)
       .transform((value) => value.toUpperCase()),
-    amount_minor_units: z.number().int().min(0),
+    amount_minor_units: z.number().int().min(0).max(KB_GRAPH_DATABASE_INT_MAX),
     components: z.array(meteredCostComponentSchema).min(1),
     metering_source: z.enum(['provider_reported', 'configured_pricing']),
   })
   .strict()
   .superRefine((value, context) => {
-    const componentTotal = value.components.reduce(
-      (total, component) => total + component.amount_minor_units,
-      0
-    )
+    let componentTotal = 0
+    for (const component of value.components) {
+      if (
+        componentTotal >
+        KB_GRAPH_DATABASE_INT_MAX - component.amount_minor_units
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'component amount total exceeds the database integer range',
+          path: ['components'],
+        })
+        return
+      }
+      componentTotal += component.amount_minor_units
+    }
     if (componentTotal !== value.amount_minor_units) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -213,7 +245,8 @@ export function validateKbGraphTerminalResult(
 
   if (
     !Number.isInteger(expectation.estimatedMinorUnits) ||
-    expectation.estimatedMinorUnits < 0
+    expectation.estimatedMinorUnits < 0 ||
+    expectation.estimatedMinorUnits > KB_GRAPH_DATABASE_INT_MAX
   ) {
     errors.push(
       `estimatedMinorUnits must be a non-negative integer, got ${expectation.estimatedMinorUnits}`

@@ -373,6 +373,97 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({ costStatus: KBGraphCostStatus.RELEASED })
   })
 
+  it('settles metered non-success results without publishing the build', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build, runId, graphmlBlobName } = await createBuild()
+    const failedResult = {
+      ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
+      status: 'FAILED',
+      error_code: 'KB_GRAPH_PROVIDER_FAILED',
+      graphml_artifact: null,
+    }
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: failedResult,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('SETTLED')
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.FAILED,
+      costStatus: KBGraphCostStatus.SETTLED,
+      errorCode: 'KB_GRAPH_PROVIDER_FAILED',
+      actualCostMinorUnits: 60,
+    })
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({
+      activeGraphBuildId: null,
+      publishedGraphBuildId: null,
+    })
+  })
+
+  it('holds metering whose aggregate counters exceed the database integer range', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build, runId, graphmlBlobName } = await createBuild()
+    const result = successfulResult({
+      buildId: build.id,
+      runId,
+      graphmlBlobName,
+    })
+    result.metered_cost!.components.push({
+      ...result.metered_cost!.components[0]!,
+      amount_minor_units: 0,
+      input_tokens: 2_147_483_647,
+    })
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('NEEDS_HUMAN_REVIEW')
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.FAILED,
+      costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      errorCode: 'KB_GRAPH_RESULT_METERING_OVERFLOW',
+    })
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 100, settledMinorUnits: 0 })
+  })
+
   it('does not publish a valid result after cleanup has started', async () => {
     await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {

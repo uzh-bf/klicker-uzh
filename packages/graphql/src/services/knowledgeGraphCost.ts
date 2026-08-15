@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
+import { KB_GRAPH_DATABASE_INT_MAX } from './kbGraphContract.js'
 
-const MAX_DATABASE_INT = 2_147_483_647
 const SEMESTER_KEY_PATTERN = /^\d{4}-(?:H1|H2)$/
 const CURRENCY_PATTERN = /^[A-Z]{3}$/
 
@@ -30,7 +30,7 @@ function parseMinorUnits(env: NodeJS.ProcessEnv, name: string): number | null {
     throw new Error(`${name} must be a non-negative integer`)
   }
   const parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed > MAX_DATABASE_INT) {
+  if (!Number.isSafeInteger(parsed) || parsed > KB_GRAPH_DATABASE_INT_MAX) {
     throw new Error(`${name} is outside the supported range`)
   }
   return parsed

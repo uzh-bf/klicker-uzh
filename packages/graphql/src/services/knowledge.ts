@@ -1811,6 +1811,7 @@ export interface KBKnowledgeGraphConfig {
   updatedAt: Date | null
   costConfigurationReady: boolean
   costCurrency: string | null
+  quotaCurrency: string | null
   billingLabel: string | null
   standardEstimateMinorUnits: number | null
   highEstimateMinorUnits: number | null
@@ -1863,7 +1864,7 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   },
 } satisfies DB.Prisma.KBGraphBuildSelect
 
-function getKBGraphBuildConfig(
+export function getKBGraphBuildConfig(
   kb: {
     id: string
     knowledgeGraphEnabled: boolean
@@ -1905,6 +1906,12 @@ function getKBGraphBuildConfig(
   } | null,
   costConfiguration: ReturnType<typeof getKBGraphCostConfiguration>
 ): KBKnowledgeGraphConfig {
+  const quotaConfigurationMatches =
+    quota === null ||
+    (quota.currency === costConfiguration.currency &&
+      quota.limitMinorUnits === costConfiguration.semesterQuotaMinorUnits)
+  const costConfigurationReady =
+    costConfiguration.ready && quotaConfigurationMatches
   const remainingSemesterQuotaMinorUnits = getKBGraphRemainingQuota(
     quota,
     costConfiguration
@@ -1929,8 +1936,9 @@ function getKBGraphBuildConfig(
     finishedAt: build?.finishedAt ?? null,
     createdAt: build?.createdAt ?? null,
     updatedAt: build?.updatedAt ?? null,
-    costConfigurationReady: costConfiguration.ready,
+    costConfigurationReady,
     costCurrency: build?.costCurrency ?? costConfiguration.currency,
+    quotaCurrency: quota?.currency ?? costConfiguration.currency,
     billingLabel: getKBGraphBillingLabel(costConfiguration),
     standardEstimateMinorUnits: costConfiguration.standardEstimateMinorUnits,
     highEstimateMinorUnits: costConfiguration.highEstimateMinorUnits,

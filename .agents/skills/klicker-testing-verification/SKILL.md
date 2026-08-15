@@ -58,7 +58,7 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
 
-For KB graph lifecycle changes, use real PostgreSQL for quota-lock and settlement tests, pure tests for the W1 result/cost contracts, and Hatchet unit tests for provider-status reconciliation. A provider `COMPLETED` response without a versioned result must be asserted as fail-closed; it is not evidence of publication or cost settlement.
+For KB graph lifecycle changes, use real PostgreSQL for quota-lock and settlement tests, including a valid metered non-success result that settles without publishing; use pure tests for the W1 result/cost contracts, PostgreSQL integer bounds, and quota-configuration drift; and use Hatchet unit tests for provider-status reconciliation and complete reservation identity before dispatch. A provider `COMPLETED` response without a versioned result must be asserted as fail-closed; it is not evidence of publication or cost settlement.
 
 ## Reporting
 

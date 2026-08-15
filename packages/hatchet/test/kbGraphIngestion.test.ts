@@ -64,7 +64,18 @@ function createBuild(overrides: Record<string, unknown> = {}) {
     externalOperationId: null,
     costStatus: KBGraphCostStatus.RESERVED,
     estimatedCostMinorUnits: 100,
+    costCurrency: 'CHF',
+    costPricingVersion: 'test-v1',
+    semesterKey: '2026-H2',
     quotaId: QUOTA_ID,
+    quota: {
+      id: QUOTA_ID,
+      ownerId: OWNER_ID,
+      semesterKey: '2026-H2',
+      currency: 'CHF',
+      limitMinorUnits: 1000,
+      reservedMinorUnits: 100,
+    },
     kb: {
       ownerId: OWNER_ID,
       deletedAt: null,
@@ -281,6 +292,40 @@ describe('KB graph external dispatch', () => {
         data: expect.objectContaining({
           costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
         }),
+      })
+    )
+  })
+
+  it('holds a reservation with incomplete quota identity before dispatch', async () => {
+    const build = createBuild({ quota: null })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: externalEnv,
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_RESERVATION_INCOMPLETE',
+        }),
+      })
+    )
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
       })
     )
   })
