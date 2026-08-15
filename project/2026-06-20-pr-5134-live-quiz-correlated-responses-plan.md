@@ -724,6 +724,15 @@ Later research:
   and emitted that route before being killed with exit 137 during page-data
   collection. This narrows the participant gate to the dev-runtime/resource
   environment; no participant browser result is claimed.
+- 2026-08-15: The follow-up slice review concerns are repaired locally. Anonymous
+  identity selection now keeps the higher publication generation when cookie and
+  bearer identities disagree, and reconciliation still selects current-
+  generation incomplete rows when the export salt is unexpectedly missing so
+  finalization can surface the anomaly. Inverse identity and null-salt
+  regression coverage pass; util identity (11), GraphQL finalization (5), and
+  response-api handler (9) tests pass, followed by the full precommit (24/24
+  tasks). Redis connection-refused warnings and the host Node 26 versus the
+  repository Node 24 warning remain environment-only.
 
 ## Goal Prompt Requirements
 
