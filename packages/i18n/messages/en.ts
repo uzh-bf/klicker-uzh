@@ -1379,8 +1379,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphQualityHigh: 'High (higher cost)',
     graphBuild: 'Build graph',
     graphRebuild: 'Rebuild graph',
-    graphBuildCost:
-      'Each build uses the configured external AI workflow and its associated budget.',
+    graphBuildCost: 'Estimated cost for this build: {amount}.',
+    graphEnableLabel: 'Enable the knowledge graph for this KB',
+    graphEnabledDescription:
+      'A published graph can be used by enabled chatbot bindings for this knowledge base.',
+    graphDisabledDescription:
+      'Enable this knowledge base before starting a graph build or serving it to students.',
+    graphCostUnavailable:
+      'Graph cost controls are not configured yet. Building remains disabled.',
+    graphEnableError: 'The knowledge graph setting could not be updated.',
+    graphBillingLabel: 'Billing mode',
+    graphBillingSemesterQuota: 'Semester quota',
+    graphBillingProvider: 'Provider-billed',
+    graphRemainingQuota: 'Remaining semester quota',
+    graphWorstCaseBalance: 'Balance after the maximum build',
+    graphActualCost: 'Actual cost',
+    graphActualUsage:
+      'Actual usage: {requests} requests, {inputTokens} input tokens, {outputTokens} output tokens, {embeddingTokens} embedding tokens.',
     graphStatusLabel: 'Status',
     graphStatusEmpty: 'No build',
     graphStatusQueued: 'Queued',

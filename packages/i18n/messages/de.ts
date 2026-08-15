@@ -1389,8 +1389,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphQualityHigh: 'Hoch (höhere Kosten)',
     graphBuild: 'Graph erstellen',
     graphRebuild: 'Graph neu erstellen',
-    graphBuildCost:
-      'Jeder Aufbau verwendet den konfigurierten externen KI-Vorgang und das zugehörige Budget.',
+    graphBuildCost: 'Geschätzte Kosten für diesen Aufbau: {amount}.',
+    graphEnableLabel: 'Wissensgraph für diese Wissensdatenbank aktivieren',
+    graphEnabledDescription:
+      'Ein veröffentlichter Graph kann von aktivierten Chatbot-Verknüpfungen dieser Wissensdatenbank verwendet werden.',
+    graphDisabledDescription:
+      'Aktivieren Sie die Wissensdatenbank, bevor Sie einen Graphen erstellen oder für Studierende bereitstellen.',
+    graphCostUnavailable:
+      'Die Kostenkontrollen für Graphen sind noch nicht konfiguriert. Der Aufbau bleibt deaktiviert.',
+    graphEnableError:
+      'Die Einstellung des Wissensgraphen konnte nicht aktualisiert werden.',
+    graphBillingLabel: 'Abrechnungsmodus',
+    graphBillingSemesterQuota: 'Semesterkontingent',
+    graphBillingProvider: 'Durch Anbieter abgerechnet',
+    graphRemainingQuota: 'Verbleibendes Semesterkontingent',
+    graphWorstCaseBalance: 'Kontostand nach dem maximalen Aufbau',
+    graphActualCost: 'Tatsächliche Kosten',
+    graphActualUsage:
+      'Tatsächliche Nutzung: {requests} Anfragen, {inputTokens} Eingabetoken, {outputTokens} Ausgabetoken, {embeddingTokens} Embedding-Token.',
     graphStatusLabel: 'Status',
     graphStatusEmpty: 'Kein Aufbau',
     graphStatusQueued: 'In Warteschlange',

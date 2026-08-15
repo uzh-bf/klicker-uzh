@@ -17,13 +17,16 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
+   - KB graph panel: show the per-KB opt-in and localized billing/quota states before the rebuild control. Keep rebuild disabled when opt-in, cost configuration, or active-build conditions fail; display actual cost and usage only after settlement; keep provider credentials out of the browser; and map billing enums to localized text.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
+
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.
    - **Host-based Setup:** You are authorized to start the dev servers needed for this verification, and must clean up after with `./_down.sh`. Bring-up per [docs/getting-started.md](../../../docs/getting-started.md) (localhost `dev:raw` path works without secrets).
    - On bring-up / server failure → `klicker-environment-doctor`.
    - Open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in via **delegated** access with the AGENTS.md test credentials (not Edu-ID).
    - Capture before/after screenshots of every changed state (including error/empty states you touched); check both locales if strings changed.
    - Iterate on issues you see yourself; hand to the user for manual verification only after your own pass succeeds.
+
 4. **Pre-PR** — `klicker-testing-verification` checklist; attach the screenshots to the PR description.
 
 ## App boundaries

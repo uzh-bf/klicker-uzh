@@ -18,12 +18,13 @@ import {
   KbGraphQualityTier,
   RebuildKbKnowledgeGraphDocument,
   SearchKbKnowledgeGraphDocument,
+  SetKbKnowledgeGraphEnabledDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import { Badge, Button, H3, SelectField } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import { Badge, Button, H3, SelectField, Switch } from '@uzh-bf/design-system'
+import { useFormatter, useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useMemo, useState } from 'react'
 
@@ -111,6 +112,18 @@ function statusLabel(
   }
 }
 
+function formatMinorUnits(
+  format: ReturnType<typeof useFormatter>,
+  amountMinorUnits: number | null | undefined,
+  currency: string | null | undefined
+) {
+  if (amountMinorUnits == null || currency == null) return '—'
+  return format.number(amountMinorUnits / 100, {
+    style: 'currency',
+    currency,
+  })
+}
+
 function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const apolloClient = useApolloClient()
@@ -169,6 +182,7 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
 
 function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const t = useTranslations()
+  const format = useFormatter()
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
@@ -184,11 +198,29 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const [rebuildGraph, { loading: isRebuilding }] = useMutation(
     RebuildKbKnowledgeGraphDocument
   )
+  const [setGraphEnabled, { loading: isTogglingEnabled }] = useMutation(
+    SetKbKnowledgeGraphEnabledDocument
+  )
   const config = data?.getKbKnowledgeGraphConfig
+  const formattedBillingLabel =
+    config?.billingLabel === 'SEMESTER_QUOTA'
+      ? t('kb.graphBillingSemesterQuota')
+      : config?.billingLabel === 'PROVIDER_BILLED'
+        ? t('kb.graphBillingProvider')
+        : '—'
   const isActive =
     config?.status === KbGraphBuildStatus.Queued ||
     config?.status === KbGraphBuildStatus.Processing
   const hasPublishedGraph = config?.publishedBuildId != null
+  const selectedEstimate =
+    selectedTier === KbGraphQualityTier.High
+      ? config?.highEstimateMinorUnits
+      : config?.standardEstimateMinorUnits
+  const formattedSelectedEstimate = formatMinorUnits(
+    format,
+    selectedEstimate,
+    config?.costCurrency
+  )
 
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
@@ -224,7 +256,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   }
 
   const handleRebuild = async () => {
-    if (isRebuilding || isActive) return
+    if (isRebuilding || isActive || !config?.isEnabled) return
 
     setOperationError(null)
     try {
@@ -235,6 +267,17 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     } catch (mutationError) {
       console.error('Failed to rebuild KB knowledge graph', { kbId })
       setOperationError(t('kb.graphBuildError'))
+    }
+  }
+
+  const handleEnabledChange = async (enabled: boolean) => {
+    setOperationError(null)
+    try {
+      await setGraphEnabled({ variables: { kbId, enabled } })
+      await refetch()
+    } catch (mutationError) {
+      console.error('Failed to update KB knowledge graph opt-in', { kbId })
+      setOperationError(t('kb.graphEnableError'))
     }
   }
 
@@ -272,6 +315,28 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       ) : (
         <>
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <Switch
+              size="sm"
+              label={t('kb.graphEnableLabel')}
+              className={{ label: 'min-w-0 whitespace-normal' }}
+              checked={config.isEnabled}
+              onCheckedChange={(enabled) => void handleEnabledChange(enabled)}
+              disabled={isTogglingEnabled}
+              data={{ cy: 'kb-knowledge-graph-enabled' }}
+            />
+            <p className="mt-2 text-xs text-slate-500">
+              {config.isEnabled
+                ? t('kb.graphEnabledDescription')
+                : t('kb.graphDisabledDescription')}
+            </p>
+            {!config.costConfigurationReady ? (
+              <p
+                className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                data-cy="kb-knowledge-graph-cost-unconfigured"
+              >
+                {t('kb.graphCostUnavailable')}
+              </p>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
               <SelectField
                 label={t('kb.graphQualityTierLabel')}
@@ -280,13 +345,22 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                 onChange={(value) =>
                   setSelectedTier(value as KbGraphQualityTier)
                 }
-                disabled={isActive || isRebuilding}
+                disabled={
+                  isActive ||
+                  isRebuilding ||
+                  !config.isEnabled ||
+                  !config.costConfigurationReady
+                }
                 data={{ cy: 'kb-knowledge-graph-quality-tier' }}
               />
               <Button
                 primary
                 loading={isRebuilding}
-                disabled={isActive}
+                disabled={
+                  isActive ||
+                  !config.isEnabled ||
+                  !config.costConfigurationReady
+                }
                 onClick={() => void handleRebuild()}
                 data={{ cy: 'kb-knowledge-graph-rebuild' }}
               >
@@ -298,8 +372,64 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
               </Button>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              {t('kb.graphBuildCost')}
+              {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
             </p>
+            <div
+              className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
+              data-cy="kb-knowledge-graph-cost"
+            >
+              <p>
+                <span className="font-semibold">
+                  {t('kb.graphBillingLabel')}:
+                </span>{' '}
+                {formattedBillingLabel}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {t('kb.graphRemainingQuota')}:
+                </span>{' '}
+                {formatMinorUnits(
+                  format,
+                  config.remainingSemesterQuotaMinorUnits,
+                  config.costCurrency
+                )}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {t('kb.graphWorstCaseBalance')}:
+                </span>{' '}
+                {formatMinorUnits(
+                  format,
+                  config.worstCaseRemainingMinorUnits,
+                  config.costCurrency
+                )}
+              </p>
+              {config.actualCostMinorUnits != null ? (
+                <p data-cy="kb-knowledge-graph-actual-cost">
+                  <span className="font-semibold">
+                    {t('kb.graphActualCost')}:
+                  </span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.actualCostMinorUnits,
+                    config.costCurrency
+                  )}
+                </p>
+              ) : null}
+            </div>
+            {config.actualRequestCount != null ? (
+              <p
+                className="mt-2 text-xs text-slate-500"
+                data-cy="kb-knowledge-graph-actual-usage"
+              >
+                {t('kb.graphActualUsage', {
+                  requests: config.actualRequestCount,
+                  inputTokens: config.actualInputTokens ?? 0,
+                  outputTokens: config.actualOutputTokens ?? 0,
+                  embeddingTokens: config.actualEmbeddingTokens ?? 0,
+                })}
+              </p>
+            ) : null}
             <div
               className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm"
               aria-live="polite"

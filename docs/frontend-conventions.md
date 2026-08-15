@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-07-30'
+timestamp: '2026-08-15'
 tags:
   - frontend
 ---
@@ -61,6 +61,8 @@ The KB file picker exposes only the production ingestion contract: PDF, TXT, and
 `packages/kb-management/src/components/KnowledgeBaseChatbotBindings.tsx:KnowledgeBaseChatbotBindings` owns the single-enabled-KB binding UI. Replacing an existing chatbot binding requires an explicit warning step; detach is available from the current KB. `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:ChatbotDetails` shows the reciprocal linked-KB state or an actionable no-KB warning.
 
 The detail metrics distinguish visible data, quota usage, upload reservations, pending asynchronous cleanup, unknown-size conservative reservations, and linked consumers. Do not present tombstoned storage as already released or treat derived values as mutable counters.
+
+`packages/kb-management/src/components/KnowledgeGraphPanel.tsx:KnowledgeGraphPanel` is the lecturer-facing graph lifecycle boundary. It exposes the per-KB opt-in, standard/high estimate, billing mode, remaining quota, worst-case balance, settled cost, actual token/request usage, and the safe status/error state. The rebuild action stays disabled while the KB is opted out, the global graph switch leaves cost configuration incomplete, or a build is active. Display billing modes through localized labels rather than raw enum values, keep provider credentials out of the client, and preserve the `data-cy` hooks for the switch, cost block, status, and rebuild action.
 
 ## i18n (next-intl)
 
