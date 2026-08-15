@@ -121,6 +121,7 @@ describe('Live quiz abort cleanup', () => {
     })
 
     let receivedStartedAt: string | undefined
+    let receivedPublicationGeneration: string | undefined
     let receivedTombstoneKey: string | undefined
     let metadataKey: string | undefined
     const redis = {
@@ -129,6 +130,7 @@ describe('Live quiz abort cleanup', () => {
         numberOfKeys: number,
         receivedMetadataKey: string,
         receivedTombstoneKeyArg: string,
+        receivedPublicationGenerationArg: string,
         receivedStartedAtArg: string,
         pattern: string
       ) => {
@@ -136,6 +138,7 @@ describe('Live quiz abort cleanup', () => {
         expect(numberOfKeys).toBe(2)
         metadataKey = receivedMetadataKey
         receivedTombstoneKey = receivedTombstoneKeyArg
+        receivedPublicationGeneration = receivedPublicationGenerationArg
         receivedStartedAt = receivedStartedAtArg
         expect(pattern).toBe(`lq:${liveQuiz.id}:*`)
         return 0
@@ -171,6 +174,7 @@ describe('Live quiz abort cleanup', () => {
     ).resolves.toBe(0)
     expect(metadataKey).toBe(`lq:${liveQuiz.id}:meta`)
     expect(receivedTombstoneKey).toBe(`lq:${liveQuiz.id}:aborted-generation`)
+    expect(receivedPublicationGeneration).toBe('0')
     expect(receivedStartedAt).toBe(String(startedAt.getTime()))
   })
 
@@ -322,6 +326,7 @@ describe('Live quiz abort cleanup', () => {
       maxRetriesPerRequest: 1,
     })
     await redis.hset(metaKey, {
+      publicationGeneration: '2',
       startedAt: String(newStartedAt.getTime()),
     })
     await redis.hset(instanceKey, { type: 'CONTENT' })
@@ -331,6 +336,7 @@ describe('Live quiz abort cleanup', () => {
         redis,
         liveQuizId,
         startedAt: oldStartedAt,
+        publicationGeneration: 1,
       })
 
       await expect(redis.exists(metaKey)).resolves.toBe(1)
@@ -344,7 +350,7 @@ describe('Live quiz abort cleanup', () => {
   it('blocks a late old publication while allowing a newer generation', async () => {
     const liveQuizId = uuid()
     const oldStartedAt = new Date('2026-07-30T10:00:00.000Z')
-    const newStartedAt = new Date('2026-07-30T11:00:00.000Z')
+    const newStartedAt = oldStartedAt
     const tombstoneKey = `lq:${liveQuizId}:aborted-generation`
     const redis = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
@@ -362,6 +368,7 @@ describe('Live quiz abort cleanup', () => {
         redis,
         liveQuizId,
         startedAt: oldStartedAt,
+        publicationGeneration: 1,
       })
 
       await expect(
@@ -371,6 +378,7 @@ describe('Live quiz abort cleanup', () => {
             id: liveQuizId,
             namespace: 'test',
             startedAt: oldStartedAt,
+            publicationGeneration: 1,
             isGamificationEnabled: false,
             isAssessmentEnabled: false,
           },
@@ -386,6 +394,7 @@ describe('Live quiz abort cleanup', () => {
             id: liveQuizId,
             namespace: 'test',
             startedAt: newStartedAt,
+            publicationGeneration: 2,
             isGamificationEnabled: true,
             isAssessmentEnabled: false,
           },
@@ -394,8 +403,11 @@ describe('Live quiz abort cleanup', () => {
         })
       ).resolves.toBeUndefined()
       await expect(
-        redis.hget(`lq:${liveQuizId}:meta`, 'startedAt')
-      ).resolves.toBe(String(newStartedAt.getTime()))
+        redis.hgetall(`lq:${liveQuizId}:meta`)
+      ).resolves.toMatchObject({
+        publicationGeneration: '2',
+        startedAt: String(newStartedAt.getTime()),
+      })
     } finally {
       await redis.unlink(`lq:${liveQuizId}:meta`, tombstoneKey)
       redis.disconnect()

@@ -873,6 +873,7 @@ export async function startLiveQuiz(
         prisma: ctx.prisma,
         liveQuizId: publication.quiz.id,
         startedAt: publication.quiz.startedAt,
+        publicationGeneration: publication.quiz.publicationGeneration,
         scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
         deleteScheduledTask: (taskId) => ctx.hatchet.scheduled.delete(taskId),
       })
@@ -2155,121 +2156,124 @@ export async function cancelLiveQuiz(
   if (!quiz) return null
 
   try {
-    const { abortedStartedAt, lockedQuiz, updatedQuiz } =
-      await ctx.prisma.$transaction(async (prisma) => {
-        await prisma.$queryRaw`
+    const {
+      abortedStartedAt,
+      abortedPublicationGeneration,
+      lockedQuiz,
+      updatedQuiz,
+    } = await ctx.prisma.$transaction(async (prisma) => {
+      await prisma.$queryRaw`
           SELECT "id"
           FROM "public"."LiveQuiz"
           WHERE "id" = ${id}::uuid AND "isDeleted" = false
           FOR UPDATE
         `
-        const lockedQuiz = await prisma.liveQuiz.findUnique({
-          where: { id, isDeleted: false },
-          include: {
-            activeBlock: true,
-            blocks: { include: { elements: true, activeInLiveQuiz: true } },
-            leaderboard: true,
-          },
+      const lockedQuiz = await prisma.liveQuiz.findUnique({
+        where: { id, isDeleted: false },
+        include: {
+          activeBlock: true,
+          blocks: { include: { elements: true, activeInLiveQuiz: true } },
+          leaderboard: true,
+        },
+      })
+      if (!lockedQuiz) {
+        throw new Error('Live quiz not found')
+      }
+      if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+        throw new Error('Live quiz is not running')
+      }
+      // Assessment quizzes can only be aborted before the first block is activated.
+      // Keep this ahead of the startedAt check so the assessment restriction still
+      // reports its own error instead of a generic missing-timestamp error.
+      if (
+        lockedQuiz.isAssessmentEnabled &&
+        (lockedQuiz.activeBlock ||
+          lockedQuiz.blocks.some(
+            (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+          ))
+      ) {
+        throw new Error(
+          'Assessment quizzes can only be aborted before the first block is activated'
+        )
+      }
+
+      if (!lockedQuiz.startedAt) {
+        throw new Error('Published live quiz has no start timestamp')
+      }
+
+      const instances = lockedQuiz.blocks.flatMap((block) => block.elements)
+      if (
+        lockedQuiz.responseCollectionMode ===
+        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+      ) {
+        const instanceIds = instances.map((instance) => instance.id)
+        await prisma.liveQuizPendingResponse.deleteMany({
+          where: { liveQuizId: id },
         })
-        if (!lockedQuiz) {
-          throw new Error('Live quiz not found')
-        }
-        if (lockedQuiz.status !== DB.PublicationStatus.PUBLISHED) {
-          throw new Error('Live quiz is not running')
-        }
-        // Assessment quizzes can only be aborted before the first block is activated.
-        // Keep this ahead of the startedAt check so the assessment restriction still
-        // reports its own error instead of a generic missing-timestamp error.
-        if (
-          lockedQuiz.isAssessmentEnabled &&
-          (lockedQuiz.activeBlock ||
-            lockedQuiz.blocks.some(
-              (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
-            ))
-        ) {
-          throw new Error(
-            'Assessment quizzes can only be aborted before the first block is activated'
-          )
-        }
+        await prisma.liveQuizResponse.deleteMany({
+          where: { instanceId: { in: instanceIds } },
+        })
+        await prisma.liveQuizRespondent.deleteMany({
+          where: { liveQuizId: id },
+        })
+      }
 
-        if (!lockedQuiz.startedAt) {
-          throw new Error('Published live quiz has no start timestamp')
-        }
-
-        const instances = lockedQuiz.blocks.flatMap((block) => block.elements)
-        if (
-          lockedQuiz.responseCollectionMode ===
-          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-        ) {
-          const instanceIds = instances.map((instance) => instance.id)
-          await prisma.liveQuizPendingResponse.deleteMany({
-            where: { liveQuizId: id },
-          })
-          await prisma.liveQuizResponse.deleteMany({
-            where: { instanceId: { in: instanceIds } },
-          })
-          await prisma.liveQuizRespondent.deleteMany({
-            where: { liveQuizId: id },
-          })
-        }
-
-        const updatedQuiz = await prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.DRAFT,
-            startedAt: null,
-            activeBlock: { disconnect: true },
-            leaderboard: { deleteMany: {} },
-            temporaryLeaderboard: { deleteMany: {} },
-            feedbacks: { deleteMany: {} },
-            confusionFeedbacks: { deleteMany: {} },
-            blocks: {
-              updateMany: {
-                where: {
-                  status: {
-                    in: [
-                      DB.ElementBlockStatus.EXECUTED,
-                      DB.ElementBlockStatus.ACTIVE,
-                    ],
-                  },
+      const updatedQuiz = await prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.DRAFT,
+          startedAt: null,
+          activeBlock: { disconnect: true },
+          leaderboard: { deleteMany: {} },
+          temporaryLeaderboard: { deleteMany: {} },
+          feedbacks: { deleteMany: {} },
+          confusionFeedbacks: { deleteMany: {} },
+          blocks: {
+            updateMany: {
+              where: {
+                status: {
+                  in: [
+                    DB.ElementBlockStatus.EXECUTED,
+                    DB.ElementBlockStatus.ACTIVE,
+                  ],
                 },
-                data: {
-                  status: DB.ElementBlockStatus.SCHEDULED,
-                  startedAt: null,
-                  closedAt: null,
-                  expiresAt: null,
-                  execution: { increment: 1 },
-                },
+              },
+              data: {
+                status: DB.ElementBlockStatus.SCHEDULED,
+                startedAt: null,
+                closedAt: null,
+                expiresAt: null,
+                execution: { increment: 1 },
               },
             },
           },
-          include: {
-            activeBlock: true,
-            blocks: { include: { elements: true, activeInLiveQuiz: true } },
-          },
-        })
-
-        await Promise.all(
-          instances.map((instance) => {
-            const initialResults = getInitialInstanceResults(
-              instance.elementData
-            )
-            return prisma.elementInstance.update({
-              where: { id: instance.id },
-              data: {
-                results: initialResults,
-                anonymousResults: initialResults,
-              },
-            })
-          })
-        )
-
-        return {
-          abortedStartedAt: lockedQuiz.startedAt,
-          lockedQuiz,
-          updatedQuiz,
-        }
+        },
+        include: {
+          activeBlock: true,
+          blocks: { include: { elements: true, activeInLiveQuiz: true } },
+        },
       })
+
+      await Promise.all(
+        instances.map((instance) => {
+          const initialResults = getInitialInstanceResults(instance.elementData)
+          return prisma.elementInstance.update({
+            where: { id: instance.id },
+            data: {
+              results: initialResults,
+              anonymousResults: initialResults,
+            },
+          })
+        })
+      )
+
+      return {
+        abortedStartedAt: lockedQuiz.startedAt,
+        abortedPublicationGeneration: lockedQuiz.publicationGeneration,
+        lockedQuiz,
+        updatedQuiz,
+      }
+    })
 
     // depending on the quiz assessment setting, select the corresponding redis instance
     const redis = lockedQuiz.isAssessmentEnabled
@@ -2280,6 +2284,7 @@ export async function cancelLiveQuiz(
       redis,
       liveQuizId: id,
       startedAt: abortedStartedAt,
+      publicationGeneration: abortedPublicationGeneration,
     })
 
     await sendTeamsNotification({
@@ -2301,15 +2306,22 @@ export async function clearAbortedLiveQuizRedisGeneration({
   redis,
   liveQuizId,
   startedAt,
+  publicationGeneration,
 }: {
   redis: Pick<Redis, 'eval'>
   liveQuizId: string
   startedAt: Date
+  publicationGeneration: number
 }) {
   return redis.eval(
     `
+      local currentGeneration = redis.call('HGET', KEYS[1], 'publicationGeneration')
+      if currentGeneration and tonumber(currentGeneration) ~= tonumber(ARGV[1]) then
+        return 0
+      end
+
       local currentStartedAt = redis.call('HGET', KEYS[1], 'startedAt')
-      if currentStartedAt and currentStartedAt ~= ARGV[1] then
+      if not currentGeneration and currentStartedAt and currentStartedAt ~= ARGV[2] then
         return 0
       end
 
@@ -2319,7 +2331,7 @@ export async function clearAbortedLiveQuizRedisGeneration({
       end
 
       redis.call('SET', KEYS[2], ARGV[1], 'EX', 2592000)
-      if not currentStartedAt then
+      if not currentGeneration and not currentStartedAt then
         return 0
       end
 
@@ -2335,6 +2347,7 @@ export async function clearAbortedLiveQuizRedisGeneration({
     2,
     `lq:${liveQuizId}:meta`,
     `lq:${liveQuizId}:aborted-generation`,
+    String(publicationGeneration),
     String(startedAt.getTime()),
     `lq:${liveQuizId}:*`
   )
@@ -3301,6 +3314,7 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
           prisma: globalCtx.prisma,
           liveQuizId: publication.quiz.id,
           startedAt: publication.quiz.startedAt,
+          publicationGeneration: publication.quiz.publicationGeneration,
           scheduledPublicationTaskId: publication.scheduledPublicationTaskId,
         })
       }

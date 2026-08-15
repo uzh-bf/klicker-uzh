@@ -67,12 +67,14 @@ describe('Live quiz publication', () => {
         _numberOfKeys: number,
         _metadataKey: string,
         _tombstoneKey: string,
+        publicationGeneration: string,
         startedAt: string,
         namespace: string,
         isGamificationEnabled: string,
         isAssessmentEnabled: string
       ) {
         const values = {
+          publicationGeneration,
           namespace,
           startedAt,
           isGamificationEnabled,
@@ -330,6 +332,7 @@ describe('Live quiz publication', () => {
         prisma,
         liveQuizId: liveQuiz.id,
         startedAt,
+        publicationGeneration: 0,
         scheduledPublicationTaskId,
         deleteScheduledTask,
       })
@@ -363,6 +366,7 @@ describe('Live quiz publication', () => {
         prisma,
         liveQuizId: liveQuiz.id,
         startedAt,
+        publicationGeneration: 0,
         scheduledPublicationTaskId: '77777777-7777-4777-8777-777777777777',
       })
     ).rejects.toThrow('changed during scheduled publication cleanup')
@@ -395,6 +399,7 @@ describe('Live quiz publication', () => {
         prisma,
         liveQuizId: liveQuiz.id,
         startedAt: previousStartedAt,
+        publicationGeneration: 0,
         scheduledPublicationTaskId,
       })
     ).rejects.toThrow('changed during scheduled publication cleanup')
