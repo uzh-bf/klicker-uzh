@@ -8,9 +8,11 @@ import {
   PublicationStatus,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getCorrelatedLiveQuizResponseExport } from '../src/services/correlatedLiveQuizResponseExport.js'
+import { getLiveQuizEvaluation } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedLiveQuiz,
@@ -70,6 +72,10 @@ describe('correlated live-quiz response export integration', () => {
         finishedAt: new Date('2026-08-15T18:00:00.000Z'),
       },
     })
+    await recomputeDerivedPermissions(
+      { liveQuizId: liveQuiz.id, userId: userOneCtx.user.sub },
+      prisma
+    )
     const block = await prisma.elementBlock.findFirstOrThrow({
       where: { liveQuizId: liveQuiz.id },
     })
@@ -130,6 +136,10 @@ describe('correlated live-quiz response export integration', () => {
       ],
     })
 
+    await expect(
+      getLiveQuizEvaluation({ id: liveQuiz.id }, userOneCtx)
+    ).resolves.toMatchObject({ canExportCorrelatedResponses: true })
+
     const result = await getCorrelatedLiveQuizResponseExport(
       { id: liveQuiz.id },
       userOneCtx
@@ -138,5 +148,43 @@ describe('correlated live-quiz response export integration', () => {
     expect(result.content).toContain('current-answer')
     expect(result.content).not.toContain('previous-answer')
     expect(result.content).toMatch(/respondent_001/)
+
+    const foreignQuiz = await seedLiveQuiz(
+      {
+        elements: [{ id: element.id, type: ElementType.CONTENT }],
+        status: PublicationStatus.ENDED,
+      },
+      userOneCtx
+    )
+    const foreignRespondent = await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: foreignQuiz.id,
+        publicationGeneration: 5,
+        type: null,
+        exportLabel: 1,
+        finalizedAt,
+      },
+    })
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: finalizedAt,
+        response: { value: 'foreign-answer' },
+        timeSpent: 1,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 1,
+        correctnessPoints: 1,
+        bonusPoints: 0,
+        elementBlockExecution: 0,
+        instanceId: instance.id,
+        respondentId: foreignRespondent.id,
+      },
+    })
+
+    await expect(
+      getLiveQuizEvaluation({ id: liveQuiz.id }, userOneCtx)
+    ).resolves.toMatchObject({ canExportCorrelatedResponses: false })
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: liveQuiz.id }, userOneCtx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE')
   })
 })

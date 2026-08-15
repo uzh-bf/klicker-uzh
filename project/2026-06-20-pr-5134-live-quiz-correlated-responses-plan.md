@@ -693,6 +693,11 @@ Later research:
   also includes the invalid-owner check. A DB-backed generation-isolation
   regression passes, along with the A5 finalization/publication regressions
   (14) and GraphQL typecheck.
+- 2026-08-15: B1 follow-up aligned the evaluation capability with the export
+  preflight's quiz-scoped join, so foreign-quiz respondents fail closed and
+  retained older-generation rows remain ignored consistently. The DB-backed
+  regression now proves readiness for current plus retained rows and rejection
+  for a foreign respondent; GraphQL typecheck and the regression pass.
 
 ## Goal Prompt Requirements
 

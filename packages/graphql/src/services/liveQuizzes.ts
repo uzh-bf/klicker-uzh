@@ -2358,6 +2358,45 @@ export async function clearAbortedLiveQuizRedisGeneration({
   )
 }
 
+// Keep this join and predicate aligned with the export size preflight: retained
+// older-generation rows are ignored, while foreign, unknown, and malformed
+// current-generation ownership fails closed before export is advertised.
+async function countInvalidCorrelatedLiveQuizResponses(
+  prisma: Context['prisma'],
+  liveQuizId: string,
+  publicationGeneration: number
+) {
+  const [result] = await prisma.$queryRaw<{ invalidResponseCount: bigint }[]>`
+    SELECT COUNT(*)::bigint AS "invalidResponseCount"
+    FROM "public"."LiveQuizResponse" AS response
+    INNER JOIN "public"."ElementInstance" AS instance
+      ON instance."id" = response."instanceId"
+    INNER JOIN "public"."ElementBlock" AS block
+      ON block."id" = instance."elementBlockId"
+    LEFT JOIN "public"."LiveQuizRespondent" AS respondent
+      ON respondent."id" = response."respondentId"
+      AND respondent."liveQuizId" = ${liveQuizId}::uuid
+    WHERE
+      block."liveQuizId" = ${liveQuizId}::uuid
+      AND response."correctionOnly" = false
+      AND instance."elementType" <> 'FREE_TEXT'
+      AND (
+        respondent."id" IS NULL
+        OR (
+          respondent."publicationGeneration" = ${publicationGeneration}
+          AND (
+            response."participantId" IS NOT NULL
+            OR response."respondentId" IS NULL
+            OR respondent."exportLabel" IS NULL
+            OR respondent."finalizedAt" IS NULL
+          )
+        )
+      )
+  `
+
+  return result?.invalidResponseCount ?? 0n
+}
+
 export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
@@ -2454,34 +2493,17 @@ export async function getLiveQuizEvaluation(
           ],
         },
       }),
-      ctx.prisma.liveQuizResponse.count({
-        where: {
-          correctionOnly: false,
-          instance: {
-            elementBlock: { liveQuizId: id },
-            elementType: { not: DB.ElementType.FREE_TEXT },
-          },
-          OR: [
-            { participantId: { not: null } },
-            { respondent: { is: null } },
-            {
-              respondent: {
-                is: {
-                  liveQuizId: id,
-                  publicationGeneration: liveQuiz.publicationGeneration,
-                  OR: [{ exportLabel: null }, { finalizedAt: null }],
-                },
-              },
-            },
-          ],
-        },
-      }),
+      countInvalidCorrelatedLiveQuizResponses(
+        ctx.prisma,
+        id,
+        liveQuiz.publicationGeneration
+      ),
     ])
     canExportCorrelatedResponses =
       unfinalizedRespondentCount === 0 &&
       activeBindingCount === 0 &&
       pendingResponseCount === 0 &&
-      invalidResponseCount === 0
+      invalidResponseCount === 0n
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
