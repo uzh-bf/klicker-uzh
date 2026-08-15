@@ -4,6 +4,7 @@
 - Branch: `rs/chat-history-rail`
 - Worktree: `trees/chat-history-rail`
 - Base: `origin/v3` at `fec2d38d0d4de7edd34b740275f6b5a9ed515b06`
+- Current head: `cb515f991` (`fix(chat): reveal collapsed tool groups from history rail`)
 - Handoff: `~/.handoffs/klicker-uzh/2026-08-14-chat-history-rail-handoff.md`
 
 ## Goal
@@ -105,6 +106,8 @@ external side effects are in scope.
 - [x] Implement and verify the long-thread collapse refinement.
 - [x] Address Agy's low-severity scroll-spy performance finding and rerun the
   focused chat verification.
+- [x] Address Agy's collapsed-tool-group navigation finding and rerun the exact
+  public-head review.
 
 ## Verification evidence
 
@@ -144,18 +147,22 @@ external side effects are in scope.
   trigger for the full-history dialog. A 100-entry browser fixture verified
   the centered desktop layout, active and inactive hover details, landmark
   navigation, and the compact mobile control.
-- The final chat package test run passed 36 files and 297 tests, and the chat
-  production build passed with Turbopack. The synthetic fixture was deleted
-  and confirmed absent from the database after browser verification.
+- The final chat package test run passed 38 files and 310 tests, the chat
+  typecheck passed, and the chat production build passed with Turbopack. The
+  synthetic fixture was deleted and confirmed absent from the database after
+  browser verification.
 - `pnpm run check:all` was attempted but its analytics lint task could not
   build pinned `pandas` because the DevPod has no C compiler; the isolated
   chat and workspace TypeScript checks passed independently.
 - The pre-commit mutable-tree review gate was deferred because no commit was
   authorized at that stage; the final review is scheduled against the exact
   pushed PR range.
-- Agy reviewed the public PR range with Gemini 3.7 Flash at high effort and
-  returned `APPROVE`. It identified one low-severity O(N²) scroll-spy query
-  pattern; the follow-up change builds one anchor map per animation frame,
-  and the current chat tests, typecheck, and build pass afterward. Agy also
-  noted outside-click dismissal as optional UX and an informational redundant
-  screen-reader span; neither changes behavior or blocks this PR.
+- Agy reviewed the exact public PR head `cb515f991` with Gemini 3.7 Flash at
+  high effort and returned `APPROVE`. The review accepted the navigation-time
+  reveal of collapsed tool groups, while noting that it expands all collapsed
+  tool groups in the owning assistant message as low-severity future polish.
+  It also noted outside-click dismissal as optional UX and an informational
+  redundant screen-reader span; none blocks this PR. A fresh authenticated
+  browser pass after the correction was limited by a Turbopack panic in the
+  seeded PWA login route; the prior 100-message desktop/mobile screenshots and
+  navigation evidence remain valid for the unchanged layout path.
