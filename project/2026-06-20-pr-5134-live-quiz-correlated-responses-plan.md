@@ -698,6 +698,12 @@ Later research:
   retained older-generation rows remain ignored consistently. The DB-backed
   regression now proves readiness for current plus retained rows and rejection
   for a foreign respondent; GraphQL typecheck and the regression pass.
+- 2026-08-15: B2 was rebased onto the corrected B1 export/readiness contract.
+  Existing cookie and memory-only bearer fixtures now carry the required
+  publication generation. The response-api (28), response-processor (36), and
+  util (76) test suites pass, and the response-api, response-processor,
+  Manage, PWA, and Playwright typechecks pass in the isolated DevPod. Browser
+  runtime verification and the final integrated review remain pending.
 
 ## Goal Prompt Requirements
 

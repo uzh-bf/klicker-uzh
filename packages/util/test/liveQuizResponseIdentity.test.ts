@@ -68,6 +68,7 @@ describe('live quiz response identity', () => {
     const token = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId,
+      publicationGeneration,
       secret,
       issuer,
     })
@@ -232,6 +233,7 @@ describe('live quiz response identity', () => {
     const respondentToken = await createLiveQuizRespondentToken({
       respondentId,
       liveQuizId,
+      publicationGeneration,
       secret,
       issuer,
     })

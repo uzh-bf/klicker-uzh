@@ -37,6 +37,7 @@ describe('standard live quiz response handlers', () => {
     const token = await createLiveQuizRespondentToken({
       respondentId: '33333333-3333-4333-8333-333333333333',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       secret,
       issuer,
     })
@@ -121,6 +122,7 @@ describe('standard live quiz response handlers', () => {
     const respondentToken = await createLiveQuizRespondentToken({
       respondentId: '44444444-4444-4444-8444-444444444444',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       secret,
       issuer,
     })
@@ -144,6 +146,7 @@ describe('standard live quiz response handlers', () => {
       kind: 'anonymous',
       id: '44444444-4444-4444-8444-444444444444',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       token: respondentToken,
       cookieName: getLiveQuizRespondentCookieName(request.liveQuizId),
     })
@@ -163,6 +166,7 @@ describe('standard live quiz response handlers', () => {
     const respondentToken = await createLiveQuizRespondentToken({
       respondentId: '44444444-4444-4444-8444-444444444444',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       secret,
       issuer,
     })
@@ -184,6 +188,7 @@ describe('standard live quiz response handlers', () => {
       kind: 'anonymous',
       id: '44444444-4444-4444-8444-444444444444',
       liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
       token: respondentToken,
       cookieName: getLiveQuizRespondentCookieName(request.liveQuizId),
     })
