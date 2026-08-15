@@ -176,7 +176,7 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
 
     expect(digest).toBe(canonicalContractDigest)
     expect(canonicalContractDigest).toBe(
-      'd5013267b049ed43fa70053f449984b7bdaf1a938abf73f5c6c9bdeeda0716e3'
+      'b9a3f0e14c766c234aead4165e5250f75bf13d02f84f905baedbf6fb4c0d733c'
     )
   })
 })

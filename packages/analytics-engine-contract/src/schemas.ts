@@ -28,120 +28,185 @@ export const rfc3339DateTimeSchema = z
   .regex(RFC3339_DATETIME_PATTERN)
   .datetime({ offset: true })
 
-function contractField<T extends z.ZodTypeAny>(
-  schema: T,
-  ...description: readonly unknown[]
-): T {
-  return schema.describe(JSON.stringify(description))
-}
+type FieldDescriptor =
+  | readonly ['required', 'literal', string]
+  | readonly ['required', 'uuid']
+  | readonly ['required', 'enum', readonly [string, ...string[]]]
+  | readonly ['required', 'datetime', 'RFC3339-with-offset']
+  | readonly [
+      'optional',
+      'calendar-date',
+      'YYYY-MM-DD',
+      'reject-explicit-undefined',
+    ]
 
-function describeFields(
-  fields: z.ZodRawShape
-): readonly (readonly unknown[])[] {
-  return Object.entries(fields).map(([name, schema]) => {
-    const description = JSON.parse(schema.description ?? 'null') as unknown
-    if (!Array.isArray(description)) {
-      throw new Error(`Contract field ${name} has no canonical description`)
-    }
-    return [name, ...description] as const
-  })
-}
-
-const versionFieldSchema = contractField(
-  z.literal(ANALYTICS_ENGINE_CONTRACT_VERSION),
-  'required',
-  'literal',
-  ANALYTICS_ENGINE_CONTRACT_VERSION
-)
-const runIdFieldSchema = contractField(z.string().uuid(), 'required', 'uuid')
-const completedAtFieldSchema = contractField(
-  rfc3339DateTimeSchema,
-  'required',
-  'datetime',
-  'RFC3339-with-offset'
-)
-const courseInputFields = {
-  contractVersion: versionFieldSchema,
-  runId: runIdFieldSchema,
-  courseId: contractField(z.string().uuid(), 'required', 'uuid'),
-  mode: contractField(
-    z.enum(COURSE_WORKFLOW_MODES),
+type FieldValue<Descriptor extends FieldDescriptor> =
+  Descriptor extends readonly [
     'required',
-    'enum',
-    COURSE_WORKFLOW_MODES
-  ),
-  windowSince: contractField(
-    calendarDateSchema.optional(),
-    'optional',
-    'calendar-date',
-    'YYYY-MM-DD'
-  ),
-} as const
-const courseSuccessFields = {
-  ...courseInputFields,
-  completedAt: completedAtFieldSchema,
-} as const
-const platformInputFields = {
-  contractVersion: versionFieldSchema,
-  runId: runIdFieldSchema,
-} as const
-const platformSuccessFields = {
-  ...platformInputFields,
-  completedAt: completedAtFieldSchema,
-} as const
+    'literal',
+    infer Value extends string,
+  ]
+    ? Value
+    : Descriptor extends readonly [
+          'required',
+          'enum',
+          infer Values extends readonly string[],
+        ]
+      ? Values[number]
+      : Descriptor extends readonly ['optional', 'calendar-date', ...string[]]
+        ? string | undefined
+        : string
 
-function rejectExplicitUndefinedWindow(
-  value: { windowSince?: string },
-  context: z.RefinementCtx
-): void {
-  if (
-    Object.prototype.hasOwnProperty.call(value, 'windowSince') &&
-    value.windowSince === undefined
-  ) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['windowSince'],
-      message: 'windowSince must be omitted or contain a calendar date',
-    })
+type ContractField<Descriptor extends FieldDescriptor = FieldDescriptor> = {
+  readonly descriptor: Descriptor
+  readonly schema: z.ZodType<FieldValue<Descriptor>>
+}
+
+type ContractFields = Readonly<Record<string, ContractField>>
+type ContractShape<Fields extends ContractFields> = {
+  readonly [Name in keyof Fields]: Fields[Name]['schema']
+}
+type DescribedField = readonly [string, ...FieldDescriptor]
+
+function contractField<const Descriptor extends FieldDescriptor>(
+  descriptor: Descriptor
+): ContractField<Descriptor> {
+  let schema: z.ZodTypeAny
+
+  switch (descriptor[1]) {
+    case 'literal':
+      schema = z.literal(descriptor[2])
+      break
+    case 'uuid':
+      schema = z.string().uuid()
+      break
+    case 'enum':
+      schema = z.enum(descriptor[2])
+      break
+    case 'datetime':
+      schema = rfc3339DateTimeSchema
+      break
+    case 'calendar-date':
+      schema = calendarDateSchema.optional()
+      break
+  }
+
+  return {
+    descriptor,
+    schema: schema as z.ZodType<FieldValue<Descriptor>>,
   }
 }
 
-export const courseWorkflowInputSchema = z
-  .object(courseInputFields)
-  .strict()
-  .superRefine(rejectExplicitUndefinedWindow)
+function schemaShape<Fields extends ContractFields>(
+  fields: Fields
+): ContractShape<Fields> {
+  return Object.fromEntries(
+    Object.entries(fields).map(([name, field]) => [name, field.schema])
+  ) as ContractShape<Fields>
+}
 
-export const courseWorkflowSuccessSchema = z
-  .object(courseSuccessFields)
-  .strict()
-  .superRefine(rejectExplicitUndefinedWindow)
+function describeFields(fields: ContractFields): readonly DescribedField[] {
+  return Object.entries(fields).map(
+    ([name, field]) => [name, ...field.descriptor] as DescribedField
+  )
+}
 
-export const platformWorkflowInputSchema = z
-  .object(platformInputFields)
-  .strict()
+function buildStrictContractObject<const Fields extends ContractFields>(
+  fields: Fields
+) {
+  const explicitUndefinedFields = Object.entries(fields)
+    .filter(
+      ([, field]) =>
+        field.descriptor[0] === 'optional' &&
+        field.descriptor.at(-1) === 'reject-explicit-undefined'
+    )
+    .map(([name]) => name)
 
-export const platformWorkflowSuccessSchema = z
-  .object(platformSuccessFields)
-  .strict()
+  const schema = z
+    .object(schemaShape(fields))
+    .strict()
+    .superRefine((value, context) => {
+      const entries = Object.entries(value)
+      for (const fieldName of explicitUndefinedFields) {
+        const ownField = entries.find(([name]) => name === fieldName)
+        if (ownField !== undefined && ownField[1] === undefined) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [fieldName],
+            message: `${fieldName} must be omitted or contain a value`,
+          })
+        }
+      }
+    })
+
+  return {
+    schema,
+    descriptor: ['strict', describeFields(fields)] as const,
+  }
+}
+
+const versionField = contractField([
+  'required',
+  'literal',
+  ANALYTICS_ENGINE_CONTRACT_VERSION,
+])
+const runIdField = contractField(['required', 'uuid'])
+const completedAtField = contractField([
+  'required',
+  'datetime',
+  'RFC3339-with-offset',
+])
+const courseInputFields = {
+  contractVersion: versionField,
+  runId: runIdField,
+  courseId: contractField(['required', 'uuid']),
+  mode: contractField(['required', 'enum', COURSE_WORKFLOW_MODES]),
+  windowSince: contractField([
+    'optional',
+    'calendar-date',
+    'YYYY-MM-DD',
+    'reject-explicit-undefined',
+  ]),
+} as const
+const courseSuccessFields = {
+  ...courseInputFields,
+  completedAt: completedAtField,
+} as const
+const platformInputFields = {
+  contractVersion: versionField,
+  runId: runIdField,
+} as const
+const platformSuccessFields = {
+  ...platformInputFields,
+  completedAt: completedAtField,
+} as const
+
+const courseInputContract = buildStrictContractObject(courseInputFields)
+const courseSuccessContract = buildStrictContractObject(courseSuccessFields)
+const platformInputContract = buildStrictContractObject(platformInputFields)
+const platformSuccessContract = buildStrictContractObject(platformSuccessFields)
+
+export const courseWorkflowInputSchema = courseInputContract.schema
+export const courseWorkflowSuccessSchema = courseSuccessContract.schema
+export const platformWorkflowInputSchema = platformInputContract.schema
+export const platformWorkflowSuccessSchema = platformSuccessContract.schema
 
 export const canonicalContract = [
   ['generation', ANALYTICS_ENGINE_CONTRACT_VERSION],
   [
     'workflow',
     COURSE_WORKFLOW_NAME,
-    'strict',
     [
-      ['input', describeFields(courseInputFields)],
-      ['success', describeFields(courseSuccessFields)],
+      ['input', courseInputContract.descriptor],
+      ['success', courseSuccessContract.descriptor],
     ],
   ],
   [
     'workflow',
     PLATFORM_WORKFLOW_NAME,
-    'strict',
     [
-      ['input', describeFields(platformInputFields)],
-      ['success', describeFields(platformSuccessFields)],
+      ['input', platformInputContract.descriptor],
+      ['success', platformSuccessContract.descriptor],
     ],
   ],
 ] as const

@@ -22,7 +22,7 @@ workflow.
   excluding this plan, wiki/log documentation, generated lockfile changes, and CI.
 - Complexity stop: pause above roughly 600 substantive lines or ten substantive files
   and recheck the package boundary.
-- Actual repository-defined substantive size: `+747/-5` across 17 files, excluding
+- Actual repository-defined substantive size: `+812/-5` across 17 files, excluding
   only this project plan and the generated lockfile. The package exceeds the planning
   estimate because the repository size rule counts CI, wiki, skill, package
   configuration, and the complete test portfolio. It remains one work package: those
@@ -246,7 +246,10 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
   pre-existing wiki conformance errors respectively.
 - [x] Final bounded security review completed with no findings at confidence 75 or
   higher.
-- [x] Substantive size measured at `+747/-5` across 17 files and accepted as one
+- [x] The first final maintainability review found that schema descriptions did not
+  make the digest authoritative over validator construction. The descriptor now builds
+  both the strict schemas and digest tree; focused tests, typecheck, and build pass.
+- [x] Substantive size measured at `+812/-5` across 17 files and accepted as one
   coherent contract package rather than separating its verification or documentation.
 - [ ] Final gates complete.
 - [ ] Branch pushed and draft PR published.
