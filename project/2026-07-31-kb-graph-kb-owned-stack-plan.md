@@ -98,7 +98,7 @@ current contract acceptance required by the roadmap.
 - Target: current GitHub `v3` ref `9a82e7fa63ba6b0f6b373470e3d6b77ae265d371`
   (materialized in the read-only clone `/tmp/klicker-v3-review.THD0dw` on
   2026-08-16).
-- Current implementation tip: `22a13576e3291428c0d1cac3ccfe4888d8374992`.
+- Current implementation tip: `1245ba6102659f11d92d256dc4790a36daf5d779`.
 - Current local comparison: 145 commits ahead and 81 behind the stale local
   `origin/v3`. Shared Git metadata still rejects `FETCH_HEAD` writes, so the
   exact target was reconciled through the read-only clone without changing
@@ -276,3 +276,20 @@ current contract acceptance required by the roadmap.
   passes 10/10 on PostgreSQL, and the package checks pass. Browser evidence
   remains limited to the previously recorded synthetic empty/unconfigured
   state; no provider run, cluster access, merge, push, or deployment occurred.
+- 2026-08-16: W2 final-review follow-up is committed in `045c01c11` and
+  `1245ba610`. The first commit wires the external Hatchet terminal-result
+  fetch and GraphQL settlement adapters into the backend, general worker, and
+  scheduled script compositions, closes dispatch-claim compensation races, and
+  validates late-success accounting before claiming publication. The second
+  retains the active KB build slot for an accepted-but-uncorrelated provider
+  run and refuses a second rebuild until recovery, cancellation, settlement, or
+  manual resolution; the regression is covered in the GraphQL integration and
+  Hatchet tests. Hatchet passes 83/83, the PostgreSQL-backed knowledge and graph
+  accounting tests pass 66/66, all four affected package checks pass, the root
+  hook passes 26/26, and staged secret scanning is clean. W3's corrected
+  transfer ledger is committed at `48ba5ff093439b61f5d5165f42ddd8287089c436`;
+  its focused suite passes 34/34 with Ruff, Pyrefly, catalog-sync, ShellCheck,
+  and shell syntax checks. The W3 repository's four unrelated pre-existing
+  dirty paths remain unstaged. Independent final review of these corrected
+  ranges remains the completion gate; browser proof remains synthetic and no
+  live provider execution, cluster access, merge, push, or deployment occurred.
