@@ -7,6 +7,7 @@ import {
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  releaseKBGraphCostReservation,
   reserveKBGraphCost,
   settleKBGraphBuildCost,
 } from '../src/services/knowledgeGraphAccounting.js'
@@ -292,5 +293,72 @@ describe('KB graph cost accounting', () => {
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({ activeGraphBuildId: null })
+
+    await expect(
+      prisma.$transaction((tx) => releaseKBGraphCostReservation(tx, build.id))
+    ).resolves.toBe(false)
+
+    const lateFailure = {
+      ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
+      status: 'FAILED',
+      error_code: 'KB_GRAPH_PROVIDER_FAILED',
+      graphml_artifact: null,
+      metered_cost: null,
+    }
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: lateFailure,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('NEEDS_HUMAN_REVIEW')
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 100, settledMinorUnits: 0 })
+  })
+
+  it('allows a late valid success to reconcile a held reservation once', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build, runId, graphmlBlobName } = await createBuild()
+    await prisma.$transaction((tx) =>
+      settleKBGraphBuildCost(tx, {
+        buildId: build.id,
+        result: {
+          ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
+          owner_id: randomUUID(),
+        },
+        finishedAt: NOW,
+      })
+    )
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: successfulResult({
+            buildId: build.id,
+            runId,
+            graphmlBlobName,
+          }),
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('SETTLED')
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
   })
 })

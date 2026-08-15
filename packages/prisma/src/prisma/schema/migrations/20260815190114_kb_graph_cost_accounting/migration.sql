@@ -47,3 +47,27 @@ ALTER TABLE "public"."KBGraphBuild" ADD CONSTRAINT "KBGraphBuild_quotaId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "public"."KBGraphQuota" ADD CONSTRAINT "KBGraphQuota_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- W1 builds created before cost accounting have no reservation ledger. Do not
+-- let an in-flight build keep the KB active slot forever after this migration.
+-- Completed historical builds remain untouched because they do not hold a slot.
+UPDATE "public"."KBGraphBuild"
+SET "status" = 'FAILED',
+    "statusMessage" = COALESCE(
+      "statusMessage",
+      'This KB graph build predates cost accounting and requires review.'
+    ),
+    "errorCode" = COALESCE("errorCode", 'KB_GRAPH_MIGRATION_REVIEW_REQUIRED'),
+    "costStatus" = 'NEEDS_HUMAN_REVIEW',
+    "finishedAt" = COALESCE("finishedAt", CURRENT_TIMESTAMP)
+WHERE "costStatus" IS NULL
+  AND "status" IN ('QUEUED', 'PROCESSING');
+
+UPDATE "public"."KB"
+SET "activeGraphBuildId" = NULL
+WHERE "activeGraphBuildId" IN (
+  SELECT "id"
+  FROM "public"."KBGraphBuild"
+  WHERE "costStatus" = 'NEEDS_HUMAN_REVIEW'
+    AND "errorCode" = 'KB_GRAPH_MIGRATION_REVIEW_REQUIRED'
+);

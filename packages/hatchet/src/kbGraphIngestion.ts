@@ -131,8 +131,7 @@ async function releaseKBGraphReservationInTransaction(
   })
   if (
     !build ||
-    (build.costStatus !== KBGraphCostStatus.RESERVED &&
-      build.costStatus !== KBGraphCostStatus.NEEDS_HUMAN_REVIEW) ||
+    build.costStatus !== KBGraphCostStatus.RESERVED ||
     build.estimatedCostMinorUnits === null
   ) {
     return
@@ -149,9 +148,7 @@ async function releaseKBGraphReservationInTransaction(
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
       id: buildId,
-      costStatus: {
-        in: [KBGraphCostStatus.RESERVED, KBGraphCostStatus.NEEDS_HUMAN_REVIEW],
-      },
+      costStatus: KBGraphCostStatus.RESERVED,
     },
     data: { costStatus: KBGraphCostStatus.RELEASED },
   })

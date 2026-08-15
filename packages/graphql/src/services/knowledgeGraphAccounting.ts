@@ -22,7 +22,8 @@ export type KBGraphCostReservation = {
 
 type KBGraphCostTransaction = DB.Prisma.TransactionClient
 
-const RESERVATION_HOLD_STATUSES = [
+const RESERVATION_HOLD_STATUSES = [DB.KBGraphCostStatus.RESERVED] as const
+const SETTLEMENT_HOLD_STATUSES = [
   DB.KBGraphCostStatus.RESERVED,
   DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
 ] as const
@@ -287,8 +288,8 @@ export async function settleKBGraphBuildCost(
     })
   }
   if (
-    !RESERVATION_HOLD_STATUSES.includes(
-      build.costStatus as (typeof RESERVATION_HOLD_STATUSES)[number]
+    !SETTLEMENT_HOLD_STATUSES.includes(
+      build.costStatus as (typeof SETTLEMENT_HOLD_STATUSES)[number]
     )
   ) {
     return 'DUPLICATE'
@@ -363,20 +364,6 @@ export async function settleKBGraphBuildCost(
         finishedAt
       )
     }
-    const componentTotal = result.metered_cost.components.reduce(
-      (total, component) => total + component.amount_minor_units,
-      0
-    )
-    if (componentTotal !== result.metered_cost.amount_minor_units) {
-      return markCostNeedsHumanReview(
-        prisma,
-        build,
-        'The KB graph result metering components did not add up.',
-        'KB_GRAPH_RESULT_METERING_INVALID',
-        finishedAt
-      )
-    }
-
     const usage = result.metered_cost.components.reduce(
       (totals, component) => ({
         inputTokens: totals.inputTokens + component.input_tokens,
@@ -391,7 +378,7 @@ export async function settleKBGraphBuildCost(
     const updated = await prisma.kBGraphBuild.updateMany({
       where: {
         id: build.id,
-        costStatus: { in: [...RESERVATION_HOLD_STATUSES] },
+        costStatus: { in: [...SETTLEMENT_HOLD_STATUSES] },
       },
       data: {
         status: DB.KBGraphBuildStatus.SUCCEEDED,
@@ -438,7 +425,12 @@ export async function settleKBGraphBuildCost(
     return 'SETTLED'
   }
 
-  await releaseKBGraphCostReservation(prisma, build.id)
+  if (build.costStatus === DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW) {
+    return 'NEEDS_HUMAN_REVIEW'
+  }
+  if (!(await releaseKBGraphCostReservation(prisma, build.id))) {
+    return 'DUPLICATE'
+  }
   await prisma.kBGraphBuild.updateMany({
     where: {
       id: build.id,
