@@ -105,6 +105,7 @@ describe('response processor orchestration', () => {
         messageId,
         sessionId: randomUUID(),
         instanceId: 'invalid',
+        publicationGeneration: 3,
         response: { value: 'response' },
         responseTimestamp: 123,
         acceptedIdentity: {
@@ -128,6 +129,7 @@ describe('response processor orchestration', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload,
+              publicationGeneration: 3,
               responseKey: 'claim',
               settledAt: null,
             }),
@@ -155,6 +157,7 @@ describe('response processor orchestration', () => {
         messageId,
         sessionId: randomUUID(),
         instanceId: '42',
+        publicationGeneration: 3,
         response: { value: 'response' },
         responseTimestamp: 123,
         acceptedIdentity: {
@@ -179,6 +182,7 @@ describe('response processor orchestration', () => {
             liveQuizPendingResponse: {
               findUnique: async () => ({
                 eventPayload,
+                publicationGeneration: 3,
                 responseKey: 'claim',
                 settledAt: null,
               }),
@@ -214,6 +218,7 @@ describe('response processor orchestration', () => {
         messageId,
         sessionId: liveQuizId,
         instanceId: '42',
+        publicationGeneration: 3,
         response: { selection },
         responseTimestamp: 123,
         acceptedIdentity: {
@@ -247,8 +252,10 @@ describe('response processor orchestration', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload,
+              publicationGeneration: 3,
               responseKey: buildCorrelatedResponseKey({
                 liveQuizId,
+                publicationGeneration: 3,
                 instanceId: '42',
                 blockExecution: '1',
                 identityKey,
@@ -264,7 +271,8 @@ describe('response processor orchestration', () => {
             findUnique: async () => ({
               id: respondentId,
               liveQuizId,
-              type: 'ANONYMOUS_CORRELATED',
+              publicationGeneration: 3,
+              finalizedAt: null,
             }),
           },
           liveQuizResponse: {
@@ -279,6 +287,7 @@ describe('response processor orchestration', () => {
                   blockExecution: 1,
                   blockStatus: 'ACTIVE',
                   isAssessmentEnabled: false,
+                  publicationGeneration: 3,
                   responseCollectionMode: 'CORRELATED_EXPORT',
                   status: 'PUBLISHED',
                 },

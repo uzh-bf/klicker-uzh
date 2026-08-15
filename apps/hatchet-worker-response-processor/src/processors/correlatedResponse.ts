@@ -1,7 +1,6 @@
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   ElementBlockStatus,
-  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
   ResponseCorrectness,
@@ -10,7 +9,6 @@ import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   type AcceptedCorrelatedResponseIdentity,
   buildCorrelatedResponseKey,
-  buildLiveQuizResponseIdentityKey,
   type CorrelatedResponseEventMessage,
   decryptCorrelatedResponseEvent,
   type LiveQuizResponseIdentityKey,
@@ -19,7 +17,7 @@ import type { RedisHashMutation } from './responseEffects.js'
 
 type CorrelatedResponseDatabase = Pick<
   PrismaClient,
-  '$transaction' | 'liveQuizRespondent' | 'liveQuizResponse' | 'participant'
+  '$transaction' | 'liveQuizRespondent' | 'liveQuizResponse'
 >
 
 interface CorrelatedProcessingRedis {
@@ -36,12 +34,15 @@ type CorrelatedLiveQuizState = {
   blockExecution: number
   blockStatus: ElementBlockStatus
   isAssessmentEnabled: boolean
+  publicationGeneration: number
   responseCollectionMode: LiveQuizResponseCollectionMode
   status: PublicationStatus
 }
 
-export type CorrelatedResponseOwner = AcceptedCorrelatedResponseIdentity & {
-  identityKey: LiveQuizResponseIdentityKey
+export type CorrelatedResponseOwner = {
+  kind: 'anonymous'
+  id: string
+  identityKey: Extract<LiveQuizResponseIdentityKey, `respondent:${string}`>
 }
 
 export type CorrelatedProcessingState = {
@@ -70,7 +71,12 @@ export async function resolveCorrelatedResponseDelivery({
 } | null> {
   const pendingResponse = await database.liveQuizPendingResponse.findUnique({
     where: { id: messageId },
-    select: { eventPayload: true, responseKey: true, settledAt: true },
+    select: {
+      eventPayload: true,
+      publicationGeneration: true,
+      responseKey: true,
+      settledAt: true,
+    },
   })
   if (
     !pendingResponse ||
@@ -87,6 +93,11 @@ export async function resolveCorrelatedResponseDelivery({
   if (message.messageId !== messageId) {
     throw new Error(
       `Correlated response outbox message id mismatch for ${messageId}`
+    )
+  }
+  if (message.publicationGeneration !== pendingResponse.publicationGeneration) {
+    throw new Error(
+      `Correlated response outbox generation mismatch for ${messageId}`
     )
   }
   return { message, responseKey: pendingResponse.responseKey }
@@ -253,10 +264,12 @@ async function lockCorrelatedLiveQuizState({
   transaction,
   liveQuizId,
   instanceId,
+  publicationGeneration,
 }: {
   transaction: Pick<Prisma.TransactionClient, '$queryRaw'>
   liveQuizId: string
   instanceId: number
+  publicationGeneration: number
 }) {
   const [liveQuiz] = await transaction.$queryRaw<CorrelatedLiveQuizState[]>`
     SELECT
@@ -265,6 +278,7 @@ async function lockCorrelatedLiveQuizState({
       block."execution" AS "blockExecution",
       block."status"::text AS "blockStatus",
       "LiveQuiz"."isAssessmentEnabled",
+      "LiveQuiz"."publicationGeneration",
       "LiveQuiz"."responseCollectionMode"::text AS "responseCollectionMode",
       "LiveQuiz"."status"::text AS "status"
     FROM "public"."LiveQuiz"
@@ -275,6 +289,7 @@ async function lockCorrelatedLiveQuizState({
     WHERE
       "LiveQuiz"."id" = ${liveQuizId}::uuid AND
       "LiveQuiz"."isDeleted" = false AND
+      "LiveQuiz"."publicationGeneration" = ${publicationGeneration} AND
       instance."id" = ${instanceId}
     FOR SHARE OF "LiveQuiz", block
   `
@@ -284,10 +299,12 @@ async function lockCorrelatedLiveQuizState({
 
 function canApplyCorrelatedRedisEffects(
   liveQuiz: CorrelatedLiveQuizState | undefined,
-  blockExecution: number
+  blockExecution: number,
+  publicationGeneration: number
 ) {
   return (
     liveQuiz !== undefined &&
+    liveQuiz.publicationGeneration === publicationGeneration &&
     liveQuiz.blockExecution === blockExecution &&
     liveQuiz.status === PublicationStatus.PUBLISHED &&
     liveQuiz.blockStatus === ElementBlockStatus.ACTIVE &&
@@ -303,6 +320,7 @@ export async function applyCorrelatedRedisMutationsWithFence({
   redis,
   liveQuizId,
   instanceId,
+  publicationGeneration,
   blockExecution,
   mutations,
   processedKey,
@@ -314,6 +332,7 @@ export async function applyCorrelatedRedisMutationsWithFence({
   redis: Pick<CorrelatedProcessingRedis, 'eval'>
   liveQuizId: string
   instanceId: number
+  publicationGeneration: number
   blockExecution: number
   mutations: RedisHashMutation[]
   processedKey: string
@@ -326,8 +345,15 @@ export async function applyCorrelatedRedisMutationsWithFence({
       transaction,
       liveQuizId,
       instanceId,
+      publicationGeneration,
     })
-    if (!canApplyCorrelatedRedisEffects(liveQuiz, blockExecution)) {
+    if (
+      !canApplyCorrelatedRedisEffects(
+        liveQuiz,
+        blockExecution,
+        publicationGeneration
+      )
+    ) {
       return 'inactive' as const
     }
 
@@ -346,46 +372,37 @@ export async function applyCorrelatedRedisMutationsWithFence({
 export async function resolveCorrelatedResponseOwner({
   acceptedIdentity,
   liveQuizId,
+  publicationGeneration,
   database,
 }: {
   acceptedIdentity: AcceptedCorrelatedResponseIdentity
   liveQuizId: string
+  publicationGeneration: number
   database: CorrelatedResponseDatabase
 }): Promise<CorrelatedResponseOwner> {
-  const identityKey = buildLiveQuizResponseIdentityKey(acceptedIdentity)
-
-  if (acceptedIdentity.kind === 'participant') {
-    const participant = await database.participant.findUnique({
-      where: { id: acceptedIdentity.id },
-      select: { id: true },
-    })
-    if (!participant) {
-      throw new CorrelatedResponseIdentityError(
-        'Correlated response participant no longer exists'
-      )
-    }
-
-    return { ...acceptedIdentity, identityKey }
+  if (acceptedIdentity.kind !== 'anonymous') {
+    throw new CorrelatedResponseIdentityError(
+      'Correlated responses must use an admitted respondent identity'
+    )
   }
-
   const respondent = await database.liveQuizRespondent.findUnique({
-    where: { id: acceptedIdentity.id },
+    where: {
+      id_liveQuizId_publicationGeneration: {
+        id: acceptedIdentity.id,
+        liveQuizId,
+        publicationGeneration,
+      },
+    },
+    select: { finalizedAt: true },
   })
-  const expectedType =
-    acceptedIdentity.kind === 'temporary'
-      ? LiveQuizRespondentType.TEMPORARY_PSEUDONYM
-      : LiveQuizRespondentType.ANONYMOUS_CORRELATED
-  if (
-    !respondent ||
-    respondent.liveQuizId !== liveQuizId ||
-    respondent.type !== expectedType
-  ) {
+  if (!respondent || respondent.finalizedAt !== null) {
     throw new CorrelatedResponseIdentityError(
       'Accepted correlated response identity has invalid scope'
     )
   }
 
-  return { ...acceptedIdentity, identityKey }
+  const identityKey = `respondent:${acceptedIdentity.id}` as const
+  return { kind: 'anonymous', id: acceptedIdentity.id, identityKey }
 }
 
 export function buildCorrelatedResponseCreateData({
@@ -424,9 +441,7 @@ export function buildCorrelatedResponseCreateData({
     bonusPoints: Number.isNaN(bonusPoints) ? 0 : bonusPoints,
     elementBlockExecution: blockExecution,
     instance: { connect: { id: instanceId } },
-    ...(owner.kind === 'participant'
-      ? { participant: { connect: { id: owner.id } } }
-      : { respondent: { connect: { id: owner.id } } }),
+    respondent: { connect: { id: owner.id } },
   }
 }
 
@@ -435,6 +450,7 @@ export async function persistAcceptedCorrelatedResponse({
   liveQuizId,
   owner,
   instanceId,
+  publicationGeneration,
   blockExecution,
   response,
   submittedAt,
@@ -450,6 +466,7 @@ export async function persistAcceptedCorrelatedResponse({
   liveQuizId: string
   owner: CorrelatedResponseOwner
   instanceId: number
+  publicationGeneration: number
   blockExecution: number
   response: LiveQuizResponseInput
   submittedAt: number
@@ -465,10 +482,12 @@ export async function persistAcceptedCorrelatedResponse({
         transaction: prisma,
         liveQuizId,
         instanceId,
+        publicationGeneration,
       })
 
       if (
         !liveQuiz ||
+        liveQuiz.publicationGeneration !== publicationGeneration ||
         liveQuiz.blockExecution !== blockExecution ||
         (liveQuiz.status !== PublicationStatus.PUBLISHED &&
           liveQuiz.status !== PublicationStatus.ENDED) ||
@@ -480,7 +499,8 @@ export async function persistAcceptedCorrelatedResponse({
       }
       applyRedisEffects = canApplyCorrelatedRedisEffects(
         liveQuiz,
-        blockExecution
+        blockExecution,
+        publicationGeneration
       )
 
       await prisma.liveQuizResponse.create({
@@ -531,14 +551,16 @@ export async function persistAcceptedCorrelatedResponse({
 
 export function getCorrelatedProcessedKey({
   liveQuizId,
+  publicationGeneration,
   instanceId,
   blockExecution,
 }: {
   liveQuizId: string
+  publicationGeneration: number
   instanceId: string
   blockExecution: number
 }) {
-  return `lq:${liveQuizId}:i:${instanceId}:correlatedProcessed:${blockExecution}`
+  return `lq:${liveQuizId}:g:${publicationGeneration}:i:${instanceId}:correlatedProcessed:${blockExecution}`
 }
 
 export async function prepareCorrelatedMessageProcessing({
@@ -550,7 +572,7 @@ export async function prepareCorrelatedMessageProcessing({
   database: CorrelatedResponseDatabase
   message: Pick<
     CorrelatedResponseEventMessage,
-    'acceptedIdentity' | 'sessionId' | 'instanceId'
+    'acceptedIdentity' | 'publicationGeneration' | 'sessionId' | 'instanceId'
   >
   blockExecution: string
   responseKey: string
@@ -560,17 +582,24 @@ export async function prepareCorrelatedMessageProcessing({
 > {
   const instanceId = Number(message.instanceId)
   const execution = Number(blockExecution)
-  if (!Number.isInteger(instanceId) || !Number.isInteger(execution)) {
+  if (
+    !Number.isInteger(instanceId) ||
+    !Number.isInteger(execution) ||
+    !Number.isInteger(message.publicationGeneration) ||
+    message.publicationGeneration < 0
+  ) {
     return { status: 'invalid' }
   }
 
   const owner = await resolveCorrelatedResponseOwner({
     acceptedIdentity: message.acceptedIdentity,
     liveQuizId: message.sessionId,
+    publicationGeneration: message.publicationGeneration,
     database,
   })
   const expectedResponseKey = buildCorrelatedResponseKey({
     liveQuizId: message.sessionId,
+    publicationGeneration: message.publicationGeneration,
     instanceId: message.instanceId,
     blockExecution,
     identityKey: owner.identityKey,
@@ -581,6 +610,7 @@ export async function prepareCorrelatedMessageProcessing({
 
   const processedKey = getCorrelatedProcessedKey({
     liveQuizId: message.sessionId,
+    publicationGeneration: message.publicationGeneration,
     instanceId: message.instanceId,
     blockExecution: execution,
   })
@@ -617,25 +647,12 @@ async function findPersistedCorrelatedResponse({
   instanceId: number
   blockExecution: number
 }) {
-  return owner.kind === 'participant'
-    ? database.liveQuizResponse.findUnique({
-        where: {
-          instanceId_elementBlockExecution_participantId: {
-            instanceId,
-            elementBlockExecution: blockExecution,
-            participantId: owner.id,
-          },
-        },
-        select: { submittedAt: true },
-      })
-    : database.liveQuizResponse.findUnique({
-        where: {
-          instanceId_elementBlockExecution_respondentId: {
-            instanceId,
-            elementBlockExecution: blockExecution,
-            respondentId: owner.id,
-          },
-        },
-        select: { submittedAt: true },
-      })
+  return database.liveQuizResponse.findFirst({
+    where: {
+      instanceId,
+      elementBlockExecution: blockExecution,
+      respondentId: owner.id,
+    },
+    select: { submittedAt: true },
+  })
 }

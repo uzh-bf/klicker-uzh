@@ -32,7 +32,6 @@ type CorrelatedProcessorDatabase = Pick<
   | 'liveQuizPendingResponse'
   | 'liveQuizRespondent'
   | 'liveQuizResponse'
-  | 'participant'
 >
 
 export async function processCorrelatedResponseMessage(
@@ -174,6 +173,7 @@ async function processResolvedCorrelatedResponse({
       liveQuizId: message.sessionId,
       owner: correlatedState.owner,
       instanceId: correlatedState.instanceId,
+      publicationGeneration: message.publicationGeneration,
       blockExecution: correlatedState.blockExecution,
       response: message.response,
       submittedAt: message.responseTimestamp,
@@ -215,6 +215,7 @@ async function processResolvedCorrelatedResponse({
       database,
       liveQuizId: message.sessionId,
       instanceId: correlatedState.instanceId,
+      publicationGeneration: message.publicationGeneration,
       redis,
       mutations: redisMutations,
       processedKey: correlatedState.processedKey,

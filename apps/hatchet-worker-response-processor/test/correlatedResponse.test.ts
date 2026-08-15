@@ -6,7 +6,6 @@ import {
   ElementBlockStatus,
   ElementInstanceType,
   ElementType,
-  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   PublicationStatus,
   ResponseCorrectness,
@@ -34,8 +33,8 @@ import {
 type RespondentRow = {
   id: string
   liveQuizId: string
-  type: LiveQuizRespondentType
-  verificationSecretHash: string | null
+  publicationGeneration: number
+  finalizedAt: Date | null
 }
 
 class MemoryProcessingRedis {
@@ -53,90 +52,54 @@ class MemoryProcessingRedis {
 }
 
 function createDatabase({
-  participantIds = [],
   respondentRows = [],
 }: {
-  participantIds?: string[]
   respondentRows?: RespondentRow[]
 } = {}) {
-  const respondents = new Map(respondentRows.map((row) => [row.id, row]))
-
   return {
     database: {
-      participant: {
-        findUnique: async ({ where }: any) =>
-          participantIds.includes(where.id) ? { id: where.id } : null,
-      },
       liveQuizRespondent: {
-        findUnique: async ({ where }: any) => respondents.get(where.id) ?? null,
+        findUnique: async ({ where }: any) => {
+          const scope = where.id_liveQuizId_publicationGeneration
+          return respondentRows.find(
+            (row) =>
+              row.id === scope.id &&
+              row.liveQuizId === scope.liveQuizId &&
+              row.publicationGeneration === scope.publicationGeneration
+          )
+        },
       },
     } as any,
   }
 }
 
 describe('resolveCorrelatedResponseOwner', () => {
-  it('accepts an admitted participant identity that still exists', async () => {
+  it('rejects a participant identity from the correlated worker contract', async () => {
     const liveQuizId = randomUUID()
     const participantId = randomUUID()
-    const { database } = createDatabase({
-      participantIds: [participantId],
-    })
+    const { database } = createDatabase()
 
-    const owner = await resolveCorrelatedResponseOwner({
-      acceptedIdentity: {
-        kind: 'participant',
-        id: participantId,
-      },
-      liveQuizId,
-      database,
-    })
-
-    assert.deepEqual(owner, {
-      kind: 'participant',
-      id: participantId,
-      identityKey: `participant:${participantId}`,
-    })
+    await assert.rejects(
+      resolveCorrelatedResponseOwner({
+        acceptedIdentity: { kind: 'participant', id: participantId },
+        liveQuizId,
+        publicationGeneration: 3,
+        database,
+      }),
+      CorrelatedResponseIdentityError
+    )
   })
 
-  it('accepts an admitted temporary identity after leaderboard logout', async () => {
-    const liveQuizId = randomUUID()
-    const respondentId = randomUUID()
-    const { database } = createDatabase({
-      respondentRows: [
-        {
-          id: respondentId,
-          liveQuizId,
-          type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-          verificationSecretHash: null,
-        },
-      ],
-    })
-
-    const owner = await resolveCorrelatedResponseOwner({
-      acceptedIdentity: {
-        kind: 'temporary',
-        id: respondentId,
-      },
-      liveQuizId,
-      database,
-    })
-
-    assert.equal(owner.kind, 'temporary')
-    assert.equal(owner.id, respondentId)
-  })
-
-  it('rejects a temporary identity that was never admitted', async () => {
+  it('rejects a temporary leaderboard identity from the correlated worker contract', async () => {
     const liveQuizId = randomUUID()
     const respondentId = randomUUID()
     const { database } = createDatabase()
 
     await assert.rejects(
       resolveCorrelatedResponseOwner({
-        acceptedIdentity: {
-          kind: 'temporary',
-          id: respondentId,
-        },
+        acceptedIdentity: { kind: 'temporary', id: respondentId },
         liveQuizId,
+        publicationGeneration: 3,
         database,
       }),
       CorrelatedResponseIdentityError
@@ -151,8 +114,8 @@ describe('resolveCorrelatedResponseOwner', () => {
         {
           id: respondentId,
           liveQuizId,
-          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-          verificationSecretHash: 'acceptance-time-token-hash',
+          publicationGeneration: 3,
+          finalizedAt: null,
         },
       ],
     })
@@ -163,11 +126,37 @@ describe('resolveCorrelatedResponseOwner', () => {
         id: respondentId,
       },
       liveQuizId,
+      publicationGeneration: 3,
       database,
     })
 
     assert.equal(owner.kind, 'anonymous')
     assert.equal(owner.id, respondentId)
+  })
+
+  it('rejects a respondent after generation finalization', async () => {
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const { database } = createDatabase({
+      respondentRows: [
+        {
+          id: respondentId,
+          liveQuizId,
+          publicationGeneration: 3,
+          finalizedAt: new Date(),
+        },
+      ],
+    })
+
+    await assert.rejects(
+      resolveCorrelatedResponseOwner({
+        acceptedIdentity: { kind: 'anonymous', id: respondentId },
+        liveQuizId,
+        publicationGeneration: 3,
+        database,
+      }),
+      CorrelatedResponseIdentityError
+    )
   })
 
   it('rejects an admitted respondent scoped to another quiz', async () => {
@@ -178,8 +167,8 @@ describe('resolveCorrelatedResponseOwner', () => {
         {
           id: respondentId,
           liveQuizId: randomUUID(),
-          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-          verificationSecretHash: 'hash',
+          publicationGeneration: 3,
+          finalizedAt: null,
         },
       ],
     })
@@ -191,6 +180,7 @@ describe('resolveCorrelatedResponseOwner', () => {
           id: respondentId,
         },
         liveQuizId,
+        publicationGeneration: 3,
         database,
       }),
       CorrelatedResponseIdentityError
@@ -235,6 +225,7 @@ describe('correlated response persistence helpers', () => {
       messageId,
       sessionId: liveQuizId,
       instanceId: '42',
+      publicationGeneration: 3,
       response: { value: 'accepted' },
       responseTimestamp: 123,
       acceptedIdentity: {
@@ -268,8 +259,10 @@ describe('correlated response persistence helpers', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload,
+              publicationGeneration: 3,
               responseKey: buildCorrelatedResponseKey({
                 liveQuizId,
+                publicationGeneration: 3,
                 instanceId: '42',
                 blockExecution: '3',
                 identityKey,
@@ -285,6 +278,7 @@ describe('correlated response persistence helpers', () => {
         message,
         responseKey: buildCorrelatedResponseKey({
           liveQuizId,
+          publicationGeneration: 3,
           instanceId: '42',
           blockExecution: '3',
           identityKey,
@@ -297,6 +291,24 @@ describe('correlated response persistence helpers', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload,
+              publicationGeneration: 2,
+              responseKey: 'response-key',
+              settledAt: null,
+            }),
+          },
+        } as any,
+        messageId,
+        secret: 'test-secret',
+      }),
+      /outbox generation mismatch/
+    )
+    await assert.rejects(
+      resolveCorrelatedResponseDelivery({
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({
+              eventPayload,
+              publicationGeneration: 3,
               responseKey: 'response-key',
               settledAt: null,
             }),
@@ -313,6 +325,7 @@ describe('correlated response persistence helpers', () => {
           liveQuizPendingResponse: {
             findUnique: async () => ({
               eventPayload: null,
+              publicationGeneration: 3,
               responseKey: 'response-key',
               settledAt: new Date(),
             }),
@@ -325,15 +338,15 @@ describe('correlated response persistence helpers', () => {
     )
   })
 
-  it('builds a participant response without respondent identifiers', () => {
-    const participantId = randomUUID()
+  it('builds a respondent response without participant identifiers', () => {
+    const respondentId = randomUUID()
     const submittedAt = Date.now()
 
     const data = buildCorrelatedResponseCreateData({
       owner: {
-        kind: 'participant',
-        id: participantId,
-        identityKey: `participant:${participantId}`,
+        kind: 'anonymous',
+        id: respondentId,
+        identityKey: `respondent:${respondentId}`,
       },
       instanceId: 42,
       blockExecution: 3,
@@ -346,12 +359,12 @@ describe('correlated response persistence helpers', () => {
     })
 
     assert.equal(data.correctness, ResponseCorrectness.PARTIAL)
-    assert.deepEqual(data.participant, { connect: { id: participantId } })
-    assert.equal('respondent' in data, false)
+    assert.deepEqual(data.respondent, { connect: { id: respondentId } })
+    assert.equal('participant' in data, false)
     assert.equal(data.submittedAt.getTime(), submittedAt)
   })
 
-  it('builds an anonymous response without participant identifiers', () => {
+  it('builds the same respondent shape for anonymous identity', () => {
     const respondentId = randomUUID()
     const data = buildCorrelatedResponseCreateData({
       owner: {
@@ -395,10 +408,11 @@ describe('correlated response persistence helpers', () => {
     assert.equal(
       getCorrelatedProcessedKey({
         liveQuizId: 'quiz',
+        publicationGeneration: 3,
         instanceId: '7',
         blockExecution: 2,
       }),
-      'lq:quiz:i:7:correlatedProcessed:2'
+      'lq:quiz:g:3:i:7:correlatedProcessed:2'
     )
   })
 
@@ -415,6 +429,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 3,
                 blockStatus: 'EXECUTED',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'ENDED',
               },
@@ -437,6 +452,7 @@ describe('correlated response persistence helpers', () => {
         identityKey: 'respondent:respondent-id',
       },
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       response: { value: 'answer' },
       submittedAt: 456,
@@ -465,6 +481,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 3,
                 blockStatus: 'SCHEDULED',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'DRAFT',
               },
@@ -485,6 +502,7 @@ describe('correlated response persistence helpers', () => {
         identityKey: 'respondent:respondent-id',
       },
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       response: { value: 'answer' },
       submittedAt: 456,
@@ -510,6 +528,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 3,
                 blockStatus: 'ACTIVE',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'PUBLISHED',
               },
@@ -532,6 +551,7 @@ describe('correlated response persistence helpers', () => {
         identityKey: 'respondent:respondent-id',
       },
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       response: { value: 'answer' },
       submittedAt: 456,
@@ -560,6 +580,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 4,
                 blockStatus: 'ACTIVE',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'PUBLISHED',
               },
@@ -580,6 +601,7 @@ describe('correlated response persistence helpers', () => {
         identityKey: 'respondent:respondent-id',
       },
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       response: { value: 'answer' },
       submittedAt: 456,
@@ -600,16 +622,17 @@ describe('correlated response persistence helpers', () => {
           throw { code: 'P2002' }
         },
         liveQuizResponse: {
-          findUnique: async () => ({ submittedAt: new Date(timestamp) }),
+          findFirst: async () => ({ submittedAt: new Date(timestamp) }),
         },
       } as any,
       liveQuizId: randomUUID(),
       owner: {
-        kind: 'participant',
-        id: 'participant-id',
-        identityKey: 'participant:participant-id',
+        kind: 'anonymous',
+        id: 'respondent-id',
+        identityKey: 'respondent:respondent-id',
       },
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       response: { value: 'answer' },
       submittedAt: timestamp,
@@ -632,6 +655,7 @@ describe('correlated response persistence helpers', () => {
     const identityKey = `respondent:${respondentId}` as const
     const responseKey = buildCorrelatedResponseKey({
       liveQuizId,
+      publicationGeneration: 3,
       instanceId: '42',
       blockExecution: '3',
       identityKey,
@@ -642,8 +666,8 @@ describe('correlated response persistence helpers', () => {
         {
           id: respondentId,
           liveQuizId,
-          type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
-          verificationSecretHash: 'acceptance-time-token-hash',
+          publicationGeneration: 3,
+          finalizedAt: null,
         },
       ],
     })
@@ -658,6 +682,7 @@ describe('correlated response persistence helpers', () => {
         messageId,
         sessionId: liveQuizId,
         instanceId: '42',
+        publicationGeneration: 3,
         responseTimestamp: 123,
         acceptedIdentity: {
           kind: 'anonymous',
@@ -665,7 +690,6 @@ describe('correlated response persistence helpers', () => {
         },
       },
       blockExecution: '3',
-      sessionBlockId: randomUUID(),
       responseKey,
     })
 
@@ -768,6 +792,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 3,
                 blockStatus: 'ACTIVE',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'PUBLISHED',
               },
@@ -786,6 +811,7 @@ describe('correlated response persistence helpers', () => {
       },
       liveQuizId: randomUUID(),
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       mutations: [],
       processedKey: 'processed',
@@ -888,6 +914,7 @@ describe('correlated response persistence helpers', () => {
         },
         liveQuizId,
         instanceId,
+        publicationGeneration: 0,
         blockExecution: 3,
         mutations: [],
         processedKey: `test:fence:${liveQuizId}:processed`,
@@ -950,6 +977,7 @@ describe('correlated response persistence helpers', () => {
                 blockExecution: 3,
                 blockStatus: 'ACTIVE',
                 isAssessmentEnabled: false,
+                publicationGeneration: 3,
                 responseCollectionMode: 'CORRELATED_EXPORT',
                 status: 'PUBLISHED',
               },
@@ -964,6 +992,7 @@ describe('correlated response persistence helpers', () => {
       },
       liveQuizId: randomUUID(),
       instanceId: 42,
+      publicationGeneration: 3,
       blockExecution: 3,
       mutations: [],
       processedKey: 'processed',
