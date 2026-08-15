@@ -82,8 +82,9 @@ Current interim-stack evidence:
 - The accepted B2 delivery slice has been cascaded onto the adapted A5/B1
   identity and finalization contract. The remaining gap is the finite-retention
   policy and runtime proof of the participant journey.
-- Source checks are recorded as green; browser proof remains blocked by the
-  shared DevPod PWA font resolver failure and lifecycle lock.
+- Source checks are recorded as green; participant browser proof remains
+  blocked by the isolated DevPod's Turbopack route manifest and unavailable
+  Playwright browser runtime.
 
 ## Resolved Grill Decisions
 
@@ -712,6 +713,17 @@ Later research:
   its Chromium runtime is missing the headless shell and required system
   libraries. No browser-run result is claimed for the participant notice or
   response submission until that environment issue is resolved.
+- 2026-08-15: Integrated review identified and the follow-up commit fixed three
+  bounded defects: a stale respondent cookie could shadow a current-generation
+  bearer fallback, finalized generations remained reconciliation candidates, and
+  aggregate-mode EN/DE notices omitted the non-linkage disclosure. Focused util,
+  response-api, and finalization regressions pass; the full precommit is green.
+- 2026-08-15: Recreating the isolated DevPod confirmed it is mounted at B2
+  HEAD. The Turbopack dev manifest still omits the existing `/session/[id]`
+  page and returns 404, while a webpack production build compiled successfully
+  and emitted that route before being killed with exit 137 during page-data
+  collection. This narrows the participant gate to the dev-runtime/resource
+  environment; no participant browser result is claimed.
 
 ## Goal Prompt Requirements
 
