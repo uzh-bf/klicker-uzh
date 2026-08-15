@@ -1074,10 +1074,12 @@ export async function markKBGraphBuildDispatchFailed(
           data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
         })
       }
-      await tx.kB.updateMany({
-        where: { id: build.kbId, activeGraphBuildId: build.id },
-        data: { activeGraphBuildId: null },
-      })
+      if (build.dispatchClaimedAt === null) {
+        await tx.kB.updateMany({
+          where: { id: build.kbId, activeGraphBuildId: build.id },
+          data: { activeGraphBuildId: null },
+        })
+      }
     }
   })
 }

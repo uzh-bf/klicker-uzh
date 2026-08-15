@@ -355,6 +355,47 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
+  it('fences rebuilds after an accepted but uncorrelated graph dispatch', async () => {
+    const kb = await createKb({ name: 'Ambiguous graph dispatch' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Graph source',
+        sourceUrl: 'https://example.com/ambiguous-graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'b'.repeat(64),
+      },
+    })
+
+    const initial = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    expect(initial.buildId).not.toBeNull()
+    await prisma.kBGraphBuild.update({
+      where: { id: initial.buildId! },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        errorCode: 'KB_GRAPH_DISPATCH_AMBIGUOUS',
+        statusMessage:
+          'The external KB graph workflow may have been accepted but could not be correlated; manual review is required.',
+        finishedAt: new Date(),
+      },
+    })
+
+    await expect(
+      rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DISPATCH_AMBIGUOUS' },
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kb.id } })
+    ).resolves.toMatchObject({ activeGraphBuildId: initial.buildId })
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(1)
+  })
+
   it('creates and lists only the current users knowledge bases', async () => {
     const created = await createKb(
       { name: 'Finance notes', description: 'Course material' },

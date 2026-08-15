@@ -501,6 +501,7 @@ describe('KB graph external dispatch', () => {
         data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
       })
     )
+    expect(ambiguousPrisma.kB.updateMany).not.toHaveBeenCalled()
   })
 
   it('does not release a reservation when gate compensation loses the dispatch claim race', async () => {

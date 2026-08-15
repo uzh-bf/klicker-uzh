@@ -1853,6 +1853,7 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   actualRequestCount: true,
   costCurrency: true,
   costStatus: true,
+  errorCode: true,
   quotaId: true,
   quota: {
     select: {
@@ -2158,6 +2159,12 @@ export async function rebuildKbKnowledgeGraph(
           activeBuild.status === DB.KBGraphBuildStatus.PROCESSING)
       ) {
         return { kb, build: activeBuild, queueBuildId: null }
+      }
+      if (activeBuild?.errorCode === 'KB_GRAPH_DISPATCH_AMBIGUOUS') {
+        throw new GraphQLError(
+          'The previous KB graph dispatch requires manual review before another build can start.',
+          { extensions: { code: 'KB_GRAPH_DISPATCH_AMBIGUOUS' } }
+        )
       }
       await prisma.kB.updateMany({
         where: { id: kbId, activeGraphBuildId: kb.activeGraphBuildId },
