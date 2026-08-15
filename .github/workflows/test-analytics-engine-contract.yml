@@ -47,11 +47,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test analytics engine contract
-        run: pnpm --filter @klicker-uzh/analytics-engine-contract test
-
-      - name: Check analytics engine contract
-        run: pnpm --filter @klicker-uzh/analytics-engine-contract check
-
-      - name: Build analytics engine contract
-        run: pnpm --filter @klicker-uzh/analytics-engine-contract build
+      - name: Verify analytics engine contract
+        run: |
+          pnpm --filter @klicker-uzh/analytics-engine-contract test
+          pnpm --filter @klicker-uzh/analytics-engine-contract check
+          pnpm --filter @klicker-uzh/analytics-engine-contract build

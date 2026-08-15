@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 
+import { describe, expect, it } from 'vitest'
 import { ZodError } from 'zod'
 
 import {
@@ -40,6 +41,22 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
     await expect(
       stubs.course(input as typeof courseInputWithWindowFixture)
     ).rejects.toThrow(ZodError)
+  })
+
+  it('rejects explicitly undefined optional windows', () => {
+    expect(() =>
+      courseWorkflowInputSchema.parse({
+        ...courseInputWithoutWindowFixture,
+        windowSince: undefined,
+      })
+    ).toThrow(ZodError)
+    expect(() =>
+      courseWorkflowSuccessSchema.parse({
+        ...courseInputWithoutWindowFixture,
+        windowSince: undefined,
+        completedAt: '2026-08-15T12:00:00Z',
+      })
+    ).toThrow(ZodError)
   })
 
   it.each([

@@ -22,6 +22,6 @@
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     "lib": ["es2022"],
-    "types": ["vitest/globals"]
+    "types": ["node"]
   }
 }

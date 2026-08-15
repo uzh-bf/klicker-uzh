@@ -8,6 +8,7 @@ export type { AnalyticsWorkflowName, CourseWorkflowMode } from './constants.js'
 
 export {
   calendarDateSchema,
+  canonicalContract,
   courseWorkflowInputSchema,
   courseWorkflowSuccessSchema,
   platformWorkflowInputSchema,
@@ -27,19 +28,13 @@ export {
   platformInputFixture,
 } from './fixtures.js'
 
-export {
-  createAnalyticsEngineStubs,
-  createCourseWorkflowStub,
-  createPlatformWorkflowStub,
-} from './stubs.js'
+export { createAnalyticsEngineStubs } from './stubs.js'
 export type {
   AnalyticsEngineWorkflowStubs,
   AnalyticsWorkflowInvoker,
-  CourseWorkflowStub,
-  PlatformWorkflowStub,
 } from './stubs.js'
 
-export { canonicalContract, canonicalContractDigest } from './digest.js'
+export { canonicalContractDigest } from './digest.js'
 
 export { runBlackBoxConformance } from './conformance.js'
 export type { ConformanceCallback, ConformanceScenario } from './conformance.js'

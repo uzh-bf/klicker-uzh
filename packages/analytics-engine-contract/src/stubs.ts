@@ -1,8 +1,5 @@
 import type { AnalyticsWorkflowName } from './constants.js'
-import {
-  COURSE_WORKFLOW_NAME as COURSE_WORKFLOW,
-  PLATFORM_WORKFLOW_NAME as PLATFORM_WORKFLOW,
-} from './constants.js'
+import { COURSE_WORKFLOW_NAME, PLATFORM_WORKFLOW_NAME } from './constants.js'
 import {
   courseWorkflowInputSchema,
   courseWorkflowSuccessSchema,
@@ -21,88 +18,66 @@ export type AnalyticsWorkflowInvoker = (
   input: unknown
 ) => Promise<unknown>
 
-export type CourseWorkflowStub = (
-  input: CourseWorkflowInput
-) => Promise<CourseWorkflowSuccess>
-
-export type PlatformWorkflowStub = (
-  input: PlatformWorkflowInput
-) => Promise<PlatformWorkflowSuccess>
-
 function hasOwn(value: object, property: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, property)
 }
 
-function requireCourseIdentityEcho(
-  input: CourseWorkflowInput,
-  output: CourseWorkflowSuccess
+function requireIdentityEcho<
+  Input extends object,
+  Output extends object,
+  Field extends Extract<keyof Input, keyof Output>,
+>(
+  input: Input,
+  output: Output,
+  fields: readonly Field[],
+  workflow: string
 ): void {
-  const identityFields = [
-    'contractVersion',
-    'runId',
-    'courseId',
-    'mode',
-    'windowSince',
-  ] as const
-
-  for (const field of identityFields) {
-    if (hasOwn(input, field) !== hasOwn(output, field)) {
-      throw new Error(`Course workflow result changed ${field} presence`)
+  for (const field of fields) {
+    if (hasOwn(input, String(field)) !== hasOwn(output, String(field))) {
+      throw new Error(
+        `${workflow} workflow result changed ${String(field)} presence`
+      )
     }
-
-    if (input[field] !== output[field]) {
-      throw new Error(`Course workflow result changed ${field}`)
+    if (!Object.is(input[field], output[field])) {
+      throw new Error(`${workflow} workflow result changed ${String(field)}`)
     }
-  }
-}
-
-function requirePlatformIdentityEcho(
-  input: PlatformWorkflowInput,
-  output: PlatformWorkflowSuccess
-): void {
-  for (const field of ['contractVersion', 'runId'] as const) {
-    if (input[field] !== output[field]) {
-      throw new Error(`Platform workflow result changed ${field}`)
-    }
-  }
-}
-
-export function createCourseWorkflowStub(
-  invoker: AnalyticsWorkflowInvoker
-): CourseWorkflowStub {
-  return async (input) => {
-    const validatedInput = courseWorkflowInputSchema.parse(input)
-    const rawOutput = await invoker(COURSE_WORKFLOW, validatedInput)
-    const validatedOutput = courseWorkflowSuccessSchema.parse(rawOutput)
-
-    requireCourseIdentityEcho(validatedInput, validatedOutput)
-    return validatedOutput
-  }
-}
-
-export function createPlatformWorkflowStub(
-  invoker: AnalyticsWorkflowInvoker
-): PlatformWorkflowStub {
-  return async (input) => {
-    const validatedInput = platformWorkflowInputSchema.parse(input)
-    const rawOutput = await invoker(PLATFORM_WORKFLOW, validatedInput)
-    const validatedOutput = platformWorkflowSuccessSchema.parse(rawOutput)
-
-    requirePlatformIdentityEcho(validatedInput, validatedOutput)
-    return validatedOutput
   }
 }
 
 export interface AnalyticsEngineWorkflowStubs {
-  readonly course: CourseWorkflowStub
-  readonly platform: PlatformWorkflowStub
+  course(input: CourseWorkflowInput): Promise<CourseWorkflowSuccess>
+  platform(input: PlatformWorkflowInput): Promise<PlatformWorkflowSuccess>
 }
 
 export function createAnalyticsEngineStubs(
   invoker: AnalyticsWorkflowInvoker
 ): AnalyticsEngineWorkflowStubs {
   return {
-    course: createCourseWorkflowStub(invoker),
-    platform: createPlatformWorkflowStub(invoker),
+    async course(input) {
+      const parsedInput = courseWorkflowInputSchema.parse(input)
+      const output = courseWorkflowSuccessSchema.parse(
+        await invoker(COURSE_WORKFLOW_NAME, parsedInput)
+      )
+      requireIdentityEcho(
+        parsedInput,
+        output,
+        ['contractVersion', 'runId', 'courseId', 'mode', 'windowSince'],
+        'Course'
+      )
+      return output
+    },
+    async platform(input) {
+      const parsedInput = platformWorkflowInputSchema.parse(input)
+      const output = platformWorkflowSuccessSchema.parse(
+        await invoker(PLATFORM_WORKFLOW_NAME, parsedInput)
+      )
+      requireIdentityEcho(
+        parsedInput,
+        output,
+        ['contractVersion', 'runId'],
+        'Platform'
+      )
+      return output
+    },
   }
 }
