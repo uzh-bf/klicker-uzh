@@ -74,6 +74,7 @@ model Participant {
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
   liveQuizResponses               LiveQuizResponse[]
+  liveQuizRespondentBindings      LiveQuizRespondentBinding[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]
   leaderboards                    LeaderboardEntry[]
@@ -244,21 +245,55 @@ enum LiveQuizRespondentType {
 model LiveQuizRespondent {
   id String @id @default(uuid()) @db.Uuid
 
-  type                   LiveQuizRespondentType
+  // Transitional compatibility fields remain until the downstream admission
+  // and settlement slices have migrated all old writers to the binding model.
+  type                   LiveQuizRespondentType?
   username               String?
   score                  Int                    @default(0)
   avatar                 String?
   verificationSecretHash String?
 
+  publicationGeneration Int      @default(0)
+  exportLabel           Int?
+  finalizedAt           DateTime?
+
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String   @db.Uuid
 
   responses LiveQuizResponse[]
+  binding   LiveQuizRespondentBinding?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([liveQuizId])
+  @@unique([id, liveQuizId, publicationGeneration], map: "LQRRespondent_quiz_generation_key")
+  @@unique([liveQuizId, publicationGeneration, exportLabel], map: "LQRRespondent_quiz_generation_export_label_key")
+  @@index([liveQuizId, publicationGeneration])
+}
+
+model LiveQuizRespondentBinding {
+  respondentId String @id @db.Uuid
+
+  respondent LiveQuizRespondent @relation(fields: [respondentId, liveQuizId, publicationGeneration], references: [id, liveQuizId, publicationGeneration], onDelete: Cascade, onUpdate: Cascade)
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @db.Uuid
+
+  publicationGeneration Int @default(0)
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  verificationSecretHash String?
+  expiresAt               DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([respondentId, liveQuizId, publicationGeneration], map: "LQRBinding_respondent_quiz_generation_key")
+  @@unique([liveQuizId, publicationGeneration, participantId], map: "LQRBinding_quiz_generation_participant_key")
+  @@unique([liveQuizId, publicationGeneration, verificationSecretHash], map: "LQRBinding_quiz_generation_secret_key")
+  @@index([liveQuizId, publicationGeneration])
 }
 
 model PushSubscription {

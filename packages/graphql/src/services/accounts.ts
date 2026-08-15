@@ -216,21 +216,6 @@ export async function loginTemporaryParticipant(
       data: temporaryLeaderboardEntryData,
     })
 
-    if (
-      lockedLiveQuiz.responseCollectionMode ===
-      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-    ) {
-      await prisma.liveQuizRespondent.create({
-        data: {
-          id: temporaryParticipantId,
-          type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-          liveQuiz: {
-            connect: { id: liveQuizId },
-          },
-        },
-      })
-    }
-
     return lockedLiveQuiz
   })
 

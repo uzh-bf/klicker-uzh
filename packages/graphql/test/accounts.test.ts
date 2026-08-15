@@ -1,6 +1,7 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementType,
+  LiveQuizResponseCollectionMode,
   Locale,
   PermissionLevel,
   PrismaClient,
@@ -708,6 +709,38 @@ describe('Temporary participant admission', () => {
       prisma.temporaryLeaderboardEntry.count({
         where: { quizId: liveQuiz.id, username: pseudonym },
       })
+    ).resolves.toBe(1)
+  })
+
+  it('keeps temporary pseudonyms in gamification storage only', async () => {
+    const liveQuiz = await seedLiveQuiz(
+      { elements: [], status: PublicationStatus.PUBLISHED },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      },
+    })
+    const context = {
+      ...userOneCtx,
+      res: { cookie: () => undefined } as any,
+    }
+
+    await expect(
+      loginTemporaryParticipant(
+        { liveQuizId: liveQuiz.id, pseudonym: `temporary-${uuid()}` },
+        context
+      )
+    ).resolves.not.toBeNull()
+
+    await expect(
+      prisma.liveQuizRespondent.count({ where: { liveQuizId: liveQuiz.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.temporaryLeaderboardEntry.count({ where: { quizId: liveQuiz.id } })
     ).resolves.toBe(1)
   })
 })

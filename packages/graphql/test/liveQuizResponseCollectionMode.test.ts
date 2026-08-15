@@ -77,7 +77,8 @@ describe('Live quiz response collection mode', () => {
       FROM pg_constraint
       WHERE conname IN (
         'LiveQuizResponse_identity_check',
-        'LiveQuizRespondent_secret_check'
+        'LiveQuizRespondent_secret_check',
+        'LiveQuizRespondentBinding_owner_check'
       )
     `
     const definitions = Object.fromEntries(
@@ -92,6 +93,9 @@ describe('Live quiz response collection mode', () => {
     )
     expect(definitions.LiveQuizRespondent_secret_check).toContain(
       '"verificationSecretHash" IS NOT NULL'
+    )
+    expect(definitions.LiveQuizRespondentBinding_owner_check).toContain(
+      'num_nonnulls("participantId", "verificationSecretHash") = 1'
     )
   })
 

@@ -637,6 +637,16 @@ Later research:
 - 2026-08-12: Final review found that `test-graphql` did not run the response-api or response-processor integrity suites. The workflow now includes both app paths in its filter and runs their existing `test:run` scripts beside the GraphQL tests; browser runtime verification remains the separate pre-merge blocker.
 - 2026-08-12: Final review follow-up aligned the plan with the implemented responseKey uniqueness and transactional outbox admission, and recorded the intentional processor extraction that preserves aggregate and assessment behavior. The workflow now also builds the response-api and response-processor production bundles before running their source-level suites.
 - 2026-08-12: User clarified that A1-A5/B1-B2 are already complete sliced PRs. The plan now treats the remaining work as in-place ADR adaptation and a two-stack cascade, preserving existing implementation, authorship, attribution, and unchanged-layer verification. The Sol planning challenge tightened layer ownership, stop conditions, and no-op B2 handling.
+- 2026-08-15: A1 adaptation resumed on the existing `rs/pr5134-a1-domain`
+  worktree after propagating the approved adaptation plan. The current slice is
+  the schema/domain contract only; retention expiry remains gated on a recorded
+  finite policy, and correlated publication stays disabled.
+- 2026-08-15: A1 schema adaptation now carries generation-scoped respondent
+  labels, active bindings with an exclusive owner check, and composite
+  respondent/quiz-generation integrity. Temporary participant admission remains
+  gamification-only. Prisma validation, generation, schema sync, Prisma and
+  GraphQL typechecks, and touched-file formatting pass; DB-backed migration and
+  integration execution remain pending because no database runtime is available.
 
 ## Goal Prompt Requirements
 
