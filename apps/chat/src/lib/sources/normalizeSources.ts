@@ -35,6 +35,8 @@ interface SourceCandidate {
   title: string
   page?: number
   labeledPage?: string
+  startSec?: number
+  endSec?: number
   url?: string
   excerpt?: string
   dedupeKey: string
@@ -102,6 +104,8 @@ export function normalizeSourcesFromParts(
         title: candidate.title,
         page: candidate.page,
         labeledPage: candidate.labeledPage,
+        startSec: candidate.startSec,
+        endSec: candidate.endSec,
         url: candidate.url,
         excerpt: candidate.excerpt,
       })
@@ -203,6 +207,33 @@ function cleanPage(value: unknown): number | undefined {
   return undefined
 }
 
+function cleanSeconds(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? value : undefined
+  }
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined
+}
+
+function cleanVideoRange(source: Record<string, unknown>): {
+  startSec?: number
+  endSec?: number
+} {
+  const startSec = cleanSeconds(source.start_sec)
+  const endCandidate = cleanSeconds(source.end_sec)
+  const endSec =
+    endCandidate !== undefined &&
+    (startSec === undefined || endCandidate >= startSec)
+      ? endCandidate
+      : undefined
+
+  return { startSec, endSec }
+}
+
 function lastPathSegment(value: string): string | undefined {
   const withoutQuery = value.split(/[?#]/)[0]
   const segments = withoutQuery.split('/').filter(Boolean)
@@ -256,11 +287,16 @@ function buildDedupeKey(params: {
   title: string
   page?: number
   labeledPage?: string
+  startSec?: number
+  endSec?: number
 }): string {
-  const { url, title, page, labeledPage } = params
-  return url
+  const { url, title, page, labeledPage, startSec, endSec } = params
+  const base = url
     ? `url:${url}|${page ?? ''}|${labeledPage ?? ''}`
     : `title:${title}|${page ?? ''}|${labeledPage ?? ''}`
+  return startSec === undefined && endSec === undefined
+    ? base
+    : `${base}|${startSec ?? ''}|${endSec ?? ''}`
 }
 
 function normalizeAnswerModeSources(
@@ -341,6 +377,7 @@ function normalizeDocumentsModeSources(
     const excerpt = truncateExcerpt(cleanString(firstChunk?.content))
     const page = cleanPage(firstChunk?.page_number)
     const labeledPage = cleanString(firstChunk?.labeled_page_number)
+    const { startSec, endSec } = cleanVideoRange(firstChunk ?? {})
 
     const typeHint = [
       cleanString(source.source_type),
@@ -357,7 +394,16 @@ function normalizeDocumentsModeSources(
       labeledPage,
       url,
       excerpt,
-      dedupeKey: buildDedupeKey({ url, title, page, labeledPage }),
+      startSec,
+      endSec,
+      dedupeKey: buildDedupeKey({
+        url,
+        title,
+        page,
+        labeledPage,
+        startSec,
+        endSec,
+      }),
     })
   }
 
