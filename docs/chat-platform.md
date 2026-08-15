@@ -364,12 +364,10 @@ realistic trigger. The suffix length lives in `lib/config/toolNames.ts` and is i
 the side that builds the name and the regex that matches it, so bumping it cannot silently break
 recognition — `mcpClients.ts` is `'use server'` and therefore cannot export the constant itself.
 
-One known edge, not currently handled: `withHashSuffix` truncates the whole `server_tool` string
-to 55 characters **from the end** before appending the hash. A server name longer than about 45
-characters pushes `doc_query` out of the kept prefix entirely, and the predicate then matches
-nothing — sources, citations, the activity chip and the prompt contract all switch off silently
-for that server. No such server name exists today; fix by truncating the server name rather than
-the combined string if one ever appears.
+When a namespaced `doc_query` name exceeds the 64-character cap or collides, `withHashSuffix`
+truncates only the readable prefix and appends `_doc_query_<8 hex characters>`. The alias therefore
+remains at the end of the model-facing name and continues to satisfy `isDocQueryToolName`; the
+long-name regression case lives in `test/mcp-clients.test.ts`.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
@@ -377,6 +375,14 @@ an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it
 file/page/url and numbers what survives **1..N in first-appearance order across every doc_query
 call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
 to break independently:
+
+Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
+runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
+one matching raw tool. Klicker exposes that tool under the configured alias (for example, the
+course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
+identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
+`503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
+configs without the reserved keys retain the existing optional/fail-open behavior.
 
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
