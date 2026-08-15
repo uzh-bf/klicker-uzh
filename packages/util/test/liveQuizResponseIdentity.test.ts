@@ -360,4 +360,72 @@ describe('live quiz response identity', () => {
       token: currentCookieToken,
     })
   })
+
+  it('keeps cookie-first precedence for same-generation respondent tokens', async () => {
+    const cookieToken = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      publicationGeneration,
+      secret,
+      issuer,
+    })
+    const explicitRespondentId = '88888888-8888-4888-8888-888888888888'
+    const explicitToken = await createLiveQuizRespondentToken({
+      respondentId: explicitRespondentId,
+      liveQuizId,
+      publicationGeneration,
+      secret,
+      issuer,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: `${getLiveQuizRespondentCookieName(liveQuizId)}=${cookieToken}`,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken: explicitToken,
+      })
+    ).resolves.toMatchObject({
+      kind: 'anonymous',
+      id: respondentId,
+      publicationGeneration,
+      token: cookieToken,
+    })
+  })
+
+  it('keeps temporary participant precedence over an explicit respondent token', async () => {
+    const temporaryParticipantId = '99999999-9999-4999-8999-999999999999'
+    const temporaryToken = await signJWT(
+      {
+        sub: temporaryParticipantId,
+        role: UserRole.TEMPORARY_PARTICIPANT,
+        scopeQuizId: liveQuizId,
+      },
+      secret,
+      { issuer }
+    )
+    const explicitToken = await createLiveQuizRespondentToken({
+      respondentId,
+      liveQuizId,
+      publicationGeneration,
+      secret,
+      issuer,
+    })
+
+    await expect(
+      resolveLiveQuizResponseIdentity({
+        cookieHeader: `temporary_participant_token=${temporaryToken}`,
+        liveQuizId,
+        secret,
+        issuer,
+        respondentToken: explicitToken,
+      })
+    ).resolves.toMatchObject({
+      kind: 'temporary',
+      id: temporaryParticipantId,
+      liveQuizId,
+      token: temporaryToken,
+    })
+  })
 })

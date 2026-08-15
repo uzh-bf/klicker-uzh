@@ -575,6 +575,31 @@ describe('Live quiz correlated response finalization', () => {
       message: `Cannot finalize correlated live quiz ${anomalousQuiz.id} without an export salt`,
     })
   })
+
+  it('reconciles incomplete receipts even when their export salt is missing', async () => {
+    const anomalousQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    await prisma.liveQuiz.update({
+      where: { id: anomalousQuiz.id },
+      data: { exportSalt: null },
+    })
+    const responseKey = uuid()
+    await prisma.liveQuizPendingResponse.create({
+      data: {
+        id: uuid(),
+        liveQuizId: anomalousQuiz.id,
+        publicationGeneration: 4,
+        responseKey,
+        eventPayload: 'pending-payload',
+      },
+    })
+
+    await expect(
+      reconcileCorrelatedLiveQuizFinalizations({ prisma })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.liveQuizPendingResponse.findUnique({ where: { responseKey } })
+    ).resolves.toMatchObject({ eventPayload: 'pending-payload' })
+  })
 })
 
 async function seedCorrelatedQuiz(
