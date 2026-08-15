@@ -1,33 +1,33 @@
+import { createHash, createHmac, randomBytes } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac, randomBytes } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -44,13 +44,18 @@ import {
   reconcileLiveQuizPublications,
   transitionLiveQuizToPublished,
 } from './liveQuizPublication.js'
+import { buildLiveQuizSelectionResponseMetadata } from './liveQuizResponseCacheMetadata.js'
 import {
   assertLiveQuizResponseCollectionModeEditable,
   deriveLiveQuizResponseCollectionMode,
   lockCourseLiveQuizResponseCollectionSettings,
   lockLiveQuizResponseCollectionState,
 } from './liveQuizResponseCollection.js'
-import { buildLiveQuizSelectionResponseMetadata } from './liveQuizResponseCacheMetadata.js'
+import {
+  endLiveQuizAndFinalizeCorrelatedGeneration,
+  finalizeCorrelatedLiveQuiz,
+  reconcileCorrelatedLiveQuizFinalizations,
+} from './liveQuizResponseFinalization.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -1689,6 +1694,7 @@ export async function endLiveQuiz(
   }
 
   if (quiz.status === DB.PublicationStatus.ENDED) {
+    await finalizeCorrelatedLiveQuiz({ prisma: ctx.prisma, liveQuizId: id })
     return quiz
   }
   if (
@@ -1954,13 +1960,11 @@ export async function endLiveQuiz(
       })
     }
 
-    const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        status: DB.PublicationStatus.ENDED,
-        finishedAt: new Date(),
-      },
+    const endedLiveQuiz = await endLiveQuizAndFinalizeCorrelatedGeneration({
+      prisma: ctx.prisma,
+      liveQuizId: id,
     })
+    if (!endedLiveQuiz) return null
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
@@ -3351,6 +3355,9 @@ export const handleReconcileLiveQuizPublications: HatchetHandlers['handleReconci
       redisAssessmentExec: globalCtx.redisAssessmentExec,
       deleteScheduledTask: (taskId) =>
         globalCtx.hatchet.scheduled.delete(taskId),
+    })
+    await reconcileCorrelatedLiveQuizFinalizations({
+      prisma: globalCtx.prisma,
     })
     return true
   }

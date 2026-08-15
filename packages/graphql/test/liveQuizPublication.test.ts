@@ -134,7 +134,11 @@ describe('Live quiz publication', () => {
       })
     ).resolves.toMatchObject({
       didStart: true,
-      quiz: { status: PublicationStatus.PUBLISHED },
+      quiz: {
+        status: PublicationStatus.PUBLISHED,
+        publicationGeneration: 1,
+        exportSalt: expect.any(String),
+      },
     })
   })
 

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 
 type PublicationSource = 'manual' | 'scheduled' | 'reconcile'
@@ -51,6 +52,11 @@ export async function transitionLiveQuizToPublished({
                 publicationGeneration: {
                   increment: 1,
                 },
+                exportSalt:
+                  liveQuiz.responseCollectionMode ===
+                  DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+                    ? randomBytes(32).toString('hex')
+                    : null,
                 publicationMetadataMaterializedAt: null,
                 publicationMetadataRetryAt: null,
               },
@@ -93,6 +99,11 @@ export async function transitionLiveQuizToPublished({
         publicationGeneration: {
           increment: 1,
         },
+        exportSalt:
+          liveQuiz.responseCollectionMode ===
+          DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+            ? randomBytes(32).toString('hex')
+            : null,
         publicationMetadataMaterializedAt: null,
         publicationMetadataRetryAt: null,
       },

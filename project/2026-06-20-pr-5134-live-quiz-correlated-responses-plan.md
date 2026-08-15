@@ -9,10 +9,11 @@ Branch: `rs/pr5134-a1-domain` for this ADR/domain update; implementation continu
 Target: `v3`
 Original PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134), preserved while the replacement stack validates.
 Status: the full A1-A5/B1-B2 slices already exist in the replacement draft
-stack, with source checks recorded and browser proof still blocked. The
-remaining work is an in-place adaptation of those slices to the accepted ADR
-identity/finalization contract, followed by the required cascade, verification,
-and delivery gates; this is not a new feature build or a new topology.
+stack. The A1-A5 ADR adaptation is now applied locally through the lifecycle
+finalization boundary; the remaining work is to cascade A5 into the existing
+B1/B2 slices, verify the integrated stack, and clear the retention, browser, and
+delivery gates. This is an in-place adaptation of existing slices, not a new
+feature build or a new topology.
 
 ## Current Stack Topology
 
@@ -47,11 +48,12 @@ or ready status by this plan.
 
 Current adaptation gap: B1 still contains the interim
 `LiveQuizResponseExportLabel` migration, retains HMAC-derived identity hashes,
-and assigns labels during export. Adapt the existing slices so A1 persists a
-nullable immutable label on `LiveQuizRespondent`, A5 allocates that label
-transactionally during settlement-gated finalization and deletes active
-bindings, settled receipts, and salt, and B1 removes HMAC identity storage and
-lazy label assignment while rendering only finalized respondent labels.
+and assigns labels during export. A1-A5 now persist generation-scoped
+respondents and active bindings, settle under the shared/exclusive quiz locks,
+and allocate labels transactionally only after settlement. Cascade that
+contract into B1 so it removes HMAC identity storage and lazy label assignment
+while rendering only finalized respondent labels; then verify B2 and the
+browser/delivery gates.
 
 ## Non-Goals
 
@@ -657,6 +659,16 @@ Later research:
   coverage now separates correlated and non-gamified rejection. Ordinary
   index-DDL safety remains a DB-backed follow-up because the local database
   runtime is unavailable.
+- 2026-08-15: A3 and A4 were cascaded onto the adapted A1/A2 contracts. Admission
+  now resolves only generation-scoped active bindings, and settlement persists
+  only through `respondentId` while rejecting temporary or finalized identities.
+  Focused admission and worker checks pass on the adapted stack.
+- 2026-08-15: A5 was cascaded onto the adapted A4 branch. Publication rotates a
+  per-generation salt; ending takes the exclusive quiz lock; finalization waits
+  for fully settled receipts, assigns immutable HMAC-ordered labels, clears
+  transitional identity fields, deletes bindings and settled receipt metadata,
+  and removes the salt. New finalization tests and the affected publication and
+  abort suites pass locally; B1 still needs the export-source adaptation.
 
 ## Goal Prompt Requirements
 
@@ -676,13 +688,9 @@ If handed to another agent:
 
 1. Record the finite retention period, deletion trigger, and enforcement owner;
    until then, keep correlated publication disabled.
-2. Adapt the existing A1 schema/domain slice to ADR-0005/0006 and verify its
-   migration, generated contracts, and assessment compatibility.
-3. Cascade the A1 contract through the existing A2, A3, A4, and A5 branches,
-   preserving existing behavior where it already matches and making only
-   focused repair commits.
-4. Cascade A5 through the existing B1 export and B2 Manage/PWA branches;
-   verify unchanged B2 layers instead of creating synthetic commits.
-5. Run response-api/worker builds and source checks, repair the shared DevPod
-   lifecycle/font blocker, execute the existing Playwright journey and
-   mandatory Manage/PWA browser checks, then run the integrated final review.
+2. Cascade the adapted A5 contract through the existing B1 export and B2
+   Manage/PWA branches; remove the interim export-label table and verify
+   unchanged B2 layers instead of creating synthetic commits.
+3. Run response-api/worker builds and source checks, execute the existing
+   Playwright journey and mandatory Manage/PWA browser checks, then run the
+   integrated final review.
