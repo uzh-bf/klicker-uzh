@@ -4,10 +4,10 @@ import {
   CORRELATED_RESPONSE_EVENT,
   type CorrelatedResponseDeliveryMessage,
   parseCorrelatedResponseInstanceInfo,
-  resolveLiveQuizResponseIdentity,
   validateStudentResponse,
 } from '@klicker-uzh/util'
 import { admitCorrelatedResponse } from './correlatedResponseAdmission.js'
+import { resolveCorrelatedResponseIdentity } from './liveQuizResponseInitialization.js'
 import type { LiveQuizResponseRequest } from './liveQuizResponseRequest.js'
 
 export async function handleCorrelatedResponse({
@@ -40,7 +40,8 @@ export async function handleCorrelatedResponse({
   }
 
   const identityConfig = getIdentityConfig()
-  const identity = await resolveLiveQuizResponseIdentity({
+  const identity = await resolveCorrelatedResponseIdentity({
+    database,
     cookieHeader: request.cookieHeader,
     liveQuizId: request.liveQuizId,
     secret: identityConfig.secret,

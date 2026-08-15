@@ -4,7 +4,6 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   createLiveQuizRespondentToken,
   getLiveQuizRespondentCookieName,
-  resolveLiveQuizResponseIdentity,
   verifyJWT,
   type JWTPayload,
   type LiveQuizResponseIdentity,
@@ -20,7 +19,10 @@ import {
 } from './correlatedResponseAdmission.js'
 import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
 import { dispatchPendingCorrelatedResponses } from './correlatedResponseOutbox.js'
-import { getCorrelatedResponseInitializationToken } from './liveQuizResponseInitialization.js'
+import {
+  getCorrelatedResponseInitializationToken,
+  resolveCorrelatedResponseIdentity,
+} from './liveQuizResponseInitialization.js'
 import {
   hasJsonContentType,
   isAllowedCorsOrigin,
@@ -152,7 +154,8 @@ async function ensureCorrelatedResponseIdentity({
   const { secret, issuer } = getResponseIdentityConfig()
   const cookieHeader =
     typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
-  const existingIdentity = await resolveLiveQuizResponseIdentity({
+  const existingIdentity = await resolveCorrelatedResponseIdentity({
+    database: prisma,
     cookieHeader,
     liveQuizId,
     secret,
