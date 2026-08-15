@@ -165,24 +165,26 @@ export async function resolveLiveQuizResponseIdentity({
     issuer,
   })
   const publicationGeneration = respondentPayload?.publicationGeneration
-  if (
-    respondentCookieToken &&
+  const cookieIdentity: Extract<
+    LiveQuizResponseIdentity,
+    { kind: 'anonymous' }
+  > | null =
+    respondentCookieToken !== undefined &&
     respondentPayload?.role === LIVE_QUIZ_RESPONDENT_ROLE &&
     respondentPayload.liveQuizId === liveQuizId &&
     typeof publicationGeneration === 'number' &&
     Number.isInteger(publicationGeneration) &&
     publicationGeneration >= 0 &&
     typeof respondentPayload.sub === 'string'
-  ) {
-    return {
-      kind: 'anonymous',
-      id: respondentPayload.sub,
-      liveQuizId,
-      publicationGeneration,
-      token: respondentCookieToken,
-      cookieName: respondentCookieName,
-    }
-  }
+      ? {
+          kind: 'anonymous',
+          id: respondentPayload.sub,
+          liveQuizId,
+          publicationGeneration,
+          token: respondentCookieToken,
+          cookieName: respondentCookieName,
+        }
+      : null
 
   const explicitRespondentPayload = await verifyIdentityToken({
     token: respondentToken,
@@ -200,7 +202,7 @@ export async function resolveLiveQuizResponseIdentity({
     explicitPublicationGeneration >= 0 &&
     typeof explicitRespondentPayload.sub === 'string'
   ) {
-    return {
+    const explicitIdentity: LiveQuizResponseIdentity = {
       kind: 'anonymous',
       id: explicitRespondentPayload.sub,
       liveQuizId,
@@ -208,9 +210,18 @@ export async function resolveLiveQuizResponseIdentity({
       token: respondentToken,
       cookieName: respondentCookieName,
     }
+
+    if (
+      cookieIdentity &&
+      cookieIdentity.publicationGeneration !== explicitPublicationGeneration
+    ) {
+      return explicitIdentity
+    }
+
+    return cookieIdentity ?? explicitIdentity
   }
 
-  return null
+  return cookieIdentity
 }
 
 export function hashLiveQuizRespondentToken(token: string) {

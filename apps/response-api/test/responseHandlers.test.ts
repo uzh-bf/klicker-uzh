@@ -359,6 +359,13 @@ describe('standard live quiz response handlers', () => {
       secret,
       issuer,
     })
+    const staleCookieToken = await createLiveQuizRespondentToken({
+      respondentId: '44444444-4444-4444-8444-444444444444',
+      liveQuizId: request.liveQuizId,
+      publicationGeneration: 2,
+      secret,
+      issuer,
+    })
     const pendingResponses: any[] = []
     let pushed:
       | {
@@ -424,6 +431,7 @@ describe('standard live quiz response handlers', () => {
     const result = await handleCorrelatedResponse({
       request: {
         ...request,
+        cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${staleCookieToken}`,
         respondentToken: token,
       },
       instanceInfo: {

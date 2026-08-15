@@ -1094,7 +1094,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
       responseCollectionAggregatedNotice:
-        'Dieses Quiz erstellt keinen Export von Antworten auf Personenebene. Antworten fliessen in aggregierte Ergebniswerte ein.',
+        'Antworten werden nur aggregiert gezählt. Antworten werden nicht über Fragen hinweg verknüpft.',
       responseCollectionCorrelatedNotice:
         'Antworten in diesem Quiz werden pro Person gespeichert und können mit zufälligen Bezeichnungen (z. B. respondent_001) statt Namen exportiert werden.',
       loginSelectionHint:

@@ -339,6 +339,34 @@ describe('Live quiz correlated response finalization', () => {
     ).resolves.toMatchObject({ exportSalt: null })
   })
 
+  it('reconciles unfinished generations without revisiting finalized quizzes', async () => {
+    const finalizedQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    await expect(
+      finalizeCorrelatedLiveQuiz({ prisma, liveQuizId: finalizedQuiz.id })
+    ).resolves.toBe('finalized')
+
+    const pendingQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    await prisma.liveQuizPendingResponse.create({
+      data: {
+        id: uuid(),
+        liveQuizId: pendingQuiz.id,
+        publicationGeneration: 4,
+        responseKey: uuid(),
+        eventPayload: 'pending-payload',
+      },
+    })
+
+    await expect(
+      reconcileCorrelatedLiveQuizFinalizations({ prisma })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: finalizedQuiz.id } })
+    ).resolves.toMatchObject({ exportSalt: null })
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: pendingQuiz.id } })
+    ).resolves.toMatchObject({ exportSalt: 'test-export-salt' })
+  })
+
   it('expires finalized correlated datasets after the retention window', async () => {
     const element = await prisma.element.create({
       data: {

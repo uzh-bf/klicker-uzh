@@ -281,6 +281,7 @@ export async function reconcileCorrelatedLiveQuizFinalizations({
       status: DB.PublicationStatus.ENDED,
       isAssessmentEnabled: false,
       responseCollectionMode: correlatedResponseMode,
+      exportSalt: { not: null },
     },
     select: { id: true },
     orderBy: { updatedAt: 'asc' },
