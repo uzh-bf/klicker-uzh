@@ -95,9 +95,12 @@ current contract acceptance required by the roadmap.
 ### Identity and current boundary
 
 - Branch: `feat/kb-graph-lifecycle` in `trees/kb-graph-stack`.
-- Target: current GitHub `v3` ref `3c64c9726fec8db89dcdcddfc701949be480cd25`.
-- Current tip: `b348adeea6139e3281b965aaca7c1553a1e53e90`.
-- Current comparison: 133 commits ahead and 60 behind the current target.
+- Target: current GitHub `v3` ref `9a82e7fa63ba6b0f6b373470e3d6b77ae265d371`
+  (read-only `git ls-remote` on 2026-08-15).
+- Current tip: `c1358a2dbb1b3f2860575960cb29c3c5661dd40c`.
+- Current local comparison: 141 commits ahead and 81 behind the stale local
+  `origin/v3`. The live target has not been fetched because shared Git metadata
+  still rejects `FETCH_HEAD` writes; no rebase or merge is implied.
 - Local `origin/v3` is stale at `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`;
   shared Git metadata currently rejects `FETCH_HEAD` writes. Read-only
   `git ls-remote` is the current target evidence. Do not rebase or merge until
@@ -228,3 +231,19 @@ current contract acceptance required by the roadmap.
 - 2026-08-01: Final L3 review found a digest race through resource-refresh webhooks. Late-success reconciliation now locks the KB and every live resource row before recomputing the pinned digest, while the worker reuses the locked KB projection and the shared GraphQL build select. Graph dispatch now fails Helm rendering without a FalkorDB host, and the general worker validates the complete FalkorDB config when graph integration is enabled. Hatchet tests pass 74/74; chart lint, configured/missing-host renders, changed-file formatting, and package typechecks pass. The webhook-primary R5 callback remains deferred because no authenticated external callback contract is available; direct status polling is the current seam. Migration application and live external integration remain intentionally unverified.
 - 2026-08-01: The L3/L4/L5 takeover is reconciled on `feat/kb-graph-lifecycle`, preserving the parked branch as the merge parent. The pinned external builder contract at `f6cb38b` passes `uv run pytest` with 61 passed and 1 skipped. The target now has KB-owned graph config/rebuild/read GraphQL wiring, a dedicated lecturer card and Cytoscape viewer, and a student viewer resolved through the chatbot's enabled KB binding; the obsolete chatbot-owned graph GraphQL/UI/migration surfaces are not carried forward. Focused chat graph tests pass 41/41, the repository check passes 35/35, and affected lint passes with only five pre-existing chat warnings. Migration application, Docker-backed cross-repo stack/browser screenshots, live FalkorDB/Blob/Hatchet integration, deployment, and external publication remain unverified by design.
 - 2026-08-02: Independent Git-level union verification confirms parked tip `9b5fc7af2` is an ancestor of `feat/kb-graph-lifecycle` through merge `bc6262f65`; both `b4a99893c..9b5fc7af2` and `b4a99893c..HEAD` pass `git diff --check`. The current DevRouter status reports the router and Docker unavailable, so disposable migration, cross-repository runtime, and browser screenshot evidence remain open; no local stack was started.
+- 2026-08-15: M1 W2 implementation is complete through `c1358a2db`. The
+  committed W2 range includes quota/lifecycle seams (`567cad080`,
+  `a52d1cb18`, `a32648781`, `7ca0ff21f`, `18dce8eba`) and the final-review
+  correction (`c1358a2db`). The correction revalidates the kill switch, KB
+  opt-in, and complete reservation before external dispatch; fences
+  pre-accounting rows and cleanup-claimed late success; rejects zero-value cost
+  readiness; presents maximum cost and localized reservation status; isolates
+  opt-in refresh failures; and adds release/cleanup accounting coverage.
+  Prisma migration deployment to disposable databases, focused GraphQL
+  accounting (5/5), cost (6/6), Hatchet (16/16), GraphQL, Hatchet, and
+  kb-management checks, the root pre-commit suite (26/26), and staged secret
+  scanning are green. Browser evidence remains deliberately limited to the
+  synthetic empty/unconfigured EN/DE desktop/mobile state; enabled, active,
+  settled, held, published, stale, failure, available, and student-visibility
+  states still require a live-stack proof. Provider callback authentication
+  and live external graph execution remain outside this package.
