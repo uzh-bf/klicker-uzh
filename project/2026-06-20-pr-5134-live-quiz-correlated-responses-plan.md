@@ -686,6 +686,13 @@ Later research:
   suite remains environment-blocked because the seeded DevPod contains 11 users
   while its existing fixture asserts exactly 6; the abort behavior itself was
   already covered on A5 before this source-only B1 adaptation.
+- 2026-08-15: B1 review found that retained responses from an older publication
+  generation were being counted as invalid during export sizing. The preflight
+  now ignores known older-generation respondents while still rejecting unknown
+  respondents and malformed current-generation rows; the evaluation capability
+  also includes the invalid-owner check. A DB-backed generation-isolation
+  regression passes, along with the A5 finalization/publication regressions
+  (14) and GraphQL typecheck.
 
 ## Goal Prompt Requirements
 

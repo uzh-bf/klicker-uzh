@@ -187,6 +187,9 @@ export async function getCorrelatedLiveQuizResponseExport(
                 WHERE response."participantId" IS NULL
                   AND response."respondentId" IS NOT NULL
                   AND respondent."id" IS NOT NULL
+                  AND respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
+                  AND respondent."exportLabel" IS NOT NULL
+                  AND respondent."finalizedAt" IS NOT NULL
               ),
               0
             )::bigint AS "responseBytes",
@@ -194,16 +197,29 @@ export async function getCorrelatedLiveQuizResponseExport(
               WHERE response."participantId" IS NULL
                 AND response."respondentId" IS NOT NULL
                 AND respondent."id" IS NOT NULL
+                AND respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
+                AND respondent."exportLabel" IS NOT NULL
+                AND respondent."finalizedAt" IS NOT NULL
             )::bigint AS "responseCount",
             COUNT(DISTINCT response."respondentId") FILTER (
               WHERE response."participantId" IS NULL
                 AND response."respondentId" IS NOT NULL
                 AND respondent."id" IS NOT NULL
+                AND respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
+                AND respondent."exportLabel" IS NOT NULL
+                AND respondent."finalizedAt" IS NOT NULL
             )::bigint AS "respondentCount",
             COUNT(*) FILTER (
-              WHERE response."participantId" IS NOT NULL
-                OR response."respondentId" IS NULL
-                OR respondent."id" IS NULL
+              WHERE respondent."id" IS NULL
+                OR (
+                  respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
+                  AND (
+                    response."participantId" IS NOT NULL
+                    OR response."respondentId" IS NULL
+                    OR respondent."exportLabel" IS NULL
+                    OR respondent."finalizedAt" IS NULL
+                  )
+                )
             )::bigint AS "invalidResponseCount"
           FROM "public"."LiveQuizResponse" AS response
           INNER JOIN "public"."ElementInstance" AS instance
@@ -213,9 +229,6 @@ export async function getCorrelatedLiveQuizResponseExport(
           LEFT JOIN "public"."LiveQuizRespondent" AS respondent
             ON respondent."id" = response."respondentId"
             AND respondent."liveQuizId" = ${id}::uuid
-            AND respondent."publicationGeneration" = ${liveQuiz.publicationGeneration}
-            AND respondent."exportLabel" IS NOT NULL
-            AND respondent."finalizedAt" IS NOT NULL
           WHERE
             block."liveQuizId" = ${id}::uuid
             AND response."correctionOnly" = false

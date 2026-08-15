@@ -2428,6 +2428,7 @@ export async function getLiveQuizEvaluation(
       unfinalizedRespondentCount,
       activeBindingCount,
       pendingResponseCount,
+      invalidResponseCount,
     ] = await Promise.all([
       ctx.prisma.liveQuizRespondent.count({
         where: {
@@ -2453,11 +2454,34 @@ export async function getLiveQuizEvaluation(
           ],
         },
       }),
+      ctx.prisma.liveQuizResponse.count({
+        where: {
+          correctionOnly: false,
+          instance: {
+            elementBlock: { liveQuizId: id },
+            elementType: { not: DB.ElementType.FREE_TEXT },
+          },
+          OR: [
+            { participantId: { not: null } },
+            { respondent: { is: null } },
+            {
+              respondent: {
+                is: {
+                  liveQuizId: id,
+                  publicationGeneration: liveQuiz.publicationGeneration,
+                  OR: [{ exportLabel: null }, { finalizedAt: null }],
+                },
+              },
+            },
+          ],
+        },
+      }),
     ])
     canExportCorrelatedResponses =
       unfinalizedRespondentCount === 0 &&
       activeBindingCount === 0 &&
-      pendingResponseCount === 0
+      pendingResponseCount === 0 &&
+      invalidResponseCount === 0
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance
