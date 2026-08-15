@@ -47,6 +47,7 @@ type KBGraphDispatchRecord = {
   createdAt: Date
   kb: {
     ownerId: string
+    knowledgeGraphEnabled: boolean
   }
   sources: Array<
     Pick<
@@ -180,18 +181,140 @@ function isDispatchableBuild(build: {
   id: string
   status: KBGraphBuildStatus
   externalOperationId: string | null
+  costStatus: KBGraphCostStatus | null
   graphmlBlobName: string | null
-  kb: { deletedAt: Date | null; activeGraphBuildId: string | null }
+  kb: {
+    deletedAt: Date | null
+    activeGraphBuildId: string | null
+    knowledgeGraphEnabled: boolean
+  }
   sources: KBGraphDispatchRecord['sources']
 }) {
   return (
     isActiveBuildStatus(build.status) &&
     build.externalOperationId === null &&
+    build.costStatus === KBGraphCostStatus.RESERVED &&
     build.kb.deletedAt === null &&
     build.kb.activeGraphBuildId === build.id &&
+    build.kb.knowledgeGraphEnabled &&
     build.sources.length > 0 &&
     build.graphmlBlobName !== null
   )
+}
+
+function isUnstartedActiveBuild(build: {
+  id: string
+  status: KBGraphBuildStatus
+  externalOperationId: string | null
+  kb: { deletedAt: Date | null; activeGraphBuildId: string | null }
+}) {
+  return (
+    isActiveBuildStatus(build.status) &&
+    build.externalOperationId === null &&
+    build.kb.deletedAt === null &&
+    build.kb.activeGraphBuildId === build.id
+  )
+}
+
+function getDispatchGateFailure(
+  build: {
+    costStatus: KBGraphCostStatus | null
+    kb: { knowledgeGraphEnabled: boolean }
+  },
+  env: NodeJS.ProcessEnv
+): { statusMessage: string; errorCode: string } | null {
+  if (env.KB_GRAPH_DISABLED === 'true') {
+    return {
+      statusMessage: 'KB graph generation is currently disabled.',
+      errorCode: 'KB_GRAPH_DISABLED',
+    }
+  }
+  if (!build.kb.knowledgeGraphEnabled) {
+    return {
+      statusMessage: 'KB graph generation is not enabled for this KB.',
+      errorCode: 'KB_GRAPH_NOT_ENABLED',
+    }
+  }
+  if (build.costStatus !== KBGraphCostStatus.RESERVED) {
+    return {
+      statusMessage:
+        'The KB graph build has no complete cost reservation and requires review.',
+      errorCode: 'KB_GRAPH_RESERVATION_INCOMPLETE',
+    }
+  }
+  return null
+}
+
+async function failKBGraphBuildBeforeDispatch(
+  prisma: KBGraphPrisma,
+  {
+    buildId,
+    kbId,
+    statusMessage,
+    errorCode,
+  }: {
+    buildId: string
+    kbId: string
+    statusMessage: string
+    errorCode: string
+  },
+  finishedAt: Date
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const current = await tx.kBGraphBuild.findUnique({
+      where: { id: buildId },
+      select: {
+        externalOperationId: true,
+        costStatus: true,
+        status: true,
+        kb: {
+          select: { deletedAt: true, activeGraphBuildId: true },
+        },
+      },
+    })
+    if (
+      !current ||
+      !isUnstartedActiveBuild({
+        id: buildId,
+        status: current.status,
+        externalOperationId: current.externalOperationId,
+        kb: current.kb,
+      })
+    ) {
+      return
+    }
+
+    const failed = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: buildId,
+        kbId,
+        externalOperationId: null,
+        status: {
+          in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        statusMessage,
+        errorCode,
+        finishedAt,
+      },
+    })
+    if (failed.count !== 1) return
+
+    if (current.costStatus === KBGraphCostStatus.RESERVED) {
+      await releaseKBGraphReservationInTransaction(tx, buildId)
+    } else if (current.costStatus === null) {
+      await tx.kBGraphBuild.updateMany({
+        where: { id: buildId, costStatus: null },
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
+    }
+    await tx.kB.updateMany({
+      where: { id: kbId, activeGraphBuildId: buildId },
+      data: { activeGraphBuildId: null },
+    })
+  })
 }
 
 export function buildExternalKBGraphPayload(
@@ -266,12 +389,14 @@ export async function dispatchKBGraphBuild(
       qualityTier: true,
       status: true,
       externalOperationId: true,
+      costStatus: true,
       createdAt: true,
       kb: {
         select: {
           ownerId: true,
           deletedAt: true,
           activeGraphBuildId: true,
+          knowledgeGraphEnabled: true,
         },
       },
       sources: {
@@ -286,9 +411,25 @@ export async function dispatchKBGraphBuild(
       },
     },
   })
-  if (!build || !isDispatchableBuild(build)) {
+  if (!build) {
     return undefined
   }
+  if (isUnstartedActiveBuild(build)) {
+    const gateFailure = getDispatchGateFailure(build, env)
+    if (gateFailure) {
+      await failKBGraphBuildBeforeDispatch(
+        dependencies.prisma,
+        {
+          buildId: build.id,
+          kbId: build.kbId,
+          ...gateFailure,
+        },
+        now()
+      )
+      return undefined
+    }
+  }
+  if (!isDispatchableBuild(build)) return undefined
 
   const dispatchBuild: KBGraphDispatchRecord = {
     id: build.id,
@@ -298,7 +439,10 @@ export async function dispatchKBGraphBuild(
     graphmlBlobName: build.graphmlBlobName,
     qualityTier: build.qualityTier,
     createdAt: build.createdAt,
-    kb: { ownerId: build.kb.ownerId },
+    kb: {
+      ownerId: build.kb.ownerId,
+      knowledgeGraphEnabled: build.kb.knowledgeGraphEnabled,
+    },
     sources: build.sources,
   }
   const identifiers = graphIdentifiers(dispatchBuild)
@@ -324,6 +468,37 @@ export async function dispatchKBGraphBuild(
       runId = recoveredRun.runId
       startedAt = recoveredRun.startedAt
     } else {
+      const current = await dependencies.prisma.kBGraphBuild.findUnique({
+        where: { id: dispatchBuild.id },
+        select: {
+          id: true,
+          status: true,
+          externalOperationId: true,
+          costStatus: true,
+          kb: {
+            select: {
+              deletedAt: true,
+              activeGraphBuildId: true,
+              knowledgeGraphEnabled: true,
+            },
+          },
+        },
+      })
+      const gateFailure = current ? getDispatchGateFailure(current, env) : null
+      if (!current || !isUnstartedActiveBuild(current) || gateFailure) {
+        if (current && isUnstartedActiveBuild(current) && gateFailure) {
+          await failKBGraphBuildBeforeDispatch(
+            dependencies.prisma,
+            {
+              buildId: current.id,
+              kbId: dispatchBuild.kbId,
+              ...gateFailure,
+            },
+            now()
+          )
+        }
+        return undefined
+      }
       const getSourceUrl = dependencies.getSourceUrl ?? getKBGraphSourceUrl
       const sourceUrls = dispatchBuild.sources.map((source) =>
         getSourceUrl(source, {
@@ -723,6 +898,10 @@ export async function markKBGraphBuildDispatchFailed(
     })
     if (failed.count === 1) {
       await releaseKBGraphReservationInTransaction(tx, build.id)
+      await tx.kBGraphBuild.updateMany({
+        where: { id: build.id, costStatus: null },
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
       await tx.kB.updateMany({
         where: { id: build.kbId, activeGraphBuildId: build.id },
         data: { activeGraphBuildId: null },

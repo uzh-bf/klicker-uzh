@@ -33,9 +33,13 @@ let kbId: string
 async function createBuild({
   costStatus = KBGraphCostStatus.RESERVED,
   active = true,
+  cleanupStartedAt = null,
+  cleanedAt = null,
 }: {
   costStatus?: KBGraphCostStatus
   active?: boolean
+  cleanupStartedAt?: Date | null
+  cleanedAt?: Date | null
 } = {}) {
   const buildId = randomUUID()
   const runId = `run-${buildId}`
@@ -61,6 +65,8 @@ async function createBuild({
       semesterKey: '2026-H2',
       quotaId: quota.id,
       externalOperationId: runId,
+      cleanupStartedAt,
+      cleanedAt,
     },
   })
   if (active) {
@@ -337,5 +343,77 @@ describe('KB graph cost accounting', () => {
         where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
       })
     ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 60 })
+  })
+
+  it('releases a reservation exactly once when dispatch never starts', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build } = await createBuild()
+
+    await expect(
+      prisma.$transaction((tx) => releaseKBGraphCostReservation(tx, build.id))
+    ).resolves.toBe(true)
+    await expect(
+      prisma.$transaction((tx) => releaseKBGraphCostReservation(tx, build.id))
+    ).resolves.toBe(false)
+
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 0, settledMinorUnits: 0 })
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({ costStatus: KBGraphCostStatus.RELEASED })
+  })
+
+  it('does not publish a valid result after cleanup has started', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build, runId, graphmlBlobName } = await createBuild({
+      cleanupStartedAt: NOW,
+    })
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: successfulResult({
+            buildId: build.id,
+            runId,
+            graphmlBlobName,
+          }),
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('NEEDS_HUMAN_REVIEW')
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.FAILED,
+      costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      errorCode: 'KB_GRAPH_RESULT_AFTER_CLEANUP',
+      actualCostMinorUnits: null,
+    })
+    await expect(
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+    ).resolves.toMatchObject({ reservedMinorUnits: 100, settledMinorUnits: 0 })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({ publishedGraphBuildId: null })
   })
 })

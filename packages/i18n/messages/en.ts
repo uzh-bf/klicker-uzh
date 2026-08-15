@@ -1393,6 +1393,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphBillingProvider: 'Provider-billed',
     graphRemainingQuota: 'Remaining semester quota',
     graphWorstCaseBalance: 'Balance after the maximum build',
+    graphMaxCost: 'Maximum reserved cost',
+    graphCostStatus: 'Cost reservation',
+    graphCostStatusReserved: 'Reserved',
+    graphCostStatusSettled: 'Settled',
+    graphCostStatusReleased: 'Released',
+    graphCostStatusNeedsHumanReview: 'Held for human review',
     graphActualCost: 'Actual cost',
     graphActualUsage:
       'Actual usage: {requests} requests, {inputTokens} input tokens, {outputTokens} output tokens, {embeddingTokens} embedding tokens.',

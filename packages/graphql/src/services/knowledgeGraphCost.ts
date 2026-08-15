@@ -138,11 +138,12 @@ export function getKBGraphCostConfiguration(
     pricingVersion: parsePricingVersion(env),
     billingMode: parseBillingMode(env),
     semesterKey: getKBGraphSemesterKey(now, env),
-    ready:
-      standardEstimateMinorUnits !== null &&
-      highEstimateMinorUnits !== null &&
-      maxCostMinorUnits !== null &&
-      semesterQuotaMinorUnits !== null,
+    ready: [
+      standardEstimateMinorUnits,
+      highEstimateMinorUnits,
+      maxCostMinorUnits,
+      semesterQuotaMinorUnits,
+    ].every((value) => value !== null && value > 0),
   }
 }
 

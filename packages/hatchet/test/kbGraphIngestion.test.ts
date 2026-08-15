@@ -25,6 +25,7 @@ const CREATED_AT = new Date('2026-08-01T11:55:00.000Z')
 const BUILD_ID = 'd1ec25e9-71ae-449f-88c5-7872f0b1a875'
 const KB_ID = '842f262d-3482-43aa-956a-68f0c52184dd'
 const OWNER_ID = 'fb5c14dc-853a-4acb-b146-080e84c4b7df'
+const QUOTA_ID = '82b6f7a1-7aa7-4fc1-b7a0-648ba4c64e90'
 const RESOURCE_ID = '17af8b84-58bf-4a92-8f8b-197556ed98f4'
 const CONTENT_SHA256 =
   '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
@@ -61,10 +62,14 @@ function createBuild(overrides: Record<string, unknown> = {}) {
     createdAt: CREATED_AT,
     status: KBGraphBuildStatus.QUEUED,
     externalOperationId: null,
+    costStatus: KBGraphCostStatus.RESERVED,
+    estimatedCostMinorUnits: 100,
+    quotaId: QUOTA_ID,
     kb: {
       ownerId: OWNER_ID,
       deletedAt: null,
       activeGraphBuildId: BUILD_ID,
+      knowledgeGraphEnabled: true,
     },
     sources: [
       {
@@ -122,7 +127,11 @@ function createDispatchPrisma({
       findUnique,
       updateMany: vi.fn().mockResolvedValue({ count: updateCount }),
     },
+    kBGraphQuota: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
     kB: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    $queryRaw: vi.fn().mockResolvedValue([{ id: QUOTA_ID }]),
     $transaction: vi.fn(),
   }
   prisma.$transaction.mockImplementation(async (callback) => callback(prisma))
@@ -183,6 +192,97 @@ describe('KB graph external dispatch', () => {
       })
     ).toThrow('KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY must be configured')
     expect(() => validateKBGraphWorkerConfig(externalEnv)).not.toThrow()
+  })
+
+  it('fails a queued build closed when the global graph kill switch is enabled', async () => {
+    const prisma = createDispatchPrisma()
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: { ...externalEnv, KB_GRAPH_DISABLED: 'true' },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphQuota.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { reservedMinorUnits: { decrement: 100 } },
+      })
+    )
+    expect(prisma.kB.updateMany).toHaveBeenCalledWith({
+      where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
+      data: { activeGraphBuildId: null },
+    })
+  })
+
+  it('rechecks the persisted KB opt-in before starting the external run', async () => {
+    const prisma = createDispatchPrisma()
+    const initialBuild = createBuild()
+    const optedOutBuild = createBuild({
+      kb: { ...initialBuild.kb, knowledgeGraphEnabled: false },
+    })
+    prisma.kBGraphBuild.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(initialBuild)
+      .mockResolvedValueOnce(optedOutBuild)
+      .mockResolvedValue(optedOutBuild)
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: externalEnv,
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ errorCode: 'KB_GRAPH_NOT_ENABLED' }),
+      })
+    )
+  })
+
+  it('holds a pre-accounting build for review instead of dispatching it', async () => {
+    const build = createBuild({ costStatus: null })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: externalEnv,
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+        }),
+      })
+    )
   })
 
   it('builds the pinned external manifest field-for-field', () => {

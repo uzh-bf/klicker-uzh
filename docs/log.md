@@ -6,6 +6,8 @@
 
 - **Correction**: [domain-model](./domain-model.md), [graphql-api-layer](./graphql-api-layer.md), and [async-and-workers](./async-and-workers.md) now distinguish an ordinary `RESERVED` release from a `NEEDS_HUMAN_REVIEW` hold. Only a later valid W1 success callback can reconcile the held reservation; malformed or late failure results remain held. The cost-accounting migration marks pre-accounting in-flight builds for review and clears their active slots.
 
+- **Correction**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) now record worker-side gate revalidation, pre-accounting reservation fencing, cleanup-safe late settlement, localized maximum/reservation status, and real-PostgreSQL release coverage.
+
 ## 2026-08-01
 
 - **Update**: [domain-model](./domain-model.md) and `klicker-data-model` document KB-owned graph builds: a reader trusts only a successful build belonging to the requested KB, each completed build has its own graph name, and retired graphs plus GraphML share bounded retention while the active and published graphs remain protected. `turbo.json` now passes the matching `KB_FALKORDB_*` configuration through task runs.

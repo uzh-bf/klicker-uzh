@@ -15,6 +15,7 @@ import {
   GetKbKnowledgeGraphNeighborsDocument,
   GetKbKnowledgeGraphOverviewDocument,
   KbGraphBuildStatus,
+  KbGraphCostStatus,
   KbGraphQualityTier,
   RebuildKbKnowledgeGraphDocument,
   SearchKbKnowledgeGraphDocument,
@@ -94,6 +95,13 @@ type KnowledgeGraphStatusLabels = {
   failed: string
 }
 
+type KnowledgeGraphCostStatusLabels = {
+  reserved: string
+  settled: string
+  released: string
+  needsHumanReview: string
+}
+
 function statusLabel(
   status: KbGraphBuildStatus | null | undefined,
   labels: KnowledgeGraphStatusLabels
@@ -109,6 +117,24 @@ function statusLabel(
       return labels.failed
     default:
       return labels.empty
+  }
+}
+
+function costStatusLabel(
+  status: KbGraphCostStatus | null | undefined,
+  labels: KnowledgeGraphCostStatusLabels
+) {
+  switch (status) {
+    case KbGraphCostStatus.Reserved:
+      return labels.reserved
+    case KbGraphCostStatus.Settled:
+      return labels.settled
+    case KbGraphCostStatus.Released:
+      return labels.released
+    case KbGraphCostStatus.NeedsHumanReview:
+      return labels.needsHumanReview
+    default:
+      return '—'
   }
 }
 
@@ -254,6 +280,12 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     succeeded: t('kb.graphStatusSucceeded'),
     failed: t('kb.graphStatusFailed'),
   }
+  const costStatusLabels: KnowledgeGraphCostStatusLabels = {
+    reserved: t('kb.graphCostStatusReserved'),
+    settled: t('kb.graphCostStatusSettled'),
+    released: t('kb.graphCostStatusReleased'),
+    needsHumanReview: t('kb.graphCostStatusNeedsHumanReview'),
+  }
 
   const handleRebuild = async () => {
     if (isRebuilding || isActive || !config?.isEnabled) return
@@ -274,8 +306,12 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     setOperationError(null)
     try {
       await setGraphEnabled({ variables: { kbId, enabled } })
-      await refetch()
-    } catch (mutationError) {
+      try {
+        await refetch()
+      } catch {
+        console.warn('Failed to refresh KB knowledge graph opt-in', { kbId })
+      }
+    } catch {
       console.error('Failed to update KB knowledge graph opt-in', { kbId })
       setOperationError(t('kb.graphEnableError'))
     }
@@ -404,6 +440,22 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   config.costCurrency
                 )}
               </p>
+              <p>
+                <span className="font-semibold">{t('kb.graphMaxCost')}:</span>{' '}
+                {formatMinorUnits(
+                  format,
+                  config.maxCostMinorUnits,
+                  config.costCurrency
+                )}
+              </p>
+              {config.costStatus ? (
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphCostStatus')}:
+                  </span>{' '}
+                  {costStatusLabel(config.costStatus, costStatusLabels)}
+                </p>
+              ) : null}
               {config.actualCostMinorUnits != null ? (
                 <p data-cy="kb-knowledge-graph-actual-cost">
                   <span className="font-semibold">
@@ -447,9 +499,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   <Badge variant="outline">{t('kb.graphStale')}</Badge>
                 ) : null}
               </div>
-              {config.statusMessage ? (
-                <p className="text-slate-600">{config.statusMessage}</p>
-              ) : null}
               {config.buildId ? (
                 <p className="break-all text-xs text-slate-500">
                   {t('kb.graphBuildId', { buildId: config.buildId })}

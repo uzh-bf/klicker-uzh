@@ -1404,6 +1404,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphBillingProvider: 'Durch Anbieter abgerechnet',
     graphRemainingQuota: 'Verbleibendes Semesterkontingent',
     graphWorstCaseBalance: 'Kontostand nach dem maximalen Aufbau',
+    graphMaxCost: 'Maximal reservierte Kosten',
+    graphCostStatus: 'Kostenreservierung',
+    graphCostStatusReserved: 'Reserviert',
+    graphCostStatusSettled: 'Abgerechnet',
+    graphCostStatusReleased: 'Freigegeben',
+    graphCostStatusNeedsHumanReview: 'Zur manuellen Prüfung zurückgehalten',
     graphActualCost: 'Tatsächliche Kosten',
     graphActualUsage:
       'Tatsächliche Nutzung: {requests} Anfragen, {inputTokens} Eingabetoken, {outputTokens} Ausgabetoken, {embeddingTokens} Embedding-Token.',

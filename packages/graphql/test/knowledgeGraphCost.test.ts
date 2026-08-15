@@ -46,6 +46,22 @@ describe('knowledge graph cost configuration', () => {
     expect(getKBGraphEstimate(KBGraphQualityTier.HIGH, config)).toBe(200)
   })
 
+  it('does not expose zero-value monetary settings as ready', () => {
+    const config = getKBGraphCostConfiguration({
+      ...configuredEnv,
+      KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS: '0',
+    })
+
+    expect(config.ready).toBe(false)
+    expect(() => requireKBGraphCostConfiguration(configuredEnv)).not.toThrow()
+    expect(() =>
+      requireKBGraphCostConfiguration({
+        ...configuredEnv,
+        KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS: '0',
+      })
+    ).toThrow(GraphQLError)
+  })
+
   it('rejects a maximum below a configured tier estimate', () => {
     expect(() =>
       getKBGraphCostConfiguration({

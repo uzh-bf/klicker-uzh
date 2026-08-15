@@ -202,6 +202,8 @@ type KBGraphCostBuild = {
   costStatus: DB.KBGraphCostStatus | null
   quotaId: string | null
   status: DB.KBGraphBuildStatus
+  cleanupStartedAt: Date | null
+  cleanedAt: Date | null
   kb: {
     ownerId: string
     activeGraphBuildId: string | null
@@ -273,6 +275,8 @@ export async function settleKBGraphBuildCost(
       costStatus: true,
       quotaId: true,
       status: true,
+      cleanupStartedAt: true,
+      cleanedAt: true,
       kb: {
         select: {
           ownerId: true,
@@ -346,6 +350,18 @@ export async function settleKBGraphBuildCost(
   }
 
   if (result.status === 'SUCCEEDED') {
+    if (build.cleanupStartedAt !== null || build.cleanedAt !== null) {
+      if (build.costStatus === DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW) {
+        return 'NEEDS_HUMAN_REVIEW'
+      }
+      return markCostNeedsHumanReview(
+        prisma,
+        build,
+        'A successful KB graph result arrived after artifact cleanup started.',
+        'KB_GRAPH_RESULT_AFTER_CLEANUP',
+        finishedAt
+      )
+    }
     if (result.metered_cost === null) {
       return markCostNeedsHumanReview(
         prisma,
@@ -379,6 +395,8 @@ export async function settleKBGraphBuildCost(
       where: {
         id: build.id,
         costStatus: { in: [...SETTLEMENT_HOLD_STATUSES] },
+        cleanupStartedAt: null,
+        cleanedAt: null,
       },
       data: {
         status: DB.KBGraphBuildStatus.SUCCEEDED,
@@ -394,7 +412,15 @@ export async function settleKBGraphBuildCost(
         finishedAt,
       },
     })
-    if (updated.count !== 1) return 'DUPLICATE'
+    if (updated.count !== 1) {
+      const current = await prisma.kBGraphBuild.findUnique({
+        where: { id: build.id },
+        select: { cleanupStartedAt: true, cleanedAt: true },
+      })
+      return current?.cleanupStartedAt || current?.cleanedAt
+        ? 'NEEDS_HUMAN_REVIEW'
+        : 'DUPLICATE'
+    }
 
     const quotaUpdated = await prisma.kBGraphQuota.updateMany({
       where: {
