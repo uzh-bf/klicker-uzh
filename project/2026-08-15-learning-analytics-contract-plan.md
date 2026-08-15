@@ -22,6 +22,12 @@ workflow.
   excluding this plan, wiki/log documentation, generated lockfile changes, and CI.
 - Complexity stop: pause above roughly 600 substantive lines or ten substantive files
   and recheck the package boundary.
+- Actual repository-defined substantive size: `+747/-5` across 17 files, excluding
+  only this project plan and the generated lockfile. The package exceeds the planning
+  estimate because the repository size rule counts CI, wiki, skill, package
+  configuration, and the complete test portfolio. It remains one work package: those
+  files make the public contract independently testable, reviewable, and safe to land;
+  splitting them would leave either the protocol or its verification incomplete.
 
 ## Evidence
 
@@ -238,6 +244,10 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
   and the OKF validator retain known unrelated baseline failures: the legacy analytics
   Python 3.14/pandas compiler path, the existing repository advisory backlog, and 32
   pre-existing wiki conformance errors respectively.
+- [x] Final bounded security review completed with no findings at confidence 75 or
+  higher.
+- [x] Substantive size measured at `+747/-5` across 17 files and accepted as one
+  coherent contract package rather than separating its verification or documentation.
 - [ ] Final gates complete.
 - [ ] Branch pushed and draft PR published.
 - [ ] Immutable public commit and digest read back for Catalyst.
