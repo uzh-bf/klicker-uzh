@@ -2069,11 +2069,20 @@ export async function setKbKnowledgeGraphEnabled(
 
 export async function settleKbKnowledgeGraphResult(
   prisma: DB.PrismaClient,
-  { buildId, result }: { buildId: string; result: unknown },
+  {
+    buildId,
+    result,
+    allowLateSuccess,
+  }: { buildId: string; result: unknown; allowLateSuccess?: boolean },
   finishedAt = new Date()
 ) {
   return prisma.$transaction((transaction) =>
-    settleKBGraphBuildCost(transaction, { buildId, result, finishedAt })
+    settleKBGraphBuildCost(transaction, {
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    })
   )
 }
 

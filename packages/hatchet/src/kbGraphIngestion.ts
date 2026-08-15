@@ -98,6 +98,7 @@ export type MonitorKBGraphBuildsDependencies = {
     buildId: string
     result: unknown
     finishedAt: Date
+    allowLateSuccess?: boolean
   }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }
 
@@ -199,6 +200,7 @@ function isDispatchableBuild(build: {
   id: string
   status: KBGraphBuildStatus
   externalOperationId: string | null
+  dispatchClaimedAt: Date | null
   graphmlBlobName: string | null
   estimatedCostMinorUnits: number | null
   costCurrency: string | null
@@ -218,6 +220,7 @@ function isDispatchableBuild(build: {
   return (
     isActiveBuildStatus(build.status) &&
     build.externalOperationId === null &&
+    build.dispatchClaimedAt === null &&
     hasCompleteKBGraphReservation(build) &&
     build.kb.deletedAt === null &&
     build.kb.activeGraphBuildId === build.id &&
@@ -265,11 +268,13 @@ function isUnstartedActiveBuild(build: {
   id: string
   status: KBGraphBuildStatus
   externalOperationId: string | null
+  dispatchClaimedAt: Date | null
   kb: { deletedAt: Date | null; activeGraphBuildId: string | null }
 }) {
   return (
     isActiveBuildStatus(build.status) &&
     build.externalOperationId === null &&
+    build.dispatchClaimedAt === null &&
     build.kb.deletedAt === null &&
     build.kb.activeGraphBuildId === build.id
   )
@@ -323,6 +328,7 @@ async function failKBGraphBuildBeforeDispatch(
       where: { id: buildId },
       select: {
         externalOperationId: true,
+        dispatchClaimedAt: true,
         costStatus: true,
         status: true,
         kb: {
@@ -336,6 +342,7 @@ async function failKBGraphBuildBeforeDispatch(
         id: buildId,
         status: current.status,
         externalOperationId: current.externalOperationId,
+        dispatchClaimedAt: current.dispatchClaimedAt,
         kb: current.kb,
       })
     ) {
@@ -454,6 +461,7 @@ export async function dispatchKBGraphBuild(
       qualityTier: true,
       status: true,
       externalOperationId: true,
+      dispatchClaimedAt: true,
       estimatedCostMinorUnits: true,
       costCurrency: true,
       costPricingVersion: true,
@@ -492,6 +500,10 @@ export async function dispatchKBGraphBuild(
     },
   })
   if (!build) {
+    return undefined
+  }
+  if (build.dispatchClaimedAt !== null && build.externalOperationId === null) {
+    await markKBGraphBuildDispatchFailed(input, dependencies.prisma)
     return undefined
   }
   if (isUnstartedActiveBuild(build)) {
@@ -547,6 +559,25 @@ export async function dispatchKBGraphBuild(
     if (recoveredRun) {
       runId = recoveredRun.runId
       startedAt = recoveredRun.startedAt
+      const claimed = await dependencies.prisma.kBGraphBuild.updateMany({
+        where: {
+          id: dispatchBuild.id,
+          kbId: dispatchBuild.kbId,
+          status: {
+            in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+          },
+          externalOperationId: null,
+          dispatchClaimedAt: null,
+          kb: {
+            deletedAt: null,
+            activeGraphBuildId: dispatchBuild.id,
+          },
+        },
+        data: { dispatchClaimedAt: startedAt },
+      })
+      if (claimed.count !== 1) {
+        return undefined
+      }
     } else {
       const current = await dependencies.prisma.kBGraphBuild.findUnique({
         where: { id: dispatchBuild.id },
@@ -554,6 +585,7 @@ export async function dispatchKBGraphBuild(
           id: true,
           status: true,
           externalOperationId: true,
+          dispatchClaimedAt: true,
           estimatedCostMinorUnits: true,
           costCurrency: true,
           costPricingVersion: true,
@@ -609,6 +641,25 @@ export async function dispatchKBGraphBuild(
         env
       )
       startedAt = now()
+      const claimed = await dependencies.prisma.kBGraphBuild.updateMany({
+        where: {
+          id: dispatchBuild.id,
+          kbId: dispatchBuild.kbId,
+          status: {
+            in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
+          },
+          externalOperationId: null,
+          dispatchClaimedAt: null,
+          kb: {
+            deletedAt: null,
+            activeGraphBuildId: dispatchBuild.id,
+          },
+        },
+        data: { dispatchClaimedAt: startedAt },
+      })
+      if (claimed.count !== 1) {
+        return undefined
+      }
       const run = await client.runNoWait(config.workflowName, payload, {
         additionalMetadata,
       })
@@ -623,6 +674,7 @@ export async function dispatchKBGraphBuild(
           in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
         },
         externalOperationId: null,
+        dispatchClaimedAt: startedAt,
         kb: {
           deletedAt: null,
           activeGraphBuildId: dispatchBuild.id,
@@ -630,6 +682,7 @@ export async function dispatchKBGraphBuild(
       },
       data: {
         externalOperationId: runId,
+        dispatchClaimedAt: null,
         externalStartedAt: startedAt,
         startedAt,
         statusMessage: null,
@@ -785,6 +838,7 @@ async function monitorTimedOutKBGraphBuilds(
           buildId: build.id,
           result: terminalResult,
           finishedAt: now(),
+          allowLateSuccess: true,
         })
       } else {
         await recordIneligibleLateSuccess(
@@ -970,7 +1024,12 @@ export async function markKBGraphBuildDispatchFailed(
   const finishedAt = new Date()
   const build = await prisma.kBGraphBuild.findUnique({
     where: { id: input.buildId },
-    select: { id: true, kbId: true },
+    select: {
+      id: true,
+      kbId: true,
+      dispatchClaimedAt: true,
+      costStatus: true,
+    },
   })
   if (!build) {
     return
@@ -987,17 +1046,32 @@ export async function markKBGraphBuildDispatchFailed(
       },
       data: {
         status: KBGraphBuildStatus.FAILED,
-        statusMessage: 'The external KB graph workflow could not be started.',
-        errorCode: 'KB_GRAPH_DISPATCH_FAILED',
+        statusMessage:
+          build.dispatchClaimedAt === null
+            ? 'The external KB graph workflow could not be started.'
+            : 'The external KB graph workflow may have been accepted but could not be correlated; manual review is required.',
+        errorCode:
+          build.dispatchClaimedAt === null
+            ? 'KB_GRAPH_DISPATCH_FAILED'
+            : 'KB_GRAPH_DISPATCH_AMBIGUOUS',
         finishedAt,
       },
     })
     if (failed.count === 1) {
-      await releaseKBGraphReservationInTransaction(tx, build.id)
-      await tx.kBGraphBuild.updateMany({
-        where: { id: build.id, costStatus: null },
-        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
-      })
+      if (
+        build.dispatchClaimedAt === null &&
+        build.costStatus === KBGraphCostStatus.RESERVED
+      ) {
+        await releaseKBGraphReservationInTransaction(tx, build.id)
+      } else if (
+        build.costStatus === null ||
+        build.costStatus === KBGraphCostStatus.RESERVED
+      ) {
+        await tx.kBGraphBuild.updateMany({
+          where: { id: build.id, costStatus: build.costStatus },
+          data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+        })
+      }
       await tx.kB.updateMany({
         where: { id: build.kbId, activeGraphBuildId: build.id },
         data: { activeGraphBuildId: null },

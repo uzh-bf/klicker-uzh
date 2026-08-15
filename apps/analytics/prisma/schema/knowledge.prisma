@@ -181,6 +181,9 @@ model KBGraphBuild {
 
   externalOperationId String?
   externalStartedAt   DateTime?
+  // Durable claim written before the provider call. If the call is accepted
+  // but its run id cannot be correlated, this prevents releasing the reserve.
+  dispatchClaimedAt   DateTime?
   statusMessage       String?
   errorCode           String?
   startedAt           DateTime?

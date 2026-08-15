@@ -60,6 +60,7 @@ export function prepareHatchetTasks({
     buildId: string
     result: unknown
     finishedAt: Date
+    allowLateSuccess?: boolean
   }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }) {
   const globalContext = {

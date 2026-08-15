@@ -1,5 +1,9 @@
 # Log
 
+## 2026-08-16
+
+- **Correction**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) now document the durable graph-dispatch claim, the `NEEDS_HUMAN_REVIEW` hold for accepted-but-uncorrelated provider runs, atomic matching/stale/superseded late-success reconciliation, and the separation between current quota currency and historical settled build cost. Matching `klicker-*` skills carry the same lifecycle and verification rules.
+
 ## 2026-08-15
 
 - **Update**: [domain-model](./domain-model.md), [data-and-migrations](./data-and-migrations.md), [graphql-api-layer](./graphql-api-layer.md), [async-and-workers](./async-and-workers.md), [frontend-conventions](./frontend-conventions.md), and [testing](./testing.md) document the M1 knowledge-graph lifecycle: per-KB opt-in, the graph kill switch, integer minor-unit reservation and settlement, W1 terminal-result validation, fail-closed provider reconciliation, human-review holds, and lecturer cost/quota states. Matching `klicker-*` skills carry the schema, GraphQL, UI, and verification rules.

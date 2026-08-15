@@ -62,6 +62,7 @@ function createBuild(overrides: Record<string, unknown> = {}) {
     createdAt: CREATED_AT,
     status: KBGraphBuildStatus.QUEUED,
     externalOperationId: null,
+    dispatchClaimedAt: null,
     costStatus: KBGraphCostStatus.RESERVED,
     estimatedCostMinorUnits: 100,
     costCurrency: 'CHF',
@@ -446,6 +447,50 @@ describe('KB graph external dispatch', () => {
     )
   })
 
+  it('holds the reservation when provider acceptance cannot be correlated', async () => {
+    const prisma = createDispatchPrisma()
+    const client = createClient()
+    vi.mocked(client.runNoWait).mockResolvedValue({
+      getWorkflowRunId: vi
+        .fn()
+        .mockRejectedValue(new Error('run id unavailable')),
+    })
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: externalEnv,
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).rejects.toThrow('External KB graph build dispatch failed')
+
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { dispatchClaimedAt: NOW },
+      })
+    )
+
+    const ambiguousPrisma = createDispatchPrisma({
+      build: createBuild({ dispatchClaimedAt: NOW }),
+    })
+    await markKBGraphBuildDispatchFailed(
+      { buildId: BUILD_ID },
+      ambiguousPrisma as never
+    )
+
+    expect(ambiguousPrisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(ambiguousPrisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW },
+      })
+    )
+  })
+
   it('recovers a matching external build before creating a duplicate run', async () => {
     const prisma = createDispatchPrisma()
     const client = createClient({
@@ -488,6 +533,9 @@ describe('KB graph external dispatch', () => {
 
   it('cancels an orphaned external run when the guarded correlation loses its race', async () => {
     const prisma = createDispatchPrisma({ updateCount: 0 })
+    prisma.kBGraphBuild.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 })
     const client = createClient({ runId: 'orphaned-run-id' })
 
     await expect(
@@ -719,6 +767,7 @@ describe('KB graph external reconciliation', () => {
       buildId: BUILD_ID,
       result: { status: 'SUCCEEDED' },
       finishedAt: NOW,
+      allowLateSuccess: true,
     })
     expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalled()
     expect(prisma.kB.updateMany).not.toHaveBeenCalled()

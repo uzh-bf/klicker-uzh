@@ -245,7 +245,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const formattedSelectedEstimate = formatMinorUnits(
     format,
     selectedEstimate,
-    config?.costCurrency
+    config?.quotaCurrency
   )
 
   useEffect(() => {
@@ -445,7 +445,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                 {formatMinorUnits(
                   format,
                   config.maxCostMinorUnits,
-                  config.costCurrency
+                  config.quotaCurrency
                 )}
               </p>
               {config.costStatus ? (

@@ -1,8 +1,11 @@
+import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
   KBGraphCostStatus,
   KBGraphQualityTier,
+  KBResourceStatus,
+  KBResourceType,
 } from '@klicker-uzh/prisma/client'
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -15,6 +18,12 @@ import {
 const NOW = new Date('2026-08-15T19:30:00.000Z')
 const SOURCE_CONTENT_DIGEST =
   '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
+const LATE_RESOURCE_ID = '17af8b84-58bf-4a92-8f8b-197556ed98f4'
+const LATE_CONTENT_SHA256 =
+  '2c26b46b68ffc68ff99b453c1d30413413422f164490f3d7c1d7d7d6d4b1f6b3'
+const LATE_SOURCE_CONTENT_DIGEST = hashKBContentDigestEntries([
+  { resourceId: LATE_RESOURCE_ID, contentSha256: LATE_CONTENT_SHA256 },
+])
 
 const costEnv = {
   KB_GRAPH_COST_CURRENCY: 'CHF',
@@ -33,11 +42,19 @@ let kbId: string
 async function createBuild({
   costStatus = KBGraphCostStatus.RESERVED,
   active = true,
+  status = KBGraphBuildStatus.PROCESSING,
+  errorCode = null,
+  createdAt,
+  sourceContentDigest = SOURCE_CONTENT_DIGEST,
   cleanupStartedAt = null,
   cleanedAt = null,
 }: {
   costStatus?: KBGraphCostStatus
   active?: boolean
+  status?: KBGraphBuildStatus
+  errorCode?: string | null
+  createdAt?: Date
+  sourceContentDigest?: string
   cleanupStartedAt?: Date | null
   cleanedAt?: Date | null
 } = {}) {
@@ -53,9 +70,9 @@ async function createBuild({
       id: buildId,
       kbId,
       requestedById: ownerId,
-      status: KBGraphBuildStatus.PROCESSING,
+      status,
       qualityTier: KBGraphQualityTier.STANDARD,
-      sourceContentDigest: SOURCE_CONTENT_DIGEST,
+      sourceContentDigest,
       graphName: `klickeruzh:kb:${kbId}:${buildId}`,
       graphmlBlobName,
       estimatedCostMinorUnits: 100,
@@ -65,6 +82,8 @@ async function createBuild({
       semesterKey: '2026-H2',
       quotaId: quota.id,
       externalOperationId: runId,
+      errorCode,
+      ...(createdAt ? { createdAt } : {}),
       cleanupStartedAt,
       cleanedAt,
     },
@@ -83,11 +102,13 @@ function successfulResult({
   runId,
   amountMinorUnits = 60,
   graphmlBlobName,
+  sourceContentDigest = SOURCE_CONTENT_DIGEST,
 }: {
   buildId: string
   runId: string
   amountMinorUnits?: number
   graphmlBlobName: string
+  sourceContentDigest?: string
 }) {
   return {
     contract_version: 'klicker-kb-graph/v1',
@@ -96,7 +117,7 @@ function successfulResult({
     kb_id: kbId,
     owner_id: ownerId,
     run_id: runId,
-    source_content_digest: SOURCE_CONTENT_DIGEST,
+    source_content_digest: sourceContentDigest,
     graph_name: `klickeruzh:kb:${kbId}:${buildId}`,
     status: 'SUCCEEDED',
     edge_count: 1,
@@ -253,6 +274,191 @@ describe('KB graph cost accounting', () => {
     ).resolves.toMatchObject({
       activeGraphBuildId: null,
       publishedGraphBuildId: build.id,
+    })
+  })
+
+  it('accepts and publishes a late success when the pinned digest still matches', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    await prisma.kBResource.create({
+      data: {
+        id: LATE_RESOURCE_ID,
+        kbId,
+        type: KBResourceType.URL,
+        title: 'Late success resource',
+        sourceUrl: 'https://content.example.org/late.pdf',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: LATE_CONTENT_SHA256,
+      },
+    })
+    const { build, runId, graphmlBlobName } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.FAILED,
+      errorCode: 'KB_GRAPH_TIMEOUT',
+      createdAt: new Date(NOW.getTime() - 5 * 60 * 1000),
+      sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+    })
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: successfulResult({
+            buildId: build.id,
+            runId,
+            graphmlBlobName,
+            sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+          }),
+          finishedAt: NOW,
+          allowLateSuccess: true,
+        })
+      )
+    ).resolves.toBe('SETTLED')
+
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.SUCCEEDED,
+      costStatus: KBGraphCostStatus.SETTLED,
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({
+      activeGraphBuildId: null,
+      publishedGraphBuildId: build.id,
+    })
+  })
+
+  it('settles a late success without publishing when the KB digest is stale', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    await prisma.kBResource.create({
+      data: {
+        id: LATE_RESOURCE_ID,
+        kbId,
+        type: KBResourceType.URL,
+        title: 'Stale late success resource',
+        sourceUrl: 'https://content.example.org/stale.pdf',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: `${LATE_CONTENT_SHA256.slice(0, -1)}0`,
+      },
+    })
+    const { build, runId, graphmlBlobName } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.FAILED,
+      errorCode: 'KB_GRAPH_TIMEOUT',
+      createdAt: new Date(NOW.getTime() - 5 * 60 * 1000),
+      sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+    })
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: successfulResult({
+            buildId: build.id,
+            runId,
+            graphmlBlobName,
+            sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+          }),
+          finishedAt: NOW,
+          allowLateSuccess: true,
+        })
+      )
+    ).resolves.toBe('SETTLED')
+
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.FAILED,
+      costStatus: KBGraphCostStatus.SETTLED,
+      errorCode: 'KB_GRAPH_LATE_SUCCESS_STALE',
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({
+      activeGraphBuildId: null,
+      publishedGraphBuildId: null,
+    })
+  })
+
+  it('settles a late success without publishing when a newer build exists', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    await prisma.kBResource.create({
+      data: {
+        id: LATE_RESOURCE_ID,
+        kbId,
+        type: KBResourceType.URL,
+        title: 'Superseded late success resource',
+        sourceUrl: 'https://content.example.org/superseded.pdf',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: LATE_CONTENT_SHA256,
+      },
+    })
+    const { build, runId, graphmlBlobName } = await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.FAILED,
+      errorCode: 'KB_GRAPH_TIMEOUT',
+      createdAt: new Date(NOW.getTime() - 5 * 60 * 1000),
+      sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+    })
+    await createBuild({
+      active: false,
+      status: KBGraphBuildStatus.QUEUED,
+      costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      createdAt: NOW,
+    })
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result: successfulResult({
+            buildId: build.id,
+            runId,
+            graphmlBlobName,
+            sourceContentDigest: LATE_SOURCE_CONTENT_DIGEST,
+          }),
+          finishedAt: NOW,
+          allowLateSuccess: true,
+        })
+      )
+    ).resolves.toBe('SETTLED')
+
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      status: KBGraphBuildStatus.SUPERSEDED,
+      costStatus: KBGraphCostStatus.SETTLED,
+      errorCode: 'KB_GRAPH_LATE_SUCCESS_SUPERSEDED',
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
+    ).resolves.toMatchObject({
+      activeGraphBuildId: null,
+      publishedGraphBuildId: null,
     })
   })
 
