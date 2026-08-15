@@ -1,4 +1,4 @@
-import { MAX_TOOL_NAME_LENGTH } from '../config/toolNames'
+import { MAX_TOOL_NAME_LENGTH } from '@/src/lib/config/toolNames'
 
 export const REQUIRED_MCP_UNAVAILABLE_CODE = 'REQUIRED_MCP_UNAVAILABLE'
 

@@ -7,11 +7,11 @@ import { createHash } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
-} from '../lib/config/toolNames'
+} from '@/src/lib/config/toolNames'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
-} from '../lib/server/mcpRuntimePolicy'
+} from '@/src/lib/server/mcpRuntimePolicy'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {

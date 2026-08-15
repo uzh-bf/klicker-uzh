@@ -24,7 +24,7 @@ jobs:
         id: filter
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/chat/|packages/(i18n|prisma|graphql|util|shared-components|markdown|next-config)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-chat\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(apps/chat/|packages/(i18n|prisma|graphql|types|grading|util|shared-components|markdown|next-config)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-chat\.yml|\.github/actions/changed-paths/)'
 
       - name: Define node version
         if: steps.filter.outputs.should_run == 'true'

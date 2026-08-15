@@ -13,8 +13,8 @@ Add one native Klicker chatbot configuration path for the Informatik-und-Wirtsch
 ## Plan identity
 
 - Plan path: `project/2026-08-14-informatik-und-wirtschaft-klicker-plan.md`
-- Repository: `/Users/rschlae/Git/klicker/klicker-uzh`
-- Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/informatik-und-wirtschaft-klicker`
+- Repository: `klicker-uzh`
+- Worktree: `informatik-und-wirtschaft-klicker`
 - Stack branches: `rs/informatik-und-wirtschaft-chat-runtime` (bottom), `rs/informatik-und-wirtschaft-chatbot-provisioner` (optional top)
 - Target: `v3`
 - Base: `origin/v3` at `d76c13a3f28dcdbddac46ed8cc3fcb70fad42924`
