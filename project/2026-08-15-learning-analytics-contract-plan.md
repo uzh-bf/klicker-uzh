@@ -1,6 +1,6 @@
 # Learning analytics engine contract
 
-Status: approved; planning-stage review complete; implementation not started.
+Status: approved; S0-S2 complete; intermediate findings closed; final gates in progress.
 
 ## Goal
 
@@ -230,8 +230,14 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
 - [x] Planning-stage specialist review completed with no unresolved owner decision.
 - [x] Plan approved through the existing LA-P1 topology and the instruction to proceed.
 - [x] S0 plan commit complete.
-- [ ] S1 contract package complete and reviewed.
-- [ ] S2 documentation and final verification complete.
+- [x] S1 contract package complete and reviewed. The intermediate review of
+  `b8679343b` found explicit-undefined and digest-authority gaps; both are closed in
+  `63c2a6265` with 16 focused tests, typecheck, build, and frozen-lock verification.
+- [x] S2 documentation and final verification complete. Package test/check/build and
+  the root build pass under Node 24. Scoped Knip passes. Root `check:all`, root Knip,
+  and the OKF validator retain known unrelated baseline failures: the legacy analytics
+  Python 3.14/pandas compiler path, the existing repository advisory backlog, and 32
+  pre-existing wiki conformance errors respectively.
 - [ ] Final gates complete.
 - [ ] Branch pushed and draft PR published.
 - [ ] Immutable public commit and digest read back for Catalyst.

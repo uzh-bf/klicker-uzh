@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-03'
+timestamp: '2026-08-15'
 tags:
   - architecture
 ---
@@ -31,7 +31,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `analytics-engine-contract` (inert learning-analytics workflow protocol), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
@@ -51,6 +51,12 @@ Redis has three roles, one client each (`apps/backend-docker/src/index.ts`): **e
 - `graphql/ops/*.graphql` — hand-written client operations, prefixed `Q`/`M`/`S`/`F` → codegen → `src/ops.ts` + `src/public/{client,server}.json`.
 
 Frontends import generated documents from `@klicker-uzh/graphql/dist/ops` — never write inline gql.
+
+`packages/analytics-engine-contract/src/index.ts` owns the strict public `v1`
+course/platform workflow schemas, SDK-free invocation stubs, synthetic fixtures,
+conformance runner, and canonical digest. It is a server-side protocol package only:
+it does not import Hatchet, register work, access product data, or replace the current
+`apps/analytics` service.
 
 ## Async response pipeline
 

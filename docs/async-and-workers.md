@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-08-15'
 tags:
   - backend
   - hatchet
@@ -43,6 +43,22 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+
+## Learning analytics contract boundary
+
+`packages/analytics-engine-contract/src/constants.ts:COURSE_WORKFLOW_NAME` and
+`PLATFORM_WORKFLOW_NAME` reserve `learning-analytics-course-v1` and
+`learning-analytics-platform-v1`. The public package validates dispatch input and
+successful identity echoes through
+`packages/analytics-engine-contract/src/stubs.ts:createAnalyticsEngineStubs`; failures
+and cancellations remain rejected workflow calls rather than successful status
+objects. `packages/analytics-engine-contract/src/conformance.ts:runBlackBoxConformance`
+checks that boundary without importing a Hatchet SDK.
+
+This contract is inert. No public task registration, worker, schedule, coordinator, or
+deployment exists for these names yet. The Catalyst runtime owns the eventual Hatchet
+workflow implementation; KlickerUZH will add its dispatch and product-state updates in
+later public layers.
 
 ## Running locally (config-derived — verify on your machine)
 
