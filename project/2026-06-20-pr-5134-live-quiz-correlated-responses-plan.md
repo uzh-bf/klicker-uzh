@@ -647,6 +647,15 @@ Later research:
   gamification-only. Prisma validation, generation, schema sync, Prisma and
   GraphQL typechecks, and touched-file formatting pass; DB-backed migration and
   integration execution remain pending because no database runtime is available.
+- 2026-08-15: A1 slice review found that the temporary-participant endpoint
+  still accepted correlated admission; the repair now rejects temporary
+  pseudonyms unless the quiz is gamified and not correlated. The review also
+  flagged that `LiveQuiz.publicationGeneration` is added by the existing A5
+  schema layer rather than A1. That ownership is retained deliberately: A1's
+  child-generation defaults are inert expansion fields, and no A2-A4 writer or
+  reader uses them before A5 adds the quiz-owned source under its lifecycle lock.
+  The A5 gate must preserve that ordering. Ordinary index-DDL safety remains a
+  DB-backed follow-up because the local database runtime is unavailable.
 
 ## Goal Prompt Requirements
 

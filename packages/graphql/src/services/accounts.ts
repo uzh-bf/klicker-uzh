@@ -189,7 +189,10 @@ export async function loginTemporaryParticipant(
     })
     if (
       !lockedLiveQuiz ||
-      lockedLiveQuiz.status !== DB.PublicationStatus.PUBLISHED
+      lockedLiveQuiz.status !== DB.PublicationStatus.PUBLISHED ||
+      !lockedLiveQuiz.isGamificationEnabled ||
+      lockedLiveQuiz.responseCollectionMode ===
+        DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
     ) {
       return null
     }

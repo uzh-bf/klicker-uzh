@@ -686,6 +686,10 @@ describe('Temporary participant admission', () => {
       { elements: [], status: PublicationStatus.PUBLISHED },
       userOneCtx
     )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { isGamificationEnabled: true },
+    })
     const pseudonym = `temporary-${uuid()}`
     const context = {
       ...userOneCtx,
@@ -712,7 +716,7 @@ describe('Temporary participant admission', () => {
     ).resolves.toBe(1)
   })
 
-  it('keeps temporary pseudonyms in gamification storage only', async () => {
+  it('rejects temporary pseudonym admission for correlated quizzes', async () => {
     const liveQuiz = await seedLiveQuiz(
       { elements: [], status: PublicationStatus.PUBLISHED },
       userOneCtx
@@ -734,13 +738,13 @@ describe('Temporary participant admission', () => {
         { liveQuizId: liveQuiz.id, pseudonym: `temporary-${uuid()}` },
         context
       )
-    ).resolves.not.toBeNull()
+    ).resolves.toBeNull()
 
     await expect(
       prisma.liveQuizRespondent.count({ where: { liveQuizId: liveQuiz.id } })
     ).resolves.toBe(0)
     await expect(
       prisma.temporaryLeaderboardEntry.count({ where: { quizId: liveQuiz.id } })
-    ).resolves.toBe(1)
+    ).resolves.toBe(0)
   })
 })

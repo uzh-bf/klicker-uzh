@@ -13,12 +13,16 @@ export async function lockLiveQuizResponseCollectionState({
   liveQuizId: string
 }) {
   const [liveQuiz] = await prisma.$queryRaw<
-    Pick<DB.LiveQuiz, 'id' | 'responseCollectionMode' | 'status'>[]
+    Pick<
+      DB.LiveQuiz,
+      'id' | 'responseCollectionMode' | 'status' | 'isGamificationEnabled'
+    >[]
   >`
     SELECT
       "id",
       "responseCollectionMode"::text AS "responseCollectionMode",
-      "status"::text AS "status"
+      "status"::text AS "status",
+      "isGamificationEnabled"
     FROM "public"."LiveQuiz"
     WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
     FOR UPDATE
