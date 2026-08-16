@@ -285,6 +285,27 @@ export function parseProvisionInput(raw: unknown): ProvisionInput {
     throw new Error('input.chatbot.creditResetPeriod is unsupported')
   }
 
+  const creditInitialCredits = integerValue(
+    chatbot,
+    'creditInitialCredits',
+    'input.chatbot'
+  )
+  const creditResetAmount = integerValue(
+    chatbot,
+    'creditResetAmount',
+    'input.chatbot'
+  )
+  const creditMaxCredits = integerValue(
+    chatbot,
+    'creditMaxCredits',
+    'input.chatbot'
+  )
+  if (creditInitialCredits > creditMaxCredits) {
+    throw new Error(
+      'input.chatbot.creditInitialCredits must not exceed creditMaxCredits'
+    )
+  }
+
   const disclaimer = record(root.disclaimer, 'input.disclaimer')
   keys(disclaimer, ['name', 'title', 'introText'], 'input.disclaimer')
 
@@ -356,10 +377,7 @@ export function parseProvisionInput(raw: unknown): ProvisionInput {
   }
 
   return {
-    isTemplate:
-      root.isTemplate === undefined
-        ? false
-        : booleanValue(root, 'isTemplate', 'input'),
+    isTemplate: booleanValue(root, 'isTemplate', 'input'),
     courseId: uuidValue(root, 'courseId', 'input'),
     ownerId: uuidValue(root, 'ownerId', 'input'),
     chatbotId: uuidValue(root, 'chatbotId', 'input'),
@@ -376,22 +394,10 @@ export function parseProvisionInput(raw: unknown): ProvisionInput {
           'input.chatbot.systemPrompts.explainer'
         ),
       },
-      creditInitialCredits: integerValue(
-        chatbot,
-        'creditInitialCredits',
-        'input.chatbot'
-      ),
+      creditInitialCredits,
       creditResetPeriod: resetPeriod as CreditResetPeriod,
-      creditResetAmount: integerValue(
-        chatbot,
-        'creditResetAmount',
-        'input.chatbot'
-      ),
-      creditMaxCredits: integerValue(
-        chatbot,
-        'creditMaxCredits',
-        'input.chatbot'
-      ),
+      creditResetAmount,
+      creditMaxCredits,
       modelSelection: booleanValue(chatbot, 'modelSelection', 'input.chatbot'),
       allowedModelIds: stringArray(chatbot, 'allowedModelIds', 'input.chatbot'),
     },

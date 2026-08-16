@@ -110,6 +110,48 @@ headers, user/course names, emails, and full database rows must never appear in 
 logs. `--validate-only` validates the synthetic local template without importing the database
 runtime (**verified** on 2026-08-14); it does not prove a database dry run or MCP retrieval.
 
+Before a target-environment run, build the workspace packages used for database access and
+encryption, then validate the ignored input without loading secrets:
+
+```bash
+pnpm --filter @klicker-uzh/prisma build
+pnpm --filter @klicker-uzh/util build
+pnpm --filter @klicker-uzh/prisma-data exec tsx \
+  src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts \
+  --validate-only
+pnpm --filter @klicker-uzh/prisma-data run check:scripts
+```
+
+The operator must verify that `DATABASE_URL` and `APP_SECRET` are sourced together from the
+same authorized target environment. `APP_SECRET` encrypts the MCP credential at rest, so a
+database URL from one environment combined with an application secret from another can create
+rows that the target runtime cannot decrypt. The ignored input, its stable target-row IDs, the
+course/owner relationship, the model registry, the MCP URL/auth policy, and any named MCP
+credential must be reviewed before the dry run. Only then use the target-specific `script:qa`
+or `script:prod` wrapper for the values-free dry run, followed by a separately authorized
+`DRY_RUN=false` apply and readback:
+
+```bash
+# Staging: the wrapper injects the authorized staging DATABASE_URL and APP_SECRET.
+pnpm --filter @klicker-uzh/prisma-data run script:qa -- \
+  src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts
+
+# Only after the dry-run receipt has been reviewed and write authority is explicit.
+DRY_RUN=false pnpm --filter @klicker-uzh/prisma-data run script:qa -- \
+  src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts
+
+# Production uses the same protocol with the separately authorized production wrapper.
+pnpm --filter @klicker-uzh/prisma-data run script:prod -- \
+  src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts
+DRY_RUN=false pnpm --filter @klicker-uzh/prisma-data run script:prod -- \
+  src/scripts/2026-08-14_provision_informatik_und_wirtschaft_chatbot.ts
+```
+
+The production commands document the generic protocol for future operators; they do not by
+themselves authorize a write, route deployment, runtime release, or MCP activation. The current
+Informatik-und-Wirtschaft production rows were prepared with a separate guarded transaction,
+while the course-specific provisioner remains optional and is not required for this chatbot.
+
 ### First-login demo content
 
 First-login demo content is a third, request-driven seed path rather than an environment fixture. When a new lecturer submits `changeInitialSettings` with `seedDemoElements: true`, `packages/graphql/src/services/accounts.ts:seedDemoQuestions` creates the owned demo elements and Demo Live Quiz inside the first-login transaction. Selection and case-study demos share one owned `Demo Teaching Activities` answer collection: selection correctness and case-study items are Prisma relations to its entries, while case-study sample ranges embed those generated entry IDs in typed JSON. `packages/graphql/src/services/demoQuestions.ts:seedDemoSelectionAndCaseStudyElements` receives the same transaction context for the relational collection-plus-elements bundle, and `packages/util/src/elements.ts:processElementData` snapshots it into the final untimed live-quiz block.
