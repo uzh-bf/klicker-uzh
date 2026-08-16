@@ -33,10 +33,12 @@
     "turndown": "~7.2.4",
     "typescript": "~6.0.3",
     "uuid": "~10.0.0",
+    "vitest": "~3.2.4",
     "xml2js": "~0.6.2"
   },
   "scripts": {
-    "check": "run-s --npm-path pnpm check:data check:scripts",
+    "check": "run-s --npm-path pnpm check:data check:scripts check:analysis",
+    "check:analysis": "tsc --noEmit -p tsconfig.analysis-check.json",
     "check:data": "tsc --noEmit -p tsconfig.check.json",
     "check:scripts": "tsc --noEmit --noCheck -p tsconfig.json",
     "script": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx",
@@ -55,7 +57,8 @@
     "seed:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx src/data/seedTEST.ts",
     "seed:raw": "ENV=development run-s --npm-path pnpm seed:test seed:assessment-course",
     "seed:raw:course-awards": "tsx src/data/seedCourseAwards.ts",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
+    "seed:test": "ENV=development tsx src/data/seedTEST.ts",
+    "test": "vitest run"
   },
   "engines": {
     "node": "=24"

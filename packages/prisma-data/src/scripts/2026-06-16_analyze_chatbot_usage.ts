@@ -58,6 +58,7 @@ type MessageRecord = {
   participantKey: string
   messageId: string
   messageKey: string
+  parentId: string | null
   role: string
   content: Prisma.JsonValue
   text: string
@@ -73,6 +74,7 @@ type MessageRecord = {
   modelId: string | null
   reasoningEffort: string | null
   reasoningContent: string | null
+  rating: 'UP' | 'DOWN' | null
   creditsUsed: number | null
   attachmentCount: number
 }
@@ -518,12 +520,14 @@ const chatbotSelect = {
 
 const threadMessageSelect = {
   id: true,
+  parentId: true,
   role: true,
   content: true,
   chatMode: true,
   modelId: true,
   reasoningEffort: true,
   reasoningContent: true,
+  rating: true,
   creditsUsed: true,
   createdAt: true,
   attachments: {
@@ -559,12 +563,14 @@ type ThreadRecord = {
   updatedAt: Date
   messages: Array<{
     id: string
+    parentId: string | null
     role: string
     content: Prisma.JsonValue
     chatMode: string | null
     modelId: string | null
     reasoningEffort: string | null
     reasoningContent: string | null
+    rating: 'UP' | 'DOWN' | null
     creditsUsed: unknown
     createdAt: Date
     attachments: Array<{ id: string }>
@@ -2122,6 +2128,7 @@ function flattenMessages(
         participantKey: participantKeyById.get(thread.participantId)!,
         messageId: message.id,
         messageKey: messageKeyById.get(message.id)!,
+        parentId: message.parentId,
         role: message.role,
         content: message.content as Prisma.JsonValue,
         text,
@@ -2139,6 +2146,7 @@ function flattenMessages(
         modelId: message.modelId,
         reasoningEffort: message.reasoningEffort,
         reasoningContent: message.reasoningContent,
+        rating: message.rating,
         creditsUsed: decimalToNumber(message.creditsUsed),
         attachmentCount: message.attachments.length,
       }
@@ -2186,6 +2194,9 @@ function buildSheets(
       assignment.messageKey,
       assignment,
     ])
+  )
+  const messageKeyById = new Map(
+    messages.map((message) => [message.messageId, message.messageKey])
   )
 
   const activeParticipantKeys = new Set(
@@ -3070,11 +3081,13 @@ function buildSheets(
     'threadKey',
     'participantKey',
     'messageKey',
+    'parentMessageKey',
     'role',
     'messageCreatedAt',
     'chatMode',
     'modelId',
     'reasoningEffort',
+    'rating',
     'creditsUsed',
     'contentTypes',
     'textCharCount',
@@ -3106,11 +3119,15 @@ function buildSheets(
         message.threadKey,
         message.participantKey,
         message.messageKey,
+        message.parentId
+          ? (messageKeyById.get(message.parentId) ?? null)
+          : null,
         message.role,
         message.messageCreatedAt,
         message.chatMode,
         message.modelId,
         message.reasoningEffort,
+        message.rating,
         message.creditsUsed,
         contentTypes(message.content),
         message.textCharCount,
@@ -3172,6 +3189,10 @@ async function writeMessageContentJsonl(
           chatMode: message.chatMode,
           modelId: message.modelId,
           reasoningEffort: message.reasoningEffort,
+          parentMessageKey: message.parentId
+            ? (messageKeyById.get(message.parentId) ?? null)
+            : null,
+          rating: message.rating,
           creditsUsed: message.creditsUsed,
           toolCallCount: toolCallCount(message.content),
           attachmentCount: message.attachmentCount,
