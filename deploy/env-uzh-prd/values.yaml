@@ -504,6 +504,7 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+  correlatedResponsesEnabled: false
 
   replicaCount: 4
 

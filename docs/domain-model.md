@@ -59,6 +59,15 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 - **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
 - **Date shifting:** MicroLearning/GroupActivity schedules shift by the local calendar-day delta between old and new course start while preserving the Europe/Zurich wall-clock time across DST changes (`courses.ts:getCourseStartDayDelta`, `courses.ts:applyCourseStartDelta`). The duplication dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).
 
+### LiveQuiz response collection
+
+`LiveQuiz.responseCollectionMode` defaults to `AGGREGATED_ANONYMOUS`. `CORRELATED_EXPORT` stores quiz-scoped respondent identity in `LiveQuizRespondent` and is designed for stable pseudonymous export labels; it does not expose account identifiers. The boundary and rollout contract are recorded in [ADR-0001](./adr/0001-correlated-live-quiz-response-boundary.md).
+
+- Assessment courses always store `AGGREGATED_ANONYMOUS` response-collection mode; assessment-specific response handling remains identifiable through its separate assessment path.
+- Correlated collection is incompatible with gamification because leaderboard state could re-identify respondents.
+- Response mode changes are editable only while a quiz is `DRAFT` or `SCHEDULED`; published or ended quizzes are locked.
+- Manual and scheduled publication share `packages/graphql/src/services/liveQuizPublication.ts:transitionLiveQuizToPublished`. Correlated publication remains blocked unless `LIVE_QUIZ_CORRELATED_RESPONSES_ENABLED` is explicitly enabled for that deployment.
+
 ## Gamification details
 
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.

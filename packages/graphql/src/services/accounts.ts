@@ -19,6 +19,7 @@ import type {
 } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
 import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
+import { lockLiveQuizResponseCollectionState } from './liveQuizResponseCollection.js'
 import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -30,6 +31,11 @@ const COOKIE_SETTINGS: CookieOptions = {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
   sameSite: 'lax',
+}
+
+const TEMPORARY_PARTICIPANT_COOKIE_SETTINGS: CookieOptions = {
+  ...COOKIE_SETTINGS,
+  maxAge: 1000 * 60 * 60 * 24 * 14,
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
@@ -57,11 +63,15 @@ export async function createParticipantToken(participantId: string) {
   )
 }
 
-export async function createTemporaryParticipantToken(participantId: string) {
+export async function createTemporaryParticipantToken(
+  participantId: string,
+  liveQuizId: string
+) {
   return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
+      scopeQuizId: liveQuizId,
     },
     // TODO: use structured configuration approach
     process.env.APP_SECRET as string,
@@ -159,53 +169,83 @@ export async function loginTemporaryParticipant(
   }: { liveQuizId: string; pseudonym: string; avatar?: string | null },
   ctx: Context
 ) {
-  // check if the live quiz exists and is running
-  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: liveQuizId, status: DB.PublicationStatus.PUBLISHED },
-  })
+  const temporaryParticipantId = uuidv4()
+  const trimmedPseudonym = pseudonym.trim()
 
-  if (!liveQuiz) {
-    return null
+  const temporaryLeaderboardEntryData = {
+    id: temporaryParticipantId,
+    username: trimmedPseudonym,
+    avatar: avatar ?? undefined,
+    score: 0,
+    quiz: {
+      connect: { id: liveQuizId },
+    },
   }
 
-  // verify that no other participant or temporary participant in this live quiz exists with the same pseudonym
-  const existingParticipant = await ctx.prisma.participant.findFirst({
-    where: { username: pseudonym.trim() },
-  })
-
-  if (existingParticipant) {
-    return null // error: 'pseudonym already taken'
-  }
-
-  const existingTemporaryParticipant =
-    await ctx.prisma.temporaryLeaderboardEntry.findFirst({
-      where: {
-        username: pseudonym.trim(),
-        quizId: liveQuizId,
-      },
+  const liveQuiz = await ctx.prisma.$transaction(async (prisma) => {
+    const lockedLiveQuiz = await lockLiveQuizResponseCollectionState({
+      prisma,
+      liveQuizId,
     })
+    if (
+      !lockedLiveQuiz ||
+      lockedLiveQuiz.status !== DB.PublicationStatus.PUBLISHED
+    ) {
+      return null
+    }
 
-  if (existingTemporaryParticipant) {
-    return null // error: 'pseudonym already taken'
-  }
+    const existingParticipant = await prisma.participant.findFirst({
+      where: { username: trimmedPseudonym },
+    })
+    if (existingParticipant) {
+      return null
+    }
 
-  // create a temporary leaderboard entry linked to the mentioned live quiz
-  const temporaryParticipant =
-    await ctx.prisma.temporaryLeaderboardEntry.create({
-      data: {
-        id: uuidv4(),
-        username: pseudonym.trim(),
-        avatar: avatar ?? undefined,
-        score: 0,
-        quiz: {
-          connect: { id: liveQuizId },
+    const existingTemporaryParticipant =
+      await prisma.temporaryLeaderboardEntry.findFirst({
+        where: {
+          username: trimmedPseudonym,
+          quizId: liveQuizId,
         },
-      },
+      })
+    if (existingTemporaryParticipant) {
+      return null
+    }
+
+    await prisma.temporaryLeaderboardEntry.create({
+      data: temporaryLeaderboardEntryData,
     })
+
+    if (
+      lockedLiveQuiz.responseCollectionMode ===
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+    ) {
+      await prisma.liveQuizRespondent.create({
+        data: {
+          id: temporaryParticipantId,
+          type: DB.LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
+          liveQuiz: {
+            connect: { id: liveQuizId },
+          },
+        },
+      })
+    }
+
+    return lockedLiveQuiz
+  })
+
+  if (!liveQuiz) return null
 
   // create and return a new valid token for the temporary participant
-  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
-  ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+  const jwt = await createTemporaryParticipantToken(
+    temporaryParticipantId,
+    liveQuizId
+  )
+  ctx.res.cookie(
+    'temporary_participant_token',
+    jwt,
+    TEMPORARY_PARTICIPANT_COOKIE_SETTINGS
+  )
   return jwt
 }
 
@@ -424,7 +464,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the cookie
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
-    ...COOKIE_SETTINGS,
+    ...TEMPORARY_PARTICIPANT_COOKIE_SETTINGS,
     maxAge: 0,
   })
 

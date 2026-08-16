@@ -14,6 +14,7 @@ data:
   APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  LIVE_QUIZ_CORRELATED_RESPONSES_ENABLED: {{ .Values.backendGraphql.correlatedResponsesEnabled | quote }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}

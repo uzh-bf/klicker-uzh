@@ -47,6 +47,7 @@ import {
   FeedbackResponse,
   LiveQuiz,
   LiveQuizMeta,
+  LiveQuizResponseCollectionMode,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
@@ -919,6 +920,10 @@ export const Mutation = builder.mutationType({
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
+          responseCollectionMode: t.arg({
+            type: LiveQuizResponseCollectionMode,
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.manipulateLiveQuiz(args, ctx)
@@ -946,6 +951,10 @@ export const Mutation = builder.mutationType({
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
+          responseCollectionMode: t.arg({
+            type: LiveQuizResponseCollectionMode,
+            required: false,
+          }),
         },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
