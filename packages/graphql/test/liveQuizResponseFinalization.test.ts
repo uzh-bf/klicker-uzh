@@ -22,6 +22,7 @@ import {
   testCleanup,
   testInitialization,
 } from './helpers.js'
+import { handleReconcileLiveQuizPublications } from '../src/services/liveQuizzes.js'
 
 describe('Live quiz correlated response finalization', () => {
   let prisma: PrismaClient
@@ -465,6 +466,56 @@ describe('Live quiz correlated response finalization', () => {
         },
       })
     ).resolves.toHaveLength(2)
+  })
+
+  it('still expires eligible datasets when the publication coordinator encounters a finalization failure', async () => {
+    const now = new Date('2026-08-16T00:00:00.000Z')
+    const expiredAt = new Date(now.getTime() - (90 + 1) * 24 * 60 * 60 * 1000)
+
+    // one poison generation: its salt is present but a label was recorded
+    // that no longer matches the digest order, so finalization throws while
+    // the coordinator keeps running the other phases
+    const poisonQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    const poisonRespondent = await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: poisonQuiz.id,
+        publicationGeneration: 4,
+        exportLabel: 99,
+        finalizedAt: null,
+      },
+    })
+
+    // one healthy expired dataset that must still be deleted in this run
+    const healthyQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    const expiredRespondent = await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: healthyQuiz.id,
+        publicationGeneration: 4,
+        exportLabel: 1,
+        finalizedAt: expiredAt,
+      },
+    })
+
+    const globalCtx = {
+      prisma,
+      redisExec: null,
+      redisAssessmentExec: null,
+      hatchet: { scheduled: { delete: async () => {} } },
+    } as any
+    await expect(
+      handleReconcileLiveQuizPublications({}, globalCtx as any, {} as any)
+    ).rejects.toThrow(/reconciliation phase/)
+
+    await expect(
+      prisma.liveQuizRespondent.findUnique({
+        where: { id: poisonRespondent.id },
+      })
+    ).resolves.not.toBeNull()
+    await expect(
+      prisma.liveQuizRespondent.findUnique({
+        where: { id: expiredRespondent.id },
+      })
+    ).resolves.toBeNull()
   })
 })
 

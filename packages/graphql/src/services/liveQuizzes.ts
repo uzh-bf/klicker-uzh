@@ -3350,19 +3350,57 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 
 export const handleReconcileLiveQuizPublications: HatchetHandlers['handleReconcileLiveQuizPublications'] =
   async (_, globalCtx) => {
-    await reconcileLiveQuizPublications({
-      prisma: globalCtx.prisma,
-      redisExec: globalCtx.redisExec,
-      redisAssessmentExec: globalCtx.redisAssessmentExec,
-      deleteScheduledTask: (taskId) =>
-        globalCtx.hatchet.scheduled.delete(taskId),
-    })
-    await reconcileCorrelatedLiveQuizFinalizations({
-      prisma: globalCtx.prisma,
-    })
-    await reconcileExpiredCorrelatedLiveQuizResponses({
-      prisma: globalCtx.prisma,
-    })
+    // Run the three reconciliation phases independently: a failure in one
+    // phase (for example one stuck generation in finalization) must not
+    // suppress the others, especially retention expiry. The minute-level
+    // task retries failed phases on its next run.
+    const failures: unknown[] = []
+    const phases: Array<[string, () => Promise<unknown>]> = [
+      [
+        'publication',
+        () =>
+          reconcileLiveQuizPublications({
+            prisma: globalCtx.prisma,
+            redisExec: globalCtx.redisExec,
+            redisAssessmentExec: globalCtx.redisAssessmentExec,
+            deleteScheduledTask: (taskId) =>
+              globalCtx.hatchet.scheduled.delete(taskId),
+          }),
+      ],
+      [
+        'finalization',
+        () =>
+          reconcileCorrelatedLiveQuizFinalizations({
+            prisma: globalCtx.prisma,
+          }),
+      ],
+      [
+        'expiry',
+        () =>
+          reconcileExpiredCorrelatedLiveQuizResponses({
+            prisma: globalCtx.prisma,
+          }),
+      ],
+    ]
+
+    for (const [phase, run] of phases) {
+      try {
+        await run()
+      } catch (error) {
+        console.error(
+          `Live quiz publication reconciliation phase '${phase}' failed:`,
+          error
+        )
+        failures.push(error)
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new AggregateError(
+        failures,
+        `Failed ${failures.length} live quiz publication reconciliation phase(s)`
+      )
+    }
     return true
   }
 
