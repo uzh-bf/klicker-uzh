@@ -82,9 +82,15 @@ Current interim-stack evidence:
 - The accepted B2 delivery slice has been cascaded onto the adapted A5/B1
   identity and finalization contract. The remaining gap is the finite-retention
   policy and runtime proof of the participant journey.
-- Source checks are recorded as green; participant browser proof remains
-  blocked by the isolated DevPod's Turbopack route manifest and unavailable
-  Playwright browser runtime.
+- Source checks are recorded as green. Manage EN/DE mode-selection verification
+  is green. A clean generated PWA dev cache and managed DevPod restart restored
+  the dynamic `/session/:id` route; mandatory agent-browser verification then
+  rendered the correlated notice and question, and `AddCorrelatedResponse`
+  returned HTTP 200. The synthetic response was admitted and settled by the
+  existing processor path, leaving one respondent, one binding, one durable
+  response, and no unsettled receipt. The managed response-processor worker
+  still crashes on the known Hatchet SDK logger error, so automatic Hatchet
+  delivery is not claimed; the isolated Playwright runtime remains unavailable.
 
 ## Resolved Grill Decisions
 
@@ -740,6 +746,15 @@ Later research:
   suite (13) and GraphQL finalization suite (6) pass, and the latest full
   precommit remains green (24/24 tasks); the integrated final review and the
   retention and participant-browser gates are still outstanding.
+- 2026-08-16: Recreated generated PWA dev state and restarted the managed B2
+  DevPod, which restored the dynamic participant route. Mandatory
+  agent-browser verification rendered the correlated notice and question, and
+  a participant submission returned HTTP 200 from `AddCorrelatedResponse`.
+  The existing correlated processor then settled the receipt and persisted one
+  synthetic respondent response; the managed response worker itself remains
+  unavailable after the Hatchet SDK `this.logger[message.type]` crash, and the
+  isolated Playwright runtime is still unavailable. Retention policy and the
+  integrated final review remain open.
 
 ## Goal Prompt Requirements
 
@@ -759,10 +774,10 @@ If handed to another agent:
 
 1. Record the finite retention period, deletion trigger, and enforcement owner;
    until then, keep correlated publication disabled.
-2. Resolve the isolated DevPod runtime blockers, then execute the existing
-   participant Playwright journey and mandatory PWA notice checks. Manage EN/DE
-   mode-selection verification is already green; no participant notice or
-   response-submission browser result is claimed yet.
+2. Restore a healthy managed response-worker runtime and, if the browser
+   runtime becomes available, execute the existing participant Playwright
+   journey. The mandatory agent-browser notice and response-admission checks
+   are now green; Manage EN/DE mode-selection verification is already green.
 3. Run the integrated final review. Only after the retention and runtime gates
    are clear should the existing draft PR stack be prepared for remote update;
    this plan does not authorize push, merge, or ready status.
