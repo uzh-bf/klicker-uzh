@@ -2,11 +2,16 @@
 
 - **Status:** Accepted — 2026-08-16
 
-> **Name collision.** "Catalyst" in this record always means the private
-> `uzh-bf/klicker-uzh-catalyst` repository. It is unrelated to the pre-existing
-> auth concept of the same name — the `asUserWithCatalyst` scope and
-> `reduceCatalyst` in `packages/util/src/auth.ts`, which flags a user by Edu-ID
-> affiliation. The two never refer to each other.
+> **One name, two layers.** Catalyst is the paid tier, and the repository is named
+> after it. The entitlement half already exists in public: `catalystInstitutional`
+> and `catalystIndividual` on `User` (migration `20230826093751_catalyst`), derived
+> from Edu-ID affiliation by `reduceCatalyst` in `packages/util/src/auth.ts`,
+> surfaced as the `catalyst` auth scope in `packages/graphql/src/builder.ts`, and
+> spent through `asUserWithCatalyst` on 23 mutations in
+> `packages/graphql/src/schema/mutation.ts` — practice quizzes, microlearnings, and
+> group activities. This record is about the other half: where the _implementation_
+> of a paid capability lives. Read a bare "Catalyst" below as the private
+> `uzh-bf/klicker-uzh-catalyst` services.
 
 ## Context
 
@@ -80,6 +85,11 @@ commit trail — is the artifact that must be right.
   and quiz platform, and deterministic rubric grading all function alone.
 - Learning analytics and content generation become visibly Catalyst-gated features.
   The UI must say so rather than failing silently, which is new work in public.
+- Entitlement and availability are two different gates, and both apply. The existing
+  `catalyst` scope answers "is this user on the paid tier"; this ADR's floor answers
+  "are the private services deployed at all". A self-hosting institution can have
+  entitled users and no Catalyst deployment, so a stub capability cannot infer
+  availability from `asUserWithCatalyst` alone.
 - Open PRs that currently build private-side implementations in the public repo have
   to be reclassified against this table. The knowledge-graph stack splits along the
   orchestration boundary rather than moving wholesale.
