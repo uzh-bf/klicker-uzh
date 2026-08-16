@@ -86,7 +86,7 @@ describe('correlated live-quiz response export integration', () => {
     const instance = await prisma.elementInstance.findFirstOrThrow({
       where: { elementBlockId: block.id },
     })
-    const finalizedAt = new Date('2026-08-15T19:00:00.000Z')
+    const finalizedAt = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const [currentRespondent, previousRespondent] = await Promise.all([
       prisma.liveQuizRespondent.create({
         data: {
@@ -186,5 +186,78 @@ describe('correlated live-quiz response export integration', () => {
     await expect(
       getCorrelatedLiveQuizResponseExport({ id: liveQuiz.id }, userOneCtx)
     ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_INVALID_RESPONSE')
+  })
+
+  it('denies export after the retention boundary even before cleanup deletes the rows', async () => {
+    const element = await prisma.element.create({
+      data: {
+        name: uuid(),
+        content: uuid(),
+        type: ElementType.CONTENT,
+        options: {},
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    const liveQuiz = await seedLiveQuiz(
+      {
+        elements: [{ id: element.id, type: ElementType.CONTENT }],
+        status: PublicationStatus.ENDED,
+      },
+      userOneCtx
+    )
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: {
+        responseCollectionMode:
+          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+        publicationGeneration: 5,
+        finishedAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000),
+      },
+    })
+    await recomputeDerivedPermissions(
+      { liveQuizId: liveQuiz.id, userId: userOneCtx.user.sub },
+      prisma
+    )
+    const block = await prisma.elementBlock.findFirstOrThrow({
+      where: { liveQuizId: liveQuiz.id },
+    })
+    await prisma.elementBlock.update({
+      where: { id: block.id },
+      data: { status: ElementBlockStatus.EXECUTED },
+    })
+    const instance = await prisma.elementInstance.findFirstOrThrow({
+      where: { elementBlockId: block.id },
+    })
+    const expiredAt = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000)
+    const respondent = await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 5,
+        type: null,
+        exportLabel: 1,
+        finalizedAt: expiredAt,
+      },
+    })
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: expiredAt,
+        response: { value: 'expired-answer' },
+        timeSpent: 1,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 1,
+        correctnessPoints: 1,
+        bonusPoints: 0,
+        elementBlockExecution: 0,
+        instanceId: instance.id,
+        respondentId: respondent.id,
+      },
+    })
+
+    await expect(
+      getLiveQuizEvaluation({ id: liveQuiz.id }, userOneCtx)
+    ).resolves.toMatchObject({ canExportCorrelatedResponses: false })
+    await expect(
+      getCorrelatedLiveQuizResponseExport({ id: liveQuiz.id }, userOneCtx)
+    ).rejects.toThrow('LIVE_QUIZ_CORRELATED_EXPORT_EXPIRED')
   })
 })

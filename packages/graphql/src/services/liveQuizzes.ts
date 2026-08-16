@@ -54,6 +54,7 @@ import {
 import {
   endLiveQuizAndFinalizeCorrelatedGeneration,
   finalizeCorrelatedLiveQuiz,
+  getCorrelatedResponseRetentionCutoff,
   reconcileCorrelatedLiveQuizFinalizations,
   reconcileExpiredCorrelatedLiveQuizResponses,
 } from './liveQuizResponseFinalization.js'
@@ -2468,6 +2469,7 @@ export async function getLiveQuizEvaluation(
       activeBindingCount,
       pendingResponseCount,
       invalidResponseCount,
+      expiredRespondentCount,
     ] = await Promise.all([
       ctx.prisma.liveQuizRespondent.count({
         where: {
@@ -2498,12 +2500,22 @@ export async function getLiveQuizEvaluation(
         id,
         liveQuiz.publicationGeneration
       ),
+      ctx.prisma.liveQuizRespondent.count({
+        where: {
+          liveQuizId: id,
+          publicationGeneration: liveQuiz.publicationGeneration,
+          finalizedAt: {
+            lte: getCorrelatedResponseRetentionCutoff(new Date()),
+          },
+        },
+      }),
     ])
     canExportCorrelatedResponses =
       unfinalizedRespondentCount === 0 &&
       activeBindingCount === 0 &&
       pendingResponseCount === 0 &&
-      invalidResponseCount === 0n
+      invalidResponseCount === 0n &&
+      expiredRespondentCount === 0
   }
 
   // depending on the quiz assessment setting, select the corresponding redis instance

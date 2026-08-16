@@ -7,6 +7,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
+import { getCorrelatedResponseRetentionCutoff } from './liveQuizResponseFinalization.js'
 
 const MAX_CORRELATED_EXPORT_RESPONSE_COUNT = 25_000n
 const MAX_CORRELATED_EXPORT_RESPONSE_BYTES = BigInt(
@@ -85,6 +86,19 @@ export async function getCorrelatedLiveQuizResponseExport(
           )
         ) {
           throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_NOT_READY', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          })
+        }
+        // The retention window is an access boundary, not only a cleanup
+        // schedule: once a finalized dataset passes the cutoff it stays
+        // unreadable even while bounded deletion batches catch up.
+        const retentionCutoff = getCorrelatedResponseRetentionCutoff(new Date())
+        if (
+          respondents.some(
+            (respondent) => respondent.finalizedAt! <= retentionCutoff
+          )
+        ) {
+          throw new GraphQLError('LIVE_QUIZ_CORRELATED_EXPORT_EXPIRED', {
             extensions: { code: 'BAD_USER_INPUT' },
           })
         }

@@ -25,7 +25,7 @@ const defaultLiveQuiz: LiveQuizFixture = {
   status: PublicationStatus.ENDED,
 }
 
-const finalizedAt = new Date('2026-08-15T18:00:00.000Z')
+const finalizedAt = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
 const defaultRespondents = [
   { id: 'respondent-id', exportLabel: 1, finalizedAt },
