@@ -1,10 +1,31 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  createLiveQuizRespondentToken,
+  getLiveQuizRespondentCookieName,
+  resolveLiveQuizResponseIdentity,
+  verifyJWT,
+  type JWTPayload,
+  type LiveQuizResponseIdentity,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import { handleAggregateResponse } from './aggregateResponse.js'
+import {
+  getCorrelatedResponseAdmission,
+  serializeLiveQuizRespondentCookie,
+} from './correlatedResponseAdmission.js'
+import { handleCorrelatedResponse } from './correlatedResponseHandler.js'
+import { dispatchPendingCorrelatedResponses } from './correlatedResponseOutbox.js'
+import {
+  hasJsonContentType,
+  isAllowedCorsOrigin,
+  loadLiveQuizResponseInstance,
+  parseLiveQuizResponseRequest,
+} from './liveQuizResponseRequest.js'
 
 const redis = new Redis({
   family: 4,
@@ -27,11 +48,14 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
+const CORRELATED_OUTBOX_POLL_INTERVAL_MS = 5_000
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
-  // Only allow explicitly whitelisted origins, and never allow "null"
-  if (origin && origin !== 'null' && CORS_ALLOWED_ORIGINS.includes(origin)) {
+  if (
+    origin &&
+    isAllowedCorsOrigin({ origin, allowedOrigins: CORS_ALLOWED_ORIGINS })
+  ) {
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
     res.setHeader('Access-Control-Allow-Credentials', 'true')
@@ -90,7 +114,108 @@ async function readBody(req: IncomingMessage): Promise<any> {
   }
 }
 
-async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
+function getResponseIdentityConfig() {
+  const secret = process.env.APP_SECRET
+  const issuer = process.env.APP_ORIGIN_API
+  if (!secret || !issuer) {
+    throw new Error(
+      'APP_SECRET and APP_ORIGIN_API are required for correlated live quiz responses'
+    )
+  }
+
+  return { secret, issuer }
+}
+
+async function ensureCorrelatedResponseIdentity({
+  req,
+  res,
+  liveQuizId,
+}: {
+  req: IncomingMessage
+  res: ServerResponse
+  liveQuizId: string
+}): Promise<LiveQuizResponseIdentity> {
+  const { secret, issuer } = getResponseIdentityConfig()
+  const cookieHeader =
+    typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
+  const existingIdentity = await resolveLiveQuizResponseIdentity({
+    cookieHeader,
+    liveQuizId,
+    secret,
+    issuer,
+  })
+  if (existingIdentity) {
+    return existingIdentity
+  }
+
+  const respondentId = randomUUID()
+  const token = await createLiveQuizRespondentToken({
+    respondentId,
+    liveQuizId,
+    secret,
+    issuer,
+  })
+  const identity: LiveQuizResponseIdentity = {
+    kind: 'anonymous',
+    id: respondentId,
+    liveQuizId,
+    token,
+    cookieName: getLiveQuizRespondentCookieName(liveQuizId),
+  }
+
+  res.setHeader(
+    'Set-Cookie',
+    serializeLiveQuizRespondentCookie({
+      token,
+      liveQuizId,
+      secure:
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    })
+  )
+  return identity
+}
+
+async function handleInitializeLiveQuizResponseIdentity(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    return sendJson(req, res, 200, { status: 'not_required' })
+  }
+
+  const payload = await readBody(req)
+  if (!payload || typeof payload.liveQuizId !== 'string') {
+    return badRequest(req, res, 'Missing required field: liveQuizId')
+  }
+
+  const admission = await getCorrelatedResponseAdmission({
+    database: prisma,
+    liveQuizId: payload.liveQuizId,
+    cookieHeader:
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
+  })
+  if (admission === 'not_found') {
+    return sendJson(req, res, 404, { error: 'Live quiz not found' })
+  }
+  if (admission === 'not_required') {
+    return sendJson(req, res, 200, { status: 'not_required' })
+  }
+  if (admission === 'pin_required') {
+    return sendJson(req, res, 403, { error: 'Live quiz PIN required' })
+  }
+  await ensureCorrelatedResponseIdentity({
+    req,
+    res,
+    liveQuizId: payload.liveQuizId,
+  })
+  return sendJson(req, res, 200, { status: 'ready' })
+}
+
+async function readLiveQuizResponseRequest(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
   let payload: any
   try {
     payload = await readBody(req)
@@ -98,62 +223,63 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     return badRequest(req, res, err.message)
   }
 
-  if (!payload || typeof payload !== 'object') {
-    return badRequest(req, res, 'Body must be a JSON object')
+  const parsed = parseLiveQuizResponseRequest({
+    payload,
+    cookieHeader:
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined,
+  })
+  if (!parsed.ok) {
+    badRequest(req, res, parsed.message)
+    return null
   }
 
-  const { response, liveQuizId, instanceId } = payload
-  if (!response || !liveQuizId || typeof instanceId === 'undefined') {
-    return badRequest(
-      req,
-      res,
-      'Missing required fields: response, liveQuizId, instanceId'
-    )
-  }
+  return parsed.request
+}
 
-  // Only forward participant-related cookies. If both exist, include both.
-  let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
-    const raw = req.headers['cookie']
-    const parts = raw.split(';').map((s) => s.trim())
-    const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
-    )
-    const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
-    )
-    const forwarded: string[] = []
-    if (participantPair) forwarded.push(participantPair)
-    if (temporaryPair) forwarded.push(temporaryPair)
-    if (forwarded.length > 0) {
-      cookie = forwarded.join('; ')
-    }
-  }
+async function handleAddAggregateResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  const request = await readLiveQuizResponseRequest(req, res)
+  if (!request) return
 
-  const responseTimestamp = Date.now()
-  const message = {
-    messageId: randomUUID(),
-    sessionId: String(liveQuizId),
-    instanceId: String(instanceId),
-    response, // pass through as-is; worker validates
-    cookie,
-    responseTimestamp,
-  }
+  const { responseCollectionMode } = await loadLiveQuizResponseInstance({
+    database: prisma,
+    redis,
+    request,
+  })
+  const result = await handleAggregateResponse({
+    request,
+    responseCollectionMode,
+    pushEvent: (eventName, message) =>
+      hatchetClient.events.push(eventName, message),
+  })
+  return sendJson(req, res, result.status, result.body)
+}
 
-  // determine if the participant is logged in with a valid student cookie (temporary or standard)
-  const isAuthenticatedParticipant =
-    cookie &&
-    (cookie.includes('participant_token=') ||
-      cookie.includes('temporary_participant_token='))
+async function handleAddCorrelatedResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  const request = await readLiveQuizResponseRequest(req, res)
+  if (!request) return
 
-  // depending on the authentication state, add the response to the correct hatchet event queue
-  const eventName = isAuthenticatedParticipant
-    ? 'response-received:authenticated'
-    : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
-
-  await hatchetClient.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
+  const { instanceInfo, responseCollectionMode } =
+    await loadLiveQuizResponseInstance({
+      database: prisma,
+      redis,
+      request,
+    })
+  const result = await handleCorrelatedResponse({
+    request,
+    instanceInfo,
+    responseCollectionMode,
+    database: prisma,
+    getIdentityConfig: getResponseIdentityConfig,
+    pushEvent: (eventName, message) =>
+      hatchetClient.events.push(eventName, message),
+  })
+  return sendJson(req, res, result.status, result.body)
 }
 
 async function handleAddAssessmentResponse(
@@ -343,6 +469,15 @@ async function handleAddAssessmentResponse(
 
 const server = createServer(async (req, res) => {
   try {
+    if (
+      !isAllowedCorsOrigin({
+        origin: req.headers.origin,
+        allowedOrigins: CORS_ALLOWED_ORIGINS,
+      })
+    ) {
+      return sendJson(req, res, 403, { error: 'Origin not allowed' })
+    }
+
     // handle CORS preflight requests
     if (req.method === 'OPTIONS') {
       setCorsHeaders(req, res)
@@ -360,16 +495,40 @@ const server = createServer(async (req, res) => {
       return sendJson(req, res, 200, { status: 'ok' })
     }
 
+    if (
+      req.method === 'POST' &&
+      !hasJsonContentType(
+        typeof req.headers['content-type'] === 'string'
+          ? req.headers['content-type']
+          : undefined
+      )
+    ) {
+      return sendJson(req, res, 415, {
+        error: 'Content-Type must be application/json',
+      })
+    }
+
     // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
-      // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
         return await handleAddAssessmentResponse(req, res)
-      } else {
-        // call the standard processing function, which will distinguish between authenticated and anonymous modes
-        // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
-        return await handleAddResponse(req, res)
       }
+      return await handleAddAggregateResponse(req, res)
+    }
+
+    if (
+      url.pathname === '/AddCorrelatedResponse' &&
+      req.method === 'POST' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      return await handleAddCorrelatedResponse(req, res)
+    }
+
+    if (
+      url.pathname === '/InitializeLiveQuizResponseIdentity' &&
+      req.method === 'POST'
+    ) {
+      return await handleInitializeLiveQuizResponseIdentity(req, res)
     }
 
     // fallback to 404 Not Found
@@ -406,6 +565,36 @@ async function initializeService() {
   } catch (error) {
     console.error('Failed to connect to assessment Redis:', error)
     throw error
+  }
+
+  if (process.env.ASSESSMENT_MODE !== 'true') {
+    const dispatchPending = async () => {
+      const result = await dispatchPendingCorrelatedResponses({
+        database: prisma,
+        pushEvent: (eventName, message) =>
+          hatchetClient.events.push(eventName, message),
+      })
+      if (result.failed > 0) {
+        console.error('Correlated response outbox delivery failures', result)
+      }
+    }
+
+    const scheduleNextDispatch = () => {
+      const outboxTimer = setTimeout(() => {
+        void dispatchPending()
+          .catch((error) => {
+            console.error('Correlated response outbox dispatch failed', error)
+          })
+          .finally(scheduleNextDispatch)
+      }, CORRELATED_OUTBOX_POLL_INTERVAL_MS)
+      outboxTimer.unref()
+    }
+
+    void dispatchPending()
+      .catch((error) => {
+        console.error('Correlated response outbox dispatch failed', error)
+      })
+      .finally(scheduleNextDispatch)
   }
 
   console.log('All connections established successfully')
