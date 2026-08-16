@@ -215,9 +215,14 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     if (
       responseCollectionMode ===
         LiveQuizResponseCollectionMode.CorrelatedExport &&
-      response.status === 401 &&
-      !respondentToken
+      response.status === 401
     ) {
+      // A 401 can also mean the cached bearer belongs to an older
+      // publication generation (for example after abort and republication
+      // in a cookie-blocked tab), so drop both cached initializations and
+      // fetch a fresh fallback token once before retrying.
+      responseIdentityInitializations.delete(`${liveQuizId}:cookie`)
+      responseIdentityInitializations.delete(`${liveQuizId}:fallback`)
       respondentToken = await ensureCorrelatedResponseIdentity(liveQuizId, true)
       if (respondentToken) {
         requestOptions = {
