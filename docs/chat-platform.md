@@ -382,11 +382,12 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
-an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it dedupes by
-file/page/url and normalized video range (`startSec`/`endSec`), so citations for different video
-ranges remain separate, then numbers what survives **1..N in first-appearance order across every
-doc_query call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and
-are easy to break independently:
+an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
+the normalizer unwraps that compatibility layer before applying the same rules. It treats the
+pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
+(`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
+survives **1..N in first-appearance order across every doc_query call in one message**, capped at
+`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly

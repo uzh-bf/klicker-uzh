@@ -479,6 +479,37 @@ describe('normalizeSourcesFromParts', () => {
     expect(result[0]?.title).toBe('from-structured.pdf')
   })
 
+  test('unwraps the structuredContent result wrapper', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: '{"mode":"documents","sources":[]}' }],
+        structuredContent: {
+          result: JSON.stringify({
+            mode: 'documents',
+            sources: [
+              {
+                reference: 'urn:video-ingestion:sha256:video#t=42.0,59.0',
+                source_type: 'video',
+                title: 'Lecture 1',
+                chunks: [
+                  { content: 'Video context', start_sec: 42, end_sec: 59 },
+                ],
+              },
+            ],
+          }),
+        },
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      type: 'video',
+      title: 'Lecture 1',
+      startSec: 42,
+      endSec: 59,
+    })
+  })
+
   test('envelope with non-JSON text content yields no sources', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', {
