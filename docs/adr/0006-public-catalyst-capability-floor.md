@@ -43,18 +43,27 @@ Three possible floors exist:
 
 The floor is set per capability, not globally.
 
-| Capability                   | Public floor                                 | What a Catalyst-less deployment gets                                                                                                                                                                                            |
-| ---------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tutoring / student chat      | **Working simple version**                   | The current production approach stays public: retrieval-augmented chat built on the AI SDK with a system prompt and MCP tools. This is a real tutoring experience, not a placeholder. The Mastra engine is the Catalyst upgrade |
-| Knowledge graph              | **Working control plane, stub construction** | Public owns the lecturer workspace, the build request, and the terminal build status. Graph construction itself is Catalyst-only, so builds do not complete without it                                                          |
-| Learning analytics           | **Stub**                                     | Nothing. A degraded psychometric engine produces numbers that look authoritative and are not, and wrong learning analytics are worse than absent ones                                                                           |
-| Content generation           | **Stub**                                     | Nothing. There is no meaningful degraded mode for generating questions from course material                                                                                                                                     |
-| Formative feedback / grading | **Degraded default**                         | Deterministic rubric scoring without the AI layer. Genuinely useful on its own, and honest about what it does not do                                                                                                            |
+| Capability                   | Public floor                                 | What a Catalyst-less deployment gets                                                                                                                                                                                                                                                                                                               |
+| ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tutoring / student chat      | **Working simple version**                   | The chat surface, the AI SDK loop, the system prompt, and the MCP client. A working chatbot, ungrounded — it answers from the model's own knowledge. Retrieval is not public: `doc_query` is a tool name public chat namespaces and cites, never one it implements, and the corpus behind it is Catalyst. The Mastra engine is the further upgrade |
+| Knowledge graph              | **Working control plane, stub construction** | Public owns the lecturer workspace, the build request, and the terminal build status. Graph construction itself is Catalyst-only, so builds do not complete without it                                                                                                                                                                             |
+| Learning analytics           | **Stub**                                     | Nothing. A degraded psychometric engine produces numbers that look authoritative and are not, and wrong learning analytics are worse than absent ones                                                                                                                                                                                              |
+| Content generation           | **Stub**                                     | Nothing. There is no meaningful degraded mode for generating questions from course material                                                                                                                                                                                                                                                        |
+| Formative feedback / grading | **Degraded default**                         | Deterministic rubric scoring without the AI layer. Genuinely useful on its own, and honest about what it does not do                                                                                                                                                                                                                               |
 
 `chat-api` and `chat-engine` are the public platform boundary and build around
 _both_ engine implementations — the public AI SDK engine and the Catalyst Mastra
 engine — rather than around either one specifically. This is the mechanism that
 makes the tutoring row above possible without forking the surface.
+
+**For tutoring, MCP is that public API.** Public chat is an MCP client: it connects
+to servers by URL (`apps/chat/src/services/mcpClients.ts`), namespaces their tools,
+and renders their output as sources and citations. It does not know what a tool does
+on the other side. Retrieval therefore needs no special case — a Catalyst deployment
+registers a `doc_query` server and the same public surface becomes grounded, while a
+deployment without one keeps working ungrounded. Adding retrieval to public would
+mean adding a corpus, embeddings, and a vector store to this repository, which is
+what the floor rules out.
 
 A capability whose public floor is **Stub** must still ship its contract, its
 authorization, and its product state in public. Only the computation is private.
@@ -81,8 +90,10 @@ commit trail — is the artifact that must be right.
 
 ## Consequences
 
-- Self-hosting KlickerUZH remains worthwhile: a working chatbot, a working editor
-  and quiz platform, and deterministic rubric grading all function alone.
+- Self-hosting KlickerUZH remains worthwhile: a working editor and quiz platform,
+  deterministic rubric grading, and a working chatbot all function alone — the
+  chatbot ungrounded, and able to be grounded by any MCP server the operator runs,
+  Catalyst's or their own.
 - Learning analytics and content generation become visibly Catalyst-gated features.
   The UI must say so rather than failing silently, which is new work in public.
 - Entitlement and availability are two different gates, and both apply. The existing
