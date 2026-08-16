@@ -147,6 +147,11 @@ async function processResolvedCorrelatedResponse({
       return { status: 400 }
     }
 
+    if (prepared.type === 'FREE_TEXT') {
+      await releaseInvalidResponse()
+      return { status: 400 }
+    }
+
     const effectPlan = planCorrelatedQuestionResponseEffects({
       type: prepared.type,
       choiceCount:

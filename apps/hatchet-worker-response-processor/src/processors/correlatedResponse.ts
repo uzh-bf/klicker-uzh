@@ -410,7 +410,7 @@ export function buildCorrelatedResponseCreateData({
   instanceId,
   blockExecution,
   response,
-  submittedAt,
+  submittedAt: _submittedAt,
   correctnessPercentage,
   basePoints,
   correctnessPoints,
@@ -426,8 +426,12 @@ export function buildCorrelatedResponseCreateData({
   correctnessPoints: number
   bonusPoints: number
 }): Prisma.LiveQuizResponseCreateInput {
+  // The shared LiveQuizResponse model keeps these required legacy columns for
+  // assessment rows. Correlated teaching rows deliberately persist no event
+  // timestamp or time-spent value: the epoch and -1 are non-information
+  // sentinels, and the response timestamp remains transient for grading only.
   return {
-    submittedAt: new Date(submittedAt),
+    submittedAt: new Date(0),
     response,
     timeSpent: -1,
     correctness:
@@ -534,11 +538,7 @@ export async function persistAcceptedCorrelatedResponse({
         instanceId,
         blockExecution,
       })
-      return existingResponse &&
-        isPersistedResponseRetry({
-          existingSubmittedAt: existingResponse.submittedAt,
-          responseTimestamp: submittedAt,
-        })
+      return existingResponse
         ? ({
             status: 'persisted' as const,
             applyRedisEffects,
@@ -626,16 +626,6 @@ export async function prepareCorrelatedMessageProcessing({
   }
 }
 
-export function isPersistedResponseRetry({
-  existingSubmittedAt,
-  responseTimestamp,
-}: {
-  existingSubmittedAt: Date
-  responseTimestamp: number
-}) {
-  return existingSubmittedAt.getTime() === responseTimestamp
-}
-
 async function findPersistedCorrelatedResponse({
   database,
   owner,
@@ -653,6 +643,6 @@ async function findPersistedCorrelatedResponse({
       elementBlockExecution: blockExecution,
       respondentId: owner.id,
     },
-    select: { submittedAt: true },
+    select: { id: true },
   })
 }

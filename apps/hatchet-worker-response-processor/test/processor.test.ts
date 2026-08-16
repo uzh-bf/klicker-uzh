@@ -148,6 +148,74 @@ describe('response processor orchestration', () => {
     assert.deepEqual(settledMessageIds, [messageId])
   })
 
+  it('settles a free-text correlated delivery without persisting it', async () => {
+    const messageId = randomUUID()
+    const liveQuizId = randomUUID()
+    const respondentId = randomUUID()
+    const responseKey = buildCorrelatedResponseKey({
+      liveQuizId,
+      publicationGeneration: 3,
+      instanceId: '42',
+      blockExecution: '1',
+      identityKey: `respondent:${respondentId}`,
+    })
+    const eventPayload = encryptCorrelatedResponseEvent({
+      message: {
+        messageId,
+        sessionId: liveQuizId,
+        instanceId: '42',
+        publicationGeneration: 3,
+        response: { value: 'identifying free-text' },
+        responseTimestamp: 123,
+        acceptedIdentity: {
+          kind: 'anonymous',
+          id: respondentId,
+        },
+        instanceInfo: {
+          type: 'FREE_TEXT',
+          blockExecution: '1',
+          sessionBlockId: '7',
+        },
+      },
+      secret: 'test-secret',
+    })
+    let settlementCount = 0
+
+    const result = await processCorrelatedResponseMessageWithDependencies(
+      { messageId },
+      createContext(),
+      {
+        database: {
+          liveQuizPendingResponse: {
+            findUnique: async () => ({
+              eventPayload,
+              publicationGeneration: 3,
+              responseKey,
+              settledAt: null,
+            }),
+            updateMany: async () => {
+              settlementCount += 1
+              return { count: 1 }
+            },
+          },
+          liveQuizRespondent: {
+            findUnique: async () => ({
+              id: respondentId,
+              liveQuizId,
+              publicationGeneration: 3,
+              finalizedAt: null,
+            }),
+          },
+        } as any,
+        redis: {} as any,
+        secret: 'test-secret',
+      }
+    )
+
+    assert.deepEqual(result, { status: 400 })
+    assert.equal(settlementCount, 1)
+  })
+
   it('leaves a correlated delivery unsettled for an operational retry', async () => {
     const messageId = randomUUID()
     const respondentId = randomUUID()

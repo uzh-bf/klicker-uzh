@@ -22,7 +22,6 @@ import {
   CorrelatedResponseIdentityError,
   CorrelatedResponseMutationLimitError,
   getCorrelatedProcessedKey,
-  isPersistedResponseRetry,
   persistAcceptedCorrelatedResponse,
   prepareCorrelatedMessageProcessing,
   resolveCorrelatedResponseDelivery,
@@ -361,7 +360,8 @@ describe('correlated response persistence helpers', () => {
     assert.equal(data.correctness, ResponseCorrectness.PARTIAL)
     assert.deepEqual(data.respondent, { connect: { id: respondentId } })
     assert.equal('participant' in data, false)
-    assert.equal(data.submittedAt.getTime(), submittedAt)
+    assert.equal(data.submittedAt.getTime(), 0)
+    assert.equal(data.timeSpent, -1)
   })
 
   it('builds the same respondent shape for anonymous identity', () => {
@@ -384,24 +384,6 @@ describe('correlated response persistence helpers', () => {
 
     assert.deepEqual(data.respondent, { connect: { id: respondentId } })
     assert.equal('participant' in data, false)
-  })
-
-  it('recognizes a persisted retry by its accepted timestamp', () => {
-    const timestamp = Date.now()
-    assert.equal(
-      isPersistedResponseRetry({
-        existingSubmittedAt: new Date(timestamp),
-        responseTimestamp: timestamp,
-      }),
-      true
-    )
-    assert.equal(
-      isPersistedResponseRetry({
-        existingSubmittedAt: new Date(timestamp),
-        responseTimestamp: timestamp + 1,
-      }),
-      false
-    )
   })
 
   it('scopes the processed marker to one execution', () => {
@@ -622,7 +604,7 @@ describe('correlated response persistence helpers', () => {
           throw { code: 'P2002' }
         },
         liveQuizResponse: {
-          findFirst: async () => ({ submittedAt: new Date(timestamp) }),
+          findFirst: async () => ({ id: 'response-id' }),
         },
       } as any,
       liveQuizId: randomUUID(),
