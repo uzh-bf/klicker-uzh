@@ -65,11 +65,14 @@
 
 ## Progress
 
-- Status: plan approved and ready for S1.
-- Completed: takeover validation, contract hash verification, live base/fetch check, selector convention inspection, planning-stage review.
-- Remaining: commit this plan; implement and verify S1; run the combined final review; update this progress note.
-- Latest verification: clean branch at `2d9c5d04835430301fe49da31260fe657387eb13`; config and rendered `data-cy` markers inspected.
-- Runtime gate: focused Chromium is not yet proven because devrouter reports an active workspace lifecycle at PID `28197`; do not expand environment repair.
+- Status: S1 implemented and statically verified; implementation commit and combined final review remain.
+- Completed: takeover validation, contract hash verification, live base/fetch check, selector convention inspection, planning-stage review, plan commit `ce560a2fc`, and the five planned locator changes.
+- Remaining: commit S1; run the combined final review; record the terminal boundary.
+- Latest verification: `git diff --check`; Prettier passed for `playwright/tests/Y-chat.spec.ts`; TypeScript passed for `playwright/tsconfig.json`. The latter two ran through their installed binaries under the DevPod's Node 24 runtime because the container `pnpm` wrapper requested a non-interactive module purge.
+- Test delta: added 0, changed 2 existing E2E journeys, removed 0.
+- Simplifier: not required — mechanical test-selector edit.
+- Slice review: not required — no security, data-integrity, architecture, cross-system, irreversible, or other named risk boundary changed.
+- Runtime gate: focused Chromium is not proven because the bounded attempt found devrouter's existing workspace lifecycle lock at PID `28197`; environment repair is out of scope for this resumed task.
 - Required delivery layer: verified local commits.
-- Achieved delivery layer: no commits yet.
+- Achieved delivery layer: committed plan plus statically verified implementation changes pending their commit.
 - Withheld: push, PR, merge, deployment, cluster access, cleanup, and any other work item.

@@ -95,11 +95,11 @@ test.describe('Chatbot Authentication & Access Control', () => {
     })
 
     expect(response?.status()).toBe(404)
-    await expect(page.getByTestId('chat-not-found')).toBeVisible()
-    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
       'Chatbot not found'
     )
-    await expect(page.getByTestId('chat-not-found-home')).toContainText(
+    await expect(page.locator('[data-cy="chat-not-found-home"]')).toContainText(
       'Open KlickerUZH'
     )
   })
@@ -114,8 +114,8 @@ test.describe('Chatbot Authentication & Access Control', () => {
     })
 
     expect(response?.status()).toBe(404)
-    await expect(page.getByTestId('chat-not-found')).toBeVisible()
-    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
       'Chatbot not found'
     )
   })
