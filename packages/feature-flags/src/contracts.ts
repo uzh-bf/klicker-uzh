@@ -41,6 +41,7 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
+  environment: FeatureFlagEnvironment
 }
 
 // An absent value is the ordinary local case and stays `development`. A value
