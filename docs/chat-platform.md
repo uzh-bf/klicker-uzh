@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-14'
+timestamp: '2026-08-16'
 tags:
   - frontend
   - chat
@@ -255,13 +255,22 @@ an LLM key.
 
 The history rail is a derived navigation view over `activeThread.messages`, which is the current
 branch path reconstructed by `chatStore.switchToBranch`. It never reads `allMessages`, persists
-anything, or renders sibling branches. User and assistant message entries use the assistant-ui
-`data-message-id` boundary plus a rail-specific focus target; grouped reasoning, tool calls, and
-client error parts get deterministic part anchors from the message id and part identity. The desktop
-rail is a vertical `nav`; mobile collapses it into a horizontal, numbered control. Entry activation
-scrolls and focuses the matching transcript target, while a scroll spy highlights the entry at the
-current reading position. The projection normalizes running, partial, and error states so loading,
-aborted, and incomplete turns remain navigable without duplicating message rows.
+anything, or renders sibling branches. Adjacent user and assistant messages are projected into one
+turn landmark; user-only and assistant-only messages remain navigable as orphan turns. On desktop
+("md" and up) the rail is a vertical column of bounded ticks, one per turn (or per bounded turn
+range); each tick targets a stable message-root focus target and exposes the complete user message
+and assistant response in an on-demand hover/focus popover. On mobile the tick strip is replaced by
+a single 44px trigger button (current turn / total) that opens the same history dialog used by the
+desktop current tick — precision tick targets do not meet touch guidelines, so the dialog is the
+only mobile navigation surface. Reasoning, tool calls, and client error parts stay in the transcript
+and influence the turn status, but do not create rail landmarks or part anchors. Details appear only
+on hover or focus.
+Entry activation scrolls and focuses the matching transcript target, while a token-guarded
+programmatic-scroll lock prevents the scroll spy from changing the highlighted turn mid-navigation.
+On mobile, activation also preserves the trigger's top gutter so the selected message is not
+covered by the history control.
+The projection normalizes running, partial, and error states so loading, aborted, and incomplete
+turns remain navigable without duplicating message rows.
 
 ## Participant entry points (course page)
 
@@ -539,7 +548,7 @@ does not validate retrieval quality or a deployed MCP server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
-`history-rail.test.ts` pins active-path ordering, stable message/tool/error anchors, reasoning-group collapse, duplicate tool-call suppression, and running/partial/error states. Browser verification must additionally exercise desktop and mobile entry activation, focus, current-entry highlighting, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
+`history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
 The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 

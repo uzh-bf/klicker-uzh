@@ -42,11 +42,17 @@ when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
 
 For the active-branch chat history rail, keep the projection contract in
-`apps/chat/test/history-rail.test.ts` and verify navigation in the browser at
-desktop and mobile widths. The browser check must cover click/focus behavior,
-current-entry highlighting, and the matching EN/DE labels; a local environment
-without an upstream model key can still prove the rail's error-state rendering
-and navigation, but not model-backed reasoning or tool content.
+`apps/chat/test/history-rail.test.ts`: adjacent user/assistant messages form one
+turn, orphan messages remain standalone, complete text is preserved for the
+popover, and reasoning/tool/error parts never become rail landmarks. Verify
+navigation in the browser at desktop and mobile widths. The browser check must
+cover the bounded desktop tick rail ("md" and up) and the mobile history-trigger
+dialog flow below "md", complete-text hover/focus popovers that are
+hidden otherwise, click/focus behavior, current-entry highlighting, rapid
+second-target navigation, collapsed tool groups remaining closed, and the
+matching EN/DE labels; a local environment without an upstream model key can
+still prove the rail's error-state rendering and navigation, but not
+model-backed reasoning or tool content.
 
 For chat Markdown or KaTeX streaming changes, `apps/chat/src/components/markdown-text.tsx`
 uses the dependency-free `src/lib/markdown/streamingMath.ts` scanner to hide only unmatched
