@@ -435,7 +435,7 @@ function canonical(value: unknown): string {
   if (typeof value === 'object' && value !== null) {
     const object = value as Record<string, unknown>
     return `{${Object.keys(object)
-      .sort()
+      .sort((a, b) => a.localeCompare(b))
       .map((key) => `${JSON.stringify(key)}:${canonical(object[key])}`)
       .join(',')}}`
   }
