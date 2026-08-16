@@ -46,6 +46,30 @@ still need a user ruling.
   owns the second course pair and is aligning its roadmap with this
   deployment; both additions share the same W5a inventory gate.
 
+## P0 preflight result (2026-08-16)
+
+The approved bounded read-only tracer ran against both live multi-tenant
+doc-query services. It did not change Milvus, deployment state, credentials, or
+Klicker rows.
+
+| Check | Result | Evidence and boundary |
+| --- | --- | --- |
+| PRD tenant mount | PASS | `prd-doc-query` is healthy on the existing multi-tenant image (`v0.7.2`, digest `sha256:8687d829…`); `/health` reports `klicker:34`, `/ready` returns `200`, and authenticated `/mcp/klicker` lists the I&W tool and its chunk-topic companion. This is runtime evidence for the old image, not proof that the pending v0.8.1 promotion landed. |
+| PRD source pair | PASS | The mounted I&W YAML/Markdown pair has the same canonical content as `origin/main@32d51401` after removing the ConfigMap's trailing blank line. The tool points to `klicker_ai_informatik_und_wirtschaft`. |
+| PRD collection existence/schema | PASS | Direct values-free Milvus read found the named collection with `872` rows, all `resource_active=true`, vector dimension `1536`, and fields `content`, `id`, `vector`, and `sparse_vector`. |
+| PRD collection scope | PASS | All `872/872` sampled rows carry `project_id=klicker-course-materials`, `kb_id=informatik-und-wirtschaft-hs26`, `chatbot_id=informatik-und-wirtschaft-hs26`, `source_id=video-corpus:informatik-und-wirtschaft-hs26`, `external_resource_id` with the same value, `resource_version=1`, and `source_type=video`. |
+| PRD positive retrieval | BLOCKED | The bounded authenticated I&W query reaches the tool but fails in `doc_reranker`: the live PRD LiteLLM response is `403 key_model_access_denied` because the presented key is allowed only for `aibuddy-fleet` while the request uses `klickeruzh/cohere/rerank-v4.0-fast`. No answer or citation proof is claimed. |
+| STG comparison | PASS | The same bounded query through STG `/mcp/klicker` returns `20` sources and `20` chunks, including structured `title`/`video_name` and `start_sec`/`end_sec` metadata. This confirms the corpus and prompt shape; it does not substitute for PRD proof. |
+| PRD write acceptance | NOT PROVEN / NOT ATTEMPTED | The PRD collection already contains the active v1 corpus, but no values-safe activation receipt or operation identity ties that write to the current A9 package. Rewriting or introducing a new resource version would be a different production mutation, so it was withheld. |
+
+The concrete P0 blocker is therefore the PRD credential/model-access binding and
+the still-undelivered v0.8.1 deployment, not collection existence or source
+metadata. Thread `019febd4-cc79-7ce2-915a-6511aa7bd1a5` must resolve the shared
+PRD service promotion/credential path (without a duplicate I&W Secret or legacy
+route) before W5a/W5e can accept this evidence. The deployment MR remains draft
+(`!609`, pipeline `645943` green) and its publication is still held by the
+separate `doc-query-eduai` Secret apply failure.
+
 ## Authority and non-goals
 
 - Each production deployment, Argo sync, grant, credential-custody step,
@@ -68,7 +92,7 @@ different boundary).
 
 | Phase | Content | Owner | Gate |
 | --- | --- | --- | --- |
-| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then complete the upstream A9 target/read-write acceptance and prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. | This thread, coordinated with the ingestion lane | Separate bounded EXPERT/paid-run authorization; feeds the W5a source-pair gate |
+| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then complete the upstream A9 target/read-write acceptance and prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. The read-only collection and scope checks pass; write acceptance and end-to-end retrieval remain open because the PRD reranker binding fails. | This thread, coordinated with the ingestion lane | Resolve the PRD credential/model-access and v0.8.1 publication gates before any write or activation |
 | P1 Multi-tenant PRD service | W5a dark preparation (single tenant inventory/readback for both course pairs), W5a.1 neutral publication/readback, W5b/W5c canary + Argo profile, W5d grants, W5e publication + operator proof + direct-Chat proof, W6 readiness review. | Thread `019febd4` (deployment repo) | Its own approval gates; I&W contributes P0 evidence only |
 | P2 Klicker PRD runtime promotion | Build and promote the chat image from `v3` at or after `2d9c5d048` (contains `#5405`/`#5411`/`#5414`), production values promotion PR, manual Argo reconciliation of the PRD `app-klicker` application, rollout marker and pod digest readback. | This thread | Separately authorized production promotion |
 | P3 Credential and activation | Read-only preflight of the prepared rows; custody-approved PRD tenant bearer for the Klicker caller; rekey the inactive MCP server row with the running production chat application key (the STG lesson: the Infisical profile `APP_SECRET` is not the live app key); verify both strict bindings; one transactional activation; immediate readback. | This thread | P1 W5e proof + P2 runtime live |
@@ -97,7 +121,8 @@ different boundary).
 
 ## Evidence ledger before activation
 
-- PRD source pair and collection-readiness evidence accepted into W5a.
+- PRD source pair and values-free collection-readiness evidence accepted into
+  W5a; the PRD retrieval and write-acceptance blockers above are still open.
 - W5e operator and direct-Chat PRD proof recorded values-free.
 - PRD chat Deployment on a release marker at or after `2ad68d057acf` with one
   ready pod and verified digest.
