@@ -22,6 +22,8 @@ export type AnalysisMessage = {
   text: string
   attachmentCount: number
   creditsUsed: number | null
+  chatMode?: string | null
+  modelId?: string | null
 }
 
 export type AnalysisRecordProvider = {

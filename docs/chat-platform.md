@@ -358,6 +358,30 @@ product ruling (`project/2026-07-27-student-chat-v3-follow-up-roadmap.md`, W7 it
 switcher is hidden entirely when a chatbot exposes a single mode — `mode-switcher.tsx` returns
 `null` for one or fewer mode keys, so there is no disabled one-pill state to style.
 
+## Learning analytics boundary
+
+Chat usage is retained in PostgreSQL for product-quality and learning-analytics
+work, but the legacy usage exporter is an operational baseline rather than a
+safe personal-data download. Its historical `--includeMessageContent` option
+is rejected, and no content-bearing export path exists. A future restricted
+export must satisfy the governance boundary in ADR-0005; that implementation is
+not part of the current package. Default reporting is aggregate-only with
+small-cell and complementary-disclosure suppression. Research eligibility is a
+separate purpose and is never inferred from learning-analytics eligibility.
+
+The reusable analysis model lives in
+`packages/prisma-data/src/chatbot-analysis/`. The bounded aggregate command is
+`src/scripts/2026-08-13_chatbot_aggregate_report.ts`; it accepts one course,
+purpose, time window, and output directory and writes disclosure-controlled JSON
+and XLSX from the same report model. Its Prisma provider loads only the selected
+window and direct assistant replies needed for lineage. The provider returns no
+eligibility decisions until an authoritative effective-dated source exists, so
+database-backed runs exclude every record and suppress the aggregate. The
+synthetic provider test proves the executable path without database or
+production access. LiteLLM and Langfuse remain authoritative for actual model,
+spend, cache, trace, and latency facts and are not copied into the PostgreSQL
+analytics model.
+
 ## Sources and citations
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a

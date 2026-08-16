@@ -346,8 +346,8 @@ aggregate-artifact contracts and makes the aggregate path executable.
 
 ## Progress
 
-- Status: pragmatic correction W1 accepted locally; W2 is planned and has not
-  started.
+- Status: W2 implementation is complete locally and awaits the required
+  simplification, privacy/data-integrity, and integrated-final reviews.
 - W1 result: visible delegated task
   `019ffcc6-c396-7b23-882e-1836e7cff349` completed range
   `7e9d8e06c6e8fe5f7e0db17735a4364a873d110b..550a266d2f497cfb8cf1c15b22b9a998d9b24bea`
@@ -367,12 +367,46 @@ aggregate-artifact contracts and makes the aggregate path executable.
 - Review gate: the user-requested Claude fallback ran the Layer 1 slice review and returned `DONE_WITH_CONCERNS`; its report identifies an eligibility parent-closure leak, a missing no-decision fixture, and an unresolved Layer 1 pseudonymization commitment. The fallback simplifier reached terminal `NEEDS_CONTEXT` because its tool-minimized contract requires exact hunks and call-site evidence, while the first fallback prompt supplied only a prose manifest. Reports and register entries are recorded at `project/_local/reviews/2026-08-12-chatbot-learning-analytics-layer1-slice-review-fallback.md`, `project/_local/reviews/2026-08-12-chatbot-learning-analytics-layer1-simplifier-fallback-needs-context.md`, and `project/_local/reviews/chatbot-learning-analytics-gate-register.md`.
 - Layer 1 correction complete: the parent-closure filter now admits only out-of-window assistant records for lineage classification; in-window assistants excluded by purpose, course, withdrawal, or effective interval remain excluded. The synthetic suite covers a participant with no eligibility decision and an in-window reply excluded by an expired eligibility interval. The Layer 1 pseudonymization finding is resolved as a scope boundary: the core may hold raw IDs internally, while Layer 2 owns the purpose-and-course pseudonym before any artifact path.
 - Layer 1 review: Claude fallback slice review returned `DONE_WITH_CONCERNS`; the eligibility finding was fixed in `0093c85b0`, and the follow-up invariant comment/progress wording are applied below. Claude fallback simplifier returned `DONE` with no net simplification. Reports: `project/_local/reviews/2026-08-12-chatbot-learning-analytics-layer1-slice-review-fallback-correction.md` and `project/_local/reviews/2026-08-12-chatbot-learning-analytics-layer1-simplifier-fallback-correction.md`.
-- Layer 2 active slice: governed aggregate JSON/XLSX model plus explicit restricted-export authorization contract. Aggregate summaries disclose only cells at or above the configured minimum, suppress same-population scalar totals whenever a dimension is suppressed, and omit exact low-count totals; exploratory signal counts are suppressed and marked unvalidated. Restricted rows require authoritative eligibility membership, operator identity, encrypted verified destination, append-only audit, expiry, and deletion/rebuild metadata. All adapters are synthetic/inert; no CLI or production provider is wired yet.
+- Layer 2 outcome: the aggregate JSON/XLSX model remains, while the unused
+  restricted-export object graph and its two tests are removed. No
+  content-bearing export path exists; ADR-0005 remains the policy boundary for
+  future work. Exploratory signal inputs now require numeric counts and become
+  nullable only inside disclosure processing.
 - Layer 2 correction: selected-model suppression now cascades through the linked-response/user-population summary and provenance fields, closing reconstruction through exchange partitions and duplicate unknown-count metadata. The correction also suppresses same-population attachment totals, aligns chat-mode provenance to user messages, expands the regression fixture, and rejects the legacy raw-content flag. Credits suppression is participant-based rather than message-based. The fallback slice review confirmed the original disclosure fix and identified these additional pre-existing gaps; they are addressed in the current correction.
-- Layer 2 verification: 21 focused synthetic tests pass (8 core, 13 reports), strict analysis typecheck passes, and changed-path formatting/diff checks pass. The paired fallback simplifier and slice review completed on `b72294f5a`; both returned `DONE_WITH_CONCERNS` without a privacy defect. The simplifier's dead-parameter reduction and the reviewer's provenance-coverage assertions are applied and reverified.
+- W2 execution path: `runAggregateReport` composes the existing core, aggregate
+  model, and artifact writer. The bounded Prisma provider selects one course and
+  window plus direct out-of-window assistant replies, omits message content,
+  and returns no eligibility decisions until an authoritative effective-dated
+  source exists. The standalone command therefore writes only a fully
+  suppressed database-backed report. An injected synthetic provider proves the
+  JSON/XLSX path and scans both artifacts for content and stable identifiers.
+- W2 verification before review: 21 focused synthetic tests passed (8 core, 11
+  report, 2 provider), strict `check:analysis` passed, changed-path
+  Biome and Prettier pass, `git diff --check` passes, and no `RestrictedExport`
+  implementation symbol remains. Both implementation commits also passed the
+  repository pre-commit `check:all` hook under host Node 26. Repository-pinned
+  Node 24 verification remains pending because `devrouter ensure` and
+  `devrouter exec` fail with `could not determine process identity for workspace
+  lifecycle lock` in this session.
 - Integrated-final correction disposition: the fallback review confirmed the high-risk withdrawal, cross-table, provider-field, manifest, and legacy-content findings were closed. Its remaining summary-partition concern is closed in this correction by suppressing additive message-role, exchange-status, and rating-outcome partitions before any sibling values can be disclosed. Main-session verification is the closing check because the configured integrated-final review budget is exhausted.
-- Next: W2 begins only through its own approved execution/delegation boundary.
-  First propagate W1 through the existing stack locally, then remove the inert
-  restricted-export subsystem, deliver the aggregate command/provider seam,
-  and run the named synthetic/privacy checks. No push, pull-request update,
-  production query, or real-data artifact is authorized in this session.
+- W2 reviews: the configured simplifier returned `DONE` with no justified
+  reduction. The privacy/data-integrity review returned `PASS-WITH-FIXES`; its
+  course/query test and CLI accuracy findings were closed in `5f25c394b`.
+  Reports are at
+  `project/_local/reviews/2026-08-13-chatbot-governed-reports-w2-simplifier.md`
+  and
+  `project/_local/reviews/2026-08-13-chatbot-governed-reports-w2-slice-review.md`.
+- Integrated-final review: `PASS-WITH-FIXES`. The correction suppresses the
+  zero-eligible fail-closed population rather than exposing its selected-record
+  count in artifact provenance or console output, fixes the vacuous
+  cross-course assertion, and updates this progress record. A fresh correction
+  review is the remaining gate. No push, pull-request update, production query,
+  or real-data artifact is authorized in this session.
+- Post-final correction verification: 22 focused tests pass (8 core, 12 report,
+  2 provider), strict `check:analysis`, changed-path Biome/Prettier, and
+  `git diff --check` pass under host Node 26. The correction review returned
+  `PASS` with no findings; its report is
+  `project/_local/reviews/2026-08-13-chatbot-learning-analytics-integrated-final-correction.md`.
+- W2 delivery: verified local commits only. The remote stacked pull requests
+  remain unchanged. No push/force-push, pull-request update, production query,
+  real-data run, publication, merge, or cleanup occurred.

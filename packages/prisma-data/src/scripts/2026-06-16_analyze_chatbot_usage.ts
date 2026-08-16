@@ -1,8 +1,8 @@
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { prisma } from '@klicker-uzh/prisma'
-import { Prisma } from '@klicker-uzh/prisma/client'
-import { open } from 'fs/promises'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import type { Prisma } from '@klicker-uzh/prisma/client'
+import { assertLegacyMessageContentExportDisabled } from '../chatbot-analysis/reports.js'
 import type { SheetValue, WorkbookSheet } from './lib/simpleWorkbook.js'
 import {
   formatDate,
@@ -23,7 +23,6 @@ type CliOptions = {
   filePrefix: string
   minTopicMessages: number
   minTopicParticipants: number
-  includeMessageContent: boolean
 }
 
 type ChatContentItem = {
@@ -161,8 +160,6 @@ type ClusterTerm = {
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(scriptDir, '../../../..')
 const todayPrefix = new Date().toISOString().slice(0, 10)
-const XLSX_CELL_TEXT_LIMIT = 32767
-const WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT = 2000
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -598,7 +595,7 @@ function usage() {
     '  --filePrefix <prefix>       Output filename prefix. Default: date + scope.',
     '  --minTopicMessages <n>      Minimum user messages for topic labels. Default: 5.',
     '  --minTopicParticipants <n>  Minimum participants for topic labels. Default: 3.',
-    '  --includeMessageContent     Write full raw message content JSONL and include workbook previews.',
+    '  --includeMessageContent     Rejected; no content-bearing export exists. See ADR-0005 for future governance.',
   ].join('\n')
 }
 
@@ -741,6 +738,10 @@ function parseArgs(): CliOptions {
 
   validateArgs(args)
 
+  if (hasFlag(args, '--includeMessageContent')) {
+    assertLegacyMessageContentExportDisabled(true)
+  }
+
   const all = hasFlag(args, '--all')
   const query = getArgValue(args, '--query') ?? getArgValue(args, '--course')
   const chatbotId = getArgValue(args, '--chatbotId')
@@ -810,7 +811,6 @@ function parseArgs(): CliOptions {
       getArgValue(args, '--minTopicParticipants'),
       3
     ),
-    includeMessageContent: hasFlag(args, '--includeMessageContent'),
   }
 }
 
@@ -909,14 +909,6 @@ function createKeyMap(values: string[], prefix: string) {
 function round(value: number, digits = 6) {
   const factor = 10 ** digits
   return Math.round(value * factor) / factor
-}
-
-function truncateForWorkbookCell(value: string, limit = XLSX_CELL_TEXT_LIMIT) {
-  const safeLimit = Math.min(limit, XLSX_CELL_TEXT_LIMIT)
-  if (value.length <= safeLimit) return value
-
-  const suffix = '\n...[truncated; full value is in message content JSONL]'
-  return `${value.slice(0, safeLimit - suffix.length)}${suffix}`
 }
 
 function sum(values: number[]) {
@@ -2228,15 +2220,7 @@ function buildSheets(
         ['chatbots', chatbots.length],
         [
           'privacy',
-          options.includeMessageContent
-            ? 'Raw message text/content is included because --includeMessageContent was passed. Participant names, emails, LMS identifiers, and database ids are still excluded.'
-            : 'No raw message text, participant names, emails, LMS identifiers, or database ids are included.',
-        ],
-        [
-          'messageContent',
-          options.includeMessageContent
-            ? `Full raw message content is written to ${sanitizeFilename(options.filePrefix)}_message_content.jsonl. Workbook content columns are previews capped to ${WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT} characters.`
-            : 'Full raw message content is not exported.',
+          'Legacy operational workbook is not a governed aggregate or restricted export. It must not be shared as a personal-data download.',
         ],
         [
           'participants',
@@ -3099,14 +3083,6 @@ function buildSheets(
     'attachmentCount',
     'topicClusterId',
   ]
-  if (options.includeMessageContent) {
-    messageMetadataHeaders.push(
-      'messageTextPreview',
-      'messageContentJsonPreview',
-      'reasoningContentPreview'
-    )
-  }
-
   sheets.push({
     name: 'Message Metadata',
     headers: messageMetadataHeaders,
@@ -3140,75 +3116,11 @@ function buildSheets(
         assignment?.clusterId ?? null,
       ]
 
-      if (options.includeMessageContent) {
-        row.push(
-          truncateForWorkbookCell(
-            message.text,
-            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
-          ),
-          truncateForWorkbookCell(
-            JSON.stringify(message.content) ?? '',
-            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
-          ),
-          truncateForWorkbookCell(
-            message.reasoningContent ?? '',
-            WORKBOOK_MESSAGE_CONTENT_PREVIEW_LIMIT
-          )
-        )
-      }
-
       return row
     }),
   })
 
   return sheets
-}
-
-async function writeMessageContentJsonl(
-  outDir: string,
-  filePrefix: string,
-  messages: MessageRecord[]
-) {
-  const filename = `${sanitizeFilename(filePrefix)}_message_content.jsonl`
-  const path = resolve(outDir, filename)
-  const file = await open(path, 'w')
-
-  try {
-    for (const message of messages) {
-      await file.write(
-        `${JSON.stringify({
-          courseName: message.courseName,
-          courseDisplayName: message.courseDisplayName,
-          chatbotKey: message.chatbotKey,
-          chatbotName: message.chatbotName,
-          threadKey: message.threadKey,
-          participantKey: message.participantKey,
-          messageKey: message.messageKey,
-          role: message.role,
-          messageCreatedAt: message.messageCreatedAt.toISOString(),
-          chatMode: message.chatMode,
-          modelId: message.modelId,
-          reasoningEffort: message.reasoningEffort,
-          parentMessageKey: message.parentId
-            ? (messageKeyById.get(message.parentId) ?? null)
-            : null,
-          rating: message.rating,
-          creditsUsed: message.creditsUsed,
-          toolCallCount: toolCallCount(message.content),
-          attachmentCount: message.attachmentCount,
-          text: message.text,
-          content: message.content,
-          reasoningContent: message.reasoningContent,
-        })}\n`,
-        undefined,
-        'utf8'
-      )
-    }
-  } finally {
-    await file.close()
-  }
-
-  return path
 }
 
 async function main() {
@@ -3272,14 +3184,6 @@ async function main() {
   )
   const filename = `${sanitizeFilename(options.filePrefix)}.xlsx`
   const path = await writeWorkbookFile(options.outDir, filename, sheets)
-  const messageContentPath = options.includeMessageContent
-    ? await writeMessageContentJsonl(
-        options.outDir,
-        options.filePrefix,
-        messages
-      )
-    : null
-
   console.log(
     `Window: ${formatDate(options.from)} to ${formatDate(options.to)}`
   )
@@ -3305,9 +3209,6 @@ async function main() {
     )
   }
   console.log(`Output: ${path}`)
-  if (messageContentPath) {
-    console.log(`Message content output: ${messageContentPath}`)
-  }
 }
 
 try {
