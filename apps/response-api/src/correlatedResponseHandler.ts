@@ -67,6 +67,16 @@ export async function handleCorrelatedResponse({
     }
   }
 
+  if (acceptedInstanceInfo.type === 'FREE_TEXT') {
+    return {
+      status: 400,
+      body: {
+        error:
+          'Free-text responses are not retained for correlated teaching exports',
+      },
+    }
+  }
+
   let restrictions: unknown
   try {
     restrictions = acceptedInstanceInfo.restrictions

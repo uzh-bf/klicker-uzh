@@ -138,6 +138,47 @@ describe('standard live quiz response handlers', () => {
     assert.equal(pushed, false)
   })
 
+  it('rejects free-text correlated responses before identity admission', async () => {
+    const secret = 'test-secret'
+    const issuer = 'https://api.test'
+    const token = await createLiveQuizRespondentToken({
+      respondentId: '33333333-3333-4333-8333-333333333333',
+      liveQuizId: request.liveQuizId,
+      publicationGeneration: 3,
+      secret,
+      issuer,
+    })
+    let pushed = false
+
+    const result = await handleCorrelatedResponse({
+      request: {
+        ...request,
+        response: { value: 'identifying free-text' },
+        cookieHeader: `${getLiveQuizRespondentCookieName(request.liveQuizId)}=${token}`,
+      },
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      responseCollectionMode: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+      database: {} as any,
+      getIdentityConfig: () => ({ secret, issuer }),
+      pushEvent: async () => {
+        pushed = true
+      },
+    })
+
+    assert.deepEqual(result, {
+      status: 400,
+      body: {
+        error:
+          'Free-text responses are not retained for correlated teaching exports',
+      },
+    })
+    assert.equal(pushed, false)
+  })
+
   it('registers and publishes only an outbox id for correlated responses', async () => {
     const secret = 'test-secret'
     const issuer = 'https://api.test'
