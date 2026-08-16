@@ -292,6 +292,7 @@ describe('correlated response request safeguards', () => {
               }),
             },
             liveQuizPendingResponse: {
+              findUnique: async () => null,
               create: async (args: any) => {
                 createCalls.push(args)
                 return args.data
@@ -448,36 +449,180 @@ describe('correlated response request safeguards', () => {
   })
 
   it('rejects a second pending response for the same respondent execution', async () => {
-    assert.equal(
-      (
-        await admitCorrelatedResponse({
-          identity: {
-            kind: 'participant',
-            id: '33333333-3333-4333-8333-333333333333',
-            token: 'signed-token',
-            cookieName: 'participant_token',
-          },
-          database: {
-            $transaction: async () => {
-              throw { code: 'P2002' }
+    const liveQuizId = '11111111-1111-4111-8111-111111111111'
+    const participantId = '33333333-3333-4333-8333-333333333333'
+    let attempts = 0
+    let receiptCreated = false
+    const result = await admitCorrelatedResponse({
+      identity: {
+        kind: 'participant',
+        id: participantId,
+        token: 'signed-token',
+        cookieName: 'participant_token',
+      },
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) => {
+          attempts += 1
+          return callback({
+            $queryRaw: async () => [
+              {
+                activeBlockId: 7,
+                blockExecution: 3,
+                blockId: 7,
+                blockStatus: 'ACTIVE',
+                isAssessmentEnabled: false,
+                pinCode: null,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                publicationGeneration: 3,
+                status: 'PUBLISHED',
+              },
+            ],
+            participant: {
+              findUnique: async () => ({ id: participantId }),
             },
-          } as any,
-          liveQuizId: '11111111-1111-4111-8111-111111111111',
-          instanceId: '42',
-          messageId: '22222222-2222-4222-8222-222222222222',
-          response: { value: 'private response' },
-          responseTimestamp: 1_000,
-          instanceInfo: {
-            type: 'FREE_TEXT',
-            blockExecution: '3',
-            sessionBlockId: '7',
-          },
-          cookieHeader: undefined,
-          secret: 'app-secret',
-        })
-      ).status,
-      'duplicate'
-    )
+            liveQuizRespondentBinding: {
+              findUnique: async () => ({
+                respondentId: participantId,
+                liveQuizId,
+                publicationGeneration: 3,
+                participantId,
+                verificationSecretHash: null,
+                expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+              }),
+              update: async () => ({
+                respondentId: participantId,
+                liveQuizId,
+                publicationGeneration: 3,
+                participantId,
+                verificationSecretHash: null,
+                expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+              }),
+            },
+            liveQuizRespondent: {
+              findUnique: async () => ({
+                finalizedAt: null,
+                liveQuizId,
+                publicationGeneration: 3,
+              }),
+            },
+            liveQuizPendingResponse: {
+              findUnique: async () => ({
+                id: '11111111-1111-4111-8111-111111111112',
+              }),
+              create: async () => {
+                receiptCreated = true
+              },
+            },
+          })
+        },
+      } as any,
+      liveQuizId,
+      instanceId: '42',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'private response' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      cookieHeader: undefined,
+      secret: 'app-secret',
+    })
+
+    assert.deepEqual(result, { status: 'duplicate' })
+    assert.equal(attempts, 1)
+    assert.equal(receiptCreated, false)
+  })
+
+  it('resolves concurrent first-submission races into distinct receipts', async () => {
+    const liveQuizId = '11111111-1111-4111-8111-111111111111'
+    const respondentId = '33333333-3333-4333-8333-333333333333'
+    const token = 'signed-token'
+    const createCalls: any[] = []
+    let attempts = 0
+    const result = await admitCorrelatedResponse({
+      database: {
+        $transaction: async (callback: (prisma: any) => Promise<unknown>) => {
+          attempts += 1
+          if (attempts === 1) {
+            // the concurrent sibling won the respondent/binding insert race
+            throw { code: 'P2002' }
+          }
+          return callback({
+            $queryRaw: async () => [
+              {
+                activeBlockId: 7,
+                blockExecution: 3,
+                blockId: 7,
+                blockStatus: 'ACTIVE',
+                isAssessmentEnabled: false,
+                pinCode: null,
+                responseCollectionMode: 'CORRELATED_EXPORT',
+                publicationGeneration: 3,
+                status: 'PUBLISHED',
+              },
+            ],
+            liveQuizRespondentBinding: {
+              findUnique: async () => ({
+                respondentId,
+                liveQuizId,
+                publicationGeneration: 3,
+                participantId: null,
+                verificationSecretHash: hashLiveQuizRespondentToken(token),
+                expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+              }),
+              update: async () => ({
+                respondentId,
+                liveQuizId,
+                publicationGeneration: 3,
+                participantId: null,
+                verificationSecretHash: hashLiveQuizRespondentToken(token),
+                expiresAt: new Date('2026-07-29T12:20:00.000Z'),
+              }),
+            },
+            liveQuizRespondent: {
+              findUnique: async () => ({
+                finalizedAt: null,
+                liveQuizId,
+                publicationGeneration: 3,
+              }),
+            },
+            liveQuizPendingResponse: {
+              findUnique: async () => null,
+              create: async (args: any) => {
+                createCalls.push(args)
+                return args.data
+              },
+            },
+          })
+        },
+      } as any,
+      identity: {
+        kind: 'anonymous',
+        id: respondentId,
+        liveQuizId,
+        publicationGeneration: 3,
+        token,
+        cookieName: `live_quiz_respondent_token_${liveQuizId}`,
+      },
+      liveQuizId,
+      instanceId: '42',
+      messageId: '22222222-2222-4222-8222-222222222222',
+      response: { value: 'race answer' },
+      responseTimestamp: 1_000,
+      instanceInfo: {
+        type: 'FREE_TEXT',
+        blockExecution: '3',
+        sessionBlockId: '7',
+      },
+      cookieHeader: undefined,
+      secret: 'app-secret',
+    })
+
+    assert.equal(result.status, 'registered')
+    assert.equal(attempts, 2)
+    assert.equal(createCalls.length, 1)
   })
 
   it('checks PIN access inside the locked admission transaction', async () => {

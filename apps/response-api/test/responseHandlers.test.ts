@@ -244,6 +244,7 @@ describe('standard live quiz response handlers', () => {
             }),
           },
           liveQuizPendingResponse: {
+            findUnique: async () => null,
             create: async ({ data }: { data: unknown }) => {
               pendingResponses.push(data)
             },
