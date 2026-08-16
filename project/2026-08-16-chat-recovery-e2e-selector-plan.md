@@ -65,14 +65,15 @@
 
 ## Progress
 
-- Status: S1 implemented and statically verified; implementation commit and combined final review remain.
-- Completed: takeover validation, contract hash verification, live base/fetch check, selector convention inspection, planning-stage review, plan commit `ce560a2fc`, and the five planned locator changes.
-- Remaining: commit S1; run the combined final review; record the terminal boundary.
-- Latest verification: `git diff --check`; Prettier passed for `playwright/tests/Y-chat.spec.ts`; TypeScript passed for `playwright/tsconfig.json`. The latter two ran through their installed binaries under the DevPod's Node 24 runtime because the container `pnpm` wrapper requested a non-interactive module purge.
+- Status: `DONE_WITH_CONCERNS`; the approved repair is complete at the verified-local-commits boundary.
+- Completed: takeover validation, contract hash verification, live base/fetch check, selector convention inspection, planning-stage review, plan commit `ce560a2fc`, implementation commit `25fc24f88`, and the combined final review.
+- Remaining: real Chromium execution when the existing DevPod lifecycle lock is cleared; no further work is authorized in this delegation.
+- Latest verification: `git diff --check`; Prettier passed for `playwright/tests/Y-chat.spec.ts` and this plan; TypeScript passed for `playwright/tsconfig.json`; Playwright discovery listed 81 Chromium tests including both recovery journeys. The Node-based checks ran through their installed binaries under the DevPod's Node 24 runtime because the container `pnpm` wrapper requested a non-interactive module purge.
 - Test delta: added 0, changed 2 existing E2E journeys, removed 0.
 - Simplifier: not required — mechanical test-selector edit.
 - Slice review: not required — no security, data-integrity, architecture, cross-system, irreversible, or other named risk boundary changed.
+- Combined final review: `DONE_WITH_CONCERNS`; the only finding was this stale progress record, now corrected. The configured final-reviewer route rejected its injected effort, so the read-only final-reviewer role ran on `combo/glm-5.3` at `max`; its report is recorded at `project/_local/reviews/2026-08-16-chat-recovery-selector-combined-final.md`.
 - Runtime gate: focused Chromium is not proven because the bounded attempt found devrouter's existing workspace lifecycle lock at PID `28197`; environment repair is out of scope for this resumed task.
 - Required delivery layer: verified local commits.
-- Achieved delivery layer: committed plan plus statically verified implementation changes pending their commit.
+- Achieved delivery layer: verified local commits.
 - Withheld: push, PR, merge, deployment, cluster access, cleanup, and any other work item.
