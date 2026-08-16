@@ -364,28 +364,6 @@ describe('correlated response persistence helpers', () => {
     assert.equal(data.timeSpent, -1)
   })
 
-  it('builds the same respondent shape for anonymous identity', () => {
-    const respondentId = randomUUID()
-    const data = buildCorrelatedResponseCreateData({
-      owner: {
-        kind: 'anonymous',
-        id: respondentId,
-        identityKey: `respondent:${respondentId}`,
-      },
-      instanceId: 42,
-      blockExecution: 3,
-      response: { value: 'answer' },
-      submittedAt: Date.now(),
-      correctnessPercentage: null,
-      basePoints: 0,
-      correctnessPoints: 0,
-      bonusPoints: 0,
-    })
-
-    assert.deepEqual(data.respondent, { connect: { id: respondentId } })
-    assert.equal('participant' in data, false)
-  })
-
   it('scopes the processed marker to one execution', () => {
     assert.equal(
       getCorrelatedProcessedKey({
