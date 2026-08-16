@@ -37,6 +37,11 @@ still need a user ruling.
   `doc-query-eduai` Secret apply failed on pre-existing Azure
   BlobServiceProperties drift (`InvalidRequestPropertyValue`). No secret
   values were read, and no PRD runtime change is claimed from the draft.
+- Video-AI upstream readiness is at the package boundary only: its A8 course
+  package records 82 complete videos and 872 publishable units, while A9
+  EXPERT course-ingestion authorization and target read/write acceptance remain
+  open. The local/STG corpus evidence therefore cannot be used as PRD
+  collection-readiness proof.
 - The RadioSurfVet onboarding (thread `019fead3-07b6-7831-a941-517620b0010d`)
   owns the second course pair and is aligning its roadmap with this
   deployment; both additions share the same W5a inventory gate.
@@ -63,7 +68,7 @@ different boundary).
 
 | Phase | Content | Owner | Gate |
 | --- | --- | --- | --- |
-| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. | This thread, coordinated with the ingestion lane | Bounded paid-run authorization when scheduled; feeds the W5a source-pair gate |
+| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then complete the upstream A9 target/read-write acceptance and prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. | This thread, coordinated with the ingestion lane | Separate bounded EXPERT/paid-run authorization; feeds the W5a source-pair gate |
 | P1 Multi-tenant PRD service | W5a dark preparation (single tenant inventory/readback for both course pairs), W5a.1 neutral publication/readback, W5b/W5c canary + Argo profile, W5d grants, W5e publication + operator proof + direct-Chat proof, W6 readiness review. | Thread `019febd4` (deployment repo) | Its own approval gates; I&W contributes P0 evidence only |
 | P2 Klicker PRD runtime promotion | Build and promote the chat image from `v3` at or after `2d9c5d048` (contains `#5405`/`#5411`/`#5414`), production values promotion PR, manual Argo reconciliation of the PRD `app-klicker` application, rollout marker and pod digest readback. | This thread | Separately authorized production promotion |
 | P3 Credential and activation | Read-only preflight of the prepared rows; custody-approved PRD tenant bearer for the Klicker caller; rekey the inactive MCP server row with the running production chat application key (the STG lesson: the Infisical profile `APP_SECRET` is not the live app key); verify both strict bindings; one transactional activation; immediate readback. | This thread | P1 W5e proof + P2 runtime live |
