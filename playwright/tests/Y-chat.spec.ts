@@ -1895,13 +1895,20 @@ test.describe('Chatbot History Rail', () => {
     const popover = page.getByTestId('chat-history-rail-turn-popover')
     await expect(popover).toContainText('First rail question')
     await expect(popover).toContainText('First rail answer')
+    // Radix's hoverable tooltip closes on the pointermove that follows the
+    // leave event: one synthetic move only fires the leave, so nudge the
+    // pointer again to let the grace-area listener dismiss the popover.
     await page.mouse.move(0, 0)
+    await page.mouse.move(1, 1)
     await expect(popover).toHaveCount(0)
 
     const currentTick = rail.locator('[aria-current="step"]')
     await expect(currentTick).toHaveCount(1)
     await currentTick.click()
-    const dialog = page.locator('[data-history-rail-dialog]')
+    // Both the desktop and the mobile dialog mount while the history is open;
+    // CSS hides the one outside the current breakpoint, so scope every dialog
+    // locator to its rail container to keep strict mode unambiguous.
+    const dialog = rail.locator('[data-history-rail-dialog]')
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('[data-history-dialog-entry]')).toHaveCount(2)
     await dialog.locator('[data-history-dialog-entry]').first().click()
@@ -1933,7 +1940,9 @@ test.describe('Chatbot History Rail', () => {
     await expect(mobileTrigger).toBeVisible()
     await expect(mobileTrigger).toContainText('/2')
     await mobileTrigger.click()
-    const mobileDialog = page.locator('[data-history-rail-dialog]')
+    const mobileDialog = page
+      .getByTestId('chat-history-rail-mobile')
+      .locator('[data-history-rail-dialog]')
     await expect(mobileDialog).toBeVisible()
     await expect(
       mobileDialog.locator('[data-history-dialog-entry]')
