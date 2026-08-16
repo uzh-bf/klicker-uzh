@@ -151,7 +151,9 @@ export function parseDocQueryPayload(
         typeof envelope.structuredContent === 'object' &&
         !Array.isArray(envelope.structuredContent)
       ) {
-        return envelope.structuredContent as Record<string, unknown>
+        return parseStructuredContent(
+          envelope.structuredContent as Record<string, unknown>
+        )
       }
 
       const textItem = envelope.content.find(
@@ -167,6 +169,16 @@ export function parseDocQueryPayload(
   }
 
   return parseJsonObject(raw)
+}
+
+function parseStructuredContent(
+  raw: Record<string, unknown>
+): Record<string, unknown> {
+  // FastMCP may wrap the JSON tool result as `{ result: '<json>' }` inside
+  // the MCP envelope. Unwrap that layer before source normalization; direct
+  // structured payloads remain supported for clients that do not wrap them.
+  const nested = parseDocQueryPayload(raw.result)
+  return nested ?? raw
 }
 
 function parseJsonObject(raw: unknown): Record<string, unknown> | undefined {
