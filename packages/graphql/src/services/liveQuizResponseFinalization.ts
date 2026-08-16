@@ -281,7 +281,6 @@ export async function reconcileCorrelatedLiveQuizFinalizations({
     FROM "public"."LiveQuiz" AS quiz
     WHERE quiz."status"::text = ${DB.PublicationStatus.ENDED}
       AND quiz."isAssessmentEnabled" = false
-      AND quiz."isDeleted" = false
       AND quiz."responseCollectionMode"::text = ${correlatedResponseMode}
       AND (
         quiz."exportSalt" IS NOT NULL
