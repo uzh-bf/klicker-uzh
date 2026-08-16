@@ -291,7 +291,9 @@ record for the course. Each button opens the existing PWA deep-link route
 when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 `chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
 (`id`, `name`, `description`, `avatar`) and matches the v3-ai blueprint so a
-later v3-ai sync reconciles without a diff.
+later v3-ai sync reconciles without a diff. That sync is sequenced by
+[ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
+v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
