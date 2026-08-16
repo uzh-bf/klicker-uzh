@@ -13,7 +13,6 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -241,20 +240,11 @@ const HistoryRailTick: FC<{
 const HistoryDialog: FC<{
   desktop?: boolean
   entries: readonly HistoryRailEntry[]
-  entryTitles: readonly string[]
   id: string
   currentAnchor: string | null
   onClose: () => void
   onNavigate: (anchor: string) => void
-}> = ({
-  desktop = false,
-  entries,
-  entryTitles,
-  id,
-  currentAnchor,
-  onClose,
-  onNavigate,
-}) => {
+}> = ({ desktop = false, entries, id, currentAnchor, onClose, onNavigate }) => {
   const t = useTranslations()
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -319,7 +309,7 @@ const HistoryDialog: FC<{
         <button
           type="button"
           aria-label={t('chat.historyRail.closeHistory')}
-          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
           onClick={onClose}
         >
           <XIcon className="size-4" aria-hidden />
@@ -369,7 +359,7 @@ const HistoryDialog: FC<{
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-medium">
-                    {entryTitles[index]}
+                    {t('chat.historyRail.turn')}
                   </span>
                   {userLabel && (
                     <span className="text-muted-foreground line-clamp-1 block text-[11px] leading-4">
@@ -411,11 +401,6 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
     entries[0]?.anchor ?? null
   )
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-
-  const entryTitles = useMemo(
-    () => entries.map(() => t('chat.historyRail.turn')),
-    [entries, t]
-  )
 
   const currentIndex = Math.max(
     0,
@@ -592,7 +577,15 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
       0,
       viewport.scrollTop + targetRect.top - viewportRect.top - mobileTopGutter
     )
-    viewport.scrollTo({ top: targetTop, behavior: 'auto' })
+    // The thread viewport sets CSS scroll-smooth, which makes a programmatic
+    // scroll animate and could outlive the short navigation lock, letting the
+    // scroll spy overwrite the selected turn mid-jump. Override the viewport's
+    // scroll-behavior just for this instant reposition, then restore it so
+    // ordinary scrolling keeps its smooth feel.
+    const previousScrollBehavior = viewport.style.scrollBehavior
+    viewport.style.scrollBehavior = 'auto'
+    viewport.scrollTo({ top: targetTop })
+    viewport.style.scrollBehavior = previousScrollBehavior
     target.focus({ preventScroll: true })
 
     const clearNavigationLock = (remainingFrames: number) => {
@@ -660,10 +653,7 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
                     onNavigate={handleNavigate}
                     onToggle={handleToggleHistory}
                     range={range}
-                    title={
-                      entryTitles[representativeIndex] ??
-                      t('chat.historyRail.turn')
-                    }
+                    title={t('chat.historyRail.turn')}
                     total={entries.length}
                   />
                 </li>
@@ -675,7 +665,6 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
           <HistoryDialog
             desktop
             entries={entries}
-            entryTitles={entryTitles}
             id={HISTORY_DIALOG_DESKTOP_ID}
             currentAnchor={currentAnchor}
             onClose={handleCloseHistory}
@@ -710,7 +699,6 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
         {isHistoryOpen && (
           <HistoryDialog
             entries={entries}
-            entryTitles={entryTitles}
             id={HISTORY_DIALOG_MOBILE_ID}
             currentAnchor={currentAnchor}
             onClose={handleCloseHistory}
