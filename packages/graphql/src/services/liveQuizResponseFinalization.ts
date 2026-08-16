@@ -8,6 +8,12 @@ const correlatedResponseMode =
 export const CORRELATED_RESPONSE_RETENTION_DAYS = 90
 const millisecondsPerDay = 24 * 60 * 60 * 1000
 
+export function getCorrelatedResponseRetentionCutoff(now: Date): Date {
+  return new Date(
+    now.getTime() - CORRELATED_RESPONSE_RETENTION_DAYS * millisecondsPerDay
+  )
+}
+
 export type CorrelatedLiveQuizFinalizationStatus =
   | 'finalized'
   | 'not_applicable'
@@ -33,10 +39,13 @@ async function lockLiveQuiz({
   prisma: PrismaTransactionClient
   liveQuizId: string
 }) {
+  // Soft-deleted quizzes stay eligible for finalization: deleting an ended
+  // correlated quiz removes lecturer access but must not leave participant
+  // bindings, salts, or receipts outside the settlement lifecycle.
   const [lockedQuiz] = await prisma.$queryRaw<{ id: string }[]>`
     SELECT "id"
     FROM "public"."LiveQuiz"
-    WHERE "id" = ${liveQuizId}::uuid AND "isDeleted" = false
+    WHERE "id" = ${liveQuizId}::uuid
     FOR UPDATE
   `
   if (!lockedQuiz) return null

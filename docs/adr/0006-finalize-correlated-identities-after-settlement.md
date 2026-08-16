@@ -42,6 +42,12 @@ no active binding or pending receipt; the respondent delete cascades to
 `LiveQuizResponse`, applied corrections, and the immutable export label as one
 referentially-integrity-preserving operation.
 
+Export access ends at the retention boundary itself, even while physical
+deletion is still progressing, so a delayed or partial cleanup batch can never
+re-expose expired data. Soft-deleting an ended correlated quiz removes
+lecturer access but does not bypass this lifecycle: finalization and expiry
+continue to process soft-deleted quizzes until their dataset is deleted.
+
 Correlated admission rejects free-text questions before identity admission or
 outbox creation. Correlated durable rows retain only the approved response and
 grading fields. The shared response table's required legacy timestamp and

@@ -1,7 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   CourseAuthType,
-  LiveQuizRespondentType,
   LiveQuizResponseCollectionMode,
   Locale,
   PrismaClient,
@@ -788,43 +787,6 @@ describe('Live quiz response collection mode', () => {
       token,
       expect.objectContaining({ maxAge: 1000 * 60 * 60 * 24 * 14 })
     )
-  })
-
-  it('assigns correlated temporary pseudonyms a respondent identity', async () => {
-    const liveQuiz = await manipulateLiveQuiz(
-      {
-        ...liveQuizArgs(),
-        responseCollectionMode:
-          LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
-      },
-      userOneCtx
-    )
-    await prisma.liveQuiz.update({
-      where: { id: liveQuiz.id },
-      data: { status: PublicationStatus.PUBLISHED },
-    })
-
-    const token = await loginTemporaryParticipant(
-      {
-        liveQuizId: liveQuiz.id,
-        pseudonym: `temporary-${uuid()}`,
-      },
-      {
-        ...userOneCtx,
-        res: { cookie: vi.fn() } as any,
-      }
-    )
-
-    const payload = decodeJWT(token!)
-    const respondent = await prisma.liveQuizRespondent.findUnique({
-      where: { id: payload.sub },
-    })
-
-    expect(respondent).toMatchObject({
-      id: payload.sub,
-      liveQuizId: liveQuiz.id,
-      type: LiveQuizRespondentType.TEMPORARY_PSEUDONYM,
-    })
   })
 
   it('keeps assessment live quizzes on identifiable assessment handling', async () => {

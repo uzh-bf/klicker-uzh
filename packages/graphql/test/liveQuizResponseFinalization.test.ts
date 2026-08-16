@@ -13,6 +13,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   endLiveQuizAndFinalizeCorrelatedGeneration,
   finalizeCorrelatedLiveQuiz,
+  reconcileCorrelatedLiveQuizFinalizations,
   reconcileExpiredCorrelatedLiveQuizResponses,
 } from '../src/services/liveQuizResponseFinalization.js'
 import {
@@ -292,6 +293,49 @@ describe('Live quiz correlated response finalization', () => {
       status: PublicationStatus.ENDED,
       exportSalt: 'test-export-salt',
     })
+  })
+
+  it('finalizes soft-deleted ended correlated quizzes through reconciliation', async () => {
+    const liveQuiz = await seedCorrelatedQuiz(prisma, userOneCtx)
+    const respondent = await prisma.liveQuizRespondent.create({
+      data: {
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 4,
+        type: LiveQuizRespondentType.ANONYMOUS_CORRELATED,
+        verificationSecretHash: 'legacy-secret-hash',
+      },
+    })
+    await prisma.liveQuizRespondentBinding.create({
+      data: {
+        respondentId: respondent.id,
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 4,
+        verificationSecretHash: 'binding-secret-hash',
+        expiresAt: new Date('2026-08-16T00:00:00.000Z'),
+      },
+    })
+    await prisma.liveQuiz.update({
+      where: { id: liveQuiz.id },
+      data: { isDeleted: true },
+    })
+
+    await expect(
+      reconcileCorrelatedLiveQuizFinalizations({ prisma })
+    ).resolves.toBe(1)
+
+    await expect(
+      prisma.liveQuizRespondentBinding.findUnique({
+        where: { respondentId: respondent.id },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.liveQuizRespondent.findUniqueOrThrow({
+        where: { id: respondent.id },
+      })
+    ).resolves.toMatchObject({ exportLabel: 1 })
+    await expect(
+      prisma.liveQuiz.findUniqueOrThrow({ where: { id: liveQuiz.id } })
+    ).resolves.toMatchObject({ exportSalt: null })
   })
 
   it('expires finalized correlated datasets after the retention window', async () => {
