@@ -33,7 +33,7 @@ stack, and it does not create replacement feature slices.
 | A2 | `rs/pr5134-a2-contracts` / #5371 | Shared token, event, cache, and validation contracts carry `publicationGeneration` and use respondent ownership only for correlated responses. |
 | A3 | `rs/pr5134-a3-admission` / #5372 | Resolve logged-in or anonymous credentials to one generation-scoped respondent, reject temporary-pseudonym admission, hold the shared quiz lock through receipt insertion, and persist receipt generation. |
 | A4 | `rs/pr5134-a4-settlement` / #5373 | Persist correlated responses under `respondentId`; mark receipts settled only after durable apply or durable non-retryable rejection; leave transient failures pending. |
-| A5 | `rs/pr5134-a5-lifecycle` / #5374 | End under the exclusive quiz lock; check the generation settlement predicate; allocate labels; delete bindings, settled receipts, and salt; finalize irreversibly; increment generation for a later run. |
+| A5 | `rs/pr5134-a5-lifecycle` / #5374 | End under the exclusive quiz lock; check the generation settlement predicate; allocate labels; delete bindings, settled receipts, and salt; finalize irreversibly; expire finalized generations after the approved retention window; increment generation for a later run. |
 | B1 | `rs/pr5134-b1-export` / #5376 | Render CSV only from finalized respondent labels and retained response fields; never lazily assign labels or require the deleted salt. |
 | B2 | `rs/pr5134-b2-ui` / #5368 | Manage/PWA notices, mode selection, response routing, export action, i18n, and browser verification. |
 
@@ -265,7 +265,7 @@ Output shape:
 - no email, participant id, username, temporary pseudonym, account type.
 - no submission or join timestamps.
 - unanswered cells are empty; scalar answers are plain text; structured answers use canonical compact JSON in one cell.
-- free-text answers are excluded from the correlated teaching export. Whether correlated mode should reject or omit their durable response payloads remains a data-minimization gate before publication is enabled.
+- free-text answers are excluded from the correlated teaching export. Correlated admission rejects those questions before identity admission or outbox creation, with worker-side rejection retained as defense in depth for already-admitted events.
 - RFC 4180-compatible quoting, CRLF rows, and UTF-8 with BOM so commas, quotes, line breaks, and German text open cleanly in spreadsheet tools.
 - response includes a safe filename, CSV content, and the privacy warning shown by the UI.
 
@@ -431,9 +431,15 @@ Do:
   delete account/credential bindings and settled receipt metadata, allocate
   immutable labels, remove `exportSalt`, mark the generation finalized, and
   reject reopening under the same generation.
-- Do not begin retention-expiry implementation until the finite retention rule
-  and enforcement owner are recorded. Until then, keep correlated publication
-  disabled and mark A5 blocked at that gate.
+- Apply the approved finite retention rule: retain finalized respondent rows
+  for 90 days after `finalizedAt`; let the existing minute-level
+  `reconcile-live-quiz-publications` general-worker task delete expired
+  respondents in bounded batches, cascading responses and corrections while
+  leaving rows with active bindings or pending receipts in place.
+- Enforce the approved field boundary at admission and settlement: reject
+  free-text correlated responses before identity/outbox creation, and persist
+  only the response and grading fields with non-information sentinels in the
+  shared timestamp/time-spent columns.
 
 Files:
 
@@ -449,6 +455,9 @@ Check:
 - Pending receipts block finalization; repeated finalization is idempotent.
 - Bindings, settled receipts, and salt are absent after finalization while
   persisted respondent labels remain stable.
+- Expired finalized respondent rows and their cascaded responses/corrections
+  are deleted, while newer rows and rows blocked by bindings or pending
+  receipts remain.
 - Existing gamified temporary-pseudonym workflows remain unchanged.
 
 Commit:

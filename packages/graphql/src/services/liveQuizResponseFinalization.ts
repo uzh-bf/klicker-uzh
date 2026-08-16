@@ -5,6 +5,9 @@ import type { PrismaTransactionClient } from '@klicker-uzh/util'
 const correlatedResponseMode =
   DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
 
+export const CORRELATED_RESPONSE_RETENTION_DAYS = 90
+const millisecondsPerDay = 24 * 60 * 60 * 1000
+
 export type CorrelatedLiveQuizFinalizationStatus =
   | 'finalized'
   | 'not_applicable'
@@ -296,4 +299,63 @@ export async function reconcileCorrelatedLiveQuizFinalizations({
   }
 
   return quizzes.length
+}
+
+/**
+ * Remove finalized correlated datasets after the teaching-export retention
+ * window. Finalization has already removed the account/token binding and
+ * settled receipts; deleting the respondent row cascades to its response and
+ * correction rows as one referentially-integrity-preserving operation.
+ */
+export async function reconcileExpiredCorrelatedLiveQuizResponses({
+  prisma,
+  batchSize = 50,
+  now = new Date(),
+}: {
+  prisma: DB.PrismaClient
+  batchSize?: number
+  now?: Date
+}) {
+  if (!Number.isInteger(batchSize) || batchSize <= 0) {
+    throw new RangeError(
+      'Correlated response retention batch size must be positive'
+    )
+  }
+
+  const expiryBefore = new Date(
+    now.getTime() - CORRELATED_RESPONSE_RETENTION_DAYS * millisecondsPerDay
+  )
+
+  return prisma.$transaction(async (transaction) => {
+    const expiredRespondents = await transaction.$queryRaw<{ id: string }[]>`
+      SELECT respondent."id"
+      FROM "public"."LiveQuizRespondent" AS respondent
+      WHERE respondent."finalizedAt" IS NOT NULL
+        AND respondent."finalizedAt" <= ${expiryBefore}
+        AND respondent."exportLabel" IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "public"."LiveQuizRespondentBinding" AS binding
+          WHERE binding."respondentId" = respondent."id"
+            AND binding."liveQuizId" = respondent."liveQuizId"
+            AND binding."publicationGeneration" = respondent."publicationGeneration"
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "public"."LiveQuizPendingResponse" AS pending_response
+          WHERE pending_response."liveQuizId" = respondent."liveQuizId"
+            AND pending_response."publicationGeneration" = respondent."publicationGeneration"
+        )
+      ORDER BY respondent."finalizedAt" ASC, respondent."id" ASC
+      LIMIT ${batchSize}
+      FOR UPDATE OF respondent SKIP LOCKED
+    `
+
+    if (expiredRespondents.length === 0) return 0
+
+    const result = await transaction.liveQuizRespondent.deleteMany({
+      where: { id: { in: expiredRespondents.map(({ id }) => id) } },
+    })
+    return result.count
+  })
 }

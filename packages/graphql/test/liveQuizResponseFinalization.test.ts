@@ -13,6 +13,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   endLiveQuizAndFinalizeCorrelatedGeneration,
   finalizeCorrelatedLiveQuiz,
+  reconcileExpiredCorrelatedLiveQuizResponses,
 } from '../src/services/liveQuizResponseFinalization.js'
 import {
   initializePrisma,
@@ -291,6 +292,135 @@ describe('Live quiz correlated response finalization', () => {
       status: PublicationStatus.ENDED,
       exportSalt: 'test-export-salt',
     })
+  })
+
+  it('expires finalized correlated datasets after the retention window', async () => {
+    const element = await prisma.element.create({
+      data: {
+        name: uuid(),
+        content: uuid(),
+        type: ElementType.CONTENT,
+        options: {},
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+    const liveQuiz = await seedCorrelatedQuiz(prisma, userOneCtx, [element.id])
+    const now = new Date('2026-08-16T00:00:00.000Z')
+    const expiredAt = new Date(now.getTime() - (90 + 1) * 24 * 60 * 60 * 1000)
+    const retainedAt = new Date(now.getTime() - (90 - 1) * 24 * 60 * 60 * 1000)
+    const [expiredRespondent, retainedRespondent] = await Promise.all([
+      prisma.liveQuizRespondent.create({
+        data: {
+          id: uuid(),
+          liveQuizId: liveQuiz.id,
+          publicationGeneration: 4,
+          exportLabel: 1,
+          finalizedAt: expiredAt,
+        },
+      }),
+      prisma.liveQuizRespondent.create({
+        data: {
+          id: uuid(),
+          liveQuizId: liveQuiz.id,
+          publicationGeneration: 4,
+          exportLabel: 2,
+          finalizedAt: retainedAt,
+        },
+      }),
+    ])
+    const bindingBlockedRespondent = await prisma.liveQuizRespondent.create({
+      data: {
+        id: uuid(),
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 4,
+        exportLabel: 3,
+        finalizedAt: expiredAt,
+      },
+    })
+    const pendingBlockedRespondent = await prisma.liveQuizRespondent.create({
+      data: {
+        id: uuid(),
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 5,
+        exportLabel: 4,
+        finalizedAt: expiredAt,
+      },
+    })
+    await prisma.liveQuizRespondentBinding.create({
+      data: {
+        respondentId: bindingBlockedRespondent.id,
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 4,
+        verificationSecretHash: uuid(),
+        expiresAt: new Date('2026-08-17T00:00:00.000Z'),
+      },
+    })
+    await prisma.liveQuizPendingResponse.create({
+      data: {
+        id: uuid(),
+        liveQuizId: liveQuiz.id,
+        publicationGeneration: 5,
+        responseKey: uuid(),
+      },
+    })
+    const instance = await prisma.elementInstance.findFirstOrThrow({
+      where: { elementBlock: { liveQuizId: liveQuiz.id } },
+    })
+    await Promise.all(
+      [expiredRespondent, retainedRespondent].map((respondent) =>
+        prisma.liveQuizResponse.create({
+          data: {
+            submittedAt: expiredAt,
+            response: { viewed: true },
+            timeSpent: -1,
+            correctness: ResponseCorrectness.CORRECT,
+            basePoints: 1,
+            correctnessPoints: 0,
+            bonusPoints: 0,
+            elementBlockExecution: 0,
+            instanceId: instance.id,
+            respondentId: respondent.id,
+          },
+        })
+      )
+    )
+
+    await expect(
+      reconcileExpiredCorrelatedLiveQuizResponses({
+        prisma,
+        now,
+      })
+    ).resolves.toBe(1)
+
+    await expect(
+      prisma.liveQuizRespondent.findUnique({
+        where: { id: expiredRespondent.id },
+      })
+    ).resolves.toBeNull()
+    await expect(
+      prisma.liveQuizResponse.count({
+        where: { respondentId: expiredRespondent.id },
+      })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.liveQuizRespondent.findUnique({
+        where: { id: retainedRespondent.id },
+      })
+    ).resolves.toMatchObject({ exportLabel: 2, finalizedAt: retainedAt })
+    await expect(
+      prisma.liveQuizResponse.count({
+        where: { respondentId: retainedRespondent.id },
+      })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.liveQuizRespondent.findMany({
+        where: {
+          id: {
+            in: [bindingBlockedRespondent.id, pendingBlockedRespondent.id],
+          },
+        },
+      })
+    ).resolves.toHaveLength(2)
   })
 })
 

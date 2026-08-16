@@ -55,6 +55,7 @@ import {
   endLiveQuizAndFinalizeCorrelatedGeneration,
   finalizeCorrelatedLiveQuiz,
   reconcileCorrelatedLiveQuizFinalizations,
+  reconcileExpiredCorrelatedLiveQuizResponses,
 } from './liveQuizResponseFinalization.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -3357,6 +3358,9 @@ export const handleReconcileLiveQuizPublications: HatchetHandlers['handleReconci
         globalCtx.hatchet.scheduled.delete(taskId),
     })
     await reconcileCorrelatedLiveQuizFinalizations({
+      prisma: globalCtx.prisma,
+    })
+    await reconcileExpiredCorrelatedLiveQuizResponses({
       prisma: globalCtx.prisma,
     })
     return true

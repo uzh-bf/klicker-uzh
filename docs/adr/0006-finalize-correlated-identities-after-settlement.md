@@ -32,7 +32,22 @@ The retained dataset consists of the minimal generation-scoped respondent key, i
 
 Assessment responses never cross this boundary. Their participant association and correction history remain intact. Reopening a finalized correlated quiz cannot restore deleted associations. A later run increments `LiveQuiz.publicationGeneration`, creates a new export salt, and uses new respondents, bindings, generation-bearing anonymous tokens, receipts, and labels. Correlated responses reference that generation through their respondent; export and finalization always filter one generation.
 
-The correlated dataset remains pseudonymous rather than anonymous and therefore requires a finite retention policy. The exact retention period and the field-level need for values not exposed in the teaching export, including exact timestamps, time spent, and free-text payloads, must be resolved before correlated publication is enabled. At expiry, respondent keys, labels, responses, and derived correlated-export data are deleted together.
+The correlated dataset remains pseudonymous rather than anonymous and therefore
+uses a finite retention policy. The finalized respondent dataset is retained
+for 90 days after `finalizedAt` so lecturers can complete a normal
+teaching and re-export window. The existing minute-level
+`reconcile-live-quiz-publications` task, handled by the general worker, owns
+expiry reconciliation in bounded batches. It deletes only finalized rows with
+no active binding or pending receipt; the respondent delete cascades to
+`LiveQuizResponse`, applied corrections, and the immutable export label as one
+referentially-integrity-preserving operation.
+
+Correlated admission rejects free-text questions before identity admission or
+outbox creation. Correlated durable rows retain only the approved response and
+grading fields. The shared response table's required legacy timestamp and
+time-spent columns receive non-information sentinels (`1970-01-01T00:00:00Z`
+and `-1`); the event timestamp remains transient for grading and is never
+retained or exported.
 
 ## Consequences
 
@@ -40,4 +55,5 @@ The correlated dataset remains pseudonymous rather than anonymous and therefore 
 - Stable re-exports remain possible during the retention period.
 - Finalization must be idempotent, transactional, and blocked by unsettled outbox receipts.
 - Finalization deletes settled outbox metadata after labels and retained responses are proven complete.
+- Expiry is bounded and retryable; rows that still have a binding or pending receipt are left in place for the next reconciliation pass.
 - A finalized dataset cannot be used for participant-level corrections, appeals, or re-identification; those remain assessment capabilities only.
