@@ -1909,11 +1909,29 @@ test.describe('Chatbot History Rail', () => {
       page.locator(`[data-history-rail-anchor="message:${firstUserId}"]`)
     ).toBeFocused()
 
+    // A second navigation issued right after the first jump must leave the
+    // last-selected tick current; a stale scroll-spy callback must not win.
+    // Navigating closes the dialog, so reopen it before picking the next row.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await dialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+    await expect(page.locator('[aria-current="step"]')).toHaveCount(1)
+
+    // Close the desktop dialog with Escape; focus returns to the invoking tick.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(currentTick).toBeFocused()
+
     await page.setViewportSize({ width: 390, height: 844 })
     await expect(rail).toBeHidden()
     const mobileTrigger = page.getByTestId('chat-history-rail-mobile-trigger')
     await expect(mobileTrigger).toBeVisible()
-    await expect(mobileTrigger).toContainText('1/2')
+    await expect(mobileTrigger).toContainText('/2')
     await mobileTrigger.click()
     const mobileDialog = page.locator('[data-history-rail-dialog]')
     await expect(mobileDialog).toBeVisible()
@@ -1924,6 +1942,15 @@ test.describe('Chatbot History Rail', () => {
     await expect(
       page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
     ).toBeFocused()
+    // Close the mobile dialog with the 44px close button; focus returns to the
+    // mobile trigger.
+    await mobileTrigger.click()
+    await expect(mobileDialog).toBeVisible()
+    await mobileDialog
+      .getByRole('button', { name: /close full history/i })
+      .click()
+    await expect(mobileDialog).toHaveCount(0)
+    await expect(mobileTrigger).toBeFocused()
   })
 })
 

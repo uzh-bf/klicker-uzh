@@ -1,6 +1,9 @@
 # Chat history rail correction
 
-- Status: replayed on fresh base; implementation and review gates pending
+- Status: implemented and committed (4 commits ahead of f8af0a899, through
+  f547e1f5d); simplifier, named-risk slice review, and integrated final
+  review complete. Publication (push/PR/readiness/merge) remains pending and
+  separately authorized.
 - Branch: `rs/chat-history-rail-correction`
 - Worktree: `trees/chat-history-rail`
 - Base: `origin/v3` at `f8af0a899305b182635d53069b4970330fb8338d`
@@ -121,8 +124,21 @@ feature stack.
 - [x] Add explicit orphan and complete-text projection tests.
 - [x] Align current docs/log wording and date with the mobile trigger contract.
 - [x] Re-run focused checks and real-browser verification on this fresh base.
-- [ ] Obtain commit authorization, commit exact slices, and run review gates.
+- [x] Commit the exact slices (4 commits through `f547e1f5d`) and run review
+      gates: simplifier, named-risk slice review, integrated final review.
 - [ ] Obtain separate push/PR/readiness/merge authority.
+
+## Product-primitive disposition
+
+The change is a derived navigation composition over the existing canonical
+conversation path. The canonical message/turn primitives, history persistence,
+and ownership are reused unchanged: no schema, API, persistence, or state
+ownership delta is introduced, and no second primitive claims turn identity,
+history, or navigation state. The history rail is a read-only projection whose
+consumer is the chat transcript (message roots). This satisfies the
+product-primitive integrity check: no primitive-impact table is required for an
+internal behavior-preserving view, and no primitive delta with user-outcome
+consequences is introduced.
 
 ## Known blockers and boundaries
 
