@@ -143,7 +143,7 @@ empty feature payload and deterministic fallbacks.
   make no external network requests.
 - Document browser versus internal Node connectivity, configuration, attribute
   privacy, lifecycle, fallbacks, and adoption steps.
-- Add ADR 0005 recording the decision to replace database-wide preview
+- Add ADR 0008 recording the decision to replace database-wide preview
   booleans with GrowthBook flags incrementally.
 - Add the package to the monorepo build/check/test conventions.
 
@@ -270,7 +270,7 @@ draft PR.
 ## Documentation
 
 - Layer 1 adds `docs/feature-flags.md`, links it from `docs/index.md`, records
-  ADR 0005, and adds a dated wiki log entry.
+  ADR 0008, and adds a dated wiki log entry.
 - Layer 1 updates `docs/frontend-conventions.md` to replace the obsolete
   dedicated-platform rejection while retaining both legacy preview fields.
 - Layer 2 documents the learning-analytics flag and migration of

@@ -48,7 +48,15 @@ Every evaluation receives the contract from
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
 - `actorType`: `user`, `participant`, or `anonymous`;
 - `role`: the Klicker role when applicable;
-- `environment`: `development`, `test`, `staging`, or `production`.
+- `environment`: `development`, `test`, `staging`, `production`, or `unknown`.
+
+`normalizeFeatureFlagEnvironment` maps an unset value to `development` and any
+other unrecognized value to `unknown`, logging it. `unknown` is a name no
+GrowthBook environment rule is configured against, so a misspelled deployment
+variable leaves every flag on its default rather than picking up the rollout of
+whichever tier the typo happens to resemble. The variable that feeds it,
+`NEXT_PUBLIC_ENV`, is registered in `turbo.json` `globalEnv` so that changing it
+invalidates the Turborepo build cache.
 
 Do not use email addresses or other direct identifiers. Browser attributes and
 client-side targeting rules are observable by the person using the browser, so
@@ -116,8 +124,13 @@ the service needs new definitions without restarting.
 
 ## Adding a flag
 
-1. Add the exact GrowthBook key and safe fallback to
-   `FEATURE_FLAG_DEFAULTS`, then update the contract test.
+1. Add the exact GrowthBook key to `FEATURE_FLAG_DEFAULTS` with the value
+   `false`, then update the contract test. The registry is typed
+   `satisfies Record<string, false>` because evaluation resolves an unavailable
+   flag through GrowthBook's own fallback rather than through this object; a
+   `true` here would describe a fallback that never takes effect. A flag that
+   genuinely needs to default on must switch the evaluation path to
+   `getFeatureValue`/`useFeatureValue` first.
 2. Create the corresponding feature in each GrowthBook environment.
 3. Add the package dependency and environment variables only to consumers of
    the flag.
@@ -128,4 +141,4 @@ the service needs new definitions without restarting.
    that it is not an authorization boundary.
 
 The architectural rationale is recorded in
-[ADR 0005](./adr/0005-use-growthbook-for-feature-flags.md).
+[ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).

@@ -64,7 +64,7 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - `packages/feature-flags/test/node.test.ts` — Node SDK fallback, targeting, and
   request-isolation tests.
 - `docs/feature-flags.md` — adoption and operations guide.
-- `docs/adr/0005-use-growthbook-for-feature-flags.md` — architecture decision.
+- `docs/adr/0008-use-growthbook-for-feature-flags.md` — architecture decision.
 - `docs/adr/README.md`, `docs/index.md` — wiki navigation.
 - `docs/log/2026-08-06-growthbook-foundation.md` — wiki change record.
 - `pnpm-lock.yaml` — pinned dependency resolution.
@@ -536,7 +536,7 @@ git commit -m "feat(feature-flags): add React adapter"
 **Files:**
 
 - Create: `docs/feature-flags.md`
-- Create: `docs/adr/0005-use-growthbook-for-feature-flags.md`
+- Create: `docs/adr/0008-use-growthbook-for-feature-flags.md`
 - Create: `docs/log/2026-08-06-growthbook-foundation.md`
 - Modify: `docs/adr/README.md`
 - Modify: `docs/index.md`
@@ -566,7 +566,7 @@ await flags.initialize()
 flags.isEnabled(featureKey, requestAttributes)
 ```
 
-ADR 0005 records direct browser evaluation as the default for UI-only flags,
+ADR 0008 records direct browser evaluation as the default for UI-only flags,
 process-level `GrowthBookClient` plus request attributes for Node, incremental
 migration from preview booleans, and remote evaluation as the privacy upgrade.
 

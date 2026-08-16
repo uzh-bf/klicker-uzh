@@ -1,4 +1,4 @@
-# 5. Use GrowthBook for shared feature flags
+# 8. Use GrowthBook for shared feature flags
 
 - **Status:** Accepted — 2026-08-06
 - **Deciders:** KlickerUZH maintainers
