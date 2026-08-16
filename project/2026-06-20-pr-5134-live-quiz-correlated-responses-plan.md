@@ -282,6 +282,19 @@ Research export:
 - aggregate/DP-safe by default.
 - no raw row-wise matrix in research profile unless explicit external approval.
 
+## Primitive impact
+
+| Primitive | Decision | Owner and lifecycle | Consumers | Partial failure behavior |
+| --- | --- | --- | --- | --- |
+| `LiveQuiz.responseCollectionMode` | Reuse the existing enum with `CORRELATED_EXPORT` | LiveQuiz publication lifecycle; mode is locked while responses exist and carries through publication generations | Publication gating, response-api routing, evaluation UI | Mode changes are rejected under an exclusive lock once a generation admitted responses |
+| `LiveQuizRespondent` | New pseudonymous identity, one per participant per publication generation | Created at correlated admission; finalized when the ended generation settles (immutable `exportLabel`, transient fields nulled); deleted 90 days after `finalizedAt` | Correlated responses, correlated export | Unsettled receipts block finalization; expired rows are denied export even before cleanup deletes them |
+| `LiveQuizRespondentBinding` | New temporary account/token binding | Created or refreshed at admission; deleted at generation finalization; never exported | Correlated admission only | A lost uniqueness race retries against the winning binding; the binding never outlives settlement |
+| `TemporaryLeaderboardEntry` | Keep separate from `LiveQuizRespondent` (ADR-0005) | Gamification lifecycle, unchanged | Anonymous gamification leaderboard | Correlated quizzes create no leaderboard entries and temporary identities cannot enter correlated mode |
+| `LiveQuizPendingResponse` | Reuse the outbox with a generation-scoped response key | Reserved at admission; settled durably; settled receipts deleted at finalization | Correlated response processor, finalization | Pending or retryable receipts block finalization; transient errors stay pending without a timeout |
+| `LiveQuizResponse` | Reuse the shared response table through `respondentId` | Created by the settlement worker with sentinel timestamps; cascade-deleted with its respondent | Correlated export, evaluations | Response rows outside the finalized generation fail the export preflight closed |
+| Assessment responses and participation | Unchanged and explicitly out of scope (ADR-0006) | Assessment lifecycle with intact participant association and correction history | Assessment grading and appeals | Assessment quizzes never enter correlated mode and never cross the identity-finalization boundary |
+| Correlated CSV export | New read-only consumer of one finalized generation | Manage evaluation gates readiness; service enforces size and retention boundaries | Lecturer teaching export | Not-ready, invalid, and expired generations return distinct errors; `canExportCorrelatedResponses` mirrors the same predicate |
+
 ## Stack-owned capability work
 
 The sections below describe adaptation work on the already-existing slices.
@@ -766,6 +779,22 @@ Later research:
   `-1` sentinels for the shared legacy timestamp/time-spent columns. Focused
   retention, response-api, and worker tests are added locally; runtime and
   integrated-review gates remain open.
+- 2026-08-16: The integrated final review returned DONE_WITH_CONCERNS
+  (93/100); every finding was verified against the code and corrected in its
+  owning layer. A3 now retries identity-creation uniqueness races and derives
+  duplicate status from the response-key receipt instead of treating every
+  constraint violation as a duplicate response. A4 drops a redundant worker
+  test. A5 finalizes soft-deleted ended correlated quizzes (lock and
+  reconciliation no longer exclude `isDeleted`) and removes the obsolete
+  temporary-pseudonym test that contradicted the ADR-0005 login rejection.
+  B1 denies export and clears `canExportCorrelatedResponses` at the retention
+  cutoff even while physical cleanup is still progressing. B2 refreshes the
+  memory-only bearer after any correlated 401 so a cookie-blocked tab survives
+  a publication-generation rollover. ADR-0006 records the access and
+  soft-delete boundaries, and a primitive-impact table was added above.
+  Fresh focused evidence: response-api 26/26 (A3), worker 34 pass plus one
+  environment skip (A4), correlated export unit tests 14/14 (B1); DB-backed
+  suites, cookie-blocked rollover verification, and remote CI remain open.
 
 ## Goal Prompt Requirements
 
@@ -787,6 +816,7 @@ If handed to another agent:
    runtime becomes available, execute the existing participant Playwright
    journey. The mandatory agent-browser notice and response-admission checks
    are now green; Manage EN/DE mode-selection verification is already green.
-2. Run the integrated final review. Only after the runtime gate and integrated
-   review are clear should the existing draft PR stack be prepared for remote
-   update; this plan does not authorize push, merge, or ready status.
+2. Complete the single correction pass of the integrated final review on the
+   corrected range, then execute the user-approved force-with-lease push of
+   all seven branches and update the PR bodies. Merge, ready status, and
+   rebasing onto the newer `v3` remain separate user decisions.
