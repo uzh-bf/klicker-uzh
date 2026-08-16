@@ -149,8 +149,9 @@ DRY_RUN=false pnpm --filter @klicker-uzh/prisma-data run script:prod -- \
 
 The production commands document the generic protocol for future operators; they do not by
 themselves authorize a write, route deployment, runtime release, or MCP activation. The current
-Informatik-und-Wirtschaft production rows were prepared with a separate guarded transaction,
-while the course-specific provisioner remains optional and is not required for this chatbot.
+Informatik-und-Wirtschaft production rows were prepared with a separately authorized guarded
+transaction; that authorization ended after readback. The course-specific provisioner remains
+optional and is not required for this chatbot.
 
 ### First-login demo content
 

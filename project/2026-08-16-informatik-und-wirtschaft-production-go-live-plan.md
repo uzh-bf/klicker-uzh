@@ -45,7 +45,8 @@ still need a user ruling.
   database activation, and paid ingestion run is separately authorized; this
   plan does not authorize any of them by itself.
 - No STG reingestion, no legacy consumer changes, no broad video sweep, no
-  merge requirement for draft `#5406`, and no second legacy PRD route.
+  merge requirement for optional course-specific `#5406`, and no second legacy
+  PRD route.
 
 ## Dependency ruling (recommended)
 
@@ -83,8 +84,9 @@ different boundary).
   parallel tenant mounts or Secret declarations from this thread.
 - Thread `019fead3` (RadioSurfVet) owns the second missing pair; align on the
   single W5a inventory update and avoid duplicate Secret/MR work.
-- The optional provisioner `#5406` stays unmerged; the prepared production rows
-  were created by a separate guarded transaction and are the activation target.
+- The optional provisioner `#5406` is closed and stays unmerged; the prepared
+  production rows were created by a separate guarded transaction and are the
+  activation target.
 
 ## Evidence ledger before activation
 
