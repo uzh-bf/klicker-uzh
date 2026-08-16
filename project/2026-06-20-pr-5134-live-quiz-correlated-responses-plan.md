@@ -11,7 +11,7 @@ Original PR: [#5134](https://github.com/uzh-bf/klicker-uzh/pull/5134), preserved
 Status: the full A1-A5/B1-B2 slices already exist in the replacement draft
 stack. The A1-A5 ADR adaptation, B1 export-source adaptation, and B2 cascade
 are now applied locally; the remaining work is to clear the retention,
-participant-browser, integrated-review, and delivery gates. This is an in-place
+participant-runtime, integrated-review, and delivery gates. This is an in-place
 adaptation of existing slices, not a new feature build or a new topology.
 
 ## Current Stack Topology
@@ -50,8 +50,8 @@ respondent labels, rejects incomplete settlement and invalid owners, and has no
 interim export-label table or lazy HMAC assignment. A1-A5 persist
 generation-scoped respondents and active bindings, settle under the
 shared/exclusive quiz locks, and allocate labels transactionally only after
-settlement. The remaining work is B2, finite retention, integrated checks, and
-browser/delivery gates.
+settlement. The remaining work is the retention/runtime follow-up, integrated
+checks, and browser/delivery gates.
 
 ## Non-Goals
 
@@ -80,8 +80,9 @@ Current interim-stack evidence:
   transactional response admission, worker processing, lifecycle generation,
   CSV delivery, notices, and cookie-blocked fallback behavior.
 - The accepted B2 delivery slice has been cascaded onto the adapted A5/B1
-  identity and finalization contract. The remaining gap is the finite-retention
-  policy and runtime proof of the participant journey.
+  identity and finalization contract. The finite-retention policy is now
+  recorded and implemented locally; the remaining gates are runtime worker
+  proof and the integrated final review.
 - Source checks are recorded as green. Manage EN/DE mode-selection verification
   is green. A clean generated PWA dev cache and managed DevPod restart restored
   the dynamic `/session/:id` route; mandatory agent-browser verification then
@@ -755,6 +756,16 @@ Later research:
   unavailable after the Hatchet SDK `this.logger[message.type]` crash, and the
   isolated Playwright runtime is still unavailable. Retention policy and the
   integrated final review remain open.
+- 2026-08-16: The retention ruling is recorded in ADR-0006: finalized
+  correlated datasets are retained for 90 days after `finalizedAt`.
+  The existing minute-level general-worker reconciliation task now deletes
+  expired generation-scoped respondents in bounded batches, cascading durable
+  responses and corrections while preserving rows blocked by an active binding
+  or pending receipt. Correlated admission and worker defense-in-depth reject
+  free-text responses before durable persistence; correlated rows use epoch and
+  `-1` sentinels for the shared legacy timestamp/time-spent columns. Focused
+  retention, response-api, and worker tests are added locally; runtime and
+  integrated-review gates remain open.
 
 ## Goal Prompt Requirements
 
@@ -772,12 +783,10 @@ If handed to another agent:
 
 ## Next Steps
 
-1. Record the finite retention period, deletion trigger, and enforcement owner;
-   until then, keep correlated publication disabled.
-2. Restore a healthy managed response-worker runtime and, if the browser
+1. Restore a healthy managed response-worker runtime and, if the browser
    runtime becomes available, execute the existing participant Playwright
    journey. The mandatory agent-browser notice and response-admission checks
    are now green; Manage EN/DE mode-selection verification is already green.
-3. Run the integrated final review. Only after the retention and runtime gates
-   are clear should the existing draft PR stack be prepared for remote update;
-   this plan does not authorize push, merge, or ready status.
+2. Run the integrated final review. Only after the runtime gate and integrated
+   review are clear should the existing draft PR stack be prepared for remote
+   update; this plan does not authorize push, merge, or ready status.
