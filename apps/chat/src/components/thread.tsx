@@ -294,7 +294,7 @@ export const Thread: FC<ThreadProps> = ({
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8',
-                showHistoryRail && 'pt-14 sm:pl-10 sm:pt-8'
+                showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
               )
         )}
       >

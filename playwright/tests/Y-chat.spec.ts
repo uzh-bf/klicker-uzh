@@ -1817,6 +1817,117 @@ test.describe('Chatbot Settings Panel', () => {
 })
 
 // ===========================================================================
+// History Rail
+// ===========================================================================
+test.describe('Chatbot History Rail', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('pairs turns, keeps tool calls out of the rail, and navigates on desktop and mobile', async ({
+    page,
+  }) => {
+    const firstUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c50'
+    const firstAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c51'
+    const secondUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c52'
+    const secondAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c53'
+
+    await seedThread(participantId, {
+      title: 'History rail test',
+      messages: [
+        {
+          id: firstUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'First rail question' }],
+        },
+        {
+          id: firstAssistantId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'First rail answer' }],
+        },
+        {
+          id: secondUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'Second rail question' }],
+        },
+        {
+          id: secondAssistantId,
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Second rail answer' },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-1',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'First result' }] },
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-2',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'Second result' }] },
+            },
+          ],
+        },
+      ],
+    })
+
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const rail = page.locator('[data-cy="chat-history-rail"]')
+    await expect(rail).toBeVisible()
+    const ticks = rail.locator('[data-history-rail-tick]')
+    await expect(ticks).toHaveCount(2)
+    const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
+    await expect(toolGroupToggle).toHaveCount(1)
+    await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'false')
+
+    await ticks.first().hover()
+    const popover = page.getByTestId('chat-history-rail-turn-popover')
+    await expect(popover).toContainText('First rail question')
+    await expect(popover).toContainText('First rail answer')
+    await page.mouse.move(0, 0)
+    await expect(popover).toHaveCount(0)
+
+    const currentTick = rail.locator('[aria-current="step"]')
+    await expect(currentTick).toHaveCount(1)
+    await currentTick.click()
+    const dialog = page.locator('[data-history-rail-dialog]')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.locator('[data-history-dialog-entry]')).toHaveCount(2)
+    await dialog.locator('[data-history-dialog-entry]').first().click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${firstUserId}"]`)
+    ).toBeFocused()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(rail).toBeHidden()
+    const mobileTrigger = page.getByTestId('chat-history-rail-mobile-trigger')
+    await expect(mobileTrigger).toBeVisible()
+    await expect(mobileTrigger).toContainText('1/2')
+    await mobileTrigger.click()
+    const mobileDialog = page.locator('[data-history-rail-dialog]')
+    await expect(mobileDialog).toBeVisible()
+    await expect(
+      mobileDialog.locator('[data-history-dialog-entry]')
+    ).toHaveCount(2)
+    await mobileDialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+  })
+})
+
+// ===========================================================================
 // Source Citations
 // ===========================================================================
 test.describe('Chatbot Source Citations', () => {
