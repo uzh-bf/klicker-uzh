@@ -28,15 +28,17 @@ still need a user ruling.
   401, synthetic Klicker-compat binding proof with guarded rollback and zero
   residual rows).
 - Production multi-tenant state (from the pre-cutover roadmap, thread
-  `019febd4-cc79-7ce2-915a-6511aa7bd1a5`): the neutral PRD workload is
-  Aibuddy-only on an older image pair; the PRD Klicker source inventory has 15
-  tool pairs and is missing the I&W video pair and the RadioSurfVet pair;
-  canonical PRD source pairs and collection-readiness evidence for both
-  additions do not exist yet; df-cloud MR `!375` landed the tenant Secrets on
-  `stg` (`b9e96928`) but the `prd` head (`d697fa66`) does not contain the
-  tenant Secret declarations.
+  `019febd4-cc79-7ce2-915a-6511aa7bd1a5`): deployment `origin/main@32d51401`
+  now contains the exact 17-pair Klicker inventory, including both the I&W
+  video pair and the RadioSurfVet pair. This proves the committed source pair,
+  not the PRD collection or a live retrieval path. Draft deployment MR `!609`
+  pins the STG-proven v0.8.1 image and preserves that inventory; its pipeline
+  `645943` passed, but publication is held because the separate Aibuddy
+  `doc-query-eduai` Secret apply failed on pre-existing Azure
+  BlobServiceProperties drift (`InvalidRequestPropertyValue`). No secret
+  values were read, and no PRD runtime change is claimed from the draft.
 - The RadioSurfVet onboarding (thread `019fead3-07b6-7831-a941-517620b0010d`)
-  owns the second missing PRD tool pair and is aligning its roadmap with this
+  owns the second course pair and is aligning its roadmap with this
   deployment; both additions share the same W5a inventory gate.
 
 ## Authority and non-goals
@@ -61,8 +63,8 @@ different boundary).
 
 | Phase | Content | Owner | Gate |
 | --- | --- | --- | --- |
-| P0 PRD data readiness | Canonical PRD source pair for `informatik_und_wirtschaft_video_expert` and PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. | This thread, coordinated with the ingestion lane | Bounded paid-run authorization when scheduled; feeds the W5a source-pair gate |
-| P1 Multi-tenant PRD service | W5a dark preparation (single tenant inventory update including both missing pairs), W5a.1 neutral publication/readback, W5b/W5c canary + Argo profile, W5d grants, W5e publication + operator proof + direct-Chat proof, W6 readiness review. | Thread `019febd4` (deployment repo) | Its own approval gates; I&W contributes P0 evidence only |
+| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. | This thread, coordinated with the ingestion lane | Bounded paid-run authorization when scheduled; feeds the W5a source-pair gate |
+| P1 Multi-tenant PRD service | W5a dark preparation (single tenant inventory/readback for both course pairs), W5a.1 neutral publication/readback, W5b/W5c canary + Argo profile, W5d grants, W5e publication + operator proof + direct-Chat proof, W6 readiness review. | Thread `019febd4` (deployment repo) | Its own approval gates; I&W contributes P0 evidence only |
 | P2 Klicker PRD runtime promotion | Build and promote the chat image from `v3` at or after `2d9c5d048` (contains `#5405`/`#5411`/`#5414`), production values promotion PR, manual Argo reconciliation of the PRD `app-klicker` application, rollout marker and pod digest readback. | This thread | Separately authorized production promotion |
 | P3 Credential and activation | Read-only preflight of the prepared rows; custody-approved PRD tenant bearer for the Klicker caller; rekey the inactive MCP server row with the running production chat application key (the STG lesson: the Infisical profile `APP_SECRET` is not the live app key); verify both strict bindings; one transactional activation; immediate readback. | This thread | P1 W5e proof + P2 runtime live |
 | P4 Bounded verification | Discovery and deep link; anonymous denial; non-participant denial (identity still missing, also open in STG); disclaimer; transcript-only, visual-only, mixed-evidence, and no-answer probes; source cards with `[n]` citations, titles, timestamps; credits; deactivate/reactivate drill. | This thread | P3 complete |
@@ -73,7 +75,7 @@ different boundary).
 | # | Decision | Recommendation |
 | --- | --- | --- |
 | D1 | Ride the multi-tenant PRD line versus an interim legacy PRD route | Ride the multi-tenant line; accept no earlier activation boundary than the W5e direct-Chat proof |
-| D2 | One W5a tenant-inventory update with both missing pairs versus an I&W-only update | One coordinated update owned by thread `019febd4`, with the RadioSurfVet thread contributing its pair |
+| D2 | One W5a tenant-inventory update covering both course pairs versus an I&W-only update | One coordinated update owned by thread `019febd4`, with the RadioSurfVet thread contributing its pair |
 | D3 | PRD corpus ingestion run (paid, bounded to the 82 course videos) | Authorize when P0 is scheduled so W5a collection readiness is not blocked |
 | D4 | Activation timing after W5e versus waiting for full W6 `READY_FOR_CUTOVER_REVIEW` | Activate after W5e direct-Chat proof with the I&W-slice evidence complete; the general legacy cutover stays a separate decision |
 
@@ -82,7 +84,7 @@ different boundary).
 - Thread `019febd4` owns the deployment-repo W-items; this thread contributes
   the I&W PRD source pair and collection evidence and consumes its gates. No
   parallel tenant mounts or Secret declarations from this thread.
-- Thread `019fead3` (RadioSurfVet) owns the second missing pair; align on the
+- Thread `019fead3` (RadioSurfVet) owns the second course pair; align on the
   single W5a inventory update and avoid duplicate Secret/MR work.
 - The optional provisioner `#5406` is closed and stays unmerged; the prepared
   production rows were created by a separate guarded transaction and are the
