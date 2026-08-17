@@ -19,8 +19,16 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
 - [0006](./0006-public-catalyst-capability-floor.md) — What public KlickerUZH keeps when Catalyst is absent
 - [0007](./0007-reintegrate-v3-ai-behind-feature-flags.md) — Reintegrate `v3-ai` into `v3` behind feature flags, after VK2
+- [0009](./0009-kb-owns-two-derived-projections.md) — The knowledge base owns two derived projections with independent lifecycles
+- [0010](./0010-graphml-archive-recovers-falkordb.md) — GraphML archive recovers the FalkorDB serving projection
+- [0011](./0011-catalyst-owns-knowledge-graph-runtime.md) — Catalyst owns the knowledge-graph runtime, not AI ingestion
+- [0012](./0012-catalyst-imports-complete-graph-history.md) — Catalyst imports the complete graph-runtime history
+- [0013](./0013-klicker-reserves-and-settles-graph-cost.md) — Klicker reserves and settles graph cost
+- [0014](./0014-beta-learns-before-quality-thresholds.md) — The graph beta learns before quality thresholds gate it
+- [0015](./0015-graphml-follows-kb-lifecycle.md) — GraphML archive follows the knowledge-base lifecycle
+- [0016](./0016-catalyst-integrates-complete-graph-history.md) — Catalyst integrates the complete graph-runtime history
 
 `0001` and `0003` are each used twice — the deployment and chat lines numbered
 independently before this index existed. Numbers are not reassigned, because existing
-records cite them. `0005` is reserved by an open PR. Pick the next free number by
-checking this directory, not by counting entries.
+records cite them. `0005` is reserved by an open PR and `0008` by the feature-flags
+stack. Pick the next free number by checking this directory, not by counting entries.

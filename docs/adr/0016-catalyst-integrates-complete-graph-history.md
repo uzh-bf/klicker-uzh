@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 8. Catalyst integrates the complete graph-runtime history
+# 16. Catalyst integrates the complete graph-runtime history
 
 Status: Accepted (2026-08-10)
 

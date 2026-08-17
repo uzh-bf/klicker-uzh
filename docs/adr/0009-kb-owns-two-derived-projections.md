@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 1. The knowledge base owns two derived projections with independent lifecycles
+# 9. The knowledge base owns two derived projections with independent lifecycles
 
 Status: Accepted (2026-07-31)
 

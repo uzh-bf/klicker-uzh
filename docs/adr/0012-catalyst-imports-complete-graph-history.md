@@ -8,9 +8,9 @@ tags:
   - knowledge-base
 ---
 
-# 4. Catalyst imports the complete graph-runtime history
+# 12. Catalyst imports the complete graph-runtime history
 
-Status: Superseded by ADR 0008 (2026-08-10)
+Status: Superseded by ADR 0016 (2026-08-10)
 
 The empty Catalyst repository starts by importing the complete
 `kg-content-generation` Git history after that history passes a secrets and

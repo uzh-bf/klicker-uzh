@@ -16,7 +16,7 @@ Parent plans:
 - Temporary provider-side harness plan, used only as a coverage-transfer source:
   `project/2026-08-10-kb-pgvector-graph-e2e-plan.md` in the
   `data-ingestion` repository
-- [KB-owned projection decision](../docs/adr/0001-kb-owns-two-derived-projections.md)
+- [KB-owned projection decision](../docs/adr/0009-kb-owns-two-derived-projections.md)
 
 Audience: an agent or engineer starting with no session context. Read the
 parent plans and ADRs before starting a work item. Each work item becomes its
@@ -87,19 +87,19 @@ branch and remote state can advance.
 | Temporary cross-system harness | Implemented in data-ingestion on `rs/kb-pgvector-graph-e2e` at `a0fcd4f2`; its safety and assertion work is reusable, but KG-system ownership belongs in Catalyst rather than AI infrastructure | 33 focused tests and `uv run poe check` passed on 2026-08-10; prior capable review passed `a2c72a7..c499c80` with no verified P1/P2 findings |
 | Data-ingestion base | Needs semantic reconciliation | Branch was 16 commits ahead and 16 behind current `origin/main` on 2026-08-15; both sides touched workflow timeout/default files and tests; unrelated local changes remain preserved |
 | Full local system proof | Not run successfully | No completed upload → ingestion → pgvector → graph build → GraphQL/FalkorDB/GraphML → cleanup run exists; the prior proof containers and port `18081` listener were absent on 2026-08-15 |
-| Runtime ownership | Resolved; W1 start base selected | The Klicker team owns the runtime in private repository `uzh-bf/klicker-uzh-catalyst`. PR #2 and PR #3 are merged, and later work is also on `main`. W1 starts from the latest fetched `main`, integrates the complete `kg-content-generation` history after a sensitive-history audit, preserves both repositories' ancestry and Patrick's authorship, and refactors only in later Catalyst commits; see ADR 0008. AI infrastructure supplies services such as doc-processing but does not own this runtime |
+| Runtime ownership | Resolved; W1 start base selected | The Klicker team owns the runtime in private repository `uzh-bf/klicker-uzh-catalyst`. PR #2 and PR #3 are merged, and later work is also on `main`. W1 starts from the latest fetched `main`, integrates the complete `kg-content-generation` history after a sensitive-history audit, preserves both repositories' ancestry and Patrick's authorship, and refactors only in later Catalyst commits; see ADR 0016. AI infrastructure supplies services such as doc-processing but does not own this runtime |
 | Production review | Not started | Full-path security, maintainability, and exact-final-outcome gates remain required per work item before publication |
 
 ## Non-negotiables
 
 - **Do not re-litigate:** Klicker KB owns graph orchestration, published build
-  selection, and the two derived projections. The rationale lives in ADR 0001.
+  selection, and the two derived projections. The rationale lives in ADR 0009.
 - **Do not re-litigate:** Klicker owns KB product state, authorization,
   lifecycle, quota enforcement, and the lecturer/student experience. Catalyst
   owns graph generation, FalkorDB operation, the GraphML archive, KG quality,
   and KG-system E2E. AI infrastructure owns data-ingestion, doc-processing, and
   pgvector; Catalyst and Klicker consume those services through contracts. See
-  ADR 0003.
+  ADR 0011.
 - **Do not re-litigate:** Patrick's branches, authored commits, Cytoscape
   presentation, and parked PR remain source history. Adaptations are separate
   commits; squashing must never erase his authorship.
@@ -115,12 +115,12 @@ branch and remote state can advance.
 - **Do not re-litigate:** completed GraphML files are the durable graph archive
   and FalkorDB is a reconstructible serving projection. The first beta does not
   require FalkorDB high availability or database backup as the recovery source;
-  see ADR 0002.
+  see ADR 0010.
 - Model-quality evaluation never substitutes for deterministic system checks,
   and a non-empty graph never counts as model-quality evidence. Existing
   testing and the production canary are sufficient to open the explicitly
   labeled beta; curated quality evaluation gathers evidence during beta and
-  gates widening, general availability, and quality claims. See ADR 0006.
+  gates widening, general availability, and quality claims. See ADR 0014.
 - The first deployment is disabled by default. New graph builds require a
   dedicated kill switch independent of ordinary KB ingestion.
 - The lecturer beta is publicly described as beta and self-service. Enabling it
@@ -143,7 +143,7 @@ branch and remote state can advance.
   use are isolated in the generic AI credential-management handoff.
 - Klicker enforces a per-lecturer, per-semester monetary quota and a per-build
   maximum. It reserves estimated cost before dispatch and idempotently settles
-  actual metered cost reported by Catalyst; see ADR 0005.
+  actual metered cost reported by Catalyst; see ADR 0013.
 - Secrets enter workers and test jobs through the approved secret store or
   protected runtime variables. Tokens, SAS query strings, DSNs, raw source
   content, and credentials never enter roadmap, logs, reports, or commits.
@@ -189,7 +189,7 @@ branch and remote state can advance.
   tip.** Cause: local `main` can lag merged PRs and later work. Remedy: fetch
   current `main` at W1 start, verify the merged ancestry, and integrate the
   complete graph-runtime history on top without replacing either ancestry; see
-  ADR 0008.
+  ADR 0016.
 - **Harness output looks machine-readable because the final line is regular.**
   Cause: it is still human text and does not record stage timing or failure
   structure. Remedy: W3 adds a schema-validated JSON report and JUnit export
@@ -248,7 +248,7 @@ stack. Each layer must be independently green, reviewable, and safe to land.
 | FalkorDB state cannot recover after pod/data loss | GraphML export exists | Add new | Restore one published build from its GraphML artifact and repoint only after verification | A serving outage becomes permanent despite retained artifacts | W4, W5 |
 | AI graph is non-empty but educationally wrong | No production-grade quality suite | Add new | Committed DeepEval dataset plus deterministic graph metrics | Unsupported concepts, wrong relations, missing citations, or source leakage pass system E2E | W6 |
 | Rollback starts new builds or drops the last good graph | Build pointers and polling tests exist | Add new | Staging kill-switch and rollback drill | Failed release keeps dispatching or removes the last published graph | W5, W7 |
-| FalkorDB cleanup deletes durable graph history | Retention intent exists in ADR 0007 | Add new | Maintenance policy over retired graph names and GraphML archive keys | Operational graph retirement incorrectly purges an archive still retained by its KB | W2, W4, W5 |
+| FalkorDB cleanup deletes durable graph history | Retention intent exists in ADR 0015 | Add new | Maintenance policy over retired graph names and GraphML archive keys | Operational graph retirement incorrectly purges an archive still retained by its KB | W2, W4, W5 |
 
 ## Work items
 
@@ -268,7 +268,7 @@ Start from the latest `main` at execution time. Import the complete
 `kg-content-generation` history after auditing it for secrets and private data,
 preserving both commit graphs, then refactor in Catalyst. Preserve the source
 repository and branch until the destination validates its complete history and
-file coverage; see ADR 0008 and Stack Gate 1.
+file coverage; see ADR 0016 and Stack Gate 1.
 
 **Do:**
 
@@ -515,7 +515,7 @@ base, branch, and target must be recorded before W4 starts.
 6. Add a GraphML-to-FalkorDB recovery job or documented one-shot command that
    validates graph identity and counts before changing the published pointer.
    Archive every completed GraphML artifact while its KB exists, retain it for
-   30 days after KB deletion, and then purge it under ADR 0007.
+   30 days after KB deletion, and then purge it under ADR 0015.
 7. Render and validate manifests locally. Deployment and cluster verification
    happen only after a separate explicit approval.
 
@@ -756,17 +756,17 @@ it closed; later agents must not reopen closed rulings.
 | Decision | Options and effect | Recommendation | Gates |
 | --- | --- | --- | --- |
 | First production promise — **closed 2026-08-10** | Internal pilot; lecturer beta; or general availability | **Ruling:** public lecturer beta after an internal canary. It is self-service with explicit cost disclosure and a hard spending cap; student access is limited to beta KBs with a successfully published graph | W7 |
-| FalkorDB durability — **closed 2026-08-10** | Ephemeral and reconstruct on loss; persistent database plus GraphML recovery; or high availability | **Ruling:** FalkorDB is reconstructible on operational issues. A clean archive of completed GraphML artifacts is the durable recovery source from the first release; see ADR 0002 | W4, W5 |
-| System ownership boundary — **closed 2026-08-10** | Keep KG orchestration in AI infrastructure; split it across service repositories; or put the KG system in Catalyst | **Ruling:** Klicker owns KB product state, authorization, quota enforcement, and lecturer/student UX. Catalyst owns graph generation, FalkorDB, GraphML archive, KG quality evaluation, and KG-system E2E. AI infrastructure owns data-ingestion, doc-processing, and pgvector; Catalyst consumes their contracts without importing their code or operational lifecycle. See ADR 0003 | W1, W3–W7 |
-| Runtime repository and history — **closed 2026-08-10; Stack Gate 1 closed 2026-08-15** | Import all `kg-content-generation` history; import a filtered production subtree with preserved authors; or take a clean snapshot | **Ruling:** the Klicker team owns private repository `uzh-bf/klicker-uzh-catalyst`. PR #2 and PR #3 are merged and later work is on `main`; W1 starts from the latest fetched `main` and uses an ordinary PR/package. Audit and integrate the entire `kg-content-generation` history before refactoring, preserving both repositories' ancestry plus Patrick's authorship, dates, and visualizations. Decide any internal W1 split only after the history and file-coverage inventory. AI infrastructure supplies selected services such as doc-processing but no AI-infrastructure provider code moves into Catalyst. See ADR 0008 and Stack Gate 1 | W1, W4, W7 |
+| FalkorDB durability — **closed 2026-08-10** | Ephemeral and reconstruct on loss; persistent database plus GraphML recovery; or high availability | **Ruling:** FalkorDB is reconstructible on operational issues. A clean archive of completed GraphML artifacts is the durable recovery source from the first release; see ADR 0010 | W4, W5 |
+| System ownership boundary — **closed 2026-08-10** | Keep KG orchestration in AI infrastructure; split it across service repositories; or put the KG system in Catalyst | **Ruling:** Klicker owns KB product state, authorization, quota enforcement, and lecturer/student UX. Catalyst owns graph generation, FalkorDB, GraphML archive, KG quality evaluation, and KG-system E2E. AI infrastructure owns data-ingestion, doc-processing, and pgvector; Catalyst consumes their contracts without importing their code or operational lifecycle. See ADR 0011 | W1, W3–W7 |
+| Runtime repository and history — **closed 2026-08-10; Stack Gate 1 closed 2026-08-15** | Import all `kg-content-generation` history; import a filtered production subtree with preserved authors; or take a clean snapshot | **Ruling:** the Klicker team owns private repository `uzh-bf/klicker-uzh-catalyst`. PR #2 and PR #3 are merged and later work is on `main`; W1 starts from the latest fetched `main` and uses an ordinary PR/package. Audit and integrate the entire `kg-content-generation` history before refactoring, preserving both repositories' ancestry plus Patrick's authorship, dates, and visualizations. Decide any internal W1 split only after the history and file-coverage inventory. AI infrastructure supplies selected services such as doc-processing but no AI-infrastructure provider code moves into Catalyst. See ADR 0016 and Stack Gate 1 | W1, W4, W7 |
 | Synthetic staging identity — **closed 2026-08-10** | Static human lecturer credentials; dedicated non-human test owner using supported auth; or an application-specific service-account API | **Ruling:** dedicated non-human test owner created through supported auth/admin paths, scoped to one synthetic KB, with short-lived or regularly rotated credentials from the secret store. No E2E-specific auth bypass | W5 |
-| Quality-eval timing, data, and reporting — **closed 2026-08-10** | Gate initial beta or learn during beta; existing or generated goldens; local or hosted reporting | **Ruling:** existing testing and the internal canary are sufficient to open the explicitly labeled beta. During beta, Catalyst versions 30–50 reviewed, non-personal goldens from approved or synthetic source documents and emits local DeepEval/CI artifacts. Quality evidence gates beta widening, general availability, and quality claims. Hosted reporting requires separate data-boundary approval. See ADR 0006 | W6, W7 |
+| Quality-eval timing, data, and reporting — **closed 2026-08-10** | Gate initial beta or learn during beta; existing or generated goldens; local or hosted reporting | **Ruling:** existing testing and the internal canary are sufficient to open the explicitly labeled beta. During beta, Catalyst versions 30–50 reviewed, non-personal goldens from approved or synthetic source documents and emits local DeepEval/CI artifacts. Quality evidence gates beta widening, general availability, and quality claims. Hosted reporting requires separate data-boundary approval. See ADR 0014 | W6, W7 |
 | Beta activation — **closed 2026-08-10** | Lecturer flag enables every KB; per-KB opt-in only; or lecturer eligibility plus per-KB opt-in | **Ruling:** the public-beta feature flag grants the lecturer permission to enable knowledge graphs. Each KB remains opted out until that lecturer explicitly enables it. Students can use a graph only for an opted-in KB after publication | W2, W7 |
 | Generic AI credential management — **open; delivery boundary closed 2026-08-15** | Per-feature custody; consumer-owned storage; or one reusable credential capability | **Ruling:** provider credentials are a generic concern for every AI capability, not a KG-specific Catalyst feature. KG, tutoring, content generation, grading feedback, and future AI services consume the same safe abstraction. Consumer applications keep only opaque handles and status; exact custody ownership and contracts are delegated to `~/.handoffs/klicker-uzh/2026-08-10-ai-credential-management-security-design-handoff.md`. While that architecture is open, W1, W3, non-credential W2, disabled W4 infrastructure, and separately authorized read-only preflight may proceed. Credential-facing UI, provider-bearing/model-backed or paid runs, canary mutations, and beta activation remain blocked | Generic platform design; credential-facing W2, provider-bearing W5/W7, canary mutation, and public beta |
-| Graph-cost quota — **closed 2026-08-10; executable seams assigned 2026-08-15** | Build-count cap; token cap; monetary cap; or combined controls | **Ruling:** W1 defines actual metered-cost result semantics keyed by graph-build ID. W2 atomically reserves a per-build maximum against the lecturer's semester quota before dispatch, denies unaffordable work, settles valid terminal results idempotently, fails closed on invalid or mismatched results, and presents estimates and actuals. W7 validates those seams through the approved credential and billing paths. Quota data is non-sensitive and contains no billing account details. See ADR 0005 | W1, W2, W7 |
+| Graph-cost quota — **closed 2026-08-10; executable seams assigned 2026-08-15** | Build-count cap; token cap; monetary cap; or combined controls | **Ruling:** W1 defines actual metered-cost result semantics keyed by graph-build ID. W2 atomically reserves a per-build maximum against the lecturer's semester quota before dispatch, denies unaffordable work, settles valid terminal results idempotently, fails closed on invalid or mismatched results, and presents estimates and actuals. W7 validates those seams through the approved credential and billing paths. Quota data is non-sensitive and contains no billing account details. See ADR 0013 | W1, W2, W7 |
 | Beta billing association — **closed 2026-08-10** | Klicker database; dedicated billing service; Catalyst registry; or manual external record | **Ruling:** for UZH-issued keys, keep the sensitive lecturer-to-cost-account association in a manually maintained spreadsheet. BYOK lecturers are billed by their own provider and need no internal billing association. Klicker stores no billing details and applies quota controls to both paths; later institutional integration is a separate decision | W7 |
 | Production canary scope — **closed 2026-08-10** | Environment-wide switch; owner/KB allow-list; or separate canary deployment | **Ruling:** allow-list two internal lecturers, one BYOK and one UZH-issued, with one opted-in KB each. Require two clean builds per KB, one rollback and GraphML restore drill, 72 hours of observation, and a fixed canary cost cap before opening self-service beta behind the global kill switch | W7 |
-| GraphML archive retention — **closed 2026-08-10** | Indefinite; while the KB exists; or fixed duration | **Ruling:** retain every successful GraphML version while its KB exists. After KB deletion, retain it through a 30-day recovery grace period and then purge it. Revisit long-term archival before general availability. See ADR 0007 | W4, W5, W7 |
+| GraphML archive retention — **closed 2026-08-10** | Indefinite; while the KB exists; or fixed duration | **Ruling:** retain every successful GraphML version while its KB exists. After KB deletion, retain it through a 30-day recovery grace period and then purge it. Revisit long-term archival before general availability. See ADR 0015 | W4, W5, W7 |
 | Lecturer cost display — **closed 2026-08-10** | Disclosure only; estimate before build; or estimate plus actual usage | **Ruling:** before dispatch show estimated maximum cost, remaining semester quota, and worst-case resulting balance. After settlement show actual usage and cost. Label BYOK as provider-billed and UZH-issued usage as semester-billed | W2, W7 |
 
 ## External dependencies to watch
@@ -964,7 +964,7 @@ is independently safe to land.
   assumption. Remote `main` has five scaffold commits, and clean stacked drafts
   PR #2 and PR #3 add operational verification and a stateless tutoring runtime.
   W1 must preserve that history and select a current stack base before
-  integrating the complete graph-runtime history; ADR 0008 supersedes ADR 0004.
+  integrating the complete graph-runtime history; ADR 0016 supersedes ADR 0012.
 - 2026-08-10: The credential-security work was reframed from KG-specific
   Catalyst custody to generic AI credential management for every AI consumer.
   KG remains one consumer. The generic design handoff supersedes the narrower

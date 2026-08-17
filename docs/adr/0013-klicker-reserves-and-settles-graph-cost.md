@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 5. Klicker reserves and settles graph cost
+# 13. Klicker reserves and settles graph cost
 
 Status: Accepted (2026-08-10)
 

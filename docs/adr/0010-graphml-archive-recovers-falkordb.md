@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 2. GraphML archive recovers the FalkorDB serving projection
+# 10. GraphML archive recovers the FalkorDB serving projection
 
 Status: Accepted (2026-08-10)
 

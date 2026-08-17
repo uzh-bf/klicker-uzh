@@ -14,7 +14,7 @@ export type PublishedKnowledgeGraph = {
   /**
    * The KB's content has moved on since this build was made. The build keeps
    * serving regardless — staleness is a label on the lecturer's views, never an
-   * outage for students (ADR 0001).
+   * outage for students (ADR 0009).
    */
   isStale: boolean
   sources: KnowledgeGraphSourceMetadata[]

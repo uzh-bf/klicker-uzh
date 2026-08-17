@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 3. Catalyst owns the knowledge-graph runtime, not AI ingestion
+# 11. Catalyst owns the knowledge-graph runtime, not AI ingestion
 
 Status: Accepted (2026-08-10)
 

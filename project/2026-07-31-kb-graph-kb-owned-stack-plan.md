@@ -1,7 +1,7 @@
 # W9 — KB-owned knowledge graph (stacked)
 
 Roadmap: [2026-07-24-kb-production-v1-roadmap-plan.md](2026-07-24-kb-production-v1-roadmap-plan.md), package W9.
-Decision record: [ADR 0001](../docs/adr/0001-kb-owns-two-derived-projections.md).
+Decision record: [ADR 0009](../docs/adr/0009-kb-owns-two-derived-projections.md).
 Base: `kb-poc` @ `38625cbbf`. Worktree: `trees/kb-graph-stack`. Gate 1 approved 2026-07-31.
 
 ## Provenance
@@ -45,7 +45,7 @@ L3 provenance note: the L3 source port was first copied verbatim from Patrick's 
 
 Deliberately **not** ported (11 files), each explained at union validation:
 
-- `docs/superpowers/**` (6) — design docs for the rejected chatbot-owned architecture, superseded by ADR 0001 and preserved in PR #5206.
+- `docs/superpowers/**` (6) — design docs for the rejected chatbot-owned architecture, superseded by ADR 0009 and preserved in PR #5206.
 - `project/screenshots/*chatbot-knowledge-graph*` (4) — verification screenshots of the chatbot-owned UI, replaced by fresh ones at L4/L5.
 - `packages/prisma/.../20260720150000_chatbot_knowledge_graph/migration.sql` — creates `ChatbotKnowledgeGraph`; the KB-owned migration is written fresh at L2 rather than created and then dropped.
 
@@ -53,7 +53,7 @@ Deliberately **not** ported (11 files), each explained at union validation:
 
 Each layer is independently functional, independently reviewable, green at its own tip. Drafts until actionable. No merge, un-draft, or deploy without explicit authority.
 
-**L1 `feat/kb-ingestion-refresh-event`** — new platform-initiated refresh event type in `packages/graphql/src/services/knowledgeWebhooks.ts`; ledger row from the platform operation id; serving-identity advance; attempt-scoped guards preserved for lecturer-initiated runs. Carries this plan, ADR 0001, and the roadmap W9 revision. No parked equivalent — new work. Ships value alone: keeps RAG current regardless of graph work.
+**L1 `feat/kb-ingestion-refresh-event`** — new platform-initiated refresh event type in `packages/graphql/src/services/knowledgeWebhooks.ts`; ledger row from the platform operation id; serving-identity advance; attempt-scoped guards preserved for lecturer-initiated runs. Carries this plan, ADR 0009, and the roadmap W9 revision. No parked equivalent — new work. Ships value alone: keeps RAG current regardless of graph work.
 
 **L2 `feat/kb-graph-model`** — re-home `packages/knowledge-graph` and its schema from chatbot to KB. Patrick's 16 added files are ported verbatim as his commit (`068241088`); the re-homing lands on top:
 
@@ -217,8 +217,8 @@ current contract acceptance required by the roadmap.
 
 ## Progress
 
-- 2026-07-31: Design grill complete (14 rulings). Gate 1 approved. Worktree `trees/kb-graph-stack` created from `kb-poc` @ `38625cbbf` on `feat/kb-ingestion-refresh-event`. ADR 0001 written, `docs/domain-model.md` KB section rewritten to the rulings, roadmap W9 row revised.
-- 2026-07-31: `ed2cba55d` on L1 — this plan, ADR 0001, and the roadmap revision; later L1 implementation is tracked below.
+- 2026-07-31: Design grill complete (14 rulings). Gate 1 approved. Worktree `trees/kb-graph-stack` created from `kb-poc` @ `38625cbbf` on `feat/kb-ingestion-refresh-event`. ADR 0009 written, `docs/domain-model.md` KB section rewritten to the rulings, roadmap W9 row revised.
+- 2026-07-31: `ed2cba55d` on L1 — this plan, ADR 0009, and the roadmap revision; later L1 implementation is tracked below.
 - 2026-07-31: `068241088` on L2 — Patrick's `packages/knowledge-graph` (15 files) and `packages/types/src/knowledgeGraph.ts` ported verbatim, authored as him. Does not typecheck alone; identity still resolves through `ChatbotKnowledgeGraph`.
 - 2026-07-31: The original L2 model refactor introduced `KBGraphBuild` + KB pointers, migration `20260731200443_kb_owned_knowledge_graph`, on-demand digest, per-build graph names, and the inverted publication rule. Its source tip passed workspace `check` (26/26), `syncpack:lint`, Prettier, and 67 package tests; revalidation after L1 propagation is pending. `apps/analytics` lint failed in-container on a `uv`/pandas source build — environmental, pre-existing, and untouched by this layer (its lint is `ruff`, which never reads `.prisma`).
 - 2026-08-01: L1 implementation started after adopting the approved native stack (`kb-poc ← feat/kb-ingestion-refresh-event ← feat/kb-graph-model`). The focused real-PostgreSQL webhook baseline passes 17/17 in the managed DevPod. The broader `test:local` bootstrap remains unavailable there because its Docker-based harness cannot find a Docker client.
@@ -441,7 +441,7 @@ current contract acceptance required by the roadmap.
   directly to FalkorDB by the external Catalyst `kg-content-generation/
   lightrag_research` stack (bridge contract export_to/n_graph_name), not by
   Klicker from GraphML. Klicker only reads (client.ts FalkorDB.connect) and
-  removes graphs/artifacts (kbMaintenance cleanup). ADR 0002's "GraphML
+  removes graphs/artifacts (kbMaintenance cleanup). ADR 0010's "GraphML
   archive recovers FalkorDB" is an operational recovery concept (re-run the
   external builder from archived GraphML), NOT an in-repo import API. So
   seeding a real student-visible graph requires running the external

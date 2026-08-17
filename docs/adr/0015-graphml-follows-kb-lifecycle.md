@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 7. GraphML archive follows the knowledge-base lifecycle
+# 15. GraphML archive follows the knowledge-base lifecycle
 
 Status: Accepted (2026-08-10)
 

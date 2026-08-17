@@ -8,7 +8,7 @@ tags:
   - knowledge-base
 ---
 
-# 6. The graph beta learns before quality thresholds gate it
+# 14. The graph beta learns before quality thresholds gate it
 
 Status: Accepted (2026-08-10)
 

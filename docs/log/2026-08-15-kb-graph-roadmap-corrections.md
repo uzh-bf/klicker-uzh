@@ -14,7 +14,7 @@ tags:
   retirement grace for operational FalkorDB graphs from the longer GraphML
   archive lifecycle.
 - **Update**:
-  [ADR 0008](../adr/0008-catalyst-integrates-complete-graph-history.md) now
+  [ADR 0016](../adr/0016-catalyst-integrates-complete-graph-history.md) now
   records that the history integration starts from the latest Catalyst `main`
   after pull requests 2 and 3 were merged.
 - **Update**:
