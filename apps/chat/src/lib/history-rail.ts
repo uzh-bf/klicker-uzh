@@ -93,8 +93,12 @@ const stripMarkdown = (value: string): string =>
  * length suitable for rail tick labels and history dialog rows. The full
  * Markdown text stays available separately for the hover popover body.
  */
-export const toHistoryRailPlainText = (value: string): string | undefined => {
-  const normalized = stripMarkdown(value).replace(/\s+/g, ' ').trim()
+export const toHistoryRailPlainText = (
+  value: string | undefined
+): string | undefined => {
+  const normalized = stripMarkdown(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!normalized) return undefined
   if (normalized.length <= MAX_PLAIN_TEXT_LENGTH) return normalized
   return `${normalized.slice(0, MAX_PLAIN_TEXT_LENGTH - 1).trimEnd()}…`

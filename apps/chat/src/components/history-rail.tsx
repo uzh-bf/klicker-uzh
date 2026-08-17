@@ -195,10 +195,10 @@ const HistoryRailTick: FC<{
     // excerpt after the title would be read out twice in a row.
     title,
     entry.userMessageId
-      ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText ?? '') ?? t('chat.historyRail.noText')}`
+      ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText) ?? t('chat.historyRail.noText')}`
       : undefined,
     entry.assistantMessageId
-      ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText ?? '') ?? t('chat.historyRail.noResponse')}`
+      ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText) ?? t('chat.historyRail.noResponse')}`
       : undefined,
     statusLabel,
     isCurrent
@@ -359,10 +359,10 @@ const HistoryDialog: FC<{
             total: entries.length,
           })
           const userLabel = entry.userMessageId
-            ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText ?? '') ?? t('chat.historyRail.noText')}`
+            ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText) ?? t('chat.historyRail.noText')}`
             : undefined
           const assistantLabel = entry.assistantMessageId
-            ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText ?? '') ?? t('chat.historyRail.noResponse')}`
+            ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText) ?? t('chat.historyRail.noResponse')}`
             : undefined
           const rowLabel = [itemLabel, userLabel, assistantLabel, statusLabel]
             .filter(Boolean)

@@ -261,7 +261,7 @@ describe('history rail projection', () => {
         userText,
       })
     )
-    const label = toHistoryRailPlainText(entry?.userText ?? '')
+    const label = toHistoryRailPlainText(entry?.userText)
     expect(label).toMatch(/…$/)
     expect(label?.length).toBeLessThan(userText.length)
   })
