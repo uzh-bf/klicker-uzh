@@ -22,7 +22,10 @@ import type {
   HistoryRailEntryKind,
   HistoryRailTickRange,
 } from '../lib/history-rail'
-import { getHistoryRailTickRanges } from '../lib/history-rail'
+import {
+  getHistoryRailTickRanges,
+  toHistoryRailPlainText,
+} from '../lib/history-rail'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 type HistoryRailProps = {
@@ -187,12 +190,15 @@ const HistoryRailTick: FC<{
         })
   const accessibleLabel = [
     itemLabel,
-    `${title}${entry.preview ? `: ${entry.preview}` : ''}`,
+    // The title deliberately carries no text excerpt: the You/Assistant
+    // lines below already announce the same plain-text projection, so an
+    // excerpt after the title would be read out twice in a row.
+    title,
     entry.userMessageId
-      ? `${t('chat.historyRail.you')}: ${entry.userText ?? t('chat.historyRail.noText')}`
+      ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText ?? '') ?? t('chat.historyRail.noText')}`
       : undefined,
     entry.assistantMessageId
-      ? `${t('chat.historyRail.assistant')}: ${entry.assistantText ?? t('chat.historyRail.noResponse')}`
+      ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText ?? '') ?? t('chat.historyRail.noResponse')}`
       : undefined,
     statusLabel,
     isCurrent
@@ -211,7 +217,7 @@ const HistoryRailTick: FC<{
       <TooltipTrigger asChild>
         <button
           type="button"
-          aria-controls={isCurrent ? dialogId : undefined}
+          aria-controls={isCurrent && isOpen ? dialogId : undefined}
           aria-current={isCurrent ? 'step' : undefined}
           aria-expanded={isCurrent ? isOpen : undefined}
           aria-haspopup={isCurrent ? 'dialog' : undefined}
@@ -224,11 +230,11 @@ const HistoryRailTick: FC<{
               onNavigate(entry.anchor)
             }
           }}
-          className={`group relative flex h-5 w-full touch-manipulation items-center justify-center rounded-full focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${isCurrent ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`group relative flex h-5 w-full touch-manipulation items-center justify-center rounded-full focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isCurrent ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
         >
           <span
             aria-hidden="true"
-            className={`block rounded-full transition-[width,height,background-color] ${isCurrent ? 'bg-primary h-0.5 w-4' : 'bg-border/80 h-0.5 w-2 group-hover:bg-foreground group-hover:w-3 group-focus-visible:bg-foreground group-focus-visible:w-3'}`}
+            className={`block rounded-full transition-[width,height,background-color] ${isCurrent ? 'bg-primary h-0.5 w-4' : 'bg-muted-foreground/80 h-0.5 w-2 group-hover:bg-foreground group-hover:w-3 group-focus-visible:bg-foreground group-focus-visible:w-3'}`}
           />
         </button>
       </TooltipTrigger>
@@ -251,6 +257,28 @@ const HistoryDialog: FC<{
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
+      return
+    }
+
+    // `aria-modal="true"` tells assistive tech everything outside is inert,
+    // so keyboard focus must not walk out either: wrap Tab between the
+    // dialog's focusable buttons (the close button and the entry rows).
+    if (event.key === 'Tab') {
+      const focusables = Array.from(
+        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+          'button:not([disabled])'
+        )
+      ).filter((el) => el.getClientRects().length > 0)
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
       return
     }
 
@@ -296,6 +324,7 @@ const HistoryDialog: FC<{
     <div
       id={id}
       aria-labelledby={`${id}-title`}
+      aria-modal="true"
       data-history-rail-dialog
       onKeyDown={handleKeyDown}
       role="dialog"
@@ -309,7 +338,7 @@ const HistoryDialog: FC<{
         <button
           type="button"
           aria-label={t('chat.historyRail.closeHistory')}
-          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onClose}
         >
           <XIcon className="size-4" aria-hidden />
@@ -330,10 +359,10 @@ const HistoryDialog: FC<{
             total: entries.length,
           })
           const userLabel = entry.userMessageId
-            ? `${t('chat.historyRail.you')}: ${entry.userText ?? t('chat.historyRail.noText')}`
+            ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText ?? '') ?? t('chat.historyRail.noText')}`
             : undefined
           const assistantLabel = entry.assistantMessageId
-            ? `${t('chat.historyRail.assistant')}: ${entry.assistantText ?? t('chat.historyRail.noResponse')}`
+            ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText ?? '') ?? t('chat.historyRail.noResponse')}`
             : undefined
           const rowLabel = [itemLabel, userLabel, assistantLabel, statusLabel]
             .filter(Boolean)
@@ -349,7 +378,7 @@ const HistoryDialog: FC<{
                 }
                 aria-label={rowLabel}
                 onClick={() => onNavigate(entry.anchor)}
-                className={`hover:bg-accent flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${entry.anchor === currentAnchor ? 'bg-primary/10' : ''}`}
+                className={`hover:bg-accent flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${entry.anchor === currentAnchor ? 'bg-primary/10' : ''}`}
               >
                 <span className="text-muted-foreground w-10 shrink-0 text-right text-[10px] tabular-nums">
                   {index + 1}/{entries.length}
@@ -389,6 +418,7 @@ const HistoryDialog: FC<{
 export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
   const t = useTranslations()
   const railRef = useRef<HTMLElement>(null)
+  const mobileNavRef = useRef<HTMLElement>(null)
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null)
   const navigationLockRef = useRef<{
     anchor: string
@@ -539,6 +569,49 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
     }
   }, [entries])
 
+  // Backstop dismissal for the expanded history dialog: a document-level
+  // Escape (in case focus ever lands outside the dialog's own onKeyDown
+  // subtree) and a click/tap outside both rail containers. Registered only
+  // while the dialog is open, so it never intercepts input elsewhere in the
+  // app.
+  useEffect(() => {
+    if (!isHistoryOpen) return
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      // The dialog's own onKeyDown already closes on Escape and calls
+      // preventDefault; skip so an Escape handled there isn't acted on twice.
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      returnFocusRef.current = true
+      setIsHistoryOpen(false)
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (railRef.current?.contains(target)) return
+      if (mobileNavRef.current?.contains(target)) return
+      // The tick hover popover renders in a portal outside both rail
+      // containers, so a pointer interaction inside it (e.g. scrolling a
+      // long popover) must not count as "outside".
+      const targetElement =
+        target instanceof Element ? target : target.parentElement
+      if (targetElement?.closest('[data-cy="chat-history-rail-turn-popover"]'))
+        return
+
+      // Unlike Escape, dismissing by clicking elsewhere shouldn't yank focus
+      // back to the tick that opened the dialog.
+      returnFocusRef.current = false
+      setIsHistoryOpen(false)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isHistoryOpen])
+
   if (entries.length === 0) return null
 
   const handleToggleHistory = (button: HTMLButtonElement) => {
@@ -623,10 +696,10 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
         ref={railRef}
         className="absolute inset-y-3 left-1 z-20 hidden w-8 overflow-visible md:block"
       >
-        <nav
-          className="relative flex h-full max-h-full flex-col items-center"
-          aria-label={t('chat.historyRail.label')}
-        >
+        {/* Nested inside the labeled `aside` above; left unlabeled so this
+            navigation landmark doesn't duplicate its parent's accessible
+            name. */}
+        <nav className="relative flex h-full max-h-full flex-col items-center">
           <span
             aria-hidden="true"
             className="bg-border/60 pointer-events-none absolute left-1/2 top-1/2 h-36 w-px -translate-x-1/2 -translate-y-1/2"
@@ -676,11 +749,12 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
       <nav
         aria-label={t('chat.historyRail.label')}
         data-cy="chat-history-rail-mobile"
+        ref={mobileNavRef}
         className="absolute right-2 top-2 z-20 md:hidden"
       >
         <button
           type="button"
-          aria-controls={HISTORY_DIALOG_MOBILE_ID}
+          aria-controls={isHistoryOpen ? HISTORY_DIALOG_MOBILE_ID : undefined}
           aria-expanded={isHistoryOpen}
           aria-haspopup="dialog"
           aria-label={t('chat.historyRail.mobileLabel', {
@@ -689,7 +763,7 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
           })}
           data-cy="chat-history-rail-mobile-trigger"
           onClick={(event) => handleToggleHistory(event.currentTarget)}
-          className="border-border/70 bg-background/95 text-muted-foreground hover:text-foreground flex h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium tabular-nums shadow-sm backdrop-blur-md transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+          className="border-border/70 bg-background/95 text-muted-foreground hover:text-foreground flex h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium tabular-nums shadow-sm backdrop-blur-md transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <HistoryIcon className="size-4 shrink-0" aria-hidden />
           <span aria-hidden>

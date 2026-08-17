@@ -15,7 +15,6 @@ export type HistoryRailEntry = {
   id: string
   kind: HistoryRailEntryKind
   messageId: string
-  preview?: string
   status: HistoryRailEntryStatus
   userMessageId?: string
   userText?: string
@@ -29,7 +28,7 @@ export type HistoryRailTickRange = {
 
 type MessageWithId = ExtendedThreadMessageLike & { id: string }
 
-const MAX_PREVIEW_LENGTH = 72
+const MAX_PLAIN_TEXT_LENGTH = 100
 
 const getStatusType = (status: unknown): string | undefined => {
   if (typeof status !== 'object' || status === null || !('type' in status)) {
@@ -71,11 +70,34 @@ const getMessageText = (message: MessageWithId): string | undefined => {
   return text || undefined
 }
 
-const truncatePreview = (value: string): string | undefined => {
-  const normalized = value.replace(/\s+/g, ' ').trim()
+// Best-effort Markdown stripper, not a full CommonMark parser: it keeps text
+// content while dropping syntax markers, sized for short navigation labels
+// rather than faithful rendering.
+const stripMarkdown = (value: string): string =>
+  value
+    .replace(/^ {0,3}`{3}[^\n]*$/gm, '') // fenced code block delimiter lines
+    .replace(/`{1,3}/g, '') // remaining inline code backticks
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // images -> alt text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links -> link text
+    .replace(/^ {0,3}#{1,6}\s+/gm, '') // headings
+    .replace(/^\s*>\s?/gm, '') // blockquotes
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '') // list markers
+    .replace(/(\*\*\*|___)([\s\S]+?)\1/g, '$2') // bold+italic
+    .replace(/(\*\*|__)([\s\S]+?)\1/g, '$2') // bold
+    .replace(/(\*|_)([\s\S]+?)\1/g, '$2') // italic
+    .replace(/~~([\s\S]+?)~~/g, '$1') // strikethrough
+
+/**
+ * Projects raw (possibly Markdown) turn text into a plain-text navigation
+ * label: strips Markdown syntax, collapses whitespace, and truncates to a
+ * length suitable for rail tick labels and history dialog rows. The full
+ * Markdown text stays available separately for the hover popover body.
+ */
+export const toHistoryRailPlainText = (value: string): string | undefined => {
+  const normalized = stripMarkdown(value).replace(/\s+/g, ' ').trim()
   if (!normalized) return undefined
-  if (normalized.length <= MAX_PREVIEW_LENGTH) return normalized
-  return `${normalized.slice(0, MAX_PREVIEW_LENGTH - 1).trimEnd()}…`
+  if (normalized.length <= MAX_PLAIN_TEXT_LENGTH) return normalized
+  return `${normalized.slice(0, MAX_PLAIN_TEXT_LENGTH - 1).trimEnd()}…`
 }
 
 const hasChatErrorPart = (message: MessageWithId): boolean =>
@@ -147,7 +169,6 @@ const createTurnEntry = ({
     id: `turn:${user?.id ?? 'none'}:${assistant?.id ?? 'none'}`,
     kind: 'turn',
     messageId: message.id,
-    preview: truncatePreview(userText ?? assistantText ?? ''),
     status: assistant ? getMessageStatus(assistant) : 'complete',
     userMessageId: user?.id,
     userText,

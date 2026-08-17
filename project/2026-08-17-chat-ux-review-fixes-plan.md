@@ -290,7 +290,23 @@ verification, commits, reviews, publication.
   an empty composer falls back to the composer input; starter click focuses
   the composer with the caret at the end; citation chip focuses the target
   non-link source card via its new `tabIndex={-1}`.
-- Remaining: S4, S5, S6a, S6b, reviews, wiki, PR.
-- Evidence: latest verified commit = S3 commit (see git log).
+- S3 simplifier: KEEP, no accepted findings; REVIEW_HANDOFF note (data-cy
+  selector coupling for focus targets) carried to final review (report in
+  `project/_local/reviews/2026-08-17-chat-ux-fixes-s3-simplifier.md`). S4
+  (executor + main integration; 3 files): shared `toHistoryRailPlainText`
+  projection for preview/labels; dedup ruling accepted — tick label no
+  longer echoes the preview and the dead `preview` field was removed; tick
+  contrast raised to `bg-muted-foreground/80` (≈3.3:1), `ring-blue-700` →
+  `ring-ring` everywhere; history dialog got `aria-modal` + Tab
+  containment (main-session addition — aria-modal without containment is
+  an ARIA mismatch) + document-level Escape/outside-pointer dismissal;
+  `aria-controls` only references the dialog while it exists; duplicate
+  nested nav label dropped. In-container biome + check + test:run 38
+  files/328 tests green; live: label read clean (no dedup, no markdown),
+  tick color = muted-foreground/80 computed, aria-controls null↔id,
+  focus-on-open row, Tab wraps both directions, Escape closes and returns
+  focus to the trigger tick.
+- Remaining: S5, S6a, S6b, reviews, wiki, PR.
+- Evidence: latest verified commit = S4 commit (see git log).
 - Delivery: required layer = draft PR on `v3`; achieved = local branch.
-- Next: simplifier on S3 range; dispatch S4.
+- Next: simplifier on S4 range; implement S5 (main-owned).
