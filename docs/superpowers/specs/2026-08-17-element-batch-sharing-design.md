@@ -59,6 +59,12 @@ the card reveals:
 - a permission-level selector with the existing element-sharing choices; and
 - no propagation control.
 
+On desktop, the User and User group controls occupy equal-width columns in the
+first row, while Permission spans the full second row. At narrower viewports,
+all three controls stack. Field containers may shrink within the modal and the
+inputs/select triggers fill their columns, so long placeholders and selected
+values cannot overlap an adjacent control.
+
 The selected-elements list computes sharing eligibility independently from the
 other selected actions. A row can therefore say that a status change will be
 applied while sharing will be skipped because the caller lacks `ADMIN` or

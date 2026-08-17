@@ -61,8 +61,8 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
             <div className="mb-3 text-sm text-gray-600">
               {t('manage.questionPool.batchSharingDescription')}
             </div>
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-              <div>
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+              <div className="min-w-0">
                 <div className="mb-1 text-sm font-medium">
                   {t('manage.questionPool.batchSharingUserOrEmail')}
                 </div>
@@ -86,7 +86,7 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }}
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="mb-1 text-sm font-medium">
                   {t('manage.questionPool.batchSharingGroup')}
                 </div>
@@ -133,12 +133,16 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                         )
                   }
                   className={{
-                    select: { trigger: 'h-8 text-sm' },
+                    root: 'min-w-0 w-full',
+                    select: {
+                      root: 'min-w-0 w-full',
+                      trigger: 'h-8 min-w-0 w-full text-sm',
+                    },
                   }}
                   data={{ cy: 'element-batch-sharing-user-group' }}
                 />
               </div>
-              <div>
+              <div className="min-w-0 xl:col-span-2">
                 <div className="mb-1 text-sm font-medium">
                   {t('manage.questionPool.batchSharingPermission')}
                 </div>
@@ -148,8 +152,10 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   items={permissionLevelSelectItems}
                   disabled={disabled || !values.enabled}
                   className={{
+                    root: 'min-w-0 w-full',
                     select: {
-                      trigger: 'h-8 text-sm',
+                      root: 'min-w-0 w-full',
+                      trigger: 'h-8 min-w-0 w-full text-sm',
                       item: 'text-sm',
                     },
                   }}

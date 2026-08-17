@@ -937,3 +937,41 @@ all checks and browser evidence are complete. Draft PR descriptions must cover
 the whole branch against its target, identify the independent transaction
 boundary, list exact tests, and include both screenshots. Keep both layers draft
 until reviewed; never merge, reorder, or unstack without user approval.
+
+## Approved follow-up: align sharing recipient controls
+
+### Task 7: Use a two-plus-one responsive field layout
+
+**Files:**
+
+- Modify:
+  `apps/frontend-manage/src/components/elements/manipulation/batchOperations/ElementBatchSharingCard.tsx`
+- Modify:
+  `docs/superpowers/specs/2026-08-17-element-batch-sharing-design.md`
+
+- [x] **Step 1: Implement the approved layout**
+
+Use two equal columns for User and User group at the desktop breakpoint. Make
+Permission span both columns on the next row. Keep all three controls stacked
+below that breakpoint, and constrain each select root and trigger to its column.
+
+- [x] **Step 2: Verify static checks**
+
+Run:
+
+```bash
+devrouter exec . -- pnpm --filter @klicker-uzh/frontend-manage check
+devrouter exec . -- pnpm exec biome check apps/frontend-manage/src/components/elements/manipulation/batchOperations/ElementBatchSharingCard.tsx
+```
+
+- [x] **Step 3: Verify the rendered modal**
+
+Use `npx agent-browser@0.32.2` against the real local Manage app at desktop and
+narrow viewports. Confirm that the User, User group, and Permission labels and
+controls do not overlap and that the shortname/email entry remains visible.
+
+- [x] **Step 4: Update the draft PR evidence**
+
+Replace the existing sharing-controls image in the PR summary. Clarify that
+`Batch Share Admin` and `Batch Share Write` are synthetic Element names encoding
+the caller's existing access, not permission levels granted by the batch.
