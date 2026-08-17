@@ -9,6 +9,7 @@ const chatModelSchema = z
     description: z.string().default(''),
     fallback: z.boolean().default(false),
     supportsReasoning: z.boolean().default(false),
+    usesResponsesApi: z.boolean().optional(),
     supportsImageAttachments: z.boolean().default(false),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().positive().optional(),
@@ -67,8 +68,9 @@ type RawChatModelConfig = z.infer<typeof chatModelSchema>
 export type ReasoningEffortByModel = Record<string, ReasoningEffort[]>
 export type ChatModelConfig = Omit<
   RawChatModelConfig,
-  'supportedReasoningEfforts'
+  'supportedReasoningEfforts' | 'usesResponsesApi'
 > & {
+  usesResponsesApi: boolean
   supportedReasoningEfforts: ReasoningEffort[]
 }
 
@@ -77,15 +79,19 @@ function dedupeStrings(values: readonly string[]) {
 }
 
 function normalizeChatModelConfig(model: RawChatModelConfig): ChatModelConfig {
+  const usesResponsesApi = model.usesResponsesApi ?? model.supportsReasoning
+
   if (!model.supportsReasoning) {
     return {
       ...model,
+      usesResponsesApi,
       supportedReasoningEfforts: [],
     }
   }
 
   return {
     ...model,
+    usesResponsesApi,
     supportedReasoningEfforts: dedupeStrings(
       model.supportedReasoningEfforts ?? []
     ),
@@ -98,7 +104,31 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
     .map((model) => normalizeChatModelConfig(model))
 }
 
-const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+  {
+    id: 'auto',
+    deploymentId: 'auto-router',
+    name: 'Auto Mode',
+    description: 'Automatic model selection through the LiteLLM auto router',
+    fallback: false,
+    supportsReasoning: false,
+    usesResponsesApi: true,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: [],
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-5.6-luna',
+    deploymentId: 'gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    cost: { input: 1.25, output: 10.0 },
+  },
   {
     id: 'gpt-5.5',
     deploymentId: 'gpt-5.5',
@@ -142,6 +172,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
     cost: { input: 2.0, output: 8.0 },
@@ -153,6 +184,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
     cost: { input: 0.4, output: 1.6 },

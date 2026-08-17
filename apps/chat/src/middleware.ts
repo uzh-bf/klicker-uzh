@@ -87,6 +87,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname === '/noLogin' ||
+    pathname === '/KlickerLogo.png' ||
+    pathname === '/user-solid.svg' ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||

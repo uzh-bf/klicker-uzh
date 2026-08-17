@@ -1,3 +1,4 @@
+import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -7,6 +8,7 @@ import type {
 import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -14,7 +16,6 @@ import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
-import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
 import {
   adjectives,
   animals,
@@ -29,7 +30,7 @@ import {
 } from '../lib/randomizedGroups.js'
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { getPermissionBooleans } from './activities.js'
+import { persistActivityWithPermissions } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -850,12 +851,15 @@ export async function manipulateGroupActivity(
     clues,
     stack,
   }: CreateGroupActivityArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  transactionPrisma?: PrismaTransactionClient
 ) {
+  const prisma = transactionPrisma ?? ctx.prisma
+
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
   let existingActivity: DB.GroupActivity | null = null
   if (id) {
-    existingActivity = await ctx.prisma.groupActivity.findUnique({
+    existingActivity = await prisma.groupActivity.findUnique({
       where: { id, isDeleted: false },
     })
 
@@ -871,14 +875,14 @@ export async function manipulateGroupActivity(
     }
 
     // remove old clues as they will be replaced through new values
-    await ctx.prisma.groupActivity.update({
+    await prisma.groupActivity.update({
       where: { id },
       data: { clues: { deleteMany: {} } },
     })
   }
 
   // get the course to which the practice quiz should be assigned
-  const course = await ctx.prisma.course.findUnique({
+  const course = await prisma.course.findUnique({
     where: { id: courseId },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
@@ -895,21 +899,21 @@ export async function manipulateGroupActivity(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx)
+  } = await splitActivityInstances({ stacksOrBlocks: [stack] }, ctx, prisma)
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
-    const instances = await ctx.prisma.elementInstance.findMany({
+    const instances = await prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
         elementStack: { groupActivityId: id },
       },
     })
 
-    const stacks = await ctx.prisma.elementStack.findMany({
+    const stacks = await prisma.elementStack.findMany({
       where: { groupActivityId: id },
     })
 
@@ -980,102 +984,95 @@ export async function manipulateGroupActivity(
     course: { connect: { id: courseId } },
   }
 
-  // Use a transaction to ensure atomicity of all database operations
-  const activity = await ctx.prisma.$transaction(
-    async (prisma) => {
-      // delete all instances that are not used anymore
-      await prisma.elementInstance.deleteMany({
-        where: { id: { in: instancesToDelete } },
-      })
+  const persistGroupActivity = async (prisma: PrismaTransactionClient) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: { id: { in: instancesToDelete } },
+    })
 
-      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-      for (const instance of persistentInstances) {
-        const elementMultiplier =
-          'pointsMultiplier' in instance.elementData
-            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-            : 1
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
 
-        await prisma.elementInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            elementStackId: null,
-            order: persistentInstanceOrderMap[instance.id],
-            options: {
-              ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
-            },
-          },
-        })
-      }
-
-      // delete all stacks
-      await prisma.elementStack.deleteMany({
-        where: { id: { in: stacksToDelete } },
-      })
-
-      const upsertedActivity = await prisma.groupActivity.upsert({
-        where: { id: id ?? newId },
-        create: {
-          ...createOrUpdateJSON,
-          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      await prisma.elementInstance.update({
+        where: {
+          id: instance.id,
         },
-        update: createOrUpdateJSON,
-        include: {
-          templateInfo: true,
-          permissions: {
-            where: { userId: ctx.user.sub },
-            include: { directPermission: true },
-            take: 1,
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
           },
-          course: {
-            include: {
-              _count: {
-                select: {
-                  participantGroups: true,
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+        },
+      })
+    }
+
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: { id: { in: stacksToDelete } },
+    })
+
+    const upsertedActivity = await prisma.groupActivity.upsert({
+      where: { id: id ?? newId },
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
+      update: createOrUpdateJSON,
+      include: {
+        templateInfo: true,
+        permissions: {
+          where: { userId: ctx.user.sub },
+          include: { directPermission: true },
+          take: 1,
+        },
+        course: {
+          include: {
+            _count: {
+              select: {
+                participantGroups: true,
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
                     },
                   },
                 },
               },
             },
           },
-          stacks: { include: { _count: { select: { elements: true } } } },
-          _count: { select: { permissions: true } },
         },
-      })
+        stacks: { include: { _count: { select: { elements: true } } } },
+        _count: { select: { permissions: true } },
+      },
+    })
 
-      // enforce derived permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-      if (unlinkedElementIds.length > 0) {
-        for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
-        }
+    // enforce derived permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
       }
+    }
 
-      // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
-      await recomputeDerivedPermissions(
-        { groupActivityId: upsertedActivity.id },
-        prisma
-      )
+    // update all permissions linked to this group activity (since course might have changed on edit as well --> new derived permissions)
+    await recomputeDerivedPermissions(
+      { groupActivityId: upsertedActivity.id },
+      prisma
+    )
 
-      return upsertedActivity
-    },
-    { timeout: 60000 }
-  )
+    return upsertedActivity
+  }
 
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -1083,12 +1080,10 @@ export async function manipulateGroupActivity(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistGroupActivity,
+    ctx,
+    transactionPrisma,
   })
 
   return {

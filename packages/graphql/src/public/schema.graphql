@@ -718,6 +718,13 @@ type ChatbotMcpConfigurationSummary {
   serverName: String!
 }
 
+type ChatbotPublic {
+  avatar: String
+  description: String
+  id: ID!
+  name: String!
+}
+
 type ChatbotReasoningConfig {
   efforts: [String!]!
   modelId: String!
@@ -1137,6 +1144,7 @@ type ElementBlock {
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
   order: Int!
+  randomSelection: Int
   timeLimit: Int
 }
 
@@ -1670,8 +1678,10 @@ type InstanceQuizAnalytics {
 }
 
 type InstanceUpdateActivityInfo {
+  activityId: String!
   activityName: String!
   activityType: ActivityType!
+  courseName: String
   status: PublicationStatus!
 }
 
@@ -2073,7 +2083,7 @@ type Mutation {
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createKb(description: String, name: String!): KB!
@@ -2655,6 +2665,7 @@ type Query {
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
+  courseChatbots(courseId: String!): [ChatbotPublic!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]

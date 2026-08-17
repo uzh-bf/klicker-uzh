@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // ! Link all question responses and details to the corresponding practice quiz / microlearning and course
   // fetch all instances
   let counter = 0

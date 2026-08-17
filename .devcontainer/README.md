@@ -122,41 +122,41 @@ the hardcoded defaults only know `klicker.com`.
 
 ## Hatchet token
 
-`backend` needs a `HATCHET_CLIENT_TOKEN`, minted per Hatchet instance. The
-`hatchet_token` sidecar mints one to a shared volume; `post-create` writes it to
-`.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The
-backend **requires** it to boot — its `HatchetClient.init` runs at module load
-(not lazy), so without the token the API crashes at startup and never serves.
-
-The sidecar runs `hatchet-admin token create`, which writes to Hatchet's DB. It
-must hit the **same** DB the server uses: hatchet-lite's generated `/config`
-points the admin tool at its internal bundled Postgres (`127.0.0.1:5431`, only
-reachable inside the hatchet container), so the sidecar is given `DATABASE_URL`
-for the shared `postgres` service to override it. It mints within seconds of the
-hatchet DB migrations finishing. If the API is down, check
-`docker logs <project>-hatchet_token-1` and `.devcontainer/.hatchet.env`.
+`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine automatically mints its worker API token on boot to `/config/authdisabled-token` (shared volume); `post-create` writes it to `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The backend **requires** it to boot — its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 
-| Service                             | Image                                            | Purpose                                                |
-| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------ |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers     |
-| `postgres`                          | `postgres:15`                                    | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql) |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub          |
-| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                          |
-| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                 |
-| `hatchet`                           | `hatchet-lite:v0.73.1`                           | workflow engine (gRPC :7077)                           |
-| `hatchet_token`                     | `hatchet-lite:v0.73.1`                           | one-shot: mint the client token                        |
-| `litellm`                           | `ghcr.io/berriai/litellm`                        | LLM proxy for chat (port 4000 intra-net)               |
+
+| Service                             | Image                                      | Purpose                                                              |
+| ----------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers                   |
+| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)               |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                        |
+| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                        |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                             |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net) |
+| Service                             | Image                                      | Purpose                                                              |
+| ----------------------------------- | ------------------------------------------ | -------------------------------------------------------------------- |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0) | runs every routed app plus the two Hatchet workers                   |
+| `postgres`                          | `postgres:15`                              | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)               |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                  | live-quiz exec / assessment / cache + pub/sub                        |
+| `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                        |
+| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                           |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                             |
+| `hatchet_token`                     | `hatchet-lite-dev:v0.101.0`                | one-shot: mint the client token                                      |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net) |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
 host-side `devrouter ensure` delivers its matching process helper and invokes
 `post-start.sh` (set Klicker origins and call that helper). Runtime state is
-`/tmp/devrouter-process-klicker-dev.state`: exact workspace, command, adapter
-bytes, and declared non-secret runtime-origin values are fingerprinted for
-reuse; stale owned groups are replaced boundedly, and unknown processes are
-never killed. HTTP readiness remains in
+`/tmp/devrouter-process-klicker-dev.state` for the app stack and
+`/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
+fixture. Exact workspace, command, adapter bytes, and declared non-secret
+runtime-origin values are fingerprinted for reuse; stale owned groups are
+replaced boundedly, and unknown processes are never killed. The MCP command
+also carries the fixture source hash so a source edit forces managed
+replacement. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
@@ -204,8 +204,13 @@ disabled and the rest of the DevPod still starts normally.
 
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo).
-- Reset the DB: `pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force`.
+- Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
 - `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
+- Auto V2 sends its Luna-low classification and semantic embedding requests to
+  the same upstream as the selected answer model. With OpenRouter, use only
+  seeded or synthetic content and expect the extra calls to add latency/cost.
+- Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
+  fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.

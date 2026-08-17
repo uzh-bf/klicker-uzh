@@ -15,6 +15,11 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Data via generated documents from `@klicker-uzh/graphql/dist/ops` only — a new op means the codegen ritual in `klicker-graphql-api` runs first.
    - Every new user-visible string in BOTH `packages/i18n/messages/de.ts` and `en.ts`, matching namespace; access via full-path keys (`t('manage.…')`).
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
+   - Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Use one contextual primary action and a labelled overflow menu for low-frequency actions; keep visible buttons and the overflow trigger in one action cluster, letting that cluster wrap as a unit across viewports.
+   - App typography comes from the shared local font definitions in
+     `packages/shared-components/src/font.ts`; preserve their exports and CSS
+     variables so production builds remain independent of external font
+     services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
    - KB graph panel: show the per-KB opt-in and localized billing/quota states before the rebuild control. Format current estimates, maxima, and quota values with the current persisted quota currency, and historical settled build cost with its recorded currency; treat persisted quota currency/limit drift as unavailable. Keep rebuild disabled when opt-in, cost configuration, or active-build conditions fail; display actual cost and usage only after settlement; keep provider credentials out of the browser; and map billing enums to localized text.

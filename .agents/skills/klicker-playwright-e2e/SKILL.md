@@ -1,6 +1,6 @@
 ---
 name: klicker-playwright-e2e
-description: Create, translate, refactor, run, and debug Playwright E2E tests for KlickerUZH. Use when working in playwright/tests, comparing Cypress and Playwright parity, fixing flaky Klicker Playwright specs, debugging local or GitHub Actions Playwright failures, adjusting Playwright CI, or preserving Cypress-to-Playwright coverage without reducing test cases.
+description: Create, refactor, run, and debug Playwright E2E tests for KlickerUZH. Use when working in playwright/tests, fixing flaky Klicker Playwright specs, debugging local or GitHub Actions Playwright failures, or adjusting Playwright CI.
 ---
 
 # KlickerUZH Playwright E2E
@@ -17,22 +17,20 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 - Activity helpers: `playwright/util/fixtures/activities.ts`
 - Element helpers: `playwright/util/fixtures/elements.ts`
 - Action-menu helpers: `playwright/util/actions.ts`
-- Cypress source specs: `cypress/cypress/e2e/**/*.cy.ts`
 
 ## Coverage And Parity Rules
 
 - Preserve test count and test intent. Do not skip, merge, delete, or weaken tests to make the suite pass faster.
 - Treat `playwright/tests` as the active suite. Ignore `playwright/example` for active parity unless the user says otherwise.
-- Compare against Cypress by spec and workflow, not just raw LOC. Playwright can be longer when it needs explicit browser/session/cookie handling.
 - Keep duplicate-title suffixes such as `[2]` when Playwright needs unique titles.
 - Prefer behavior-preserving helper extraction over broad rewrites.
-- Keep explicit Playwright assertions when they document important state; Cypress chains may look shorter only because retries are implicit.
+- Keep explicit Playwright assertions when they document important state; do not collapse them for brevity.
 
-Useful parity checks:
+Useful check:
 
 ```bash
 volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
-rg -n "it\\(|test\\(" cypress/cypress/e2e playwright/tests
+rg -n "test\\(" playwright/tests
 ```
 
 ## Local Test Setup
@@ -67,6 +65,30 @@ pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
 ```
 
 Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
+
+For `apps/chat` app-router recovery, authenticate the browser with a seeded
+participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
+well-formed missing chatbot should assert the branded 404 and its response
+status; an unexpected route failure must be fault-injected only in an
+uncommitted local proof, restored before commit, and asserted against the
+branded `error.tsx` retry/return surface without exposing the server error
+text. Keep the `/noLogin` assertion focused on the login action and concise
+return copy, not a raw redirect URL.
+
+For chat settings coverage, seed credits through the existing `setCredits`
+helper rather than mocking the credits route. A zero-credit response must leave
+only the fallback model available, reconcile an unavailable persisted model to
+that fallback, and expose the fallback notice in the sidebar-enabled mobile
+layout outside the closed drawer. Set the viewport before `visitChat`; embedded
+chat already owns its compact `EmbeddedCreditsBar` and should not receive the
+sidebar mobile bar.
+
+For chat welcome coverage, assert that the chatbot name and selected mode
+description are visible before clicking a starter. Starter clicks populate the
+composer without sending; assert the value contains no square-bracket template
+placeholder, then edit the value before sending. The initial mode descriptions
+are passed with the chatbot shell so this journey should not wait for a second
+render of the starter grid.
 
 ## Fast Failure Triage
 
@@ -123,12 +145,12 @@ Cleanup dialogs:
 ## Authoring Gotchas
 
 - **Fixture wiring**: when exposing a helper as a fixture, do not reference the fixture name from inside its own `test.extend` initializer — import the helper under a different name and bind it there, otherwise fixture resolution can fail and the Testing UI stops discovering tests. (`playwright/util/fixtures.ts`)
-- **CLEANUP parity**: Cypress workflow specs expose `CLEANUP` as the first `it`; translations should add `test('CLEANUP', cleanupTest)` at module scope before the translated `describe` so filtered/spec-local runs still reset and seed the DB. (`playwright/util/cleanup.ts`)
+- **CLEANUP first**: workflow specs put `test('CLEANUP', cleanupTest)` at module scope before the `describe`, so filtered and spec-local runs still reset and seed the DB. (`playwright/util/cleanup.ts`)
 - **Rich-text blur before `add-new-answer`**: blur the editor first by clicking `insert-question-title`; without it the new answer slot may not appear and `scrollIntoViewIfNeeded` times out. (`playwright/util/fixtures/elements.ts`)
 - **Verify after reorder**: never click a `FastField`-wrapped `ContentInput` when verifying content after a `move()` — use `scrollIntoViewIfNeeded` + `toContainText` only; clicking can trigger a stale re-render showing the previous value. (`playwright/util/fixtures/elements.ts`)
-- **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — Cypress `.type()` works on the wrapper, Playwright does not. (`playwright/tests/K-elements-selection.spec.ts`)
-- **localforage parity**: Playwright creates a fresh context per test (Cypress keeps IndexedDB across `it` blocks). Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
-- **PIN-cookie bridges**: clear test-side PIN cookie bridges whenever the Cypress source clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — typing against the wrapper does not work. (`playwright/tests/K-elements-selection.spec.ts`)
+- **localforage**: Playwright creates a fresh context per test, so IndexedDB does not carry across tests. Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
+- **PIN-cookie bridges**: clear test-side PIN cookie bridges wherever a spec clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
 
 ## CI Notes
 
@@ -138,7 +160,7 @@ Cleanup dialogs:
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.
 - If Postgres logs `role "root" does not exist`, a startup/reset path is connecting without the intended `DATABASE_URL`. Ensure every DB-touching step gets the explicit CI database URL — and GitHub service `pg_isready` health checks must pass `-U` and `-d` for the same reason.
 - Make service wait scripts configurable by host/port env vars; keep localhost defaults for non-container local runs. The Playwright container may lack `nc` — use `.github/scripts/wait-for-services.sh`'s `check_tcp` helper instead of raw `nc -z`.
-- `util/_create_hatchet_token_cypress.sh` must keep its Hatchet HTTP API fallback: the Playwright container has no Docker, so the Docker token path only works for local compose runs.
+- `util/_create_hatchet_token_test.sh` must keep its Hatchet HTTP API fallback: the Playwright container has no Docker, so the Docker token path only works for local compose runs.
 - `turbo run start:test` is a persistent server task — keep it uncached and persistent in `turbo.json`, or CI replays startup logs instead of starting real processes. Keep `start:test:ci` owned by `.github/scripts/wait-for-services.sh -- <test command>`; splitting startup and test execution into separate steps leaves tests navigating to dead ports.
 - Pass the same test `DATABASE_URL`, Redis hosts, and app origins to the **build** step as to runtime — Next.js public env is baked during `next build`. Service connection vars (e.g. `REDIS_ASSESSMENT_HOST`, `HATCHET_CLIENT_HOST_PORT`) must be listed in `turbo.json` `globalEnv` or `turbo run start:test` won't pass them through and apps fall back to checked-in localhost defaults.
 

@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // find all tags that do not have any elements linked to them
   const unusedTags = await prisma.tag.findMany({
     where: { questions: { every: { isDeleted: true } } },

@@ -3,8 +3,8 @@ import {
   hatchetClient,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
-import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { prisma } from '@klicker-uzh/prisma'
+import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import { EventEmitter } from 'events'
 import { Redis } from 'ioredis'
@@ -39,8 +39,6 @@ import { handlePublishScheduledPracticeQuiz } from '../services/practiceQuizzes.
 const DRY_RUN = true
 
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
   const emitter = new EventEmitter()
 
   // connect to the assessment live quiz

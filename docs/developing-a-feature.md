@@ -33,4 +33,4 @@ Automated reviewers (Copilot/CodeRabbit/SonarCloud/claude-code-review) flag many
 
 ## Skills for each step
 
-Procedural, task-shaped guidance lives in [.agents/skills/](../.agents/skills/): environment bring-up and diagnosis (`klicker-environment-doctor`), feature design (`klicker-feature-design`), API work (`klicker-graphql-api`), schema/data work (`klicker-data-model`), UI work (`klicker-frontend-ui`), test routing and pre-PR verification (`klicker-testing-verification`), e2e authoring (`klicker-cypress-e2e`, `klicker-playwright-e2e`), browser verification (`agent-browser`), and wiki upkeep (`klicker-wiki-maintenance`).
+Procedural, task-shaped guidance lives in [.agents/skills/](../.agents/skills/): environment bring-up and diagnosis (`klicker-environment-doctor`), feature design (`klicker-feature-design`), API work (`klicker-graphql-api`), schema/data work (`klicker-data-model`), UI work (`klicker-frontend-ui`), test routing and pre-PR verification (`klicker-testing-verification`), e2e authoring (`klicker-playwright-e2e`), browser verification (`agent-browser`), and wiki upkeep (`klicker-wiki-maintenance`).

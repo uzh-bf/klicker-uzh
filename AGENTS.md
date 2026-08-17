@@ -6,6 +6,11 @@
 - **Main branch**: `v3`
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
+## Stacked PRs
+
+- GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
+- This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
+
 ## Commands
 
 ### Root-level (from repo root)
@@ -14,13 +19,13 @@
 pnpm install                  # install all deps
 pnpm run build                # build everything (turbo)
 pnpm run check                # typecheck all packages (tsc --noEmit)
-pnpm run lint                 # eslint across all packages
-pnpm run format               # prettier --write
-pnpm run format:check         # prettier --check
+pnpm run lint                 # eslint (Next.js safety net) across all packages
+pnpm run format               # biome format (code) + prettier (md/yaml, e2e specs)
+pnpm run format:check         # check formatting (biome + prettier)
 pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
-pnpm run dev:test             # dev in test/cypress mode
+pnpm run dev:playwright       # dev in test/playwright mode
 ```
 
 ### Workspace-filtered
@@ -37,9 +42,12 @@ pnpm --filter @klicker-uzh/graphql test
 pnpm run prisma:migrate       # create + apply migration (dev)
 pnpm run prisma:setup         # reset DB + push schema + seed
 pnpm run prisma:reset         # reset DB (skip seed)
+pnpm --filter @klicker-uzh/prisma prisma:seed  # seed explicitly
 pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
+
+The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
 
 ### GraphQL codegen
 
@@ -86,24 +94,23 @@ packages/
   hatchet/                 # Hatchet task definitions
   next-config/             # Shared Next.js config
   transactional/           # Transactional email templates
-cypress/                   # E2E tests
 ```
 
 ## Tech Stack
 
-| Layer                  | Technology                                            |
-| ---------------------- | ----------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                         |
-| Styling                | TailwindCSS, @uzh-bf/design-system                    |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
-| GraphQL client         | Apollo Client                                         |
-| ORM                    | Prisma 6 (PostgreSQL)                                 |
-| Caching                | Redis (ioredis)                                       |
-| Workflow orchestration | Hatchet (workers for async processing)                |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
-| Build                  | Turborepo + Rollup                                    |
-| Test                   | Vitest (unit), Cypress (E2E)                          |
-| Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
+| Layer                  | Technology                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                             |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                        |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                                      |
+| GraphQL client         | Apollo Client                                                                             |
+| ORM                    | Prisma 7 (PostgreSQL)                                                                     |
+| Caching                | Redis (ioredis)                                                                           |
+| Workflow orchestration | Hatchet (workers for async processing)                                                    |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                          |
+| Build                  | Turborepo + Rollup                                                                        |
+| Test                   | Vitest (unit), Playwright (E2E)                                                           |
+| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + playwright specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
 
@@ -111,7 +118,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate`, then `pnpm run prisma:sync` (mirrors the schema into `apps/analytics`, excluding `js.prisma`) and regenerate the client. Update GraphQL types/resolvers if the change affects the API.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
 
 ## Auth Model
 
@@ -132,6 +139,48 @@ devrouter ensure .
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+
+**OpenRouter-backed local chat:** Start a new or stopped environment through
+Infisical so the local LiteLLM container receives the OpenRouter key without
+writing it to disk:
+
+```bash
+infisical run \
+  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
+  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
+```
+
+If LiteLLM is already running without those variables, stop the workspace with
+`devrouter workspace stop <workspace>` and rerun the command; `ensure` does not
+replace environment variables inside an existing service container. Use only
+seeded or synthetic test content because OpenRouter is an external upstream and
+the Azure-specific chatbot disclaimer does not describe this local path.
+
+Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
+`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
+the request with the current Auto V2 policy in `util/litellm/config.yaml`.
+Classification uses Luna low; semantic corpus matching uses
+`openai/text-embedding-3-small`; SIMPLE, MEDIUM, and COMPLEX route to Luna
+medium, high, and xhigh; REASONING routes to Sol medium. LiteLLM then forwards
+all three request types through OpenRouter's OpenAI-compatible endpoint;
+OpenRouter supplies the selected models but does not make the routing decision.
+This adds one classifier request and, for semantic matching, one embedding
+request to the same external OpenRouter data boundary. It therefore adds local
+latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
+upstream failure. Separately, when Chat credits reach zero, Chat selects
+`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+
+The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
+and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
+`/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
+Chat with: “Use the local MCP tool to test the integration.
+Search for `portfolio diversification` and tell me the exact marker it
+returns.” A successful turn calls `KB_doc_query` and shows
+`KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
+card. Reload the thread and require the tool result, answer, and source to
+remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+router from the model/tool integration.
 
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
@@ -178,8 +227,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **TypeScript strict mode** everywhere
 - **Functional components** with hooks only (no class components)
 - **Component naming**: PascalCase files, `function` keyword for component declarations
-- **Prettier**: no semicolons, single quotes, trailing comma es5, 2-space indent
-- Plugins: `prettier-plugin-organize-imports` + `prettier-plugin-tailwindcss`
+- **Biome** (code): no semicolons, single quotes, trailing comma es5, 2-space indent, line width 80; imports organized via Biome assist (`organizeImports`)
+- **Prettier**: Markdown/YAML plus the `playwright/` e2e specs (Biome excludes those dirs)
+- Tailwind class sorting is not auto-enforced (deferred; previously `prettier-plugin-tailwindcss`)
 - **Imports**: use `@` and `~` path aliases
 - **GraphQL ops**: import from `@klicker-uzh/graphql`
 - **State**: Apollo Client for server state, React hooks for local state
@@ -187,9 +237,9 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Pre-commit / Pre-push
 
-- **pre-commit** (husky): runs `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
+- **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged checks: `prettier --check` on all staged files
+- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
 
@@ -201,17 +251,17 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Facts, gotchas, and architectural decisions live in the engineering wiki at [docs/index.md](docs/index.md) — update the matching page as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
+- **Keep this file high-level.** Facts and non-obvious concepts live in the engineering wiki at [docs/index.md](docs/index.md); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md). Update the matching page/ADR as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
 
 ## Engineering Wiki
 
 Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
-Retrospective fixes and durable lessons live in `docs/solutions/`; check them before re-deriving a solved problem.
+Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) — the decision record of _why_. The wiki explains non-obvious concepts and links the relevant ADR; it does not itself hold the decision. Retrospective fixes and durable lessons live in `docs/solutions/`; check both before re-deriving a solved problem.
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).

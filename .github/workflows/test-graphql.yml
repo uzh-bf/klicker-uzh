@@ -63,7 +63,7 @@ jobs:
           - 5433:5432
 
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: localhost
@@ -248,6 +248,12 @@ jobs:
     steps:
       - name: Check result
         run: |
+          # A run cancelled by concurrency (duplicate push, quick re-push) must not
+          # leave a red required check behind: the surviving run is the real signal.
+          if [ "${{ needs.filter.result }}" = "cancelled" ] || [ "${{ needs.test-graphql.result }}" = "cancelled" ]; then
+            echo "Superseded by a newer run; jobs were cancelled by concurrency."
+            exit 0
+          fi
           if [ "${{ needs.filter.result }}" != "success" ]; then
             echo "Filter job failed: ${{ needs.filter.result }}"
             exit 1

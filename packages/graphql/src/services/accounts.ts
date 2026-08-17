@@ -12,8 +12,13 @@ import {
 import bcrypt from 'bcryptjs'
 import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
-import type { Context, ContextWithUser } from '../lib/context.js'
+import type {
+  Context,
+  ContextWithUser,
+  PrismaTransactionContextWithUser,
+} from '../lib/context.js'
 import * as EmailService from '../services/email.js'
+import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
 import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -573,6 +578,7 @@ type ResolveOrCreateParticipantForLtiResult =
         | 'not_found'
         | 'username_taken'
         | 'invalid_create_input'
+        | 'unsupported_scope'
     }
 
 interface ResolveOrCreateParticipantForLtiArgs {
@@ -602,6 +608,14 @@ async function resolveOrCreateParticipantForLti(
     email?: string
     sub: string
     scope: string
+  }
+
+  // LTI 1.1 is retired: its launches were never signature-verified, so any
+  // caller could mint a token for an arbitrary subject or email. Only accept
+  // LTI 1.3, which is verified by apps/lti before the JWT is issued.
+  if (ltiData.scope !== 'LTI1.3') {
+    console.warn(`event=lti_rejected_scope scope=${ltiData.scope}`)
+    return { type: 'unsupported_scope' }
   }
 
   return ctx.prisma.$transaction(async (prisma) => {
@@ -1198,38 +1212,58 @@ export async function changeInitialSettings(
   },
   ctx: ContextWithUser
 ) {
-  const existingUser = await ctx.prisma.user.findFirst({
-    where: { shortname: shortname.trim() },
-  })
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const currentUser = await prisma.user.findUniqueOrThrow({
+        where: { id: ctx.user.sub },
+      })
 
-  if (existingUser && existingUser.id !== ctx.user.sub) {
-    // another user already uses the shortname this user wants
-    const user = await ctx.prisma.user.update({
-      where: { id: ctx.user.sub },
-      data: { locale },
-    })
-    return user
-  }
+      if (!currentUser.firstLogin) {
+        return currentUser
+      }
 
-  // seed demo questions
-  if (seedDemoElements) {
-    await seedDemoQuestions(ctx)
-  }
+      const existingUser = await prisma.user.findFirst({
+        where: { shortname: shortname.trim() },
+      })
 
-  const user = await ctx.prisma.user.update({
-    where: { id: ctx.user.sub },
-    data: {
-      shortname: shortname.trim(),
-      locale,
-      sendProjectUpdates: sendUpdates,
-      firstLogin: false,
+      if (existingUser && existingUser.id !== ctx.user.sub) {
+        // another user already uses the shortname this user wants
+        return prisma.user.update({
+          where: { id: ctx.user.sub },
+          data: { locale },
+        })
+      }
+
+      const claim = await prisma.user.updateMany({
+        where: { id: ctx.user.sub, firstLogin: true },
+        data: { firstLogin: false },
+      })
+
+      if (claim.count === 0) {
+        return prisma.user.findUniqueOrThrow({
+          where: { id: ctx.user.sub },
+        })
+      }
+
+      if (seedDemoElements) {
+        await seedDemoQuestions({ ...ctx, prisma })
+      }
+
+      return prisma.user.update({
+        where: { id: ctx.user.sub },
+        data: {
+          shortname: shortname.trim(),
+          locale,
+          sendProjectUpdates: sendUpdates,
+          firstLogin: false,
+        },
+      })
     },
-  })
-
-  return user
+    { maxWait: 10000, timeout: 30000 }
+  )
 }
 
-async function seedDemoQuestions(ctx: ContextWithUser) {
+async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
   // create single choice demo question
   const questionSC = await ctx.prisma.element.create({
     data: {
@@ -1543,6 +1577,9 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     ctx.prisma
   )
 
+  const { questionSE, questionCS } =
+    await seedDemoSelectionAndCaseStudyElements(ctx)
+
   const blockData = [
     {
       questions: [questionSC, questionMC],
@@ -1566,6 +1603,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
     },
     {
       questions: [questionKPRIM],
+      timeLimit: null,
+      randomSelection: null,
+    },
+    {
+      questions: [questionSE, questionCS],
       timeLimit: null,
       randomSelection: null,
     },

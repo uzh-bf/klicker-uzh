@@ -1,6 +1,82 @@
 # LiteLLM Proxy Configuration
 
 model_list:
+  # This mirrors the deployed Klicker Auto V2 policy while keeping local model
+  # names and the generic upstream boundary. The chat registry maps its `auto`
+  # model id to `auto-router`.
+  - model_name: 'auto-router'
+    litellm_params:
+      model: 'auto_router/complexity_router'
+      complexity_router_config:
+        session_affinity: false
+        adaptive: false
+        escalation_keywords: []
+        classifier_type: 'llm'
+        classifier_llm_config:
+          model: 'gpt-5.6-luna-low'
+          timeout_ms: 4000
+        semantic_keyword_matching: true
+        embedding_model: 'text-embedding-3-small'
+        match_threshold: 0.55
+        tiers:
+          SIMPLE: 'gpt-5.6-luna-medium'
+          MEDIUM: 'gpt-5.6-luna-high'
+          COMPLEX: 'gpt-5.6-luna-xhigh'
+          REASONING: 'gpt-5.6-sol-medium'
+        keyword_tier_rules:
+          - tier: 'SIMPLE'
+            keywords:
+              - 'What is the definition of opportunity cost?'
+              - 'What does CAPM stand for?'
+              - 'When is the final exam for this course?'
+              - 'What topics are covered in chapter 4?'
+              - 'What is a confidence interval?'
+              - 'List the assumptions of linear regression.'
+              - 'What is the formula for present value?'
+              - 'Summarize the key points of lecture 5.'
+              - 'Explain what a p-value means in simple terms.'
+              - 'Can you explain the concept of price elasticity?'
+              - 'What is the difference between a stock and a bond?'
+              - 'Explain the difference between correlation and causation.'
+              - 'Give me an overview of supply and demand.'
+              - 'Why do we use a logarithm in this formula?'
+              - 'What does this term in the lecture slides mean?'
+          - tier: 'COMPLEX'
+            keywords:
+              - 'Calculate the NPV of a project with cash flows -100, 40, 40, and 40 at the course discount rate.'
+              - 'Solve for x in 3x^2 + 2x - 5 = 0 and explain which root is relevant.'
+              - 'Compute the standard deviation of the dataset 4, 8, 15, 16, 23, 42.'
+              - 'Find the equilibrium price and quantity from these supply and demand functions.'
+              - 'Work through this constrained optimization problem step by step.'
+              - 'Given this balance sheet, calculate the current ratio and interpret it.'
+              - 'Determine the Nash equilibrium of this 2x2 game.'
+              - 'Compute the duration of this bond from its cash flows.'
+              - 'Run a hypothesis test for these two sample means and state the conclusion.'
+              - 'Derive the demand function from this utility function.'
+              - 'Work out the marginal cost from this total cost function.'
+              - 'Calculate the expected return and variance of this portfolio.'
+              - "Use Bayes' rule to compute the posterior probability from these test results."
+              - 'Estimate the regression coefficient from this small dataset and interpret the sign.'
+          - tier: 'REASONING'
+            keywords:
+              - 'Prove that the square root of 2 is irrational and identify where the contradiction enters.'
+              - 'Derive the Black-Scholes partial differential equation from no-arbitrage assumptions and discuss which assumptions fail in illiquid markets.'
+              - 'Explain why increasing the money supply can lead to inflation in the long run, including the transmission mechanism and limiting assumptions.'
+              - 'Critically evaluate the efficient market hypothesis using both theoretical assumptions and empirical anomalies.'
+              - 'Design an experiment to test whether this intervention causes the observed effect, including identification strategy and threats to validity.'
+              - 'Explain why the central limit theorem holds and what its assumptions imply for small, skewed samples.'
+              - 'Compare Keynesian and monetarist explanations of stagflation and argue which explanation is stronger under different evidence patterns.'
+              - 'Discuss the trade-off between bias and variance and use it to justify a model-selection strategy.'
+              - 'Prove that this function is convex and explain why that matters for finding a global optimum.'
+              - 'Analyze the welfare effects of a tax in this market, separating consumer surplus, producer surplus, government revenue, and deadweight loss.'
+              - 'Assess whether a statistically significant regression result supports a causal claim, considering confounding, selection bias, and external validity.'
+              - 'Critique this survey design for non-response bias, measurement error, and sampling bias, then propose a stronger design.'
+              - 'Choose between two competing economic models for this scenario and justify the choice from assumptions, predictive power, and limitations.'
+              - 'Explain how an omitted variable can reverse a regression coefficient and construct a concrete example.'
+              - 'Develop a proof strategy for this theorem before carrying out the proof.'
+              - 'Evaluate whether a price ceiling improves welfare when the market also has an externality.'
+      complexity_router_default_model: 'gpt-5.6-luna-medium'
+
   - model_name: 'gpt-4.1'
     litellm_params:
       model: 'openai/gpt-4.1'
@@ -13,8 +89,74 @@ model_list:
       api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
 
+  # Direct GPT-5.6 Luna selection for comparison with Auto Mode. The fixed
+  # effort aliases are internal router targets and are not exposed as chat
+  # picker options.
+  - model_name: 'gpt-5.6-luna'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-medium'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'medium'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-low'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'low'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-high'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'high'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-luna-xhigh'
+    litellm_params:
+      model: 'openai/gpt-5.6-luna'
+      reasoning_effort: 'xhigh'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  - model_name: 'gpt-5.6-sol-medium'
+    litellm_params:
+      model: 'openai/gpt-5.6-sol'
+      reasoning_effort: 'medium'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 600
+
+  # The first `openai/` selects LiteLLM's OpenAI-compatible provider. The
+  # second remains in the model id sent to OpenRouter.
+  - model_name: 'text-embedding-3-small'
+    litellm_params:
+      model: 'openai/openai/text-embedding-3-small'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 60
+
   - model_name: 'gpt-4.1-mini'
     litellm_params:
       model: 'openai/gpt-4.1-mini'
       api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+
+request_timeout: 600
+
+router_settings:
+  routing_strategy: 'simple-shuffle'
+  fallbacks:
+    - 'gpt-5.6-sol-medium': ['gpt-5.1']

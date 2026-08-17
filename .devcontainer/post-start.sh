@@ -92,6 +92,29 @@ pnpm --filter @klicker-uzh/graphql exec tsx src/scripts/setupLocalBlobStorage.ts
 
 export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,BLOB_STORAGE_ACCOUNT_URL,BLOB_STORAGE_INTERNAL_ACCOUNT_URL,KB_SOURCE_GATEWAY_URL,KB_INGESTION_API_URL,KB_INGESTION_PROJECT_ID,KB_GRAPH_HATCHET_CLIENT_HOST_PORT,KB_GRAPH_HATCHET_API_URL,KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY,KB_GRAPH_HATCHET_WORKFLOW_NAME,KB_FALKORDB_HOST,KB_FALKORDB_PORT,KB_FALKORDB_TLS,NODE_EXTRA_CA_CERTS'
 
+# The test seed connects Benibot's Tutor and Explainer modes to this local,
+# read-only MCP fixture. Keep it in the app container so the seeded
+# http://localhost:1417/mcp endpoint remains valid in every workspace. Prove
+# readiness before starting Chat so its first request cannot miss the fixture.
+MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
+MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
+"$DEVROUTER_PROCESS_HELPER" ensure \
+  --name klicker-local-mcp \
+  --match 'apps/chat/scripts/local-mcp-server.mjs' \
+  --log /tmp/local-mcp.log \
+  -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
+
+for attempt in $(seq 1 20); do
+  if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
+    break
+  fi
+  if [ "$attempt" -eq 20 ]; then
+    echo '[post-start] ERROR: local MCP fixture did not become healthy.' >&2
+    exit 1
+  fi
+  sleep 1
+done
+
 # Run every routed app plus both Hatchet workers without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
@@ -114,6 +137,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   LTI Service  -> ${APP_ORIGIN_LTI}
 [post-start]   Chat         -> ${NEXT_PUBLIC_CHAT_URL} (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Blob Storage -> ${BLOB_STORAGE_ACCOUNT_URL} (Azurite)
+[post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
@@ -131,6 +155,7 @@ else
 [post-start]   LTI Service  -> http://localhost:4000
 [post-start]   Chat         -> http://localhost:3004 (requires UPSTREAM_OPENAI_API_KEY)
 [post-start]   Blob Storage -> http://localhost:10000/klickerdev (Azurite)
+[post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF

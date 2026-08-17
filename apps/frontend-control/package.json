@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-control",
-  "version": "3.4.0-alpha.64",
+  "version": "3.4.0-alpha.68",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -18,7 +18,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
-    "@uzh-bf/design-system": "4.1.6",
+    "@uzh-bf/design-system": "4.1.8",
     "cross-env": "7.0.3",
     "dayjs": "1.11.20",
     "deepmerge": "4.3.1",
@@ -57,7 +57,7 @@
     "swc-loader": "~0.2.7",
     "tailwindcss": "~4.1.11",
     "tw-animate-css": "~1.3.4",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "build": "next build --webpack",

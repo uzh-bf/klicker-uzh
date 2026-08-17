@@ -15,8 +15,14 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    // Allow any *.localhost dev host (primary `<app>.klicker.localhost` and
+    // worktree `<app>.klicker.<workspace>.localhost`) to reach Next dev
+    // resources (HMR, fonts). Next 16 blocks cross-origin dev requests by
+    // default and its implicit `*.localhost` only matches a single segment,
+    // so multi-label localhost hosts (worktrees) would otherwise be blocked
+    // and never finish hydrating. Dev-only; not applied in production.
     allowedDevOrigins:
-      NODE_ENV === 'development' ? ['**.klicker.localhost'] : undefined,
+      NODE_ENV === 'development' ? ['**.localhost'] : undefined,
     outputFileTracingRoot: monorepoRoot,
     productionBrowserSourceMaps: isStaging,
     turbopack: {
@@ -47,9 +53,6 @@ function getNextBaseConfig({
       '@klicker-uzh/prisma',
       '@uzh-bf/design-system',
     ],
-    typescript: {
-      ignoreBuildErrors: true,
-    },
     ...(includeI18n
       ? {
           i18n: {

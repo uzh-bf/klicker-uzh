@@ -11,10 +11,19 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/backend-docker
+  MIGRATOR_IMAGE_NAME: ${{ github.repository }}/backend-docker-migrator
 
 jobs:
   build-arm:
     if: github.event.pull_request.draft == false
+    # Gate the app image on the migrator image so the two tags can never drift
+    # apart in the dangerous direction. If the migrator build fails, this job is
+    # skipped and the backend tag stays put, leaving the migrator ahead of the
+    # app — the expand-contract state migrations must already tolerate. The
+    # reverse (app ahead of migrator) would let the PreSync hook run an old
+    # migrator, apply nothing, exit 0, and roll out code against an unmigrated
+    # schema.
+    needs: build-migrator-arm
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -55,6 +64,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
     if: github.event.pull_request.draft == false
+    # See build-arm: the app image must never advance without its migrator.
+    needs: build-migrator-amd
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,6 +99,85 @@ jobs:
         with:
           context: .
           file: apps/backend-docker/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64
+          labels: ${{ steps.meta.outputs.labels }}
+  build-migrator-arm:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: packages/prisma/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/arm64
+          no-cache: true
+          labels: ${{ steps.meta.outputs.labels }}
+  build-migrator-amd:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-amd
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: packages/prisma/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64

@@ -1,6 +1,7 @@
+import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
-import type { ContextWithUser } from '../lib/context.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 
 const chatModelSchema = z
   .object({
@@ -10,6 +11,7 @@ const chatModelSchema = z
     description: z.string().default(''),
     fallback: z.boolean().default(false),
     supportsReasoning: z.boolean().default(false),
+    usesResponsesApi: z.boolean().optional(),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().positive().optional(),
     apiVersion: z.string().min(1).optional(),
@@ -36,8 +38,9 @@ const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
 type ChatModelCapability = Omit<
   RawChatModelConfig,
-  'supportedReasoningEfforts'
+  'supportedReasoningEfforts' | 'usesResponsesApi'
 > & {
+  usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
 }
 type ChatbotReasoningConfigEntry = {
@@ -45,7 +48,31 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
-const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+  {
+    id: 'auto',
+    deploymentId: 'auto-router',
+    name: 'Auto Mode',
+    description: 'Automatic model selection through the LiteLLM auto router',
+    fallback: false,
+    supportsReasoning: false,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: [],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-5.6-luna',
+    deploymentId: 'gpt-5.6-luna',
+    name: 'GPT-5.6 Luna',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    usesResponsesApi: true,
+    supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
   {
     id: 'gpt-5.5',
     deploymentId: 'gpt-5.5',
@@ -89,6 +116,7 @@ const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
@@ -100,6 +128,7 @@ const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
+    usesResponsesApi: false,
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
@@ -111,11 +140,14 @@ let cachedChatModelRegistry: ChatModelCapability[] | null = null
 const dedupeStrings = (values: readonly string[]) => Array.from(new Set(values))
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
+  const usesResponsesApi = model.usesResponsesApi ?? model.supportsReasoning
+
   if (!model.supportsReasoning) {
-    return { ...model, supportedReasoningEfforts: [] }
+    return { ...model, usesResponsesApi, supportedReasoningEfforts: [] }
   }
   return {
     ...model,
+    usesResponsesApi,
     supportedReasoningEfforts: dedupeStrings(
       model.supportedReasoningEfforts ?? []
     ),
@@ -190,6 +222,49 @@ const toNumber = (value: unknown): number | null => {
   }
   const parsed = Number(value)
   return Number.isNaN(parsed) ? null : parsed
+}
+
+export async function getParticipantCourseChatbots(
+  { courseId }: { courseId: string },
+  ctx: Context
+) {
+  // the course overview page is publicly accessible, so anonymous visitors and
+  // logged-in lecturers must receive an empty list instead of an auth error
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
+    return []
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    select: { id: true },
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    return []
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+    },
+    where: { courseId },
+  })
+
+  return chatbots.map(({ id, name, description, avatar }) => ({
+    id,
+    name,
+    description,
+    avatar,
+  }))
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {

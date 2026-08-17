@@ -24,6 +24,18 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        filterRoot: '.',
+        // Keep Rollup independent from stale TypeScript incremental metadata.
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
+        include: [
+          'src/**/*.cts',
+          'src/**/*.mts',
+          'src/**/*.ts',
+          'src/**/*.tsx',
+        ],
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies

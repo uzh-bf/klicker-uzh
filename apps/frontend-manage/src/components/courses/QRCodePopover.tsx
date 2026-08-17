@@ -17,7 +17,7 @@ function QRCodePopover({
   relHref,
   data,
 }: {
-  triggerStyle: 'basic' | 'button'
+  triggerStyle: 'basic' | 'button' | 'primary'
   triggerText: string
   infoComponent?: React.ReactNode
   relHref: string
@@ -40,6 +40,16 @@ function QRCodePopover({
       {triggerStyle === 'button' && (
         <PopoverTrigger
           className="hover:bg-accent border-input flex h-8 flex-row items-center gap-2.5 rounded-md border px-3 py-0"
+          data-cy={data?.cy}
+          data-test={data?.test}
+        >
+          <FontAwesomeIcon icon={faQrcode} />
+          <div>{triggerText}</div>
+        </PopoverTrigger>
+      )}
+      {triggerStyle === 'primary' && (
+        <PopoverTrigger
+          className="bg-primary-100 text-primary-foreground hover:bg-primary-80 focus-visible:ring-ring inline-flex h-8 flex-row items-center gap-2.5 rounded-md border border-primary-100 px-3.25 py-1.75 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden"
           data-cy={data?.cy}
           data-test={data?.test}
         >

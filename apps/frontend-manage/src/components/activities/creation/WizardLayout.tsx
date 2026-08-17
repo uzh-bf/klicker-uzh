@@ -36,6 +36,7 @@ export interface ElementInstanceFormInput {
 
 export interface ElementBlockFormValues {
   timeLimit?: number
+  randomSelection?: number | null
   elements: ElementInstanceFormInput[]
 }
 

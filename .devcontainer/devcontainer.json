@@ -20,7 +20,7 @@
     "mailhog",
     "azurite",
     "hatchet",
-    "hatchet_token"
+    "litellm"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "customizations": {

@@ -29,11 +29,14 @@ vi.mock('../src/lib/utils/chatUtils', () => ({
 }))
 
 vi.mock('../src/stores/settingsStore', () => ({
-  useSettingsStore: () => ({
-    selectedMode: 'chat',
-    selectedModel: 'gpt-test',
-    selectedReasoningEffort: 'medium',
-  }),
+  useSettingsStore: (selector?: (state: any) => unknown) => {
+    const state = {
+      selectedMode: 'chat',
+      selectedModel: 'gpt-test',
+      selectedReasoningEffort: 'medium',
+    }
+    return selector ? selector(state) : state
+  },
 }))
 
 vi.mock('../src/stores/chatStore', () => ({
@@ -50,6 +53,11 @@ type MockState = {
 }
 
 let storeState: MockState
+let chatActions: {
+  createThread: ReturnType<typeof vi.fn>
+  addMessage: ReturnType<typeof vi.fn>
+  setIsRunning: ReturnType<typeof vi.fn>
+}
 
 describe('getEditedMessageSource', () => {
   beforeEach(() => {
@@ -59,11 +67,17 @@ describe('getEditedMessageSource', () => {
     }
 
     mockUseChatStore.mockReset()
-    mockUseChatStore.mockReturnValue({
+    chatActions = {
       createThread: vi.fn(),
       addMessage: vi.fn(),
       setIsRunning: vi.fn(),
-    })
+    }
+    mockUseChatStore.mockImplementation(
+      (selector?: (state: any) => unknown) => {
+        const state = { ...storeState, ...chatActions }
+        return selector ? selector(state) : state
+      }
+    )
     mockUseChatStore.getState.mockImplementation(() => storeState)
     mockUseChatStore.setState.mockImplementation((updater: any) => {
       const partial =
@@ -213,11 +227,11 @@ describe('getEditedMessageSource', () => {
   test('new user message preserves attachment previews from composer attachments', async () => {
     const addMessage = vi.fn().mockResolvedValue('thread-1')
 
-    mockUseChatStore.mockReturnValue({
+    chatActions = {
       createThread: vi.fn(),
       addMessage,
       setIsRunning: vi.fn(),
-    })
+    }
 
     storeState = {
       activeThreadId: 'thread-1',

@@ -3,12 +3,7 @@ import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
-import {
-  enhanceContext,
-  handleKBIngestionWebhook,
-  handleKBSourceGateway,
-  schema,
-} from '@klicker-uzh/graphql'
+import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -18,11 +13,6 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-declare namespace global {
-  let __coverage__: any
-}
 
 function prepareApp({
   prisma,
@@ -45,15 +35,6 @@ function prepareApp({
   const enhancements = armor.protect()
 
   const app = express()
-
-  /* istanbul ignore next */
-  if (global.__coverage__) {
-    try {
-      require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
   app.use(
     cors({
@@ -197,70 +178,6 @@ function prepareApp({
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
-
-  app.get(
-    '/api/ingestion/resources/:resourceId/versions/:resourceVersion',
-    async (req, res) => {
-      const resourceVersion = Number(req.params.resourceVersion)
-      if (
-        !UUID_PATTERN.test(req.params.resourceId) ||
-        !/^[1-9]\d*$/.test(req.params.resourceVersion) ||
-        !Number.isSafeInteger(resourceVersion)
-      ) {
-        res.status(404).json({ error: 'Resource not found' })
-        return
-      }
-
-      try {
-        const result = await handleKBSourceGateway({
-          prisma,
-          resourceId: req.params.resourceId,
-          resourceVersion,
-          authorization: req.headers.authorization,
-        })
-        if (result.statusCode !== 200) {
-          res.status(result.statusCode).json(result.body)
-          return
-        }
-
-        res.status(200)
-        res.set({
-          'Cache-Control': 'private, no-store',
-          'Content-Length': String(result.contentLength),
-          'Content-Type': result.contentType,
-          'X-Content-Type-Options': 'nosniff',
-        })
-        result.stream.on('error', () => res.destroy())
-        result.stream.pipe(res)
-      } catch (error) {
-        console.error('KB source gateway failed', error)
-        res.status(500).json({ error: 'Internal server error' })
-      }
-    }
-  )
-
-  app.post(
-    '/api/webhooks/kb-ingestion',
-    express.raw({ type: 'application/json', limit: '1mb' }),
-    async (req, res) => {
-      try {
-        if (!Buffer.isBuffer(req.body)) {
-          res.status(400).json({ error: 'Invalid request' })
-          return
-        }
-
-        const result = await handleKBIngestionWebhook({
-          prisma,
-          rawBody: req.body,
-          headers: req.headers,
-        })
-        res.status(result.statusCode).json(result.body)
-      } catch (error) {
-        console.error('KB ingestion webhook failed', error)
-        res.status(500).json({ error: 'Internal server error' })
-      }
-    }
-  )
 
   app.use('/api/graphql', yogaApp as any)
 
