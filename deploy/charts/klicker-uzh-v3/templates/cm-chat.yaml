@@ -30,5 +30,15 @@ data:
   {{- end }}
   {{- if .Values.mcpStudent.enabled }}
   {{- $mcpStudentPath := printf "/%s" (trimPrefix "/" .Values.mcpStudent.path) }}
-  MCP_STUDENT_URL: {{ printf "http://%s-mcp-student:%v%s" $fullName .Values.mcpStudent.service.port $mcpStudentPath | quote }}
+  MCP_STUDENT_SCHEME: {{ .Values.mcpStudent.service.scheme | default "http" | quote }}
+  MCP_STUDENT_HOST: {{ printf "%s-mcp-student" $fullName | quote }}
+  MCP_STUDENT_PORT: {{ .Values.mcpStudent.service.port | quote }}
+  MCP_STUDENT_PATH: {{ $mcpStudentPath | quote }}
+  {{- end }}
+  {{- if .Values.mcpLecturer.enabled }}
+  {{- $mcpLecturerPath := printf "/%s" (trimPrefix "/" .Values.mcpLecturer.path) }}
+  MCP_LECTURER_SCHEME: {{ .Values.mcpLecturer.service.scheme | default "http" | quote }}
+  MCP_LECTURER_HOST: {{ printf "%s-mcp-lecturer" $fullName | quote }}
+  MCP_LECTURER_PORT: {{ .Values.mcpLecturer.service.port | quote }}
+  MCP_LECTURER_PATH: {{ $mcpLecturerPath | quote }}
   {{- end }}

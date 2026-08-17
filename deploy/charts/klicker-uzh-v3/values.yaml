@@ -275,7 +275,55 @@ mcpStudent:
 
   service:
     type: ClusterIP
+    scheme: http
     port: 7080
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
+
+mcpLecturer:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+
+  secret:
+    appSecretName: ''
+    appSecretKey: APP_SECRET
+    databaseName: ''
+    databaseUrlKey: DATABASE_URL
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    scheme: http
+    port: 7081
 
   resources:
     requests:

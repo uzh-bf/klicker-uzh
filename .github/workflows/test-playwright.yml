@@ -94,6 +94,12 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+          # The manage assistant widget is compiled out of frontend-manage
+          # without these two: NEXT_PUBLIC_* values are inlined into the client
+          # bundle at build time (.env.test maps NEXT_PUBLIC_CHAT_URL from
+          # APP_ORIGIN_CHAT), and Y-manage-assistant.spec.ts needs the widget.
+          APP_ORIGIN_CHAT: http://127.0.0.1:3004
+          NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED: 'true'
 
       - name: Archive Next build outputs
         run: |

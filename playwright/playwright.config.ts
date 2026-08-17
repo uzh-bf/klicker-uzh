@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
+const isReleaseMatrix = process.env.PLAYWRIGHT_RELEASE_MATRIX === 'true'
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -45,17 +46,28 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,
-    // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
-    launchOptions: {
-      args: ['--lang=en-US'],
-    },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent
   },
 
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    // { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Chromium-only CLI flag; WebKit's launcher rejects unknown options,
+        // so it must not live in the shared `use` block. Firefox/WebKit get
+        // their locale from the shared `locale: 'en-US'` alone.
+        launchOptions: {
+          args: ['--lang=en-US'],
+        },
+      },
+    },
+    ...(isReleaseMatrix
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
 })

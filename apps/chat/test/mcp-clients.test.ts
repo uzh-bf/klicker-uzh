@@ -81,7 +81,7 @@ describe('MCP runtime policy', () => {
           }
         ),
       ],
-      'chatbot-1'
+      { chatbotId: 'chatbot-1' }
     )
 
     expect(Object.keys(tools)).toEqual(['IW_doc_query'])
@@ -101,7 +101,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
@@ -116,7 +116,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
@@ -133,16 +133,15 @@ describe('MCP runtime policy', () => {
             { allowedTools: ['search*'] }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).resolves.toEqual({})
 
     setTools({ search_docs: { description: 'search' }, unrelated: {} })
     await expect(
-      getAggregatedMCPTools(
-        [createServer({}, { allowedTools: ['search*'] })],
-        'chatbot-1'
-      )
+      getAggregatedMCPTools([createServer({}, { allowedTools: ['search*'] })], {
+        chatbotId: 'chatbot-1',
+      })
     ).resolves.toEqual({ IW_search_docs: { description: 'search' } })
   })
 
@@ -172,7 +171,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
   })
@@ -189,7 +188,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()
@@ -207,7 +206,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()
@@ -226,7 +225,7 @@ describe('MCP runtime policy', () => {
           }
         ),
       ],
-      'chatbot-1'
+      { chatbotId: 'chatbot-1' }
     )
 
     const [toolName] = Object.keys(tools)
@@ -256,7 +255,7 @@ describe('MCP runtime policy', () => {
         tools: vi.fn().mockResolvedValue({ video_expert: {} }),
       })
     await expect(
-      getAggregatedMCPTools([optional, required], 'chatbot-1')
+      getAggregatedMCPTools([optional, required], { chatbotId: 'chatbot-1' })
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
     vi.clearAllMocks()
@@ -270,7 +269,7 @@ describe('MCP runtime policy', () => {
         tools: vi.fn().mockResolvedValue({ doc_query: {} }),
       })
     await expect(
-      getAggregatedMCPTools([optional, required], 'chatbot-1')
+      getAggregatedMCPTools([optional, required], { chatbotId: 'chatbot-1' })
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
   })
 
@@ -291,7 +290,7 @@ describe('MCP runtime policy', () => {
             }
           ),
         ],
-        'chatbot-1'
+        { chatbotId: 'chatbot-1' }
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).not.toHaveBeenCalled()

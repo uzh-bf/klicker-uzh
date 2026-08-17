@@ -16,7 +16,11 @@ import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
+import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
+import { getKlickerChatContextLabel } from '../services/chatContext'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
@@ -77,6 +81,7 @@ export function Assistant({
   useChatGuestTokenBootstrap()
 
   const t = useTranslations()
+  usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
     (state) => state.participationRequired
@@ -609,6 +614,10 @@ function AssistantLayout({
   const isLoading = useChatStore((state) => state.isLoading)
   const pathname = usePathname()
   const graphMode = pathname === `/${chatbot.id}/graph`
+  useEmbeddedChatContext()
+  const context = useChatContextStore((state) => state.context)
+  const contextLabel = getKlickerChatContextLabel(context)
+  const hasQuestionContext = Boolean(context?.question)
 
   if (showSidebar) {
     return (
@@ -648,6 +657,8 @@ function AssistantLayout({
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
+              contextLabel={contextLabel}
+              contextualSuggestions={hasQuestionContext}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />

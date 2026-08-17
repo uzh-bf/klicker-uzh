@@ -1,5 +1,10 @@
 # Klicker MCP Server — Review and Integration Plan
 
+> **Superseded for current branch work (2026-05-30).** For student MCP work,
+> use `project/STUDENT_MCP_CONCEPT.md` and `apps/mcp-student`. For the lecturer
+> Manage assistant MCP, use `project/plans_wip/PLAN-lecturer-mcp.md`. This file
+> remains as historical background for the earlier broad MCP-server concept.
+
 ## Status snapshot (2026-05-01)
 
 This branch (`claude/mcp-server-review-planning-XMkzh`) was created from `v3` and currently

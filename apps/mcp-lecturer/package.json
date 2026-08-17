@@ -1,0 +1,41 @@
+{
+  "private": true,
+  "name": "@klicker-uzh/mcp-lecturer",
+  "description": "Lecturer-facing KlickerUZH MCP server",
+  "version": "0.1.0",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*",
+    "fastmcp": "3.15.2",
+    "jose": "5.9.4",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "cross-env": "~7.0.3",
+    "tsx": "~4.19.4",
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production tsc -p tsconfig.build.json",
+    "build:test": "pnpm run build",
+    "check": "tsc --noEmit",
+    "dev": "cross-env NODE_ENV=development tsx src/index.ts",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
+    "smoke:local": "tsx scripts/smoke.ts",
+    "smoke:negative": "tsx scripts/smoke-negative.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:run": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}

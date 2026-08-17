@@ -6,6 +6,7 @@ import { authedFetch } from '../lib/client/authedFetch'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
+import { useChatContextStore } from '../stores/chatContextStore'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
@@ -33,6 +34,7 @@ export function useChatResponse(
   selectedReasoningEffort: ReasoningEffort
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const chatContext = useChatContextStore((state) => state.context)
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
@@ -183,6 +185,7 @@ export function useChatResponse(
             selectedModel,
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
+            chatContext: chatContext ?? undefined,
             parentId: parentId || undefined,
             assistantMessageId,
             images: (resolvedTriggerMessage?.imageAttachments ?? [])
@@ -725,6 +728,7 @@ export function useChatResponse(
       selectedMode,
       selectedReasoningEffort,
       chatbotId,
+      chatContext,
       loadCredits,
       t,
     ]

@@ -1,11 +1,40 @@
+import { createHash, randomUUID } from 'node:crypto'
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import {
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  tool,
+} from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
+import {
+  formatKlickerChatContextForPrompt,
+  sanitizeKlickerChatContext,
+} from '@/src/services/chatContext'
+import { CreditsService } from '@/src/services/credits'
+import { DisclaimersService } from '@/src/services/disclaimers'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from '@/src/services/studentPracticeMcp'
+import { ThreadService } from '@/src/services/threads'
+import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
@@ -26,30 +55,12 @@ import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
-import { CreditsService } from '@/src/services/credits'
-import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { consumeStream, type ToolSet } from 'ai'
 
 export const runtime = 'nodejs'
 
@@ -561,6 +572,9 @@ const joinReasoningFromSteps = (
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
 export async function POST(
+  // Legacy endpoint complexity predates this PR; this branch only adds scoped
+  // context handling. S3776 is suppressed in sonar-project.properties because
+  // Biome moves an inline NOSONAR marker off the declaration line.
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
@@ -571,7 +585,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode, chatbot: authChatbot } = authResult
 
   // check disclaimer acceptance
   try {
@@ -620,6 +634,7 @@ export async function POST(
       .transform((val) => val?.toLowerCase())
       .default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     images: z
@@ -636,7 +651,7 @@ export async function POST(
       .optional()
       .default([]),
   })
-  let parsed
+  let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
@@ -651,7 +666,23 @@ export async function POST(
     parentId,
     assistantMessageId,
     images,
+    chatContext: rawChatContext,
   } = parsed
+
+  const sanitizedChatContext = sanitizeKlickerChatContext(rawChatContext)
+  const chatContext =
+    authChatbot && sanitizedChatContext?.courseId === authChatbot.courseId
+      ? sanitizedChatContext
+      : null
+
+  if (sanitizedChatContext && authChatbot && !chatContext) {
+    console.warn('Ignoring chat context for unrelated course', {
+      requestId,
+      chatbotId,
+      contextCourseId: sanitizedChatContext.courseId,
+      chatbotCourseId: authChatbot.courseId,
+    })
+  }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
     typeof image === 'string'
@@ -679,6 +710,7 @@ export async function POST(
     selectedModel: parsed.selectedModel,
     selectedMode,
     messageCount: messages.length,
+    hasChatContext: Boolean(chatContext),
   })
 
   let selectedModel = parsed.selectedModel
@@ -690,6 +722,7 @@ export async function POST(
   let systemPrompt = ''
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
+  let enabledKnowledgeBaseId: string | undefined
 
   try {
     chatbot = await prisma.chatbot.findUnique({
@@ -704,16 +737,23 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
+        knowledgeBases: {
+          where: { isEnabled: true },
+          select: { kbId: true },
+          take: 1,
+        },
       },
     })
 
     if (chatbot) {
+      enabledKnowledgeBaseId = chatbot.knowledgeBases[0]?.kbId
+
       // Extract system prompt
       const systemPrompts = chatbot.systemPrompts as Record<
         string,
         Record<string, string>
       >
-      if (systemPrompts && systemPrompts[selectedMode]) {
+      if (systemPrompts?.[selectedMode]) {
         systemPrompt =
           systemPrompts[selectedMode].prompt ||
           DEFAULT_PROMPT[selectedMode]?.prompt ||
@@ -783,7 +823,12 @@ export async function POST(
   // credit, image-generation, or message-persistence work.
   let mcpTools: ToolSet
   try {
-    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
+      chatbotId,
+      participantId,
+      kbId: enabledKnowledgeBaseId,
+      sessionId: currentThreadId ?? requestId,
+    })
   } catch (error) {
     if (error instanceof RequiredMCPUnavailableError) {
       return NextResponse.json(
@@ -796,19 +841,6 @@ export async function POST(
     }
     throw error
   }
-
-  const toolNames = Object.keys(mcpTools || {})
-
-  // Append the citation contract only when a doc_query-style RAG tool is
-  // actually available; mutating `systemPrompt` here (rather than deriving a
-  // separate `instructions` variable) keeps the `systemPromptLength` /
-  // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model. The language-style contract applies unconditionally: stored
-  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
-  // orthography must be enforced here, not in the default prompt text.
-  systemPrompt = withLanguageStyleContract(
-    withCitationContract(systemPrompt, toolNames)
-  )
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -842,6 +874,115 @@ export async function POST(
     content: msg.content,
   }))
 
+  // Add the optional student-practice tool after MCP availability has been
+  // checked. The candidates are scoped to the authenticated participant and
+  // course, and the tool can only expose references returned by that lookup.
+  let practiceCandidatePrompt = ''
+  let practiceCandidateCount = 0
+  const practiceCandidateRefs = new Map<string, string>()
+
+  if (selectedMode === 'tutor') {
+    try {
+      const lookupResult = await lookupRelevantPracticeStacks({
+        chatbotId,
+        courseId: authChatbot.courseId,
+        messages,
+        participantId,
+      })
+      const candidates = lookupResult?.candidates ?? []
+      practiceCandidateCount = candidates.length
+      candidates.forEach((candidate, index) => {
+        practiceCandidateRefs.set(
+          toPracticeCandidateId(index),
+          candidate.questionRef
+        )
+      })
+      practiceCandidatePrompt = formatPracticeCandidatesForPrompt(candidates)
+
+      logChatDev('studentPractice.lookup', {
+        requestId,
+        chatbotId,
+        participantId,
+        candidateCount: practiceCandidateCount,
+      })
+    } catch (error) {
+      console.warn(
+        'Student practice lookup failed; continuing without quiz candidates',
+        {
+          requestId,
+          chatbotId,
+          error,
+        }
+      )
+    }
+  }
+
+  const studentPracticeTools: Record<string, any> = {}
+  if (practiceCandidatePrompt) {
+    studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
+      description:
+        'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
+      inputSchema: z.object({
+        candidateId: z
+          .string()
+          .min(1)
+          .describe('Candidate id from the current practice candidate context'),
+      }),
+      execute: async ({ candidateId }) => {
+        const questionRef = practiceCandidateRefs.get(candidateId)
+        if (!questionRef) {
+          throw new Error('Unknown practice candidate id')
+        }
+
+        const payload = await getPracticeStackForQuiz({
+          chatbotId,
+          participantId,
+          questionRef,
+        })
+
+        if (!payload) {
+          throw new Error('Student practice MCP is not configured')
+        }
+
+        return {
+          kind: 'student-practice-quiz',
+          ...payload,
+        }
+      },
+      toModelOutput: () => ({
+        type: 'text' as const,
+        value:
+          'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+      }),
+    })
+  }
+
+  const chatTools: Record<string, any> = {
+    ...(mcpTools || {}),
+    ...studentPracticeTools,
+  }
+  const toolNames = Object.keys(chatTools)
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  // Applied after `chatTools` is assembled so the doc_query detection sees the
+  // full tool list, and before the context/practice prompts are layered on.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
+
+  const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
+  const contextAwareSystemPrompt = chatContextPrompt
+    ? `${systemPrompt}\n\n${chatContextPrompt}`
+    : systemPrompt
+  const effectiveSystemPrompt = practiceCandidatePrompt
+    ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
+    : contextAwareSystemPrompt
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
     chatbot.allowedModelIds.length > 0
@@ -902,6 +1043,26 @@ export async function POST(
     }
   }
 
+  // Phase A: anonymous (LTI guest) users are locked to fallback models.
+  // This is the FINAL model override — runs after all account-mode model
+  // resolution branches so it cannot be silently overwritten by the
+  // `!chatbot.modelSelection` branch (the bug from the original branch).
+  // Phase B replaces this with reasoning-effort tier gating.
+  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
+    // Pick a fallback directly. `getAutomaticModelId` returns the *primary*
+    // when credits>0 even when called with `chatbot.allowedModelIds`, which
+    // would re-trip this branch and 503 anonymous users that have credits.
+    const guestFallback = modelRegistry.find((m) => m.fallback)
+    if (!guestFallback) {
+      return NextResponse.json(
+        { error: 'No fallback model available for guest access' },
+        { status: 503 }
+      )
+    }
+    selectedModel = guestFallback.id
+    selectedModelConfig = guestFallback
+  }
+
   const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
     selectedModelConfig,
     chatbot.allowedReasoningEffortsByModel
@@ -927,7 +1088,7 @@ export async function POST(
             ? 'responses'
             : 'chat',
           instructions: systemPrompt,
-          tools: mcpTools,
+          tools: chatTools,
         })
       : null
 
@@ -1035,6 +1196,8 @@ export async function POST(
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
+    practiceCandidateCount,
+    hasChatContext: Boolean(chatContextPrompt),
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -1259,11 +1422,11 @@ export async function POST(
         },
       },
       messages: modelMessages as ModelMessage[],
-      tools: promptCacheRequest?.tools ?? mcpTools,
+      tools: promptCacheRequest?.tools ?? chatTools,
       toolOrder: promptCacheRequest?.toolOrder,
       toolChoice: 'auto',
       stopWhen: isStepCount(5),
-      instructions: systemPrompt,
+      instructions: effectiveSystemPrompt,
 
       abortSignal: req.signal,
 

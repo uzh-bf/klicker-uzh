@@ -139,6 +139,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   Blob Storage -> ${BLOB_STORAGE_ACCOUNT_URL} (Azurite)
 [post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
 [post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
@@ -157,6 +158,7 @@ else
 [post-start]   Blob Storage -> http://localhost:10000/klickerdev (Azurite)
 [post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
+[post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 fi

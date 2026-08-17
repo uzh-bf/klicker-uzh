@@ -1,8 +1,6 @@
 import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
-  type StudentMcpToolErrorCode,
-  type StudentMcpToolErrorOutput,
 } from '@klicker-uzh/types'
 import { FastMCP, UserError } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
@@ -12,8 +10,16 @@ import {
   verifyParticipantSession,
   type StudentMcpSession,
 } from './auth.js'
+import {
+  getStudentCapabilities,
+  type StudentMcpCapabilities,
+} from './capabilities.js'
 import type { RuntimeSettings } from './config.js'
 import type { StudentPracticeService } from './service.js'
+import { toolDefinition } from './toolPolicy.js'
+import { runStudentTool } from './toolRunner.js'
+
+export { getStudentCapabilities, type StudentMcpCapabilities }
 
 const lookupSchema = z.object({
   chatbotId: z.string().min(1).describe('Chatbot assigned to the course'),
@@ -55,79 +61,6 @@ const submitSchema = z.object({
   stackAnswerTimeSeconds: z.number().int().min(0),
 })
 
-function json(value: unknown): string {
-  return JSON.stringify(value ?? null, null, 2)
-}
-
-function requireSession(session: StudentMcpSession | undefined) {
-  if (!session) {
-    throw new UserError('Missing authenticated participant session')
-  }
-  return session
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  return String(error)
-}
-
-function errorCode(message: string): StudentMcpToolErrorCode {
-  if (
-    message === 'Missing authenticated participant session' ||
-    message === 'Missing Authorization bearer token'
-  ) {
-    return 'UNAUTHENTICATED'
-  }
-  if (/questionRef has expired/i.test(message)) {
-    return 'QUESTION_REF_EXPIRED'
-  }
-  if (/Invalid questionRef|questionRef signature/i.test(message)) {
-    return 'QUESTION_REF_INVALID'
-  }
-  if (
-    /no longer eligible|no longer matches|does not match request context/i.test(
-      message
-    )
-  ) {
-    return 'QUESTION_REF_STALE'
-  }
-  if (
-    /Submission must answer|Duplicate response|Response type mismatch/i.test(
-      message
-    )
-  ) {
-    return 'SUBMISSION_INVALID'
-  }
-  if (/No practice pool is available/i.test(message)) {
-    return 'PRACTICE_POOL_UNAVAILABLE'
-  }
-  return 'UNKNOWN'
-}
-
-function safeToolError(error: unknown): StudentMcpToolErrorOutput {
-  const message = errorMessage(error)
-  const code = errorCode(message)
-
-  return {
-    error: {
-      code,
-      message:
-        code === 'UNKNOWN' ? 'Student practice tool call failed' : message,
-    },
-  }
-}
-
-async function runTool(
-  session: StudentMcpSession | undefined,
-  execute: (session: StudentMcpSession) => Promise<unknown>
-): Promise<string> {
-  try {
-    return json(await execute(requireSession(session)))
-  } catch (error) {
-    return json(safeToolError(error))
-  }
-}
-
 export function createStudentMcpServer(
   settings: RuntimeSettings,
   service: StudentPracticeService
@@ -136,7 +69,9 @@ export function createStudentMcpServer(
     authenticate: async (request: IncomingMessage) => {
       const token = bearerTokenFromHeaders(request.headers)
       if (!token) {
-        throw new UserError('Missing Authorization bearer token')
+        throw new UserError(
+          'Authentication failed: missing Authorization bearer token'
+        )
       }
       return verifyParticipantSession(token, settings)
     },
@@ -151,54 +86,70 @@ export function createStudentMcpServer(
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Lookup Relevant Practice Stacks',
-    },
+    ...toolDefinition(
+      'klicker_student_capabilities',
+      'Student MCP Capabilities'
+    ),
+    description:
+      'Return the current student MCP service capabilities and policy summary. This tool does not access course practice data.',
+    execute: (_args, context) =>
+      runStudentTool({
+        execute: async () => getStudentCapabilities(settings),
+        session: context.session,
+        toolName: 'klicker_student_capabilities',
+      }),
+    parameters: z.object({}),
+    timeoutMs: 5_000,
+  })
+
+  server.addTool({
+    ...toolDefinition(
+      'lookup_relevant_practice_stacks',
+      'Lookup Relevant Practice Stacks'
+    ),
     description:
       'Find answer-safe practice-stack candidates related to the current chat topic.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.lookupRelevantPracticeStacks(args, session)
-      ),
-    name: 'lookup_relevant_practice_stacks',
+      runStudentTool({
+        execute: (session) =>
+          service.lookupRelevantPracticeStacks(args, session),
+        session: context.session,
+        toolName: 'lookup_relevant_practice_stacks',
+      }),
     parameters: lookupSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Get Practice Stack For Quiz',
-    },
+    ...toolDefinition(
+      'get_practice_stack_for_quiz',
+      'Get Practice Stack For Quiz'
+    ),
     description:
       'Fetch full answer-safe render data for a selected practice stack.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.getPracticeStackForQuiz(args, session)
-      ),
-    name: 'get_practice_stack_for_quiz',
+      runStudentTool({
+        execute: (session) => service.getPracticeStackForQuiz(args, session),
+        session: context.session,
+        toolName: 'get_practice_stack_for_quiz',
+      }),
     parameters: getQuizStackSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: false,
-      readOnlyHint: false,
-      title: 'Submit Practice Stack Answer',
-    },
+    ...toolDefinition(
+      'submit_practice_stack_answer',
+      'Submit Practice Stack Answer'
+    ),
     description:
       'Submit a completed structured stack answer and return backend grading.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.submitPracticeStackAnswer(args, session)
-      ),
-    name: 'submit_practice_stack_answer',
+      runStudentTool({
+        execute: (session) => service.submitPracticeStackAnswer(args, session),
+        session: context.session,
+        toolName: 'submit_practice_stack_answer',
+      }),
     parameters: submitSchema,
     timeoutMs: 30_000,
   })

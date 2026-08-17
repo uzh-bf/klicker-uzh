@@ -110,7 +110,10 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      'chatbot-1'
+      {
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+      }
     )
     expect(mocks.createThread).not.toHaveBeenCalled()
   })

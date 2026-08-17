@@ -95,7 +95,9 @@ render of the starter grid.
 - `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
-- Sudden Firefox/WebKit execution: Playwright is running all configured projects. Pass `--project=chromium` or keep non-Chromium projects commented in config if Chromium-only is desired.
+- Sudden Firefox/WebKit execution: Playwright is running with
+  `PLAYWRIGHT_RELEASE_MATRIX=true`. Leave that variable unset for ordinary
+  Chromium-only work, or pass `--project=chromium` explicitly.
 - UI mode does not automatically mean tests execute; prefer CLI runs for verification and use UI mode only for interactive debugging.
 - A passing `CLEANUP` followed by immediate failures often means frontend apps or auth URLs are unavailable after setup.
 
@@ -155,6 +157,19 @@ Cleanup dialogs:
 ## CI Notes
 
 - For Chromium-only CI, run with `--project=chromium`.
+- The Firefox/WebKit projects are an opt-in release gate. Against the
+  production-built test stack, run:
+
+  ```bash
+  PLAYWRIGHT_RELEASE_MATRIX=true \
+  pnpm --filter @klicker-uzh/playwright exec playwright test \
+    tests/Y-manage-assistant.spec.ts \
+    tests/Y-course-chat-drawer.spec.ts \
+    --project=firefox --project=webkit
+  ```
+
+  Leave `PLAYWRIGHT_RELEASE_MATRIX` unset for ordinary local and CI runs.
+
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.

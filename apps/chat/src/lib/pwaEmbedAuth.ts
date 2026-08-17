@@ -1,0 +1,5 @@
+export const PWA_CHAT_EMBED_EXCHANGE_SCOPE = 'PWA_CHAT_EMBED_EXCHANGE'
+export const PWA_CHAT_EMBED_SESSION_SCOPE = 'PWA_CHAT_EMBED_SESSION'
+export const PWA_CHAT_EMBED_SESSION_COOKIE = 'chat_pwa_embed_token'
+export const PWA_CHAT_EMBED_SESSION_STORAGE_KEY = 'chat_pwa_embed_token'
+export const PWA_CHAT_EMBED_QUERY_KEY = '_pe'

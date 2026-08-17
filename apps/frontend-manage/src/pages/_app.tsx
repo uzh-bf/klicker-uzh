@@ -14,6 +14,7 @@ import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
@@ -57,6 +58,10 @@ function App({ Component, pageProps }: AppProps) {
           <DndProvider backend={HTML5Backend}>
             <Toaster closeButton position="top-right" />
             <Component {...pageProps} />
+            {/* Mounted here rather than in Layout so that navigating between
+                Manage pages does not tear down the assistant and reload its
+                iframe mid-conversation. */}
+            <ManageAssistantWidget />
           </DndProvider>
         </NextIntlClientProvider>
       </ApolloProvider>

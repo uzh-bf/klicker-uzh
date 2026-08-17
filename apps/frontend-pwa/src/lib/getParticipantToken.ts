@@ -1,8 +1,44 @@
-import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
-import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
+import type { ApolloClient, NormalizedCacheObject } from '@apollo/client'
+import {
+  LoginParticipantWithLtiDocument,
+  type LoginParticipantWithLtiMutation,
+} from '@klicker-uzh/graphql/dist/ops'
 import { verifyJWT } from '@klicker-uzh/util'
-import { GetServerSidePropsContext } from 'next'
+import {
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
+  LTI_PROBE_COOKIE_NAME,
+} from '@klicker-uzh/util/auth'
+import type { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
+
+function appendCookieAttribute(
+  ctx: GetServerSidePropsContext,
+  cookieName: string,
+  attribute: string
+) {
+  const currentHeader = ctx.res.getHeader('Set-Cookie')
+  const cookies = Array.isArray(currentHeader)
+    ? currentHeader
+    : typeof currentHeader === 'string'
+      ? [currentHeader]
+      : []
+
+  if (cookies.length === 0) return
+
+  const normalizedAttribute = attribute.toLowerCase()
+  const cookiePrefix = `${cookieName}=`
+  ctx.res.setHeader(
+    'Set-Cookie',
+    cookies.map((cookie) => {
+      if (!cookie.startsWith(cookiePrefix)) return cookie
+      const hasAttribute = cookie
+        .split(';')
+        .some((part) => part.trim().toLowerCase() === normalizedAttribute)
+      return hasAttribute ? cookie : `${cookie}; ${attribute}`
+    })
+  )
+}
 
 export default async function getParticipantToken({
   apolloClient,
@@ -15,33 +51,34 @@ export default async function getParticipantToken({
 }) {
   const { query } = ctx
   const cookies = nookies.get(ctx)
+  const ltiProbeAvailable = cookiesAvailableViaLtiProbe(cookies)
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
   let participantToken: string | undefined | null =
     (process.env.ASSESSMENT_MODE === 'true'
       ? cookies['next-auth.participant-session-token']
-      : cookies['participant_token']) ?? query.participantToken
+      : cookies.participant_token) ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
-  if (participantToken && !cookies['lti-token'] && !query.jwt) {
+  if (participantToken && !ltiProbeAvailable && !query.jwt) {
     return {
       participantToken,
       cookiesAvailable:
         process.env.ASSESSMENT_MODE === 'true'
           ? !!cookies['next-auth.participant-session-token']
-          : !!cookies['participant_token'],
+          : !!cookies.participant_token,
     }
   }
 
   try {
-    let result
+    let result: { data?: LoginParticipantWithLtiMutation | null } | undefined
 
-    const cookiesAvailable = !!cookies['lti-token']
+    const cookiesAvailable = ltiProbeAvailable
 
     // LTI 1.3 authentication flow
-    if (cookies['lti-token'] || query.jwt) {
-      const token = cookies['lti-token'] ?? query.jwt
+    if (ltiProbeAvailable || query.jwt) {
+      const token = cookies[LTI_PROBE_COOKIE_NAME] ?? query.jwt
 
       if (!token) {
         return {
@@ -57,7 +94,7 @@ export default async function getParticipantToken({
         )) as { sub: string; email: string; scope: string }
 
         if (signedLtiData.scope === 'LTI1.3') {
-          result = await apolloClient.mutate({
+          result = await apolloClient.mutate<LoginParticipantWithLtiMutation>({
             mutation: LoginParticipantWithLtiDocument,
             variables: {
               signedLtiData: token,
@@ -65,14 +102,19 @@ export default async function getParticipantToken({
             },
           })
         }
-      } catch (e) {}
+      } catch (_e) {}
     }
-
     const ltiParticipantToken =
       result?.data?.loginParticipantWithLti?.participantToken ?? null
 
     if (ltiParticipantToken) {
       participantToken = ltiParticipantToken
+      const isProduction =
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1'
+      const { partitioned, ...securityOptions } = cookieSecurityOptions({
+        isProduction,
+      })
 
       // set a proper participant_token
       nookies.set(ctx, 'participant_token', participantToken, {
@@ -80,21 +122,17 @@ export default async function getParticipantToken({
         path: '/',
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 13,
-        secure:
-          process.env.NODE_ENV === 'production' &&
-          process.env.COOKIE_DOMAIN !== '127.0.0.1',
-        sameSite:
-          process.env.NODE_ENV === 'development' ||
-          process.env.COOKIE_DOMAIN === '127.0.0.1'
-            ? 'lax'
-            : 'none',
+        ...securityOptions,
       })
 
       // remove the lti-token cookie since we now have a proper participant_token
-      nookies.destroy(ctx, 'lti-token', {
+      nookies.destroy(ctx, LTI_PROBE_COOKIE_NAME, {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
+      if (partitioned) {
+        appendCookieAttribute(ctx, 'participant_token', 'Partitioned')
+      }
     } else {
       // LTI auth attempted but failed -- clear stale token to prevent session leakage
       participantToken = null

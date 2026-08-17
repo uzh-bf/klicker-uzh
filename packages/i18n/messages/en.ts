@@ -819,6 +819,12 @@ Other participants will only see your public **participant profile**, including 
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
+      courseChat: 'Course chatbot',
+      selectChatbot: 'Select chatbot',
+      openInNewTab: 'Open chat in new tab',
+      activeContext: 'Using current page context',
+      questionContext: 'Question {currentStep}/{totalSteps}',
+      noCourseChatbot: 'No course chatbot is available for this course yet.',
       retrieval: {
         searching: 'Searching lecture content for “{query}”…',
         errorTitle: 'Search unavailable',
@@ -1680,6 +1686,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Adding new content to knowledge bases is temporarily disabled.',
   },
   manage: {
+    assistant: {
+      open: 'Assistant',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'AI assistant for your courses and question pool',
+      openInNewTab: 'Open assistant in a new tab',
+      elementCreatedToast: 'Draft "{name}" added to your question pool',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',

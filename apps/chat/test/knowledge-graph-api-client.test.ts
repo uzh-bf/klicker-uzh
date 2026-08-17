@@ -3,10 +3,7 @@ import {
   createChatKnowledgeGraphDataSource,
 } from '@/src/components/knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { CHAT_GUEST_SESSION_STORAGE_KEY } from '@/src/hooks/useChatGuestTokenBootstrap'
-import {
-  DEFAULT_PARTICIPATION_MESSAGE,
-  useChatStore,
-} from '@/src/stores/chatStore'
+import { useChatStore } from '@/src/stores/chatStore'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -153,7 +150,7 @@ describe('chat knowledge graph API client', () => {
     })
     expect(useChatStore.getState()).toMatchObject({
       participationRequired: true,
-      participationMessage: DEFAULT_PARTICIPATION_MESSAGE,
+      participationMessage: null,
     })
     expect(useChatStore.getState().participationMessage).not.toContain('secret')
   })

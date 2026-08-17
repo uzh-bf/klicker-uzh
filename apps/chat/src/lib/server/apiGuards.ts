@@ -1,6 +1,12 @@
+import {
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+  PWA_CHAT_EMBED_SESSION_SCOPE,
+} from '@/src/lib/pwaEmbedAuth'
 import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
+import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import { decodeJWT } from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,35 +17,62 @@ export type { AuthMode }
 type ParticipantIdentity = {
   participantId: string
   authMode: AuthMode
+  pwaEmbedScope?: {
+    chatbotId: string
+    courseId: string
+  }
 }
 
-// Token order: chat_participant_token first, then participant_token.
+// Token order: chat_participant_token, scoped PWA embed token, then
+// participant_token.
 // Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
 // account cookie stays. Guest-first ordering means the switch takes effect
 // without clearing the account cookie or changing this code.
 //
 // Authorization header fallback (`Bearer <token>`) supports the
-// CHIPS-unsupported-browser path: client-side `authedFetch` reads the token
-// from sessionStorage and attaches it to API calls. The header carries a
-// chat-guest token (verified with the chat-guest secret); account-mode users
-// in cookieless contexts are not yet supported here (would need a separate
-// header handoff in PWA flow first).
+// CHIPS-unsupported-browser path: client-side `authedFetch` reads a chat-owned
+// scoped token from sessionStorage and attaches it to API calls. Raw
+// participant_token header fallback remains unsupported.
 export async function getParticipantId(
   req: NextRequest
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   const headerToken = extractBearerToken(req.headers.get('authorization'))
-  const chatGuestToken =
-    req.cookies.get('chat_participant_token')?.value ?? headerToken
-  if (chatGuestToken) {
+  const chatGuestCookieToken = req.cookies.get('chat_participant_token')?.value
+  if (chatGuestCookieToken) {
     try {
-      const payload = await verifyChatGuestToken(chatGuestToken)
+      const payload = await verifyChatGuestToken(chatGuestCookieToken)
       if (payload.sub) {
         return { participantId: payload.sub, authMode: 'anonymous' }
       }
     } catch (error) {
       console.error('Chat guest token verification failed:', error)
-      // Fall through to participant_token below.
+      // Fall through to PWA embed / participant_token below.
     }
+  }
+
+  const pwaEmbedCookieToken = req.cookies.get(
+    PWA_CHAT_EMBED_SESSION_COOKIE
+  )?.value
+  if (pwaEmbedCookieToken) {
+    try {
+      const payload = await verifyPwaEmbedSessionToken(pwaEmbedCookieToken)
+      return {
+        participantId: payload.sub,
+        authMode: 'account',
+        pwaEmbedScope: {
+          chatbotId: payload.chatbotId,
+          courseId: payload.courseId,
+        },
+      }
+    } catch (error) {
+      console.error('PWA embed session token verification failed:', error)
+      // Fall through to header / participant_token below.
+    }
+  }
+
+  if (headerToken) {
+    const headerIdentity = await getHeaderTokenIdentity(headerToken)
+    if (headerIdentity) return headerIdentity
   }
 
   const participantToken = req.cookies.get('participant_token')?.value
@@ -94,6 +127,49 @@ export async function getParticipantId(
   }
 }
 
+async function getHeaderTokenIdentity(
+  token: string
+): Promise<ParticipantIdentity | null> {
+  const scope = decodeHeaderTokenScope(token)
+
+  if (scope === 'CHAT_GUEST') {
+    try {
+      const payload = await verifyChatGuestToken(token)
+      if (payload.sub) {
+        return { participantId: payload.sub, authMode: 'anonymous' }
+      }
+    } catch {
+      return null
+    }
+  }
+
+  if (scope === PWA_CHAT_EMBED_SESSION_SCOPE) {
+    try {
+      const payload = await verifyPwaEmbedSessionToken(token)
+      return {
+        participantId: payload.sub,
+        authMode: 'account',
+        pwaEmbedScope: {
+          chatbotId: payload.chatbotId,
+          courseId: payload.courseId,
+        },
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+function decodeHeaderTokenScope(token: string): unknown {
+  try {
+    return decodeJWT(token).scope
+  } catch {
+    return null
+  }
+}
+
 export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   chatbotId: string,
   select: TSelect
@@ -144,6 +220,20 @@ export async function withChatbotAuth(
   const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
   if ('response' in chatbotResult) {
     return chatbotResult
+  }
+
+  if (
+    participantResult.pwaEmbedScope &&
+    (participantResult.pwaEmbedScope.chatbotId !== chatbotId ||
+      participantResult.pwaEmbedScope.courseId !==
+        chatbotResult.chatbot.courseId)
+  ) {
+    return {
+      response: NextResponse.json(
+        { error: 'Embed session is not valid for this chatbot' },
+        { status: 403 }
+      ),
+    }
   }
 
   const participationResult = await requireParticipation(

@@ -1,8 +1,12 @@
 import { getTranslations } from 'next-intl/server'
+import { NoLoginSelfHeal } from '@/src/components/NoLoginSelfHeal'
 import Link from 'next/link'
 
 interface NoLoginPageProps {
-  searchParams?: Promise<{ redirectTo?: string | string[] }>
+  searchParams?: Promise<{
+    redirectTo?: string | string[]
+    lti?: string | string[]
+  }>
 }
 
 function getChatRedirectUrl(redirectTo: string | undefined) {
@@ -29,6 +33,9 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const redirectTo = Array.isArray(redirectToParam)
     ? redirectToParam[0]
     : redirectToParam
+  const ltiParam = resolvedSearchParams.lti
+  const isLtiContext =
+    (Array.isArray(ltiParam) ? ltiParam[0] : ltiParam) === '1'
 
   const loginBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
@@ -45,6 +52,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
       data-cy="chat-no-login"
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
     >
+      <NoLoginSelfHeal redirectTo={redirectTo} />
       <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
         <h1
           data-cy="chat-no-login-title"
@@ -52,9 +60,22 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
         >
           {t('chat.noLogin.title')}
         </h1>
-        <p className="text-muted-foreground mt-4 text-base">
-          {t('chat.noLogin.message')}
-        </p>
+        {isLtiContext ? (
+          <>
+            <p className="text-muted-foreground mt-4 text-base">
+              Your LTI session could not be verified. The link may have expired
+              or be invalid.
+            </p>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Please return to your LMS and re-launch the chatbot, or sign in
+              with a KlickerUZH account.
+            </p>
+          </>
+        ) : (
+          <p className="text-muted-foreground mt-4 text-base">
+            {t('chat.noLogin.message')}
+          </p>
+        )}
         {redirectUrl && (
           <p className="text-muted-foreground mt-2 text-sm">
             {t('chat.noLogin.redirectNotice')}

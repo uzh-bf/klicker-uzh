@@ -46,7 +46,7 @@ function Chatbots() {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="min-h-full w-full shrink-0">
       <H2>{t('manage.resources.chatbots')}</H2>
       <div className="mt-6 flex flex-col lg:flex-row-reverse">
         <div className="lg:w-1/2 lg:border-l lg:pl-4">

@@ -825,6 +825,12 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
+      courseChat: 'Kurs-Chatbot',
+      selectChatbot: 'Chatbot auswählen',
+      openInNewTab: 'Chat in neuem Tab öffnen',
+      activeContext: 'Nutzt den aktuellen Seitenkontext',
+      questionContext: 'Frage {currentStep}/{totalSteps}',
+      noCourseChatbot: 'Für diesen Kurs ist noch kein Kurs-Chatbot verfügbar.',
       retrieval: {
         searching: 'Vorlesungsinhalte werden nach „{query}“ durchsucht…',
         errorTitle: 'Suche nicht verfügbar',
@@ -1695,6 +1701,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
   manage: {
+    assistant: {
+      open: 'Assistent',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
+      openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
