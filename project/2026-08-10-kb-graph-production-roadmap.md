@@ -1,7 +1,7 @@
 # KB knowledge graph production roadmap
 
-Status: M1 execution approved and in progress; W1/W2/W3 package planning and
-base reconciliation are underway.
+Status: M1 execution approved and in progress; W1/W2/W3 package evidence is
+locally reviewed, while cross-package compatibility and external delivery gates remain.
 
 Date: 2026-08-10
 
@@ -1010,3 +1010,41 @@ is independently safe to land.
   Klicker linked-worktree and primary-checkout fetches are blocked by a shared
   Git metadata `FETCH_HEAD` permission error; current GitHub `v3` was verified
   read-only with `git ls-remote`. No existing dirty files were modified.
+- 2026-08-16: Phase-5 boundary reconciliation records Catalyst W1 as reviewed
+  at its authorized local delivery boundary. The Catalyst execution plan is
+  `docs/project/2026-08-15-kb-graph-production-adopter-plan.md` on
+  `rs/kb-graph-production-adopter` at `b1c7edd4e`; its graph checks pass with
+  86 tests passing and one skipped, the formatting gate passes, and the exact
+  integrated final review is clean. This is `reviewed` local evidence only —
+  not `pr_ready`, merged, released, or live-proven delivery. Hosted CI, W2
+  consumer compatibility, image build/run and registry-digest pullability,
+  live Hatchet/dependency proof, and separately authorized publication, push,
+  PR, deployment, and paid smoke remain open.
+- 2026-08-16: The M1 sibling evidence is refreshed without changing the
+  roadmap's existing W1/W2/W3 parallelism. Klicker W2 has a clean local
+  final-review record through its current implementation tip, but disposable
+  migration, required lecturer/student browser states, live-stack, and provider
+  execution checks remain open. Data-ingestion W3's transfer ledger is at
+  `48ba5ff093439b61f5d5165f42ddd8287089c436`; the later W2 record contains its
+  exact final-review evidence, while the W3 plan still has stale final-review
+  close-out bookkeeping. Catalyst parity and source retirement remain W5/M2
+  work. M1 therefore remains in progress and no W4 staging action is implied.
+- 2026-08-16: No hosted CI, image-registry publication, live service or
+  cluster access, secret access, push, PR/MR mutation, merge, deployment, or
+  paid model run was performed during this reconciliation.
+- 2026-08-17: W2-C student-view browser evidence captured against the local
+  stack; root cause of the earlier hydration hang was a stale
+  `allowedDevOrigins: ['**.klicker.localhost']` in the worktree's
+  `packages/next-config/index.js` (predates #5248), which blocked the HMR
+  WebSocket for the four-label worktree host and left the app-router hydration
+  decoder waiting on its debug channel forever. The worktree file now matches
+  upstream (`['**.localhost']` in development, uncommitted). Evidence:
+  `w2c-kb-graph-student-graph-unavailable-en-desktop.png` showing the
+  graceful "temporarily unavailable" graph state (FalkorDB absent — partial
+  evidence), plus contract readback proving the published binding resolves
+  (build `20000000-...-0004`, isStale false) and fails on
+  `KB_FALKORDB_HOST must be a non-empty value` (503), while an unbound
+  chatbot throws `KnowledgeGraphNotPublishedError` code EMPTY (409). Dev
+  caveat: Turbopack cannot load `@klicker-uzh/knowledge-graph` via
+  `createRequire`, so the live dev API degrades all graph errors to 503;
+  the 409 branch is proven by direct probe only.

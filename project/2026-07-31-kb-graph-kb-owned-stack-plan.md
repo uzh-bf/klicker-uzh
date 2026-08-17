@@ -299,3 +299,155 @@ current contract acceptance required by the roadmap.
   and mutation/retry semantics. Residual verification limits remain browser
   proof, live provider execution, worker-process startup, migration
   application, cluster access, merge, push, and deployment.
+- 2026-08-16: W2-B/W2-C runtime verification was attempted without changing
+  code or external state. `devrouter status --json` reported the router, TLS,
+  shared network, and eleven-route repository configuration healthy, but the
+  exact `devrouter ensure .` retry reached the named worktree and failed while
+  Docker Compose tried to attach a referenced missing network. The managed
+  route returned `502`; no browser session or screenshot evidence was produced.
+  The failed exact runtime was stopped with `devrouter stop .`, and the second
+  ensure attempt reproduced the same environment blocker. Migration application,
+  worker startup, provider execution, cluster access, merge, push, and deployment
+  remain unverified; repair the exact DevPod/network and rerun W2-B/W2-C before
+  treating M1 as complete.
+- 2026-08-16: The requested runtime retry found the real root cause and caused
+  a cross-workspace dev-database incident. A Docker daemon restart about six
+  hours earlier left this workspace's `postgres`, `redis_*`, and `mailhog`
+  containers attached to no Docker network, while the shared `devnet` resolves
+  the bare name `postgres` to four sibling workspaces' Postgres containers.
+  Repeated `devrouter ensure .` retries recreated the app container, and each
+  recreation re-ran `.devcontainer/post-create.sh`, whose `prisma migrate reset
+  --skip-seed --force` plus `db push` therefore executed against sibling
+  databases. Read-only inspection confirms the `klicker-prod` databases of
+  `trees/pr5134-b2-ui`, `trees/fix-chat-recovery-e2e-selector`,
+  `trees/chat-history-rail`, and the
+  `.claude/worktrees/klicker-uzh-ux-accessibility-32b832` worktree now carry
+  this branch's `20260816120000_kb_graph_dispatch_claim` migration and were
+  reset to this branch's schema; this workspace's own database was untouched
+  (its newest migration remains `20260815190114_kb_graph_cost_accounting`).
+  The exact runtime was halted with `devrouter stop .`; DevPod reports
+  `Stopped`, every project container is exited, and zero routes remain for
+  `feat-kb-ingestion-refresh-event`. One stale hatchet container (created
+  against the deleted compose network) was removed and recreated during the
+  retries; its named config/token volumes were preserved. No browser evidence
+  was produced; W2-B/W2-C verification stays blocked pending (1) explicit
+  approval to recreate this workspace's network-detached `postgres`, `redis_*`,
+  and `mailhog` containers before any further `ensure`, and (2) a ruling on
+  remediating the four sibling dev databases (each can rebuild via its own
+  worktree's post-create reset/reseed, which is itself destructive).
+- 2026-08-16: Both approved repairs are complete. Each affected sibling
+  database was rebuilt from its own worktree code with `DATABASE_URL` pinned
+  to its own postgres container name (no DNS ambiguity):
+  `fix-chat-recovery-e2e-selector` and `chat-history-rail` at
+  `20260721193705_chat_message_rating`, the ux-accessibility worktree at
+  `20260706151837_add_verifiable_credentials`, and `pr5134-b2-ui` at
+  `20260815180000_live_quiz_pending_response_generation`; all four verify
+  with 5 users and 52 participants, and `pr5134-b2-ui`'s containers were
+  returned to their prior stopped state. Recorded contamination events
+  (UTC): rs-917c1 20:02, rs-0f6d6 20:05, rs-497d8 20:07, cl-7d302 20:18 and
+  20:32. The 22:32 re-attempt proved `devrouter ensure` keeps appending the
+  localhost overlay on re-up (postgres `127.0.0.1:5432` conflicts with
+  devrouter Traefik's `0.0.0.0:5432`), which recreated the app and re-ran
+  post-create against a sibling once more before the runtime was halted.
+- 2026-08-16: This workspace's stack was recovered under direct compose
+  control and is fully verified. Six stale-network containers were removed
+  and recreated with `docker compose -p default-fe-625ea` over only
+  `docker-compose.yml` + `docker-compose.devrouter.yml` (workspace env set,
+  no localhost overlay); the app's `DATABASE_URL`, `SHADOW_DATABASE_URL`, and
+  `LTI_DB_HOST` are pinned to `default-fe-625ea-postgres-1` via
+  `/tmp/kb-graph-pin-db.yml`. Our database was reset and seeded from this
+  branch (latest migration `20260816120000_kb_graph_dispatch_claim`, 5 users,
+  52 participants); in-app `postgres` DNS resolves to exactly this stack's
+  default-network IP. Hatchet migrated and minted its client token; dev
+  processes run through the canonical `post-start.sh` with the devrouter
+  process helper copied from a healthy sibling container; all 11 routes were
+  reconciled via `devrouter app run`. Host proof: manage returns 200, the
+  API returns its expected CSRF 403 for an unauthenticated curl POST, and the
+  general worker executed `monitor-kb-graph-builds` successfully. Do not run
+  `devrouter ensure` for this worktree until the overlay bug and the shared
+  devnet bare-`postgres` alias hazard are fixed upstream; the runtime stays up
+  under an explicit lease for the approved W2-B/W2-C browser verification,
+  whose screenshots are the next open evidence.
+- 2026-08-17: W2-C student-view evidence captured. Root cause of the earlier
+  hydration hang is fixed and recorded in the roadmap: the worktree shipped a
+  stale `allowedDevOrigins: ['**.klicker.localhost']` in
+  `packages/next-config/index.js` (predates upstream fix in #5248), which
+  blocked the dev HMR WebSocket for the four-label worktree host; Next's
+  app-router hydration decoder waits on the HMR debug channel, so the page
+  hung pre-hydration. Applied the upstream pattern
+  (`allowedDevOrigins: ['**.localhost']` in development) to the worktree
+  file only (uncommitted; commit needs approval). Stack restarted, chat
+  hydrates, all instrumentation restored. W2-C: minted a chat-guest JWT
+  (HS256, `CHAT_GUEST` scope, 14d) for testuser1 in the container from the
+  chat dev process env, set as host-only `chat_participant_token` cookie,
+  and captured
+  `w2c-kb-graph-student-graph-unavailable-en-desktop.png` (Benibot → KB
+  graph, guest session, desktop 1440×900): graph workspace renders the
+  graceful "Knowledge graph temporarily unavailable" state with Retry,
+  search, and zoom controls — expected with FalkorDB absent (partial
+  evidence; graph unavailability, not a healthy graph). Contract readback:
+  with the published binding enabled, plain-Node probe of
+  `getPublishedKnowledgeGraphForChatbot` resolves to
+  `10000000-...-0004` build `20000000-...-0004` (isStale false) and the
+  overview read fails with `KB_FALKORDB_HOST must be a non-empty value`
+  (503 source). Unbinding (isEnabled=false) makes the same probe throw
+  `KnowledgeGraphNotPublishedError` code EMPTY (409 source), and the
+  binding was restored to enabled afterward (verified). Caveat: the live API
+  degrades every graph error to 503 in this dev runtime because Turbopack
+  cannot load `@klicker-uzh/knowledge-graph` via `createRequire`
+  ("Cannot find module as expression is too dynamic"), so
+  `isKnowledgeGraphNotPublishedError` never matches in dev; the 409 branch
+  is unreachable in this environment but proven correct by direct probe.
+
+- 2026-08-17 (merge + relaunch): Integrated v3 through #5420 (tip
+  `3fd5259ad`, base `3872caee7`) into this worktree and merged into
+  `feat/kb-graph-lifecycle`. v3 does NOT contain the KB schema or
+  chat-graph UI — the feature remains branch-only; every conflict was v3-ai
+  reintegration lineage. Took v3 side for ~20 pure-lineage files
+  (shared-components questions, schema/resource.ts, seedChatbots, codegen
+  outputs, chatStore reset, tool-fallback, credits routes, assistant reset
+  base); unioned turbo.json, chat/hatchet/prisma-data package.json,
+  devcontainer.env, post-start.sh, app-sidebar.tsx (Guest badge + graph
+  switch + v3 header), chatStore.ts (v3 participation refactor + re-added
+  `setParticipationRequired` for KG), assistant.tsx (rebuilt from v3 base +
+  re-added `useChatGuestTokenBootstrap`, authedFetch disclaimers,
+  graphMode + ChatGraphModeSwitch + ChatKnowledgeGraphWorkspace),
+  docs/log/ -> v3 per-batch convention. Commit 1 `7882bccc3`. Kept our KB
+  docs sections and v3's course-duplication. During codegen, the merge
+  dropped our `enabledKnowledgeBase` field on Chatbot (I took v3's
+  resource.ts); orphan op `QGetChatbotsInfo` referenced it. Re-added the
+  Pothos type + field to packages/graphql/src/schema/resource.ts (resolve
+  `chatbot.enabledKnowledgeBase ?? null`; service already maps
+  `knowledgeBases[0]?.kb`) and regenerated — commit 2 `919d22f54`;
+  graphql build EXIT=0 (only non-fatal circular-dep warnings). NOTE: the
+  service returns enabledKnowledgeBase only when knowledgeBases is loaded —
+  verify chat/manage resolvers include .knowledgeBases. Combined pnpm
+  install kept OOM-killing the app container (its cgroup, not host RAM);
+  containers rebuilt via `docker start` and install succeeded with
+  `--child-concurrency=1 --network-concurrency=4`. Relaunched pipeline via
+  explicit post-start.sh (NEVER `devrouter ensure` — overlay bug). All
+  apps Ready (3001-3004, 3010), graphql build green, hatchet workers up.
+  Runtime left RUNNING under the current lease for user self-test (user
+  asked to keep it up). Expected dev-only errors: worker
+  `KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY must be configured` (no external
+  graph builder wired — no .local-kb-services.env, no UPSTREAM_OPENAI_API_KEY,
+  no FalkorDB), Langfuse no-op exporter warnings, LTI
+  MISSING_PLATFORM_URL_OR_CLIENTID.
+- 2026-08-17 (KG data seeding): Confirmed there is NO prebuilt graph data to
+  seed. No *.graphml fixtures anywhere in the repo; local Azurite blob store
+  (default-fe-625ea-azurite-1) is EMPTY — the two SUCCEEDED KBGraphBuild rows
+  (kb-graph/synthetic-0004/0005.graphml) are record metadata only, with no
+  blob artifact. No FalkorDB container is running; graph data is written
+  directly to FalkorDB by the external Catalyst `kg-content-generation/
+  lightrag_research` stack (bridge contract export_to/n_graph_name), not by
+  Klicker from GraphML. Klicker only reads (client.ts FalkorDB.connect) and
+  removes graphs/artifacts (kbMaintenance cleanup). ADR 0002's "GraphML
+  archive recovers FalkorDB" is an operational recovery concept (re-run the
+  external builder from archived GraphML), NOT an in-repo import API. So
+  seeding a real student-visible graph requires running the external
+  lightrag/FalkorDB stack (util/configure-local-kb-graph-builder.sh), which
+  is not set up here. The 5 synthetic KBs + SUCCEEDED builds exist in the DB
+  (verified) purely to render the empty/active/failed/published/stale UI
+  states; without FalkorDB the student graph view shows the graceful
+  "temporarily unavailable" state (W2-C evidence).
+
