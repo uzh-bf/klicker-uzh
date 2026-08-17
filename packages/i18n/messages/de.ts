@@ -1,5 +1,8 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(öffnet in neuem Tab)',
+    },
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
@@ -58,6 +61,8 @@ export default {
       toggleSidebar: 'Seitenleiste umschalten',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',

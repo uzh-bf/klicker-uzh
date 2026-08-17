@@ -124,6 +124,10 @@ function SourceCard({
         rel="noopener noreferrer"
       >
         {inner}
+        {/* `target="_blank"` is otherwise only signalled visually (the
+            external-link icon above is aria-hidden), so the accessible name
+            has to carry the new-tab hint itself. */}
+        <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
       </a>
     )
   }

@@ -1489,11 +1489,11 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
                   className={actionBarButtonClassName}
                 >
                   <RefreshCwIcon />
-                  <span className="sr-only">{t('chat.message.refresh')}</span>
+                  <span className="sr-only">{t('chat.message.retry')}</span>
                 </button>
               </ActionBarPrimitive.Reload>
             </TooltipTrigger>
-            <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
+            <TooltipContent>{t('chat.message.retry')}</TooltipContent>
           </Tooltip>
         )}
 
