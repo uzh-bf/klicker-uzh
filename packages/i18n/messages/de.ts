@@ -203,6 +203,7 @@ export default {
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
       ratingError: 'Bewertung konnte nicht gespeichert werden.',
+      stoppedNotice: 'Du hast diese Antwort gestoppt.',
       toolCallsGroupLabel:
         '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },

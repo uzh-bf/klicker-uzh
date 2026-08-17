@@ -100,15 +100,16 @@ export const toHistoryRailPlainText = (value: string): string | undefined => {
   return `${normalized.slice(0, MAX_PLAIN_TEXT_LENGTH - 1).trimEnd()}…`
 }
 
-const hasChatErrorPart = (message: MessageWithId): boolean =>
+const hasDataPart = (message: MessageWithId, name: string): boolean =>
   Array.isArray(message.content) &&
   message.content.some(
-    (part) =>
-      part.type === 'data' && 'name' in part && part.name === 'chat-error'
+    (part) => part.type === 'data' && 'name' in part && part.name === name
   )
 
 const getMessageStatus = (message: MessageWithId): HistoryRailEntryStatus => {
-  if (hasChatErrorPart(message)) return 'error'
+  if (hasDataPart(message, 'chat-error')) return 'error'
+  // A turn the participant stopped mid-stream is incomplete but not failed.
+  if (hasDataPart(message, 'chat-stopped')) return 'partial'
 
   return normalizeStatus(
     (message as ExtendedThreadMessageLike & { status?: unknown }).status

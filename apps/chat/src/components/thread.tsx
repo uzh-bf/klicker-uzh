@@ -77,7 +77,7 @@ import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
-import { hasChatError } from './message-parts-state'
+import { hasChatError, isStoppedWithoutText } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
@@ -170,10 +170,12 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     return null
   }
 
-  // A failed turn has its own localized callout and retry action. The normal
-  // answer timestamp and feedback controls would make an incomplete response
-  // look like a finished answer that is ready to rate.
-  if (hasChatError(message)) return null
+  // A failed turn has its own localized callout and retry action, as does a
+  // turn stopped before any text arrived. The normal answer timestamp and
+  // feedback controls would make an incomplete response look like a finished
+  // answer that is ready to rate. (A stopped turn WITH text is a real partial
+  // answer and keeps them.)
+  if (hasChatError(message) || isStoppedWithoutText(message)) return null
 
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
@@ -1582,7 +1584,10 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   if (!showMessageActions) return null
-  const hasError = hasChatError(message)
+  // Failed and stopped-without-text callouts carry their own retry action,
+  // and an incomplete turn has no answer to rate.
+  const hideAnswerActions =
+    hasChatError(message) || isStoppedWithoutText(message)
 
   return (
     <div
@@ -1614,7 +1619,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hasError && (
+        {!hideAnswerActions && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
@@ -1631,7 +1636,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Tooltip>
         )}
 
-        {!hasError && <MessageRatingButtons />}
+        {!hideAnswerActions && <MessageRatingButtons />}
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>

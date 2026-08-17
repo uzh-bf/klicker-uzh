@@ -1533,12 +1533,9 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // save partial message
-        if (
-          currentThreadId &&
-          owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        // save partial message (always non-empty: `buildAbortedAssistantContent`
+        // closes every aborted turn with the `chat-stopped` marker part)
+        if (currentThreadId && owningThread) {
           try {
             const metadata = {
               chatMode: selectedMode,
@@ -1597,11 +1594,7 @@ export async function POST(
               error,
             })
           }
-        } else if (
-          currentThreadId &&
-          !owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        } else if (currentThreadId && !owningThread) {
           console.warn(
             'Skipping assistant message save: thread ownership mismatch',
             {

@@ -200,6 +200,7 @@ export default {
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
       ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },

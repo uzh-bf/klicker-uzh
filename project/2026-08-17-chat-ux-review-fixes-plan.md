@@ -306,7 +306,26 @@ verification, commits, reviews, publication.
   tick color = muted-foreground/80 computed, aria-controls null↔id,
   focus-on-open row, Tab wraps both directions, Escape closes and returns
   focus to the trigger tick.
-- Remaining: S5, S6a, S6b, reviews, wiki, PR.
-- Evidence: latest verified commit = S4 commit (see git log).
+- S5 (main-owned; 12 files): server persists a `chat-stopped` data marker
+  in aborted assistant content (`buildAbortedAssistantContent` always ends
+  with it, marker-only when nothing streamed); onAbort guards reduced to
+  thread ownership; client AbortError branch writes the stopped turn into
+  BOTH `messages` and `allMessages` one macrotask after assistant-ui's
+  cancel resync; empty assistant turns filtered from the request body;
+  `ChatStoppedPart` renders the callout + retry; stopped-without-text
+  follows error chrome (no rating/reload); rail maps chat-stopped →
+  'partial'. In-container biome + check + test:run 38 files/331 tests
+  green. Live: mid-text abort (callout + preserved text + rating + retry),
+  reload + branch-flip round trip (470 chars persisted), retry-from-stopped
+  (no double-append; stopped attempt = previous version), zero-content
+  abort (marker-only chrome in-session; evaporates on reload because the
+  server never persisted anything — pre-existing request-timing behavior,
+  flagged to slice-reviewer), abort-after-tool-step (sources + partial
+  text + callout survive reload), rail tick reads "Partial response".
+  Two-tab check skipped (noted as slice-reviewer lens).
+- Remaining: S5 gates (slice-reviewer + simplifier), S6a, S6b, reviews,
+  wiki, PR.
+- Evidence: latest verified commit = S5 commit (see git log).
 - Delivery: required layer = draft PR on `v3`; achieved = local branch.
-- Next: simplifier on S4 range; implement S5 (main-owned).
+- Next: collect s4-simplifier; dispatch S5 slice-reviewer + simplifier;
+  S6a/S6b executors.
