@@ -123,13 +123,10 @@ test('batch sharing applies updates first and reports elements without ADMIN acc
   await expect(writeOnlyElement).toBeVisible()
   await writeOnlyElement.hover()
   await expect(
-    page
-      .getByRole('tooltip')
-      .getByText(
-        messages.manage.questionPool.batchSharingInsufficientPermission,
-        { exact: true }
-      )
-  ).toBeVisible()
+    page.locator('li:visible').filter({
+      hasText: messages.manage.questionPool.batchSharingInsufficientPermission,
+    })
+  ).toHaveText(messages.manage.questionPool.batchSharingInsufficientPermission)
 
   await page.getByTestId('apply-batch-operations').click()
   await expect(page.getByTestId('element-batch-result')).toBeVisible()
