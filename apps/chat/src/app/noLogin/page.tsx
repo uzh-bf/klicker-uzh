@@ -78,10 +78,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
         )}
         {redirectUrl && (
           <p className="text-muted-foreground mt-2 text-sm">
-            {t.rich('chat.noLogin.redirectNotice', {
-              redirectUrl,
-              url: (chunks) => <span className="font-medium">{chunks}</span>,
-            })}
+            {t('chat.noLogin.redirectNotice')}
           </p>
         )}
         <Link

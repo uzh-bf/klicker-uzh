@@ -16,6 +16,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
+import { truncateMessagesForReload } from '../components/message-parts-state'
 
 /**
  * Hook for managing chat thread operations.
@@ -35,14 +36,21 @@ export function useThreadManagement(
     messages: ExtendedThreadMessageLike[],
     threadId: string
   ) => Promise<void>,
-  abortControllerRef: React.MutableRefObject<AbortController | null>
+  abortControllerRef: React.MutableRefObject<AbortController | null>,
+  selectedModeOverride?: string
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { createThread, addMessage, setIsRunning } = useChatStore()
-  const { selectedMode, selectedModel, selectedReasoningEffort } =
-    useSettingsStore()
+  const createThread = useChatStore((state) => state.createThread)
+  const addMessage = useChatStore((state) => state.addMessage)
+  const setIsRunning = useChatStore((state) => state.setIsRunning)
+  const storedSelectedMode = useSettingsStore((state) => state.selectedMode)
+  const selectedMode = selectedModeOverride ?? storedSelectedMode
+  const selectedModel = useSettingsStore((state) => state.selectedModel)
+  const selectedReasoningEffort = useSettingsStore(
+    (state) => state.selectedReasoningEffort
+  )
 
   /**
    * Handles creation of new user messages and generates response
@@ -272,18 +280,15 @@ export function useThreadManagement(
         return
       }
 
-      // find parent message index
-      const parentIndex = parentId
-        ? activeThread.messages.findIndex((m) => m.id === parentId)
-        : -1
+      const truncatedPath = truncateMessagesForReload(
+        activeThread.messages,
+        parentId
+      )
 
-      if (parentId && parentIndex === -1) {
+      if (!truncatedPath) {
         console.error('Parent message not found for reload')
         return
       }
-
-      const truncatedPath =
-        parentIndex >= 0 ? activeThread.messages.slice(0, parentIndex + 1) : []
 
       // update thread with truncated message history
       useChatStore.setState((state) => ({

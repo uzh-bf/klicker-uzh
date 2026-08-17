@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+@custom-variant fine-pointer (@media (hover: hover) and (pointer: fine));
+
 @source "../../node_modules/@uzh-bf/design-system/src";
 @source "../../../../packages/shared-components/src";
 @source "../../../../packages/markdown/src";

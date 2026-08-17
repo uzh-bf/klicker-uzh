@@ -333,9 +333,10 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 200Mi
+      memory: 250Mi
     limits:
-      memory: 400Mi
+      cpu: 200m
+      memory: 768Mi
 
 mcpStudent:
   priorityClassName: production-workload

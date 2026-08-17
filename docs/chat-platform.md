@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-04'
+timestamp: '2026-08-16'
 tags:
   - frontend
   - chat
@@ -12,7 +12,7 @@ tags:
 # Chat Platform (`apps/chat`)
 
 > **Framework status (2026-08-03):** the AI-SDK route-handler layer described
-> here **is** the current production path — the AI SDK 7 / assistant-ui 0.14
+> here **is** the current production path — the AI SDK 7 / assistant-ui 0.15
 > upgrade shipped with this branch ([ADR 0003](./adr/0003-chat-framework-upgrade.md)).
 > A Mastra-based `apps/chat-api` service split remains an open exploration in the
 > draft PRs #5126 / #5129 (tutor architecture in #5129) with no landing date, so
@@ -24,6 +24,8 @@ tags:
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
+Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
+
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
@@ -31,6 +33,7 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.
 - `src/components/thread.tsx`, `src/components/message-parts.tsx`, and `src/hooks/` — assistant-ui composition and transport.
+- `src/components/history-rail.tsx` and `src/lib/history-rail.ts` — the read-only active-path history projection, transcript anchors, and responsive navigation rail.
 - `src/components/ui/` — the app's own shadcn-style primitives (`tooltip.tsx`, `action-bar-button.ts`), separate from `@uzh-bf/design-system`.
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
@@ -38,6 +41,75 @@ The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
+- Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
+  read-only `doc_query` tool on port 1417 for the seeded Benibot.
+
+The chat route returns an AI SDK UI message stream and passes
+`consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
+explicit when changing the transport: it keeps the UI stream's abort lifecycle
+consumed so abort callbacks and partial-response handling can run. It does not
+detach upstream generation from `req.signal` or guarantee completion after a
+client abort. The root layout also declares
+`interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
+is required for Android keyboard resizing because the thread viewport is the
+only conversation scroller and the composer is positioned over it.
+
+The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
+train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
+resolve `@ai-sdk/provider-utils@5.0.21`. The earlier provider-utils `5.0.12`
+tracker stored streamed tool calls in an index-addressed array; a first tool
+call at provider index `1` left a sparse entry that crashed during stream flush
+with `hasFinished` read from `undefined`. The deterministic public-provider
+fixture in `apps/chat/test/openai-chat-streaming.test.ts` covers this boundary
+with injected SSE. A green fixture proves the local provider conversion path;
+it does not replace a real-upstream first-turn staging smoke test.
+
+## Provider request cache boundaries
+
+The chat route keeps two cache mechanisms separate. `getModel` constructs a
+default OpenAI-compatible provider or a chatbot-specific custom provider, and
+`createOpenAIFetch` adds LiteLLM's exact-response bypass only to the default
+provider request: `cache.no-cache` and `cache.no-store` are both `true`.
+Custom endpoints retain their existing request fields. The same fetch boundary
+continues to normalize assistant items for Responses requests.
+
+A chatbot with a custom API key is treated as custom routing even when it has
+no custom base URL and therefore still reaches the shared gateway. That
+key-only path intentionally receives neither the default exact-response bypass
+nor the default prompt-cache identity.
+
+For default requests, `POST` passes the final `systemPrompt`, requested
+deployment identity, transport family, and MCP tools to
+`buildPromptCacheRequest`. The helper hashes only a versioned canonical
+provider-visible projection with SHA-256, then emits the provider-safe
+`klicker:pc:v1:<50-hex-character-digest>` key and
+passes it to the OpenAI provider. Tool execution functions, MCP clients,
+participant/user/chatbot/thread/message/request identifiers, and raw tool-call
+identifiers are not identity inputs. Tool input examples are excluded because
+neither OpenAI transport serializes them. Tool provider options are excluded
+for Chat Completions and limited to the OpenAI Responses options that reach the
+request. The rebuilt tools retain runtime execution, and the route supplies
+their deterministic `toolOrder` to both transport families.
+
+Function-valued tool descriptions are resolved with an undefined tool context
+for both the fingerprint and the provider request because this route does not
+pass AI SDK `toolsContext`. Introducing context-dependent descriptions would
+require extending this identity contract before they can participate safely.
+
+The provider's implicit prompt-cache behavior remains the default; the route
+does not override it with a deployment allow-list or an explicit
+`promptCacheOptions.mode`. The route does not emit an explicit prompt-cache
+breakpoint. The stable key is an optimization for provider cache matching, not
+evidence of resolved router behavior or a provider cache hit.
+
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts` use synthetic, no-network Chat
+Completions and Responses responses. They verify serialized cache fields,
+canonical tool order, privacy-negative identity inputs, and the public AI SDK
+`usage.inputTokenDetails` buckets for uncached, cache-read, and cache-write
+tokens. The tests prove local request shaping and SDK response conversion only;
+they do not prove LiteLLM, Redis, Azure OpenAI, router affinity, production
+cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
@@ -77,34 +149,59 @@ Three properties matter when debugging it:
 
 `chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
 
-The deployed Klicker Auto option is a LiteLLM `complexity-router` endpoint. The
+The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
-`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-4.1`, MEDIUM =
-`gpt-5.4-low`, COMPLEX = `gpt-5.4-medium`, REASONING = `gpt-5.5-low`. The
-authoritative router configuration lives in the external AI deployment
-repository's `litellm/config.yaml` and **cannot be verified from this
-repository** — treat the values.yaml comment as the best available record and
-confirm against the deployment before making a routing claim. Neither
-deployment ships a GPT-5.6 model at all.
+`deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-5.6-luna-medium`, MEDIUM
+= `gpt-5.6-luna-high`, COMPLEX = `gpt-5.6-luna-xhigh`, REASONING =
+`gpt-5.6-sol-medium` (match_threshold 0.55). The authoritative router
+configuration lives in the external AI deployment repository's
+`litellm/config.yaml` and **cannot be verified from this repository** — treat
+the values.yaml comment as the best available record and confirm against the
+deployment before making a routing claim. The deployed registry exposes no
+direct GPT-5.6 picker option; the router's tier targets are internal.
+Both staging and production now use `auto` as the global automatic-model
+primary, so chatbots using automatic model selection use Auto by default.
+Chatbots with an explicit model selection can continue using that selection.
+Model registry capabilities separate the student-facing reasoning-effort
+selector from the provider protocol: `supportsReasoning` controls whether the
+effort picker is offered, while `usesResponsesApi` selects OpenAI Responses so
+reasoning summary parts can stream. When `usesResponsesApi` is omitted it
+inherits `supportsReasoning`, preserving older registry JSON and existing
+reasoning models. Auto sets only `usesResponsesApi: true`, so its routed tier
+keeps ownership of effort instead of accepting a participant override.
 
-The local devcontainer simulation in `util/litellm/config.yaml` is deliberately
-**not** a copy of that map: it uses different model names (GPT-5.6 Luna/Sol),
-its own tier assignment, and the generic
+The local devcontainer simulation in `util/litellm/config.yaml` mirrors the
+deployed Klicker Auto V2 policy and semantic corpus with local, unprefixed model
+aliases: Luna medium/high/xhigh for SIMPLE/MEDIUM/COMPLEX and Sol medium for
+REASONING. It deliberately retains the generic
 `UPSTREAM_OPENAI_BASE_URL`/`UPSTREAM_OPENAI_API_KEY` boundary instead of
-production Azure URLs or secret names. Local Auto Mode behaviour is therefore
-evidence about the wiring only, never about production routing. The local chat
-registry maps the user-facing `auto` model id to the `complexity-router`
-LiteLLM deployment and exposes `gpt-5.6-luna` for a direct comparison. The
-seeded Benibot fixture allow-lists all three of `auto`, `gpt-5.6-luna` and
-`gpt-4.1-mini` explicitly, so it satisfies the fallback invariant below without
-relying on the `|| m.fallback` exemption that the runtime filters apply anyway.
+production Azure URLs, model prefixes, secrets, or failover topology. Local
+Auto Mode is therefore evidence about the wiring and policy simulation, never
+live production routing. The local chat registry maps the user-facing `auto`
+model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
+a direct comparison. The seeded Benibot fixture allow-lists all three of
+`auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
+fallback invariant below without relying on the `|| m.fallback` exemption that
+the runtime filters apply anyway.
 
-The local LiteLLM service uses the deployed semantic-router-compatible image
-`ghcr.io/berriai/litellm-database:v1.88.1`, has a healthcheck, and is included
-in `.devcontainer/devcontainer.json:runServices`. A model call still requires
-the operator's local `UPSTREAM_OPENAI_API_KEY`; without it, verify service
-health, model exposure, picker state, and request error handling, but do not
-claim an end-to-end answer stream.
+The local LiteLLM service pins
+`ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
+has a healthcheck, and is included in
+`.devcontainer/devcontainer.json:runServices`. Auto V2 uses Luna low for its LLM
+classifier and `openai/text-embedding-3-small` for semantic corpus matching,
+then invokes the selected answer model. With an OpenRouter upstream, all of
+those requests cross the same external provider boundary and add latency and
+usage cost. A model call still requires the operator's local
+`UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
+picker state, and request error handling, but do not claim an end-to-end answer
+stream.
+
+Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
+That maps each routed alias's fixed `reasoning_effort` to a visible summary
+without adding a request-level effort that would flatten Auto's Luna/Sol tier
+policy. The deployed LiteLLM configuration is external; a local summary proves
+the development path only, and staging still needs a Responses + tool-loop
+smoke test before a production compatibility claim.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
@@ -115,6 +212,20 @@ Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migratio
 response from another chatbot cannot expose stale credit/model state as current. `creditsLoaded`
 is sticky once a load has succeeded: a refresh (including a failing one) keeps the last known
 balance on screen instead of hiding the footer for the rest of the session.
+
+The settings panel translates model capabilities into student-facing descriptions. It does not
+render deployment registry descriptions, because those can expose provider or router terminology
+and are not localized. Automatic, reasoning, general-purpose, and fallback models each have a
+localized explanation in `packages/i18n/messages/en.ts` and `de.ts`; the read-only automatic
+selection state uses the same plain-language contract. Known Tutor and Explainer modes use their
+localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
+their configured description.
+
+In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the current
+balance visible below the header at mobile widths, even while the design-system sidebar drawer
+is closed. When the balance reaches zero it also states that new messages use the smaller model.
+The bar is rendered only by `SidebarMain`; embedded mode continues to use its existing
+`EmbeddedCreditsBar` so the two compact readouts are never shown together.
 
 Two further credit conventions are easy to break:
 
@@ -145,23 +256,92 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 
 ## Runtime and student-visible states
 
-The chat branch uses `@assistant-ui/react` 0.14's stable `GroupedParts` primitive. Local
+The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
-The runtime's feedback adapter delegates votes to `src/stores/chatStore.ts:rateMessage`, while
-the adapter maps the persisted `ChatMessage.rating` back into `metadata.submittedFeedback` so
-votes survive store refreshes and reloads. AI SDK 7 powers the server route (`ai`,
-`@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client transport
-because the spike-gated `useAISDKRuntime` replacement could not be live-verified without an LLM
-key.
+The source-card section is derived from completed `doc_query` tool results but
+stays hidden while the same assistant message is actively running without
+non-whitespace answer text. This keeps tool activity in stream order and
+prevents a result card from appearing as if it were the answer during the gap
+between tool completion and the model's next text step. If the turn becomes
+terminal before producing answer text, including an incomplete or aborted
+tool-only turn, valid completed sources are shown instead of being lost on
+reload. The source component still suppresses the section when normalization
+produces no sources.
+The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
+thread's messages/running state and the actions it calls, while `Thread` renders its message rows
+through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
+attachment adapters are memoized as well, so a streamed message or a feedback update does not
+replace every message row's component type or adapter object. Ratings have one owner: the plain
+buttons in `thread.tsx` read the active `ChatMessage.rating` from `chatStore` and call
+`chatStore.rateMessage` for set, switch, and clear; assistant-ui's feedback adapter is not used.
+This preserves the store's optimistic persistence, per-message request serialization, and rollback
+without a second runtime-owned feedback state competing with it. AI SDK 7 powers the server route
+(`ai`, `@ai-sdk/openai`, and `@ai-sdk/mcp`); `src/hooks/useChatResponse.ts` remains the client
+transport because the spike-gated `useAISDKRuntime` replacement could not be live-verified without
+an LLM key.
+
+The history rail is a derived navigation view over `activeThread.messages`, which is the current
+branch path reconstructed by `chatStore.switchToBranch`. It never reads `allMessages`, persists
+anything, or renders sibling branches. Adjacent user and assistant messages are projected into one
+turn landmark; user-only and assistant-only messages remain navigable as orphan turns. On desktop
+("md" and up) the rail is a vertical column of bounded ticks, one per turn (or per bounded turn
+range); each tick targets a stable message-root focus target and exposes the complete user message
+and assistant response in an on-demand hover/focus popover. On mobile the tick strip is replaced by
+a single 44px trigger button (current turn / total) that opens the same history dialog used by the
+desktop current tick — precision tick targets do not meet touch guidelines, so the dialog is the
+only mobile navigation surface. Reasoning, tool calls, and client error parts stay in the transcript
+and influence the turn status, but do not create rail landmarks or part anchors. Details appear only
+on hover or focus.
+Entry activation scrolls and focuses the matching transcript target, while a token-guarded
+programmatic-scroll lock prevents the scroll spy from changing the highlighted turn mid-navigation.
+On mobile, activation also preserves the trigger's top gutter so the selected message is not
+covered by the history control.
+The projection normalizes running, partial, and error states so loading, aborted, and incomplete
+turns remain navigable without duplicating message rows.
+
+## Participant entry points (course page)
+
+Participants reach a chatbot from the shared PWA header (`apps/frontend-pwa/src/components/common/Header.tsx`)
+on any course page on v3 (`/course/[courseId]/…`) without any v3-ai dependency.
+The header runs `GetCourseChatbots` (`courseChatbots(courseId)` query backed by
+`getParticipantCourseChatbots` in `packages/graphql/src/services/chatbots.ts`)
+and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
+to the home/back button when the caller is a participant of the course. The
+button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
+design-system `Button`, the same pattern as the sibling home button), so
+middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
+courses are deliberately limited to a single chatbot for now, which is also why
+`Chatbot` carries no ordering or visibility field. Lifting that limit means
+deciding the multi-chatbot affordance first — the header row does not wrap and
+the design-system button is `shrink-0`, so several buttons would squeeze the
+course title on a narrow viewport.
+The query is deliberately **not** `withAuth(asParticipant)`: course pages are
+publicly reachable, and a scope error would surface as the literal message
+`Unauthorized`, which the PWA `errorLink` (`apps/frontend-pwa/src/lib/apollo.ts`)
+turns into a hard redirect to `/login?expired=true` for every anonymous visitor
+and every logged-in lecturer. Instead the resolver mirrors its page siblings
+`getCourseOverviewData` and `getStudentCourseLeaderboard` — a public field whose
+service returns `[]` unless the caller is a `PARTICIPANT` with a `Participation`
+record for the course. Each button opens the existing PWA deep-link route
+`course/[courseId]/chatbot/[chatbotId]` in a new tab, which redirects to login
+when needed, runs `ensureParticipation` server-side, and then 302-redirects to
+`chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
+(`id`, `name`, `description`, `avatar`) and matches the v3-ai blueprint so a
+later v3-ai sync reconciles without a diff. That sync is sequenced by
+[ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
+v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
 the action can be retried. Asynchronous disclaimer failures render in a live `role="alert"`
-region. Stream/send errors inside a message render as a styled callout, not inline markdown:
+region. The required disclaimer is a deliberate consent gate: the modal has no close or Escape
+exit, the consequence summary appears before the Accept/Decline actions, and Accept is the
+primary action. Students must choose one of those two explicit outcomes. Stream/send errors
+inside a message render as a styled callout, not inline markdown:
 `useChatResponse` pushes a `{ type: 'data', name: 'chat-error', data: { errorLabel, message } }`
 content part (assistant-ui's official `DataMessagePart` shape) and `message-parts.tsx` renders it
 as `ChatErrorPart` (`data-cy="chat-message-error"`). The convention is client-side only — data
@@ -171,10 +351,24 @@ partial text from being re-pushed alongside the error part. Truncated responses 
 localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
 typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error
 rather than a stringified `ProgressEvent`. A cached thread list intentionally remains visible if only its background refresh fails.
-The welcome view contains localized starter suggestions, and message action bars remain mounted
-for touch users rather than relying on hover. An unavailable image edit uses `aria-disabled`
-instead of native `disabled`, so its explanatory Radix tooltip remains focusable. Each thread
-row shows the thread's last chat mode as an icon plus localized label under the title
+The welcome view contains localized, mode-aware starter suggestions: Tutor offers interactive
+practice prompts for a specific topic or pasted problem, while Explainer offers source-oriented
+explanations of a specific concept or comparisons between two concepts. The prompts are inserted
+into the composer without sending and use complete, editable wording rather than raw bracket
+templates. The starter panel tells students to adjust the wording before sending. Broad
+whole-course summaries and study plans are intentionally not offered here; a reliable planner
+needs a separate structured planning flow and tool/result budget. Chatbot-scoped mode descriptions
+are supplied with the initial shell, so the welcome view and starters do not wait for the settings
+request or briefly render the wrong persisted mode. A genuine configured description, including an
+empty one, overrides the localized generic mode explanation; the synthesized Tutor fallback keeps
+the localized generic copy. On an empty thread, the selected-mode card also renders the same mode
+switcher as the header, so participants can change modes before choosing a starter. Message action bars
+remain mounted for touch users rather than relying on hover. An unavailable image edit uses
+`aria-disabled` instead of native `disabled`, so its explanatory Radix tooltip remains focusable.
+Failed assistant turns, including silent stream interruptions, keep their own localized retry
+callout but omit the normal reload and thumbs-rating actions and the relative timestamp, so an
+incomplete answer is not presented as a finished answer ready for feedback.
+Each thread row shows the thread's last chat mode as an icon plus localized label under the title
 (`thread.lastChatMode` via `formatModeLabel`), and Markdown blockquotes in answers render as
 amber info callouts (the `blockquote` override in `markdown-text.tsx`, which only assistant
 messages render through — user text never gets the callout styling). A reply to an
@@ -222,19 +416,27 @@ realistic trigger. The suffix length lives in `lib/config/toolNames.ts` and is i
 the side that builds the name and the regex that matches it, so bumping it cannot silently break
 recognition — `mcpClients.ts` is `'use server'` and therefore cannot export the constant itself.
 
-One known edge, not currently handled: `withHashSuffix` truncates the whole `server_tool` string
-to 55 characters **from the end** before appending the hash. A server name longer than about 45
-characters pushes `doc_query` out of the kept prefix entirely, and the predicate then matches
-nothing — sources, citations, the activity chip and the prompt contract all switch off silently
-for that server. No such server name exists today; fix by truncating the server name rather than
-the combined string if one ever appears.
+When a namespaced `doc_query` name exceeds the 64-character cap or collides, `withHashSuffix`
+truncates only the readable prefix and appends `_doc_query_<8 hex characters>`. The alias therefore
+remains at the end of the model-facing name and continues to satisfy `isDocQueryToolName`; the
+long-name regression case lives in `test/mcp-clients.test.ts`.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
-an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it dedupes by
-file/page/url and numbers what survives **1..N in first-appearance order across every doc_query
-call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
-to break independently:
+an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
+the normalizer unwraps that compatibility layer before applying the same rules. It treats the
+pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
+(`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
+survives **1..N in first-appearance order across every doc_query call in one message**, capped at
+`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+
+Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
+runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
+one matching raw tool. Klicker exposes that tool under the configured alias (for example, the
+course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
+identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
+`503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
+configs without the reserved keys retain the existing optional/fail-open behavior.
 
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
@@ -269,14 +471,14 @@ The line under a source's name is per-type, chosen by `getSourceSecondaryLine` i
 documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
 and fall back to a cleaned display URL when they carry no page; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. **doc_query has no timestamp
-field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
-`labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
-`labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
-(`getSourceTimestamp`). A bare numeric `labeled_page_number` remains a publisher page label,
-never seconds; bare seconds are accepted only from URL time parameters, where their meaning is
-unambiguous. Other labels such as `Kapitel IV` also remain page text. A dedicated timestamp
-field is phase-2 work in the doc-query service. Each card's index badge mirrors the inline chip —
+lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
+`labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
+and prefers the structured start for the card and citation preview. Legacy results remain
+supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
+or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
+such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
 zero-padded `01` — so the number on the card and the `[n]` in the answer read as the same
 token. Card titles clamp at two lines with the
@@ -300,6 +502,24 @@ state. The raw tool-name/args/result path is preserved wherever the friendly pan
 empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
 unreadable-args combination (which would otherwise render a blank panel).
 
+## Streamed Markdown math
+
+`src/components/markdown-text.tsx:MarkdownTextImpl` reads the current text-part status before
+rendering Markdown. While a text part is running, `src/lib/markdown/streamingMath.ts` removes only
+the unmatched tail of a supported math span (`$`, `$$`, `\\(...\\)`, `\\[...\\]`, `[/inline]`, or
+`[/math]`); ordinary prose before that span continues to stream. The scanner ignores escaped
+dollars, currency-like `$5`, inline code, and fenced code. Once a supported opener appears, the
+component disables assistant-ui's smooth text replay for that part, so the closing delimiter adds
+the complete formula in one render rather than exposing raw LaTeX or a partial KaTeX parse. A
+terminal or persisted message renders its full text normally, including an incomplete span from an
+aborted turn.
+
+`normalizeCustomMathTags` keeps custom and bracketed display-math fences on separate Markdown lines.
+Without those boundaries, a multiline formula can consume the prose or links that follow it. The
+streaming regression in `playwright/tests/Y-chat.spec.ts` pauses before a closing delimiter,
+observes the DOM for raw delimiters, partial formulas, and KaTeX errors, then asserts the final
+formula, surrounding Markdown, and assistant-row identity.
+
 ## Localization
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
@@ -321,7 +541,7 @@ Two recurring traps in this app's strings:
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote; [ADR 0002](./adr/0002-message-feedback-as-a-rating-field.md) records why a field on the message beat a separate feedback entity). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating.
+A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating. The action-bar buttons intentionally bypass assistant-ui's feedback adapter so clicking the active vote can send `rating: null` and retract it without remounting the conversation.
 
 Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
@@ -341,11 +561,27 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Do not put user-facing English in the store.** `chatStore` maps the API's generic enrolment 403 to `null` so the notice component can render its localized default; substituting a readable English sentence in the store makes the translated fallback unreachable.
 - **Thread-row edit/delete need the row active first on touch** (`thread-list.tsx`): the buttons are `hidden` and only reveal via `group-hover`/`group-focus-within`, which touch has neither of, so a touch user must tap the row (making it active, which also sets `inline-flex`) before the edit/delete buttons appear. Accepted friction, not a bug — leave as is.
 - **Thread deletion is a two-step confirm on the same button** (`thread-list.tsx`): first click turns the trash icon into a destructive-styled "Delete?" pill (aria-label switches to the confirm wording), second click deletes. The confirm state reverts on a 4s timeout, Escape, pointer leaving the row, focus leaving the row, or starting a rename — the state machine is the pure `transitionDeleteConfirm` in `thread-list-state.ts` so vitest can pin it without a DOM. `data-cy="chat-thread-delete-button"` stays on the button in both states.
+- **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
 ## Testing
 
-Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts` — no Cypress counterpart).
+The self-contained devcontainer starts the seeded local MCP fixture through
+`post-start.sh`. Benibot's Tutor and Explainer configurations already point to
+`http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
+tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+the local MCP tool to test the integration. Search for
+`portfolio diversification` and tell me the exact marker it returns.” The
+end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
+non-empty answer, and the `synthetic-course-material.pdf` source card. Keep
+Auto Mode selected and require the tool result, answer, and source to remain
+after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
+from the model/tool path. The fixture is synthetic wiring evidence only; it
+does not validate retrieval quality or a deployed MCP server.
+
+Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
+
+`history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
 The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
@@ -355,6 +591,28 @@ the package Vitest suite (`pnpm --filter @klicker-uzh/chat test:run` — the pac
 plain `test` script), and the package production build in the worktree's devcontainer.
 The live reasoning/tool/credit matrix additionally needs a configured model key; without one,
 those checks remain an explicit environment-gated follow-up rather than an unverified claim.
+
+The chat Playwright fixture can emit `textChunks` through a delayed browser
+`ReadableStream` with `chunkDelayMs`, and can pause after a chosen text delta
+with `pauseAfterTextChunk` until the test explicitly releases it. The streaming stability regression in
+`playwright/tests/Y-chat.spec.ts` captures the assistant row before later deltas arrive and
+asserts that the same DOM node remains mounted; the rating regression performs the same identity
+check across an optimistic feedback update. These checks target remounts, which are the visible
+flicker signal, rather than treating a successful final answer as proof that the conversation
+stayed stable.
+
+For mobile UI verification, use a real Chromium mobile emulation or Android
+Chrome and check the focused composer, the visible conversation tail, and every
+primary icon control with the keyboard both closed and open. A desktop screenshot
+does not prove the `dvh`/keyboard behavior.
+
+Primary mobile controls use at least 44px touch targets and shrink only when the
+primary pointer is a fine, hover-capable pointer; this includes the composer,
+sidebar/header actions, mode options, message actions, and scroll-to-bottom
+control. A stream failure is a message callout with a localized, labeled retry
+action that uses the existing assistant-ui reload path, so retrying truncates
+the failed branch instead of adding a duplicate user turn. Keep the retry and
+duplicate-turn behavior in the mobile smoke matrix.
 
 The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
 filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).

@@ -1,82 +1,132 @@
-import { UserRole } from '@klicker-uzh/prisma/client'
-import { describe, expect, test, vi } from 'vitest'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
+import { EventEmitter } from 'events'
+import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getParticipantCourseChatbots } from '../src/services/chatbots.js'
+import {
+  initializePrisma,
+  seedCourse,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 
-describe('participant course chatbots', () => {
-  test('returns only public chatbot fields for enrolled course participants', async () => {
-    const ctx = {
-      prisma: {
-        participation: {
-          findUnique: vi.fn().mockResolvedValue({ id: 1 }),
-        },
-        chatbot: {
-          findMany: vi.fn().mockResolvedValue([
-            {
-              id: 'chatbot-1',
-              name: 'Tutor',
-              description: 'Course tutor',
-              avatar: 'robot',
-              openaiApiKey: 'encrypted-secret',
-              systemPrompts: { tutor: { prompt: 'hidden' } },
-            },
-          ]),
-        },
-      },
-      user: { role: UserRole.PARTICIPANT, sub: 'participant-1' },
-    } as any
+describe('Integration tests for the public courseChatbots query', () => {
+  // shared resources used across tests
+  let prisma: PrismaClient
+  let hatchet: Hatchet
+  let emitter: EventEmitter
+  let userOneCtx: ContextWithUser
 
-    const chatbots = await getParticipantCourseChatbots(
-      { courseId: 'course-1' },
-      ctx
-    )
-
-    expect(ctx.prisma.participation.findUnique).toHaveBeenCalledWith({
-      select: { id: true },
-      where: {
-        courseId_participantId: {
-          courseId: 'course-1',
-          participantId: 'participant-1',
-        },
-      },
-    })
-    expect(ctx.prisma.chatbot.findMany).toHaveBeenCalledWith({
-      orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        avatar: true,
-      },
-      where: { courseId: 'course-1' },
-    })
-    expect(chatbots).toEqual([
-      {
-        id: 'chatbot-1',
-        name: 'Tutor',
-        description: 'Course tutor',
-        avatar: 'robot',
-      },
-    ])
-    expect(JSON.stringify(chatbots)).not.toContain('encrypted-secret')
-    expect(JSON.stringify(chatbots)).not.toContain('hidden')
+  beforeAll(async () => {
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
+    prisma = newPrisma
+    hatchet = newHatchet
+    emitter = newEmitter
   })
 
-  test('returns no chatbots when participation is missing', async () => {
-    const ctx = {
-      prisma: {
-        participation: {
-          findUnique: vi.fn().mockResolvedValue(null),
-        },
-        chatbot: {
-          findMany: vi.fn(),
-        },
-      },
-      user: { role: UserRole.PARTICIPANT, sub: 'participant-1' },
-    } as any
+  afterAll(async () => {
+    await testCleanup(prisma)
+    await prisma.$disconnect()
+  })
 
-    await expect(
-      getParticipantCourseChatbots({ courseId: 'course-1' }, ctx)
-    ).resolves.toEqual([])
-    expect(ctx.prisma.chatbot.findMany).not.toHaveBeenCalled()
+  beforeEach(async () => {
+    const { userOneCtx: ctx1 } = await testInitialization(
+      prisma,
+      hatchet,
+      emitter
+    )
+    userOneCtx = ctx1
+  })
+
+  afterEach(async () => await testCleanup(prisma))
+
+  async function seedCourseWithChatbot() {
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Course Tutor',
+        courseId: course.id,
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+
+    return { course, chatbot }
+  }
+
+  // participant tokens carry no scope (see createParticipantToken)
+  function participantContext(participantId: string): Context {
+    return {
+      ...userOneCtx,
+      user: {
+        sub: participantId,
+        role: UserRole.PARTICIPANT,
+      },
+    } as unknown as Context
+  }
+
+  it('returns an empty list for anonymous visitors instead of throwing', async () => {
+    const { course } = await seedCourseWithChatbot()
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      { ...userOneCtx, user: undefined } as unknown as Context
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns an empty list for a logged-in lecturer', async () => {
+    const { course } = await seedCourseWithChatbot()
+
+    // userOneCtx is the course owner, but has role USER (not PARTICIPANT)
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      userOneCtx as Context
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns an empty list for a participant that is not enrolled in the course', async () => {
+    const { course } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: { username: 'chatbotParticipantUnenrolled', password: 'abcdabcd' },
+    })
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(chatbots).toEqual([])
+  })
+
+  it('returns the course chatbots for an enrolled participant', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'chatbotParticipantEnrolled',
+        password: 'abcdabcd',
+        participations: { create: [{ courseId: course.id }] },
+      },
+    })
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(chatbots).toEqual([
+      {
+        id: chatbot.id,
+        name: 'Course Tutor',
+        description: null,
+        avatar: null,
+      },
+    ])
   })
 })

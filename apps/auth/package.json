@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.4.0-alpha.64",
+  "version": "3.4.0-alpha.68",
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.11.2",
@@ -11,7 +11,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
-    "@uzh-bf/design-system": "4.1.6",
+    "@uzh-bf/design-system": "4.1.8",
     "axios": "1.16.1",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.7",

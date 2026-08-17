@@ -2,6 +2,118 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.68](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.67...v3.4.0-alpha.68) (2026-08-12)
+
+
+### Features
+
+* **manage:** add course duplication ([#4954](https://github.com/uzh-bf/klicker-uzh/issues/4954)) ([f85b9c1](https://github.com/uzh-bf/klicker-uzh/commit/f85b9c1d86634dea2757dd1ba93a9acbec4efc11))
+
+
+### Bug Fixes
+
+* **build:** harden Rollup TypeScript state ([#5362](https://github.com/uzh-bf/klicker-uzh/issues/5362)) ([90604a4](https://github.com/uzh-bf/klicker-uzh/commit/90604a44ad267920fdd26a692893b95fa488052c))
+
+## [3.4.0-alpha.67](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.66...v3.4.0-alpha.67) (2026-08-10)
+
+
+### Bug Fixes
+
+* **chat:** handle sparse streamed tool-call indices ([#5342](https://github.com/uzh-bf/klicker-uzh/issues/5342)) ([5863ab8](https://github.com/uzh-bf/klicker-uzh/commit/5863ab8e6d335a2437942411a9e10afa35af4396))
+* **chat:** stabilize streamed conversations and feedback ([#5351](https://github.com/uzh-bf/klicker-uzh/issues/5351)) ([cba6736](https://github.com/uzh-bf/klicker-uzh/commit/cba673628982835bdf9b7834ea5f551e8326b8d3))
+* **chat:** stabilize Vorkurs chatbot for staging ([aaa4d09](https://github.com/uzh-bf/klicker-uzh/commit/aaa4d09c4fd9d3a6bf6d65ec68d7b9f2fd5d4a30))
+* **pwa:** expose every course chatbot from the header as a real link ([#5339](https://github.com/uzh-bf/klicker-uzh/issues/5339)) ([30df9e9](https://github.com/uzh-bf/klicker-uzh/commit/30df9e9d67c0bc8f2067960478f821f4944d94d8))
+
+
+### Build and CI
+
+* **security:** scan full branch-creation commit ranges ([dbfe71b](https://github.com/uzh-bf/klicker-uzh/commit/dbfe71bda59390cddd71b603eabdd4c4303c3bc7))
+
+
+### Enhancements
+
+* **chat:** tailor welcome starters by mode ([#5349](https://github.com/uzh-bf/klicker-uzh/issues/5349)) ([8565b04](https://github.com/uzh-bf/klicker-uzh/commit/8565b047cc9bf9d4216432486105533051ef37bb))
+* **graphql:** add selection and case study demo questions ([#5261](https://github.com/uzh-bf/klicker-uzh/issues/5261)) ([8134e3f](https://github.com/uzh-bf/klicker-uzh/commit/8134e3f27526c0d0e0cb2ea0c8a104269c2eaec9))
+
+## [3.4.0-alpha.66](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.65...v3.4.0-alpha.66) (2026-08-07)
+
+
+### Enhancements
+
+* **pwa:** add course chatbot entry link for participants ([#5335](https://github.com/uzh-bf/klicker-uzh/issues/5335)) ([060b421](https://github.com/uzh-bf/klicker-uzh/commit/060b421535cbdc867440fcd719ba0275e0bdc5b4))
+
+## [3.4.0-alpha.65](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.64...v3.4.0-alpha.65) (2026-08-06)
+
+
+### Features
+
+* **chat:** render source cards and inline citations from doc_query results ([#5250](https://github.com/uzh-bf/klicker-uzh/issues/5250)) ([102097e](https://github.com/uzh-bf/klicker-uzh/commit/102097eaacae6352eac8c9753b1b10503d2edd4e))
+* **export:** export student assessment report with verifiable credentials ([#5141](https://github.com/uzh-bf/klicker-uzh/issues/5141)) ([393a1ff](https://github.com/uzh-bf/klicker-uzh/commit/393a1fffb852ca75da3365f45dcceab585a20467))
+* **markdown:** support embedding YouTube and Kaltura videos via link-interception ([#5147](https://github.com/uzh-bf/klicker-uzh/issues/5147)) ([50c4a55](https://github.com/uzh-bf/klicker-uzh/commit/50c4a55a0c506c9f20b50eaebabfb4a5c9c5c3f6))
+* **prisma-data:** add chatbot usage analytics export ([#5125](https://github.com/uzh-bf/klicker-uzh/issues/5125)) ([ffa34ba](https://github.com/uzh-bf/klicker-uzh/commit/ffa34bafa0da82476ed4f9b8fd17e1cd8bca6970))
+
+
+### Bug Fixes
+
+* **chat:** disable staging ai telemetry ([d7c333c](https://github.com/uzh-bf/klicker-uzh/commit/d7c333cbf7726b1b89849df3e3595c2a73364913))
+* **chat:** production-readiness fixes for the student chat ([#5299](https://github.com/uzh-bf/klicker-uzh/issues/5299)) ([40556f1](https://github.com/uzh-bf/klicker-uzh/commit/40556f1f23736348d83603bb9714b170c04db6cc))
+* **deploy:** restore staging chat primary model ([ab10a1c](https://github.com/uzh-bf/klicker-uzh/commit/ab10a1cd6647c87aa5d2e49fd354e1e0836437a8))
+* **deploy:** roll out chat alpha 64 to production ([237f51d](https://github.com/uzh-bf/klicker-uzh/commit/237f51d2e54a19a2721548f351f195b231cf183a))
+* **deploy:** use gpt-5.5 on staging chat ([cad94c0](https://github.com/uzh-bf/klicker-uzh/commit/cad94c09741cc68ef0d1009f8877285ec1e5995d))
+* **deploy:** use mini as staging chat primary ([e56e365](https://github.com/uzh-bf/klicker-uzh/commit/e56e365faae7a8ec6cf509a089f2e4b7b616f5b7))
+* **devcontainer:** harden worktree startup with devrouter ([#5169](https://github.com/uzh-bf/klicker-uzh/issues/5169)) ([3872cae](https://github.com/uzh-bf/klicker-uzh/commit/3872caee79df882e9c56ab438e740b5caf561d50))
+* **frontend-pwa:** export assessment reports as PDFs ([#5306](https://github.com/uzh-bf/klicker-uzh/issues/5306)) ([29c7605](https://github.com/uzh-bf/klicker-uzh/commit/29c76054cffdfc4ffd2e3ec7c7b75cb84cd114b7))
+* **frontend-pwa:** remove unverified LTI 1.1 login path ([#5260](https://github.com/uzh-bf/klicker-uzh/issues/5260)) ([7812fa7](https://github.com/uzh-bf/klicker-uzh/commit/7812fa71ce7a11aae1d987627190d95e44ef814f))
+* **frontend-pwa:** restore Edu-ID login for the assessment build ([#5303](https://github.com/uzh-bf/klicker-uzh/issues/5303)) ([0841b31](https://github.com/uzh-bf/klicker-uzh/commit/0841b3181d9df2a6dcba02c58e4fda6443df9baa))
+* **graphql:** give tied leaderboard entries the same rank ([#5170](https://github.com/uzh-bf/klicker-uzh/issues/5170)) ([e057439](https://github.com/uzh-bf/klicker-uzh/commit/e05743901b4a2656612ad0e677e493003a3707b8))
+* **lti:** drop the Node flag removed in Node 24 from the runtime CMD ([#5308](https://github.com/uzh-bf/klicker-uzh/issues/5308)) ([31da964](https://github.com/uzh-bf/klicker-uzh/commit/31da9647f4a331ecaebbba98de5795048969bb6b))
+
+
+### Other
+
+* **playwright:** remove redundant openNextBlockFromCockpit in word cloud test ([#5146](https://github.com/uzh-bf/klicker-uzh/issues/5146)) ([20fb022](https://github.com/uzh-bf/klicker-uzh/commit/20fb022980e857a5d827cadc99e10989f645dcf3))
+
+
+### Refactors
+
+* **devcontainer:** support parallel workspaces and resolve port conflicts ([#5159](https://github.com/uzh-bf/klicker-uzh/issues/5159)) ([de840fa](https://github.com/uzh-bf/klicker-uzh/commit/de840fa78b4c95c25b9551c7bce59f0a02e40a73))
+* **prisma-data:** consolidate chatbot export script ([2e10c2f](https://github.com/uzh-bf/klicker-uzh/commit/2e10c2f0030257a2b5f6c98fff3b1ef3fdc298b8))
+
+
+### Enhancements
+
+* add playwright test cases based on cypress suite ([#5127](https://github.com/uzh-bf/klicker-uzh/issues/5127)) ([8119fd5](https://github.com/uzh-bf/klicker-uzh/commit/8119fd53e6d25d75de3a4e4d79b8c6ce654afd31))
+* **apps/chat:** Add playwright E2E tests and data-cy attributes for chat app ([#5136](https://github.com/uzh-bf/klicker-uzh/issues/5136)) ([d6c7772](https://github.com/uzh-bf/klicker-uzh/commit/d6c7772f8e0f080b9f63ff6c8463380b37225ac9))
+* **chat:** close the mockup gaps and pre-merge design findings ([#5251](https://github.com/uzh-bf/klicker-uzh/issues/5251)) ([e8903fc](https://github.com/uzh-bf/klicker-uzh/commit/e8903fc060738917e803797097c5adc54789d623))
+* **chat:** reskin Student Chat to the UZH v3 design language ([#5248](https://github.com/uzh-bf/klicker-uzh/issues/5248)) ([2cf34ea](https://github.com/uzh-bf/klicker-uzh/commit/2cf34eaca3e799940c0af7a6a73de731228316c3))
+* **chat:** upgrade the chat runtime and harden it for production ([#5249](https://github.com/uzh-bf/klicker-uzh/issues/5249)) ([3fc8158](https://github.com/uzh-bf/klicker-uzh/commit/3fc815809d5897ea9e85811320cec82b8b8dd446))
+* **ci:** agent readiness — CI integrity, path-filtered checks, and tooling quick wins ([#5140](https://github.com/uzh-bf/klicker-uzh/issues/5140)) ([bd6df48](https://github.com/uzh-bf/klicker-uzh/commit/bd6df485b3401199468441116feded96c37f484d))
+* **devcontainer:** self-contained devcontainer + devrouter local dev ([#5119](https://github.com/uzh-bf/klicker-uzh/issues/5119)) ([51f5a1e](https://github.com/uzh-bf/klicker-uzh/commit/51f5a1ed90bda31ef7e96dcd89de51bee880756c))
+* **office-addin:** replace React runtime with plain TypeScript ([#4643](https://github.com/uzh-bf/klicker-uzh/issues/4643)) ([7ed533e](https://github.com/uzh-bf/klicker-uzh/commit/7ed533edf26dcb64fe64c0a9352875a696f719ad))
+* **packages/shared-components:** replace tagcloud with wordcloud and filter user input ([#4947](https://github.com/uzh-bf/klicker-uzh/issues/4947)) ([40e36e2](https://github.com/uzh-bf/klicker-uzh/commit/40e36e2f52dac53d141237eed7baf68a99b54ea1))
+* **prisma-data:** extend chatbot cost analytics ([1077baa](https://github.com/uzh-bf/klicker-uzh/commit/1077baa98c1844d94459ecd3ceb2936124047c6d))
+
+
+### Documentation
+
+* add agent-facing engineering wiki (OKF) and lifecycle skills ([#5145](https://github.com/uzh-bf/klicker-uzh/issues/5145)) ([e6f307c](https://github.com/uzh-bf/klicker-uzh/commit/e6f307c160a3e044054845f3efdadb9c25858f5c))
+* **agents:** pre-commit data-hygiene rule + ignore internal PM/PII artifacts ([#5171](https://github.com/uzh-bf/klicker-uzh/issues/5171)) ([37153d5](https://github.com/uzh-bf/klicker-uzh/commit/37153d5850a16e0bf84e8d806737579ff8b24f1a))
+* **agents:** require stacks for larger features ([#5229](https://github.com/uzh-bf/klicker-uzh/issues/5229)) ([f424f03](https://github.com/uzh-bf/klicker-uzh/commit/f424f03a16d5d823e2283772e5bbd5ffa3b01905))
+* align Node/pnpm versions & update devcontainer onboarding ([#5150](https://github.com/uzh-bf/klicker-uzh/issues/5150)) ([5e69e40](https://github.com/uzh-bf/klicker-uzh/commit/5e69e404291457485a0ecdf2c295fb2c008b3566))
+* **chat:** student chat v3 readiness report, wiki alignment, and user docs ([#5298](https://github.com/uzh-bf/klicker-uzh/issues/5298)) ([c5072e5](https://github.com/uzh-bf/klicker-uzh/commit/c5072e5e820bfa3857e84ef8a88b55516656d5f2))
+* Mastra framework evaluation for the chat platform ([#5118](https://github.com/uzh-bf/klicker-uzh/issues/5118)) ([95593b2](https://github.com/uzh-bf/klicker-uzh/commit/95593b261fb12ae644224833208b9e1981ff5fdb))
+* **solutions:** refresh production seed lesson ([#5181](https://github.com/uzh-bf/klicker-uzh/issues/5181)) ([dfdc278](https://github.com/uzh-bf/klicker-uzh/commit/dfdc278037dc4df9e77380b60910970da264ce14))
+
+
+### Build and CI
+
+* **backend-docker:** gate the app image build on the migrator build ([#5301](https://github.com/uzh-bf/klicker-uzh/issues/5301)) ([30d2906](https://github.com/uzh-bf/klicker-uzh/commit/30d2906ffd42df446e39daf9b83f8b05507becae))
+* **deploy:** auto-promote merged commits to staging ([#5305](https://github.com/uzh-bf/klicker-uzh/issues/5305)) ([4f6990e](https://github.com/uzh-bf/klicker-uzh/commit/4f6990e33274239580cada933a77887e3ca712b6))
+* **deploy:** automate DB migrations via ArgoCD PreSync hook ([#5183](https://github.com/uzh-bf/klicker-uzh/issues/5183)) ([d43a1b4](https://github.com/uzh-bf/klicker-uzh/commit/d43a1b420aea564ab2e288255165f6e21755ad8c))
+* **deps:** upgrade Next.js 16 and React 19 ([#5166](https://github.com/uzh-bf/klicker-uzh/issues/5166)) ([212a924](https://github.com/uzh-bf/klicker-uzh/commit/212a924c1c53e71bb1973388658c3fd66877a0cb))
+* **deps:** upgrade workspace to Prisma 7 ([#5185](https://github.com/uzh-bf/klicker-uzh/issues/5185)) ([f16b9ce](https://github.com/uzh-bf/klicker-uzh/commit/f16b9ceb4d2e98e59a1cfcc5cfc81d4aa553e3d5))
+* **deps:** upgrade workspace to TypeScript 6 ([#5167](https://github.com/uzh-bf/klicker-uzh/issues/5167)) ([15feded](https://github.com/uzh-bf/klicker-uzh/commit/15fededdb78a69b09eb80f81b522ef6bc024f18e))
+
 ## [3.4.0-alpha.64](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.63...v3.4.0-alpha.64) (2026-06-15)
 
 

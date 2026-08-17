@@ -115,7 +115,6 @@ export default {
   //   'package.json',
   //   'apps/*/package.json',
   //   'packages/*/package.json',
-  //   'cypress/package.json',
   //   'docs/package.json',
   // ],
 }

@@ -11,9 +11,9 @@ const realFiles = (stagedFiles) =>
     }
   })
 
-// Biome owns code everywhere except the E2E suites; playwright/ and cypress/
-// stay on Prettier (Biome mangles their `test.describe.serial()` chains).
-const isE2E = (f) => /(^|\/)(playwright|cypress)\//.test(f)
+// Biome owns code everywhere except the E2E suites; playwright/ stays on
+// Prettier (Biome mangles its `test.describe.serial()` chains).
+const isE2E = (f) => /(^|\/)playwright\//.test(f)
 
 export default {
   // Code, JSON and CSS: Biome (check-only; run `pnpm format` to fix), except

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.4.0-alpha.64",
+  "version": "3.4.0-alpha.68",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,21 +12,23 @@
   },
   "devDependencies": {
     "@klicker-uzh/types": "workspace:*",
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.9",
     "ts-node": "~10.9.2",
     "typescript": "~6.0.3",
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "run-s --npm-path pnpm build:clean build:ts",
-    "build:clean": "rm -rf dist",
+    "build": "run-s --npm-path pnpm build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production tsc -p tsconfig.json",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
-    "dev": "cross-env NODE_ENV=development tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
     "test": "vitest run"

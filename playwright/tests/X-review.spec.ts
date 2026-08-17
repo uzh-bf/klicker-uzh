@@ -7,6 +7,7 @@ import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import {
   chooseActivityAction,
+  chooseCourseAction,
   type ActivityActionType,
 } from '../util/actions.js'
 import { test } from '../util/fixtures.js'
@@ -44,10 +45,7 @@ import {
 
 function readFixture(name: string) {
   return JSON.parse(
-    fs.readFileSync(
-      new URL(`../../cypress/cypress/fixtures/${name}`, import.meta.url),
-      'utf8'
-    )
+    fs.readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')
   )
 }
 
@@ -337,7 +335,7 @@ test.describe
     await expect(page.getByTestId('course-name-with-pin')).toContainText(
       data.review.course.name
     )
-    await page.getByTestId('course-share-button').click()
+    await chooseCourseAction(page, 'course-share-button')
     await shareObject(page, {
       usernameOrEmail: env('LECTURER_IND_SHORTNAME'),
       permissionLevel: messages.manage.sharing.permissionsREAD,

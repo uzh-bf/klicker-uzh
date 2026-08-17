@@ -174,7 +174,6 @@ export interface IChatbotPublic {
   description?: string | null
   avatar?: string | null
 }
-
 export const ChatbotPublicRef =
   builder.objectRef<IChatbotPublic>('ChatbotPublic')
 export const ChatbotPublic = ChatbotPublicRef.implement({

@@ -27,6 +27,10 @@ const config = defineConfig([
           moduleResolution: 'Bundler',
         },
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
       copy({
         targets: [{ src: 'src/public/*', dest: 'dist' }],

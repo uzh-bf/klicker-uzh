@@ -304,7 +304,7 @@ function Index() {
         </>
       )}
 
-      <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto md:flex-row">
         <div>
           <FilterList
             key={creationMode}
@@ -386,7 +386,7 @@ function Index() {
               </div>
             </div>
 
-            <div className="h-full overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {!dataElements || loadingElements ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader />

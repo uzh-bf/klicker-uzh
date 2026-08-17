@@ -10,7 +10,6 @@
     "includes": [
       "**",
       "!playwright/**",
-      "!cypress/**",
       "!**/ops.ts",
       "!**/ops.schema.json",
       "!**/nexus-typegen.ts",

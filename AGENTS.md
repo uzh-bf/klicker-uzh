@@ -25,7 +25,7 @@ pnpm run format:check         # check formatting (biome + prettier)
 pnpm run check:all            # check + format:check + lint + syncpack
 pnpm run dev                  # full dev (requires Infisical secrets)
 pnpm run dev:raw              # dev without secret injection
-pnpm run dev:test             # dev in test/cypress mode
+pnpm run dev:playwright       # dev in test/playwright mode
 ```
 
 ### Workspace-filtered
@@ -96,24 +96,23 @@ packages/
   hatchet/                 # Hatchet task definitions
   next-config/             # Shared Next.js config
   transactional/           # Transactional email templates
-cypress/                   # E2E tests
 ```
 
 ## Tech Stack
 
-| Layer                  | Technology                                                                         |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| Frontend framework     | Next.js 16, React, TypeScript                                                      |
-| Styling                | TailwindCSS, @uzh-bf/design-system                                                 |
-| GraphQL server         | GraphQL Yoga + Pothos schema builder                                               |
-| GraphQL client         | Apollo Client                                                                      |
-| ORM                    | Prisma 7 (PostgreSQL)                                                              |
-| Caching                | Redis (ioredis)                                                                    |
-| Workflow orchestration | Hatchet (workers for async processing)                                             |
-| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                   |
-| Build                  | Turborepo + Rollup                                                                 |
-| Test                   | Vitest (unit), Cypress (E2E)                                                       |
-| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + e2e specs), ESLint (Next.js safety net) |
+| Layer                  | Technology                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| Frontend framework     | Next.js 16, React, TypeScript                                                             |
+| Styling                | TailwindCSS, @uzh-bf/design-system                                                        |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                                                      |
+| GraphQL client         | Apollo Client                                                                             |
+| ORM                    | Prisma 7 (PostgreSQL)                                                                     |
+| Caching                | Redis (ioredis)                                                                           |
+| Workflow orchestration | Hatchet (workers for async processing)                                                    |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login                                          |
+| Build                  | Turborepo + Rollup                                                                        |
+| Test                   | Vitest (unit), Playwright (E2E)                                                           |
+| Format + lint          | Biome (code fmt+lint), Prettier (md/yaml + playwright specs), ESLint (Next.js safety net) |
 
 ## GraphQL Workflow
 
@@ -142,6 +141,48 @@ devrouter ensure .
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+
+**OpenRouter-backed local chat:** Start a new or stopped environment through
+Infisical so the local LiteLLM container receives the OpenRouter key without
+writing it to disk:
+
+```bash
+infisical run \
+  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
+  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
+```
+
+If LiteLLM is already running without those variables, stop the workspace with
+`devrouter workspace stop <workspace>` and rerun the command; `ensure` does not
+replace environment variables inside an existing service container. Use only
+seeded or synthetic test content because OpenRouter is an external upstream and
+the Azure-specific chatbot disclaimer does not describe this local path.
+
+Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
+`auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
+the request with the current Auto V2 policy in `util/litellm/config.yaml`.
+Classification uses Luna low; semantic corpus matching uses
+`openai/text-embedding-3-small`; SIMPLE, MEDIUM, and COMPLEX route to Luna
+medium, high, and xhigh; REASONING routes to Sol medium. LiteLLM then forwards
+all three request types through OpenRouter's OpenAI-compatible endpoint;
+OpenRouter supplies the selected models but does not make the routing decision.
+This adds one classifier request and, for semantic matching, one embedding
+request to the same external OpenRouter data boundary. It therefore adds local
+latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
+upstream failure. Separately, when Chat credits reach zero, Chat selects
+`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+
+The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
+and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
+`/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
+Chat with: “Use the local MCP tool to test the integration.
+Search for `portfolio diversification` and tell me the exact marker it
+returns.” A successful turn calls `KB_doc_query` and shows
+`KLICKER_LOCAL_MCP_OK` in a non-empty final answer plus the synthetic source
+card. Reload the thread and require the tool result, answer, and source to
+remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
+router from the model/tool integration.
 
 **Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
@@ -189,7 +230,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **Functional components** with hooks only (no class components)
 - **Component naming**: PascalCase files, `function` keyword for component declarations
 - **Biome** (code): no semicolons, single quotes, trailing comma es5, 2-space indent, line width 80; imports organized via Biome assist (`organizeImports`)
-- **Prettier**: Markdown/YAML plus the `playwright/` + `cypress/` e2e specs (Biome excludes those dirs)
+- **Prettier**: Markdown/YAML plus the `playwright/` e2e specs (Biome excludes those dirs)
 - Tailwind class sorting is not auto-enforced (deferred; previously `prettier-plugin-tailwindcss`)
 - **Imports**: use `@` and `~` path aliases
 - **GraphQL ops**: import from `@klicker-uzh/graphql`
@@ -200,7 +241,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 - **pre-commit** (husky): a staged `gitleaks` secret scan (skipped with a notice when the binary isn't installed; CI enforces it), then `pnpm run check:all` (typecheck + format:check via lint-staged + lint + syncpack)
 - **pre-push**: runs `pnpm run build`
-- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/`+`cypress/` specs
+- lint-staged: Biome on staged code files, Prettier on staged Markdown/YAML and `playwright/` specs
 
 ## Important Notes
 
@@ -222,7 +263,7 @@ Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) 
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-cypress-e2e`, `klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).

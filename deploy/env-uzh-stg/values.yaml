@@ -301,10 +301,10 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 200Mi
+      memory: 250Mi
     limits:
       cpu: 200m
-      memory: 400Mi
+      memory: 768Mi
 
 mcpStudent:
   priorityClassName: staging-workload

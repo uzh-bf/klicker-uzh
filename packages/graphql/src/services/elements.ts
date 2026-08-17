@@ -22,7 +22,7 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
-import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
+import { prop, sortBy, swapIndices } from 'remeda'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -1216,6 +1216,7 @@ export async function getInstanceUpdateActivities(
                     },
                   },
                 },
+                include: { course: { select: { name: true } } },
               },
               practiceQuiz: {
                 where: {
@@ -1230,6 +1231,7 @@ export async function getInstanceUpdateActivities(
                     },
                   },
                 },
+                include: { course: { select: { name: true } } },
               },
               groupActivity: {
                 where: {
@@ -1244,12 +1246,20 @@ export async function getInstanceUpdateActivities(
                     },
                   },
                 },
+                include: { course: { select: { name: true } } },
               },
             },
           },
           // ? where clause is not accepted by prisma for unknown reasons
           elementBlock: {
-            include: { liveQuiz: { include: { permissions: true } } },
+            include: {
+              liveQuiz: {
+                include: {
+                  permissions: true,
+                  course: { select: { name: true } },
+                },
+              },
+            },
           },
         },
       },
@@ -1271,7 +1281,9 @@ export async function getInstanceUpdateActivities(
   // combine instances that are to be updated
   const instancesToBeUpdated = element.elementInstances.reduce<
     {
+      activityId: string
       activityName: string
+      courseName?: string | null
       activityType: ActivityType
       status: DB.PublicationStatus
     }[]
@@ -1291,7 +1303,9 @@ export async function getInstanceUpdateActivities(
         )
     ) {
       acc.push({
+        activityId: instance.elementBlock.liveQuiz.id,
         activityName: instance.elementBlock.liveQuiz.name,
+        courseName: instance.elementBlock.liveQuiz.course?.name,
         activityType: ActivityType.LIVE_QUIZ,
         status: instance.elementBlock.liveQuiz.status,
       })
@@ -1308,7 +1322,9 @@ export async function getInstanceUpdateActivities(
       asynchronousActivityValid
     ) {
       acc.push({
+        activityId: instance.elementStack.microLearning.id,
         activityName: instance.elementStack.microLearning.name,
+        courseName: instance.elementStack.microLearning.course?.name,
         activityType: ActivityType.MICRO_LEARNING,
         status: instance.elementStack.microLearning.status,
       })
@@ -1325,7 +1341,9 @@ export async function getInstanceUpdateActivities(
       asynchronousActivityValid
     ) {
       acc.push({
+        activityId: instance.elementStack.practiceQuiz.id,
         activityName: instance.elementStack.practiceQuiz.name,
+        courseName: instance.elementStack.practiceQuiz.course?.name,
         activityType: ActivityType.PRACTICE_QUIZ,
         status: instance.elementStack.practiceQuiz.status,
       })
@@ -1341,7 +1359,9 @@ export async function getInstanceUpdateActivities(
           DB.PublicationStatus.TEMPLATE)
     ) {
       acc.push({
+        activityId: instance.elementStack.groupActivity.id,
         activityName: instance.elementStack.groupActivity.name,
+        courseName: instance.elementStack.groupActivity.course?.name,
         activityType: ActivityType.GROUP_ACTIVITY,
         status: instance.elementStack.groupActivity.status,
       })
@@ -1352,14 +1372,23 @@ export async function getInstanceUpdateActivities(
     return acc
   }, [])
 
-  return uniqueBy(
-    sortBy(
-      instancesToBeUpdated,
-      [prop('activityType'), 'desc'],
-      [prop('activityName'), 'asc']
-    ),
-    prop('activityName')
-  )
+  const sortedActivities = [...instancesToBeUpdated].sort((a, b) => {
+    const typeComparison = String(b.activityType).localeCompare(
+      String(a.activityType)
+    )
+    if (typeComparison !== 0) return typeComparison
+
+    const nameComparison = a.activityName.localeCompare(b.activityName)
+    if (nameComparison !== 0) return nameComparison
+
+    return (a.courseName ?? '').localeCompare(b.courseName ?? '')
+  })
+
+  return [
+    ...new Map(
+      sortedActivities.map((activity) => [activity.activityId, activity])
+    ).values(),
+  ]
 }
 
 export async function getElementSummary(

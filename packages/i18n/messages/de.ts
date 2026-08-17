@@ -3,17 +3,30 @@ export default {
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
+      tutorDescription:
+        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
       explainer: 'Erklärer',
+      explainerDescription:
+        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
     },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
       selectAiModel: 'KI-Modell auswählen',
+      autoModelDescription:
+        'Wählt automatisch für jede Nachricht ein passendes Modell aus.',
+      reasoningModelDescription:
+        'Für schwierige Aufgaben mit mehreren Schritten. Die Antwort kann länger dauern und mehr Credits verbrauchen.',
+      standardModelDescription:
+        'Ein vielseitiges Modell für alltägliche Fragen.',
+      fallbackModelDescription:
+        'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
-        'Automatische Auswahl basierend auf verfügbaren Credits.',
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
       usingPrimaryModel:
-        'Primäres Modell wird mit verfügbaren Credits verwendet.',
-      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+      usingFallbackModel:
+        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -35,6 +48,8 @@ export default {
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
         'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+      fallbackNotice:
+        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
     },
     sidebar: {
       newChat: 'Neuer Chat',
@@ -55,9 +70,35 @@ export default {
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot nicht gefunden',
+      notFoundMessage:
+        'Dieser Chat-Link ist nicht mehr verfügbar. Kehre zu KlickerUZH zurück, um einen anderen Kurs oder Chatbot auszuwählen.',
+      errorTitle: 'Chatbot nicht verfügbar',
+      errorMessage:
+        'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      retry: 'Erneut versuchen',
+      openKlickerUzh: 'KlickerUZH öffnen',
+    },
     branchPicker: {
       previous: 'Vorherige Variante',
       next: 'Nächste Variante',
+    },
+    historyRail: {
+      label: 'Gesprächsverlauf',
+      mobileLabel: 'Verlauf {current}/{total}',
+      item: 'Eintrag {current} von {total}',
+      itemRange: 'Einträge {start}-{end} von {total}',
+      openHistory: 'Gesamten Verlauf öffnen',
+      closeHistory: 'Gesamten Verlauf schliessen',
+      turn: 'Gesprächsrunde',
+      you: 'Du',
+      assistant: 'Assistent',
+      noText: 'Kein Text',
+      noResponse: 'Noch keine Antwort',
+      inProgress: 'In Bearbeitung',
+      partial: 'Unvollständige Antwort',
+      error: 'Fehler',
     },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
@@ -116,16 +157,26 @@ export default {
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
-      welcomeTitle: 'Hallo!',
-      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+      welcomeTitle: 'Willkommen!',
+      welcomeTo: 'Du chattest mit {chatbot}.',
+      welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
+      welcomeMode: 'Ausgewählter Modus: {mode}',
     },
     suggestions: {
-      explainConcept: 'Erkläre mir ein zufälliges Konzept aus dem Skript',
+      sectionLabel: 'Gesprächseinstiege',
+      editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
+      practiceTopic: 'Ein Thema üben',
+      practiceTopicPrompt:
+        'Ich möchte ein bestimmtes Thema aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
+      workThroughProblem: 'Eine Aufgabe bearbeiten',
+      workThroughProblemPrompt:
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+      explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Nimm ein zufälliges Konzept aus dem Kursskript und erkläre es mir in einfachen Worten.',
-      examPrep: 'Hilf mir bei der Prüfungsvorbereitung',
-      examPrepPrompt:
-        'Erstelle einen Lernplan für die bevorstehende Prüfung, der alle wichtigen Themen aus den Vorlesungsunterlagen abdeckt.',
+        'Erkläre ein schwieriges Konzept aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+      compareConcepts: 'Zwei Konzepte vergleichen',
+      compareConceptsPrompt:
+        'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
     },
     message: {
       creditsUsed:
@@ -137,6 +188,7 @@ export default {
         'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
       copy: 'Kopieren',
       refresh: 'Aktualisieren',
+      retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
       toolCallsGroupLabel:
@@ -192,8 +244,7 @@ export default {
       title: 'Anmeldung erforderlich',
       message:
         'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
-      redirectNotice:
-        'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
+      redirectNotice: 'Nach der Anmeldung kehrst Du zu diesem Chatbot zurück.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
     },
     response: {
@@ -770,10 +821,10 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
+      openCourseChat: 'KI-Tutor',
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
-      openCourseChat: 'KI-Tutor',
       courseChat: 'Kurs-Chatbot',
       selectChatbot: 'Chatbot auswählen',
       openInNewTab: 'Chat in neuem Tab öffnen',
@@ -1355,13 +1406,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
         'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
-      exportReportButton: 'Performance-Bericht exportieren (HTML)',
+      exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
-        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn öffnen oder herunterladen. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+        'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
       exportReportReady:
-        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder lade die HTML-Datei herunter.',
+        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder öffne über «Als PDF speichern» den Druckdialog des Browsers.',
       viewReportButton: 'Bericht öffnen',
-      downloadReportButton: 'Bericht herunterladen',
+      downloadReportButton: 'Als PDF speichern',
       refreshReportButton: 'Bericht aktualisieren',
       exportReportNotEligibleError:
         'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
@@ -1373,10 +1424,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Assessment-Daten konnten für den Bericht nicht validiert werden. Bitte versuche es später erneut oder kontaktiere deine Dozierenden.',
       exportReportIssuanceError:
         'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
-      exportReportDownloadError:
-        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt werden. Bitte versuche es erneut.',
+      exportReportGenerationError:
+        'Der Bericht wurde ausgestellt, aber das Browser-Dokument konnte nicht erstellt werden. Bitte versuche es erneut.',
       exportReportViewError:
-        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite oder lade stattdessen die HTML-Datei herunter.',
+        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
+      exportReportPrintError:
+        'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
@@ -1408,7 +1461,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
       verificationActiveTitle: 'Aktiver Assessment-Datensatz',
       verificationActiveText:
-        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem heruntergeladenen Bericht.',
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem gedruckten oder angezeigten Bericht.',
       verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
       verificationRevokedText:
         'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',
@@ -2997,6 +3050,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
+      changeAvailabilityDateMicrolearnings:
+        'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      changeAvailabilityDateGroupActivities:
+        'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      courseDatesForCourseDuplicationTooltip:
+        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
+      fixedDateInterval:
+        'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
+      groupCreationDeadlineForCourseDuplicationTooltip:
+        'Wenn Sie die Kursdaten ändern, wird diese Deadline anhand ihres ursprünglichen Abstands neu berechnet. Sie können sie anschliessend anpassen.',
+      copyLiveQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Live-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyPracticeQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Übungs-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyMicroLearningsTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Microlearnings im Kurs in den neuen Kurs kopiert.',
+      copyGroupActivitiesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
+      courseDuplicationCopyInfo:
+        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente. Wenn Sie einen Kurs duplizieren, der einer anderen Person gehört, behält diese Administratorzugriff auf die Kopie.',
+      courseCopySuffix: 'Kopie',
+      courseDuplicationEndDateInPast:
+        'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationNoAccess:
+        'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
+      courseDuplicationPartialFailure:
+        'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
+      courseDuplicationInProgress:
+        'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
@@ -3129,7 +3213,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     course: {
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
+      duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',

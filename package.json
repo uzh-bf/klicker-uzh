@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.4.0-alpha.64",
+  "version": "3.4.0-alpha.68",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -62,9 +62,8 @@
     "dev:playwright": "./util/_run_with_infisical.sh --env dev-playwright bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run dev:test --concurrency 30",
     "dev:prepare-prod": "./util/_prepare_local_prod.sh",
     "dev:raw": "turbo run dev --concurrency 30",
-    "dev:test": "./util/_run_with_infisical.sh --env dev-cypress bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run dev:test --concurrency 30",
-    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yaml,yml}\" playwright/ cypress/ --config .prettierrc.mjs",
-    "format:check": "biome format . && prettier --check \"**/*.{md,mdx,yaml,yml}\" playwright/ cypress/ --config .prettierrc.mjs",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
+    "format:check": "biome format . && prettier --check \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "knip": "knip",
     "lint": "turbo run lint --parallel --continue",
     "lint:biome": "biome lint .",
@@ -101,7 +100,7 @@
     "syncpack:update": "syncpack update",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm --filter @klicker-uzh/playwright test:run",
-    "test:watch": "run-p --npm-path pnpm test dev:test"
+    "test:watch": "run-p --npm-path pnpm test dev:playwright"
   },
   "engines": {
     "node": "=24"

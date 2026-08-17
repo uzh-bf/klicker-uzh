@@ -12,6 +12,10 @@ export type PersistedAssistantContentPart =
       isError?: boolean
     }
 
+type UnfinishedAssistantContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
+
 export function mapAssistantStepContent(
   steps: Array<{ content?: unknown[] }> | undefined
 ): PersistedAssistantContentPart[] {
@@ -94,6 +98,21 @@ export function mapAssistantStepContent(
         content.push(toolCallWithResult)
         toolCallIndexById.set(part.toolCallId, content.length - 1)
       }
+    }
+  }
+
+  return content
+}
+
+export function buildAbortedAssistantContent(
+  steps: Array<{ content?: unknown[] }> | undefined,
+  unfinishedContent: readonly UnfinishedAssistantContentPart[]
+): PersistedAssistantContentPart[] {
+  const content = mapAssistantStepContent(steps)
+
+  for (const part of unfinishedContent) {
+    if (part.text.trim()) {
+      content.push(part)
     }
   }
 

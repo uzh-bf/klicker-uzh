@@ -16,6 +16,11 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new user-visible string in BOTH `packages/i18n/messages/de.ts` and `en.ts`, matching namespace; access via full-path keys (`t('manage.…')`).
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Custom modal drawers use a neutral element with `role="dialog"` and `aria-modal="true"`; connect the launcher with `aria-controls` / `aria-expanded` / `aria-haspopup`, move focus into the dialog, trap Tab, restore focus on close, and make the background inert. Portal outside the page root before setting that root `inert` and `aria-hidden`.
+   - Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Use one contextual primary action and a labelled overflow menu for low-frequency actions; keep visible buttons and the overflow trigger in one action cluster, letting that cluster wrap as a unit across viewports.
+   - App typography comes from the shared local font definitions in
+     `packages/shared-components/src/font.ts`; preserve their exports and CSS
+     variables so production builds remain independent of external font
+     services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:

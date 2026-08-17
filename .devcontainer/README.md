@@ -139,10 +139,13 @@ Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
 host-side `devrouter ensure` delivers its matching process helper and invokes
 `post-start.sh` (set Klicker origins and call that helper). Runtime state is
-`/tmp/devrouter-process-klicker-dev.state`: exact workspace, command, adapter
-bytes, and declared non-secret runtime-origin values are fingerprinted for
-reuse; stale owned groups are replaced boundedly, and unknown processes are
-never killed. HTTP readiness remains in
+`/tmp/devrouter-process-klicker-dev.state` for the app stack and
+`/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
+fixture. Exact workspace, command, adapter bytes, and declared non-secret
+runtime-origin values are fingerprinted for reuse; stale owned groups are
+replaced boundedly, and unknown processes are never killed. The MCP command
+also carries the fixture source hash so a source edit forces managed
+replacement. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
@@ -164,3 +167,8 @@ analytics image and lint CI so the root quality gate runs inside the container.
   silently kill long-running Node 24 servers in this repo, so it deliberately
   does not use it in dev (no restart-on-change; restart the app manually via
   `devrouter exec . -- ...` after edits).
+- Auto V2 sends its Luna-low classification and semantic embedding requests to
+  the same upstream as the selected answer model. With OpenRouter, use only
+  seeded or synthetic content and expect the extra calls to add latency/cost.
+- Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
+  fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.

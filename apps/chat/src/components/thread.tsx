@@ -1,24 +1,15 @@
 import {
-  ATTACHMENT_ERROR_CODE,
-  AttachmentAdapterError,
-  imageAttachmentAdapter,
-} from '@/src/lib/attachments/imageAttachmentAdapter'
-import {
   ActionBarPrimitive,
   AttachmentPrimitive,
+  AuiIf,
   ComposerPrimitive,
   ErrorPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
-  useComposer,
-  useComposerRuntime,
-  useEditComposer,
-  useEditComposerAttachment,
-  useMessage,
-  useMessageRuntime,
-  useThread,
-  useThreadComposerAttachment,
+  useAui,
+  useAuiState,
 } from '@assistant-ui/react'
+import { Button } from '@uzh-bf/design-system'
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -34,17 +25,22 @@ import {
   ThumbsUpIcon,
   XIcon,
 } from 'lucide-react'
+import Image from 'next/image'
+import { useParams } from 'next/navigation'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
 import {
   type ComponentType,
+  createContext,
   type FC,
-  type MouseEvent,
   type PropsWithChildren,
   type ReactNode,
+  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
-
+import { twMerge } from 'tailwind-merge'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -54,6 +50,11 @@ import {
 import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
 import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
 import {
+  ATTACHMENT_ERROR_CODE,
+  AttachmentAdapterError,
+  imageAttachmentAdapter,
+} from '@/src/lib/attachments/imageAttachmentAdapter'
+import {
   type ExtendedThreadMessageLike,
   useChatStore,
 } from '@/src/stores/chatStore'
@@ -62,16 +63,27 @@ import {
   useComposerStore,
 } from '@/src/stores/composerStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
-import { Button } from '@uzh-bf/design-system'
-import { isKnownMode } from '../lib/config/modes'
+import {
+  formatModeLabel,
+  getModeDescription,
+  isKnownMode,
+  resolveSelectedMode,
+} from '../lib/config/modes'
 import { formatReasoningEffort } from '../lib/config/reasoning'
 import { getThreadSuggestions } from '../lib/config/suggestions'
+import {
+  getHistoryRailEntries,
+  getHistoryRailMessageAnchor,
+} from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { ChatbotAvatar } from './chatbot-avatar'
+import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
+import { hasChatError } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
+import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
 import {
@@ -80,12 +92,6 @@ import {
 } from './thread-welcome-capabilities'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
-
-import Image from 'next/image'
-import { useParams } from 'next/navigation'
-
-import { useFormatter, useNow, useTranslations } from 'next-intl'
-import { twMerge } from 'tailwind-merge'
 
 // Re-exported for backward compatibility: callers (e.g. manage-assistant.tsx)
 // import this type from './thread' — the type itself now lives in
@@ -112,9 +118,12 @@ type ThreadProps = {
   // assistant's limits). Ignored when `capabilities` is unset/empty.
   limitsNote?: string
   maxImageAttachments?: number
+  initialModeOptions?: Record<string, string>
+  initialModeOptionsAreFallback?: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
+const ChatbotAvatarContext = createContext('')
 
 const formatTitleCase = (value: string) =>
   value
@@ -136,7 +145,7 @@ type ImageAttachment = {
 type MessageWithCustomMetadata = {
   id: string
   parentId?: string | null
-  content?: readonly { type: string; text?: string }[]
+  content?: readonly { type: string; name?: string; text?: string }[]
   attachmentSourceMessageId?: string | null
   imageAttachments?: ImageAttachment[]
   metadata?: {
@@ -157,26 +166,26 @@ const extractMessageText = (message: {
     .join('')
 
 const useSupportsImageAttachments = () => {
-  const { selectedModel, modelOptions } = useSettingsStore()
-
-  return (
-    modelOptions.find((model) => model.id === selectedModel)
-      ?.supportsImageAttachments !== false
+  const selectedModel = useSettingsStore((state) => state.selectedModel)
+  return useSettingsStore(
+    (state) =>
+      state.modelOptions.find((model) => model.id === selectedModel)
+        ?.supportsImageAttachments !== false
   )
 }
 
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
 }) => {
-  const message = useMessage() as MessageWithCustomMetadata & {
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata & {
     role: string
     status?: { type: string }
-    // `useMessage()` already returns `createdAt` at runtime (assistant-ui's
+    // `useAuiState()` already returns `createdAt` at runtime (assistant-ui's
     // `ThreadMessage`); declared here only to widen the local cast, like
     // `role`/`status` above.
     createdAt: Date
   }
-  const { modelOptions } = useSettingsStore()
+  const modelOptions = useSettingsStore((state) => state.modelOptions)
   const t = useTranslations()
   const format = useFormatter()
   // A ticking `now`, not `new Date()`: the caption is rendered once and its
@@ -190,6 +199,11 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   if (message.role === 'assistant' && message.status?.type === 'running') {
     return null
   }
+
+  // A failed turn has its own localized callout and retry action. The normal
+  // answer timestamp and feedback controls would make an incomplete response
+  // look like a finished answer that is ready to rate.
+  if (hasChatError(message)) return null
 
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
@@ -288,11 +302,21 @@ export const Thread: FC<ThreadProps> = ({
   capabilities,
   limitsNote,
   maxImageAttachments = MAX_IMAGE_ATTACHMENTS,
+  initialModeOptions = {},
+  initialModeOptionsAreFallback = false,
 }) => {
   const { embedded } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
+  const activeThread = useChatStore((state) =>
+    state.threads.find((thread) => thread.id === state.activeThreadId)
+  )
+  const historyEntries = useMemo(
+    () => getHistoryRailEntries(activeThread?.messages ?? EMPTY_MESSAGES),
+    [activeThread?.messages]
+  )
+  const showHistoryRail = !embedded && historyEntries.length > 0
 
   return (
     <ThreadPrimitive.Root
@@ -302,12 +326,17 @@ export const Thread: FC<ThreadProps> = ({
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
     >
+      {!embedded && <HistoryRail entries={historyEntries} />}
       <ThreadPrimitive.Viewport
+        data-cy="chat-thread-viewport"
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
+          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit motion-reduce:scroll-auto',
           embedded
-            ? 'scrollbar-none overflow-y-auto px-2 pb-24 pt-2'
-            : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
+            : twMerge(
+                'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8',
+                showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
+              )
         )}
       >
         <ThreadWelcome
@@ -319,23 +348,28 @@ export const Thread: FC<ThreadProps> = ({
           welcomeMessage={welcomeMessage}
           capabilities={capabilities}
           limitsNote={limitsNote}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
 
-        <ThreadPrimitive.Messages
-          components={{
-            UserMessage: UserMessage,
-            EditComposer: () => (
-              <EditComposer maxImageAttachments={maxImageAttachments} />
-            ),
-            AssistantMessage: (props) => (
-              <AssistantMessage
-                {...props}
-                chatbotAvatar={chatbotAvatar}
-                chatbotFallbackIcon={chatbotFallbackIcon}
-              />
-            ),
-          }}
-        />
+        <ChatbotAvatarContext.Provider value={chatbotAvatar}>
+          <ThreadPrimitive.Messages>
+            {({ message }) => {
+              if (message.composer.isEditing) {
+                return (
+                  <EditComposer maxImageAttachments={maxImageAttachments} />
+                )
+              }
+              if (message.role === 'user') return <UserMessage />
+              return (
+                <AssistantMessage
+                  chatbotAvatar={chatbotAvatar}
+                  chatbotFallbackIcon={chatbotFallbackIcon}
+                />
+              )
+            }}
+          </ThreadPrimitive.Messages>
+        </ChatbotAvatarContext.Provider>
       </ThreadPrimitive.Viewport>
 
       <div
@@ -364,7 +398,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none">
+          <button className="border-border bg-background/80 hover:bg-accent absolute bottom-full mb-4 inline-flex h-11 w-11 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-[opacity,color,background-color] duration-200 ease-in focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-0 disabled:[transition:opacity_200ms,visibility_0s_200ms] motion-reduce:transition-none fine-pointer:h-9 fine-pointer:w-9">
             <ArrowDownIcon />
             <span className="sr-only">{t('chat.thread.scrollToBottom')}</span>
           </button>
@@ -407,6 +441,32 @@ const ThinkingDots: FC = () => {
   )
 }
 
+const useWelcomeModeOptions = (
+  initialModeOptions: Record<string, string>,
+  initialModeOptionsAreFallback = false
+) => {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const modeOptionsChatbotId = useSettingsStore(
+    (state) => state.modeOptionsChatbotId
+  )
+  const modeOptionsAreFallback = useSettingsStore(
+    (state) => state.modeOptionsAreFallback
+  )
+
+  const hasCurrentChatbotModeOptions =
+    modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
+
+  return {
+    modeOptions: hasCurrentChatbotModeOptions
+      ? modeOptions
+      : initialModeOptions,
+    modeOptionsAreFallback: hasCurrentChatbotModeOptions
+      ? modeOptionsAreFallback
+      : initialModeOptionsAreFallback,
+  }
+}
+
 const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
@@ -416,6 +476,8 @@ const ThreadWelcome: FC<{
   welcomeMessage?: string
   capabilities?: ThreadWelcomeCapability[]
   limitsNote?: string
+  initialModeOptions?: Record<string, string>
+  initialModeOptionsAreFallback?: boolean
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
@@ -425,18 +487,33 @@ const ThreadWelcome: FC<{
   welcomeMessage,
   capabilities,
   limitsNote,
+  initialModeOptions = {},
+  initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
+    initialModeOptions,
+    initialModeOptionsAreFallback
+  )
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
+  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
+  const modeDescription = activeMode
+    ? !modeOptionsAreFallback &&
+      Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
+      ? (modeOptions[activeMode]?.trim() ?? '')
+      : getModeDescription(t, activeMode, modeOptions)
+    : null
   return (
-    <ThreadPrimitive.Empty>
+    <AuiIf condition={(s) => s.thread.isEmpty}>
       <div
         className={twMerge(
-          'aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col',
+          'aui-thread-welcome-root mx-auto my-0 flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col sm:my-auto',
           embedded ? 'px-2' : ''
         )}
       >
-        <div className="aui-thread-welcome-center relative flex w-full flex-grow flex-col items-center justify-center">
+        <div className="aui-thread-welcome-center relative flex w-full flex-none flex-col items-center justify-center py-8 sm:flex-grow sm:py-0">
           {/* Faint branded accent behind the greeting — restrained, no new assets. */}
           <div
             aria-hidden
@@ -457,21 +534,53 @@ const ThreadWelcome: FC<{
               )}
               iconClassName={embedded ? 'size-6' : 'size-7'}
             />
-            <div
-              className={twMerge(
-                'animate-in fade-in slide-in-from-bottom-2 font-semibold duration-300 motion-reduce:animate-none',
-                embedded ? 'text-base' : 'text-3xl sm:text-4xl'
-              )}
-            >
-              {welcomeMessage ??
-                (embedded
-                  ? `Ask ${chatbotName}`
-                  : t('chat.thread.welcomeTitle'))}
-            </div>
-            {!embedded && !welcomeMessage && (
-              <div className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 text-lg delay-100 duration-300 motion-reduce:animate-none">
-                {t('chat.thread.welcomeSubtitle')}
+            {welcomeMessage || embedded ? (
+              <div
+                className={twMerge(
+                  'animate-in fade-in slide-in-from-bottom-2 font-semibold duration-300 motion-reduce:animate-none',
+                  embedded ? 'text-base' : 'text-3xl sm:text-4xl'
+                )}
+              >
+                {welcomeMessage ?? `Ask ${chatbotName}`}
               </div>
+            ) : (
+              <>
+                <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
+                  {t('chat.thread.welcomeTitle')}
+                </h2>
+                <p
+                  data-cy="chat-welcome-chatbot"
+                  className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-2 text-lg text-pretty delay-75 duration-300 motion-reduce:animate-none"
+                >
+                  {t('chat.thread.welcomeTo', { chatbot: chatbotName })}
+                </p>
+                <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-2 mt-1 text-base text-pretty delay-100 duration-300 motion-reduce:animate-none">
+                  {t('chat.thread.welcomeSubtitle')}
+                </p>
+                {modeLabel && (
+                  <div
+                    data-cy="chat-welcome-mode"
+                    className="border-border bg-muted/60 text-foreground animate-in fade-in slide-in-from-bottom-2 mt-5 max-w-md rounded-xl border px-4 py-3 text-left text-sm shadow-sm delay-150 duration-300 motion-reduce:animate-none"
+                  >
+                    <p className="font-medium">
+                      {t('chat.thread.welcomeMode', { mode: modeLabel })}
+                    </p>
+                    {Object.keys(modeOptions).length > 1 && (
+                      <div className="mt-3 flex justify-center">
+                        <ModeSwitcher
+                          modeOptions={modeOptions}
+                          testIdPrefix="chat-welcome-mode"
+                        />
+                      </div>
+                    )}
+                    {modeDescription ? (
+                      <p className="text-muted-foreground mt-1 text-pretty">
+                        {modeDescription}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </>
             )}
             {contextLabel && (
               <p className="text-muted-foreground mt-1 max-w-xs text-xs">
@@ -486,9 +595,13 @@ const ThreadWelcome: FC<{
             )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions suggestions={suggestions} />
+        <ThreadWelcomeSuggestions
+          suggestions={suggestions}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
       </div>
-    </ThreadPrimitive.Empty>
+    </AuiIf>
   )
 }
 
@@ -496,37 +609,61 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC<{
   suggestions?: ThreadSuggestion[]
-}> = ({ suggestions }) => {
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback?: boolean
+}> = ({
+  suggestions: customSuggestions,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
+}) => {
   const t = useTranslations()
+  const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const { modeOptions } = useWelcomeModeOptions(
+    initialModeOptions,
+    initialModeOptionsAreFallback
+  )
 
-  // Fully resolved suggestions (manage assistant / contextual student set)
-  // render as-is; the default student set stays id-based so label and prompt
-  // both come from i18n (`chat.suggestions.<id>` / `...<id>Prompt`).
+  if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
+
+  const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const items: ThreadSuggestion[] =
-    suggestions ??
-    getThreadSuggestions().map((suggestion) => ({
+    customSuggestions ??
+    getThreadSuggestions(activeMode).map((suggestion) => ({
       id: suggestion.id,
       text: t(`chat.suggestions.${suggestion.id}`),
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
 
   return (
-    <div className="mt-4 grid w-full grid-cols-1 gap-3 px-8 sm:grid-cols-2">
-      {items.map((suggestion, index) => (
-        <ThreadPrimitive.Suggestion
-          key={suggestion.id}
-          data-cy="chat-welcome-suggestion"
-          className={twMerge(
-            'border-border bg-background hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm transition-colors duration-300 motion-reduce:animate-none',
-            SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
-          )}
-          prompt={suggestion.prompt}
-          autoSend
-        >
-          {suggestion.text}
-        </ThreadPrimitive.Suggestion>
-      ))}
-    </div>
+    <section
+      aria-label={t('chat.suggestions.sectionLabel')}
+      data-cy="chat-welcome-suggestions"
+      className="mt-4 w-full px-8"
+    >
+      <p
+        data-cy="chat-welcome-suggestion-hint"
+        className="text-muted-foreground mb-2 text-center text-xs"
+      >
+        {t('chat.suggestions.editHint')}
+      </p>
+      <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+        {items.map((suggestion, index) => (
+          <ThreadPrimitive.Suggestion
+            key={suggestion.id}
+            data-cy="chat-welcome-suggestion"
+            className={twMerge(
+              'border-foreground/15 bg-background hover:border-primary/30 hover:bg-accent animate-in fade-in slide-in-from-bottom-2 min-h-11 rounded-lg border p-3 text-left text-sm shadow-sm transition-colors duration-300 motion-reduce:animate-none',
+              SUGGESTION_DELAY_CLASSNAMES[index] ?? 'delay-200'
+            )}
+            prompt={suggestion.prompt}
+            send={false}
+            clearComposer
+          >
+            {suggestion.text}
+          </ThreadPrimitive.Suggestion>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -577,7 +714,7 @@ const AttachmentErrorBanner: FC<{
         <button
           type="button"
           onClick={onDismiss}
-          className="hover:bg-destructive/20 rounded"
+          className="hover:bg-destructive/20 inline-flex size-11 items-center justify-center rounded touch-manipulation fine-pointer:size-6"
           aria-label={t('chat.composer.dismissError')}
         >
           <XIcon className="size-3" />
@@ -664,8 +801,8 @@ const useComposerAttachmentLimit = ({
   maxImageAttachments: number
 }) => {
   const t = useTranslations()
-  const composerRuntime = useComposerRuntime()
-  const attachments = useComposer((s) => s.attachments ?? [])
+  const aui = useAui()
+  const attachments = useAuiState((s) => s.composer.attachments)
   const composerAttachmentCount = attachments.length
   const existingAttachmentCount =
     currentCount == null
@@ -690,12 +827,12 @@ const useComposerAttachmentLimit = ({
 
     void Promise.all(
       overflowAttachmentIndexes.map((index) =>
-        composerRuntime.getAttachmentByIndex(index).remove()
+        aui.composer.attachment({ index }).remove()
       )
     )
   }, [
     attachments,
-    composerRuntime,
+    aui,
     maxComposerAttachmentCount,
     maxImageAttachments,
     setError,
@@ -759,25 +896,16 @@ const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
   )
 }
 
-const ThreadComposerImageAttachment: FC = () => {
-  const imageSrc = useThreadComposerAttachment(selectAttachmentImageSrc)
-  const attachmentName = useThreadComposerAttachment(selectAttachmentName)
+const ComposerImageAttachment: FC<{
+  variant?: 'thread' | 'edit'
+}> = ({ variant }) => {
+  const imageSrc = useAuiState((s) => selectAttachmentImageSrc(s.attachment))
+  const attachmentName = useAuiState((s) => selectAttachmentName(s.attachment))
   return (
     <ComposerAttachmentView
       imageSrc={imageSrc}
       attachmentName={attachmentName}
-    />
-  )
-}
-
-const EditComposerImageAttachment: FC = () => {
-  const imageSrc = useEditComposerAttachment(selectAttachmentImageSrc)
-  const attachmentName = useEditComposerAttachment(selectAttachmentName)
-  return (
-    <ComposerAttachmentView
-      imageSrc={imageSrc}
-      attachmentName={attachmentName}
-      variant="edit"
+      variant={variant}
     />
   )
 }
@@ -786,19 +914,10 @@ const ComposerAttachments: FC<{
   source?: 'thread' | 'edit'
   inline?: boolean
 }> = ({ source = 'thread', inline = false }) => {
-  const Component =
-    source === 'edit'
-      ? EditComposerImageAttachment
-      : ThreadComposerImageAttachment
   const primitive = (
-    <ComposerPrimitive.Attachments
-      components={{
-        Image: Component,
-        Document: Component,
-        File: Component,
-        Attachment: Component,
-      }}
-    />
+    <ComposerPrimitive.Attachments>
+      {() => <ComposerImageAttachment variant={source} />}
+    </ComposerPrimitive.Attachments>
   )
 
   if (inline) {
@@ -878,7 +997,7 @@ const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => {
       type="button"
       data-cy="chat-attachment-remove"
       onClick={onClick}
-      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-full border"
+      className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-11 items-center justify-center rounded-full border touch-manipulation fine-pointer:size-6"
       aria-label={t('chat.composer.removeAttachment')}
     >
       ×
@@ -924,8 +1043,10 @@ const ComposerAttachButton: FC<{
 }> = ({ setError, currentCount, maxImageAttachments, dataCy }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
-  const composerRuntime = useComposerRuntime()
-  const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
+  const aui = useAui()
+  const composerAttachmentCount = useAuiState(
+    (s) => s.composer.attachments.length
+  )
   const attachmentCount = currentCount ?? composerAttachmentCount
   const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages = useSupportsImageAttachments()
@@ -943,7 +1064,7 @@ const ComposerAttachButton: FC<{
     let lastAdapterError: string | null = null
     for (const file of accepted) {
       try {
-        await composerRuntime.addAttachment(file)
+        await aui.composer.addAttachment(file)
       } catch (e) {
         // the adapter rejects with a typed error + stable code for failures
         // that need a localized message (e.g. FileReader errors, which
@@ -989,8 +1110,10 @@ const ComposerAttachButton: FC<{
         data-cy={dataCy ? `${dataCy}-attach-button` : 'chat-attach-button'}
         onClick={() => inputRef.current?.click()}
         className={twMerge(
-          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
-          embedded ? 'size-11' : 'size-9'
+          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md touch-manipulation',
+          embedded
+            ? 'size-11 fine-pointer:size-8'
+            : 'size-11 fine-pointer:size-9'
         )}
         aria-label={t('chat.composer.attachImage')}
       >
@@ -1009,7 +1132,7 @@ const ComposerAction: FC = () => {
   // running/empty for Send, disabled when not running for Cancel — see
   // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
   // drives which one is *visible*; it never duplicates that disabled logic.
-  const isRunning = useThread((state) => state.isRunning)
+  const isRunning = useAuiState((s) => s.thread.isRunning)
 
   const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
@@ -1025,7 +1148,9 @@ const ComposerAction: FC = () => {
     <div
       className={twMerge(
         'relative shrink-0',
-        embedded ? 'm-1 size-7' : 'm-2 size-9'
+        embedded
+          ? 'm-1 size-11 fine-pointer:size-8'
+          : 'm-2 size-11 fine-pointer:size-9'
       )}
     >
       <ComposerPrimitive.Send asChild>
@@ -1084,13 +1209,15 @@ const getMessageAttachments = (
 }
 
 const UserMessage: FC = () => {
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
 
   return (
     <MessagePrimitive.Root
       data-cy="chat-user-message"
-      className="animate-in fade-in slide-in-from-bottom-2 flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none sm:py-4"
+      data-history-rail-anchor={getHistoryRailMessageAnchor(message.id)}
+      tabIndex={-1}
+      className="animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4"
     >
       <div
         data-cy="chat-user-message-content"
@@ -1117,7 +1244,7 @@ const UserMessage: FC = () => {
 const UserActionBar: FC = () => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
 
   if (!showMessageActions) return null
@@ -1170,12 +1297,12 @@ const UserActionBar: FC = () => {
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
             <button className={actionBarButtonClassName}>
-              <MessagePrimitive.If copied>
+              <AuiIf condition={(s) => s.message.isCopied}>
                 <CheckIcon />
-              </MessagePrimitive.If>
-              <MessagePrimitive.If copied={false}>
+              </AuiIf>
+              <AuiIf condition={(s) => !s.message.isCopied}>
                 <CopyIcon />
-              </MessagePrimitive.If>
+              </AuiIf>
               <span className="sr-only">{t('chat.message.copy')}</span>
             </button>
           </ActionBarPrimitive.Copy>
@@ -1193,7 +1320,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
 }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
   const removedAttachmentKeys = useComposerStore(
@@ -1207,10 +1334,12 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
   const clearEditRemovedAttachmentKeys = useComposerStore(
     (state) => state.clearEditRemovedAttachmentKeys
   )
-  const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
-  const composerText = useEditComposer((s) => s.text)
+  const pendingAttachmentCount = useAuiState(
+    (s) => s.message.composer.attachments.length
+  )
+  const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
-  const messageRuntime = useMessageRuntime()
+  const aui = useAui()
 
   useEffect(() => {
     return () => {
@@ -1260,7 +1389,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
       // (`editRemovedAttachmentKeysByMessageId`), and would silently
       // no-op a kept-attachment-only edit. `canSubmit` above is the real
       // change gate; once it passes, the run should start unconditionally.
-      messageRuntime.composer.send({ startRun: true })
+      aui.message.composer().send({ startRun: true })
     } catch (error) {
       setAttachmentError(error instanceof Error ? error.message : String(error))
     }
@@ -1331,7 +1460,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
               data-cy="chat-edit-cancel-button"
               onClick={() => {
                 clearEditRemovedAttachmentKeys(message.id)
-                messageRuntime.composer.cancel()
+                aui.message.composer().cancel()
               }}
               className={{ root: 'rounded-full font-semibold' }}
             >
@@ -1373,7 +1502,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
  */
 const ImageAnalyzedChip: FC = () => {
   const t = useTranslations()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const hasImageAttachment = useChatStore((state) => {
     const activeThread = state.threads.find(
       (thread) => thread.id === state.activeThreadId
@@ -1423,16 +1552,30 @@ const AssistantMessageError: FC = () => (
 const AssistantMessage: FC<{
   chatbotAvatar: string
   chatbotFallbackIcon?: ComponentType<{ className?: string }>
-}> = ({ chatbotAvatar, chatbotFallbackIcon }) => {
+}> = ({ chatbotAvatar: explicitAvatar, chatbotFallbackIcon }) => {
+  const contextAvatar = useContext(ChatbotAvatarContext)
+  const chatbotAvatar = explicitAvatar || contextAvatar
   const { embedded } = useChatUi()
+  const messageId = useAuiState((s) => s.message.id)
   // True only for the synthetic empty assistant message the runtime injects
   // while a response is pending (before the first streamed part arrives).
-  const isPendingEmpty = useMessage(
-    (m) =>
-      m.role === 'assistant' &&
-      m.status?.type === 'running' &&
-      m.content.length === 0
+  const isPendingEmpty = useAuiState(
+    (s) =>
+      s.message.role === 'assistant' &&
+      s.message.status?.type === 'running' &&
+      s.message.content.length === 0
   )
+  // Sources stay hidden only while the assistant message is actively running
+  // and no non-whitespace answer text has streamed yet. Once the turn is
+  // terminal (e.g. a completed tool call with no answer text), completed
+  // source-bearing tool results must become visible.
+  const showSources = useAuiState((s) => {
+    const message = s.message
+    const hasAnswerText = message.content.some(
+      (part) => part.type === 'text' && part.text.trim().length > 0
+    )
+    return !(message.status?.type === 'running' && !hasAnswerText)
+  })
   // Computed once here (not inside SourcesSection/MarkdownText) and shared
   // via context, so the sources grid and the inline `[n]` citation chips
   // read the same normalized list instead of each re-parsing the tool JSON.
@@ -1441,8 +1584,10 @@ const AssistantMessage: FC<{
   return (
     <MessagePrimitive.Root
       data-cy="chat-assistant-message"
+      data-history-rail-anchor={getHistoryRailMessageAnchor(messageId)}
+      tabIndex={-1}
       className={twMerge(
-        'animate-in fade-in slide-in-from-bottom-2 relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none sm:py-4',
+        'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
         embedded ? 'grid-cols-[auto_1fr] gap-x-2' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
@@ -1504,7 +1649,7 @@ const AssistantMessage: FC<{
         <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
-          <SourcesSection />
+          {showSources && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
         <AssistantMessageError />
@@ -1518,12 +1663,14 @@ const AssistantMessage: FC<{
 const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   if (!showMessageActions) return null
+  const hasError = hasChatError(message)
 
   return (
     <div
       className={twMerge(
-        'row-start-2 min-h-8',
+        'row-start-2 min-h-11 fine-pointer:min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
@@ -1538,34 +1685,36 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
                 data-cy="chat-copy-message-button"
                 className={actionBarButtonClassName}
               >
-                <MessagePrimitive.If copied>
+                <AuiIf condition={(s) => s.message.isCopied}>
                   <CheckIcon />
-                </MessagePrimitive.If>
-                <MessagePrimitive.If copied={false}>
+                </AuiIf>
+                <AuiIf condition={(s) => !s.message.isCopied}>
                   <CopyIcon />
-                </MessagePrimitive.If>
+                </AuiIf>
                 <span className="sr-only">{t('chat.message.copy')}</span>
               </button>
             </ActionBarPrimitive.Copy>
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ActionBarPrimitive.Reload asChild>
-              <button
-                data-cy="chat-reload-message-button"
-                className={actionBarButtonClassName}
-              >
-                <RefreshCwIcon />
-                <span className="sr-only">{t('chat.message.refresh')}</span>
-              </button>
-            </ActionBarPrimitive.Reload>
-          </TooltipTrigger>
-          <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
-        </Tooltip>
+        {!hasError && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ActionBarPrimitive.Reload asChild>
+                <button
+                  data-cy="chat-reload-message-button"
+                  className={actionBarButtonClassName}
+                >
+                  <RefreshCwIcon />
+                  <span className="sr-only">{t('chat.message.refresh')}</span>
+                </button>
+              </ActionBarPrimitive.Reload>
+            </TooltipTrigger>
+            <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
+          </Tooltip>
+        )}
 
-        <MessageRatingButtons />
+        {!hasError && <MessageRatingButtons />}
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>
@@ -1575,28 +1724,29 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
 
 const MessageRatingButtons: FC = () => {
   const t = useTranslations()
-  const message = useMessage()
+  const message = useAuiState((s) => s.message)
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const rateMessage = useChatStore((state) => state.rateMessage)
-  // The active vote comes from the feedback adapter's own metadata field
-  // (populated by `convertMessage` in RuntimeProvider from the store's
-  // persisted rating), not a separate zustand selector.
-  const submittedFeedbackType = message.metadata.submittedFeedback?.type ?? null
+  const submittedRating = useChatStore((state) => {
+    const activeThread = state.threads.find(
+      (thread) => thread.id === state.activeThreadId
+    )
+    return (
+      activeThread?.messages.find((candidate) => candidate.id === message.id)
+        ?.rating ?? null
+    )
+  })
 
   if (!chatbotId) return null
 
   const options = [
     {
       value: 'UP' as const,
-      feedbackType: 'positive' as const,
-      FeedbackPrimitive: ActionBarPrimitive.FeedbackPositive,
       Icon: ThumbsUpIcon,
       label: t('chat.message.rateUp'),
     },
     {
       value: 'DOWN' as const,
-      feedbackType: 'negative' as const,
-      FeedbackPrimitive: ActionBarPrimitive.FeedbackNegative,
       Icon: ThumbsDownIcon,
       label: t('chat.message.rateDown'),
     },
@@ -1604,53 +1754,44 @@ const MessageRatingButtons: FC = () => {
 
   return (
     <>
-      {options.map(
-        ({ value, feedbackType, FeedbackPrimitive, Icon, label }) => {
-          const isActive = submittedFeedbackType === feedbackType
-          return (
-            <Tooltip key={value}>
-              <TooltipTrigger asChild>
-                <FeedbackPrimitive
-                  asChild
-                  // The feedback adapter only models "submit a vote": clicking
-                  // the already-active vote here clears it instead, so a
-                  // misclick is undoable. That clear path bypasses the
-                  // adapter (there is no "retract" concept in assistant-ui)
-                  // and calls the same store action directly.
-                  onClick={(event: MouseEvent) => {
-                    if (isActive) {
-                      event.preventDefault()
-                      void rateMessage(chatbotId, message.id, null)
-                    }
-                  }}
-                >
-                  <button
-                    data-cy={`chat-rate-${value.toLowerCase()}-button`}
-                    aria-pressed={isActive}
-                    className={twMerge(
-                      actionBarButtonClassName,
-                      isActive && 'text-primary'
-                    )}
-                  >
-                    {/* The cast icon is filled, not merely recoloured: primary
-                      against muted-foreground is only ~2.4:1 (~2.0:1 in dark
-                      mode), so colour alone would leave the active vote
-                      indistinguishable under WCAG 1.4.1/1.4.11. */}
-                    <Icon className={isActive ? 'fill-current' : undefined} />
-                    <span className="sr-only">{label}</span>
-                  </button>
-                </FeedbackPrimitive>
-              </TooltipTrigger>
-              <TooltipContent>{label}</TooltipContent>
-            </Tooltip>
-          )
-        }
-      )}
+      {options.map(({ value, Icon, label }) => {
+        const isActive = submittedRating === value
+        return (
+          <Tooltip key={value}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                data-cy={`chat-rate-${value.toLowerCase()}-button`}
+                aria-pressed={isActive}
+                onClick={() => {
+                  void rateMessage(
+                    chatbotId,
+                    message.id,
+                    isActive ? null : value
+                  )
+                }}
+                className={twMerge(
+                  actionBarButtonClassName,
+                  isActive && 'text-primary'
+                )}
+              >
+                {/* The cast icon is filled, not merely recoloured: primary
+                    against muted-foreground is only ~2.4:1 (~2.0:1 in dark
+                    mode), so colour alone would leave the active vote
+                    indistinguishable under WCAG 1.4.1/1.4.11. */}
+                <Icon className={isActive ? 'fill-current' : undefined} />
+                <span className="sr-only">{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        )
+      })}
     </>
   )
 }
 
 const BranchPickerWrapper: FC = () => {
-  const message = useMessage()
+  const message = useAuiState((s) => s.message)
   return <BranchPicker messageId={message.id} />
 }
