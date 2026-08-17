@@ -73,7 +73,7 @@ import {
   getHistoryRailMessageAnchor,
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
-import { useChatUi } from './chat-ui-context'
+import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -615,6 +615,16 @@ const ThreadWelcomeSuggestions: FC<{
             prompt={t(`chat.suggestions.${suggestion.id}Prompt`)}
             send={false}
             clearComposer
+            onClick={() => {
+              // The suggestion only fills the composer text and leaves focus
+              // on the card itself — send it to the composer input so a
+              // student can start typing straight away.
+              document
+                .querySelector<HTMLTextAreaElement>(
+                  '[data-cy="chat-composer-input"]'
+                )
+                ?.focus()
+            }}
           >
             {t(`chat.suggestions.${suggestion.id}`)}
           </ThreadPrimitive.Suggestion>
@@ -651,7 +661,28 @@ const AttachmentErrorBanner: FC<{
 const Composer: FC = () => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Whether the gate was open the last time this ran, so only the *closing*
+  // transition hands focus back — the ordinary, no-disclaimer mount is
+  // already covered by `autoFocus` below and must not be duplicated here.
+  const gateWasOpenRef = useRef(false)
+
+  // `autoFocus` only ever fires once, on mount, so it cannot react to the
+  // disclaimer gate closing later — hand focus back to the input explicitly
+  // once `disclaimerGateOpen` (see chat-ui-context.tsx) flips from true to
+  // false.
+  useEffect(() => {
+    if (disclaimerGateOpen) {
+      gateWasOpenRef.current = true
+      return
+    }
+    if (gateWasOpenRef.current) {
+      gateWasOpenRef.current = false
+      inputRef.current?.focus()
+    }
+  }, [disclaimerGateOpen])
 
   return (
     <ComposerDropzone
@@ -678,8 +709,9 @@ const Composer: FC = () => {
           />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
+            ref={inputRef}
             rows={1}
-            autoFocus
+            autoFocus={!disclaimerGateOpen}
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
@@ -1031,6 +1063,32 @@ const ComposerAction: FC = () => {
   // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
   // drives which one is *visible*; it never duplicates that disabled logic.
   const isRunning = useAuiState((s) => s.thread.isRunning)
+  const sendButtonRef = useRef<HTMLButtonElement>(null)
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  // An `inert` button can never be `document.activeElement`, so comparing
+  // against it here, during render — before this render's `isRunning` value
+  // is committed to the DOM and applies `inert` below — is only ever true
+  // for a button that genuinely still holds focus from the previous commit.
+  const outgoingButtonWasFocused =
+    typeof document !== 'undefined' &&
+    document.activeElement ===
+      (isRunning ? sendButtonRef.current : cancelButtonRef.current)
+
+  useEffect(() => {
+    if (!outgoingButtonWasFocused) return
+    const incoming = isRunning ? cancelButtonRef.current : sendButtonRef.current
+    // Send stays `disabled` (self-disabled by `createActionButton`, see
+    // above) while the composer is empty, which it normally is right after
+    // sending — a disabled button can't take focus, so fall back to the
+    // composer input rather than leaving focus stranded on <body>.
+    if (incoming && !incoming.disabled) {
+      incoming.focus()
+      return
+    }
+    document
+      .querySelector<HTMLTextAreaElement>('[data-cy="chat-composer-input"]')
+      ?.focus()
+  }, [isRunning, outgoingButtonWasFocused])
 
   const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
@@ -1059,6 +1117,7 @@ const ComposerAction: FC = () => {
          * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
          */}
         <button
+          ref={sendButtonRef}
           type="button"
           data-cy="chat-send-button"
           aria-hidden={isRunning}
@@ -1077,6 +1136,7 @@ const ComposerAction: FC = () => {
       </ComposerPrimitive.Send>
       <ComposerPrimitive.Cancel asChild>
         <button
+          ref={cancelButtonRef}
           type="button"
           data-cy="chat-cancel-button"
           aria-hidden={!isRunning}

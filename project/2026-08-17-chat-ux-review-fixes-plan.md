@@ -281,7 +281,16 @@ verification, commits, reviews, publication.
   saved." with aria-pressed rollback, retry cleared it and persisted the
   vote; thread-list delete arm announced the confirmation status and cleared
   after disarm). Simplifier: armed (substantive) — pending dispatch.
-- Remaining: S3, S4, S5, S6a, S6b, reviews, wiki, PR.
-- Evidence: latest verified commit = S2 commit (see git log).
+- S2 simplifier: KEEP, no accepted findings (report in
+  `project/_local/reviews/2026-08-17-chat-ux-fixes-s2-simplifier.md`). S3
+  (executor; 5 files, +137/−14): in-container biome + check + test:run 38
+  files/319 tests green; live keyboard walk: disclaimer gate focuses Accept
+  on open and hands focus to the composer on accept; cancel-while-focused
+  lands on the re-enabled Send, natural completion with focus on Stop and
+  an empty composer falls back to the composer input; starter click focuses
+  the composer with the caret at the end; citation chip focuses the target
+  non-link source card via its new `tabIndex={-1}`.
+- Remaining: S4, S5, S6a, S6b, reviews, wiki, PR.
+- Evidence: latest verified commit = S3 commit (see git log).
 - Delivery: required layer = draft PR on `v3`; achieved = local branch.
-- Next: simplifier on S2 range; dispatch S3.
+- Next: simplifier on S3 range; dispatch S4.

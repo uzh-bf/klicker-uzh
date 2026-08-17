@@ -105,16 +105,21 @@ function SourceCard({
     id: `src-${messageId}-${source.index}`,
     'data-cy': 'chat-source-card',
     className: twMerge(
-      'border-border bg-background flex min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors',
+      // `focus-visible` applies to both branches: a citation chip can send
+      // programmatic focus to a non-url card too (see `tabIndex={-1}`
+      // below), and that focus needs to stay visible even though the card
+      // itself isn't a link. The hover treatment stays url-only — hovering
+      // a card that does nothing would be a misleading affordance.
+      'border-border bg-background focus-visible:ring-ring flex min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
       isMedia && 'w-auto max-w-[16rem]',
-      source.url &&
-        'hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-1'
+      source.url && 'hover:bg-accent hover:text-accent-foreground'
     ),
   }
 
-  // Only sources with a url are interactive — everything else stays a plain,
-  // non-focusable card (no tabIndex/role) so screen readers and keyboard
-  // navigation skip straight past it.
+  // Only sources with a url are interactive for Tab navigation — everything
+  // else stays role-less and out of the tab order. `tabIndex={-1}` on the
+  // non-url card below only enables the programmatic focus a citation chip
+  // sends here (see citation-chip.tsx); Tab still skips straight past it.
   if (source.url) {
     return (
       <a
@@ -132,7 +137,11 @@ function SourceCard({
     )
   }
 
-  return <div {...sharedProps}>{inner}</div>
+  return (
+    <div {...sharedProps} tabIndex={-1}>
+      {inner}
+    </div>
+  )
 }
 
 export function SourcesSection() {
