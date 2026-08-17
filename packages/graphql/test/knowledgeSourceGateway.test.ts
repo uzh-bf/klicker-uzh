@@ -282,30 +282,27 @@ describe('KB source gateway authz filter (real database)', () => {
     KBResourceStatus.ADDED,
     KBResourceStatus.READY,
     KBResourceStatus.FAILED,
-  ])(
-    'rejects status %s even though every other clause matches',
-    async (status) => {
-      const resource = await createGatewayResource({ status })
-      const getContainerClient = vi.spyOn(
-        BlobServiceClient.prototype,
-        'getContainerClient'
-      )
+  ])('rejects status %s even though every other clause matches', async (status) => {
+    const resource = await createGatewayResource({ status })
+    const getContainerClient = vi.spyOn(
+      BlobServiceClient.prototype,
+      'getContainerClient'
+    )
 
-      await expect(
-        handleKBSourceGateway({
-          prisma,
-          resourceId: resource.id,
-          resourceVersion: resource.resourceVersion,
-          authorization,
-          env,
-        })
-      ).resolves.toEqual({
-        statusCode: 404,
-        body: { error: 'Resource not found' },
+    await expect(
+      handleKBSourceGateway({
+        prisma,
+        resourceId: resource.id,
+        resourceVersion: resource.resourceVersion,
+        authorization,
+        env,
       })
-      expect(getContainerClient).not.toHaveBeenCalled()
-    }
-  )
+    ).resolves.toEqual({
+      statusCode: 404,
+      body: { error: 'Resource not found' },
+    })
+    expect(getContainerClient).not.toHaveBeenCalled()
+  })
 
   it('rejects a resource whose content digest has not been computed yet', async () => {
     const resource = await createGatewayResource({ contentSha256: null })

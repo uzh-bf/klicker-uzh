@@ -54,29 +54,36 @@ describe('getKnowledgeGraphConfig', () => {
     ).toThrow('KB_FALKORDB_HOST')
   })
 
-  it.each([undefined, '', '0', '-1', '1.5', '65536', 'not-a-port'])(
-    'rejects an invalid port (%s)',
-    (port) => {
-      expect(() =>
-        getKnowledgeGraphConfig({
-          ...validEnv,
-          KB_FALKORDB_PORT: port,
-        })
-      ).toThrow('KB_FALKORDB_PORT')
-    }
-  )
+  it.each([
+    undefined,
+    '',
+    '0',
+    '-1',
+    '1.5',
+    '65536',
+    'not-a-port',
+  ])('rejects an invalid port (%s)', (port) => {
+    expect(() =>
+      getKnowledgeGraphConfig({
+        ...validEnv,
+        KB_FALKORDB_PORT: port,
+      })
+    ).toThrow('KB_FALKORDB_PORT')
+  })
 
-  it.each(['TRUE', '1', 'yes', ' false '])(
-    'rejects a non-strict TLS value (%s)',
-    (tls) => {
-      expect(() =>
-        getKnowledgeGraphConfig({
-          ...validEnv,
-          KB_FALKORDB_TLS: tls,
-        })
-      ).toThrow('KB_FALKORDB_TLS')
-    }
-  )
+  it.each([
+    'TRUE',
+    '1',
+    'yes',
+    ' false ',
+  ])('rejects a non-strict TLS value (%s)', (tls) => {
+    expect(() =>
+      getKnowledgeGraphConfig({
+        ...validEnv,
+        KB_FALKORDB_TLS: tls,
+      })
+    ).toThrow('KB_FALKORDB_TLS')
+  })
 
   it('accepts an explicit false TLS value', () => {
     expect(
@@ -96,17 +103,21 @@ describe('getKnowledgeGraphConfig', () => {
     ).toBe(12000)
   })
 
-  it.each(['', '0', '-1', '1.5', 'not-a-timeout', '9007199254740992'])(
-    'rejects an invalid or unsafe query timeout (%s)',
-    (queryTimeoutMs) => {
-      expect(() =>
-        getKnowledgeGraphConfig({
-          ...validEnv,
-          KB_FALKORDB_QUERY_TIMEOUT_MS: queryTimeoutMs,
-        })
-      ).toThrow('KB_FALKORDB_QUERY_TIMEOUT_MS')
-    }
-  )
+  it.each([
+    '',
+    '0',
+    '-1',
+    '1.5',
+    'not-a-timeout',
+    '9007199254740992',
+  ])('rejects an invalid or unsafe query timeout (%s)', (queryTimeoutMs) => {
+    expect(() =>
+      getKnowledgeGraphConfig({
+        ...validEnv,
+        KB_FALKORDB_QUERY_TIMEOUT_MS: queryTimeoutMs,
+      })
+    ).toThrow('KB_FALKORDB_QUERY_TIMEOUT_MS')
+  })
 
   it('does not expose credentials in validation errors', () => {
     const username = 'sensitive-user'

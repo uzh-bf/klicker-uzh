@@ -38,12 +38,12 @@ describe('normalizePublicHttpUrl', () => {
 })
 
 describe('isPublicIPv4Address', () => {
-  it.each(['8.8.8.8', '1.1.1.1'])(
-    'accepts public IPv4 address %s',
-    (address) => {
-      expect(isPublicIPv4Address(address)).toBe(true)
-    }
-  )
+  it.each([
+    '8.8.8.8',
+    '1.1.1.1',
+  ])('accepts public IPv4 address %s', (address) => {
+    expect(isPublicIPv4Address(address)).toBe(true)
+  })
 
   it.each([
     '127.0.0.1',

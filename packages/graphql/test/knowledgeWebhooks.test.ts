@@ -344,23 +344,20 @@ describe('KB ingestion webhook contract', () => {
   it.each([
     'resource.subresources_updated',
     'kb.metrics_updated',
-  ] satisfies EventType[])(
-    'authenticates reserved %s events as successful no-ops',
-    async (eventType) => {
-      const request = createRequest(event(eventType))
+  ] satisfies EventType[])('authenticates reserved %s events as successful no-ops', async (eventType) => {
+    const request = createRequest(event(eventType))
 
-      await expect(
-        handleKBIngestionWebhook({
-          prisma,
-          ...request,
-          env: { KB_WEBHOOK_SECRET: SECRET },
-        })
-      ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
-      await expect(getResource()).resolves.toMatchObject({
-        status: KBResourceStatus.QUEUED,
+    await expect(
+      handleKBIngestionWebhook({
+        prisma,
+        ...request,
+        env: { KB_WEBHOOK_SECRET: SECRET },
       })
-    }
-  )
+    ).resolves.toEqual({ statusCode: 200, body: { ok: true } })
+    await expect(getResource()).resolves.toMatchObject({
+      status: KBResourceStatus.QUEUED,
+    })
+  })
 
   it('marks a succeeded replacement ready when a later serving event cuts over', async () => {
     const succeeded = createRequest(

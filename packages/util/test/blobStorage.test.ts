@@ -17,12 +17,12 @@ describe('getBlobStorageAccountUrl', () => {
     ).toBe('https://blob.klicker.localhost/devstoreaccount1')
   })
 
-  it.each(['not a URL', 'file:///tmp/blob'])(
-    'rejects an invalid account URL: %s',
-    (accountUrl) => {
-      expect(() => getBlobStorageAccountUrl('klicker', accountUrl)).toThrow(
-        'Blob storage account URL is invalid'
-      )
-    }
-  )
+  it.each([
+    'not a URL',
+    'file:///tmp/blob',
+  ])('rejects an invalid account URL: %s', (accountUrl) => {
+    expect(() => getBlobStorageAccountUrl('klicker', accountUrl)).toThrow(
+      'Blob storage account URL is invalid'
+    )
+  })
 })

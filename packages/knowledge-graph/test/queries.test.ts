@@ -26,14 +26,15 @@ describe('fixed knowledge graph queries', () => {
     expect(query.params).toEqual({ searchText: userText })
   })
 
-  it.each(['', '   ', 'x'.repeat(101)])(
-    'rejects invalid search text %j',
-    (searchText) => {
-      expect(() => getSearchNodesQuery(searchText)).toThrow(
-        'Search text must contain between 1 and 100 characters'
-      )
-    }
-  )
+  it.each([
+    '',
+    '   ',
+    'x'.repeat(101),
+  ])('rejects invalid search text %j', (searchText) => {
+    expect(() => getSearchNodesQuery(searchText)).toThrow(
+      'Search text must contain between 1 and 100 characters'
+    )
+  })
 
   it('keeps decimal neighborhood IDs parameterized and bounded', () => {
     const query = getNeighborhoodNodesQuery('12345678901234567890')
@@ -46,14 +47,17 @@ describe('fixed knowledge graph queries', () => {
     expect(edges.cypher).toContain('LIMIT 201')
   })
 
-  it.each(['-1', '1.2', '1 OR 1=1', ' 1', ''])(
-    'rejects non-decimal node ID %j',
-    (nodeId) => {
-      expect(() => getNeighborhoodNodesQuery(nodeId)).toThrow(
-        'Node ID must be a decimal integer'
-      )
-    }
-  )
+  it.each([
+    '-1',
+    '1.2',
+    '1 OR 1=1',
+    ' 1',
+    '',
+  ])('rejects non-decimal node ID %j', (nodeId) => {
+    expect(() => getNeighborhoodNodesQuery(nodeId)).toThrow(
+      'Node ID must be a decimal integer'
+    )
+  })
 
   it('rejects invalid internally selected IDs before constructing edge reads', () => {
     expect(() =>

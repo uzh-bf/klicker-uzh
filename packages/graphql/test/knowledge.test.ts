@@ -750,38 +750,38 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
   })
 
-  it.each([KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING])(
-    'does not delete a knowledge base with a %s resource',
-    async (status) => {
-      const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-      const resource = await prisma.kBResource.create({
-        data: {
-          kbId: created.id,
-          type: KBResourceType.BLOB,
-          title: 'Finance notes',
-          originalFilename: 'notes.pdf',
-          mimeType: 'application/pdf',
-          sizeBytes: 1024,
-          blobName: '83fa9dfa-d796-4f8e-868f-b87a220127b3.pdf',
-          blobHref:
-            'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
-          status,
-        },
-      })
+  it.each([
+    KBResourceStatus.QUEUED,
+    KBResourceStatus.PROCESSING,
+  ])('does not delete a knowledge base with a %s resource', async (status) => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.BLOB,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: '83fa9dfa-d796-4f8e-868f-b87a220127b3.pdf',
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
+        status,
+      },
+    })
 
-      await expect(deleteKb({ id: created.id }, userOneCtx)).rejects.toThrow(
-        'KB cannot be deleted'
-      )
+    await expect(deleteKb({ id: created.id }, userOneCtx)).rejects.toThrow(
+      'KB cannot be deleted'
+    )
 
-      expect(deleteBlobIfExists).not.toHaveBeenCalled()
-      await expect(
-        prisma.kB.findUnique({ where: { id: created.id } })
-      ).resolves.toBeTruthy()
-      await expect(
-        prisma.kBResource.findUnique({ where: { id: resource.id } })
-      ).resolves.toBeTruthy()
-    }
-  )
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kB.findUnique({ where: { id: created.id } })
+    ).resolves.toBeTruthy()
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toBeTruthy()
+  })
 
   it('denies reads and deletion to a foreign owner without revealing existence', async () => {
     const created = await createKb({ name: 'Private notes' }, userOneCtx)
@@ -1796,35 +1796,35 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toMatchObject({ deletedAt: expect.any(Date) })
   })
 
-  it.each([KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING])(
-    'does not delete a %s blob resource',
-    async (status) => {
-      const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-      const resource = await prisma.kBResource.create({
-        data: {
-          kbId: created.id,
-          type: KBResourceType.BLOB,
-          title: 'Finance notes',
-          originalFilename: 'notes.pdf',
-          mimeType: 'application/pdf',
-          sizeBytes: 1024,
-          blobName: 'bc1b27e4-b616-4403-8223-e6e8b3136c7e.pdf',
-          blobHref:
-            'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
-          status,
-        },
-      })
+  it.each([
+    KBResourceStatus.QUEUED,
+    KBResourceStatus.PROCESSING,
+  ])('does not delete a %s blob resource', async (status) => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const resource = await prisma.kBResource.create({
+      data: {
+        kbId: created.id,
+        type: KBResourceType.BLOB,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+        blobName: 'bc1b27e4-b616-4403-8223-e6e8b3136c7e.pdf',
+        blobHref:
+          'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
+        status,
+      },
+    })
 
-      await expect(
-        deleteKbResource({ id: resource.id }, userOneCtx)
-      ).rejects.toThrow('KB resource cannot be deleted')
+    await expect(
+      deleteKbResource({ id: resource.id }, userOneCtx)
+    ).rejects.toThrow('KB resource cannot be deleted')
 
-      expect(deleteBlobIfExists).not.toHaveBeenCalled()
-      await expect(
-        prisma.kBResource.findUnique({ where: { id: resource.id } })
-      ).resolves.toBeTruthy()
-    }
-  )
+    expect(deleteBlobIfExists).not.toHaveBeenCalled()
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toBeTruthy()
+  })
 
   it('serializes resource deletion against a concurrent ingestion claim', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)

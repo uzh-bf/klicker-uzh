@@ -136,110 +136,110 @@ describe('KB retention maintenance', () => {
     })
   })
 
-  it.each([KBIngestionStatus.FAILED, KBIngestionStatus.SUPERSEDED])(
-    'starts a fresh attempt after a terminal external delete result (%s)',
-    async (terminalStatus) => {
-      const failedOperationId = 'op_01J2X8K3M9QZ4R7T6V5W1Y0OLD'
-      const failed = {
-        id: RESOURCE_ID,
-        kbId: KB_ID,
-        status: KBResourceStatus.FAILED,
-        ingestionAttemptId: ATTEMPT_ID,
-        resourceVersion: 4,
-        externalOperationId: failedOperationId,
-        ingestionRuns: [{ id: ATTEMPT_ID, status: terminalStatus }],
-      }
-      const prisma = maintenancePrisma({ pendingDispatch: [failed] })
-      prisma.kBResource.findMany.mockReset()
-      prisma.kBResource.findMany
-        .mockImplementationOnce(async (args) => {
-          const terminalStatuses = args.select.ingestionRuns.where.status.in
-          return terminalStatuses.includes(terminalStatus) ? [failed] : []
-        })
-        .mockResolvedValueOnce([]) // no stranded UPSERT dispatches
-        .mockResolvedValueOnce([]) // no hard-deletable resources
-      prisma.kBResource.updateMany
-        .mockReset()
-        .mockImplementationOnce(async (args) => {
-          const terminalStatuses = args.where.ingestionRuns.some.status.in
-          return { count: terminalStatuses.includes(terminalStatus) ? 1 : 0 }
-        })
-        .mockResolvedValue({ count: 1 })
-      prisma.kBResource.findUnique.mockImplementation(async () => {
-        const retryAttemptId =
-          prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
-        return {
-          kbId: KB_ID,
-          deletedAt: NOW,
-          ingestionOperation: KBIngestionOperation.DELETE,
-          ingestionAttemptId: retryAttemptId,
-          resourceVersion: 4,
-          externalOperationId: null,
-        }
+  it.each([
+    KBIngestionStatus.FAILED,
+    KBIngestionStatus.SUPERSEDED,
+  ])('starts a fresh attempt after a terminal external delete result (%s)', async (terminalStatus) => {
+    const failedOperationId = 'op_01J2X8K3M9QZ4R7T6V5W1Y0OLD'
+    const failed = {
+      id: RESOURCE_ID,
+      kbId: KB_ID,
+      status: KBResourceStatus.FAILED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 4,
+      externalOperationId: failedOperationId,
+      ingestionRuns: [{ id: ATTEMPT_ID, status: terminalStatus }],
+    }
+    const prisma = maintenancePrisma({ pendingDispatch: [failed] })
+    prisma.kBResource.findMany.mockReset()
+    prisma.kBResource.findMany
+      .mockImplementationOnce(async (args) => {
+        const terminalStatuses = args.select.ingestionRuns.where.status.in
+        return terminalStatuses.includes(terminalStatus) ? [failed] : []
       })
-      const apiClient = client()
-
-      await maintainKBResources({
-        prisma: prisma as never,
-        client: apiClient,
-        now: () => NOW,
+      .mockResolvedValueOnce([]) // no stranded UPSERT dispatches
+      .mockResolvedValueOnce([]) // no hard-deletable resources
+    prisma.kBResource.updateMany
+      .mockReset()
+      .mockImplementationOnce(async (args) => {
+        const terminalStatuses = args.where.ingestionRuns.some.status.in
+        return { count: terminalStatuses.includes(terminalStatus) ? 1 : 0 }
       })
-
+      .mockResolvedValue({ count: 1 })
+    prisma.kBResource.findUnique.mockImplementation(async () => {
       const retryAttemptId =
         prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
-      expect(retryAttemptId).toEqual(expect.any(String))
-      expect(retryAttemptId).not.toBe(ATTEMPT_ID)
-      expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
-        1,
-        expect.objectContaining({
-          select: expect.objectContaining({
-            ingestionRuns: expect.objectContaining({
-              where: {
-                operation: KBIngestionOperation.DELETE,
-                status: {
-                  in: [KBIngestionStatus.FAILED, KBIngestionStatus.SUPERSEDED],
-                },
-              },
-            }),
-          }),
-        })
-      )
-      expect(prisma.kBResource.updateMany).toHaveBeenNthCalledWith(1, {
-        where: {
-          id: RESOURCE_ID,
-          deletedAt: { not: null },
-          status: KBResourceStatus.FAILED,
-          ingestionOperation: KBIngestionOperation.DELETE,
-          ingestionAttemptId: ATTEMPT_ID,
-          resourceVersion: 4,
-          externalOperationId: failedOperationId,
-          ingestionRuns: {
-            some: {
-              id: ATTEMPT_ID,
+      return {
+        kbId: KB_ID,
+        deletedAt: NOW,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: retryAttemptId,
+        resourceVersion: 4,
+        externalOperationId: null,
+      }
+    })
+    const apiClient = client()
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    const retryAttemptId =
+      prisma.kBIngestionRun.create.mock.calls[0]?.[0].data.id
+    expect(retryAttemptId).toEqual(expect.any(String))
+    expect(retryAttemptId).not.toBe(ATTEMPT_ID)
+    expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        select: expect.objectContaining({
+          ingestionRuns: expect.objectContaining({
+            where: {
               operation: KBIngestionOperation.DELETE,
               status: {
                 in: [KBIngestionStatus.FAILED, KBIngestionStatus.SUPERSEDED],
               },
             },
+          }),
+        }),
+      })
+    )
+    expect(prisma.kBResource.updateMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        id: RESOURCE_ID,
+        deletedAt: { not: null },
+        status: KBResourceStatus.FAILED,
+        ingestionOperation: KBIngestionOperation.DELETE,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 4,
+        externalOperationId: failedOperationId,
+        ingestionRuns: {
+          some: {
+            id: ATTEMPT_ID,
+            operation: KBIngestionOperation.DELETE,
+            status: {
+              in: [KBIngestionStatus.FAILED, KBIngestionStatus.SUPERSEDED],
+            },
           },
         },
-        data: {
-          status: KBResourceStatus.QUEUED,
-          statusMessage: 'The deletion operation is awaiting retry.',
-          ingestionAttemptId: retryAttemptId,
-          externalOperationId: null,
-          externalOperationStartedAt: null,
-          errorCode: null,
-        },
-      })
-      expect(apiClient.deleteResource).toHaveBeenCalledWith({
-        resourceId: RESOURCE_ID,
-        kbId: KB_ID,
-        deletionAttemptId: retryAttemptId,
-        resourceVersion: 4,
-      })
-    }
-  )
+      },
+      data: {
+        status: KBResourceStatus.QUEUED,
+        statusMessage: 'The deletion operation is awaiting retry.',
+        ingestionAttemptId: retryAttemptId,
+        externalOperationId: null,
+        externalOperationStartedAt: null,
+        errorCode: null,
+      },
+    })
+    expect(apiClient.deleteResource).toHaveBeenCalledWith({
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      deletionAttemptId: retryAttemptId,
+      resourceVersion: 4,
+    })
+  })
 
   it('continues independent cleanup when deletion dispatch is not configured', async () => {
     const expiresAt = new Date(NOW.getTime() - 25 * 60 * 60 * 1000)

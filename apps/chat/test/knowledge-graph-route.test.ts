@@ -152,29 +152,28 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
-  it.each(['EMPTY', 'QUEUED', 'PROCESSING', 'FAILED'] as const)(
-    'returns a safe 409 for an unpublished %s graph',
-    async (publicationStatus) => {
-      const error = Object.assign(
-        new Error('Knowledge graph is not published'),
-        {
-          code: publicationStatus,
-          name: 'KnowledgeGraphNotPublishedError',
-        }
-      )
-      boundaries.getPublishedKnowledgeGraphForChatbot.mockRejectedValue(error)
+  it.each([
+    'EMPTY',
+    'QUEUED',
+    'PROCESSING',
+    'FAILED',
+  ] as const)('returns a safe 409 for an unpublished %s graph', async (publicationStatus) => {
+    const error = Object.assign(new Error('Knowledge graph is not published'), {
+      code: publicationStatus,
+      name: 'KnowledgeGraphNotPublishedError',
+    })
+    boundaries.getPublishedKnowledgeGraphForChatbot.mockRejectedValue(error)
 
-      const result = await callRoute('operation=overview')
+    const result = await callRoute('operation=overview')
 
-      expect(result.status).toBe(409)
-      await expect(result.json()).resolves.toEqual({
-        code: 'KNOWLEDGE_GRAPH_NOT_PUBLISHED',
-        error: 'Knowledge graph is not published',
-        publicationStatus,
-      })
-      expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
-    }
-  )
+    expect(result.status).toBe(409)
+    await expect(result.json()).resolves.toEqual({
+      code: 'KNOWLEDGE_GRAPH_NOT_PUBLISHED',
+      error: 'Knowledge graph is not published',
+      publicationStatus,
+    })
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
 
   it('returns the normalized overview DTO', async () => {
     const result = await callRoute('operation=overview')
