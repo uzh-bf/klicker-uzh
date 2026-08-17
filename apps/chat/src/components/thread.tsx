@@ -285,6 +285,7 @@ export const Thread: FC<ThreadProps> = ({
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
     >
+      <ThreadRunAnnouncer />
       {!embedded && <HistoryRail entries={historyEntries} />}
       <ThreadPrimitive.Viewport
         data-cy="chat-thread-viewport"
@@ -336,6 +337,77 @@ export const Thread: FC<ThreadProps> = ({
   )
 }
 
+/**
+ * The thread's single polite live region for the response lifecycle. Only the
+ * four state transitions are announced — never the streamed tokens, which
+ * would talk over the reader for the whole answer.
+ *
+ * The end of a run is read from the store's `lastRunOutcome` rather than from
+ * `isRunning` alone, because cancelling clears the running flag before the
+ * response hook records the outcome: a running-only signal announces a
+ * stopped answer as a completed one.
+ */
+const ThreadRunAnnouncer: FC = () => {
+  const t = useTranslations()
+  const activeThreadId = useChatStore((state) => state.activeThreadId)
+  const isRunning = useChatStore(
+    (state) =>
+      state.threads.find((thread) => thread.id === state.activeThreadId)
+        ?.isRunning ?? false
+  )
+  const lastRunOutcome = useChatStore(
+    (state) =>
+      state.threads.find((thread) => thread.id === state.activeThreadId)
+        ?.lastRunOutcome ?? null
+  )
+  const [announcement, setAnnouncement] = useState('')
+  // Which thread the last announcement decision was made for; undefined until
+  // the first one.
+  const announcedThreadIdRef = useRef<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    const announcedThreadId = announcedThreadIdRef.current
+    announcedThreadIdRef.current = activeThreadId
+
+    // The first render and a switch to a different thread both surface
+    // existing state rather than a transition, and must stay silent. Sending
+    // the first message of a new chat activates a thread where there was
+    // none — that is the same view continuing, not a switch, and swallowing
+    // it would leave the first turn of every new chat unannounced.
+    const isThreadSwitch =
+      announcedThreadId === undefined ||
+      (announcedThreadId !== null && announcedThreadId !== activeThreadId)
+
+    if (isThreadSwitch) {
+      setAnnouncement('')
+      return
+    }
+
+    if (isRunning) {
+      setAnnouncement(t('chat.thread.runStarted'))
+      return
+    }
+
+    // A cancelled run clears `isRunning` before its outcome lands, so the
+    // empty string here is a real intermediate state, not a missing case.
+    setAnnouncement(
+      lastRunOutcome === 'completed'
+        ? t('chat.thread.runCompleted')
+        : lastRunOutcome === 'stopped'
+          ? t('chat.thread.runStopped')
+          : lastRunOutcome === 'error'
+            ? t('chat.thread.runFailed')
+            : ''
+    )
+  }, [activeThreadId, isRunning, lastRunOutcome, t])
+
+  return (
+    <div data-cy="chat-run-status" role="status" className="sr-only">
+      {announcement}
+    </div>
+  )
+}
+
 const ThreadScrollToBottom: FC = () => {
   const t = useTranslations()
   return (
@@ -368,7 +440,6 @@ const ThinkingDots: FC = () => {
   return (
     <div
       data-cy="chat-thinking-indicator"
-      role="status"
       className="flex min-h-7 items-center gap-1 py-2"
     >
       {THINKING_DOT_DELAYS.map((delayClassName, index) => (
@@ -380,6 +451,9 @@ const ThinkingDots: FC = () => {
           )}
         />
       ))}
+      {/* A label, not a live region: ThreadRunAnnouncer already announces the
+          same transition, and two polite regions firing on one event read the
+          start of an answer twice. */}
       <span className="sr-only">{t('chat.thread.thinking')}</span>
     </div>
   )
@@ -1519,6 +1593,9 @@ const MessageRatingButtons: FC = () => {
         ?.rating ?? null
     )
   })
+  const ratingFailed = useChatStore(
+    (state) => state.ratingErrors[message.id] === true
+  )
 
   if (!chatbotId) return null
 
@@ -1570,6 +1647,19 @@ const MessageRatingButtons: FC = () => {
           </Tooltip>
         )
       })}
+      {/* The optimistic vote is rolled back on a rejected POST; without this
+          the icon just snaps back, which reads as a mis-click rather than a
+          failure. Mounted on failure only — insertion is what makes an alert
+          announce. */}
+      {ratingFailed && (
+        <span
+          data-cy="chat-rating-error"
+          role="alert"
+          className="text-destructive self-center text-xs"
+        >
+          {t('chat.message.ratingError')}
+        </span>
+      )}
     </>
   )
 }

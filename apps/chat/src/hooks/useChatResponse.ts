@@ -8,6 +8,7 @@ import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
+  type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -76,7 +77,21 @@ export function useChatResponse(
         }))
       }
 
+      // Records how the run ended so the thread can announce a stopped run
+      // distinctly: cancelling clears `isRunning` before this hook reaches its
+      // abort branch, so the running flag alone reads a stop as a completion.
+      const updateThreadRunOutcome = (outcome: ThreadRunOutcome | null) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId
+              ? { ...thread, lastRunOutcome: outcome }
+              : thread
+          ),
+        }))
+      }
+
       updateThreadRunning(true)
+      updateThreadRunOutcome(null)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
@@ -238,6 +253,7 @@ export function useChatResponse(
             parentId: triggerMessage?.id || null,
           }
           updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
           return
         }
 
@@ -676,9 +692,17 @@ export function useChatResponse(
             }))
           }
         }
+
+        // A stream error and a silent cutoff both pushed a `chat-error` part
+        // above, and a missing reader means no answer arrived at all — none of
+        // those may announce as a completed answer.
+        updateThreadRunOutcome(
+          hasStreamError || !hasFinishEvent ? 'error' : 'completed'
+        )
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           // request was cancelled by user
+          updateThreadRunOutcome('stopped')
         } else {
           console.error('Chat error:', error)
 
@@ -704,6 +728,7 @@ export function useChatResponse(
             parentId: triggerMessage?.id || null,
           }
           updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
         }
       } finally {
         updateThreadRunning(false)

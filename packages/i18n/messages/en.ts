@@ -150,6 +150,8 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
@@ -159,6 +161,10 @@ export default {
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
       welcomeTitle: 'Welcome!',
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
@@ -193,6 +199,7 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },

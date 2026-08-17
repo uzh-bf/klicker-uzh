@@ -153,6 +153,8 @@ export default {
       deleteChat: 'Chat löschen',
       deleteConfirm: 'Löschen?',
       deleteConfirmAria: 'Löschen dieses Chats bestätigen',
+      deleteArmedStatus:
+        'Bestätigung erforderlich: Betätige Löschen erneut, um diesen Chat zu löschen.',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
@@ -162,6 +164,10 @@ export default {
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
+      runStarted: 'Antwort wird generiert …',
+      runCompleted: 'Antwort abgeschlossen.',
+      runStopped: 'Antwort gestoppt.',
+      runFailed: 'Antwort fehlgeschlagen.',
       welcomeTitle: 'Willkommen!',
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
@@ -196,6 +202,7 @@ export default {
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
+      ratingError: 'Bewertung konnte nicht gespeichert werden.',
       toolCallsGroupLabel:
         '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },

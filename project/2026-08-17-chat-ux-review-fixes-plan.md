@@ -268,10 +268,20 @@ verification, commits, reviews, publication.
 
 ## Progress
 
-- Status: plan reviewed (planner: ACCEPT-WITH-CHANGES, findings folded in);
-  ready to commit and start S1.
-- Completed: —
-- Remaining: S1, S2, S3, S4, S5, S6a, S6b, reviews, wiki, PR.
-- Evidence: —
-- Delivery: required layer = draft PR on `v3`; achieved = branch created.
-- Next: commit plan → dispatch S1 executor.
+- Status: S2 done (executor implementation, main-session integration after
+  executor session limit); S1 done.
+- Completed: plan commit `d64ab5b61`; S1 `0a2a18ccd` (6 files, +28/−10;
+  in-container chat check + test:run 38 files/318 tests green; live browser
+  EN+DE name/footer reads). Slice review: not required — mechanical
+  markup/i18n edits; simplifier not armed (not substantive). S2 (8 files;
+  in-container biome + chat check + test:run 38 files/319 tests green; live
+  browser: run-status live region announced start → "Answer complete." on a
+  full cycle and "Answer stopped." 200ms after mid-stream cancel; forced
+  `**/feedback` network abort surfaced role=alert "Rating could not be
+  saved." with aria-pressed rollback, retry cleared it and persisted the
+  vote; thread-list delete arm announced the confirmation status and cleared
+  after disarm). Simplifier: armed (substantive) — pending dispatch.
+- Remaining: S3, S4, S5, S6a, S6b, reviews, wiki, PR.
+- Evidence: latest verified commit = S2 commit (see git log).
+- Delivery: required layer = draft PR on `v3`; achieved = local branch.
+- Next: simplifier on S2 range; dispatch S3.

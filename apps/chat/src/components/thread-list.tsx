@@ -452,6 +452,16 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           </button>
         </>
       )}
+      {/* Row-local live region for the armed delete. The button's swapped
+          aria-label is the only other carrier of that state, and a label
+          change while focus already sits on the button is announced
+          unreliably. Rendered empty rather than conditionally so the region
+          exists before the state flips. */}
+      <span role="status" className="sr-only">
+        {deletePhase === 'confirming'
+          ? t('chat.threadList.deleteArmedStatus')
+          : ''}
+      </span>
     </div>
   )
 }
