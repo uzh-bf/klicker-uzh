@@ -72,7 +72,6 @@ type FeatureFlagAttributes = {
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
-  environment: 'development' | 'test' | 'staging' | 'production'
 }
 ```
 
@@ -80,6 +79,9 @@ type FeatureFlagAttributes = {
 - Email, display name, and other personal data are not sent to the SDK.
 - The same `id` and attribute names must be used for browser and server
   evaluation, so percentage rollouts and targeted assignments remain stable.
+- Deployment environment is mandatory adapter configuration rather than caller
+  context. Each adapter normalizes it once and adds it to evaluations. An
+  invalid non-empty value disables fetching and evaluates every flag false.
 - GrowthBook attribute values supplied by Klicker stay local to SDK evaluation,
   but browser feature payloads can expose targeting rules. If pseudonymous ID
   lists must also be hidden, use GrowthBook remote evaluation or add a distinct
@@ -88,9 +90,10 @@ type FeatureFlagAttributes = {
 ### Browser lifecycle
 
 The React adapter owns SDK construction, initialization, attribute updates,
-and cleanup. It receives `apiHost`, `clientKey`, and attributes from the host
-application. Missing configuration, loading, unknown flags, timeouts, and
-network failures all evaluate to the declared fallback.
+and cleanup. It receives `apiHost`, `clientKey`, deployment `environment`, and
+actor attributes from the host application. Missing configuration, invalid
+environment, loading, unknown flags, timeouts, and network failures all
+evaluate to the declared fallback.
 
 `frontend-manage` activates the adapter inside its authenticated `Layout`,
 after `UserProfileDocument` has returned the lecturer. Login and unauthenticated
@@ -102,9 +105,11 @@ deployment includes the GrowthBook Proxy Server.
 ### Node.js lifecycle
 
 The Node adapter wraps one process-level `GrowthBookClient`, initialized during
-service startup from `GROWTHBOOK_API_HOST` and `GROWTHBOOK_CLIENT_KEY`. Feature
-evaluation receives `FeatureFlagAttributes` on every call. The singleton owns
-the cached feature payload, while user state remains request-scoped.
+service startup from `GROWTHBOOK_API_HOST`, `GROWTHBOOK_CLIENT_KEY`, and the
+deployment environment. Feature evaluation receives actor
+`FeatureFlagAttributes` on every call, and the adapter adds its normalized
+environment. The singleton owns the cached feature payload, while user state
+remains request-scoped.
 
 The foundation package provides and tests this adapter, but no running backend
 service initializes it in this stack. The first backend flag can choose the
@@ -117,11 +122,14 @@ Browser applications use:
 
 - `NEXT_PUBLIC_GROWTHBOOK_API_HOST`
 - `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY`
+- `NEXT_PUBLIC_ENV` (falling back to `NODE_ENV` only for local development)
 
 Node.js services use:
 
 - `GROWTHBOOK_API_HOST`
 - `GROWTHBOOK_CLIENT_KEY`
+- their deployment environment variable (falling back to `NODE_ENV` only for
+  local development)
 
 The browser variables contain an SDK connection and never a GrowthBook
 management/admin key. Production and staging builds receive their own SDK
@@ -304,3 +312,6 @@ draft PR.
   including a fresh feature-flags build; 22 existing tasks were cached).
 - 2026-08-06: wiki files pass Prettier. The validator referenced by
   `klicker-wiki-maintenance` was unavailable at its documented local path.
+- 2026-08-17: review hardening moved deployment environment from actor context
+  into mandatory adapter configuration. Invalid non-empty values now skip the
+  SDK fetch and evaluate against an empty payload in both adapters.

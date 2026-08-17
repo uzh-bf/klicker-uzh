@@ -41,15 +41,12 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
-  environment: FeatureFlagEnvironment
 }
 
 // An absent value is the ordinary local case and stays `development`. A value
-// that is present but unrecognized is a deployment misconfiguration, and
-// mapping it onto a real environment would apply that environment's targeting
-// rules to a build that is not it. `unknown` is deliberately a name no
-// GrowthBook environment rule is configured against, so a typo leaves every
-// flag on its default instead of silently adopting another tier's rollout.
+// that is present but unrecognized is a deployment misconfiguration. Both
+// adapters treat `unknown` as unconfigured and initialize an empty payload, so
+// no targeting rule or remote default can enable a flag for that deployment.
 export function normalizeFeatureFlagEnvironment(
   value?: string
 ): FeatureFlagEnvironment {
@@ -67,7 +64,7 @@ export function normalizeFeatureFlagEnvironment(
   }
 
   console.error(
-    `[feature-flags] unrecognized environment "${value}"; using "unknown" so that no environment targeting rule matches`
+    `[feature-flags] unrecognized environment "${value}"; disabling feature flag evaluation`
   )
 
   return 'unknown'
