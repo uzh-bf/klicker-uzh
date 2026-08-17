@@ -4072,7 +4072,7 @@ async function resolveSharingTarget(
 > {
   const hasIndividualTarget =
     typeof shortnameOrEmail === 'string' && shortnameOrEmail.length > 0
-  const hasGroupTarget = typeof userGroupId === 'number' && userGroupId !== null
+  const hasGroupTarget = typeof userGroupId === 'number'
 
   if (mode === 'EXACTLY_ONE' && hasIndividualTarget === hasGroupTarget) {
     return { target: null, error: 'INVALID_OR_SELF_TARGET' }
