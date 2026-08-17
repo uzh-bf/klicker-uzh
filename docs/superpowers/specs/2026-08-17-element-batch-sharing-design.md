@@ -19,6 +19,10 @@ from the existing element batch-operations modal. Sharing can be used alone or
 combined with the existing archive, status, multiplier, and base-points
 operations. Users must see which Elements were not shared and why.
 
+Archive, status, multiplier, and base points are existing, independent Element
+updates. They are listed only to define which actions can share the same Apply
+button; permission sharing does not change their meaning or eligibility rules.
+
 ## Non-goals
 
 - Batch sharing activities, courses, collections, or catalog objects.
@@ -111,7 +115,9 @@ user group. The UI maps all codes to German and English text. Internal database
 or recomputation errors are logged server-side and exposed only as the generic
 `SHARING_FAILED` reason.
 
-The generated operation is named `MShareElementsBatch`. GraphQL code generation
+The hand-written operation file is named `MShareElementsBatch.graphql`; in line
+with repository conventions, its operation is `ShareElementsBatch` and its
+generated document is `ShareElementsBatchDocument`. GraphQL code generation
 artifacts and persisted-query maps are committed with the change.
 
 ## Service design and consistency
@@ -132,7 +138,8 @@ The batch service:
 Every successful transaction preserves the existing sharing invariants:
 
 - upsert the direct user or group permission with `propagation: false`;
-- delete matching pending access requests;
+- for an individual target, delete matching pending access requests; group
+  targets retain the existing object-wide recomputation behavior;
 - recompute derived permissions for the Element and target;
 - create a `PERMISSION_GRANTED` audit-log entry; and
 - return the updated permission as a successful outcome.
