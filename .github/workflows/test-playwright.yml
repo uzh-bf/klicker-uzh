@@ -137,6 +137,7 @@ jobs:
             packages/grading/dist
             packages/graphql/dist
             packages/hatchet/dist
+            packages/knowledge-graph/dist
             packages/markdown/dist
             packages/prisma/dist
             packages/types/dist
