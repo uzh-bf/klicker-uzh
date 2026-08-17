@@ -50,7 +50,6 @@ supplies the actor contract from
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
 - `actorType`: `user`, `participant`, or `anonymous`;
 - `role`: the Klicker role when applicable;
-- `environment`: `development`, `test`, `staging`, `production`, or `unknown`.
 
 `normalizeFeatureFlagEnvironment` maps an unset value to `development`. A
 recognized value (`development`, `test`, `staging`, or `production`) allows the
