@@ -291,19 +291,21 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   }) => {
     await mockManageChatStream(page)
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    // The conversation starters render in their own section next to the
+    // welcome message, not inside it, so scope surface assertions here.
+    const starters = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [
       'Draft a question',
       'Find questions',
       'Improve feedback',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible()
+      await expect(starters.getByText(text, { exact: true })).toBeVisible()
     }
 
     // Course-dashboard-only suggestions must not leak into this surface.
     await expect(
-      welcome.getByText('Summarize this course', { exact: true })
+      starters.getByText('Summarize this course', { exact: true })
     ).toHaveCount(0)
   })
 
@@ -316,7 +318,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
     )
 
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    const starters = assistant.getByTestId('chat-welcome-suggestions')
 
     // The course-dashboard set only replaces the default suggestions once the
     // parent → iframe manage-context handshake completes, which races the
@@ -326,7 +328,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
       'Draft course question',
       'Find course material',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+      await expect(starters.getByText(text, { exact: true })).toBeVisible({
         timeout: 15_000,
       })
     }
@@ -334,7 +336,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
     // Question-pool-only suggestions must not leak into this surface (retries
     // until the handshake has swapped the default set out).
     await expect(
-      welcome.getByText('Draft a question', { exact: true })
+      starters.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
   })
 })
@@ -362,14 +364,14 @@ test.describe('Manage Assistant — Slow hydration', () => {
     await delayChatIframeScripts(page, 1_000)
 
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    const starters = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [
       'Summarize this course',
       'Draft course question',
       'Find course material',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+      await expect(starters.getByText(text, { exact: true })).toBeVisible({
         timeout: 20_000,
       })
     }
@@ -377,7 +379,7 @@ test.describe('Manage Assistant — Slow hydration', () => {
     // Question-pool-only suggestions must not leak in: the default set was
     // never the one actually shown, confirming the swap really happened.
     await expect(
-      welcome.getByText('Draft a question', { exact: true })
+      starters.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
   })
 })
