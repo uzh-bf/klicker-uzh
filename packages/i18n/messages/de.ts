@@ -1882,20 +1882,66 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
       batchOperationsElements: 'Elemente - Batch-Operationen',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Ihre Berechtigung',
+      batchUpdateStatus: 'Eignung für Elementänderungen',
+      batchUpdateStatusInactive: 'Keine Elementänderung konfiguriert',
+      batchSharingStatus: 'Eignung für Elementfreigaben',
       actionApplies: 'Aktion wird angewendet',
+      batchSharingApplies: 'Freigabe wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
       modifyBasePoints: 'Basispunkte ändern',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
       nElementsWillBeUpdated: '{number} Elemente werden angepasst',
+      batchSharing: 'Elemente teilen',
+      batchSharingDescription:
+        'Erteilen Sie dieselbe direkte Berechtigung für alle ausgewählten Elemente. Die Freigabe wird nicht auf abhängige Objekte übertragen.',
+      batchSharingUserOrEmail: 'Benutzer:in',
+      batchSharingGroup: 'Benutzergruppe',
+      batchSharingPermission: 'Berechtigung',
+      noElementsWillBeShared: 'Keine Elemente können geteilt werden',
+      nElementsWillBeShared: '{number} Elemente können geteilt werden',
+      batchSharingNotApplicableExplanation:
+        'Die ausgewählte Freigabe kann aus den folgenden Gründen nicht auf dieses Element angewendet werden:',
+      batchSharingInsufficientPermission:
+        'Das Teilen von Elementen erfordert mindestens Adminrechte.',
+      batchOperationsResult: 'Ergebnis der Batch-Operation',
+      batchOperationsResultDescription:
+        'Überprüfen Sie unten die ausgeführten und übersprungenen Operationen. Dieses Ergebnis kann nicht bearbeitet werden.',
+      batchUpdateResultSuccess:
+        'Die ausgewählten Elementänderungen wurden erfolgreich angewendet.',
+      batchUpdateResultPartial:
+        '{updated}/{total} ausgewählte Elementänderungen wurden angewendet.',
+      batchUpdateResultFailed:
+        'Die ausgewählten Elementänderungen konnten nicht angewendet werden.',
+      batchUpdateResultSkipped:
+        'Elementänderungen wurden übersprungen, da keines der ausgewählten Elemente dafür geeignet war.',
+      batchSharingResult: 'Freigabeergebnis',
+      batchSharingResultShared: 'Geteilt',
+      batchSharingResultSkippedInsufficientPermission:
+        'Übersprungen: Adminrechte erforderlich',
+      batchSharingResultElementUnavailable:
+        'Übersprungen: Element nicht verfügbar',
+      batchSharingResultFailed: 'Freigabe fehlgeschlagen',
+      batchSharingResultNotProcessed: 'Nicht verarbeitet',
+      batchSharingRequestFailed:
+        'Die Freigabeanfrage ist fehlgeschlagen, bevor alle Ergebnisse zurückgegeben werden konnten.',
+      batchSharingTargetInvalidOrSelf:
+        'Der Zielbenutzer existiert nicht oder ist Ihr eigenes Konto.',
+      batchSharingTargetGroupUnavailable:
+        'Die ausgewählte Benutzergruppe ist nicht mehr verfügbar.',
+      batchOperationsRefreshFailed:
+        'Die Operationen wurden beendet, aber die Elementliste konnte nicht aktualisiert werden.',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
 <ul>
 <li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
 <li>Multiplikatoren können nur für Fragen mit einer definierten Musterlösung geändert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
+<li>Das Teilen erfordert für jedes Element mindestens Adminrechte und wird nicht auf abhängige Objekte übertragen.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
