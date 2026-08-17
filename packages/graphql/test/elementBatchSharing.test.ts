@@ -599,9 +599,17 @@ describe('Integration tests for batch sharing elements', () => {
     const secondElement = await seedElement()
     const transaction = prisma.$transaction.bind(prisma)
     const emitSpy = vi.spyOn(emitter, 'emit')
-    vi.spyOn(prisma, '$transaction')
+    const transactionMock = vi
+      .fn()
       .mockRejectedValueOnce(new Error('synthetic transaction failure'))
       .mockImplementation(transaction as typeof prisma.$transaction)
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionMock
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -609,7 +617,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
@@ -634,5 +642,6 @@ describe('Integration tests for batch sharing elements', () => {
       typename: 'Permission',
       id: committedPermission!.id,
     })
+    expect(prisma.$transaction).toBeTypeOf('function')
   })
 })
