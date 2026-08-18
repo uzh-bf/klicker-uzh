@@ -1071,17 +1071,29 @@ const ComposerAction: FC = () => {
   const isRunning = useAuiState((s) => s.thread.isRunning)
   const sendButtonRef = useRef<HTMLButtonElement>(null)
   const cancelButtonRef = useRef<HTMLButtonElement>(null)
-  // An `inert` button can never be `document.activeElement`, so comparing
-  // against it here, during render — before this render's `isRunning` value
-  // is committed to the DOM and applies `inert` below — is only ever true
-  // for a button that genuinely still holds focus from the previous commit.
-  const outgoingButtonWasFocused =
-    typeof document !== 'undefined' &&
-    document.activeElement ===
-      (isRunning ? sendButtonRef.current : cancelButtonRef.current)
+  // Focus bookkeeping via events, not a render-phase `document.activeElement`
+  // read (which react-hooks/refs forbids): `onFocus` records which shell
+  // button holds focus, and `onBlur` clears the record only when focus moved
+  // to a real target — a `null` relatedTarget means the browser evicted focus
+  // (the button just went `inert` below), which is exactly the case the
+  // effect must still see.
+  const focusedShellButtonRef = useRef<'send' | 'cancel' | null>(null)
+  const handleShellFocus = (event: React.FocusEvent<HTMLButtonElement>) => {
+    focusedShellButtonRef.current =
+      event.currentTarget.dataset.cy === 'chat-send-button' ? 'send' : 'cancel'
+  }
+  const handleShellBlur = (event: React.FocusEvent<HTMLButtonElement>) => {
+    if (event.relatedTarget) focusedShellButtonRef.current = null
+  }
 
   useEffect(() => {
-    if (!outgoingButtonWasFocused) return
+    const outgoing = isRunning ? 'send' : 'cancel'
+    if (focusedShellButtonRef.current !== outgoing) return
+    focusedShellButtonRef.current = null
+    // Only rescue focus the `inert` swap actually evicted; if the user has
+    // meanwhile focused something real (e.g. the composer), leave it alone.
+    const active = document.activeElement
+    if (active && active !== document.body) return
     const incoming = isRunning ? cancelButtonRef.current : sendButtonRef.current
     // Send stays `disabled` (self-disabled by `createActionButton`, see
     // above) while the composer is empty, which it normally is right after
@@ -1094,7 +1106,7 @@ const ComposerAction: FC = () => {
     document
       .querySelector<HTMLTextAreaElement>('[data-cy="chat-composer-input"]')
       ?.focus()
-  }, [isRunning, outgoingButtonWasFocused])
+  }, [isRunning])
 
   const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
@@ -1130,6 +1142,8 @@ const ComposerAction: FC = () => {
           inert={isRunning}
           tabIndex={isRunning ? -1 : 0}
           aria-label={t('chat.composer.send')}
+          onFocus={handleShellFocus}
+          onBlur={handleShellBlur}
           className={twMerge(
             baseAction,
             'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
@@ -1149,6 +1163,8 @@ const ComposerAction: FC = () => {
           inert={!isRunning}
           tabIndex={isRunning ? 0 : -1}
           aria-label={t('chat.composer.stop')}
+          onFocus={handleShellFocus}
+          onBlur={handleShellBlur}
           className={twMerge(
             baseAction,
             'text-foreground hover:bg-accent disabled:opacity-50',
