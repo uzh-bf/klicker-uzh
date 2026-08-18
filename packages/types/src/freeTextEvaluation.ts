@@ -1,0 +1,120 @@
+export type FreeTextCorrectnessCategory = 'CORRECT' | 'PARTIAL' | 'INCORRECT'
+
+export type FreeTextRubricAchievementLevel = {
+  name: string
+  description: string
+  normalized_score: number
+  [key: string]: unknown
+}
+
+export type FreeTextRubric = {
+  id: string
+  name: string
+  description: string
+  weight: number
+  achievement_levels: FreeTextRubricAchievementLevel[]
+  score_scale?: unknown
+  anchors?: unknown
+  interpolation_policy?: unknown
+  modalities?: unknown
+  deterministic_caps?: unknown
+  scoring_policy?: unknown
+  components?: unknown
+  adversarial_checks?: unknown
+  evidence_mode_rules?: unknown
+  binary_checklist?: unknown
+  credit_unverifiable?: unknown
+  [key: string]: unknown
+}
+
+export type FreeTextRubricSchema = {
+  schema_version: string
+  name: string
+  description: string
+  rubrics: FreeTextRubric[]
+  evidence_contract?: unknown
+  score_scale?: unknown
+  interpolation_policy?: unknown
+  segmentation?: unknown
+  feedback_required?: unknown
+  feedback_register?: unknown
+  batch_comparison?: unknown
+  adaptations?: unknown
+  scoring_policy?: unknown
+  [key: string]: unknown
+}
+
+export type FreeTextOutcomeBand = {
+  id: string
+  label: string
+  min_score: number
+  max_score: number
+  category: FreeTextCorrectnessCategory
+}
+
+export type SemanticFreeTextConfig = {
+  contract_version: '1'
+  question_language: 'en' | 'de'
+  attempt_limit: number
+  solution_reveal_enabled: boolean
+  accepted_exact_answers: string[]
+  reference_solution?: string | null
+  outcome_bands?: FreeTextOutcomeBand[] | null
+  rubric_schema: FreeTextRubricSchema
+}
+
+export type FreeTextRubricAssessment = {
+  task_bundle_id: string
+  rubric_id: string
+  rubric_name: string
+  proposed_level: string
+  normalized_score: number
+  justification: string
+  evidence_ids: string[]
+  confidence: number
+  needs_review: boolean
+  review_flags: string[]
+  used_evidence_ids: string[]
+  unsupported_claims: string[]
+  evidence_sufficiency?: string | null
+  uncertainty_reason?: string | null
+  rationale: string
+}
+
+export type FreeTextFeedbackProposal = {
+  task_bundle_id: string
+  rubric_id: string
+  rubric_name: string
+  feedback: string
+  strengths: string[]
+  improvements: string[]
+  action_items: string[]
+  evidence_ids: string[]
+  confidence: number
+}
+
+export type EvaluateFreeTextRequestV1 = {
+  contract_version: '1'
+  task_bundle_id: string
+  question: {
+    content: string
+    language: SemanticFreeTextConfig['question_language']
+  }
+  response: { text: string }
+  reference_solution?: string
+  rubric_schema: FreeTextRubricSchema
+}
+
+export type EvaluateFreeTextResponseV1 = {
+  contract_version: '1'
+  task_bundle_id: string
+  evaluator_version: string
+  model_version: string
+  rubric_assessments: FreeTextRubricAssessment[]
+  feedback_proposals?: FreeTextFeedbackProposal[]
+}
+
+export type FreeTextEvaluationResult = {
+  rubric_assessments: FreeTextRubricAssessment[]
+  feedback_proposals?: FreeTextFeedbackProposal[]
+}

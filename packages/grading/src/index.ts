@@ -7,6 +7,8 @@ import type {
 } from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
 
+export * from './freeTextSemanticEvaluation.js'
+
 interface GradeQuestionChoicesArgs {
   responseCount: number
   response: ChoicesResponse[]
