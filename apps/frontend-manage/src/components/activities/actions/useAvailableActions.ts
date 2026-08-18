@@ -11,6 +11,7 @@ export type ActivityAction = {
     cy?: string
   }
   disabled?: boolean
+  tooltip?: string
   className?: string
 }
 

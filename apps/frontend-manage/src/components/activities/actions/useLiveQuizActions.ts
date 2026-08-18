@@ -8,6 +8,7 @@ import {
 import {
   faArrowsRotate,
   faChalkboardUser,
+  faDownload,
   faChartSimple,
   faCode,
   faFileCircleCheck,
@@ -47,6 +48,9 @@ function useLiveQuizActions({
   setDeletionModal,
   setActivityLogOpen,
   setResetModal,
+  onDownloadCorrelatedResponses,
+  correlatedExportDisabled,
+  correlatedExportTooltip,
 }: {
   quiz: ActivityInfo
   onStart: any
@@ -68,6 +72,9 @@ function useLiveQuizActions({
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
   setResetModal: Dispatch<SetStateAction<boolean>>
+  onDownloadCorrelatedResponses: () => void
+  correlatedExportDisabled: boolean
+  correlatedExportTooltip: string
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -124,6 +131,15 @@ function useLiveQuizActions({
             '_blank'
           ),
         data: { cy: `live-quiz-evaluation-${quiz.name}` },
+      },
+      {
+        id: 'downloadCorrelatedResponses',
+        label: t('manage.evaluation.downloadCorrelatedResponses'),
+        icon: faDownload,
+        onClick: onDownloadCorrelatedResponses,
+        disabled: correlatedExportDisabled,
+        tooltip: correlatedExportTooltip,
+        data: { cy: `download-correlated-live-quiz-responses-${quiz.name}` },
       },
       {
         id: 'duplicateLiveQuiz',
@@ -277,6 +293,13 @@ function useLiveQuizActions({
       setRemovalModal,
       setDeletionModal,
       setActivityLogOpen,
+      setResetModal,
+      unpublishLiveQuiz,
+      quiz.courseId,
+      quiz.status,
+      onDownloadCorrelatedResponses,
+      correlatedExportDisabled,
+      correlatedExportTooltip,
     ]
   )
 

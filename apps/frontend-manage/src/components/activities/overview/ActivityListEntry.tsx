@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityInfo,
   ActivityType,
+  LiveQuizResponseCollectionMode,
   ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -31,6 +32,7 @@ import SharingTypeBadge from '../../sharing/SharingTypeBadge'
 import ActivityNameChangeModal from './ActivityNameChangeModal'
 import ActivityReviewStatus from './ActivityReviewStatus'
 import AssessmentBadge from './AssessmentBadge'
+import AttributableBadge from './AttributableBadge'
 import ActivityDetailsModal from './details/ActivityDetailsModal'
 import GroupActivityActions from './GroupActivityActions'
 import LiveQuizActions from './LiveQuizActions'
@@ -169,6 +171,10 @@ function ActivityListEntry({
 
               {activity.isAssessmentEnabled && (
                 <AssessmentBadge className="ml-2" />
+              )}
+              {activity.responseCollectionMode ===
+                LiveQuizResponseCollectionMode.CorrelatedExport && (
+                <AttributableBadge className="ml-2" />
               )}
               {!!activity.pinCode && (
                 <Badge

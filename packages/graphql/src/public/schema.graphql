@@ -91,6 +91,7 @@ type ActivityInfo {
   numSharedUsers: Int
   permissionLevel: PermissionLevel!
   pinCode: String
+  responseCollectionMode: LiveQuizResponseCollectionMode
   reviewStatus: ReviewStatus!
   scheduledEndAt: Date
   scheduledStartAt: Date
@@ -2535,6 +2536,7 @@ type Query {
   groupActivityDetails(activityId: String!, groupId: String!): GroupActivityDetails
   groupActivityInstances(courseId: String!, groupId: String!): [GroupActivityInstance!]
   liveQuiz(id: String!): LiveQuiz
+  liveQuizCorrelatedExportReadiness(id: String!): Boolean
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
   liveQuizStudentAssessmentResponses(liveQuizId: String!, participantId: String!): [StudentAssessmentBlockResponse!]

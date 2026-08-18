@@ -62,10 +62,35 @@ Apollo Client with **generated documents only** — `import { UserProfileDocumen
 `LiveQuizResponseCollectionMode` is a persisted activity setting, not a
 frontend-only preference (`apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizWizard.tsx:LiveQuizWizard`). The wizard defaults to aggregate anonymous collection, forces aggregate collection for assessment courses, and clears gamification when correlated export is selected. Published and ended quizzes keep their existing mode locked. The student page renders the matching privacy notice and selects the corresponding response-api endpoint; correlated mode first calls `InitializeLiveQuizResponseIdentity` with cookie credentials, then requests a signed anonymous respondent token into page memory only after a cookie-backed `AddCorrelatedResponse` returns identity `401`, and submits the retry with `Authorization` (`apps/frontend-pwa/src/pages/session/[id].tsx:handleNewResponse`). The response API prefers participant, temporary, and respondent cookies before accepting the explicit bearer fallback.
 
-The manage evaluation page renders the correlated CSV action only when the
-server grants `canExportCorrelatedResponses`; the action includes its privacy
-warning and maps the bounded export-service failure messages to localized
-toasts (`apps/frontend-manage/src/components/evaluation/CorrelatedResponseExport.tsx:CorrelatedResponseExport`).
+Manage reaches the correlated CSV from two places, both driven by the shared
+`apps/frontend-manage/src/components/evaluation/useCorrelatedResponseExport.ts`
+hook, which owns the blob download and maps the bounded export-service failure
+messages to localized toasts. On the evaluation page the action sits in the
+bottom-right footer overflow next to the language and font-size choices
+(`EvaluationFooterMenu.tsx`), gated on the server-granted
+`canExportCorrelatedResponses` flag. On the activity list it sits in the live
+quiz's overflow menu directly before "Duplicate live quiz"
+(`activities/overview/LiveQuizActions.tsx`). The privacy warning is a tooltip on
+the item itself in both places rather than a page-level banner.
+
+The list surface cannot reuse the evaluation flag, because computing it means
+five settlement counts per quiz and would turn the activity overview into an
+N+1 surface. It instead calls the dedicated `liveQuizCorrelatedExportReadiness`
+query once, lazily, when the menu opens, and keeps the entry disabled until that
+answer arrives. `ActivityInfo.responseCollectionMode` decides whether the entry
+and the Attributable badge appear at all; because the `UserActivities` SQL view
+unions four activity types and carries no response mode, `getUserActivities`
+resolves the modes of the live quizzes on the current page in one extra batched
+query.
+
+The design system's `Dropdown` exposes no open callback, so the readiness fetch
+is triggered from a wrapper element **around** the dropdown, where events
+bubbling up from the trigger button reach it — a handler placed inside the
+`trigger` prop never sees keyboard activation, since the key event fires on the
+trigger button itself and propagates upward, not down into its children. That
+same component also refuses `items` and `radioGroups` together, which is why the
+footer menu models its single download action as a one-item group alongside the
+real one-of-N choices.
 
 ## i18n (next-intl)
 

@@ -274,6 +274,23 @@ export async function getUserActivities(
     ctx.prisma.userActivities.count({ where: whereClause }),
   ])
 
+  // the UserActivities view unions four activity types and carries no
+  // live-quiz response mode, so the modes of the live quizzes on this page are
+  // fetched in one additional query instead of widening the view
+  const liveQuizIds = activitiesFromView
+    .filter((activity) => activity.type === ActivityType.LIVE_QUIZ)
+    .map((activity) => activity.id)
+  const responseCollectionModes = new Map(
+    liveQuizIds.length > 0
+      ? (
+          await ctx.prisma.liveQuiz.findMany({
+            where: { id: { in: liveQuizIds } },
+            select: { id: true, responseCollectionMode: true },
+          })
+        ).map((liveQuiz) => [liveQuiz.id, liveQuiz.responseCollectionMode])
+      : []
+  )
+
   // map the fetched activities to the return type
   const activities = activitiesFromView.flatMap((activity) => {
     const {
@@ -315,6 +332,7 @@ export async function getUserActivities(
         activity.isUserCourseAdmin,
       pinCode:
         activity.type === ActivityType.LIVE_QUIZ ? activity.pinCode : null,
+      responseCollectionMode: responseCollectionModes.get(activity.id) ?? null,
       sharingType,
     }
   })

@@ -1,16 +1,18 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
   DeleteLiveQuizDocument,
+  GetLiveQuizCorrelatedExportReadinessDocument,
   GetSingleCourseDocument,
+  LiveQuizResponseCollectionMode,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useCallback, useMemo, useState } from 'react'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
@@ -24,6 +26,7 @@ import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
+import useCorrelatedResponseExport from '../../evaluation/useCorrelatedResponseExport'
 import ActivityActions from './ActivityActions'
 import ActivityRemovalModal from './ActivityRemovalModal'
 
@@ -66,6 +69,7 @@ const statusActionMap = {
   ],
   [PublicationStatus.Ended]: [
     'liveQuizEvaluation',
+    'downloadCorrelatedResponses',
     'duplicateLiveQuiz',
     'embeddingEvaluation',
     'activityLog',
@@ -155,6 +159,40 @@ function LiveQuizActions({
   })
   const user = dataUser?.userProfile
 
+  // an ended, correlated, non-assessment live quiz is the only activity whose
+  // responses can be exported; readiness of the dataset itself is resolved
+  // lazily when the overflow menu opens, because the server-side check costs
+  // several count queries per quiz
+  const isCorrelatedExportEligible =
+    liveQuiz.status === PublicationStatus.Ended &&
+    !liveQuiz.isAssessmentEnabled &&
+    liveQuiz.responseCollectionMode ===
+      LiveQuizResponseCollectionMode.CorrelatedExport
+
+  const [
+    fetchExportReadiness,
+    { data: readinessData, loading: readinessLoading, called: readinessCalled },
+  ] = useLazyQuery(GetLiveQuizCorrelatedExportReadinessDocument, {
+    variables: { id: liveQuiz.id },
+    fetchPolicy: 'network-only',
+  })
+  const { downloadExport, loading: exportLoading } =
+    useCorrelatedResponseExport(liveQuiz.id)
+
+  const onMenuOpen = useCallback(() => {
+    if (isCorrelatedExportEligible) {
+      fetchExportReadiness()
+    }
+  }, [isCorrelatedExportEligible, fetchExportReadiness])
+
+  const exportReady = readinessData?.liveQuizCorrelatedExportReadiness === true
+  const correlatedExportDisabled =
+    exportLoading || readinessLoading || !readinessCalled || !exportReady
+  const correlatedExportTooltip =
+    readinessCalled && !readinessLoading && !exportReady
+      ? t('manage.evaluation.responseExportNotReady')
+      : t('manage.evaluation.responseExportPrivacyWarning')
+
   // limit the available actions based on the permission level (order irrelevant - lower levels automatically included)
   const permissionActionMap = useMemo(() => {
     return {
@@ -181,7 +219,12 @@ function LiveQuizActions({
           : []),
         'deleteTemplate',
       ],
-      isEditor: ['editLiveQuiz', 'editTemplate'],
+      isEditor: [
+        'editLiveQuiz',
+        'editTemplate',
+        // the export resolver requires OWNER, ADMIN or WRITE access
+        ...(isCorrelatedExportEligible ? ['downloadCorrelatedResponses'] : []),
+      ],
       isExecutor: [
         'startLiveQuiz',
         'scheduleLiveQuiz',
@@ -203,6 +246,7 @@ function LiveQuizActions({
     liveQuiz.status,
     liveQuiz.isAssessmentEnabled,
     liveQuiz.isActivityReviewer,
+    isCorrelatedExportEligible,
   ])
 
   const actions = useLiveQuizActions({
@@ -220,6 +264,9 @@ function LiveQuizActions({
     setDeletionModal,
     setActivityLogOpen,
     setResetModal,
+    onDownloadCorrelatedResponses: downloadExport,
+    correlatedExportDisabled,
+    correlatedExportTooltip,
   })
 
   // get all available actions based on permissions and status
@@ -244,6 +291,7 @@ function LiveQuizActions({
         activityName={liveQuiz.name}
         activityType={liveQuiz.type}
         openActivityDetailsModal={() => setShowDetails(true)}
+        onMenuOpen={onMenuOpen}
       />
       <div>
         {schedulingModal && (

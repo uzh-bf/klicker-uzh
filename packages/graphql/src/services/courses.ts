@@ -4485,6 +4485,7 @@ export async function getCourseData(
       reviewStatus: liveQuiz.reviewStatus,
       isGamificationEnabled: liveQuiz.isGamificationEnabled,
       isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+      responseCollectionMode: liveQuiz.responseCollectionMode,
       type: ActivityType.LIVE_QUIZ,
       status: liveQuiz.status,
       courseId: course.id,

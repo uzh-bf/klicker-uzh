@@ -72,6 +72,12 @@ export const sizeReducer = (
   action: { type: string }
 ) => {
   switch (action.type) {
+    // an explicit size is selected directly from the evaluation footer menu
+    case 'sm':
+    case 'md':
+    case 'lg':
+    case 'xl':
+      return TextSizes[action.type]
     case 'increase':
       switch (state.size) {
         case 'xl':

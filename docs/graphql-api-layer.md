@@ -35,6 +35,8 @@ Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on c
 
 The correlated live-quiz export query is a heavier protected boundary: `schema/query.ts:correlatedLiveQuizResponseExport` requires an authenticated user with `WRITE` permission and delegates to `services/correlatedLiveQuizResponseExport.ts`. The service locks the ended quiz, requires settlement-complete receipts, removed active bindings, and A5-finalized respondent labels, excludes free-text rows before size checks, and passes only label-owned response rows to `packages/export`; it never creates export identity state. Evaluation metadata exposes the mode and sets its capability flag only after the same finalization checks pass for the later Manage action.
 
+Those finalization checks are five parallel counts, which is affordable once per opened evaluation but not once per row of an activity list. They live in `services/liveQuizzes.ts:isCorrelatedExportSettled`, shared by the evaluation flag and by `schema/query.ts:liveQuizCorrelatedExportReadiness` — a `WRITE`-guarded per-quiz query the activity overflow menu calls lazily on open. Deliberately keep this off any list-serving resolver.
+
 ## Client operations and codegen
 
 Hand-written ops live in `packages/graphql/src/graphql/ops/*.graphql`, one per file, prefix = kind: `Q` query, `M` mutation, `S` subscription, `F` fragment (e.g. `QGetRunningLiveQuiz`, `MUpvoteFeedback`, `SFeedbackCreated`, `FActivityInfoData`).

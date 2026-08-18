@@ -1,0 +1,3 @@
+query GetLiveQuizCorrelatedExportReadiness($id: String!) {
+  liveQuizCorrelatedExportReadiness(id: $id)
+}

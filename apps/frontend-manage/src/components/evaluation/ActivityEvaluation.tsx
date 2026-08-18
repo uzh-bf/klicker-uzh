@@ -47,6 +47,8 @@ interface ActivityEvaluationProps {
   pinCode?: string | null
   type?: ActivityEvaluationType
   toolbarContent?: ReactNode
+  onDownloadCorrelatedResponses?: () => void
+  correlatedExportLoading?: boolean
 }
 
 function ActivityEvaluation({
@@ -63,6 +65,8 @@ function ActivityEvaluation({
   hideActiveBlockResults = false,
   type = 'Asynchronous',
   toolbarContent,
+  onDownloadCorrelatedResponses,
+  correlatedExportLoading,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -296,6 +300,8 @@ function ActivityEvaluation({
           chartType={chartType}
           setChartType={setChartType}
           currentInstance={instanceResults[activeInstance]}
+          onDownloadCorrelatedResponses={onDownloadCorrelatedResponses}
+          correlatedExportLoading={correlatedExportLoading}
         />
       </div>
     </>

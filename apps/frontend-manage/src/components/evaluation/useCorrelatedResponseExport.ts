@@ -1,17 +1,20 @@
 import { useLazyQuery } from '@apollo/client'
-import { faDownload } from '@fortawesome/free-solid-svg-icons'
 import { GetCorrelatedLiveQuizResponseExportDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, toast } from '@uzh-bf/design-system'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useCallback } from 'react'
 
-function CorrelatedResponseExport({ liveQuizId }: { liveQuizId: string }) {
+// the correlated CSV is fetched through an authorized GraphQL operation and
+// turned into a browser download here; the typed export errors stay the
+// fallback for the race between an eligible quiz and a fully settled dataset.
+function useCorrelatedResponseExport(liveQuizId: string) {
   const t = useTranslations()
   const [getExport, { loading }] = useLazyQuery(
     GetCorrelatedLiveQuizResponseExportDocument,
     { fetchPolicy: 'no-cache' }
   )
 
-  const downloadExport = async () => {
+  const downloadExport = useCallback(async () => {
     try {
       const result = await getExport({ variables: { id: liveQuizId } })
       const responseExport = result.data?.correlatedLiveQuizResponseExport
@@ -43,27 +46,9 @@ function CorrelatedResponseExport({ liveQuizId }: { liveQuizId: string }) {
               : t('manage.evaluation.responseExportFailed'),
       })
     }
-  }
+  }, [getExport, liveQuizId, t])
 
-  return (
-    <div className="flex flex-col items-start justify-end gap-2 border-b bg-gray-50 px-3 py-2 sm:flex-row sm:items-center print:hidden">
-      <p className="max-w-3xl text-sm leading-5 text-gray-700">
-        {t('manage.evaluation.responseExportPrivacyWarning')}
-      </p>
-      <Button
-        onClick={downloadExport}
-        disabled={loading}
-        loading={loading}
-        className={{ root: 'min-h-8 shrink-0 py-1' }}
-        data={{ cy: 'download-correlated-live-quiz-responses' }}
-      >
-        <Button.Icon icon={faDownload} />
-        <Button.Label>
-          {t('manage.evaluation.downloadCorrelatedResponses')}
-        </Button.Label>
-      </Button>
-    </div>
-  )
+  return { downloadExport, loading }
 }
 
-export default CorrelatedResponseExport
+export default useCorrelatedResponseExport

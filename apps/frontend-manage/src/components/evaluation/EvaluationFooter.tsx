@@ -1,26 +1,20 @@
-import {
-  faFont,
-  faMinus,
-  faPlus,
-  faTriangleExclamation,
-} from '@fortawesome/free-solid-svg-icons'
+import { faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
   ElementType,
-  LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   ACTIVE_CHART_TYPES,
   ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Select, Switch, Tooltip } from '@uzh-bf/design-system'
+import { Select, Switch, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActiveStackType } from './ActivityEvaluation'
+import EvaluationFooterMenu from './EvaluationFooterMenu'
 import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
@@ -36,6 +30,8 @@ interface EvaluationFooterProps {
   setShowExplanation: Dispatch<SetStateAction<boolean>>
   chartType: ChartType
   setChartType: (newValue: ChartType) => void
+  onDownloadCorrelatedResponses?: () => void
+  correlatedExportLoading?: boolean
 }
 
 function EvaluationFooter({
@@ -51,9 +47,10 @@ function EvaluationFooter({
   setShowExplanation,
   chartType,
   setChartType,
+  onDownloadCorrelatedResponses,
+  correlatedExportLoading,
 }: EvaluationFooterProps) {
   const t = useTranslations()
-  const router = useRouter()
   const hasSolution = currentInstance?.hasSampleSolution ?? false
   const hasExplanation =
     currentInstance?.explanation &&
@@ -77,34 +74,6 @@ function EvaluationFooter({
                 })}
           </div>
           <div className="flex flex-row items-center gap-7">
-            <div className="ml-2 flex flex-row items-center gap-2">
-              <Button
-                onClick={() => {
-                  setTextSize({ type: 'decrease' })
-                }}
-                disabled={textSize.size === 'sm'}
-                className={{
-                  root: 'h-8 w-8',
-                }}
-                data={{ cy: 'decrease-font-size' }}
-              >
-                <Button.Icon withoutLabel icon={faMinus} />
-              </Button>
-              <Button
-                onClick={() => {
-                  setTextSize({ type: 'increase' })
-                }}
-                disabled={textSize.size === 'xl'}
-                className={{
-                  root: 'h-8 w-8',
-                }}
-                data={{ cy: 'increase-font-size' }}
-              >
-                <Button.Icon withoutLabel icon={faPlus} />
-              </Button>
-              <FontAwesomeIcon icon={faFont} size="lg" />
-              {t('manage.evaluation.fontSize')}
-            </div>
             {hasSolution || hasExplanation ? (
               <div className="flex flex-row items-center gap-2">
                 <div className="flex flex-col gap-1">
@@ -167,25 +136,12 @@ function EvaluationFooter({
                 data={{ cy: 'change-chart-type' }}
               />
             ) : null}
-            {!router.query.hmac ? (
-              <Select
-                value={router.locale}
-                contentPosition="popper"
-                className={{ trigger: '-ml-3 w-16 border-slate-400' }}
-                items={Object.values(LocaleType).map((language) => ({
-                  label: t(`shared.generic.${language}`),
-                  shortLabel: t(`shared.generic.${language}Short`),
-                  value: language,
-                }))}
-                onChange={(language) => {
-                  router.push(
-                    { pathname: router.pathname, query: router.query },
-                    undefined,
-                    { locale: language }
-                  )
-                }}
-              />
-            ) : null}
+            <EvaluationFooterMenu
+              textSize={textSize}
+              setTextSize={setTextSize}
+              onDownloadCorrelatedResponses={onDownloadCorrelatedResponses}
+              correlatedExportLoading={correlatedExportLoading}
+            />
           </div>
         </div>
       )}

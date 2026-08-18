@@ -117,6 +117,49 @@ Current interim-stack evidence:
 - Decision: CSV has one respondent per row, a `respondent` header first, then stable question column groups with human-readable headers.
 - Decision: research / DP-safe export later. Correlated row export is pseudonymized individual-level data, not differential privacy.
 
+## Resolved Export-Discoverability Decisions (2026-08-17)
+
+These close the design frontier for the follow-up Manage/evaluation UI slice and
+supersede the full-width evaluation download banner.
+
+- Decision: the correlated-mode tag reads `Zuordenbar` (de) / `Attributable`
+  (en). It follows the existing assessment-badge pattern next to the activity
+  name and distinguishes correlated live quizzes from the default aggregated
+  response-collection mode.
+- Decision: the activity-overflow download item resolves its server-side export
+  readiness lazily when the overflow menu opens, not eagerly per list row. The
+  evaluation-page readiness flag costs five parallel count queries, so computing
+  it for every activity row would add an N+1 cost to the activity list and the
+  course overview. Eligibility alone (ended, correlated, non-assessment, and
+  OWNER/ADMIN/WRITE access) decides whether the item is rendered; the lazy
+  readiness answer decides whether it is enabled.
+- Decision: the item sits immediately before `Duplicate live quiz` in the ended
+  live-quiz overflow menu. Every other quiz keeps the existing action order.
+- Decision: the evaluation-footer overflow offers font size as an explicit
+  four-choice radio group (`sm`, `md`, `lg`, `xl`) instead of the previous
+  increment and decrement buttons.
+- Decision: the privacy explanation moves from the removed full-width banner to
+  a tooltip on the download item itself, in both the activity overflow and the
+  evaluation-footer overflow.
+
+Implementation shape forced by the `@uzh-bf/design-system` v4.1.6 dropdown API,
+which has no `open`/`onOpenChange` prop and treats `items` and `radioGroups` as
+mutually exclusive:
+
+- The footer overflow is rendered as a `radioGroups` dropdown. The first group
+  carries the download action as a standard item, and the following groups carry
+  the language choice and the font-size choice as real radio groups. Any item
+  type renders inside a group, so this keeps one menu without a design-system
+  change.
+- Lazy readiness is triggered from the dropdown trigger itself, on both pointer
+  and keyboard interaction, because keyboard menu opening emits no pointer
+  event.
+- Item tooltips use the dropdown's own `tooltip` field on standard items rather
+  than a wrapping `Tooltip` component.
+- Readiness is served by a dedicated `liveQuizCorrelatedExportReadiness` query
+  rather than by widening `ActivityInfo`, so the expensive settlement checks run
+  only for the one quiz whose menu was opened.
+
 ## Participant Notice Copy
 
 Aggregated mode:
@@ -795,6 +838,72 @@ Later research:
   Fresh focused evidence: response-api 26/26 (A3), worker 34 pass plus one
   environment skip (A4), correlated export unit tests 14/14 (B1); DB-backed
   suites, cookie-blocked rollover verification, and remote CI remain open.
+- 2026-08-17: Implemented the export-discoverability slice on B2. The
+  evaluation banner is gone; download, language, and a four-choice font-size
+  radio group now live in one bottom-right evaluation-footer overflow, with the
+  privacy text as the download item's own tooltip. A new
+  `liveQuizCorrelatedExportReadiness` query serves lazy readiness, the five
+  settlement counts were extracted into a shared `isCorrelatedExportSettled`
+  helper, and `ActivityInfo` exposes `responseCollectionMode`. Browser
+  verification against the running B2 instance confirmed the overflow contents
+  and radio state, that selecting Extra large applies and persists, that the
+  privacy tooltip renders on hover, that the download runs without an error
+  toast, and that the readiness query returns true for the settled review quiz.
+  The `UserActivities` SQL view unions four activity types and carries no
+  response mode, so `getUserActivities` now resolves the modes of the live
+  quizzes on the current page in one additional batched query rather than
+  requiring a drop-and-recreate view migration; the course-overview path keeps
+  reading the column directly. Browser verification then confirmed the
+  Attributable badge on the activity list, the download entry rendered
+  immediately before Duplicate Live Quiz with its privacy tooltip, exactly one
+  readiness request fired when that overflow opened, and neither the entry nor
+  the request appeared for an ineligible assessment quiz.
+  Repo `check:all` is green. The `graphql` suite is 614 passed with two
+  pre-existing failures in `assessmentRestrictions.test.ts`, reproduced
+  identically on the unmodified baseline. That DB-backed run wiped the shared
+  dev database, so the manually created correlated review quiz and its
+  anonymous sessions are gone from the running B2 instance and need reseeding
+  plus recreation before further manual testing.
+- 2026-08-17 (follow-up): Review caught that the readiness trigger was mounted
+  inside the dropdown's `trigger` prop, where a keyboard activation on the
+  trigger button can never reach it and a pointer press on the button's padding
+  misses it too; the handlers now sit on a wrapper around the whole dropdown,
+  which is where those events actually bubble. The footer overflow's icon-only
+  trigger gained an accessible name from the previously unused `moreOptions`
+  key. `docs/frontend-conventions.md` and `docs/graphql-api-layer.md` record the
+  two-surface export entry points, the lazy readiness query, the view-gap
+  workaround, and both design-system constraints. Formatting and the typechecks
+  for `graphql` and `frontend-manage` are green. With the user's approval the
+  dev database was reset, pushed, and reseeded, and the seeded ended
+  non-assessment quiz `Test Live Quiz (Wordcloud)` was switched to correlated
+  collection so both surfaces have data to render. Browser verification on the
+  German locale then confirmed the badge reads Zuordenbar and appears on exactly
+  that one quiz, that focusing the activity overflow trigger and pressing Enter
+  opens the menu and fires exactly one readiness request — the path that could
+  not work before the wrapper fix — that the download entry sits directly before
+  Live Quiz duplizieren and is enabled, that the footer trigger announces itself
+  as Weitere Optionen, and that the footer overflow opens upward carrying Klein,
+  Mittel, Gross, and Sehr gross with the correct checked radio states.
+- Because the open menu is rendered into a portal while React still routes its
+  events through the component tree, an activated menu entry reaches the same
+  wrapper as the trigger. The wrapper therefore ignores events whose target is
+  not inside it, and the browser confirmed that opening the menu by mouse or by
+  keyboard costs exactly one readiness request while activating an entry
+  afterwards adds none. The guard was also measured against its absence: with
+  the containment check neutralised, opening the menu and then activating
+  Aktivitätsinformationen produced two readiness requests instead of one, so the
+  extra condition earns its place rather than describing a hypothetical.
+- `packages/graphql/test/correlatedExportReadiness.test.ts` covers
+  `getCorrelatedExportReadiness` with a mocked Prisma context: the settled quiz
+  is ready, an unknown quiz, a quiz that has not ended, an assessment quiz, and
+  an aggregate-anonymous quiz all refuse before any counting, and each of the
+  five settlement blockers refuses on its own. Ten tests pass without touching
+  the database. The browser fixture could not prove those false branches,
+  because a quiz with no correlated responses satisfies every count trivially.
+- `docs/architecture-overview.md` still pointed at the deleted
+  `CorrelatedResponseExport.tsx`; it now names the footer overflow and the
+  readiness query. Repo-wide formatting and the graphql and manage typechecks
+  are green, and manage lint reports only the pre-existing hook warnings.
 
 ## Goal Prompt Requirements
 

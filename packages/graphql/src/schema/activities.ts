@@ -7,6 +7,7 @@ import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
 import { ElementInstanceRef, IElementInstance } from './element.js'
+import { LiveQuizResponseCollectionMode } from './liveQuiz.js'
 import { PublicationStatus, ReviewStatus } from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
@@ -109,6 +110,7 @@ export interface IActivityInfo {
   areInstancesOutdated: boolean
   isGamificationEnabled?: boolean
   isAssessmentEnabled?: boolean
+  responseCollectionMode?: DB.LiveQuizResponseCollectionMode | null
   pinCode?: string | null
 
   numSharedUsers?: number
@@ -178,6 +180,10 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
       nullable: true,
     }),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
+      nullable: true,
+    }),
+    responseCollectionMode: t.expose('responseCollectionMode', {
+      type: LiveQuizResponseCollectionMode,
       nullable: true,
     }),
     pinCode: t.exposeString('pinCode', {

@@ -25,6 +25,7 @@ fragment ActivityInfoData on ActivityInfo {
   areInstancesOutdated
   isGamificationEnabled
   isAssessmentEnabled
+  responseCollectionMode
   pinCode
 
   numSharedUsers

@@ -699,6 +699,18 @@ export const Query = builder.queryType({
         },
       }),
 
+      liveQuizCorrelatedExportReadiness: t.withAuth(asUser).boolean({
+        nullable: true,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.WRITE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.getCorrelatedExportReadiness(args, ctx)
+          }
+        ),
+      }),
+
       correlatedLiveQuizResponseExport: t.withAuth(asUser).field({
         nullable: true,
         type: CorrelatedLiveQuizResponseExport,

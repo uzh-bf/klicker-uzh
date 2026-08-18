@@ -605,6 +605,7 @@ export async function manipulateLiveQuiz(
     areInstancesOutdated: activity.areInstancesOutdated,
     isGamificationEnabled: activity.isGamificationEnabled,
     isAssessmentEnabled: activity.isAssessmentEnabled,
+    responseCollectionMode: activity.responseCollectionMode,
     pinCode: activity.pinCode,
     numSharedUsers: id ? activity._count.permissions - 1 : 0,
     isOwner,
@@ -2398,6 +2399,101 @@ async function countInvalidCorrelatedLiveQuizResponses(
   return result?.invalidResponseCount ?? 0n
 }
 
+// a correlated dataset may only be exported once every admitted response has
+// settled, every account binding has been destroyed, and the retention cutoff
+// has not yet started removing respondents. the checks are deliberately kept out
+// of any list-serving resolver: five parallel counts per activity row would turn
+// an activity overview into an N+1 query surface.
+export async function isCorrelatedExportSettled(
+  liveQuizId: string,
+  publicationGeneration: number,
+  prisma: Context['prisma']
+) {
+  const [
+    unfinalizedRespondentCount,
+    activeBindingCount,
+    pendingResponseCount,
+    invalidResponseCount,
+    expiredRespondentCount,
+  ] = await Promise.all([
+    prisma.liveQuizRespondent.count({
+      where: {
+        liveQuizId,
+        publicationGeneration,
+        OR: [{ exportLabel: null }, { finalizedAt: null }],
+      },
+    }),
+    prisma.liveQuizRespondentBinding.count({
+      where: { liveQuizId, publicationGeneration },
+    }),
+    prisma.liveQuizPendingResponse.count({
+      where: {
+        liveQuizId,
+        publicationGeneration,
+        OR: [
+          { settledAt: null },
+          { eventPayload: { not: null } },
+          { nextDeliveryAt: { not: null } },
+        ],
+      },
+    }),
+    countInvalidCorrelatedLiveQuizResponses(
+      prisma,
+      liveQuizId,
+      publicationGeneration
+    ),
+    prisma.liveQuizRespondent.count({
+      where: {
+        liveQuizId,
+        publicationGeneration,
+        finalizedAt: { lte: getCorrelatedResponseRetentionCutoff(new Date()) },
+      },
+    }),
+  ])
+
+  return (
+    unfinalizedRespondentCount === 0 &&
+    activeBindingCount === 0 &&
+    pendingResponseCount === 0 &&
+    invalidResponseCount === 0n &&
+    expiredRespondentCount === 0
+  )
+}
+
+// resolves the same readiness answer as the evaluation query, but for a single
+// quiz on demand, so the activity overflow menu can decide whether its download
+// entry is actionable without paying the cost for every listed activity.
+export async function getCorrelatedExportReadiness(
+  { id }: { id: string },
+  ctx: Context
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: {
+      status: true,
+      isAssessmentEnabled: true,
+      responseCollectionMode: true,
+      publicationGeneration: true,
+    },
+  })
+
+  if (
+    !liveQuiz ||
+    liveQuiz.status !== DB.PublicationStatus.ENDED ||
+    liveQuiz.isAssessmentEnabled ||
+    liveQuiz.responseCollectionMode !==
+      DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
+  ) {
+    return false
+  }
+
+  return await isCorrelatedExportSettled(
+    id,
+    liveQuiz.publicationGeneration,
+    ctx.prisma
+  )
+}
+
 export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
@@ -2462,61 +2558,13 @@ export async function getLiveQuizEvaluation(
     !liveQuiz.isAssessmentEnabled &&
     liveQuiz.responseCollectionMode ===
       DB.LiveQuizResponseCollectionMode.CORRELATED_EXPORT
-  let canExportCorrelatedResponses = false
-  if (hasCorrelatedExportPermission) {
-    const [
-      unfinalizedRespondentCount,
-      activeBindingCount,
-      pendingResponseCount,
-      invalidResponseCount,
-      expiredRespondentCount,
-    ] = await Promise.all([
-      ctx.prisma.liveQuizRespondent.count({
-        where: {
-          liveQuizId: id,
-          publicationGeneration: liveQuiz.publicationGeneration,
-          OR: [{ exportLabel: null }, { finalizedAt: null }],
-        },
-      }),
-      ctx.prisma.liveQuizRespondentBinding.count({
-        where: {
-          liveQuizId: id,
-          publicationGeneration: liveQuiz.publicationGeneration,
-        },
-      }),
-      ctx.prisma.liveQuizPendingResponse.count({
-        where: {
-          liveQuizId: id,
-          publicationGeneration: liveQuiz.publicationGeneration,
-          OR: [
-            { settledAt: null },
-            { eventPayload: { not: null } },
-            { nextDeliveryAt: { not: null } },
-          ],
-        },
-      }),
-      countInvalidCorrelatedLiveQuizResponses(
-        ctx.prisma,
+  const canExportCorrelatedResponses = hasCorrelatedExportPermission
+    ? await isCorrelatedExportSettled(
         id,
-        liveQuiz.publicationGeneration
-      ),
-      ctx.prisma.liveQuizRespondent.count({
-        where: {
-          liveQuizId: id,
-          publicationGeneration: liveQuiz.publicationGeneration,
-          finalizedAt: {
-            lte: getCorrelatedResponseRetentionCutoff(new Date()),
-          },
-        },
-      }),
-    ])
-    canExportCorrelatedResponses =
-      unfinalizedRespondentCount === 0 &&
-      activeBindingCount === 0 &&
-      pendingResponseCount === 0 &&
-      invalidResponseCount === 0n &&
-      expiredRespondentCount === 0
-  }
+        liveQuiz.publicationGeneration,
+        ctx.prisma
+      )
+    : false
 
   // depending on the quiz assessment setting, select the corresponding redis instance
   const redis = liveQuiz.isAssessmentEnabled
