@@ -360,8 +360,23 @@ verification, commits, reviews, publication.
   region/label/tabIndex and programmatic focusability confirmed, thread
   rows are `<li>` inside `<ol>`, reduced-motion media rule present in the
   served stylesheet.
-- Remaining: final review, PR.
-- Evidence: latest verified commit = S6b commit (see git log).
+- Final review (final-reviewer, range 822695ef8..a398dfdd2): verdict
+  READY_WITH_NOTES. All cross-slice checks clean (announcer x stopped
+  chrome, landmarks x focus, rail partial mapping, i18n completeness,
+  marker data-boundary). Two accepted findings fixed in-branch:
+  `ChatRecoveryCard` `<main>` now carries `id="main-content"` (skip link
+  previously dead on the error/404 states) and all seven skip-link
+  targets carry `tabIndex={-1}` so activation programmatically moves
+  focus. Live re-verified: skip-link click lands
+  `document.activeElement` on `main#main-content` on the normal chat
+  page and the 404 state. Reviewer notes (orphaned `chat.message.refresh`
+  key, per-render rail projection cost, italic-regex underscore eating,
+  ratingErrors surviving thread switch, aria-modal without backdrop,
+  declined-button restyle) carried to the PR description. Report in
+  `_local/reviews/2026-08-18-chat-ux-fixes-final-review.md`.
+- Remaining: draft PR.
+- Evidence: latest verified commit = final-review fix commit (see git
+  log); repo-wide check:all green except pre-existing environmental
+  analytics lint (meson C-toolchain, untouched by branch).
 - Delivery: required layer = draft PR on `v3`; achieved = local branch.
-- Next: repo-wide check:all; final whole-journey pass + screenshots;
-  final-reviewer; draft PR.
+- Next: push branch; draft PR via `$rs-mr-description-writer`.

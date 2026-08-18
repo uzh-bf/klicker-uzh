@@ -288,6 +288,7 @@ function ParticipationRequired({
   return (
     <main
       id="main-content"
+      tabIndex={-1}
       data-cy="chat-participation-required"
       className={twMerge(
         'bg-muted flex w-full items-center justify-center px-4',
@@ -336,6 +337,7 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
   return (
     <main
       id="main-content"
+      tabIndex={-1}
       data-cy="chat-loading"
       className={twMerge(
         'bg-muted flex items-center justify-center px-4',
@@ -391,6 +393,7 @@ function DisclaimerDeclined({
     <>
       <main
         id="main-content"
+        tabIndex={-1}
         data-cy="chat-disclaimer-declined"
         className={twMerge(
           'flex items-center justify-center',
@@ -498,7 +501,7 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset id="main-content">
+    <SidebarInset id="main-content" tabIndex={-1}>
       <header className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           {/* Only visible when the sidebar is closed — once it's open, the
@@ -601,7 +604,11 @@ function AssistantLayout({
         </h1>
         <EmbeddedSettings />
       </div>
-      <main id="main-content" className="flex min-h-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">

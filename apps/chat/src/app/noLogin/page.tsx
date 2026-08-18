@@ -43,6 +43,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   return (
     <main
       id="main-content"
+      tabIndex={-1}
       data-cy="chat-no-login"
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
     >
