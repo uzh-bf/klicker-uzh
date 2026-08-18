@@ -66,6 +66,30 @@ pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
 
 Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
 
+For `apps/chat` app-router recovery, authenticate the browser with a seeded
+participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
+well-formed missing chatbot should assert the branded 404 and its response
+status; an unexpected route failure must be fault-injected only in an
+uncommitted local proof, restored before commit, and asserted against the
+branded `error.tsx` retry/return surface without exposing the server error
+text. Keep the `/noLogin` assertion focused on the login action and concise
+return copy, not a raw redirect URL.
+
+For chat settings coverage, seed credits through the existing `setCredits`
+helper rather than mocking the credits route. A zero-credit response must leave
+only the fallback model available, reconcile an unavailable persisted model to
+that fallback, and expose the fallback notice in the sidebar-enabled mobile
+layout outside the closed drawer. Set the viewport before `visitChat`; embedded
+chat already owns its compact `EmbeddedCreditsBar` and should not receive the
+sidebar mobile bar.
+
+For chat welcome coverage, assert that the chatbot name and selected mode
+description are visible before clicking a starter. Starter clicks populate the
+composer without sending; assert the value contains no square-bracket template
+placeholder, then edit the value before sending. The initial mode descriptions
+are passed with the chatbot shell so this journey should not wait for a second
+render of the starter grid.
+
 ## Fast Failure Triage
 
 - `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.

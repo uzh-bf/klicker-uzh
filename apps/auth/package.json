@@ -11,7 +11,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
-    "@uzh-bf/design-system": "4.1.6",
+    "@uzh-bf/design-system": "4.1.8",
     "axios": "1.16.1",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.7",

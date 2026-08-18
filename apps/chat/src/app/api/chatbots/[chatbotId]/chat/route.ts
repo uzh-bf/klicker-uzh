@@ -15,10 +15,16 @@ import {
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
-import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
+} from '@/src/lib/server/mcpRuntimePolicy'
+import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
+import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  buildAbortedAssistantContent,
   mapAssistantStepContent,
-  type PersistedAssistantContentPart,
 } from '@/src/lib/server/persistedAssistantContent'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
@@ -39,6 +45,7 @@ import {
   streamText,
   type ModelMessage,
   type StepResult,
+  type ToolSet,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -75,40 +82,6 @@ const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-/**
- * Custom fetch that patches Responses API request body to add
- * `status: "completed"` and `type: "message"` on assistant messages.
- * AI SDK omits these fields but some strict Responses API providers require them.
- *
- * Workaround for: https://github.com/vercel/ai/issues/12754
- */
-const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
-  if (init?.body && typeof init.body === 'string') {
-    try {
-      const body = JSON.parse(init.body)
-      if (Array.isArray(body.input)) {
-        body.input = body.input.map((item: Record<string, unknown>) =>
-          item.role === 'assistant'
-            ? { ...item, type: 'message', status: 'completed' }
-            : item
-        )
-        init = { ...init, body: JSON.stringify(body) }
-      }
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        // not JSON, pass through
-      } else {
-        console.error(
-          '[responsesApiFetch] Unexpected error patching body:',
-          error
-        )
-        throw error
-      }
-    }
-  }
-  return globalThis.fetch(input, init)
-}
-
 type ModelRouting = {
   source: 'custom' | 'default'
   hasCustomKey: boolean
@@ -119,7 +92,7 @@ function getOpenAIModel(
   provider: ReturnType<typeof createOpenAI>,
   modelConfig: ChatModelConfig
 ) {
-  return modelConfig.supportsReasoning
+  return modelConfig.usesResponsesApi
     ? provider.responses(modelConfig.deploymentId)
     : provider.chat(modelConfig.deploymentId)
 }
@@ -163,7 +136,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
         createOpenAI({
           baseURL: baseUrl,
           apiKey: apiKey || 'no-key',
-          fetch: responsesApiFetch,
+          fetch: createOpenAIFetch('custom'),
         }),
         modelConfig
       ),
@@ -183,7 +156,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
       createOpenAI({
         baseURL: process.env.OPENAI_BASE_URL,
         apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: responsesApiFetch,
+        fetch: createOpenAIFetch('default'),
       }),
       modelConfig
     ),
@@ -194,6 +167,12 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
+}
+
+function getSupportedChatModes(systemPrompts: unknown): Set<string> {
+  const configuredModes = asObject(systemPrompts)
+  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
+  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -718,7 +697,6 @@ export async function POST(
       include: {
         mcpConfigurations: {
           where: {
-            chatMode: selectedMode,
             isEnabled: true,
           },
           include: {
@@ -743,28 +721,6 @@ export async function POST(
       } else {
         systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
       }
-
-      // Prepare MCP server configurations
-      mcpServersWithConfigs =
-        chatbot.mcpConfigurations
-          ?.filter((config) => config.mcpServer?.isActive === true)
-          ?.map((config) => ({
-            server: {
-              id: config.mcpServer.id,
-              name: config.mcpServer.name,
-              url: config.mcpServer.url,
-              authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret ?? '',
-              parameters: config.mcpServer.parameters,
-              passChatbotId: config.mcpServer.passChatbotId,
-              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-            },
-            config: {
-              allowedTools: config.allowedTools as string[] | undefined,
-              parameters: config.parameters,
-              priority: config.priority,
-            },
-          })) || []
     }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
@@ -772,6 +728,87 @@ export async function POST(
       error,
     })
   }
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+    return NextResponse.json(
+      { error: `Unsupported chat mode: ${selectedMode}` },
+      { status: 400 }
+    )
+  }
+
+  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
+  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
+    (config) => config.chatMode === selectedMode
+  )
+  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
+  }
+
+  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
+    server: {
+      id: config.mcpServer.id,
+      name: config.mcpServer.name,
+      url: config.mcpServer.url,
+      authType: config.mcpServer.authType,
+      authSecret: config.mcpServer.authSecret ?? '',
+      parameters: config.mcpServer.parameters,
+      isActive: config.mcpServer.isActive,
+      passChatbotId: config.mcpServer.passChatbotId,
+      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+    },
+    config: {
+      allowedTools: config.allowedTools as string[] | undefined,
+      parameters: config.parameters,
+      priority: config.priority,
+    },
+  }))
+
+  // MCP availability is checked before creating a thread or doing any model,
+  // credit, image-generation, or message-persistence work.
+  let mcpTools: ToolSet
+  try {
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
+
+  const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -795,31 +832,15 @@ export async function POST(
   // track partial content for cancelled streams
   let partialContent = ''
   let partialReasoningContent = ''
+  let currentStepContent: Array<
+    { type: 'text'; text: string } | { type: 'reasoning'; text: string }
+  > = []
   let assistantReasoningContent: string | null = null
 
   const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
   }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
-
-  // Append the citation contract only when a doc_query-style RAG tool is
-  // actually available; mutating `systemPrompt` here (rather than deriving a
-  // separate `instructions` variable) keeps the `systemPromptLength` /
-  // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model. The language-style contract applies unconditionally: stored
-  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
-  // orthography must be enforced here, not in the default prompt text.
-  systemPrompt = withLanguageStyleContract(
-    withCitationContract(systemPrompt, toolNames)
-  )
-
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
-  }
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -898,6 +919,17 @@ export async function POST(
       : undefined
 
   const { model, routing } = getModel(chatbot, selectedModelConfig)
+  const promptCacheRequest =
+    routing.source === 'default'
+      ? await buildPromptCacheRequest({
+          deploymentId: selectedModelConfig.deploymentId,
+          transport: selectedModelConfig.usesResponsesApi
+            ? 'responses'
+            : 'chat',
+          instructions: systemPrompt,
+          tools: mcpTools,
+        })
+      : null
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1214,7 +1246,10 @@ export async function POST(
       telemetry: { isEnabled: isAiTelemetryEnabled },
       providerOptions: {
         openai: {
-          ...(selectedModelConfig.supportsReasoning && {
+          ...(promptCacheRequest
+            ? { promptCacheKey: promptCacheRequest.promptCacheKey }
+            : {}),
+          ...(selectedModelConfig.usesResponsesApi && {
             store: getOpenAIResponsesStore(),
           }),
           ...(providerReasoningEffort && {
@@ -1224,7 +1259,8 @@ export async function POST(
         },
       },
       messages: modelMessages as ModelMessage[],
-      tools: mcpTools,
+      tools: promptCacheRequest?.tools ?? mcpTools,
+      toolOrder: promptCacheRequest?.toolOrder,
       toolChoice: 'auto',
       stopWhen: isStepCount(5),
       instructions: systemPrompt,
@@ -1242,9 +1278,24 @@ export async function POST(
 
         if (chunk.type === 'text-delta' && chunk.text) {
           partialContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'text') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({ type: 'text', text: chunk.text })
+          }
         }
         if (chunk.type === 'reasoning-delta' && chunk.text) {
           partialReasoningContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'reasoning') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({
+              type: 'reasoning',
+              text: chunk.text,
+            })
+          }
         }
       },
 
@@ -1463,21 +1514,15 @@ export async function POST(
           }
         }
 
-        const abortedReasoningContent =
-          normalizeReasoningContent(
-            Array.isArray(steps?.steps)
-              ? joinReasoningFromSteps(steps.steps)
-              : ''
-          ) ??
-          normalizeReasoningContent(
-            Array.isArray(steps?.steps)
-              ? steps.steps
-                  .map((step) => step.reasoningText || '')
-                  .filter((value) => value.length > 0)
-                  .join('\n\n')
-              : ''
-          ) ??
-          normalizeReasoningContent(partialReasoningContent)
+        const abortedAssistantContent = buildAbortedAssistantContent(
+          Array.isArray(steps?.steps) ? steps.steps : undefined,
+          currentStepContent
+        )
+        const abortedReasoningContent = normalizeReasoningContent(
+          abortedAssistantContent
+            .flatMap((part) => (part.type === 'reasoning' ? [part.text] : []))
+            .join('\n\n')
+        )
         assistantReasoningContent = abortedReasoningContent
 
         logEvent('stream.abort', {
@@ -1488,43 +1533,13 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // A pure tool-call abort has no partial text or reasoning, but the
-        // completed steps still carry persistable tool calls — without them a
-        // cancelled tool-only turn is charged yet leaves no assistant row.
-        // Only used when nothing streamed, since partialContent already
-        // contains the completed steps' text.
-        const completedStepContent =
-          !partialContent.trim() && !abortedReasoningContent
-            ? mapAssistantStepContent(
-                Array.isArray(steps?.steps) ? steps.steps : undefined
-              )
-            : []
-
         // save partial message
         if (
           currentThreadId &&
           owningThread &&
-          (partialContent.trim() ||
-            abortedReasoningContent ||
-            completedStepContent.length > 0)
+          abortedAssistantContent.length > 0
         ) {
           try {
-            const partialAssistantContent: PersistedAssistantContentPart[] = [
-              ...completedStepContent,
-            ]
-            if (partialContent.trim()) {
-              partialAssistantContent.push({
-                type: 'text',
-                text: partialContent,
-              })
-            }
-            if (abortedReasoningContent) {
-              partialAssistantContent.push({
-                type: 'reasoning',
-                text: abortedReasoningContent,
-              })
-            }
-
             const metadata = {
               chatMode: selectedMode,
               modelId: selectedModelConfig.id,
@@ -1535,7 +1550,7 @@ export async function POST(
             const updated = await prisma.chatMessage.updateMany({
               where: { id: assistantMessageId, threadId: currentThreadId },
               data: {
-                content: partialAssistantContent,
+                content: abortedAssistantContent,
                 ...metadata,
               },
             })
@@ -1563,7 +1578,7 @@ export async function POST(
                     threadId: currentThreadId,
                     parentId: userMessageId,
                     role: 'assistant',
-                    content: partialAssistantContent,
+                    content: abortedAssistantContent,
                     ...metadata,
                   },
                 })
@@ -1585,7 +1600,7 @@ export async function POST(
         } else if (
           currentThreadId &&
           !owningThread &&
-          (partialContent.trim() || abortedReasoningContent)
+          abortedAssistantContent.length > 0
         ) {
           console.warn(
             'Skipping assistant message save: thread ownership mismatch',
@@ -1605,6 +1620,7 @@ export async function POST(
       },
 
       onStepEnd: async (step) => {
+        currentStepContent = []
         const diagnostics = collectStepToolDiagnostics(step)
         const toolCallNames = Array.from(
           new Set(diagnostics.map((diagnostic) => diagnostic.toolName))

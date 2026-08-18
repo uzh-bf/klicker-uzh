@@ -17,6 +17,10 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
    - Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Use one contextual primary action and a labelled overflow menu for low-frequency actions; keep visible buttons and the overflow trigger in one action cluster, letting that cluster wrap as a unit across viewports.
    - Browser CSV imports parse files only after the file-selection event, validate required headers locally, submit generated-operation input types, and preserve row-level backend failures instead of reducing them to one generic batch error. Prefer a small dependency-free parser when the accepted CSV contract is deliberately narrow; verify quoted fields, BOMs, delimiters, and malformed input in the real browser.
+   - App typography comes from the shared local font definitions in
+     `packages/shared-components/src/font.ts`; preserve their exports and CSS
+     variables so production builds remain independent of external font
+     services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:

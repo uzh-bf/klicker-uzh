@@ -3,15 +3,28 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
+      tutorDescription: 'Get patient, step-by-step help with your questions.',
       explainer: 'Explainer',
+      explainerDescription: 'Get clear explanations of difficult concepts.',
     },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',
       selectAiModel: 'Select AI Model',
-      autoSelectionInfo: 'Automatic selection based on credit availability.',
-      usingPrimaryModel: 'Using primary model with available credits.',
-      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      autoModelDescription:
+        'Automatically chooses a suitable model for each message.',
+      reasoningModelDescription:
+        'Built for difficult, multi-step questions. It may take longer and use more credits.',
+      standardModelDescription:
+        'A general-purpose model for everyday questions.',
+      fallbackModelDescription:
+        'Uses fewer credits and remains available when your credits run out.',
+      autoSelectionInfo:
+        'KlickerUZH chooses a suitable model for each message.',
+      usingPrimaryModel:
+        'The standard model is used while credits are available.',
+      usingFallbackModel:
+        'No credits remain, so new messages use the smaller model.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -33,6 +46,8 @@ export default {
       resetNone: 'These credits do not refill automatically.',
       exhausted:
         'You have used up all your credits. However, you can still use the smaller model.',
+      fallbackNotice:
+        'Your credits are used up. New messages use the smaller model.',
     },
     sidebar: {
       newChat: 'New Chat',
@@ -53,9 +68,35 @@ export default {
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot not found',
+      notFoundMessage:
+        'This chat link is no longer available. Return to KlickerUZH to choose another course or chatbot.',
+      errorTitle: 'Chatbot unavailable',
+      errorMessage:
+        'We could not load this chatbot. Try again or return to KlickerUZH.',
+      retry: 'Try again',
+      openKlickerUzh: 'Open KlickerUZH',
+    },
     branchPicker: {
-      previous: 'Previous branch',
-      next: 'Next branch',
+      previous: 'Previous version',
+      next: 'Next version',
+    },
+    historyRail: {
+      label: 'Conversation history',
+      mobileLabel: 'History {current}/{total}',
+      item: 'Item {current} of {total}',
+      itemRange: 'Items {start}-{end} of {total}',
+      openHistory: 'Open full history',
+      closeHistory: 'Close full history',
+      turn: 'Conversation turn',
+      you: 'You',
+      assistant: 'Assistant',
+      noText: 'No text',
+      noResponse: 'No response yet',
+      inProgress: 'In progress',
+      partial: 'Partial response',
+      error: 'Error',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
@@ -113,22 +154,26 @@ export default {
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
-      welcomeTitle: 'Hello there!',
-      welcomeSubtitle: 'How can I help you?',
+      welcomeTitle: 'Welcome!',
+      welcomeTo: 'You are chatting with {chatbot}.',
+      welcomeSubtitle: 'Choose a starter or write your own question.',
+      welcomeMode: 'Selected mode: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Conversation starters',
+      editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
       practiceTopicPrompt:
-        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+        'I want to practise a specific topic from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
       workThroughProblem: 'Work through a problem',
       workThroughProblemPrompt:
-        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+        'Help me work through a problem from the course materials step by step. Ask me questions and give hints before revealing the solution.',
       explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+        'Explain a difficult concept from the course materials in simple terms, using one worked example and citations.',
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
-        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+        'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:
@@ -195,8 +240,7 @@ export default {
       title: 'Login Required',
       message:
         'You need to create a KlickerUZH account or log in before you can access this chatbot.',
-      redirectNotice:
-        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      redirectNotice: 'After logging in, you will return to this chatbot.',
       loginButton: 'Go to KlickerUZH Login',
     },
     response: {

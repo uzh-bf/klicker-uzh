@@ -3,17 +3,30 @@ export default {
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
+      tutorDescription:
+        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
       explainer: 'Erklärer',
+      explainerDescription:
+        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
     },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
       selectAiModel: 'KI-Modell auswählen',
+      autoModelDescription:
+        'Wählt automatisch für jede Nachricht ein passendes Modell aus.',
+      reasoningModelDescription:
+        'Für schwierige Aufgaben mit mehreren Schritten. Die Antwort kann länger dauern und mehr Credits verbrauchen.',
+      standardModelDescription:
+        'Ein vielseitiges Modell für alltägliche Fragen.',
+      fallbackModelDescription:
+        'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
-        'Automatische Auswahl basierend auf verfügbaren Credits.',
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
       usingPrimaryModel:
-        'Primäres Modell wird mit verfügbaren Credits verwendet.',
-      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+      usingFallbackModel:
+        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -35,6 +48,8 @@ export default {
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
         'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+      fallbackNotice:
+        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
     },
     sidebar: {
       newChat: 'Neuer Chat',
@@ -55,9 +70,35 @@ export default {
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot nicht gefunden',
+      notFoundMessage:
+        'Dieser Chat-Link ist nicht mehr verfügbar. Kehre zu KlickerUZH zurück, um einen anderen Kurs oder Chatbot auszuwählen.',
+      errorTitle: 'Chatbot nicht verfügbar',
+      errorMessage:
+        'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      retry: 'Erneut versuchen',
+      openKlickerUzh: 'KlickerUZH öffnen',
+    },
     branchPicker: {
       previous: 'Vorherige Variante',
       next: 'Nächste Variante',
+    },
+    historyRail: {
+      label: 'Gesprächsverlauf',
+      mobileLabel: 'Verlauf {current}/{total}',
+      item: 'Eintrag {current} von {total}',
+      itemRange: 'Einträge {start}-{end} von {total}',
+      openHistory: 'Gesamten Verlauf öffnen',
+      closeHistory: 'Gesamten Verlauf schliessen',
+      turn: 'Gesprächsrunde',
+      you: 'Du',
+      assistant: 'Assistent',
+      noText: 'Kein Text',
+      noResponse: 'Noch keine Antwort',
+      inProgress: 'In Bearbeitung',
+      partial: 'Unvollständige Antwort',
+      error: 'Fehler',
     },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
@@ -116,22 +157,26 @@ export default {
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
-      welcomeTitle: 'Hallo!',
-      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+      welcomeTitle: 'Willkommen!',
+      welcomeTo: 'Du chattest mit {chatbot}.',
+      welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
+      welcomeMode: 'Ausgewählter Modus: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Gesprächseinstiege',
+      editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
       practiceTopicPrompt:
-        'Ich möchte [ein bestimmtes Thema] aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
+        'Ich möchte ein bestimmtes Thema aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
       workThroughProblem: 'Eine Aufgabe bearbeiten',
       workThroughProblemPrompt:
-        'Hilf mir, diese Aufgabe Schritt für Schritt zu bearbeiten: [füge eine Aufgabe aus den Kursunterlagen ein]. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
       explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Erkläre [ein bestimmtes Konzept] aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+        'Erkläre ein schwieriges Konzept aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
-        'Vergleiche [Konzept A] und [Konzept B] anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+        'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
     },
     message: {
       creditsUsed:
@@ -199,8 +244,7 @@ export default {
       title: 'Anmeldung erforderlich',
       message:
         'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
-      redirectNotice:
-        'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
+      redirectNotice: 'Nach der Anmeldung kehrst Du zu diesem Chatbot zurück.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
     },
     response: {

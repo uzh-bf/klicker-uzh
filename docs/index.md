@@ -28,6 +28,8 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 
 Architectural decisions live in [docs/adr/](./adr/README.md) as numbered ADRs — the durable record of _why_, kept separate from the concept pages above (which explain _what_ and _how_). The wiki links the relevant ADR for the rationale; it is not itself the decision record. Record a new ADR when a choice is hard to reverse, surprising without context, and a real trade-off.
 
+Read [ADR 0006](./adr/0006-public-catalyst-capability-floor.md) before building an AI-native capability here — tutoring, learning analytics, content generation, knowledge graph, or AI grading. It sets, per capability, how much belongs in this public repository and how much belongs in the private `uzh-bf/klicker-uzh-catalyst` services, so that work is not written in the wrong place and reclassified later.
+
 ## Skill routing
 
 Task-shaped procedures live in [.agents/skills/](../.agents/skills/); the wiki holds facts, skills hold workflows.

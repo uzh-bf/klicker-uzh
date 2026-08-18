@@ -3,7 +3,7 @@ import {
   groupPartByType,
   MessagePrimitive,
   type ReasoningMessagePartProps,
-  useMessage,
+  useAuiState,
 } from '@assistant-ui/react'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -97,7 +97,7 @@ const ReasoningGroup: FC<
   }>
 > = ({ active, children }) => {
   const t = useTranslations()
-  const message = useMessage() as MessageWithCustomMetadata
+  const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const reasoningEffort = message.metadata?.custom?.reasoningEffort
   const effortLabel =
     typeof reasoningEffort === 'string'
@@ -181,46 +181,56 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   )
 }
 
-export const AssistantMessageParts: FC = () => (
-  <MessagePrimitive.GroupedParts
-    indicator="never"
-    groupBy={groupPartByType({
-      reasoning: ['group-reasoning'],
-      'tool-call': ['group-tool'],
-    })}
-  >
-    {({ part, children }) => {
-      switch (part.type) {
-        case 'group-reasoning':
-          return (
-            <ReasoningGroup active={part.status.type === 'running'}>
-              {children}
-            </ReasoningGroup>
-          )
-        case 'group-tool':
-          return part.indices.length <= 1 ? (
-            <>{children}</>
-          ) : (
-            <ToolGroup
-              active={part.status.type === 'running'}
-              count={part.indices.length}
-            >
-              {children}
-            </ToolGroup>
-          )
-        case 'text':
-          return <MarkdownText />
-        case 'reasoning':
-          return <ReasoningPart {...part} />
-        case 'tool-call':
-          return part.toolUI ?? <ToolFallback {...part} />
-        case 'data':
-          return part.name === 'chat-error' ? (
-            <ChatErrorPart data={part.data as ChatErrorPartData} />
-          ) : null
-        default:
-          return null
-      }
-    }}
-  </MessagePrimitive.GroupedParts>
-)
+export const AssistantMessageParts: FC = () => {
+  return (
+    <MessagePrimitive.GroupedParts
+      indicator="never"
+      groupBy={groupPartByType({
+        reasoning: ['group-reasoning'],
+        'tool-call': ['group-tool'],
+      })}
+    >
+      {({ part, children }) => {
+        switch (part.type) {
+          case 'group-reasoning':
+            return (
+              <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <ReasoningGroup active={part.status.type === 'running'}>
+                  {children}
+                </ReasoningGroup>
+              </div>
+            )
+          case 'group-tool':
+            return part.indices.length <= 1 ? (
+              children
+            ) : (
+              <ToolGroup
+                active={part.status.type === 'running'}
+                count={part.indices.length}
+              >
+                {children}
+              </ToolGroup>
+            )
+          case 'text':
+            return <MarkdownText />
+          case 'reasoning':
+            return <ReasoningPart {...part} />
+          case 'tool-call':
+            return (
+              <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                {part.toolUI ?? <ToolFallback {...part} />}
+              </div>
+            )
+          case 'data':
+            return part.name === 'chat-error' ? (
+              <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <ChatErrorPart data={part.data as ChatErrorPartData} />
+              </div>
+            ) : null
+          default:
+            return null
+        }
+      }}
+    </MessagePrimitive.GroupedParts>
+  )
+}
