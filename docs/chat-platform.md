@@ -318,9 +318,10 @@ primary action. Students must choose one of those two explicit outcomes. Stream/
 inside a message render as a styled callout, not inline markdown:
 `useChatResponse` pushes a `{ type: 'data', name: 'chat-error', data: { errorLabel, message } }`
 content part (assistant-ui's official `DataMessagePart` shape) and `message-parts.tsx` renders it
-as `ChatErrorPart` (`data-cy="chat-message-error"`). The convention is client-side only — data
-parts never persist and `serializeMessageContent` excludes them from the model-visible history,
-so an error label can never leak into a follow-up prompt. A `hasStreamError` guard keeps the
+as `ChatErrorPart` (`data-cy="chat-message-error"`). The error convention is client-side only —
+`chat-error` parts never persist (the `chat-stopped` marker under Client-state gotchas is the
+persisted exception) and `serializeMessageContent` excludes data parts from the model-visible
+history, so an error label can never leak into a follow-up prompt. A `hasStreamError` guard keeps the
 partial text from being re-pushed alongside the error part. Truncated responses append the
 localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
 typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error

@@ -282,6 +282,12 @@ describe('history rail plain-text projection', () => {
     ).toBe('A bold and italic claim, plus also bold and also italic word')
   })
 
+  test('preserves underscores inside identifiers', () => {
+    expect(toHistoryRailPlainText('Rename foo_bar_baz in the config')).toBe(
+      'Rename foo_bar_baz in the config'
+    )
+  })
+
   test('strips inline code backticks', () => {
     expect(toHistoryRailPlainText('Use `inline code` here')).toBe(
       'Use inline code here'

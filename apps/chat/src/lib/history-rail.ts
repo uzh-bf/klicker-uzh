@@ -84,7 +84,10 @@ const stripMarkdown = (value: string): string =>
     .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '') // list markers
     .replace(/(\*\*\*|___)([\s\S]+?)\1/g, '$2') // bold+italic
     .replace(/(\*\*|__)([\s\S]+?)\1/g, '$2') // bold
-    .replace(/(\*|_)([\s\S]+?)\1/g, '$2') // italic
+    .replace(/\*([\s\S]+?)\*/g, '$1') // italic (asterisk)
+    // Underscore italic only when the delimiters sit outside word characters,
+    // so identifiers like snake_case_name keep their underscores.
+    .replace(/(?<!\w)_([\s\S]+?)_(?!\w)/g, '$1') // italic (underscore)
     .replace(/~~([\s\S]+?)~~/g, '$1') // strikethrough
 
 /**

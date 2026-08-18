@@ -17,15 +17,13 @@ import {
   useState,
 } from 'react'
 
-import type {
-  HistoryRailEntry,
-  HistoryRailEntryKind,
-  HistoryRailTickRange,
-} from '../lib/history-rail'
 import {
   getHistoryRailTickRanges,
+  type HistoryRailEntry,
+  type HistoryRailEntryKind,
+  type HistoryRailTickRange,
   toHistoryRailPlainText,
-} from '../lib/history-rail'
+} from '@/src/lib/history-rail'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 type HistoryRailProps = {

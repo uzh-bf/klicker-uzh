@@ -346,7 +346,6 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
     >
       <output
         aria-live="polite"
-        aria-busy="true"
         className={twMerge(
           'bg-card flex w-full items-center gap-4 rounded-xl border p-6 shadow-sm',
           embedded ? 'max-w-xs p-4' : 'max-w-sm'
