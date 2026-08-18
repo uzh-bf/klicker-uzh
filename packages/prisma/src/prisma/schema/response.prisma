@@ -4,6 +4,35 @@ enum ResponseCorrectness {
   WRONG
 }
 
+enum FreeTextPracticeCycleStatus {
+  ACTIVE
+  CORRECT
+  SOLUTION_REVEALED
+  EXHAUSTED
+}
+
+enum FreeTextEvaluationStatus {
+  PENDING
+  EVALUATED
+  UNAVAILABLE
+}
+
+enum FreeTextEvaluationSource {
+  SEMANTIC
+  EXACT_MATCH
+}
+
+enum FreeTextCorrectnessCategory {
+  CORRECT
+  PARTIAL
+  INCORRECT
+}
+
+enum SemanticEvaluationConsentDecision {
+  ACCEPTED
+  DECLINED
+}
+
 model QuestionResponse {
   id Int @id @default(autoincrement())
 
@@ -99,6 +128,8 @@ model QuestionResponseDetail {
   microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   microLearningId String?        @db.Uuid
 
+  freeTextAttempt FreeTextAttempt?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -106,6 +137,106 @@ model QuestionResponseDetail {
   @@index([microLearningId])
   @@index([practiceQuizId, participantId])
   @@index([microLearningId, participantId])
+}
+
+model FreeTextPracticeCycle {
+  id String @id @default(uuid()) @db.Uuid
+
+  ordinal      Int
+  status       FreeTextPracticeCycleStatus @default(ACTIVE)
+  attemptLimit Int
+
+  pointsRewardEligible Boolean
+  xpRewardEligible     Boolean
+  bestScore            Float   @default(0)
+  bestXp               Float   @default(0)
+  pointsAwarded        Float?  @default(0)
+  xpAwarded            Float   @default(0)
+
+  solutionRevealedAt DateTime?
+  endedAt            DateTime?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participationId Int
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int
+
+  practiceQuiz   PracticeQuiz @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String       @db.Uuid
+
+  attempts FreeTextAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, elementInstanceId, ordinal])
+  @@index([participantId, practiceQuizId])
+  @@index([elementInstanceId, status])
+}
+
+model FreeTextAttempt {
+  id String @id @default(uuid()) @db.Uuid
+
+  ordinal            Int
+  clientSubmissionId String @db.Uuid
+  answer             String @db.Text
+  answerTime         Float  @db.Real
+
+  evaluationRevision Int                       @default(0)
+  evaluationStatus   FreeTextEvaluationStatus  @default(PENDING)
+  evaluationSource   FreeTextEvaluationSource?
+  retryable          Boolean                   @default(false)
+  availabilityReason String?
+  completedAt        DateTime?
+
+  rubricSchemaVersion String
+  rubricSchemaHash    String
+  evaluatorVersion    String?
+  modelVersion        String?
+
+  aggregateScore   Float?
+  outcomeBandId    String?
+  outcomeBandLabel String?
+  correctness      FreeTextCorrectnessCategory?
+
+  /// [PrismaFreeTextEvaluationResult]
+  structuredResult Json?
+
+  workflowRunId String?
+
+  cycle   FreeTextPracticeCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  cycleId String                @db.Uuid
+
+  questionResponseDetail   QuestionResponseDetail? @relation(fields: [questionResponseDetailId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  questionResponseDetailId Int?                    @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cycleId, ordinal])
+  @@unique([cycleId, clientSubmissionId])
+  @@index([evaluationStatus, updatedAt])
+}
+
+model ParticipantSemanticEvaluationConsent {
+  id Int @id @default(autoincrement())
+
+  disclosureVersion String
+  decision          SemanticEvaluationConsentDecision
+  decidedAt         DateTime                          @default(now())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, disclosureVersion])
+  @@index([disclosureVersion, decision])
 }
 
 model LiveQuizResponse {

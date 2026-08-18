@@ -44,6 +44,7 @@ model PracticeQuiz {
 
   responses               QuestionResponse[]
   responseDetails         QuestionResponseDetail[]
+  freeTextPracticeCycles  FreeTextPracticeCycle[]
   participantPerformances ParticipantActivityPerformance[]
   performance             ActivityPerformance?
   progress                ActivityProgress?

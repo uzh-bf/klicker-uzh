@@ -8,6 +8,7 @@ import type {
   ElementInstanceResults,
   ElementOptions,
   FlashcardGenerationConfiguration,
+  FreeTextEvaluationResult,
   GeneratedFlashcard,
   GeneratedFlashcardEditable,
   GeneratedQuestionCitation,
@@ -86,6 +87,7 @@ declare global {
     type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
     type PrismaElementGenerationProvenance =
       QuestionGenerationQuestionProvenance
+    type PrismaFreeTextEvaluationResult = FreeTextEvaluationResult
   }
 }
 // #endregion
