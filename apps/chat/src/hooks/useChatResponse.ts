@@ -751,15 +751,13 @@ export function useChatResponse(
                 ? [...activeThread.allMessages, resolvedTriggerMessage]
                 : activeThread.allMessages
 
-            const updatedAllMessages = withUserMessage.some(
-              (message) => message.id === stoppedAssistantMessage.id
-            )
-              ? withUserMessage.map((message) =>
-                  message.id === stoppedAssistantMessage.id
-                    ? stoppedAssistantMessage
-                    : message
-                )
-              : [...withUserMessage, stoppedAssistantMessage]
+            // The stopped turn's id is generated fresh for this run and no
+            // other writer touches `allMessages` before this deferred
+            // callback, so a plain append cannot duplicate it.
+            const updatedAllMessages = [
+              ...withUserMessage,
+              stoppedAssistantMessage,
+            ]
 
             useChatStore.setState((state) => ({
               threads: state.threads.map((thread) =>
