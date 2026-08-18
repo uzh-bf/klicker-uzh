@@ -51,7 +51,6 @@ function getNextBaseConfig({
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
       '@klicker-uzh/prisma',
-      '@uzh-bf/design-system',
     ],
     ...(includeI18n
       ? {

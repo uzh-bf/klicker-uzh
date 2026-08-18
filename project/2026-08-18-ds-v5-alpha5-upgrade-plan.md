@@ -253,9 +253,33 @@ else; leave its styling alone.
 
 - [x] Grilling complete, decisions ratified 2026-08-18
 - [x] ADRs 0011 and 0012 written
-- [ ] Blocked: publish run 32167417044 still in `Test`; npm shows `alpha: 5.0.0-alpha.4`.
-      `pnpm install` waits on `alpha: 5.0.0-alpha.5`.
+- [x] Blocker cleared: `alpha: 5.0.0-alpha.5` published 2026-08-18T19:30Z
 - [x] Independent plan review 2026-08-18: five blocking findings accepted and folded in
       (uzh-blue ramp stranding, typography and `tw-animate-css` drops, chat's `:root:root`
       block, the `--font-sans` bridge)
-- [ ] Slices 1-7
+- [x] Slice 1 — dependency bump. Nine pins at `5.0.0-alpha.5`; lockfile carries 22
+      alpha.5 references and zero 4.1.8; `@uzh-bf/design-system` removed from
+      `transpilePackages` (v5 has no `development` condition and ships prebuilt ESM).
+      No peers added by hand — `pnpm peers check` reports no design-system peer issue.
+      Evidence: `pnpm install` clean, `pnpm install --frozen-lockfile` up to date,
+      `syncpack list-mismatches` 788 valid with only the two pre-existing ignored groups.
+      Test delta: 0 added / 0 changed / 0 removed.
+      Simplifier: not required — mechanical version and config edits, 14 added / 13
+      removed excluding lockfile and project docs.
+      Slice review: not required — the only risk-adjacent edit is the
+      `minimumReleaseAgeExclude` entry, which follows the convention already documented
+      in `pnpm-workspace.yaml`, names one exact first-party version, and leaves the
+      14-day policy intact for every other package. Escalate if that call is wrong.
+- [ ] Slices 2-7 remaining. Next: slice 2, the `Shadcn*` rewrite to `./primitives`.
+
+### Notes carried into later slices
+
+- `pnpm` enforces `minimumReleaseAge: 20160` (14 days). alpha.5 needed an exact-version
+  entry in `minimumReleaseAgeExclude`, following the repository's existing convention and
+  replacing the spent `4.1.8` entry. The lockfile is validated before resolution, so both
+  versions had to be excluded during the transition via the union form the `ai` and
+  `@ai-sdk/*` entries already use; the transitional half was removed once the lockfile no
+  longer referenced 4.1.8.
+- `devrouter ensure` fails at `post-start` on the chat local MCP fixture
+  (`localhost:1417` never becomes healthy). Unrelated to this upgrade on the evidence so
+  far, but confirm it reproduces on `v3` before slice 7 depends on the runtime.

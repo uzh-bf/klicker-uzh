@@ -10,9 +10,11 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
-  # Internal UZH design-system release: the exact 4.1.8 consumer bump is
-  # reviewed and verified in this PR.
-  - '@uzh-bf/design-system@4.1.8'
+  # Internal UZH design-system release: the exact 5.0.0-alpha.5 consumer bump is
+  # reviewed and verified in this PR. The tag was published from the first-party
+  # design-system repository and its dist was inspected against the release
+  # commit before the bump.
+  - '@uzh-bf/design-system@5.0.0-alpha.5'
   # U1 (student-chat-v3-production-readiness-plan): reviewed assistant-ui 0.14
   # bump, apps/chat/package.json. Transitive assistant-ui deps pulled in below.
   - '@assistant-ui/react@0.14.27'
