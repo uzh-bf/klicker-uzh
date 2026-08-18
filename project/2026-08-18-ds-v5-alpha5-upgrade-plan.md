@@ -1,0 +1,261 @@
+# Upgrade KlickerUZH to @uzh-bf/design-system 5.0.0-alpha.5
+
+**Branch:** `rs/ds-v5-alpha5-upgrade` · **Worktree:** `trees/ds-v5-alpha5-upgrade` · **Base:** `origin/v3`
+**Decisions:** [ADR 0011](../docs/adr/0011-uzh-theme-selected-by-root-data-attribute.md),
+[ADR 0012](../docs/adr/0012-klicker-declares-token-names-not-values.md)
+
+## Plan identity
+
+| Field | Value |
+| --- | --- |
+| Plan | `project/2026-08-18-ds-v5-alpha5-upgrade-plan.md` |
+| Branch | `rs/ds-v5-alpha5-upgrade` |
+| Target | `v3` |
+| PR | none yet |
+| Ceremony tier | Full path — public contract, theming and styling surfaces across six apps |
+| Topology | Single PR. Not stackable: `4.1.8` has no `./primitives` target and v5 removes the `Shadcn*` root exports, so the bump, the import rewrite and the CSS rework have no valid ordering apart from together. |
+
+## Delegation Map
+
+| Workstream | Slices | Owner | Acceptance |
+| --- | --- | --- | --- |
+| Dependency bump | 1 | main | `pnpm install` clean in-container, syncpack green |
+| Mechanical import rewrite | 2 | executor | `pnpm run check` green, no `/ui` or `/forms` specifiers left, each rewrite matched to the door the call site used |
+| CSS composition | 3 | main | Single-source artifacts appear once per app; app builds |
+| Token audit and bridge | 4 | main | Audit table complete; no bare v5 runtime property redeclared; no utility resolves to an initial value |
+| Theme opt-in | 5 | main | `data-theme="uzh"` present in all five shells |
+| Visual review | 6 | main | Both variants captured across five apps; each survivor recorded with its reason |
+| Verification | 7 | main | `check:all`, `build`, Playwright, computed-style sweep |
+
+Slices 3 to 6 stay in the main session: they are the seam work this plan exists to decide,
+and the review already showed the failure modes are silent rather than test-visible. Slice 2
+is the one genuinely mechanical workstream with a named check.
+
+## Test portfolio
+
+| Risk | Existing protection | Obligation | Seam | Distinct failure | Slice |
+| --- | --- | --- | --- | --- | --- |
+| Wrong-door component import | TypeScript accepts both doors | none | `pnpm run check` plus visual review | A root component silently replaced by its primitive twin | 2 |
+| Missing utility after token deletion | none | none | Computed-style sweep | `text-uzh-blue-60` resolves to an initial value | 4, 7 |
+| Duplicate single-source CSS | none | none | Sentinel count on emitted CSS | Preflight or font-faces emitted twice | 3, 7 |
+| Theme not applied | none | none | Visual review | Stock shadcn palette instead of UZH | 5, 6 |
+| Existing behaviour regression | Playwright suite | extend existing | Playwright | A journey breaks on a changed component contract | 7 |
+
+`No new test` is the declared outcome for the styling risks: they are computed-style and
+visual properties that the existing suites cannot assert and that a bespoke test would
+assert less reliably than the sweep and the review.
+
+## Scope
+
+One atomic PR. The upgrade cannot be stacked: `4.1.8` exports only `.`, `./ui` and
+`./forms`, so the `Shadcn*` import rewrite has no `./primitives` target before the version
+bump, and v5 removes those root exports, so it has no source after it. The bump, the import
+rewrite and the CSS rework land together or the tree does not compile.
+
+`apps/docs` is in scope for the version bump and its broken `@source` rule only — syncpack
+enforces one exact version across all nine packages, so it cannot be left on `4.1.8`. No
+theming, no full visual pass — but one smoke check, because importing the design system's
+CSS injects preflight, forms base styles and font-faces into a site that deliberately
+imports Tailwind without preflight (`custom.css:4-6`). Note that `custom.css` has no font
+tokens at all, so the `--theme-font-primary` removal is a no-op there. Docusaurus sets
+`data-theme` itself for its colour mode, which
+collides with the design system's theme attribute; the ADR 0011 shell change is therefore
+deliberately not applied there. `apps/docs/src/custom.css` is touched by slice 3 only —
+its `@source` rule is removed and its `--theme-font-primary` reference goes with the font
+change, so docs renders in the design system's neutral theme with v5's fonts. Its own
+`@theme` block is out of scope for the slice 4 audit and is left as it is.
+
+The react-hook-form migration is **not** in scope and is not currently possible. See
+Deferred below.
+
+## Pass criteria
+
+1. Every app builds and renders, `pnpm run check:all` green.
+2. Tailwind output compiles without duplicates, scoped to what can actually be
+   deduplicated. The design system ships a full Tailwind build, so single-source artifacts
+   must appear exactly once in each app's final CSS: preflight (`text-size-adjust`),
+   `@font-face` declarations, and the design system's runtime token blocks. Plugin
+   utilities are **excluded** from this criterion — Tailwind generates them on demand from
+   each consumer's own sources, so overlap between the design system's build and Klicker's
+   is inherent and value-identical. A sentinel like `.prose` or `--color-red-500` is
+   therefore unachievable at 1 and is not used; counting it would fail a correct build and
+   pass an incorrect one.
+3. No missing styles — no Klicker-authored class resolves to an empty or initial computed
+   value, and every token v5 needs is declared and applied.
+4. Playwright green (`testIdAttribute: 'data-cy'`).
+
+## Slices
+
+### 1. Version bump and dependency reconciliation
+
+Bump the nine `package.json` pins from `4.1.8` to `5.0.0-alpha.5`
+(`apps/{auth,chat,docs,frontend-control,frontend-manage,frontend-pwa}`,
+`packages/{markdown,shared-components,transactional}`). v5 externalises its peers, so add
+any of `react`, `react-dom`, `formik`, `dayjs`, `lucide-react`,
+`class-variance-authority`, `clsx`, `tailwind-merge`, `@fortawesome/*` that a consumer now
+needs directly. Re-check `packages/next-config/index.js:54` — `transpilePackages` still
+lists the design system, which is likely wrong now that it ships dist-only ESM.
+
+Peers to check beyond the component libraries: `tw-animate-css`, `tailwindcss`,
+`@tailwindcss/postcss` and `postcss` are all declared peers of v5.
+
+*Check:* `pnpm install` clean, syncpack green.
+
+### 2. Import rewrite to `./primitives`
+
+Move the ~215 `Shadcn*` occurrences to the `./primitives` subpath under their new names.
+The hazard is silent: `Collapsible`, `FormLabel`, `Label`, `Progress`, `Table`, `Button`,
+`Checkbox`, `Select`, `Slider`, `Switch`, `Tabs` and `Tooltip` exist at **both** the root
+and `./primitives` as different components, and TypeScript does not error on the wrong
+door. Every rewrite is checked against which of the two the call site actually used.
+
+Known non-problems, already verified: the root `Table` composite is unused, so its
+`data`→`rows` / `dataAttributes`→`data` rename is moot; `dataAttributes`, `ThemeProvider`
+and `customTrigger` have zero usages; tabs already carry both `id` and `data.cy`, so the
+v5 change dropping caller ids from the DOM does not affect the 95 `getByTestId('tab-*')`
+usages.
+
+*Check:* `pnpm run check` green with no `@uzh-bf/design-system/ui` or `/forms` specifiers
+left.
+
+### 3. CSS entry rework
+
+In each of the six stylesheets (`apps/{auth,frontend-control,frontend-manage,frontend-pwa}/src/globals.css`,
+`apps/chat/src/app/globals.css`, `apps/docs/src/custom.css`):
+
+- Delete `@source "../node_modules/@uzh-bf/design-system/src";`. v5 publishes `dist` only,
+  and MIGRATION.md says delete the rule rather than re-point it at `dist`.
+- Import `@uzh-bf/design-system/css` **first**, before Tailwind's own imports, and pin
+  every import to an explicit layer (`layer(theme)`, `layer(utilities)`) the way
+  `apps/docs/src/custom.css:5-6` already does. Import order is load-bearing for the font
+  bridge in slice 4 and must not be left implicit.
+- Stop emitting a second preflight: import `tailwindcss/theme.css` and
+  `tailwindcss/utilities.css` rather than bare `tailwindcss`, and let the design system
+  supply preflight once.
+- Drop **only** `tailwindcss-animate`, the legacy plugin superseded by `tw-animate-css`.
+
+**Keep every other plugin.** Tailwind plugins generate utilities on demand from the
+consumer's own sources, so a precompiled `dist` can never cover Klicker's usage and the
+overlap is not duplication in any meaningful sense. Typography is the clearest case: `dist`
+contains no `prose-base`, `prose-lg`, `prose-xl` or any `prose-p:`/`prose-img:` modifier,
+while Klicker uses `prose-p:` in 17 files and `prose-img:` in 14
+(`packages/markdown/src/Markdown.tsx:200` and across shared-components, pwa, manage, chat).
+Dropping it would silently unstyle every Markdown surface. The same argument keeps
+`tw-animate-css`, which v5 declares a peer dependency precisely because consumers compile
+their own usage. Aspect-ratio and container-queries stay because the design system does not
+provide them.
+
+*Check:* one copy of each **single-source** artifact per app — preflight
+(`text-size-adjust`), font-face declarations, and the design system's runtime token blocks.
+Overlapping on-demand plugin utilities are expected and value-identical; they are not a
+defect and are not counted.
+
+### 4. Token audit and shared bridge
+
+Create one `packages/shared-components/src/theme.css` imported by all five themed apps,
+using `@theme inline` for bridges. The directive is settled rather than experimental: v5
+uses `inline` for exactly this job, and with theme state only ever on `:root` the two
+directives are behaviourally identical for every current consumer while `inline` avoids
+emitting a redundant `:root` property.
+
+**Re-derive the audit table from scratch — do not work from an enumeration in this plan.**
+The input is all 146 tokens in the four identical app blocks, plus `apps/chat`'s 93, and
+every token gets a row with its verdict and evidence. The rule:
+
+| Bucket | Verdict |
+| --- | --- |
+| Value override — v5 owns the token *and* Klicker's Tailwind does not need the name | Delete; v5's value wins |
+| Namespace bridge — Klicker has live utilities for the name | Keep the name, value it `var(--theme-…)` |
+| Extension — v5 does not ship it | Keep, usage count as justification |
+
+The discriminator between the first two buckets is **whether Klicker's own build must emit
+the utility**, not whether v5 declares the token. The compiled `dist` emits utilities only
+for classes the design system's own source happens to use, so v5 declaring a token is not
+evidence the utility exists.
+
+`--color-uzh-blue-*` is the trap and must stay in bucket 2. `dist` emits only five uzh-blue
+utilities — `bg-uzh-blue-20`, `bg-uzh-blue-100`, `border-uzh-blue-80`, `fill-uzh-blue-100`,
+`text-uzh-blue-100` — while Klicker uses ten, including `text-uzh-blue-60` (5),
+`text-uzh-blue-80`, `bg-uzh-blue-80` and the bare `text-/bg-/border-uzh-blue`. Deleting the
+five names strands those with no build error. Keep the names, take v5's values.
+`--theme-color-primary-*` genuinely deletes, because the `--color-primary-*` bridges carry
+the 159 `-primary-N` usages across 105 files.
+
+Fonts are the second trap. `--font-sans` is not a v5 runtime property — v5's runtime is
+`--theme-font-sans` and its own bridge is `--font-sans: var(--theme-font-sans, …)`. Deleting
+Klicker's `--font-sans` makes `@apply font-sans` fall back to Tailwind's system stack and
+renders the entire UI in the system font while every stated check stays green. The shared
+file must mirror v5's bridge for both `--font-sans` and `--font-mono`; the stale
+`var(--mono-space-font)` first entry goes, which is what loses JetBrains Mono otherwise.
+`packages/shared-components/src/font.ts` and its **six** call sites come out — the sixth is
+`apps/frontend-manage/src/components/user/DelegatedAccessPassword.tsx`.
+
+`apps/chat` needs separate treatment beyond its `@theme` block. It carries 32 shadcn runtime
+tokens in an unlayered `:root:root` block (`globals.css:83-124`) whose elevated (0,2,0)
+specificity deliberately out-ranks assistant-ui's `:root`. v5's `[data-theme="uzh"]` block is
+unlayered at (0,1,0), so once slice 5 lands, chat's stock-zinc values beat v5 on every token
+they share — the exact defect this slice claims to fix, in the one place the original audit
+did not look. Re-value the block against `var(--theme-*)` while keeping its specificity;
+delete it only on proof that assistant-ui no longer ships `:root` tokens.
+
+Extensions carry real values and stay. The six UZH colour families beyond blue and berry are
+extensions in effect but **not** Klicker-owned in origin: v5 declares all six at
+`src/tailwind.css:50-91` with values identical to Klicker's and merely compiles them away as
+unused. They should track v5's source rather than drifting from it. Usage: grey 114, red 77,
+darkgreen 43, yellow 42, turqoise 35, lightgreen 35.
+
+*Check:* no bare v5 runtime property name redeclared anywhere in Klicker, chat's
+`:root:root` block included; and every Klicker-authored utility class resolves to a
+non-initial computed value.
+
+### 5. Theme opt-in
+
+Add `data-theme="uzh"` to `<html>` in the four Pages Router `_document.tsx` files and in
+`apps/chat/src/app/layout.tsx`, keeping the `dark` class handling as-is. Not applied to
+`apps/docs` (see Scope).
+
+### 6. Dual-variant visual review
+
+The two variants are the bridge file's override rows present or absent, so this is two
+builds of the same tree. Capture the same screen set for each across the five themed apps:
+login, course list, a live quiz, an evaluation view, and one form-heavy editor.
+
+This is a decision gate, not a screenshot exercise. Default is v5-native. A Klicker value
+returns only where the review shows v5 is worse, and each survivor is recorded in the audit
+table with its reason.
+
+### 7. Verification
+
+`pnpm run check:all`; `pnpm run build`; Playwright; preflight sentinel count per app; a
+computed-style sweep over the UZH and primary utility classes proving none resolves to an
+empty or initial value. Browser verification runs via `agent-browser` against this
+worktree's own devcontainer stack, logging in with delegated access.
+
+## Deferred — react-hook-form
+
+Blocked upstream, not merely postponed. Klicker uses ten Formik wrappers across 221 call
+sites; v5 alpha.5 ships only four RHF wrappers (`RhfTextField`, `RhfNumberField`,
+`RhfSelectField`, `RhfMultiSelect`). Fifty-nine call sites have no RHF equivalent at all:
+Switch 22, Datetime 12, Textarea 11, Pin 6, Date 4, Color 2, AlphaNumericPin 2. The
+precondition for stage 2 is six further design-system wrappers.
+
+There is no forcing function meanwhile — the Formik wrappers are `@deprecated` in v5 but
+exported and functional, and `formik` remains a peer. They are removed in v6, which is when
+this becomes urgent.
+
+## Not covered by the six stylesheets
+
+`packages/transactional` renders email templates through its own react-email pipeline and
+uses `bg-uzh-blue-100` outside the app CSS entirely. It takes the version bump and nothing
+else; leave its styling alone.
+
+## Progress
+
+- [x] Grilling complete, decisions ratified 2026-08-18
+- [x] ADRs 0011 and 0012 written
+- [ ] Blocked: publish run 32167417044 still in `Test`; npm shows `alpha: 5.0.0-alpha.4`.
+      `pnpm install` waits on `alpha: 5.0.0-alpha.5`.
+- [x] Independent plan review 2026-08-18: five blocking findings accepted and folded in
+      (uzh-blue ramp stranding, typography and `tw-animate-css` drops, chat's `:root:root`
+      block, the `--font-sans` bridge)
+- [ ] Slices 1-7
