@@ -118,6 +118,49 @@ describe('Assessment participant invitation management', () => {
     })
   })
 
+  it('rejects malformed emails without aborting valid rows', async () => {
+    const course = await createAssessmentCourse()
+
+    const result = await createAssessmentParticipantInvitations(
+      {
+        courseId: course.id,
+        invitations: [
+          { email: 'valid.affiliation@uzh.ch' },
+          { email: 'missing-domain@' },
+          { email: 'two@@example.org' },
+          { email: 'contains space@example.org' },
+        ],
+      },
+      lecturerCtx
+    )
+
+    expect(result).toMatchObject({
+      totalProcessed: 4,
+      created: 1,
+      autoAccepted: 0,
+      duplicates: 0,
+      errors: 3,
+      results: [
+        { email: 'valid.affiliation@uzh.ch', status: 'created' },
+        {
+          email: 'missing-domain@',
+          status: 'error',
+          error: 'Invalid email format',
+        },
+        {
+          email: 'two@@example.org',
+          status: 'error',
+          error: 'Invalid email format',
+        },
+        {
+          email: 'contains space@example.org',
+          status: 'error',
+          error: 'Invalid email format',
+        },
+      ],
+    })
+  })
+
   it('auto-accepts a verified affiliation account', async () => {
     const course = await createAssessmentCourse()
     const email = 'verified.affiliation@example.org'

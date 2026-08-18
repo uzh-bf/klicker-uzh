@@ -1657,6 +1657,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationImportTitle: 'Einladungen importieren',
       invitationImportDescription:
         'Wählen Sie eine CSV-Datei mit den E-Mail-Adressen und Matrikelnummern der Teilnehmenden. Die Datei wird in Ihrem Browser verarbeitet, bevor die Einladungen übermittelt werden.',
+      invitationAffiliationWarning:
+        'Verwenden Sie genau die E-Mail-Adresse, die in der Swiss Edu-ID als verifizierte Hochschulzugehörigkeit hinterlegt ist (z. B. eine @uzh.ch-Adresse). Private E-Mail-Adressen können bei der Anmeldung möglicherweise nicht zugeordnet werden.',
+      invitationDownloadTemplate: 'CSV-Vorlage herunterladen',
       invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
       invitationCsvHeaders:
         'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
@@ -1665,6 +1668,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationImportButton: '{count} Einladungen importieren',
       invitationCsvMissingHeaders:
         'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
+      invitationCsvInvalidHeaders:
+        'Die CSV-Datei muss genau eine email-Spalte und eine matriculationNumber-Spalte enthalten.',
+      invitationCsvInvalidRows:
+        'Jede CSV-Zeile muss gleich viele Spalten wie die Kopfzeile enthalten.',
       invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
       invitationCsvParseError:
         'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',

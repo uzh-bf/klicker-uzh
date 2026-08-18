@@ -13,7 +13,10 @@ import {
 } from '@klicker-uzh/util'
 import * as R from 'remeda'
 import { GraphQLError } from 'graphql'
+import * as z from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
+
+const invitationEmailSchema = z.string().email()
 
 export interface InvitationResult {
   email: string
@@ -83,7 +86,10 @@ export async function createParticipantInvitations(
       invitationInput.matriculationNumber
     )
 
-    if (!normalizedEmail) {
+    if (
+      !normalizedEmail ||
+      !invitationEmailSchema.safeParse(normalizedEmail).success
+    ) {
       results.push({
         email: rawEmail,
         status: 'error',

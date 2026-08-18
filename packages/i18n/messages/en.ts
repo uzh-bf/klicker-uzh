@@ -1650,6 +1650,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationImportTitle: 'Import invitations',
       invitationImportDescription:
         'Select a CSV file containing the participant email addresses and matriculation numbers. The file is parsed in your browser before the invitations are submitted.',
+      invitationAffiliationWarning:
+        'Use the exact email address listed as a verified Swiss Edu-ID affiliation (for example, an @uzh.ch address). Personal email addresses may not be matched when the participant signs in.',
+      invitationDownloadTemplate: 'Download CSV template',
       invitationCsvPrompt: 'Select a participant CSV file',
       invitationCsvHeaders:
         'Required headers: email and matriculationNumber (comma or semicolon separated).',
@@ -1658,6 +1661,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationImportButton: 'Import {count} invitations',
       invitationCsvMissingHeaders:
         'The CSV must contain email and matriculationNumber columns.',
+      invitationCsvInvalidHeaders:
+        'The CSV must contain exactly one email column and one matriculationNumber column.',
+      invitationCsvInvalidRows:
+        'Every CSV row must contain the same number of columns as the header.',
       invitationCsvEmpty: 'The CSV does not contain any participant rows.',
       invitationCsvParseError:
         'The CSV could not be read. Check its format and try again.',

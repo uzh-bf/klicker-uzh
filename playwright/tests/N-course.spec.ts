@@ -8,6 +8,7 @@
 
 import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import {
   chooseActivityAction,
   chooseCourseAction,
@@ -2364,6 +2365,22 @@ test.describe('Part 4b: Assessment participant invitations', () => {
           level: 1,
         })
       ).toBeVisible()
+      await expect(
+        page.getByTestId('assessment-invitations-affiliation-warning')
+      ).toContainText(messages.manage.assessment.invitationAffiliationWarning)
+
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByTestId('assessment-invitations-download-template').click()
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toBe(
+        'assessment-participant-invitations-template.csv'
+      )
+      const downloadPath = await download.path()
+      if (!downloadPath) throw new Error('CSV template download has no path')
+      expect(await readFile(downloadPath, 'utf8')).toBe(
+        'email,matriculationNumber\r\n'
+      )
+
       const acceptedRow = page.getByRole('row').filter({
         hasText: acceptedEmail,
       })
@@ -2383,10 +2400,43 @@ test.describe('Part 4b: Assessment participant invitations', () => {
       ).toContainText(messages.manage.assessment.invitationCsvMissingHeaders)
 
       await csvInput.setInputFiles({
+        name: 'duplicate-headers.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,e-mail,matriculationNumber\nfirst@example.org,second@example.org,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'uneven-rows.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\ninvalid@example.org,12-345-678,unexpected'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidRows)
+
+      await csvInput.setInputFiles({
+        name: 'malformed-quotes.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\n"invalid@example.org"unexpected,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvParseError)
+
+      await csvInput.setInputFiles({
         name: 'assessment-invitations.csv',
         mimeType: 'text/csv',
         buffer: Buffer.from(
-          `email;matriculationNumber\n${pendingEmail};12-345-678\nnot-an-email;98-765-432`
+          `\uFEFFemail;matriculationNumber;note\n"${pendingEmail}";12-345-678;"quoted ""note"""\nnot-an-email;98-765-432;invalid`
         ),
       })
       await expect(

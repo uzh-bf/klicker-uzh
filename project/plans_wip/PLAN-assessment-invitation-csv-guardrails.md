@@ -120,3 +120,20 @@ permission. The adjustment has no gamification or asynchronous-workflow impact.
   Swiss Edu-ID affiliation matching, tests, documentation, and branch state.
 - **2026-08-18:** User approved a non-blocking affiliation warning, canonical
   template download, layered validation, and stricter structural parsing.
+- **2026-08-18:** Implemented server-side email syntax validation, the localized
+  warning and template action, stricter structural parsing, and expanded
+  Playwright coverage. Focused frontend, GraphQL, and Playwright typechecks pass.
+- **2026-08-18:** The new service test reproduced the former behavior exactly
+  (`created: 4`, `errors: 0` for one valid and three malformed addresses). A
+  local green rerun was withheld because the legacy helper deletes all courses
+  and users from the workspace database; isolated CI remains the authoritative
+  runtime verification path.
+- **2026-08-18:** Verified the real routed lecturer UI in English and German at
+  desktop and mobile widths. The exact 27-byte CRLF template downloaded, all
+  three structural error states rendered, BOM/semicolon/quoted input produced
+  a two-row preview, the server returned one pending row plus one email error,
+  and the synthetic pending invitation was deleted successfully.
+- **2026-08-18:** Repository-wide checks and the unrestricted production build
+  pass. Focused OpenGrep reported only one pre-existing dynamic-regex test
+  helper outside the changed lines. The screenshots and changed literals were
+  reviewed for public-repository data hygiene and contain synthetic data only.

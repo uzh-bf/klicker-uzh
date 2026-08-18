@@ -1,5 +1,9 @@
 import { useMutation } from '@apollo/client'
-import { faFileCsv, faUpload } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDownload,
+  faFileCsv,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   AssessmentParticipantInvitationImportStatus,
@@ -24,6 +28,8 @@ const MATRICULATION_NUMBER_HEADERS = new Set([
   'matrikelnummer',
   'studiid',
 ])
+const CSV_TEMPLATE_FILENAME = 'assessment-participant-invitations-template.csv'
+const CSV_TEMPLATE_CONTENT = 'email,matriculationNumber\r\n'
 
 function normalizeHeader(header: string) {
   return header
@@ -63,12 +69,14 @@ function parseCsvRows(csvText: string) {
   let row: string[] = []
   let field = ''
   let isQuoted = false
+  let quotedFieldClosed = false
 
   function finishRow() {
     row.push(field.trim())
     if (row.some((value) => value.length > 0)) rows.push(row)
     row = []
     field = ''
+    quotedFieldClosed = false
   }
 
   for (let index = 0; index < content.length; index++) {
@@ -80,7 +88,8 @@ function parseCsvRows(csvText: string) {
         index++
       } else if (isQuoted) {
         isQuoted = false
-      } else if (field.length === 0) {
+        quotedFieldClosed = true
+      } else if (field.length === 0 && !quotedFieldClosed) {
         isQuoted = true
       } else {
         throw new Error('Unexpected quote in CSV field')
@@ -88,9 +97,12 @@ function parseCsvRows(csvText: string) {
     } else if (!isQuoted && character === delimiter) {
       row.push(field.trim())
       field = ''
+      quotedFieldClosed = false
     } else if (!isQuoted && (character === '\n' || character === '\r')) {
       finishRow()
       if (character === '\r' && content[index + 1] === '\n') index++
+    } else if (quotedFieldClosed && !/\s/.test(character)) {
+      throw new Error('Unexpected character after quoted CSV field')
     } else {
       field += character
     }
@@ -125,6 +137,19 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
     }
   )
 
+  function downloadCsvTemplate() {
+    const url = URL.createObjectURL(
+      new Blob([CSV_TEMPLATE_CONTENT], { type: 'text/csv;charset=utf-8' })
+    )
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = CSV_TEMPLATE_FILENAME
+    document.body.append(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
+
   async function handleFileSelection(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -137,14 +162,25 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
 
     try {
       const csvText = await file.text()
-      const [sourceHeaders, ...recordRows] = parseCsvRows(csvText)
-      const headers = sourceHeaders?.map(normalizeHeader) ?? []
+      const [sourceHeaders = [], ...recordRows] = parseCsvRows(csvText)
+      const headers = sourceHeaders.map(normalizeHeader)
 
-      const matriculationNumberHeader = headers.find((header) =>
-        MATRICULATION_NUMBER_HEADERS.has(header)
+      const emailIndices = headers.flatMap((header, index) =>
+        header === 'email' ? [index] : []
       )
-      if (!headers.includes('email') || !matriculationNumberHeader) {
+      const matriculationNumberIndices = headers.flatMap((header, index) =>
+        MATRICULATION_NUMBER_HEADERS.has(header) ? [index] : []
+      )
+      if (
+        emailIndices.length === 0 ||
+        matriculationNumberIndices.length === 0
+      ) {
         setParseError(t('manage.assessment.invitationCsvMissingHeaders'))
+        return
+      }
+
+      if (emailIndices.length > 1 || matriculationNumberIndices.length > 1) {
+        setParseError(t('manage.assessment.invitationCsvInvalidHeaders'))
         return
       }
 
@@ -153,10 +189,13 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
         return
       }
 
-      const emailIndex = headers.indexOf('email')
-      const matriculationNumberIndex = headers.indexOf(
-        matriculationNumberHeader
-      )
+      if (recordRows.some((record) => record.length !== sourceHeaders.length)) {
+        setParseError(t('manage.assessment.invitationCsvInvalidRows'))
+        return
+      }
+
+      const emailIndex = emailIndices[0]
+      const matriculationNumberIndex = matriculationNumberIndices[0]
       setInvitations(
         recordRows.map((record) => ({
           email: record[emailIndex] ?? '',
@@ -218,6 +257,23 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
       <p className="mb-4 text-sm text-slate-600">
         {t('manage.assessment.invitationImportDescription')}
       </p>
+
+      <div className="mb-4 flex flex-col items-start gap-3">
+        <UserNotification
+          type="warning"
+          message={t('manage.assessment.invitationAffiliationWarning')}
+          data={{ cy: 'assessment-invitations-affiliation-warning' }}
+        />
+        <Button
+          onClick={downloadCsvTemplate}
+          data={{ cy: 'assessment-invitations-download-template' }}
+        >
+          <Button.Icon icon={faDownload} />
+          <Button.Label>
+            {t('manage.assessment.invitationDownloadTemplate')}
+          </Button.Label>
+        </Button>
+      </div>
 
       <div className="flex flex-col items-start gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
