@@ -8,6 +8,7 @@ import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
+  type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -76,7 +77,21 @@ export function useChatResponse(
         }))
       }
 
+      // Records how the run ended so the thread can announce a stopped run
+      // distinctly: cancelling clears `isRunning` before this hook reaches its
+      // abort branch, so the running flag alone reads a stop as a completion.
+      const updateThreadRunOutcome = (outcome: ThreadRunOutcome | null) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId
+              ? { ...thread, lastRunOutcome: outcome }
+              : thread
+          ),
+        }))
+      }
+
       updateThreadRunning(true)
+      updateThreadRunOutcome(null)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
@@ -173,11 +188,21 @@ export function useChatResponse(
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
           body: JSON.stringify({
-            messages: resolvedMessagesToSend.map((m) => ({
-              id: m.id,
-              role: m.role,
-              content: serializeMessageContent(m),
-            })),
+            // Assistant turns that carry no text — stopped-before-output or
+            // error-only turns hold just a data marker part — would serialize
+            // to empty assistant messages, which some upstream models reject
+            // and none benefit from.
+            messages: resolvedMessagesToSend
+              .filter(
+                (m) =>
+                  m.role !== 'assistant' ||
+                  serializeMessageContent(m).trim() !== ''
+              )
+              .map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: serializeMessageContent(m),
+              })),
             threadId,
             selectedModel,
             selectedMode,
@@ -238,6 +263,7 @@ export function useChatResponse(
             parentId: triggerMessage?.id || null,
           }
           updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
           return
         }
 
@@ -676,9 +702,77 @@ export function useChatResponse(
             }))
           }
         }
+
+        // A stream error and a silent cutoff both pushed a `chat-error` part
+        // above, and a missing reader means no answer arrived at all — none of
+        // those may announce as a completed answer.
+        updateThreadRunOutcome(
+          hasStreamError || !hasFinishEvent ? 'error' : 'completed'
+        )
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          // request was cancelled by user
+          // request was cancelled by user — keep the turn: whatever streamed
+          // plus a `chat-stopped` marker (mirrors what the server persists in
+          // its own onAbort path, so a reload shows the same stopped turn)
+          const stoppedAssistantMessage: ExtendedThreadMessageLike = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: [
+              ...orderedContentParts,
+              { type: 'data', name: 'chat-stopped', data: {} },
+            ],
+            createdAt: new Date(),
+            parentId: triggerMessage?.id || null,
+          }
+
+          // assistant-ui's `cancelRun` synchronously removes the trailing
+          // user turn, restores it as the composer draft, and re-syncs its
+          // view of the store in a `setTimeout(0)` scheduled before this
+          // catch runs — a synchronous write here would be overwritten by
+          // that resync. Defer one macrotask (FIFO puts this after the
+          // resync) and rebuild both the current path and the full history.
+          setTimeout(() => {
+            const { threads } = useChatStore.getState()
+            const activeThread = threads.find(
+              (thread) => thread.id === threadId
+            )
+            if (!activeThread) return
+
+            const newCurrentPath = [
+              ...resolvedMessagesToSend,
+              stoppedAssistantMessage,
+            ]
+
+            const withUserMessage =
+              resolvedTriggerMessage &&
+              !activeThread.allMessages.some(
+                (message) => message.id === resolvedTriggerMessage.id
+              )
+                ? [...activeThread.allMessages, resolvedTriggerMessage]
+                : activeThread.allMessages
+
+            // The stopped turn's id is generated fresh for this run and no
+            // other writer touches `allMessages` before this deferred
+            // callback, so a plain append cannot duplicate it.
+            const updatedAllMessages = [
+              ...withUserMessage,
+              stoppedAssistantMessage,
+            ]
+
+            useChatStore.setState((state) => ({
+              threads: state.threads.map((thread) =>
+                thread.id === threadId
+                  ? {
+                      ...thread,
+                      messages: newCurrentPath,
+                      allMessages: updatedAllMessages,
+                    }
+                  : thread
+              ),
+            }))
+          }, 0)
+
+          updateThreadRunOutcome('stopped')
         } else {
           console.error('Chat error:', error)
 
@@ -704,6 +798,7 @@ export function useChatResponse(
             parentId: triggerMessage?.id || null,
           }
           updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
         }
       } finally {
         updateThreadRunning(false)

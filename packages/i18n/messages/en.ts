@@ -1,5 +1,11 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(opens in new tab)',
+    },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
@@ -56,6 +62,8 @@ export default {
       toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -145,15 +153,22 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
       welcomeTitle: 'Welcome!',
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
@@ -188,6 +203,8 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },

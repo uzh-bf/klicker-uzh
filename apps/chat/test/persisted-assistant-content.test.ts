@@ -183,6 +183,7 @@ describe('persisted assistant content', () => {
       { type: 'text', text: 'Finished step text.' },
       { type: 'reasoning', text: 'Unfinished reasoning.' },
       { type: 'text', text: 'Unfinished answer text.' },
+      { type: 'data', name: 'chat-stopped', data: {} },
     ])
   })
 
@@ -220,6 +221,13 @@ describe('persisted assistant content', () => {
         args: {},
         result: { sources_used: 1 },
       },
+      { type: 'data', name: 'chat-stopped', data: {} },
+    ])
+  })
+
+  test('persists only the stopped marker when nothing streamed before abort', () => {
+    expect(buildAbortedAssistantContent(undefined, [])).toEqual([
+      { type: 'data', name: 'chat-stopped', data: {} },
     ])
   })
 })

@@ -58,6 +58,14 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   }[]
 }
 
+/**
+ * How a response run ended. Kept separate from `isRunning` because cancelling
+ * clears the running flag (from `onCancel`) before the response hook reaches
+ * its abort branch — a running-only signal therefore cannot tell a stopped
+ * run from a completed one.
+ */
+export type ThreadRunOutcome = 'completed' | 'stopped' | 'error'
+
 export interface Thread {
   id: string
   messages: ExtendedThreadMessageLike[] // current conversation branch
@@ -67,6 +75,7 @@ export interface Thread {
   createdAt: Date
   updatedAt: Date
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
+  lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
 }
 
 interface ChatState {
@@ -82,6 +91,12 @@ interface ChatState {
    * yet" from "we don't actually know, the fetch failed" and offer a retry.
    */
   threadsLoadError: boolean
+  /**
+   * Message ids whose latest rating attempt was rejected and rolled back.
+   * Without it the optimistic vote just snaps back, which reads as a
+   * mis-click rather than a failure. Cleared when a new attempt starts.
+   */
+  ratingErrors: Record<string, boolean>
 
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
@@ -252,6 +267,7 @@ export const useChatStore = create<ChatState>((set, get) => {
     participationRequired: false,
     participationMessage: null,
     threadsLoadError: false,
+    ratingErrors: {},
 
     /**
      * Creates a new conversation thread
@@ -887,6 +903,15 @@ export const useChatStore = create<ChatState>((set, get) => {
       if (!threadId) return
       const requestKey = `${threadId}:${messageId}`
 
+      // A new attempt supersedes the previous failure notice.
+      if (get().ratingErrors[messageId]) {
+        set((state) => {
+          const remaining = { ...state.ratingErrors }
+          delete remaining[messageId]
+          return { ratingErrors: remaining }
+        })
+      }
+
       const applyRating = (next: MessageRating | null) => {
         const setRating = (messages: ExtendedThreadMessageLike[]) =>
           messages.map((message) =>
@@ -921,8 +946,17 @@ export const useChatStore = create<ChatState>((set, get) => {
             `/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/feedback`,
             { method: 'POST', body: JSON.stringify({ rating }) }
           ).then(() => undefined),
-        onError: (error) =>
-          console.error('Failed to save message feedback:', error),
+        onError: (error, isLatestRequest) => {
+          console.error('Failed to save message feedback:', error)
+          // Only the request whose optimistic rating was actually rolled back
+          // may surface a failure: a superseded one leaves a newer vote on
+          // screen, so flagging it would contradict what the student sees.
+          if (isLatestRequest) {
+            set((state) => ({
+              ratingErrors: { ...state.ratingErrors, [messageId]: true },
+            }))
+          }
+        },
       })
     },
 
@@ -949,6 +983,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         threads: [],
         activeThreadId: null,
         isLoading: false,
+        ratingErrors: {},
       })
     },
 

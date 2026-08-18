@@ -145,3 +145,27 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Reduced-motion guard (CC-11). tw-animate-css (imported above) generates its
+   `animate-in`/`animate-out` enter/exit utilities, plus the many named
+   keyframe modifiers (`fade-in`, `zoom-in-95`, `slide-in-from-*`, ...), as an
+   open-ended set of dynamically composed classes — there is no fixed list of
+   selectors to target individually, and several `transition-*` utilities
+   across the app (hover/focus states, the composer send/cancel crossfade,
+   etc.) also lack a per-usage `motion-reduce:` variant. A single broad `*`
+   guard is the conventional, documented way to cover both without auditing
+   every className site by hand. `animation-duration`/`transition-duration`
+   collapse to near-zero (not exactly 0) and `animation-iteration-count: 1` so
+   animation/transition end events still fire — code that waits on them (e.g.
+   an exit animation before unmount) keeps working, it just resolves
+   immediately. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
