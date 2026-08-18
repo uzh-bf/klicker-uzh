@@ -145,6 +145,164 @@ and is enforced field-by-field in the API layer.
   the instance as outdated; it never rewrites what participants already saw or
   answered.
 
+## Learning activities: semantic free-text retries
+
+These terms name the participant-facing concepts used to answer and evaluate
+learning elements.
+
+### Formative free-text evaluation
+
+**Free-text element**:
+A question that accepts a participant-authored text response. In the first
+retry capability, this term refers only to free-text questions, not numerical
+or case-study questions.
+_Avoid_: Open-ended element
+
+**Free-text attempt**:
+One submitted answer to one free-text element in a formative activity. A new
+attempt reopens only that element; neighboring elements and the containing
+stack remain submitted.
+_Avoid_: Retry submission, trial
+
+**Formative evaluation**:
+An evaluation whose purpose is to help a participant improve through feedback
+and another attempt, rather than to determine a formal assessment result.
+_Avoid_: Grading, assessment
+
+**Rubric schema**:
+A versioned specification for evaluating a response, composed of weighted
+rubrics and their achievement levels.
+_Avoid_: Solution schema, grading prompt
+
+**Rubric**:
+One weighted, independently evaluated dimension of response quality. A rubric
+has a stable identity, a description, and a set of achievement levels.
+_Avoid_: Criterion, category
+
+**Achievement level**:
+A named and described level of performance for one rubric, paired with a
+normalized score.
+_Avoid_: Correctness status, grade
+
+**Outcome band**:
+A lecturer-defined label and score range for the aggregated rubric result. Each
+band maps to one correctness category; when no bands are defined, the standard
+correct, partially correct, and not-yet-correct bands apply.
+_Avoid_: State, rubric anchor, achievement level
+
+**Correctness category**:
+One of the stable behavioral categories `CORRECT`, `PARTIAL`, or `INCORRECT`.
+It determines retry behavior, progress representation, and aggregate analytics
+independently of an outcome band's lecturer-defined label.
+_Avoid_: Outcome band, achievement level
+
+**Semantic evaluation**:
+An LLM-backed evaluation of a free-text attempt against a rubric schema. It
+assigns achievement levels and can distinguish correct, partially correct, and
+incorrect responses.
+_Avoid_: Advanced grading, AI score
+
+**Exact-match fallback**:
+A deterministic comparison between a normalized free-text response and the
+element's accepted exact answers, used when semantic evaluation is unavailable.
+An exact match confirms correctness; a non-match is inconclusive and leaves the
+evaluation unavailable.
+_Avoid_: Rubric evaluation
+
+**Attempt limit**:
+The lecturer-configured maximum number of free-text attempts available for one
+element in one practice cycle. It includes the initial attempt, defaults to
+two, and can be set from one to ten.
+_Avoid_: Retry count
+
+**Practice cycle**:
+The server-owned sequence of attempts for one participant and one semantic-
+retry element. It ends when the answer is correct, the solution is revealed,
+or the attempt limit is exhausted. Practicing again creates a new cycle while
+the activity's reward-reset window independently controls points and XP.
+_Avoid_: Browser session, reward window, attempt
+
+**Solution reveal**:
+The terminal action that exposes the detailed solution after an unsuccessful
+free-text attempt. Once revealed, no further attempts can be submitted for that
+element. It shows the reference solution, the element explanation, and a
+human-readable rubric breakdown, but never the raw rubric schema. Its
+availability is configured per element and is enabled by default.
+_Avoid_: Feedback, retry
+
+**Accepted exact answer**:
+A text value that can confirm correctness through exact-match fallback. It is
+not the detailed solution shown to participants.
+_Avoid_: Sample solution, reference solution
+
+**Reference solution**:
+The rich example answer shown through solution reveal. It explains the expected
+answer but is not used for exact-match fallback.
+_Avoid_: Accepted exact answer, sample solution
+
+**Rewarded result**:
+The best evaluated result within one practice cycle. Points and XP are awarded
+only for improvement beyond the result already rewarded in that cycle.
+_Avoid_: Latest result, accumulated score
+
+**Evaluation retry**:
+A repeated semantic evaluation of the same submitted answer after an evaluator
+failure. It does not consume another free-text attempt.
+_Avoid_: Free-text attempt, answer retry
+
+**Attempt evaluation**:
+The persisted structured assessment of one free-text attempt, including its
+rubric results, aggregate result, outcome band, correctness category, and
+availability status.
+_Avoid_: Engine trace, response
+
+**Evaluation status**:
+The state of an attempt evaluation: pending, evaluated, or unavailable.
+_Avoid_: Correctness category, outcome band
+
+**Semantic-retry element**:
+A free-text element that has explicitly opted into semantic evaluation and
+individual retries through a valid rubric schema and attempt limit. Legacy
+free-text elements remain outside this capability until upgraded.
+_Avoid_: Free-text element, open-ended element
+
+**Uncertain evaluation**:
+An attempt evaluation whose evaluator requests review or cannot support its
+result confidently. It is treated as unavailable rather than as a correctness
+outcome.
+_Avoid_: Partially correct evaluation
+
+**Peer answers**:
+Aggregated answers submitted by other participants. They remain hidden during
+an active attempt loop and become available only after the element is terminal.
+_Avoid_: Reference solution, feedback
+
+**Semantic-evaluation consent**:
+A participant's versioned authorization to send free-text attempts to the
+semantic evaluator. Without it, the participant remains on exact-match fallback.
+_Avoid_: Chat disclaimer, Catalyst entitlement
+
+**Evaluation availability**:
+Whether semantic evaluation can currently process attempts, independently of a
+lecturer's Catalyst entitlement. An unavailable evaluation remains recoverable
+through evaluation retry, exact-match fallback, or solution reveal.
+_Avoid_: Catalyst entitlement, evaluation status
+
+**Question language**:
+The explicit language of a semantic-retry element. Semantic rationale and
+feedback use this language; it is snapshotted with the published element.
+Course and participant locales may provide authoring defaults but do not
+override the question language, and the participant's answer is never used to
+infer it.
+_Avoid_: Participant locale, course language, detected language
+
+**Detailed explanation**:
+The terminal learning material available after a correct answer or through
+solution reveal when enabled. It contains the reference solution, the element
+explanation, a human-readable rubric breakdown, and peer answers, without
+changing rewards.
+_Avoid_: Generic feedback, raw rubric schema
+
 ## Chatbot usage
 
 These terms define the language for lecturer authorization, model usage, and
