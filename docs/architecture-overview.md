@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-03'
+timestamp: '2026-08-18'
 tags:
   - architecture
 ---
@@ -33,7 +33,9 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email), `knowledge-graph` (FalkorDB client, graph naming, content digests), `kb-management` (lecturer knowledge-base UI).
+
+FalkorDB is the serving projection for published knowledge graphs, not their durable record: each build writes its own named graph and the archived GraphML export is the recovery source ([ADR 0009](./adr/0009-kb-owns-two-derived-projections.md), [ADR 0011](./adr/0011-catalyst-owns-knowledge-graph-runtime.md)).
 
 ## Request flow (query/mutation)
 

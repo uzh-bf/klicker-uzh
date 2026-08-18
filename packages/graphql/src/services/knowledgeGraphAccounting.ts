@@ -222,6 +222,14 @@ async function markCostNeedsHumanReview(
   errorCode: string,
   finishedAt: Date
 ): Promise<KBGraphCostSettlementOutcome> {
+  // KB before quota: every other path that touches both rows takes them in this
+  // order, and reversing it here would let two settlements deadlock.
+  await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT "id"
+    FROM "public"."KB"
+    WHERE "id" = CAST(${build.kbId} AS UUID)
+    FOR UPDATE
+  `
   if (build.quotaId) await lockQuota(prisma, build.quotaId)
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {

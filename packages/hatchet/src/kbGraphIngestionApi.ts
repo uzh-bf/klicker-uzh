@@ -17,8 +17,12 @@ import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 const DEFAULT_KB_GRAPH_TIMEOUT_SECONDS = 6 * 60 * 60
 const KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS = 5 * 60 * 1000
 const KB_GRAPH_ARTIFACT_PREFIX = 'knowledge-graphs'
+// Only chart-owned (ConfigMap) keys may arm the all-or-nothing startup gate.
+// `KB_GRAPH_HATCHET_CLIENT_TOKEN` lives in the out-of-repo general-worker secret,
+// so listing it would let a secret rollout on its own halt every unrelated job on
+// that worker before the chart values completing the configuration have landed.
+// Once one of these keys is set the token is still required.
 const KB_GRAPH_CONFIGURATION_ENVIRONMENT_VARIABLES = [
-  'KB_GRAPH_HATCHET_CLIENT_TOKEN',
   'KB_GRAPH_HATCHET_CLIENT_HOST_PORT',
   'KB_GRAPH_HATCHET_API_URL',
   'KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY',
@@ -359,7 +363,10 @@ export async function recoverExternalKBGraphRun({
     additionalMetadata: { [KB_GRAPH_BUILD_METADATA_KEY]: buildId },
     onlyTasks: false,
     includePayloads: false,
-    limit: 1,
+    // An empty answer is taken as proof that the provider never accepted a run
+    // for this build (it releases the cost reservation), so the page must be
+    // large enough that a matching row can never be truncated away.
+    limit: 10,
     since: new Date(recoveryAnchor.getTime() - KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS),
   })
   const recoveredRun = existingRuns.rows.find((run) =>

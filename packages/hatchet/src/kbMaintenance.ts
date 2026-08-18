@@ -40,11 +40,25 @@ const KB_MAINTENANCE_CONCURRENCY = 8
 // being dispatched or reconciled, i.e. it is stranded rather than merely in flight.
 export const KB_MAINTENANCE_INTERVAL_MS = 15 * 60 * 1000
 const KB_UPLOAD_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
+// How long a retired FalkorDB graph (neither active nor published) is kept before
+// the serving projection is dropped. The GraphML archive is on a separate clock.
 const KB_GRAPH_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
+// ADR 0015: deleting a knowledge base starts a 30-day recovery grace, after which
+// its archived GraphML versions are purged. Until then every archived version is
+// restorable, so a lecturer can be rolled back to any earlier successful graph.
+const KB_GRAPH_DELETION_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
 const KB_TERMINAL_DELETION_STATUSES = [
   KBIngestionStatus.FAILED,
   KBIngestionStatus.SUPERSEDED,
+]
+// A build reaches one of these statuses only after the external run completed and
+// exported its GraphML, so its artifact is a real, restorable graph version.
+// SUPERSEDED is reached solely by a late success that a newer build outran
+// (`KB_GRAPH_LATE_SUCCESS_SUPERSEDED`), which still produced a valid export.
+const KB_GRAPH_ARCHIVED_ARTIFACT_STATUSES: KBGraphBuildStatus[] = [
+  KBGraphBuildStatus.SUCCEEDED,
+  KBGraphBuildStatus.SUPERSEDED,
 ]
 
 type KBMaintenanceDependencies = {
@@ -55,6 +69,8 @@ type KBMaintenanceDependencies = {
   logger?: KBIngestionLogger
   deleteBlob?: (ownerId: string, blobName: string) => Promise<void>
   deleteGraph?: (graphName: string) => Promise<void>
+  // Maintenance holds no task handles, so the caller supplies the re-enqueue.
+  enqueueKBGraphBuild?: (buildId: string) => Promise<void>
 }
 
 async function logMaintenanceError(
@@ -381,6 +397,57 @@ export async function maintainKBResources(
     })
   }
 
+  // The graph-build analogue of the UPSERT recovery above. `rebuildKbKnowledgeGraph`
+  // commits the reservation and the build-slot claim, then enqueues the task; a
+  // crash in between leaves a QUEUED build with neither an externalOperationId nor
+  // a dispatch claim. `monitorActiveKBGraphBuilds` skips it (it requires a
+  // correlated run) and it has no finishedAt for the retention sweep, so the KB's
+  // build slot and the lecturer's quota reservation would stay held forever.
+  const enqueueKBGraphBuild = dependencies.enqueueKBGraphBuild
+  if (enqueueKBGraphBuild) {
+    const graphDispatchStaleBefore = new Date(
+      now.getTime() - KB_MAINTENANCE_INTERVAL_MS
+    )
+    const graphDispatchRetryWhere = {
+      status: KBGraphBuildStatus.QUEUED,
+      externalOperationId: null,
+      dispatchClaimedAt: null,
+      createdAt: { lte: graphDispatchStaleBefore },
+    } satisfies Prisma.KBGraphBuildWhereInput
+    const graphDispatchRetryCount =
+      await dependencies.prisma.kBGraphBuild.count({
+        where: graphDispatchRetryWhere,
+      })
+    const graphDispatchRetryOffset = getBatchOffset(
+      graphDispatchRetryCount,
+      now
+    )
+    const graphDispatchRetries =
+      await dependencies.prisma.kBGraphBuild.findMany({
+        where: graphDispatchRetryWhere,
+        select: { id: true, kbId: true },
+        orderBy: { id: 'asc' },
+        ...(graphDispatchRetryOffset > 0
+          ? { skip: graphDispatchRetryOffset }
+          : {}),
+        take: KB_MAINTENANCE_BATCH_SIZE,
+      })
+    await runBounded(graphDispatchRetries, async (build) => {
+      try {
+        // The build id is already the external idempotency key and the real
+        // provider call is fenced by `dispatchClaimedAt`, so re-enqueuing the
+        // same id can never start a second external run or a second charge.
+        await enqueueKBGraphBuild(build.id)
+      } catch {
+        await logMaintenanceError(
+          dependencies.logger,
+          'KB graph build dispatch retry failed',
+          { buildId: build.id, kbId: build.kbId }
+        )
+      }
+    })
+  }
+
   const expiredBefore = new Date(now.getTime() - KB_UPLOAD_RETENTION_GRACE_MS)
   const expiredTicketWhere = {
     expiresAt: { lte: expiredBefore },
@@ -447,6 +514,7 @@ export async function maintainKBResources(
     select: {
       id: true,
       kbId: true,
+      status: true,
       graphName: true,
       graphmlBlobName: true,
       kb: {
@@ -526,8 +594,15 @@ export async function maintainKBResources(
       return
     }
 
+    // Only the serving projection is retired here. A build that exported a
+    // GraphML keeps it until its knowledge base is deleted and the recovery
+    // grace expires, so an earlier version stays restorable; a build that never
+    // produced an export has nothing worth retaining.
+    const purgeArchive = !KB_GRAPH_ARCHIVED_ARTIFACT_STATUSES.includes(
+      build.status
+    )
     try {
-      if (build.graphmlBlobName) {
+      if (purgeArchive && build.graphmlBlobName) {
         await deleteBlob(build.kb.ownerId, build.graphmlBlobName)
       }
       await deleteGraph(build.graphName)
@@ -559,7 +634,10 @@ export async function maintainKBResources(
             ],
           },
         },
-        data: { cleanedAt: now },
+        data: {
+          cleanedAt: now,
+          ...(purgeArchive ? { graphmlPurgedAt: now } : {}),
+        },
       })
       if (cleaned.count !== 1) {
         throw new Error('KB graph cleanup claim was lost')
@@ -585,6 +663,81 @@ export async function maintainKBResources(
           buildId: build.id,
           kbId: build.kbId,
         }
+      )
+    }
+  })
+
+  // ADR 0015: once the deletion recovery grace has expired there is nothing left
+  // to restore, so every remaining artifact of that knowledge base goes. This
+  // pass deliberately ignores `activeGraphBuildId`/`publishedGraphBuildId`: the
+  // KB is gone, and a build still holding the slot when it was deleted would
+  // otherwise keep its graph and archive forever.
+  const purgeArchiveBefore = new Date(
+    now.getTime() - KB_GRAPH_DELETION_GRACE_MS
+  )
+  const archivePurgeWhere = {
+    graphmlPurgedAt: null,
+    kb: { deletedAt: { lte: purgeArchiveBefore } },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const archivePurgeCount = await dependencies.prisma.kBGraphBuild.count({
+    where: archivePurgeWhere,
+  })
+  const archivePurgeOffset = getBatchOffset(archivePurgeCount, now)
+  const purgeableArchives = await dependencies.prisma.kBGraphBuild.findMany({
+    where: archivePurgeWhere,
+    select: {
+      id: true,
+      kbId: true,
+      graphName: true,
+      graphmlBlobName: true,
+      cleanedAt: true,
+      kb: { select: { ownerId: true } },
+    },
+    orderBy: { id: 'asc' },
+    ...(archivePurgeOffset > 0 ? { skip: archivePurgeOffset } : {}),
+    take: KB_MAINTENANCE_BATCH_SIZE,
+  })
+  await runBounded(purgeableArchives, async (build) => {
+    if (build.graphName !== getKnowledgeGraphName(build.kbId, build.id)) {
+      await logMaintenanceError(
+        dependencies.logger,
+        'KB graph archive purge rejected an invalid graph name',
+        { buildId: build.id, kbId: build.kbId }
+      )
+      return
+    }
+    if (
+      build.graphmlBlobName !== null &&
+      !isExpectedKBGraphArtifactName(build.graphmlBlobName, build.id)
+    ) {
+      await logMaintenanceError(
+        dependencies.logger,
+        'KB graph archive purge rejected an invalid artifact name',
+        { buildId: build.id, kbId: build.kbId }
+      )
+      return
+    }
+    try {
+      if (build.graphmlBlobName) {
+        await deleteBlob(build.kb.ownerId, build.graphmlBlobName)
+      }
+      if (build.cleanedAt === null) {
+        await deleteGraph(build.graphName)
+      }
+      // The ledger row survives the purge (ADR 0013 keeps its cost evidence);
+      // only the stamps recording that the artifacts are gone are written.
+      await dependencies.prisma.kBGraphBuild.updateMany({
+        where: { id: build.id, kbId: build.kbId, graphmlPurgedAt: null },
+        data: {
+          graphmlPurgedAt: now,
+          ...(build.cleanedAt === null ? { cleanedAt: now } : {}),
+        },
+      })
+    } catch {
+      await logMaintenanceError(
+        dependencies.logger,
+        'KB graph archive purge failed',
+        { buildId: build.id, kbId: build.kbId }
       )
     }
   })
@@ -668,12 +821,17 @@ export async function maintainKBResources(
     }
   })
 
+  // `KBGraphBuild.kb` cascades, so hard-deleting a KB would take its build ledger
+  // — metered cost, pricing version and actual provider usage — with it. ADR 0013
+  // requires that evidence to stay auditable, so a KB that ever ran a graph build
+  // keeps its tombstone row permanently and only its artifacts are purged above.
+  // KBs that never built a graph are removed once the recovery grace has expired.
   const deletedKbWhere = {
-    deletedAt: { not: null },
+    deletedAt: { not: null, lte: purgeArchiveBefore },
     resources: { none: {} },
     uploadTickets: { none: {} },
     chatbots: { none: { isEnabled: true } },
-    graphBuilds: { none: { cleanedAt: null } },
+    graphBuilds: { none: {} },
   } satisfies Prisma.KBWhereInput
   const deletedKbCount = await dependencies.prisma.kB.count({
     where: deletedKbWhere,

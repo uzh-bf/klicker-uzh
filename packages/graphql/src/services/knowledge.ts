@@ -1581,7 +1581,9 @@ export async function deleteKbResources(
   ) {
     invalidPaginationInput('KB bulk deletion selection is invalid')
   }
-  const sortedIds = [...ids].sort()
+  // Explicit code-unit order: this fixes the child lock order, so it must not
+  // vary with the runtime locale.
+  const sortedIds = [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
 
   const { resources, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {

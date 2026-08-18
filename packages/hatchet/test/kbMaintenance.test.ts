@@ -1,4 +1,5 @@
 import {
+  KBGraphBuildStatus,
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceStatus,
@@ -19,6 +20,10 @@ const OPERATION_ID = 'op_01J2X8K3M9QZ4R7T6V5W1Y0BND'
 const CONTENT_SHA256 =
   '9b74c9897bac770ffc029102a200c5de11ba9dbd0e0f28c991eb64b0fb54d96e'
 const NOW = new Date('2026-07-27T12:00:00.000Z')
+const GRAPH_DELETION_GRACE_MS = 30 * 24 * 60 * 60 * 1000
+const BUILD_ID = 'f1fbd1fd-aabb-4dd4-8e64-2f9a13a971a6'
+const GRAPH_NAME = `klickeruzh:kb:${KB_ID}:${BUILD_ID}`
+const GRAPHML_BLOB_NAME = `knowledge-graphs/${BUILD_ID}.graphml`
 
 function client(): KBIngestionApiClient {
   return {
@@ -39,8 +44,12 @@ function maintenancePrisma({
   deletedResourceCount = deletedResources.length,
   deletedKbs = [],
   deletedKbCount = deletedKbs.length,
+  pendingGraphDispatch,
+  pendingGraphDispatchCount,
   retainedGraphBuilds = [],
   retainedGraphBuildCount = retainedGraphBuilds.length,
+  purgeableArchives = [],
+  purgeableArchiveCount = purgeableArchives.length,
   currentResource,
 }: {
   pendingDispatch?: unknown[]
@@ -53,10 +62,35 @@ function maintenancePrisma({
   deletedResourceCount?: number
   deletedKbs?: unknown[]
   deletedKbCount?: number
+  pendingGraphDispatch?: unknown[]
+  pendingGraphDispatchCount?: number
   retainedGraphBuilds?: unknown[]
   retainedGraphBuildCount?: number
+  purgeableArchives?: unknown[]
+  purgeableArchiveCount?: number
   currentResource?: unknown
 } = {}) {
+  // The sweep queries KBGraphBuild once per pass, in order. The stranded-dispatch
+  // pass only runs when the caller wires `enqueueKBGraphBuild`, which is what
+  // supplying `pendingGraphDispatch` stands for here.
+  const graphBuildPages: Array<{ count: number; rows: unknown[] }> = [
+    ...(pendingGraphDispatch
+      ? [
+          {
+            count: pendingGraphDispatchCount ?? pendingGraphDispatch.length,
+            rows: pendingGraphDispatch,
+          },
+        ]
+      : []),
+    { count: retainedGraphBuildCount, rows: retainedGraphBuilds },
+    { count: purgeableArchiveCount, rows: purgeableArchives },
+  ]
+  const graphBuildCount = vi.fn()
+  const graphBuildFindMany = vi.fn()
+  for (const page of graphBuildPages) {
+    graphBuildCount.mockResolvedValueOnce(page.count)
+    graphBuildFindMany.mockResolvedValueOnce(page.rows)
+  }
   const prisma = {
     kBResource: {
       count: vi
@@ -88,8 +122,8 @@ function maintenancePrisma({
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kBGraphBuild: {
-      count: vi.fn().mockResolvedValue(retainedGraphBuildCount),
-      findMany: vi.fn().mockResolvedValue(retainedGraphBuilds),
+      count: graphBuildCount,
+      findMany: graphBuildFindMany,
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     $transaction: vi.fn(),
@@ -484,28 +518,32 @@ describe('KB retention maintenance', () => {
     })
 
     expect(prisma.kB.deleteMany).toHaveBeenCalledWith({
-      where: {
+      where: expect.objectContaining({
         id: KB_ID,
-        deletedAt: { not: null },
         resources: { none: {} },
         uploadTickets: { none: {} },
         chatbots: { none: { isEnabled: true } },
-        graphBuilds: { none: { cleanedAt: null } },
-      },
+        // A build ledger row carries the settled cost evidence and cascades from
+        // the KB, so only a knowledge base that never built a graph is removed,
+        // and only once the recovery grace has expired.
+        graphBuilds: { none: {} },
+        deletedAt: {
+          not: null,
+          lte: new Date(NOW.getTime() - GRAPH_DELETION_GRACE_MS),
+        },
+      }),
     })
   })
 
-  it('removes only an unreferenced retained graph and its pinned artifact', async () => {
-    const buildId = 'f1fbd1fd-aabb-4dd4-8e64-2f9a13a971a6'
-    const graphName = `klickeruzh:kb:${KB_ID}:${buildId}`
-    const graphmlBlobName = `knowledge-graphs/${buildId}.graphml`
+  it('retires an unreferenced successful graph but keeps its GraphML archive', async () => {
     const prisma = maintenancePrisma({
       retainedGraphBuilds: [
         {
-          id: buildId,
+          id: BUILD_ID,
           kbId: KB_ID,
-          graphName,
-          graphmlBlobName,
+          status: KBGraphBuildStatus.SUCCEEDED,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: GRAPHML_BLOB_NAME,
           kb: {
             ownerId: OWNER_ID,
             activeGraphBuildId: null,
@@ -525,24 +563,139 @@ describe('KB retention maintenance', () => {
       deleteGraph,
     })
 
-    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, graphmlBlobName)
-    expect(deleteGraph).toHaveBeenCalledWith(graphName)
+    // The serving projection is reconstructible and goes after the short grace;
+    // the archive is the durable record and stays while the KB exists, so an
+    // earlier successful version remains restorable.
+    expect(deleteGraph).toHaveBeenCalledWith(GRAPH_NAME)
+    expect(deleteBlob).not.toHaveBeenCalled()
     expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ id: buildId, cleanedAt: null }),
+        where: expect.objectContaining({ id: BUILD_ID, cleanedAt: null }),
         data: { cleanedAt: NOW },
       })
     )
     expect(prisma.kBGraphBuild.updateMany.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         where: expect.objectContaining({
-          id: buildId,
+          id: BUILD_ID,
           cleanedAt: null,
           OR: expect.arrayContaining([{ cleanupStartedAt: null }]),
         }),
         data: { cleanupStartedAt: NOW },
       })
     )
+  })
+
+  it('purges the pinned artifact of a build that never produced an export', async () => {
+    const prisma = maintenancePrisma({
+      retainedGraphBuilds: [
+        {
+          id: BUILD_ID,
+          kbId: KB_ID,
+          status: KBGraphBuildStatus.FAILED,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: GRAPHML_BLOB_NAME,
+          kb: {
+            ownerId: OWNER_ID,
+            activeGraphBuildId: null,
+            publishedGraphBuildId: null,
+          },
+        },
+      ],
+    })
+    const deleteBlob = vi.fn().mockResolvedValue(undefined)
+    const deleteGraph = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      deleteBlob,
+      deleteGraph,
+    })
+
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, GRAPHML_BLOB_NAME)
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { cleanedAt: NOW, graphmlPurgedAt: NOW },
+      })
+    )
+  })
+
+  it('purges a retained archive only once the deletion recovery grace expired', async () => {
+    const prisma = maintenancePrisma({
+      purgeableArchives: [
+        {
+          id: BUILD_ID,
+          kbId: KB_ID,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: GRAPHML_BLOB_NAME,
+          cleanedAt: NOW,
+          kb: { ownerId: OWNER_ID },
+        },
+      ],
+    })
+    const deleteBlob = vi.fn().mockResolvedValue(undefined)
+    const deleteGraph = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      deleteBlob,
+      deleteGraph,
+    })
+
+    // The pass is selected purely on how long the KB has been deleted, and it
+    // leaves the ledger row in place so the settled cost stays auditable.
+    expect(prisma.kBGraphBuild.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: {
+          graphmlPurgedAt: null,
+          kb: {
+            deletedAt: {
+              lte: new Date(NOW.getTime() - GRAPH_DELETION_GRACE_MS),
+            },
+          },
+        },
+      })
+    )
+    expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, GRAPHML_BLOB_NAME)
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
+      where: { id: BUILD_ID, kbId: KB_ID, graphmlPurgedAt: null },
+      data: { graphmlPurgedAt: NOW },
+    })
+  })
+
+  it('re-enqueues a graph build stranded between its reservation and its dispatch', async () => {
+    const prisma = maintenancePrisma({
+      pendingGraphDispatch: [{ id: BUILD_ID, kbId: KB_ID }],
+    })
+    const enqueueKBGraphBuild = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      enqueueKBGraphBuild,
+    })
+
+    expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: {
+          status: KBGraphBuildStatus.QUEUED,
+          externalOperationId: null,
+          dispatchClaimedAt: null,
+          createdAt: {
+            lte: new Date(NOW.getTime() - KB_MAINTENANCE_INTERVAL_MS),
+          },
+        },
+      })
+    )
+    // Recovery reuses the stored build id, which is already the external
+    // idempotency key, so no second run and no second charge can start.
+    expect(enqueueKBGraphBuild).toHaveBeenCalledWith(BUILD_ID)
   })
 
   it('retries a stranded UPSERT dispatch stuck in the crash window with its stable attempt id', async () => {

@@ -54,9 +54,15 @@ function getHeader(headers: WebhookHeaders, name: string) {
   return typeof value === 'string' ? value : undefined
 }
 
+// The canonical JSON below is what the webhook signature is verified against, so
+// key order must be byte-stable and locale-independent rather than collated.
+function compareCodeUnits(a: string, b: string) {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 function hasExactKeys(value: Record<string, unknown>, keys: string[]) {
-  const actualKeys = Object.keys(value).sort()
-  const expectedKeys = [...keys].sort()
+  const actualKeys = Object.keys(value).sort(compareCodeUnits)
+  const expectedKeys = [...keys].sort(compareCodeUnits)
   return (
     actualKeys.length === expectedKeys.length &&
     actualKeys.every((key, index) => key === expectedKeys[index])
@@ -108,7 +114,7 @@ function canonicalJson(value: unknown): string {
   if (value !== null && typeof value === 'object') {
     const record = value as Record<string, unknown>
     return `{${Object.keys(record)
-      .sort()
+      .sort(compareCodeUnits)
       .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
       .join(',')}}`
   }

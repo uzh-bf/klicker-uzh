@@ -131,9 +131,15 @@ function getOrigin(env: NodeJS.ProcessEnv, name: string): string {
   return value.origin
 }
 
+// Key comparison guards an exact-shape contract check, so the order must be
+// byte-stable code units rather than locale-dependent collation.
+function compareCodeUnits(a: string, b: string) {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 function hasExactKeys(value: Record<string, unknown>, keys: string[]) {
-  const actualKeys = Object.keys(value).sort()
-  const expectedKeys = [...keys].sort()
+  const actualKeys = Object.keys(value).sort(compareCodeUnits)
+  const expectedKeys = [...keys].sort(compareCodeUnits)
   return (
     actualKeys.length === keys.length &&
     actualKeys.every((key, index) => key === expectedKeys[index])

@@ -152,7 +152,7 @@ describe('chat knowledge graph API client', () => {
       participationRequired: true,
       participationMessage: null,
     })
-    expect(useChatStore.getState().participationMessage).not.toContain('secret')
+    expect(JSON.stringify(useChatStore.getState())).not.toContain('secret')
   })
 
   it('uses authedFetch so the guest bearer token reaches the API', async () => {

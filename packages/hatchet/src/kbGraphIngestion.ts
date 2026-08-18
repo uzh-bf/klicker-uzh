@@ -26,6 +26,15 @@ import {
 
 const KB_GRAPH_MONITOR_BATCH_SIZE = 32
 const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
+export const KB_GRAPH_DISPATCH_AMBIGUOUS_CODE = 'KB_GRAPH_DISPATCH_AMBIGUOUS'
+const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
+// A dispatch claim is written just before the provider call, so a claimed build
+// with no external operation id is ambiguous for as long as the first attempt may
+// still be inside that call. Within this window a duplicate task run must leave
+// the build alone: asking the provider too early answers "no run yet", and acting
+// on that answer would release the reservation while the real run is starting and
+// goes on to spend. Only a claim older than the window is treated as abandoned.
+const KB_GRAPH_DISPATCH_CLAIM_GRACE_MS = 15 * 60 * 1000
 
 type KBGraphPrisma = Pick<
   PrismaClient,
@@ -139,7 +148,11 @@ function isActiveBuildStatus(status: KBGraphBuildStatus) {
 
 async function releaseKBGraphReservationInTransaction(
   prisma: Prisma.TransactionClient,
-  buildId: string
+  buildId: string,
+  // A held reservation normally only leaves RESERVED. Resolving an ambiguous
+  // dispatch also has to unwind a hold that was already parked for review, once
+  // the provider has confirmed that no run of that build id ever existed.
+  releasableCostStatuses: KBGraphCostStatus[] = [KBGraphCostStatus.RESERVED]
 ): Promise<void> {
   const build = await prisma.kBGraphBuild.findUnique({
     where: { id: buildId },
@@ -151,7 +164,8 @@ async function releaseKBGraphReservationInTransaction(
   })
   if (
     !build ||
-    build.costStatus !== KBGraphCostStatus.RESERVED ||
+    build.costStatus === null ||
+    !releasableCostStatuses.includes(build.costStatus) ||
     build.estimatedCostMinorUnits === null
   ) {
     return
@@ -168,7 +182,7 @@ async function releaseKBGraphReservationInTransaction(
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
       id: buildId,
-      costStatus: KBGraphCostStatus.RESERVED,
+      costStatus: build.costStatus,
     },
     data: { costStatus: KBGraphCostStatus.RELEASED },
   })
@@ -445,6 +459,131 @@ function validateBuildIdentity(build: KBGraphDispatchRecord): void {
   }
 }
 
+/**
+ * Outcome of asking the provider whether an accepted-but-uncorrelated dispatch
+ * actually produced a run.
+ *
+ * - `CORRELATED`: the run exists and the build now carries its id again.
+ * - `RELEASED`: the provider has no such run, so nothing external is spending;
+ *   the reservation is released and the KB build slot is freed for a rebuild.
+ * - `HELD`: the provider could not be asked, so a run may still be spending and
+ *   both the reservation and the build slot stay fenced until the next attempt.
+ */
+export type KBGraphDispatchAmbiguityResolution =
+  | 'CORRELATED'
+  | 'RELEASED'
+  | 'HELD'
+
+/**
+ * Resolves a build whose dispatch was claimed but never correlated. The provider
+ * lookup decides: only a definitive "no run for this build id" may unwind the
+ * hold, because releasing a reservation for a run that is still generating would
+ * both under-charge the lecturer's quota and allow a second external run.
+ */
+export async function resolveAmbiguousKBGraphDispatch(
+  build: { id: string; kbId: string; createdAt: Date },
+  dependencies: Pick<
+    DispatchKBGraphDependencies,
+    'prisma' | 'client' | 'env' | 'logger' | 'now'
+  >
+): Promise<KBGraphDispatchAmbiguityResolution> {
+  const env = dependencies.env ?? process.env
+  const now = dependencies.now ?? (() => new Date())
+  const identifiers = graphIdentifiers(build)
+
+  let recoveredRun: Awaited<ReturnType<typeof recoverExternalKBGraphRun>>
+  try {
+    const config = getExternalKBGraphConfig(env)
+    const client = dependencies.client ?? getExternalKBGraphClient(env)
+    recoveredRun = await recoverExternalKBGraphRun({
+      client,
+      workflowName: config.workflowName,
+      additionalMetadata: {
+        [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
+        [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
+      },
+      recoveryAnchor: build.createdAt,
+    })
+  } catch {
+    await logErrorBestEffort(
+      dependencies.logger,
+      'KB graph dispatch ambiguity could not be resolved against the provider',
+      identifiers
+    )
+    return 'HELD'
+  }
+
+  if (recoveredRun) {
+    const correlated = await dependencies.prisma.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: null,
+        dispatchClaimedAt: { not: null },
+        kb: { deletedAt: null, activeGraphBuildId: build.id },
+      },
+      data: {
+        externalOperationId: recoveredRun.runId,
+        dispatchClaimedAt: null,
+        externalStartedAt: recoveredRun.startedAt,
+        startedAt: recoveredRun.startedAt,
+        status: KBGraphBuildStatus.PROCESSING,
+        statusMessage: null,
+        errorCode: null,
+        finishedAt: null,
+      },
+    })
+    if (correlated.count !== 1) {
+      return 'HELD'
+    }
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB graph dispatch ambiguity resolved by correlating the external run',
+      identifiers
+    )
+    return 'CORRELATED'
+  }
+
+  await dependencies.prisma.$transaction(async (tx) => {
+    const failed = await tx.kBGraphBuild.updateMany({
+      where: {
+        id: build.id,
+        kbId: build.kbId,
+        externalOperationId: null,
+        // Second money fence: re-checked at write time so a claim refreshed by a
+        // concurrent dispatch between the provider lookup and this update keeps
+        // its reservation instead of being released underneath a starting run.
+        dispatchClaimedAt: {
+          lte: new Date(now().getTime() - KB_GRAPH_DISPATCH_CLAIM_GRACE_MS),
+        },
+      },
+      data: {
+        status: KBGraphBuildStatus.FAILED,
+        statusMessage: 'The external KB graph workflow could not be started.',
+        errorCode: KB_GRAPH_DISPATCH_FAILED_CODE,
+        finishedAt: new Date(),
+      },
+    })
+    if (failed.count !== 1) {
+      return
+    }
+    await releaseKBGraphReservationInTransaction(tx, build.id, [
+      KBGraphCostStatus.RESERVED,
+      KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+    ])
+    await tx.kB.updateMany({
+      where: { id: build.kbId, activeGraphBuildId: build.id },
+      data: { activeGraphBuildId: null },
+    })
+  })
+  await logInfoBestEffort(
+    dependencies.logger,
+    'KB graph dispatch ambiguity resolved: the provider has no run for this build',
+    identifiers
+  )
+  return 'RELEASED'
+}
+
 export async function dispatchKBGraphBuild(
   input: BuildKBGraphInput,
   dependencies: DispatchKBGraphDependencies
@@ -504,7 +643,31 @@ export async function dispatchKBGraphBuild(
     return undefined
   }
   if (build.dispatchClaimedAt !== null && build.externalOperationId === null) {
-    await markKBGraphBuildDispatchFailed(input, dependencies.prisma)
+    if (
+      now().getTime() - build.dispatchClaimedAt.getTime() <
+      KB_GRAPH_DISPATCH_CLAIM_GRACE_MS
+    ) {
+      // A sibling task run for the same build is probably still inside the
+      // provider call. Leave its claim, its reservation, and its status exactly
+      // as they are; the graph monitor revisits the build once the claim ages
+      // past the grace.
+      await logInfoBestEffort(
+        dependencies.logger,
+        'KB graph dispatch is already claimed and may still be in flight',
+        graphIdentifiers(build)
+      )
+      return undefined
+    }
+    // Ask the provider before parking the build for review: the earlier attempt
+    // may have produced a run that simply lost its id, and an unresolvable hold
+    // fences the KB slot and the lecturer's quota with no way out.
+    const resolution = await resolveAmbiguousKBGraphDispatch(
+      build,
+      dependencies
+    )
+    if (resolution === 'HELD') {
+      await markKBGraphBuildDispatchFailed(input, dependencies.prisma)
+    }
     return undefined
   }
   if (isUnstartedActiveBuild(build)) {
@@ -907,6 +1070,10 @@ export async function monitorActiveKBGraphBuilds(
     ...(timedOutOffset > 0 ? { skip: timedOutOffset } : {}),
     take: KB_GRAPH_MONITOR_BATCH_SIZE,
   })
+  // Runs ahead of the early return: a build parked on an ambiguous dispatch has
+  // neither a correlated run nor a timeout, so no other sweep would revisit it.
+  await recheckAmbiguousKBGraphDispatches(dependencies, sweepNow)
+
   if (builds.length === 0 && timedOutBuilds.length === 0) {
     return
   }
@@ -1016,6 +1183,48 @@ export async function monitorActiveKBGraphBuilds(
     client,
     now
   )
+}
+
+/**
+ * Retries the provider lookup for every build still parked on an ambiguous
+ * dispatch. A provider outage is transient, so the hold is a waiting state rather
+ * than a permanent one: each sweep either correlates the run or, once the
+ * provider is reachable and reports no run, releases the reservation and frees
+ * the KB build slot so the lecturer can rebuild without an operator.
+ */
+export async function recheckAmbiguousKBGraphDispatches(
+  dependencies: Pick<
+    MonitorKBGraphBuildsDependencies,
+    'prisma' | 'client' | 'env' | 'logger'
+  >,
+  sweepNow: Date
+): Promise<void> {
+  const ambiguousWhere = {
+    errorCode: KB_GRAPH_DISPATCH_AMBIGUOUS_CODE,
+    externalOperationId: null,
+    // Only claims older than the in-flight grace are candidates: a fresher claim
+    // may belong to a dispatch that is still inside the provider call.
+    dispatchClaimedAt: {
+      lte: new Date(sweepNow.getTime() - KB_GRAPH_DISPATCH_CLAIM_GRACE_MS),
+    },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const ambiguousCount = await dependencies.prisma.kBGraphBuild.count({
+    where: ambiguousWhere,
+  })
+  const ambiguousOffset = getGraphMonitorBatchOffset(ambiguousCount, sweepNow)
+  const ambiguousBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: ambiguousWhere,
+    select: { id: true, kbId: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+    ...(ambiguousOffset > 0 ? { skip: ambiguousOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+  for (const build of ambiguousBuilds) {
+    await resolveAmbiguousKBGraphDispatch(build, {
+      ...dependencies,
+      now: () => sweepNow,
+    })
+  }
 }
 
 export async function markKBGraphBuildDispatchFailed(

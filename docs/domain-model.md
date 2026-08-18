@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-16'
+timestamp: '2026-08-18'
 tags:
   - backend
   - prisma
@@ -66,6 +66,8 @@ The KB's content revision is a digest over the active serving set — the `resou
 Nothing lands in FalkorDB until a build is complete: each build writes to its own recorded graph name and the published pointer moves only to a successful build, so no reader ever observes a partial graph and a failed build leaves the serving graph untouched. An operational FalkorDB graph that is no longer active or published stays through a bounded retirement grace period before KB maintenance sweeps it. A successful build's GraphML export follows the longer knowledge-base archive lifecycle: it remains while the knowledge base exists and for 30 days after deletion, and it is excluded from the resource quota. Failed or incomplete builds do not create a durable GraphML archive.
 
 FalkorDB is a reconstructible serving projection rather than the durable graph record. Completed GraphML artifacts form the graph archive and recovery source; a restore validates build identity, source digest, provenance, and graph counts before publication moves. The operational trade-off is recorded in [ADR 0010](./adr/0010-graphml-archive-recovers-falkordb.md).
+
+The restore half of that decision is not built yet: no code in this repository imports a GraphML export back into FalkorDB (roadmap W4 step 6). Until it lands, losing FalkorDB means rebuilding every affected graph from its sources at the lecturer's cost, even though the archive itself is now retained for the full knowledge-base lifetime per [ADR 0015](./adr/0015-graphml-follows-kb-lifecycle.md). Operationally: the archive protects the record, not the recovery time.
 
 Every successful GraphML version remains archived while its KB exists. Deleting the KB starts a 30-day recovery grace period, after which maintenance purges its archived graphs. Long-term archival beyond that beta policy requires a new general-availability decision. The lifecycle is recorded in [ADR 0015](./adr/0015-graphml-follows-kb-lifecycle.md).
 

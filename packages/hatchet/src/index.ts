@@ -421,7 +421,14 @@ export function prepareHatchetTasks({
       maxRuns: 1,
       limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
     },
-    fn: async (_, ctx) => maintainKBResources({ prisma, logger: ctx.logger }),
+    fn: async (_, ctx) =>
+      maintainKBResources({
+        prisma,
+        logger: ctx.logger,
+        enqueueKBGraphBuild: async (buildId) => {
+          await buildKBGraph.runNoWait({ buildId })
+        },
+      }),
   })
 
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing

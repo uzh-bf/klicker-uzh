@@ -189,12 +189,17 @@ model KBGraphBuild {
   startedAt           DateTime?
   finishedAt          DateTime?
   // terminal builds keep their ledger row; maintenance records once their
-  // external graph and GraphML artifact have been removed.
+  // external FalkorDB graph has been retired.
   // Set before external deletion so late external completions cannot publish
   // while retention cleanup is in flight. Stale claims are reclaimable after
   // the retention grace window.
-  cleanupStartedAt DateTime?
+  cleanupStartedAt    DateTime?
   cleanedAt           DateTime?
+  // The GraphML archive outlives the serving graph: it is purged on a separate,
+  // longer clock (the KB deletion recovery grace) so an earlier successful
+  // version stays restorable while the knowledge base exists. Tracked apart from
+  // `cleanedAt` because whole-KB hard deletion keys off graph retirement.
+  graphmlPurgedAt     DateTime?
 
   // builds spend the requesting lecturer's AI budget, so the requester is recorded
   requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)

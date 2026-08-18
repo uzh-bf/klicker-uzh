@@ -17,5 +17,11 @@ export function getBlobStorageAccountUrl(
     throw new Error('Blob storage account URL is invalid')
   }
 
-  return accountUrl.replace(/\/+$/, '')
+  // Trimmed without a regex: a backtracking `\/+$` on a configured value is a
+  // polynomial-time pattern, and a plain scan is both linear and clearer.
+  let end = accountUrl.length
+  while (end > 0 && accountUrl.charCodeAt(end - 1) === 47) {
+    end -= 1
+  }
+  return accountUrl.slice(0, end)
 }

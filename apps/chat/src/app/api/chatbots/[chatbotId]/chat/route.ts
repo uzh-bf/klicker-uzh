@@ -27,6 +27,7 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
+import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import { ThreadService } from '@/src/services/threads'
 import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
@@ -819,6 +820,26 @@ export async function POST(
     },
   }))
 
+  // The doc-query scope token carries this session id as its JWT subject, so a
+  // caller-supplied thread id has to be proven to belong to this participant and
+  // chatbot before the token is minted rather than where the thread is first
+  // used further down. A request that opens a new thread has no id yet and falls
+  // back to the request id.
+  const scopeOwningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: { id: currentThreadId, participantId, chatbotId },
+        select: { id: true },
+      })
+    : null
+  const mcpScopeSessionId = resolveMcpScopeSessionId({
+    requestedThreadId: currentThreadId,
+    owningThreadId: scopeOwningThread?.id,
+    fallbackId: requestId,
+  })
+  if (mcpScopeSessionId === null) {
+    return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+  }
+
   // MCP availability is checked before creating a thread or doing any model,
   // credit, image-generation, or message-persistence work.
   let mcpTools: ToolSet
@@ -827,7 +848,7 @@ export async function POST(
       chatbotId,
       participantId,
       kbId: enabledKnowledgeBaseId,
-      sessionId: currentThreadId ?? requestId,
+      sessionId: mcpScopeSessionId,
     })
   } catch (error) {
     if (error instanceof RequiredMCPUnavailableError) {

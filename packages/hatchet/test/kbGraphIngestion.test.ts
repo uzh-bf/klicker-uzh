@@ -23,6 +23,10 @@ import {
 
 const NOW = new Date('2026-08-01T12:00:00.000Z')
 const CREATED_AT = new Date('2026-08-01T11:55:00.000Z')
+// Older than the 15-minute in-flight grace, so the claiming attempt is treated as
+// abandoned rather than as a dispatch that may still be inside the provider call.
+const STALE_CLAIMED_AT = new Date(NOW.getTime() - 16 * 60 * 1000)
+const FRESH_CLAIMED_AT = new Date(NOW.getTime() - 60 * 1000)
 const BUILD_ID = 'd1ec25e9-71ae-449f-88c5-7872f0b1a875'
 const KB_ID = '842f262d-3482-43aa-956a-68f0c52184dd'
 const OWNER_ID = 'fb5c14dc-853a-4acb-b146-080e84c4b7df'
@@ -159,6 +163,8 @@ function createMonitorPrisma(
     timedOutBuildCount = timedOutBuilds.length,
     newerBuild = null,
     servingResources = [],
+    ambiguousBuilds = [],
+    ambiguousBuildCount = ambiguousBuilds.length,
   }: {
     timedOutBuilds?: Array<Record<string, unknown>>
     timedOutBuildCount?: number
@@ -167,6 +173,8 @@ function createMonitorPrisma(
       id: string
       activeContentSha256: string | null
     }>
+    ambiguousBuilds?: Array<Record<string, unknown>>
+    ambiguousBuildCount?: number
   } = {}
 ) {
   const prisma = {
@@ -174,9 +182,21 @@ function createMonitorPrisma(
       findMany: vi
         .fn()
         .mockResolvedValueOnce(builds)
-        .mockResolvedValueOnce(timedOutBuilds),
-      count: vi.fn().mockResolvedValue(timedOutBuildCount),
+        .mockResolvedValueOnce(timedOutBuilds)
+        .mockResolvedValueOnce(ambiguousBuilds),
+      count: vi
+        .fn()
+        .mockResolvedValueOnce(timedOutBuildCount)
+        .mockResolvedValueOnce(ambiguousBuildCount),
       findFirst: vi.fn().mockResolvedValue(newerBuild),
+      findUnique: vi.fn().mockResolvedValue({
+        quotaId: QUOTA_ID,
+        estimatedCostMinorUnits: 100,
+        costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      }),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+    },
+    kBGraphQuota: {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
     kB: {
@@ -210,9 +230,16 @@ describe('KB graph external dispatch', () => {
 
   it('allows an unconfigured worker but rejects a partial graph integration', () => {
     expect(() => validateKBGraphWorkerConfig({})).not.toThrow()
+    // The out-of-repo worker secret alone must not arm the gate: doing so would
+    // stop every unrelated general-worker job if the secret lands first.
     expect(() =>
       validateKBGraphWorkerConfig({
         KB_GRAPH_HATCHET_CLIENT_TOKEN: 'external-token',
+      })
+    ).not.toThrow()
+    expect(() =>
+      validateKBGraphWorkerConfig({
+        KB_GRAPH_HATCHET_WORKFLOW_NAME: 'course-kg-ingestion',
       })
     ).toThrow('KB_GRAPH_HATCHET_CLIENT_TLS_STRATEGY must be configured')
     expect(() => validateKBGraphWorkerConfig(externalEnv)).not.toThrow()
@@ -488,7 +515,7 @@ describe('KB graph external dispatch', () => {
     )
 
     const ambiguousPrisma = createDispatchPrisma({
-      build: createBuild({ dispatchClaimedAt: NOW }),
+      build: createBuild({ dispatchClaimedAt: STALE_CLAIMED_AT }),
     })
     await markKBGraphBuildDispatchFailed(
       { buildId: BUILD_ID },
@@ -502,6 +529,140 @@ describe('KB graph external dispatch', () => {
       })
     )
     expect(ambiguousPrisma.kB.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('correlates an accepted-but-uncorrelated dispatch instead of parking it', async () => {
+    const prisma = createDispatchPrisma({
+      build: createBuild({ dispatchClaimedAt: STALE_CLAIMED_AT }),
+    })
+    const client = createClient({
+      rows: [
+        {
+          workflowRunExternalId: 'recovered-run-id',
+          createdAt: NOW.toISOString(),
+          additionalMetadata: {
+            [KB_GRAPH_BUILD_METADATA_KEY]: BUILD_ID,
+            [KB_GRAPH_KB_METADATA_KEY]: KB_ID,
+          },
+        },
+      ],
+    })
+
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        env: externalEnv,
+        now: () => NOW,
+        getSourceUrl: () => SOURCE_URL,
+      }
+    )
+
+    // The run the earlier attempt lost is adopted, so no second run is started
+    // and the build leaves the ambiguous state on its own.
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalOperationId: 'recovered-run-id',
+          status: KBGraphBuildStatus.PROCESSING,
+          errorCode: null,
+        }),
+      })
+    )
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('leaves a freshly claimed dispatch alone instead of releasing its money', async () => {
+    const prisma = createDispatchPrisma({
+      build: createBuild({ dispatchClaimedAt: FRESH_CLAIMED_AT }),
+    })
+    const client = createClient({ rows: [] })
+
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        env: externalEnv,
+        now: () => NOW,
+        getSourceUrl: () => SOURCE_URL,
+      }
+    )
+
+    // A duplicate task run for the same build must not act on the provider's
+    // "no run yet": the first attempt may still be inside its dispatch call and
+    // about to start a run that spends. Nothing is asked, nothing is written.
+    expect(client.runs.list).not.toHaveBeenCalled()
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('releases the hold when the provider has no run for the claimed build', async () => {
+    const prisma = createDispatchPrisma({
+      build: createBuild({ dispatchClaimedAt: STALE_CLAIMED_AT }),
+    })
+    const client = createClient({ rows: [] })
+
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        env: externalEnv,
+        now: () => NOW,
+        getSourceUrl: () => SOURCE_URL,
+      }
+    )
+
+    // Nothing external was ever accepted, so this is an ordinary dispatch
+    // failure: the quota is given back and the KB build slot is freed.
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DISPATCH_FAILED',
+        }),
+      })
+    )
+    expect(prisma.kBGraphQuota.updateMany).toHaveBeenCalled()
+    expect(prisma.kB.updateMany).toHaveBeenCalledWith({
+      where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
+      data: { activeGraphBuildId: null },
+    })
+  })
+
+  it('keeps the ambiguous hold when the provider lookup itself fails', async () => {
+    const prisma = createDispatchPrisma({
+      build: createBuild({ dispatchClaimedAt: STALE_CLAIMED_AT }),
+    })
+    const client = createClient()
+    vi.mocked(client.runs.list).mockRejectedValue(new Error('provider down'))
+
+    await dispatchKBGraphBuild(
+      { buildId: BUILD_ID },
+      {
+        prisma: prisma as never,
+        client,
+        env: externalEnv,
+        now: () => NOW,
+        getSourceUrl: () => SOURCE_URL,
+      }
+    )
+
+    // A run may still be generating and spending, so neither the quota nor the
+    // build slot may be handed back on an unanswered lookup.
+    expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kB.updateMany).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DISPATCH_AMBIGUOUS',
+        }),
+      })
+    )
   })
 
   it('does not release a reservation when gate compensation loses the dispatch claim race', async () => {
@@ -723,6 +884,34 @@ describe('KB graph external reconciliation', () => {
       2,
       expect.objectContaining({ skip: 32, take: 32 })
     )
+  })
+
+  it('frees a parked ambiguous build once the provider confirms no run exists', async () => {
+    const prisma = createMonitorPrisma([], {
+      ambiguousBuilds: [{ id: BUILD_ID, kbId: KB_ID, createdAt: CREATED_AT }],
+    })
+    const client = createClient({ rows: [] })
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => NOW,
+    })
+
+    // The hold is a waiting state, not a permanent one: the sweep gives the
+    // lecturer their quota and build slot back without an operator step.
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DISPATCH_FAILED',
+        }),
+      })
+    )
+    expect(prisma.kB.updateMany).toHaveBeenCalledWith({
+      where: { id: KB_ID, activeGraphBuildId: BUILD_ID },
+      data: { activeGraphBuildId: null },
+    })
   })
 
   it('does not publish a late completion without a versioned terminal result', async () => {
