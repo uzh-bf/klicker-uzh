@@ -27,6 +27,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0014](./0014-beta-learns-before-quality-thresholds.md) — The graph beta learns before quality thresholds gate it
 - [0015](./0015-graphml-follows-kb-lifecycle.md) — GraphML archive follows the knowledge-base lifecycle
 - [0016](./0016-catalyst-integrates-complete-graph-history.md) — Catalyst integrates the complete graph-runtime history
+- [0017](./0017-graph-build-ledger-is-canonical.md) — The KBGraphBuild ledger is the canonical graph version record
 
 `0001` and `0003` are each used twice — the deployment and chat lines numbered
 independently before this index existed. Numbers are not reassigned, because existing
