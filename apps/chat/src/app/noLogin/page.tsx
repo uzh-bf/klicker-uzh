@@ -41,7 +41,8 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
     : `${loginBaseUrl}/login`
 
   return (
-    <div
+    <main
+      id="main-content"
       data-cy="chat-no-login"
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
     >
@@ -69,6 +70,6 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           {t('chat.noLogin.loginButton')}
         </Link>
       </div>
-    </div>
+    </main>
   )
 }

@@ -3,6 +3,9 @@ export default {
     common: {
       opensInNewTab: '(opens in new tab)',
     },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
