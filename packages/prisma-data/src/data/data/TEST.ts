@@ -1,10 +1,13 @@
 import {
   AchievementType,
   ElementType,
+  LiveQuizResponseCollectionMode,
   ObjectAccess,
   PublicationStatus,
+  ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
+import { COURSE_ID_TEST3 } from '../constants.js'
 
 export const PUBLIC_CATALOG_COLLECTION_ID =
   '64b6eb55-e76d-42bf-b382-5cff2f5bee74'
@@ -797,6 +800,13 @@ export type QUESTION_ID_TYPE =
   // | '10'
   | '11'
 
+const { CORRECT, PARTIAL, WRONG } = ResponseCorrectness
+
+// live quiz choice responses carry one entry per picked option
+function selectedChoices(...indices: number[]) {
+  return { choices: indices.map((ix) => ({ ix, selected: true })) }
+}
+
 export const LIVE_QUIZZES = [
   {
     id: '1ec093e0-b6b6-421f-98ac-98ab146505f7',
@@ -1189,6 +1199,66 @@ export const LIVE_QUIZZES = [
         },
       },
     },
+  },
+  {
+    // the correlated counterpart to the anonymous live quizzes above: it is
+    // already finalized, so every respondent carries the sequential export
+    // label the download uses instead of an account reference. correlated mode
+    // is incompatible with gamification, hence the non-gamified course.
+    id: 'd2b7c4e5-8f61-4a3d-9c02-7e4b1a6f5d38',
+    name: 'Test Live Quiz (Correlated)',
+    displayName: 'Test Live Quiz (Correlated)',
+    description:
+      'Ended live quiz collecting attributable responses for the correlated export.',
+    courseId: COURSE_ID_TEST3,
+    isModerationEnabled: false,
+    isLiveQAEnabled: false,
+    isConfusionFeedbackEnabled: false,
+    isGamificationEnabled: false,
+    isAssessmentEnabled: false,
+    responseCollectionMode: LiveQuizResponseCollectionMode.CORRELATED_EXPORT,
+    status: PublicationStatus.ENDED,
+    blocks: [
+      {
+        questions: [1, 4, 2],
+        timeLimit: undefined,
+      },
+    ],
+    // one entry per respondent, each answering the block questions in order
+    correlatedRespondents: [
+      {
+        id: '0a4c2f18-6d53-4f9a-8b21-3c7e5d90a1f4',
+        answers: [
+          { response: selectedChoices(1, 2), correctness: CORRECT },
+          { response: selectedChoices(3), correctness: CORRECT },
+          { response: { value: '17' }, correctness: CORRECT },
+        ],
+      },
+      {
+        id: '1b5d3a29-7e64-4a0b-9c32-4d8f6e01b2a5',
+        answers: [
+          { response: selectedChoices(1), correctness: PARTIAL },
+          { response: selectedChoices(0), correctness: WRONG },
+          { response: { value: '42' }, correctness: WRONG },
+        ],
+      },
+      {
+        id: '2c6e4b3a-8f75-4b1c-8d43-5e907f12c3b6',
+        answers: [
+          { response: selectedChoices(0, 4), correctness: WRONG },
+          { response: selectedChoices(3), correctness: CORRECT },
+          { response: { value: '5' }, correctness: WRONG },
+        ],
+      },
+      {
+        id: '3d7f5c4b-9a86-4c2d-8e54-6f018a23d4c7',
+        answers: [
+          { response: selectedChoices(2), correctness: PARTIAL },
+          { response: selectedChoices(2), correctness: WRONG },
+          { response: { value: '17' }, correctness: CORRECT },
+        ],
+      },
+    ],
   },
 ]
 

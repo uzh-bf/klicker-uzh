@@ -540,6 +540,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         isConfusionFeedbackEnabled: data.isConfusionFeedbackEnabled,
         isGamificationEnabled: data.isGamificationEnabled,
         isAssessmentEnabled: data.isAssessmentEnabled,
+        responseCollectionMode:
+          data.responseCollectionMode ??
+          Prisma.LiveQuizResponseCollectionMode.AGGREGATED_ANONYMOUS,
         status: data.status ?? Prisma.PublicationStatus.DRAFT,
         availableFrom: data.availableFrom,
         pointsMultiplier: data.pointsMultiplier,
@@ -581,7 +584,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
                   elementId
                 ) as DATA_TEST.QUESTION_ID_TYPE
                 const anonymousResults = isEnded
-                  ? data.anonymousResults[anonymousResultIndex]
+                  ? (data.anonymousResults?.[anonymousResultIndex] ??
+                    initialResults)
                   : initialResults
                 return {
                   order: elementIx,
@@ -631,7 +635,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             }
           : undefined,
         owner: { connect: { id: USER_ID_TEST } },
-        course: { connect: { id: COURSE_ID_TEST } },
+        course: { connect: { id: data.courseId ?? COURSE_ID_TEST } },
       },
       update: {},
       include: {
@@ -651,6 +655,67 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       },
       prisma
     )
+
+    // a finalized correlated quiz has no link left to any account: each
+    // respondent only carries the sequential export label the download uses,
+    // so seeding them directly reproduces a dataset that is ready to export
+    if (data.correlatedRespondents) {
+      const instances = [...liveQuiz.blocks]
+        .sort((blockA, blockB) => blockA.order - blockB.order)
+        .flatMap((block) =>
+          [...block.elements].sort(
+            (elementA, elementB) => elementA.order - elementB.order
+          )
+        )
+
+      for (const [
+        respondentIx,
+        respondent,
+      ] of data.correlatedRespondents.entries()) {
+        await prisma.liveQuizRespondent.upsert({
+          where: { id: respondent.id },
+          create: {
+            id: respondent.id,
+            exportLabel: respondentIx + 1,
+            finalizedAt: endedAtLiveQuiz,
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          update: {},
+        })
+
+        for (const [answerIx, answer] of respondent.answers.entries()) {
+          const instance = instances[answerIx]
+          if (typeof instance === 'undefined') {
+            throw new Error(
+              `Missing element instance ${answerIx} for correlated live quiz ${liveQuiz.id}`
+            )
+          }
+
+          await prisma.liveQuizResponse.upsert({
+            where: {
+              instanceId_elementBlockExecution_respondentId: {
+                instanceId: instance.id,
+                elementBlockExecution: 0,
+                respondentId: respondent.id,
+              },
+            },
+            create: {
+              submittedAt: endedAtLiveQuiz,
+              timeSpent: 10,
+              response: answer.response as Prisma.Prisma.InputJsonValue,
+              correctness: answer.correctness,
+              basePoints: 0,
+              correctnessPoints: 0,
+              bonusPoints: 0,
+              elementBlockExecution: 0,
+              instance: { connect: { id: instance.id } },
+              respondent: { connect: { id: respondent.id } },
+            },
+            update: {},
+          })
+        }
+      }
+    }
 
     // create a catalog collection assignment if the live quiz is in template status
     if (data.status === Prisma.PublicationStatus.TEMPLATE) {
