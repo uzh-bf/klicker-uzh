@@ -30,3 +30,6 @@
   build tasks. Focused OpenGrep completed 210 rules over the three changed
   code/test files; its only result is a pre-existing dynamic-regex finding at
   `playwright/tests/N-course.spec.ts:918`, outside this change.
+- **Review follow-up**: Hardened the Playwright invitation fixture so unknown
+  participant usernames fail immediately and pending fixtures cannot reference
+  participant accounts.
