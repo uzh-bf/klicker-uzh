@@ -164,6 +164,7 @@ export default {
       loading: 'Deine Chats werden geladen...',
     },
     thread: {
+      viewportLabel: 'Gesprächsverlauf',
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',

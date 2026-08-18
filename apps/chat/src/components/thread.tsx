@@ -269,6 +269,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptions,
   initialModeOptionsAreFallback,
 }) => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
   const activeThread = useChatStore((state) =>
     state.threads.find((thread) => thread.id === state.activeThreadId)
@@ -291,8 +292,11 @@ export const Thread: FC<ThreadProps> = ({
       {!embedded && <HistoryRail entries={historyEntries} />}
       <ThreadPrimitive.Viewport
         data-cy="chat-thread-viewport"
+        role="region"
+        aria-label={t('chat.thread.viewportLabel')}
+        tabIndex={0}
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit motion-reduce:scroll-auto',
+          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
             : twMerge(

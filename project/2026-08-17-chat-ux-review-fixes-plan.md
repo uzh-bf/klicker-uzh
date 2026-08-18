@@ -323,9 +323,45 @@ verification, commits, reviews, publication.
   flagged to slice-reviewer), abort-after-tool-step (sources + partial
   text + callout survive reload), rail tick reads "Partial response".
   Two-tab check skipped (noted as slice-reviewer lens).
-- Remaining: S5 gates (slice-reviewer + simplifier), S6a, S6b, reviews,
-  wiki, PR.
-- Evidence: latest verified commit = S5 commit (see git log).
+- S4 simplifier: SIMPLIFY — one accepted finding (undefined handling
+  absorbed into `toHistoryRailPlainText`), applied as `73f74cd38`
+  (report: `_local/reviews/2026-08-17-chat-ux-fixes-s4-simplifier.md`).
+- Wiki: `docs/chat-platform.md` updated for the package (stopped-turn
+  marker contract, corrected rating-failure paragraph, live region, label
+  projection) — `d048dc8ff`.
+- S5 simplifier: DONE_WITH_CONCERNS — one accepted finding (unreachable
+  upsert branch in the deferred abort write), applied as `8489372d7`
+  (report: `_local/reviews/2026-08-18-chat-ux-fixes-s5-simplifier.md`).
+- S5 slice-reviewer: APPROVE_WITH_CONCERNS, no code changes — dual retry
+  affordance is the plan's ruled contract, staleness guard confirmed
+  unreachable and deliberately omitted, terminal-sources lens was
+  mis-scoped (not in branch ancestry). Rulings recorded in
+  `_local/reviews/2026-08-18-chat-ux-fixes-s5-slice-review.md`.
+- S6a (executor): skip link in root layout (first focusable, sr-only until
+  focused, localized `chat.a11y.skipToContent`); per-state
+  `<main id="main-content">` (participation-required, loading, declined,
+  embedded, noLogin; normal state via `SidebarInset id` spread onto its own
+  `<main>`); header row → `<header>`; declined re-consent button switched
+  to the primary CTA idiom (its destructive-contrast comment deleted as
+  invalidated). Known residual: header maps to a generic landmark inside
+  `<main>` (design-system tag not consumer-changeable).
+- S6b (executor): broad `*` reduced-motion guard in globals.css (0.01ms +
+  iteration-count 1 so end-events still fire; scroll-behavior auto);
+  transcript viewport `role="region"` + `aria-label`
+  (`chat.thread.viewportLabel`) + `tabIndex=0` + inset focus ring (inset
+  because ThreadPrimitive.Root clips outset rings); thread list per-group
+  `<ol>`/`<li>` (deviation from single outer `<ol>`: group wrapper holds a
+  heading, invalid `<ol>` content). Known cosmetic gap: guard omits
+  transition-delay (scroll-to-bottom visibility flip keeps its delay).
+- S6 verification: in-container biome + check + test:run 38 files/331
+  green (both slices); live browser: skip link is the first focusable and
+  becomes visible on focus, exactly one `main#main-content` + `<header>`
+  on the normal state, noLogin state has landmark + skip link, viewport
+  region/label/tabIndex and programmatic focusability confirmed, thread
+  rows are `<li>` inside `<ol>`, reduced-motion media rule present in the
+  served stylesheet.
+- Remaining: final review, PR.
+- Evidence: latest verified commit = S6b commit (see git log).
 - Delivery: required layer = draft PR on `v3`; achieved = local branch.
-- Next: collect s4-simplifier; dispatch S5 slice-reviewer + simplifier;
-  S6a/S6b executors.
+- Next: repo-wide check:all; final whole-journey pass + screenshots;
+  final-reviewer; draft PR.

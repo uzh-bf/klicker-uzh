@@ -161,6 +161,7 @@ export default {
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
