@@ -15,5 +15,5 @@ To start, what do you think it means in practice for public information to be "a
 
 ## Sources
 
-- Financial Economics script FS26, Efficient Market Hypothesis
-- Financial Economics script FS26, Capital Asset Pricing Model
+- Financial Economics script FS26, Chapter 1.2, Efficient Market Hypothesis, pp. 9–12
+- Financial Economics script FS26, Chapters 3.1–3.4, Capital Asset Pricing Model, pp. 40–47

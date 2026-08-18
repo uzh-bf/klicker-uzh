@@ -19,5 +19,5 @@ As a first step, how would you describe beta in your own words if you think of i
 
 ## Sources
 
-- Financial Economics script FS26, Capital Asset Pricing Model
-- FinEco FS26 Guide, beta and the Security Market Line
+- Financial Economics script FS26, Chapters 3.4–3.5, Capital Asset Pricing Model and beta, pp. 47–50
+- FinEco FS26 Guide, Chapter 3, beta and the Security Market Line, pp. 40–50

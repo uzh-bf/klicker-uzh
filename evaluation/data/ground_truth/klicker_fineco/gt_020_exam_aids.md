@@ -15,5 +15,5 @@ Which section of the formula guide would you currently find hardest to reproduce
 
 ## Sources
 
-- Financial Economics FS26 course information, assessment and permitted aids
-- FinEco FS26 Guide, exam preparation material
+- Financial Economics FS26 course information, Section 5.1, assessment and permitted aids, p. 5
+- Financial Economics FS26 course information, Section 4.2, the FinEco Guide as exam preparation material, pp. 2–3

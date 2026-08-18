@@ -23,5 +23,5 @@ Looking at the formula, which term makes the ex-ante alpha specific to investor 
 
 ## Sources
 
-- Financial Economics script FS26, homogeneous CAPM and alpha
-- Financial Economics script FS26, CAPM with heterogeneous expectations
+- Financial Economics script FS26, Chapter 3.6, homogeneous CAPM and alpha, p. 50
+- Financial Economics script FS26, Chapter 4.2, alpha under heterogeneous expectations, p. 57

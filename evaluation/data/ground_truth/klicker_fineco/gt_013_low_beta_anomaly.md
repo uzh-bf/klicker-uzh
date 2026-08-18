@@ -19,5 +19,5 @@ This is an average empirical pattern, not a claim that every low-beta security a
 
 ## Sources
 
-- Financial Economics script FS26, empirical evidence on the CAPM
-- FinEco FS26 Guide, low-beta anomaly
+- Financial Economics script FS26, Chapter 5.3, empirical CAPM anomalies and the beta-return relation, pp. 65–66
+- FinEco FS26 Guide, Chapter 5, empirical evidence and the low-beta anomaly, pp. 62–66

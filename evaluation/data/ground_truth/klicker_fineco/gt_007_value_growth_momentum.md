@@ -15,5 +15,5 @@ Which information would you examine first to decide whether a security belongs t
 
 ## Sources
 
-- Financial Economics script FS26, empirical CAPM anomalies and investment styles
-- FinEco FS26 Guide, value, growth, and momentum strategies
+- Financial Economics script FS26, Chapters 9.3–9.5, value, momentum, and growth strategies, p. 82
+- FinEco FS26 Guide, Chapter 9, value, growth, and momentum strategies, pp. 81–82

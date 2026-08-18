@@ -20,5 +20,5 @@ Therefore, only matrix C can be a covariance matrix.
 
 ## Sources
 
-- Financial Economics script FS26, covariance matrices
-- FinEco FS26 Guide, variance-covariance matrices
+- Financial Economics script FS26, Chapter 1.1, matrix definiteness, pp. 1–8; Chapter 2.2, covariance matrices, pp. 26–29
+- FinEco FS26 Guide, Chapter 1.1, matrix operations and semidefiniteness, pp. 1–8; Chapter 2.2, variance-covariance matrices, pp. 26–28

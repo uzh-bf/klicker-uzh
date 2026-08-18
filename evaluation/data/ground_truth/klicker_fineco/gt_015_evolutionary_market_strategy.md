@@ -19,5 +19,5 @@ As relative wealth changes over time, the strategies that perform better receive
 
 ## Sources
 
-- Financial Economics script FS26, Evolutionary Finance model
-- FinEco FS26 Guide, relative wealth and market strategy
+- Financial Economics script FS26, Chapter 10.3, Evolutionary Finance model and market strategy, pp. 86–89
+- FinEco FS26 Guide, Chapter 10.3, relative wealth and market strategy, pp. 86–89

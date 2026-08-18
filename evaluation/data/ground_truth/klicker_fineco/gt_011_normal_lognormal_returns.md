@@ -20,5 +20,5 @@ Simple returns are also sometimes approximated as normal for short horizons and 
 
 ## Sources
 
-- Financial Economics script FS26, return distributions and random walks
-- FinEco FS26 Guide, simple returns, gross returns, and log returns
+- Financial Economics script FS26, Chapters 1.3–1.4, return distributions and random walks, pp. 12–17
+- FinEco FS26 Guide, Chapters 1.3–1.4, simple returns, gross returns, and log returns, pp. 12–17

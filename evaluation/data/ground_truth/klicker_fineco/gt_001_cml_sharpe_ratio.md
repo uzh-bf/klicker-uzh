@@ -19,5 +19,5 @@ So the CML shows the expected excess return per unit of total risk. This is diff
 
 ## Sources
 
-- Financial Economics script FS26, portfolio theory and CAPM
-- FinEco FS26 Guide, Sharpe ratio and tangency portfolio
+- Financial Economics script FS26, Chapter 3.1, graphical derivation of the Security Market Line and the CML, p. 40
+- FinEco FS26 Guide, Chapter 2, Sharpe ratio and tangency portfolio, pp. 10–18

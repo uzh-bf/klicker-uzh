@@ -25,5 +25,5 @@ If an asset's beta rises while the market risk premium stays constant, which par
 
 ## Sources
 
-- Financial Economics script FS26, Security Market Line
-- FinEco FS26 Guide, beta and risk premiums
+- Financial Economics script FS26, Chapter 3.4, CAPM equation and Security Market Line, p. 47
+- FinEco FS26 Guide, Chapter 3, beta, the Security Market Line, and risk premiums, pp. 40–50

@@ -25,5 +25,5 @@ $$
 
 ## Sources
 
-- Financial Economics script FS26, portfolio weights
-- FinEco FS26 Guide, portfolio theory
+- Financial Economics script FS26, Chapter 2.1, portfolio returns and weights, pp. 22–23
+- FinEco FS26 Guide, Chapter 2, portfolio weights and the risk-free asset, pp. 1–20

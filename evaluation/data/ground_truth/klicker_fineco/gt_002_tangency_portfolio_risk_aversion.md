@@ -29,5 +29,5 @@ Which of $\mu(R_T)$, $R_f$, and $\sigma_T^2$ have you already calculated, so tha
 
 ## Sources
 
-- Financial Economics script FS26, utility-maximizing portfolios
-- FinEco FS26 Guide, portfolio optimization
+- Financial Economics script FS26, Chapter 2.5, utility-maximizing portfolios, p. 38
+- FinEco FS26 Guide, Chapter 2, portfolio optimization and risk aversion, pp. 10–18

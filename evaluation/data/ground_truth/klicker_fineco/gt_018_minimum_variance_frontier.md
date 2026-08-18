@@ -21,5 +21,5 @@ Which additional constraint turns the single global minimum-variance problem int
 
 ## Sources
 
-- Financial Economics script FS26, minimum-variance portfolio and efficient frontier
-- FinEco FS26 Guide, portfolio optimization
+- Financial Economics script FS26, Chapter 2.3.2, minimum-variance portfolio and efficient frontier, pp. 31–34
+- FinEco FS26 Guide, Chapter 2, portfolio optimization and the efficient frontier, pp. 22–33

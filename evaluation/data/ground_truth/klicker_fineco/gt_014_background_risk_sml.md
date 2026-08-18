@@ -15,5 +15,5 @@ The ordinary CAPM is recovered when the relevant asset and market covariances wi
 
 ## Sources
 
-- Financial Economics script FS26, CAPM with background risks
-- FinEco FS26 Guide, background-risk covariance and the Security Market Line
+- Financial Economics script FS26, Chapters 6.1–6.3, CAPM with background risks, pp. 69–72
+- FinEco FS26 Guide, Chapter 6, background-risk covariance and the Security Market Line, pp. 69–72

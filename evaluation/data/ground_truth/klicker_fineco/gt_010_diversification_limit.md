@@ -23,5 +23,5 @@ Diversification can therefore remove unsystematic risk, while systematic market 
 
 ## Sources
 
-- Financial Economics script FS26, portfolio variance and diversification
-- FinEco FS26 Guide, systematic and unsystematic risk
+- Financial Economics script FS26, Chapter 2.2, portfolio variance and naive diversification, p. 28
+- FinEco FS26 Guide, Chapter 2.2, systematic and unsystematic risk, p. 28

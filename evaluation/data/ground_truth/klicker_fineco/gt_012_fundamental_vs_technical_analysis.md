@@ -15,5 +15,5 @@ Under weak-form market efficiency, past price and volume information is already 
 
 ## Sources
 
-- Financial Economics script FS26, Efficient Market Hypothesis
-- Financial Economics script FS26, investment styles and analysis methods
+- Financial Economics script FS26, Chapter 1.2, Efficient Market Hypothesis and analysis methods, pp. 9–12
+- Financial Economics script FS26, Chapters 9.3–9.5, investment styles, pp. 81–82

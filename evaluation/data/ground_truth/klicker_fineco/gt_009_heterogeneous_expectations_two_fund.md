@@ -13,5 +13,5 @@ Under heterogeneous expectations, investors disagree about expected returns and 
 
 ## Sources
 
-- Financial Economics script FS26, CAPM with homogeneous expectations
-- Financial Economics script FS26, CAPM with heterogeneous expectations
+- Financial Economics script FS26, Chapter 2.5, two-fund separation under homogeneous expectations, p. 38
+- Financial Economics script FS26, Chapter 4.1, CAPM with heterogeneous expectations, pp. 55–57

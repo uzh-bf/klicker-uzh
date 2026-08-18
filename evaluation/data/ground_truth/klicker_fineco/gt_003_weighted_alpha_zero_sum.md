@@ -29,5 +29,5 @@ For two investors, how would you describe the relationship between their alphas 
 
 ## Sources
 
-- Financial Economics script FS26, CAPM with heterogeneous expectations
-- FinEco FS26 Guide, alpha and investor weights
+- Financial Economics script FS26, Chapter 4.2, alpha under heterogeneous expectations, p. 57
+- FinEco FS26 Guide, Chapter 4, alpha and investor weights under heterogeneous expectations, pp. 12–20

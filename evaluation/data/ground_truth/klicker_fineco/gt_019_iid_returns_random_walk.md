@@ -19,5 +19,5 @@ If today's return innovation is independent of yesterday's, what information fro
 
 ## Sources
 
-- Financial Economics script FS26, return processes and Random Walk Theory
-- FinEco FS26 Guide, market efficiency and return predictability
+- Financial Economics script FS26, Chapter 1.1, Random Walk Theory, p. 1; Chapter 1.3, return processes, pp. 12–16
+- FinEco FS26 Guide, Chapter 1.2, market efficiency and return predictability, pp. 9–12
