@@ -1214,6 +1214,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       semanticAiFeedback: 'AI feedback',
       semanticWhyThisScore: 'Why this score',
       semanticHowToImprove: 'How to improve',
+      semanticConsentTitle: 'AI-assisted feedback',
+      semanticConsentIntro:
+        'This practice quiz can use an external AI evaluation service to compare your answers with the lecturer’s rubrics and provide formative feedback.',
+      semanticConsentData:
+        'If you accept, KlickerUZH sends affected questions, your answers, the reference solutions, and the rubrics to {provider}. Your participant identity is not included.',
+      semanticConsentResponsibility:
+        'The feedback can be incomplete or wrong. Use it as learning support and compare detailed feedback with the reference solution.',
+      semanticConsentDecline:
+        'If you decline, your answers stay in KlickerUZH. Only accepted exact-answer matching is used; a non-match remains unevaluated.',
+      semanticConsentPolicy: 'Disclosure version: {version}',
+      semanticConsentDeclineAction: 'Decline and use exact matching',
+      semanticConsentAcceptAction: 'Accept and start practice quiz',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

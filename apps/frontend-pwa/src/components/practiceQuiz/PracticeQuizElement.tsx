@@ -15,7 +15,6 @@ import {
   useState,
 } from 'react'
 import FreeTextRetryPanel from './FreeTextRetryPanel'
-import SemanticEvaluationConsentModal from './SemanticEvaluationConsentModal'
 import useFreeTextPracticeState from './useFreeTextPracticeState'
 
 function runHandledAction(action: () => Promise<unknown>) {
@@ -54,7 +53,6 @@ function PracticeQuizElement({
     retryEvaluation,
     revealSolution,
     startPracticeCycle,
-    decideConsent,
   } = useFreeTextPracticeState({
     instanceId: element.id,
     enabled: semanticEnabled,
@@ -129,12 +127,6 @@ function PracticeQuizElement({
     await startPracticeCycle()
   }
 
-  const requiresConsent =
-    state?.currentAttempt?.evaluationStatus ===
-      FreeTextEvaluationStatus.Unavailable &&
-    state.currentAttempt.availabilityReason === 'CONSENT_REQUIRED' &&
-    !state.canRetryEvaluation
-
   return (
     <>
       <StudentElement
@@ -167,18 +159,6 @@ function PracticeQuizElement({
           onRevealSolution={() => runHandledAction(revealSolution)}
           onToggleDetails={() => setDetailsOpen((open) => !open)}
           onPracticeAgain={() => runHandledAction(practiceAgain)}
-        />
-      )}
-
-      {requiresConsent && state && (
-        <SemanticEvaluationConsentModal
-          language={state.questionLanguage}
-          provider={state.evaluationProvider}
-          disclosureVersion={state.disclosureVersion}
-          loading={actionLoading}
-          error={!!actionError}
-          onAccept={() => runHandledAction(() => decideConsent(true))}
-          onDecline={() => runHandledAction(() => decideConsent(false))}
         />
       )}
     </>

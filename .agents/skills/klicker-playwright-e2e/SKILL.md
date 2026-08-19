@@ -69,6 +69,10 @@ database, Hatchet workflow, and participant UI remain real. The local test-origi
 wrapper configures the evaluator URL automatically; set
 `PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` only when intentionally exercising
 the unavailable fallback. Never enable the stub in development or production.
+The focused flow decides the versioned external-AI disclosure from the Practice
+Quiz Start action, before filling or submitting an answer. Assert its copy in the
+participant interface locale, then prove that a saved current-version decision
+prevents a repeat prompt and that no disclosure interrupts the post-answer state.
 
 For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
 

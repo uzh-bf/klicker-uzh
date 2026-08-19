@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  DecideSemanticEvaluationConsentDocument,
   FreeTextEvaluationStatus,
   type FreeTextPracticeStateDataFragment,
   FreeTextPracticeStateDocument,
@@ -111,10 +110,6 @@ function useFreeTextPracticeState({
   const [startMutation, startResult] = useMutation(
     StartFreeTextPracticeCycleDocument
   )
-  const [decideConsentMutation, consentResult] = useMutation(
-    DecideSemanticEvaluationConsentDocument
-  )
-
   useEffect(() => {
     if (initialState !== undefined) {
       setState((current) => preferLatestState(current, initialState))
@@ -130,7 +125,6 @@ function useFreeTextPracticeState({
 
   const currentAttemptId = state?.currentAttempt?.id
   const cycleId = state?.cycleId
-  const disclosureVersion = state?.disclosureVersion
 
   const submitAnswer = useCallback(
     async ({ answer, answerTime }: { answer: string; answerTime: number }) => {
@@ -191,26 +185,6 @@ function useFreeTextPracticeState({
     return nextState ?? null
   }, [instanceId, startMutation])
 
-  const decideConsent = useCallback(
-    async (accepted: boolean) => {
-      if (!disclosureVersion) return null
-
-      await decideConsentMutation({
-        variables: {
-          disclosureVersion,
-          accepted,
-        },
-      })
-      if (accepted) return await retryEvaluation()
-
-      const refreshed = await refetch()
-      const nextState = refreshed.data.freeTextPracticeState ?? null
-      setState((current) => preferLatestState(current, nextState))
-      return nextState
-    },
-    [decideConsentMutation, disclosureVersion, refetch, retryEvaluation]
-  )
-
   const refresh = useCallback(async () => {
     if (!enabled) return null
     const refreshed = await refetch()
@@ -227,19 +201,16 @@ function useFreeTextPracticeState({
       submitResult.loading ||
       retryResult.loading ||
       revealResult.loading ||
-      startResult.loading ||
-      consentResult.loading,
+      startResult.loading,
     actionError:
       submitResult.error ||
       retryResult.error ||
       revealResult.error ||
-      startResult.error ||
-      consentResult.error,
+      startResult.error,
     submitAnswer,
     retryEvaluation,
     revealSolution,
     startPracticeCycle,
-    decideConsent,
     refresh,
   }
 }

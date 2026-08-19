@@ -24,7 +24,15 @@ async function openQuiz(page: Page, username: string) {
     `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`,
     { waitUntil: 'commit' }
   )
+}
+
+async function startQuiz(page: Page, decision: 'accept' | 'decline') {
   await page.getByTestId('start-practice-quiz').click()
+  const disclosure = page.getByTestId('semantic-evaluation-consent')
+  await expect(disclosure).toBeVisible()
+  await expect(disclosure).toContainText('AI-assisted feedback')
+  await page.getByTestId(`semantic-consent-${decision}`).click()
+  await expect(page.getByTestId('free-text-input-0')).toBeVisible()
 }
 
 async function submitInitialStack(page: Page, semanticAnswer: string) {
@@ -44,15 +52,13 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     page,
   }) => {
     await openQuiz(page, 'testuser1')
+    await startQuiz(page, 'accept')
     await submitInitialStack(page, data.partialAnswer)
 
-    await expect(page.getByTestId('semantic-evaluation-consent')).toContainText(
-      'KI-gestütztes Feedback'
-    )
     await expect(
       page.getByText(data.semanticEvaluation.reference_solution)
     ).toHaveCount(0)
-    await page.getByTestId('semantic-consent-accept').click()
+    await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
 
     const panel = page.getByTestId('semantic-free-text-retry-panel')
     await expect(panel).toContainText('Your answer is being evaluated.')
@@ -62,6 +68,8 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
 
     await page.reload({ waitUntil: 'commit' })
+    await page.getByTestId('start-practice-quiz').click()
+    await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
     await expect(panel).toContainText(data.partialLabel)
     await expect(page.getByTestId('free-text-input-0')).toBeDisabled()
     await expect(page.getByTestId('free-text-input-1')).toBeDisabled()
@@ -93,15 +101,14 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     page,
   }) => {
     await openQuiz(page, 'testuser2')
+    await startQuiz(page, 'decline')
     await submitInitialStack(page, data.incorrectAnswer)
-
-    await expect(page.getByTestId('semantic-evaluation-consent')).toBeVisible()
-    await page.getByTestId('semantic-consent-decline').click()
 
     const panel = page.getByTestId('semantic-free-text-retry-panel')
     await expect(panel).toContainText(
       'Semantic feedback is currently unavailable.'
     )
+    await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
     await expect(page.getByTestId('semantic-attempts-used')).toContainText(
       '0 of 2'
     )
@@ -116,8 +123,8 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     page,
   }) => {
     await openQuiz(page, 'testuser5')
+    await startQuiz(page, 'accept')
     await submitInitialStack(page, data.partialAnswer)
-    await page.getByTestId('semantic-consent-accept').click()
 
     const panel = page.getByTestId('semantic-free-text-retry-panel')
     await expect(panel).toContainText(data.partialLabel)
@@ -167,8 +174,11 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     await expect(correlationResult).toHaveAttribute('open', '')
   })
 
-  test('accepts an exact answer without external consent', async ({ page }) => {
+  test('keeps exact matching after declining external evaluation', async ({
+    page,
+  }) => {
     await openQuiz(page, 'testuser3')
+    await startQuiz(page, 'decline')
     await submitInitialStack(page, data.exactAnswer)
 
     await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
@@ -182,8 +192,8 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     page,
   }) => {
     await openQuiz(page, 'testuser4')
+    await startQuiz(page, 'accept')
     await submitInitialStack(page, data.incorrectAnswer)
-    await page.getByTestId('semantic-consent-accept').click()
 
     const panel = page.getByTestId('semantic-free-text-retry-panel')
     await expect(panel).toContainText(data.incorrectLabel)

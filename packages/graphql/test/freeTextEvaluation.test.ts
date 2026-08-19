@@ -39,6 +39,7 @@ import {
   completeFreeTextAttemptEvaluationInTransaction,
   decideSemanticEvaluationConsent,
   getFreeTextPracticeState,
+  getSemanticFreeTextCapability,
   markFreeTextAttemptUnavailable,
   retryFreeTextEvaluation,
   revealFreeTextSolution,
@@ -783,6 +784,36 @@ describe('semantic free-text practice state', () => {
     expect(state.peerAnswers).toHaveLength(20)
     expect(state.peerAnswers[0]).toEqual({ value: 'Answer 24', count: 25 })
     expect(state.peerAnswers.at(-1)).toEqual({ value: 'Answer 05', count: 6 })
+  })
+
+  it('returns the participant decision for the current disclosure version', async () => {
+    const ctx = participantContext(fixture.participant.id)
+
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      disclosureVersion: '2026-08-18',
+      entitled: false,
+      consentDecision: null,
+    })
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      consentDecision: SemanticEvaluationConsentDecision.ACCEPTED,
+    })
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      consentDecision: SemanticEvaluationConsentDecision.DECLINED,
+    })
+
+    await expect(
+      getSemanticFreeTextCapability(lecturerContext(fixture.lecturer.id))
+    ).resolves.toMatchObject({ consentDecision: null })
   })
 
   it('does not expose solution details for an active cycle', async () => {

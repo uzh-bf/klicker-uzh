@@ -1222,6 +1222,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       semanticAiFeedback: 'KI-Feedback',
       semanticWhyThisScore: 'Warum diese Bewertung?',
       semanticHowToImprove: 'So kannst du dich verbessern',
+      semanticConsentTitle: 'KI-gestütztes Feedback',
+      semanticConsentIntro:
+        'Dieses Übungs-Quiz kann einen externen KI-Bewertungsdienst verwenden, um Ihre Antworten mit den Rubriken der Lehrperson zu vergleichen und formatives Feedback zu geben.',
+      semanticConsentData:
+        'Wenn Sie zustimmen, sendet KlickerUZH betroffene Fragen, Ihre Antworten, die Referenzlösungen und die Rubriken an {provider}. Ihre Teilnehmendenidentität wird nicht übermittelt.',
+      semanticConsentResponsibility:
+        'Das Feedback kann unvollständig oder falsch sein. Nutzen Sie es als Lernhilfe und vergleichen Sie detailliertes Feedback mit der Referenzlösung.',
+      semanticConsentDecline:
+        'Wenn Sie ablehnen, bleiben Ihre Antworten in KlickerUZH. Es wird nur der Abgleich mit akzeptierten exakten Antworten verwendet; eine Abweichung bleibt unbewertet.',
+      semanticConsentPolicy: 'Version der Information: {version}',
+      semanticConsentDeclineAction: 'Ablehnen und exakt abgleichen',
+      semanticConsentAcceptAction: 'Zustimmen und Übungs-Quiz starten',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

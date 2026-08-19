@@ -515,9 +515,10 @@ booleans.
       Show solution, View explanation, and Practice again actions.
 - [x] Reopen only the semantic free-text input with the previous answer as editable
       text. Render prior attempts without making them resubmittable.
-- [x] Add the non-dismissible versioned consent modal before the first external
-      retry. Accept retries the saved answer; decline runs exact fallback without
-      sending the answer externally.
+- [x] Add the non-dismissible versioned consent modal to the Start action of every
+      Practice Quiz containing semantic rubric feedback. Accept or decline persists
+      the current-version decision before entering the first stack; decline runs exact
+      fallback without sending an answer externally.
 - [x] Fetch/render reference solution, explanation, per-rubric achieved level and
       rationale, points/XP delta, and peer answers only after the server returns detailed
       data. Never render raw rubric JSON.
@@ -554,7 +555,7 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
       it in global teardown. Refuse to start outside `NODE_ENV=test`.
 - [x] Seed one semantic-retry free-text question with a synthetic rubric and accepted
       answer; add no real course or participant data.
-- [x] Add a focused Practice Quiz semantic spec to prove consent,
+- [x] Add a focused Practice Quiz semantic spec to prove pre-start consent,
       pending-to-partial, individual
       retry-to-correct, no neighboring unlock, reload recovery, detail gating, reveal,
       exhaustion, exact fallback, and no duplicate reward after a repeated request.

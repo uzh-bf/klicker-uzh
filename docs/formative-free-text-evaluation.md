@@ -2,7 +2,7 @@
 type: Design
 title: Formative Free-Text Evaluation
 description: Approved target design for semantic retries, rubric outcomes, durable evaluation, consent, fallback, and solution reveal in Practice Quizzes.
-timestamp: '2026-08-18'
+timestamp: '2026-08-19'
 tags:
   - backend
   - frontend
@@ -100,9 +100,10 @@ prefills the previous answer. Mutations and query responses are reconciled by cy
 attempt, evaluation revision, and terminal status so an older response cannot roll
 the UI back after **Practice again**.
 
-Participant-facing feedback uses the question's configured language where the
-content belongs to that question, including the non-dismissible AI disclosure. The
-surrounding PWA actions remain in the participant's selected interface language.
+Question-specific generated feedback uses the question's configured language. The
+versioned external-AI disclosure uses the participant app's selected interface
+language and appears when the participant starts a Practice Quiz containing semantic
+rubric feedback. A saved decision for the current version prevents repeat prompts.
 
 ## Availability and deterministic fallback
 
@@ -113,7 +114,8 @@ Entitlement, service availability, and participant consent are different gates:
 - the evaluator reports availability separately, with a sanitized reason and
   retryability
 - the participant must accept the current version of the semantic-evaluation
-  disclosure before any answer is sent externally
+  disclosure before an affected Practice Quiz starts and before any answer is sent
+  externally
 
 A missing or declined disclosure keeps the answer in public KlickerUZH. Changing
 the disclosure version requires a new decision. Enforcement is server-side.
