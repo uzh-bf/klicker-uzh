@@ -13,18 +13,16 @@ import {
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { Button, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import {
-  Button,
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableFooter,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
@@ -62,10 +60,10 @@ function ActivityOverviewTable({
   }
 
   return (
-    <ShadcnTable className="mt-2 text-sm">
-      <ShadcnTableHeader>
-        <ShadcnTableRow>
-          <ShadcnTableHead
+    <Table className="mt-2 text-sm">
+      <TableHeader>
+        <TableRow>
+          <TableHead
             className={twMerge(
               'flex-1',
               isLiveQuiz && details.arePointsAwarded ? 'w-2/5 xl:w-1/2' : ''
@@ -75,34 +73,34 @@ function ActivityOverviewTable({
             <>
               {isLiveQuiz && (
                 <>
-                  <ShadcnTableHead className="w-20 whitespace-normal text-center leading-tight">
+                  <TableHead className="w-20 whitespace-normal text-center leading-tight">
                     {t('manage.general.basePointsDescription')}
-                  </ShadcnTableHead>
-                  <ShadcnTableHead className="w-20 whitespace-normal text-center leading-tight">
+                  </TableHead>
+                  <TableHead className="w-20 whitespace-normal text-center leading-tight">
                     {t('manage.general.correctnessPointsDescription')}
-                  </ShadcnTableHead>
-                  <ShadcnTableHead className="w-20 whitespace-normal text-center leading-tight">
+                  </TableHead>
+                  <TableHead className="w-20 whitespace-normal text-center leading-tight">
                     {t('manage.general.bonusPointsDescription')}
-                  </ShadcnTableHead>
+                  </TableHead>
                 </>
               )}
-              <ShadcnTableHead className="w-20 text-center font-bold">
+              <TableHead className="w-20 text-center font-bold">
                 {t('shared.generic.total')}
-              </ShadcnTableHead>
+              </TableHead>
             </>
           )}
-          <ShadcnTableHead className="w-16" />
-        </ShadcnTableRow>
-      </ShadcnTableHeader>
-      <ShadcnTableBody>
+          <TableHead className="w-16" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {stacks.map((stack, stackIx) => (
           <>
-            <ShadcnTableRow
+            <TableRow
               key={`stack-${stack.id}`}
               className="bg-muted/30 hover:bg-muted/30"
               data-cy={`activity-details-stack-header-${stackIx}`}
             >
-              <ShadcnTableCell colSpan={isLiveQuiz ? 4 : 1} className="py-1">
+              <TableCell colSpan={isLiveQuiz ? 4 : 1} className="py-1">
                 <div className="flex items-center font-bold">
                   <span>
                     {isLiveQuiz
@@ -140,16 +138,16 @@ function ActivityOverviewTable({
                     </Tooltip>
                   ) : null}
                 </div>
-              </ShadcnTableCell>
+              </TableCell>
               {details.arePointsAwarded && stack.stackPoints !== null ? (
                 <>
-                  <ShadcnTableCell className="py-1 text-center font-bold">
+                  <TableCell className="py-1 text-center font-bold">
                     {`${stack.stackPoints} P.`}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell />
+                  </TableCell>
+                  <TableCell />
                 </>
               ) : null}
-            </ShadcnTableRow>
+            </TableRow>
 
             {stack.elements.map((element, instanceIx) => {
               const instanceId = String(element.instance.id)
@@ -165,7 +163,7 @@ function ActivityOverviewTable({
               ].includes(element.instance.elementType)
 
               return (
-                <ShadcnTableRow
+                <TableRow
                   key={instanceId}
                   className={twMerge(
                     'hover:bg-muted/50',
@@ -175,7 +173,7 @@ function ActivityOverviewTable({
                   )}
                   data-cy={`stack-${stackIx}-instance-${instanceIx}`}
                 >
-                  <ShadcnTableCell className="whitespace-normal py-2">
+                  <TableCell className="whitespace-normal py-2">
                     <div className="flex items-center gap-2">
                       <div className="line-clamp-1 text-sm font-bold">
                         {element.instance.elementData.name}
@@ -209,44 +207,43 @@ function ActivityOverviewTable({
                         </span>
                       )}
                     </div>
-                  </ShadcnTableCell>
+                  </TableCell>
                   {details.arePointsAwarded && (
                     <>
                       {isLiveQuiz && (
                         <>
-                          <ShadcnTableCell
+                          <TableCell
                             className="text-center align-middle"
                             data-cy={`base-points-stack-${stackIx}-instance-${instanceIx}`}
                           >
                             {`${element.basePoints ?? 0} P.`}
-                          </ShadcnTableCell>
-                          <ShadcnTableCell
+                          </TableCell>
+                          <TableCell
                             className="text-center align-middle"
                             data-cy={`correctness-points-stack-${stackIx}-instance-${instanceIx}`}
                           >
                             {`${element.correctnessPoints ?? 0} P.`}
-                          </ShadcnTableCell>
-                          <ShadcnTableCell
+                          </TableCell>
+                          <TableCell
                             className="text-center align-middle"
                             data-cy={`bonus-points-stack-${stackIx}-instance-${instanceIx}`}
                           >
                             {`${element.bonusPoints ?? 0} P.`}
-                          </ShadcnTableCell>
+                          </TableCell>
                         </>
                       )}
-                      <ShadcnTableCell
+                      <TableCell
                         className="text-uzh-darkgreen-100 text-center align-middle"
                         data-cy={`total-points-stack-${stackIx}-instance-${instanceIx}`}
                       >
                         {`${element.totalPoints} P.`}
-                      </ShadcnTableCell>
+                      </TableCell>
                     </>
                   )}
-                  <ShadcnTableCell className="text-center align-middle">
+                  <TableCell className="text-center align-middle">
                     <Tooltip tooltip={t('manage.activities.previewElement')}>
                       <Button
                         basic
-                        size="icon"
                         className={{ root: 'h-8 w-8' }}
                         onClick={() => {
                           setSelectedInstanceId(element.instance.id)
@@ -267,7 +264,6 @@ function ActivityOverviewTable({
                     >
                       <Button
                         basic
-                        size="icon"
                         className={{ root: 'h-8 w-8' }}
                         disabled={!element.isEditor || element.isDeleted}
                         onClick={() => {
@@ -286,59 +282,59 @@ function ActivityOverviewTable({
                         <FontAwesomeIcon icon={faPencil} size="sm" />
                       </Button>
                     </Tooltip>
-                  </ShadcnTableCell>
-                </ShadcnTableRow>
+                  </TableCell>
+                </TableRow>
               )
             })}
 
             {stackIx < stacks.length - 1 && (
-              <ShadcnTableRow className="h-4">
-                <ShadcnTableCell
+              <TableRow className="h-4">
+                <TableCell
                   colSpan={details.arePointsAwarded ? 6 : 2}
                   className="border-0 p-0"
                 />
-              </ShadcnTableRow>
+              </TableRow>
             )}
           </>
         ))}
-      </ShadcnTableBody>
+      </TableBody>
       {details.arePointsAwarded && (
-        <ShadcnTableFooter>
-          <ShadcnTableRow className="py-2.5 font-bold">
-            <ShadcnTableCell>{`${t('shared.generic.total')}`}</ShadcnTableCell>
+        <TableFooter>
+          <TableRow className="py-2.5 font-bold">
+            <TableCell>{`${t('shared.generic.total')}`}</TableCell>
             {isLiveQuiz && (
               <>
-                <ShadcnTableCell
+                <TableCell
                   className="text-center"
                   data-cy="base-points-activity"
                 >
                   {details?.totalBasePoints ?? 0} P.
-                </ShadcnTableCell>
-                <ShadcnTableCell
+                </TableCell>
+                <TableCell
                   className="text-center"
                   data-cy="correctness-points-activity"
                 >
                   {details?.totalCorrectnessPoints ?? 0} P.
-                </ShadcnTableCell>
-                <ShadcnTableCell
+                </TableCell>
+                <TableCell
                   className="text-center"
                   data-cy="bonus-points-activity"
                 >
                   {details?.totalBonusPoints ?? 0} P.
-                </ShadcnTableCell>
+                </TableCell>
               </>
             )}
-            <ShadcnTableCell
+            <TableCell
               className="text-uzh-darkgreen-100 text-center"
               data-cy="total-points-activity"
             >
               {details?.totalPoints ?? 0} P.
-            </ShadcnTableCell>
-            <ShadcnTableCell />
-          </ShadcnTableRow>
-        </ShadcnTableFooter>
+            </TableCell>
+            <TableCell />
+          </TableRow>
+        </TableFooter>
       )}
-    </ShadcnTable>
+    </Table>
   )
 }
 

@@ -106,7 +106,11 @@ function AddStackButton({
               resetSelection?.()
             }}
             data={{ cy: 'add-stack-with-selected' }}
-            ref={drop}
+            // react-dnd's connector returns the rendered element, which a
+            // callback ref may not do; discard the return value.
+            ref={(node) => {
+              drop(node)
+            }}
           >
             <Button.Icon icon={faSquare} />
             <Button.Label className={{ root: 'max-w-full whitespace-normal' }}>
@@ -156,7 +160,11 @@ function AddStackButton({
               resetSelection?.()
             }}
             data={{ cy: 'add-stack-with-selected' }}
-            ref={drop}
+            // react-dnd's connector returns the rendered element, which a
+            // callback ref may not do; discard the return value.
+            ref={(node) => {
+              drop(node)
+            }}
           >
             <div className="flex flex-row gap-1">
               <FontAwesomeIcon icon={faSquare} />

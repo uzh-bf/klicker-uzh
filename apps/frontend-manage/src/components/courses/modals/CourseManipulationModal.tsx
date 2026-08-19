@@ -320,6 +320,7 @@ function CourseManipulationModal({
                     name="color"
                     label={t('manage.courseList.courseColor')}
                     colorLabel={t('shared.generic.color')}
+                    triggerAriaLabel={t('manage.courseList.courseColor')}
                     position="top-left"
                     submitText={t('shared.generic.confirm')}
                     dataTrigger={{ cy: 'course-color-trigger' }}

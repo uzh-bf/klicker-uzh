@@ -1,7 +1,7 @@
 # 12. Klicker declares design-token names, not their values
 
 Under `@uzh-bf/design-system` v5, Klicker's `@theme` block keeps declaring the token
-*names* its Tailwind utilities need, but their *values* are `var()` references into the
+_names_ its Tailwind utilities need, but their _values_ are `var()` references into the
 design system's runtime cascade rather than hardcoded colours. The block is a namespace
 bridge, not a palette.
 

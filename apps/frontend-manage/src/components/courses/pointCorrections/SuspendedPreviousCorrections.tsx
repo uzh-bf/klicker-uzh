@@ -3,10 +3,10 @@ import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetPreviousPointCorrectionsDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
-  ShadcnCollapsible,
-  ShadcnCollapsibleContent,
-  ShadcnCollapsibleTrigger,
-} from '@uzh-bf/design-system'
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
@@ -48,8 +48,8 @@ function SuspendedPreviousCorrections({
   }
 
   return (
-    <ShadcnCollapsible open={collapsibleOpen} onOpenChange={setCollapsibleOpen}>
-      <ShadcnCollapsibleTrigger className="text-primary-100 flex w-fit items-center gap-2 text-sm font-medium transition-colors hover:underline focus:outline-none focus-visible:underline">
+    <Collapsible open={collapsibleOpen} onOpenChange={setCollapsibleOpen}>
+      <CollapsibleTrigger className="text-primary-100 flex w-fit items-center gap-2 text-sm font-medium transition-colors hover:underline focus:outline-none focus-visible:underline">
         <span>
           {collapsibleOpen
             ? t('manage.pointCorrections.historyToggleHide')
@@ -59,11 +59,11 @@ function SuspendedPreviousCorrections({
           icon={faChevronDown}
           className={`h-3.5 w-3.5 transition-transform duration-200 ${collapsibleOpen ? 'rotate-180' : ''}`}
         />
-      </ShadcnCollapsibleTrigger>
-      <ShadcnCollapsibleContent className="mt-3">
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-3">
         <PreviousPointCorrectionList corrections={corrections} />
-      </ShadcnCollapsibleContent>
-    </ShadcnCollapsible>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

@@ -14,17 +14,15 @@ import {
   ResponseCorrectness,
 } from '@klicker-uzh/graphql/dist/ops'
 import { InstanceStackStudentResponseType } from '@klicker-uzh/shared-components/src/StudentElement'
+import { Button, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import {
-  Button,
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableHead,
-  ShadcnTableHeader,
-  ShadcnTableRow,
-  Tooltip,
-  UserNotification,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useFormatter, useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
@@ -203,65 +201,65 @@ function LiveQuizSingleStudentResults({
 
   return (
     <>
-      <ShadcnTable className="text-xs sm:text-sm">
-        <ShadcnTableHeader>
-          <ShadcnTableRow>
-            <ShadcnTableHead className="w-40 whitespace-normal px-3 text-left text-[0.7rem] leading-tight">
+      <Table className="text-xs sm:text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-40 whitespace-normal px-3 text-left text-[0.7rem] leading-tight">
               {t('manage.assessment.liveQuizElement')}
-            </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
+            </TableHead>
+            <TableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.basePointsDescription')}
-            </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
+            </TableHead>
+            <TableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.correctnessPointsDescription')}
-            </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
+            </TableHead>
+            <TableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.bonusPointsDescription')}
-            </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
+            </TableHead>
+            <TableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('shared.generic.total')}
-            </ShadcnTableHead>
-            <ShadcnTableHead className="whitespace-normal px-0 text-center text-[0.7rem] leading-tight">
+            </TableHead>
+            <TableHead className="whitespace-normal px-0 text-center text-[0.7rem] leading-tight">
               <span className="sr-only">
                 {t('manage.assessment.liveQuizResponse')}
               </span>
-            </ShadcnTableHead>
-          </ShadcnTableRow>
-        </ShadcnTableHeader>
-        <ShadcnTableBody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {computedBlocks.map(({ block, blockIx, instances, totals }) => {
             return (
               <Fragment key={`block-${block.blockId}`}>
-                <ShadcnTableRow className="bg-muted/30 hover:bg-muted/30">
-                  <ShadcnTableCell className="py-2 pl-3 font-bold">
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableCell className="py-2 pl-3 font-bold">
                     {t(`shared.generic.blockN`, { number: blockIx + 1 })}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="px-2 py-2 text-center">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-center">
                     {renderPointsStack(
                       totals.basePoints,
                       totals.availableBasePoints
                     )}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="px-2 py-2 text-center">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-center">
                     {renderPointsStack(
                       totals.correctnessPoints,
                       totals.availableCorrectnessPoints
                     )}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="px-2 py-2 text-center">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-center">
                     {renderPointsStack(
                       totals.bonusPoints,
                       totals.availableBonusPoints
                     )}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="px-2 py-2 text-center">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-center">
                     {renderPointsStack(
                       totals.totalPoints,
                       totals.totalAvailablePoints
                     )}
-                  </ShadcnTableCell>
-                  <ShadcnTableCell className="w-0 max-w-0 px-0" />
-                </ShadcnTableRow>
+                  </TableCell>
+                  <TableCell className="w-0 max-w-0 px-0" />
+                </TableRow>
 
                 {instances.map((instance, instanceIx) => {
                   const elementData = instance.elementData
@@ -277,14 +275,14 @@ function LiveQuizSingleStudentResults({
                   )
 
                   return (
-                    <ShadcnTableRow
+                    <TableRow
                       key={`block-${block.blockId}-instance-${instance.id}`}
                       className={twMerge(
                         'hover:bg-muted/50 transition-colors',
                         !instance.submission && 'opacity-70'
                       )}
                     >
-                      <ShadcnTableCell className="px-3 py-3">
+                      <TableCell className="px-3 py-3">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <FontAwesomeIcon
@@ -464,32 +462,32 @@ function LiveQuizSingleStudentResults({
                             </span>
                           </div>
                         </div>
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="px-2 py-3 text-center">
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-center">
                         {renderPointsStack(
                           instance.basePoints,
                           instance.availableBasePoints
                         )}
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="px-2 py-3 text-center">
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-center">
                         {renderPointsStack(
                           instance.correctnessPoints,
                           instance.availableCorrectnessPoints
                         )}
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="px-2 py-3 text-center">
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-center">
                         {renderPointsStack(
                           instance.bonusPoints,
                           instance.availableBonusPoints
                         )}
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="px-2 py-3 text-center">
+                      </TableCell>
+                      <TableCell className="px-2 py-3 text-center">
                         {renderPointsStack(
                           instance.totalPoints,
                           instance.totalAvailablePoints
                         )}
-                      </ShadcnTableCell>
-                      <ShadcnTableCell className="px-0 py-3">
+                      </TableCell>
+                      <TableCell className="px-0 py-3">
                         <div className="flex justify-center gap-0">
                           <Tooltip
                             tooltip={
@@ -519,7 +517,7 @@ function LiveQuizSingleStudentResults({
                               data={{
                                 cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-modal`,
                               }}
-                              variant="ghost"
+                              basic
                             >
                               <Button.Icon
                                 withoutLabel
@@ -544,7 +542,7 @@ function LiveQuizSingleStudentResults({
                               data={{
                                 cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-correction`,
                               }}
-                              variant="ghost"
+                              basic
                             >
                               <Button.Icon
                                 withoutLabel
@@ -554,15 +552,15 @@ function LiveQuizSingleStudentResults({
                             </Button>
                           </Tooltip>
                         </div>
-                      </ShadcnTableCell>
-                    </ShadcnTableRow>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
               </Fragment>
             )
           })}
-        </ShadcnTableBody>
-      </ShadcnTable>
+        </TableBody>
+      </Table>
 
       {!!selectedInstance && (
         <StudentAssessmentResponseModal

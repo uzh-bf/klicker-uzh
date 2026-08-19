@@ -258,8 +258,8 @@ else; leave its styling alone.
       (uzh-blue ramp stranding, typography and `tw-animate-css` drops, chat's `:root:root`
       block, the `--font-sans` bridge)
 - [x] Slice 1 — dependency bump. Nine pins at `5.0.0-alpha.5`; lockfile carries 22
-      alpha.5 references and zero 4.1.8; `@uzh-bf/design-system` removed from
-      `transpilePackages` (v5 has no `development` condition and ships prebuilt ESM).
+      alpha.5 references and zero 4.1.8. `@uzh-bf/design-system` stays in
+      `transpilePackages`: removing it was tried and reverted in slice 2 (see below).
       No peers added by hand — `pnpm peers check` reports no design-system peer issue.
       Evidence: `pnpm install` clean, `pnpm install --frozen-lockfile` up to date,
       `syncpack list-mismatches` 788 valid with only the two pre-existing ignored groups.
@@ -270,7 +270,23 @@ else; leave its styling alone.
       `minimumReleaseAgeExclude` entry, which follows the convention already documented
       in `pnpm-workspace.yaml`, names one exact first-party version, and leaves the
       14-day policy intact for every other package. Escalate if that call is wrong.
-- [ ] Slices 2-7 remaining. Next: slice 2, the `Shadcn*` rewrite to `./primitives`.
+- [x] Slice 2 — v5 API migration. 215 `Shadcn*` identifiers across ten files rewritten to
+      the `@uzh-bf/design-system/primitives` entry point; six genuine v5 breakages fixed:
+      `ForwardRefButton`'s props now omit `ref` and `asChild` (v5's `ButtonProps` is a
+      union discriminated on `asChild`), two react-dnd connectors wrapped so the callback
+      ref discards its return value (React 19 rejects a returning callback ref), two
+      `size="icon"` props dropped where the call site already sized the root, three
+      `variant="ghost"` replaced by `basic`, and three accessibility props added that v5
+      now requires (`ariaLabel` on two icon-only header controls, `triggerAriaLabel` on
+      the course colour picker).
+      `@uzh-bf/design-system` restored to `transpilePackages` — without it Next treats
+      the dist-only package as external, the server build loads formik's CommonJS copy
+      while the app bundles ESM, and the two `FormikContext` objects fail prerender with
+      `Cannot read properties of undefined (reading 'getFieldProps')`.
+      Evidence: `pnpm run build` 22/22, `pnpm run check:all` 24/24.
+      Test delta: 0 added / 0 changed / 0 removed — every change is a compile-checked
+      call-site signature fix already covered by the build.
+- [ ] Slices 3-7 remaining. Next: slice 3, the CSS entry rework.
 
 ### Notes carried into later slices
 
@@ -280,6 +296,11 @@ else; leave its styling alone.
   versions had to be excluded during the transition via the union form the `ai` and
   `@ai-sdk/*` entries already use; the transitional half was removed once the lockfile no
   longer referenced 4.1.8.
+- `apps/analytics` lint failed once under `turbo` while passing standalone: concurrent
+  tasks raced on its `uv` virtualenv. Not a code failure; rerun before investigating.
+- The `analytics` navigation item in `Header.tsx` carries an `as NavigationItemProps`
+  cast that suppresses v5's new icon-only `ariaLabel` requirement. Removing the cast is
+  a real accessibility fix but out of this slice's scope — decide with the user.
 - `devrouter ensure` fails at `post-start` on the chat local MCP fixture
   (`localhost:1417` never becomes healthy). Unrelated to this upgrade on the evidence so
   far, but confirm it reproduces on `v3` before slice 7 depends on the runtime.

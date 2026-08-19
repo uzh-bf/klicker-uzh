@@ -1,13 +1,13 @@
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Element } from '@klicker-uzh/graphql/dist/ops'
+import { Tooltip } from '@uzh-bf/design-system'
 import {
-  ShadcnTable,
-  ShadcnTableBody,
-  ShadcnTableCell,
-  ShadcnTableRow,
-  Tooltip,
-} from '@uzh-bf/design-system'
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+} from '@uzh-bf/design-system/primitives'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,35 +33,35 @@ function SelectedElementsList({
 
   return (
     <div className="min-h-0 flex-1 overflow-auto">
-      <ShadcnTable className="mt-2">
-        <ShadcnTableBody>
+      <Table className="mt-2">
+        <TableBody>
           {affectedElements.map((element) => (
-            <ShadcnTableRow
+            <TableRow
               key={element.id}
               data-cy={`element-batch-entry-${element.name}`}
             >
-              <ShadcnTableCell
+              <TableCell
                 className={twMerge(
                   'line-clamp-1 h-7 whitespace-normal',
                   !element.actionsApplied && 'text-black/30'
                 )}
               >
                 {element.name}
-              </ShadcnTableCell>
+              </TableCell>
               {!allAdminPermissions ? (
                 !element.isOwner ? (
-                  <ShadcnTableCell className="w-5.5 px-0 text-center">
+                  <TableCell className="w-5.5 px-0 text-center">
                     <ObjectPermissionLevel
                       iconOnly
                       objectName={element.name}
                       permissionLevel={element.permissionLevel!}
                     />
-                  </ShadcnTableCell>
+                  </TableCell>
                 ) : (
-                  <ShadcnTableCell className="w-5.5" />
+                  <TableCell className="w-5.5" />
                 )
               ) : null}
-              <ShadcnTableCell className="w-5.5 px-0 text-center">
+              <TableCell className="w-5.5 px-0 text-center">
                 {element.actionsApplied ? (
                   <FontAwesomeIcon
                     icon={faCheck}
@@ -94,11 +94,11 @@ function SelectedElementsList({
                     />
                   </Tooltip>
                 )}
-              </ShadcnTableCell>
-            </ShadcnTableRow>
+              </TableCell>
+            </TableRow>
           ))}
-        </ShadcnTableBody>
-      </ShadcnTable>
+        </TableBody>
+      </Table>
     </div>
   )
 }

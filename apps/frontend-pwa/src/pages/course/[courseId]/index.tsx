@@ -21,11 +21,11 @@ import {
   H3,
   RadioGroup,
   RadioGroupItem,
-  ShadcnLabel,
   TabContent,
   Tabs,
   UserNotification,
 } from '@uzh-bf/design-system'
+import { Label } from '@uzh-bf/design-system/primitives'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -341,9 +341,9 @@ function CourseOverview({
                                   id="course"
                                   data-cy="select-course-leaderboard"
                                 />
-                                <ShadcnLabel htmlFor="course">
+                                <Label htmlFor="course">
                                   {t('shared.generic.course')}
-                                </ShadcnLabel>
+                                </Label>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem
@@ -351,7 +351,7 @@ function CourseOverview({
                                   id="biweekly"
                                   data-cy="select-biweekly-leaderboard"
                                 />
-                                <ShadcnLabel htmlFor="biweekly">
+                                <Label htmlFor="biweekly">
                                   {`${t('pwa.courses.biWeekly')} (${(() => {
                                     const startDate = dayjs().subtract(
                                       14,
@@ -361,7 +361,7 @@ function CourseOverview({
                                       date.format('DD.MM')
                                     return `${formatDate(startDate)} - ${dayjs().format('DD.MM')}`
                                   })()})`}
-                                </ShadcnLabel>
+                                </Label>
                               </div>
                             </RadioGroup>
                           )}

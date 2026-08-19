@@ -51,6 +51,11 @@ function getNextBaseConfig({
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
       '@klicker-uzh/prisma',
+      // Kept for v5: without it Next treats the dist-only package as external,
+      // so the server build resolves formik's CommonJS copy while the app
+      // bundles its ESM copy. The two FormikContext instances do not match and
+      // the Formik wrappers fail during prerender.
+      '@uzh-bf/design-system',
     ],
     ...(includeI18n
       ? {

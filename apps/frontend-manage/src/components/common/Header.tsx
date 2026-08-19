@@ -215,6 +215,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'button',
       key: 'support-menubar-item',
       icon: faQuestionCircle,
+      ariaLabel: t('manage.support.modalTitle'),
       onClick: () => setShowSupportModal(true),
       className: { icon: '-mx-1', root: 'px-3' },
     },
@@ -222,6 +223,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       type: 'dropdown',
       key: 'quizzes-menubar-dropdown',
       icon: faPlayCircle,
+      ariaLabel: t('manage.liveQuizzes.runningLiveQuizzes'),
       disabled: !quizzes || quizzes.length === 0,
       className: {
         trigger: 'px-3',
