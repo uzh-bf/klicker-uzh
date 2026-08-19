@@ -24,7 +24,9 @@ async function startQuiz(page: Page, decision: 'accept' | 'decline') {
   await page.getByTestId('start-practice-quiz').click()
   const disclosure = page.getByTestId('semantic-evaluation-consent')
   await expect(disclosure).toBeVisible()
-  await expect(disclosure).toContainText('AI-assisted feedback')
+  await expect(
+    page.getByRole('dialog', { name: 'AI-assisted feedback' })
+  ).toBeVisible()
   await page.getByTestId(`semantic-consent-${decision}`).click()
   await expect(page.getByTestId('free-text-input-0')).toBeVisible()
 }
