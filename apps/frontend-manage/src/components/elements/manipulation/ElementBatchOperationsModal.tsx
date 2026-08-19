@@ -136,7 +136,8 @@ function ElementBatchOperationsModal({
       onClose={onClose}
       title={t('manage.questionPool.batchOperationsElements')}
       className={{
-        content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
+        content:
+          'h-max w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] xl:max-w-220 lg:overflow-hidden',
       }}
       dataCloseButton={{ cy: 'close-batch-operations-modal' }}
     >

@@ -39,7 +39,10 @@ function ActivityInformation({
 
   return (
     <UserNotification
-      className={{ root: 'w-full text-base', content: 'w-full' }}
+      className={{
+        root: 'w-full text-base',
+        content: 'w-full max-w-[calc(100%-2rem)]',
+      }}
     >
       <div className="flex flex-row items-center justify-between gap-4">
         <span className="font-bold">
