@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.69
+        tag: v3.4.0-alpha.70
       resources:
         requests:
           cpu: 50m
@@ -67,7 +67,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.69
+        tag: v3.4.0-alpha.70
       resources:
         requests:
           cpu: 50m
@@ -106,7 +106,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.69
+        tag: v3.4.0-alpha.70
       resources:
         requests:
           cpu: 50m
@@ -176,7 +176,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   ingress:
     annotations:
@@ -329,7 +329,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   ingress:
     annotations:
@@ -384,7 +384,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -437,7 +437,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -475,7 +475,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   autoscaling:
     enabled: false
@@ -544,7 +544,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -597,7 +597,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   autoscaling:
     enabled: false
@@ -670,7 +670,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -702,7 +702,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.69
+    tag: v3.4.0-alpha.70
     pullPolicy: IfNotPresent
 
   autoscaling:
@@ -797,7 +797,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.69
+      tag: v3.4.0-alpha.70
 
     ingress:
       className: haproxy
@@ -874,7 +874,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.69
+      tag: v3.4.0-alpha.70
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -953,7 +953,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.69
+      tag: v3.4.0-alpha.70
 
     ingress:
       className: haproxy
