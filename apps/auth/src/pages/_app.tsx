@@ -1,5 +1,4 @@
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
-import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { Toaster } from '@uzh-bf/design-system'
 import { SessionProvider } from 'next-auth/react'
 import { Locale, NextIntlClientProvider } from 'next-intl'
@@ -22,7 +21,7 @@ export default function App({
   return (
     <div
       id="__app"
-      className={`flex h-full min-h-full flex-col ${sourceSansPro.variable} font-sans`}
+      className={`flex h-full min-h-full flex-col font-sans`}
     >
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
@@ -36,12 +35,6 @@ export default function App({
           <Component {...pageProps} />
         </SessionProvider>
       </NextIntlClientProvider>
-      <style>{`
-        :root {
-          --source-sans-pro: ${sourceSansPro.variable};
-          --theme-font-primary: ${sourceSansPro.variable};
-        }
-      `}</style>
     </div>
   )
 }

@@ -2,7 +2,6 @@ import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
-import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -44,7 +43,7 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div
       id="__app"
-      className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
+      className={`flex h-full min-h-full flex-col bg-white font-sans`}
     >
       <ApolloProvider client={apolloClient}>
         <NextIntlClientProvider
@@ -60,13 +59,6 @@ function App({ Component, pageProps }: AppProps) {
           </DndProvider>
         </NextIntlClientProvider>
       </ApolloProvider>
-
-      <style>{`
-        :root {
-          --source-sans-pro: ${sourceSansPro.variable};
-          --theme-font-primary: ${sourceSansPro.variable};
-        }
-      `}</style>
     </div>
   )
 }

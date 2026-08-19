@@ -9,7 +9,6 @@ import {
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
-import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
@@ -90,7 +89,7 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <div
       id="__app"
-      className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
+      className={`flex h-full min-h-full flex-col bg-white font-sans`}
     >
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
@@ -104,12 +103,6 @@ function App({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </ApolloProvider>
       </NextIntlClientProvider>
-      <style>{`
-        :root {
-          --source-sans-pro: ${sourceSansPro.variable};
-          --theme-font-primary: ${sourceSansPro.variable};
-        }
-      `}</style>
     </div>
   )
 }
