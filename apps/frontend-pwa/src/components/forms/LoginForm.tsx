@@ -98,7 +98,7 @@ function LoginForm({
               data: { cy: 'joinCourse-tab' },
             },
           ]}
-          className={{ root: 'px-3 md:px-6' }}
+          className={{ root: 'px-3 md:px-6', list: 'w-full' }}
         >
           <TabContent key="joinCourse" value="joinCourse">
             <CreateAccountJoinForm />

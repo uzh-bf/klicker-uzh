@@ -22,7 +22,7 @@ function FilterListEntry({
     <AccordionItem value={value} className="border-b-0">
       <AccordionTrigger
         className={twMerge(
-          'border-border mb-1 mt-0.5 flex w-full border-b border-solid px-2 py-0.5 text-sm text-neutral-500 hover:text-black hover:no-underline',
+          'border-border mb-1 mt-0.5 flex h-max w-full border-b border-solid px-2 py-0.5 text-sm text-neutral-500 hover:text-black hover:no-underline',
           active && 'text-primary-100 hover:text-primary-100 font-bold'
         )}
         data-cy={data?.cy}

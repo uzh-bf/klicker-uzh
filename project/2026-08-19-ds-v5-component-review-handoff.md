@@ -90,6 +90,7 @@ Klicker adopts the DS `size` prop **zero** times — every density fix is a hand
 - Chrome matches the redesign (white, `#E0E0E0` border, `rounded-lg`, `p-6`, 520px, shadow) ✅.
 - Title renders centered at all widths — systemic defect A1.
 - The redesign preview's signature **full-bleed `#FAFAFA` footer band** (`padding:14px 22px; border-top:1px #EFEFEF`, panel `overflow:hidden`) is absent; v5 ships only an inset divider. The redesign bundle itself is split (preview has the band, its `Modal.jsx` doesn't) — DS should rule once; the band would align modal and card footers.
+- **Breaking change missing from MIGRATION.md:** v5 newly caps the panel at `max-w-[520px]`. Every v4-era consumer override that set only `w-*` (Klicker had six modals with `xl:w-220`, `w-full!`, …) silently collapses to 520px — the batch-operations modal rendered its two-column layout inside 520px. Belongs in the A3 delta table; the C10 `size` prop would remove the class-juggling entirely.
 - `Modal.js` renders `DialogFooter` unconditionally → actionless modals draw a stray divider. **DS fix:** render footer only when actions exist.
 - Auto-focus ring on open — systemic defect A2.
 
