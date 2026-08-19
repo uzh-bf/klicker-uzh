@@ -1,15 +1,20 @@
 import { GrowthBook } from '@growthbook/growthbook'
+import { normalizeFeatureFlagEnvironment } from './contracts.js'
 
 export type BrowserFeatureFlagConfig = {
   apiHost?: string
   clientKey?: string
+  environment: string | undefined
   timeoutMs?: number
 }
 
 export function createBrowserFeatureFlagClient<
   Features extends Record<string, unknown>,
 >(config: BrowserFeatureFlagConfig) {
-  const configured = Boolean(config.apiHost && config.clientKey)
+  const environment = normalizeFeatureFlagEnvironment(config.environment)
+  const configured = Boolean(
+    environment !== 'unknown' && config.apiHost && config.clientKey
+  )
   const growthbook = new GrowthBook<Features>(
     configured
       ? {
@@ -36,5 +41,5 @@ export function createBrowserFeatureFlagClient<
     return initializePromise
   }
 
-  return { growthbook, initialize }
+  return { environment, growthbook, initialize }
 }
