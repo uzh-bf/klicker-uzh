@@ -113,6 +113,38 @@ Additionally, you can access the following important views directly from the lec
 - **Lecturer View:** In large lecture settings, where teaching assistants can answer Live Q&A submissions, a filtered view of only pinned Live Q&A submissions and the aggregated feedback on speed and difficulty **is provided through the lecturer view**.
 - **Evaluation:** On the lecturer cockpit, you can access the continuously updated evaluation view of the Live Quiz, allowing you to discuss incoming results, display correct answer options or the optionally defined explanation. For gamified Live Quizzes, the evaluation view also contains the leaderboard of the quiz.
 
+## How can I explore responses with the word cloud?
+
+The word cloud is available in the evaluation view for free-text and numerical
+questions. In **Individual words** mode, larger entries represent words that
+occur more often across all responses. In **Full responses** mode and for
+numerical questions, larger entries represent complete answers that were
+submitted more often. Hover over an entry to see its exact frequency.
+
+![Word cloud with filtering and text-size controls](/img/live_quiz/wordcloud_controls.png)
+
+KlickerUZH uses its own word-cloud package and renderer. This provides a
+consistent layout and gives you several controls for adapting the visualization
+to your responses:
+
+1. Open the **Evaluation** view and select **Word Cloud** for the question you
+   would like to discuss.
+2. For free-text questions, choose between **Individual words** and **Full
+   responses**. Individual words are grouped by frequency, while full responses
+   keep each submitted answer together.
+3. When displaying individual words, use the **Language Filter** to remove
+   common English or German words such as “the” or “and.” Choose **Disabled** if
+   every word should remain visible.
+4. In individual-word mode, use the **Display limit** to show the 50, 100, or
+   200 most frequent words, or select **All**. For every word cloud, you can
+   adjust the minimum and maximum text sizes to make the visualization easier
+   to read in your room.
+
+If the selected limit, font sizes, or available space prevent some entries from
+being shown, KlickerUZH displays how many words or responses were omitted. No
+responses are deleted; adjusting the controls may show more entries in the word
+cloud.
+
 ## How can participants join a Live Quiz?
 
 <iframe
