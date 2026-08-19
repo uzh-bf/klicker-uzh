@@ -19,10 +19,7 @@ export default function App({
     : routing.defaultLocale
 
   return (
-    <div
-      id="__app"
-      className={`flex h-full min-h-full flex-col font-sans`}
-    >
+    <div id="__app" className={`flex h-full min-h-full flex-col font-sans`}>
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
         messages={pageProps.messages}

@@ -23,31 +23,29 @@
   /* Fonts. The design system declares `--font-sans` and emits `.font-sans`; it
      declares neither `--font-mono` nor `.font-mono`, so the mono face has to be
      bridged here from the runtime theme variable the design system does set. */
-  --font-sans:
-    var(
-      --theme-font-sans,
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      "Helvetica Neue",
-      Arial,
-      sans-serif
-    );
-  --font-mono:
-    var(
-      --theme-font-mono,
-      ui-monospace,
-      SFMono-Regular,
-      "SF Mono",
-      Menlo,
-      Monaco,
-      Consolas,
-      "Liberation Mono",
-      "Courier New",
-      monospace
-    );
+  --font-sans: var(
+    --theme-font-sans,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif
+  );
+  --font-mono: var(
+    --theme-font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    "SF Mono",
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace
+  );
 
   /* UZH blue. Owned by the design system, but with no intermediate variable to
      bridge to: it declares the ramp as literals, so referring to the same name

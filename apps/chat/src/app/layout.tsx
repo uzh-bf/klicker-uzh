@@ -44,11 +44,8 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} data-theme="uzh">
-      <head>
-      </head>
-      <body
-        className={`font-sans antialiased`}
-      >
+      <head></head>
+      <body className={`font-sans antialiased`}>
         {/* First focusable element on every page: jumps keyboard/screen-reader
             users past the sidebar/header chrome straight to the `<main
             id="main-content">` each rendered chat state provides. */}
