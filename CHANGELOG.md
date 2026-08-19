@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.68...v3.4.0-alpha.70) (2026-08-19)
+
+
+### Bug Fixes
+
+* **build:** self-host application fonts ([#5381](https://github.com/uzh-bf/klicker-uzh/issues/5381)) ([c1f4d95](https://github.com/uzh-bf/klicker-uzh/commit/c1f4d95e1d647a9de9e07420fde471b7433a82b3))
+* **chat:** align recovery E2E selectors with data-cy ([#5416](https://github.com/uzh-bf/klicker-uzh/issues/5416)) ([34f301b](https://github.com/uzh-bf/klicker-uzh/commit/34f301bb9e1f35813d53fec88dc538f71742a494))
+* **chat:** correct history rail turn navigation ([#5420](https://github.com/uzh-bf/klicker-uzh/issues/5420)) ([3fd5259](https://github.com/uzh-bf/klicker-uzh/commit/3fd5259adac2c36ca1431aeba3a858d53e009bc8))
+* **chat:** preserve sources on terminal tool-only turns ([#5393](https://github.com/uzh-bf/klicker-uzh/issues/5393)) ([9f39304](https://github.com/uzh-bf/klicker-uzh/commit/9f39304915e0c6d336983db16c7b2f98f8cca87a))
+* **chat:** render streamed formulas atomically ([#5396](https://github.com/uzh-bf/klicker-uzh/issues/5396)) ([4eae216](https://github.com/uzh-bf/klicker-uzh/commit/4eae2165d65d8b2212b16466e218ecdc7dac2743))
+* **chat:** separate exact and prompt cache boundaries ([#5387](https://github.com/uzh-bf/klicker-uzh/issues/5387)) ([548cf2e](https://github.com/uzh-bf/klicker-uzh/commit/548cf2e1ae5d6c113be1b582c9d5013e9f45f011))
+* **chat:** student chat accessibility and UX review fixes ([#5425](https://github.com/uzh-bf/klicker-uzh/issues/5425)) ([e397a0d](https://github.com/uzh-bf/klicker-uzh/commit/e397a0d1bd2a75e8cc726085ad2d6b8fb98d6b7e))
+* **chat:** unwrap structured MCP results ([#5414](https://github.com/uzh-bf/klicker-uzh/issues/5414)) ([2ad68d0](https://github.com/uzh-bf/klicker-uzh/commit/2ad68d057acfe972b505d930e52e721a41f2fd94))
+* **graphql:** decouple assessment results from leaderboard participation ([#5428](https://github.com/uzh-bf/klicker-uzh/issues/5428)) ([2423099](https://github.com/uzh-bf/klicker-uzh/commit/24230994e90f5a1689ed4769034f9304a9d83b2e))
+
+
+### Dependencies
+
+* **chat:** upgrade assistant-ui to 0.15 ([#5382](https://github.com/uzh-bf/klicker-uzh/issues/5382)) ([f0c858a](https://github.com/uzh-bf/klicker-uzh/commit/f0c858a2ed0ffd8b5fb9297072518bbd1a9be487))
+
+
+### Enhancements
+
+* **chat:** add compact history rail ([#5409](https://github.com/uzh-bf/klicker-uzh/issues/5409)) ([19f3afb](https://github.com/uzh-bf/klicker-uzh/commit/19f3afbf540bc306931371a7aadbc6cc76afc042))
+* **chat:** brand route recovery states ([#5358](https://github.com/uzh-bf/klicker-uzh/issues/5358)) ([f2d0c9d](https://github.com/uzh-bf/klicker-uzh/commit/f2d0c9dfb93e58367fef0283b8c5865f341e3331))
+* **chat:** clarify usage and model choices ([#5359](https://github.com/uzh-bf/klicker-uzh/issues/5359)) ([9b0a38c](https://github.com/uzh-bf/klicker-uzh/commit/9b0a38c7ffa2f0a6402fed573b9e0c884f5ebd3e))
+* **chat:** enforce required MCP tools before chat generation ([#5405](https://github.com/uzh-bf/klicker-uzh/issues/5405)) ([fdae7cd](https://github.com/uzh-bf/klicker-uzh/commit/fdae7cd5245ad0079aa4a4b758d5438c10dcd5b1))
+* **chat:** guide welcome starters ([#5360](https://github.com/uzh-bf/klicker-uzh/issues/5360)) ([d4b7c3a](https://github.com/uzh-bf/klicker-uzh/commit/d4b7c3a6bf683d88b257625ff6315026c78a2466))
+* **chat:** make disclaimer consent gate explicit ([#5355](https://github.com/uzh-bf/klicker-uzh/issues/5355)) ([deceb53](https://github.com/uzh-bf/klicker-uzh/commit/deceb536dd07c4e28d0cdc7ebc882bdfa7694760))
+* **chat:** make streamed sources and reasoning visible ([#5380](https://github.com/uzh-bf/klicker-uzh/issues/5380)) ([3dfdbe2](https://github.com/uzh-bf/klicker-uzh/commit/3dfdbe2f9fb2206339553340db96ac2f139e5153))
+* **chat:** polish conversation presentation ([#5363](https://github.com/uzh-bf/klicker-uzh/issues/5363)) ([51cc8e3](https://github.com/uzh-bf/klicker-uzh/commit/51cc8e3011ad35f7650323a9084b42cc215be8ef))
+* **chat:** render structured video citations ([#5411](https://github.com/uzh-bf/klicker-uzh/issues/5411)) ([9222929](https://github.com/uzh-bf/klicker-uzh/commit/9222929ad8a54ab85bf6cecf1955c285d3f0dea0))
+
+
+### Documentation
+
+* **adr:** record the public/Catalyst capability floor and the v3-ai reintegration ([#5418](https://github.com/uzh-bf/klicker-uzh/issues/5418)) ([7369525](https://github.com/uzh-bf/klicker-uzh/commit/736952577ea1250a9dfe02db91b9cfad1bf50336))
+
 ## [3.4.0-alpha.69](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.68...v3.4.0-alpha.69) (2026-08-18)
 
 
