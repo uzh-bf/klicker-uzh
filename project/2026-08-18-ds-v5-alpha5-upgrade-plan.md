@@ -374,8 +374,16 @@ preflight; every app's root `font-size` is unchanged at 16px; and an audit of th
 question pool covering 160 elements and 560 property checks found zero spacing utilities
 resolving to anything other than their declared value.
 
-**Open decision.** Accept v5's new component scale as the product's new baseline, or pin
-the previous values per primitive. Accepting is the smaller change and matches the ratified
+**Resolved 2026-08-19 by review against the UZH DF redesign bundle.** The component
+re-tune and the ramp re-valuation are v5's partial implementation of the department's
+component redesign: the new ramp slots 80/60 hold the redesign's *pressed/hover* state
+colors, packed into tint-ladder positions instead of dedicated tokens. Klicker accepts the
+new component scale (it is the redesign) and does not pin old values. The ramp defect is
+handed back to the design-system project as item 01 of the gap review (introduce
+`--primary-hover/-pressed/-container`, restore the 100-20 ladder as true tints), together
+with six further token-level items. Klicker-side follow-ups (migrate 84 ladder usages,
+delete the theme.css mirror block and ring override) are queued behind the corresponding
+DS items. Accepting is the smaller change and matches the ratified
 rule that v5's values win; pinning means carrying overrides for roughly thirty primitives,
 which is the maintenance burden this upgrade exists to shed.
 
