@@ -595,7 +595,6 @@ export async function getStudentAssessmentResults(
       where: {
         courseId,
         participantId,
-        isActive: true,
         participant: { isActive: true },
         course: {
           isAssessmentEnabled: true,
@@ -613,7 +612,7 @@ export async function getStudentAssessmentResults(
 
     if (!participation) {
       throw new Error(
-        'Active assessment participation with an accepted invitation not found'
+        'Assessment participation with an accepted invitation not found'
       )
     }
   }
@@ -853,10 +852,7 @@ export async function getAssessmentResultsCourse(
   }: { courseId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ): Promise<AssessmentResultsCourse | null> {
-  const scores = await calculateAssessmentCourseScores(
-    { courseId, participantScope: 'ALL' },
-    ctx
-  )
+  const scores = await calculateAssessmentCourseScores({ courseId }, ctx)
   if (!scores) return null
 
   const participants = await ctx.prisma.participant.findMany({
