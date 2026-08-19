@@ -310,7 +310,37 @@ else; leave its styling alone.
       login/start/practice/course/microlearning/question flow, control, chat. Captured
       under `neutral`: manage library. Both variants render correctly and the neutral
       switch is live (primary turns black, font falls back to the system stack).
-- [ ] Slice 7 — verification and final review.
+- [x] Slice 7 — verification (`ca3646566`)
+      **Docs site repaired.** `apps/docs` was the sixth stylesheet and was missed: it has
+      no `build` script, so `turbo run build` never covered it, and its `@source` pointed
+      at the design system source tree v5 no longer publishes. Its Button, heading, Prose
+      and Tag components were rendering unstyled. It now imports the published stylesheet
+      and the shared bridges. Docusaurus owns `data-theme` on the html element for its own
+      light/dark switch, so the UZH palette is selected by assigning the ten
+      `--theme-color-*` variables on an unlayered `:root` instead. `docusaurus build`
+      succeeds and every token class the site uses resolves.
+      **Duplicates.** Each app emits every token utility exactly once — `.bg-primary-100`,
+      `.text-primary-100` and `.bg-uzh-blue-100` all appear a single time. The 100-145
+      repeated selectors per app are Tailwind 4's own output: breakpoint variants of
+      `.container` and `@supports`-guarded `color-mix` fallbacks for opacity modifiers.
+      Not attributable to the upgrade.
+      **Missing styles.** Sweeping every `bg|text|border|ring|fill|…`-prefixed token class
+      used across the six apps plus `shared-components` and `markdown` against each built
+      stylesheet leaves eight unresolved, all in `frontend-manage` and `docs`, and all
+      referencing numeric primary steps (30, 50, 200, 500-800) that Klicker's ramp has
+      never had — `origin/v3` defines only 20 through 100. Pre-existing dead classes,
+      untouched by this work.
+      **Dark mode.** The design system's compiled CSS contains no `prefers-color-scheme`
+      rule, so its components cannot flip dark on a viewer's OS setting while
+      Klicker-authored surfaces stay light. The ratified class-gated variant holds.
+      **Overlays, focus and mobile.** The user menu and the sort select render correctly
+      as popovers (surface, border, radius and accent all resolving); a focused input
+      carries the intended 3px ring; the PWA start screen, practice list, quiz start and
+      question flow all render correctly at 390x844.
+      **The auth consent checkbox is not a regression.** Its red border is app-authored —
+      `!tosChecked ? 'border border-red-500 bg-red-100'` in `apps/auth/src/pages/index.tsx`
+      — and is byte-identical to `origin/v3`.
+- [ ] Final review of the integrated branch.
 
 #### Decisions taken during slices 3-5
 
