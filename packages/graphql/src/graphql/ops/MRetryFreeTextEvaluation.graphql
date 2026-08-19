@@ -1,0 +1,5 @@
+mutation RetryFreeTextEvaluation($attemptId: String!) {
+  retryFreeTextEvaluation(attemptId: $attemptId) {
+    ...FreeTextPracticeStateData
+  }
+}

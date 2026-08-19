@@ -1,6 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  DisplayMode,
   type BaseElementData,
   type CaseStudyCaseCriterionSolution as CaseStudyCaseCriterionSolutionType,
   type CaseStudyCaseSolution as CaseStudyCaseSolutionType,
@@ -8,6 +7,7 @@ import {
   type CaseStudyCriterionLabels as CaseStudyCriterionLabelsType,
   type CaseStudyCriterion as CaseStudyCriterionType,
   type Choice as ChoiceType,
+  DisplayMode,
   type ElementInstanceOptions as ElementInstanceOptionsType,
   type ElementOptionsAnswerCollectionEntry as ElementOptionsAnswerCollectionEntryType,
   type ElementOptionsAnswerCollection as ElementOptionsAnswerCollectionType,
@@ -115,6 +115,37 @@ export const FreeTextRestrictions = builder
     }),
   })
 
+export function semanticEvaluationForViewer(
+  options: ElementOptionsFreeTextType,
+  role: DB.UserRole | undefined
+) {
+  return role === DB.UserRole.USER || role === DB.UserRole.ADMIN
+    ? options.semanticEvaluation
+    : null
+}
+
+function isAuthoringRole(role: DB.UserRole | undefined) {
+  return role === DB.UserRole.USER || role === DB.UserRole.ADMIN
+}
+
+export function freeTextSolutionsForViewer(
+  options: ElementOptionsFreeTextType,
+  role: DB.UserRole | undefined
+) {
+  return options.semanticEvaluation && !isAuthoringRole(role)
+    ? null
+    : options.solutions
+}
+
+export function freeTextExplanationForViewer(
+  data: IFreeTextElementData,
+  role: DB.UserRole | undefined
+) {
+  return data.options.semanticEvaluation && !isAuthoringRole(role)
+    ? null
+    : data.explanation
+}
+
 export const FreeTextElementOptions = builder
   .objectRef<ElementOptionsFreeTextType>('FreeTextElementOptions')
   .implement({
@@ -129,7 +160,18 @@ export const FreeTextElementOptions = builder
         type: FreeTextRestrictions,
         nullable: true,
       }),
-      solutions: t.exposeStringList('solutions', { nullable: true }),
+      solutions: t.field({
+        type: ['String'],
+        nullable: true,
+        resolve: (options, _, ctx) =>
+          freeTextSolutionsForViewer(options, ctx.user?.role),
+      }),
+      semanticEvaluation: t.field({
+        type: 'Json',
+        nullable: true,
+        resolve: (options, _, ctx) =>
+          semanticEvaluationForViewer(options, ctx.user?.role) as never,
+      }),
     }),
   })
 
@@ -326,6 +368,12 @@ export const FreeTextElementData = builder
   .implement({
     fields: (t) => ({
       ...sharedElementData(t),
+      explanation: t.field({
+        type: 'String',
+        nullable: true,
+        resolve: (data, _, ctx) =>
+          freeTextExplanationForViewer(data, ctx.user?.role),
+      }),
       options: t.expose('options', { type: FreeTextElementOptions }),
     }),
   })

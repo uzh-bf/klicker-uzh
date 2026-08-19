@@ -26,6 +26,7 @@ import './schema/element.js'
 import './schema/elementData.js'
 import './schema/elementGeneration.js'
 import './schema/evaluation.js'
+import './schema/freeTextEvaluation.js'
 import './schema/groupActivity.js'
 import './schema/kbKnowledgeGraph.js'
 import './schema/knowledge.js'
@@ -60,6 +61,10 @@ import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from './services/courseDuplication.js'
+import {
+  handleEvaluateFreeTextAttempt,
+  handleEvaluateFreeTextAttemptFailure,
+} from './services/freeTextEvaluationHandler.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,

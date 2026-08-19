@@ -153,6 +153,10 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    evaluateFreeTextAttempt: hatchet.task({
+      name: 'evaluate-free-text-attempt',
+      fn: async () => ({ success: true, applied: true }),
+    }),
     ingestKBResource: hatchet.task({
       name: 'ingest-kb-resource',
       fn: async (input: IngestKBResourceInput) => {

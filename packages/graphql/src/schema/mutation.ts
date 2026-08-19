@@ -13,6 +13,7 @@ import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
 import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as FeedbackService from '../services/feedbacks.js'
+import * as FreeTextEvaluationService from '../services/freeTextEvaluation.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -55,6 +56,7 @@ import {
   UpdateGeneratedElementDraftInputRef,
 } from './elementGeneration.js'
 import { ElementStatus, ElementType } from './elementData.js'
+import { FreeTextPracticeStateType } from './freeTextEvaluation.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -169,6 +171,74 @@ export const Mutation = builder.mutationType({
     }
 
     return {
+      submitFreeTextAttempt: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          answer: t.arg.string({ required: true }),
+          answerTime: t.arg.float({ required: true }),
+          clientSubmissionId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await FreeTextEvaluationService.createFreeTextAttempt(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      retryFreeTextEvaluation: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: { attemptId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await FreeTextEvaluationService.retryFreeTextEvaluation(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      revealFreeTextSolution: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: { cycleId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await FreeTextEvaluationService.revealFreeTextSolution(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      startFreeTextPracticeCycle: t.withAuth(asParticipant).field({
+        nullable: false,
+        type: FreeTextPracticeStateType,
+        args: { instanceId: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await FreeTextEvaluationService.startFreeTextPracticeCycle(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      decideSemanticEvaluationConsent: t.withAuth(asParticipant).boolean({
+        nullable: false,
+        args: {
+          disclosureVersion: t.arg.string({ required: true }),
+          accepted: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          await FreeTextEvaluationService.decideSemanticEvaluationConsent(
+            args,
+            ctx
+          )
+          return true
+        },
+      }),
+
       // ----- ANONYMOUS OPERATIONS -----
       // #region
       addConfusionTimestep: t.field({
@@ -1194,6 +1264,29 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: async (_, args, ctx) => {
+          if (
+            args.options &&
+            Object.hasOwn(args.options, 'semanticEvaluation')
+          ) {
+            const existing = args.id
+              ? await ctx.prisma.element.findUnique({
+                  where: { id: args.id },
+                  select: { options: true },
+                })
+              : null
+            const previousSemantic = (
+              existing?.options as {
+                semanticEvaluation?: unknown
+              } | null
+            )?.semanticEvaluation
+            const semanticChanged =
+              JSON.stringify(previousSemantic ?? null) !==
+              JSON.stringify(args.options.semanticEvaluation ?? null)
+            const catalystEntitled =
+              ctx.user.catalystInstitutional || ctx.user.catalystIndividual
+            if (semanticChanged && !catalystEntitled) return null
+          }
+
           // if element is edited, >= WRITE permissions on element required
           if (typeof args.id !== 'undefined' && args.id !== null) {
             const validAccess = await checkAccess(

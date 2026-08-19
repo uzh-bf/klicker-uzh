@@ -11,6 +11,7 @@ import {
   ActivityType,
   DisplayMode,
   ElementManipulationInput,
+  ElementOptionsFreeText,
   GeneratedFlashcard,
   GeneratedQuestionEditable,
   SharingType,
@@ -568,6 +569,18 @@ export async function manipulateElement(
 
   validateElementDifficultyLevel(difficultyLevel, elementPrev?.type ?? type)
 
+  const optionsForPersistence =
+    type === DB.ElementType.FREE_TEXT &&
+    options &&
+    !Object.hasOwn(options, 'semanticEvaluation') &&
+    elementPrev
+      ? {
+          ...processedOptions,
+          semanticEvaluation: (elementPrev.options as ElementOptionsFreeText)
+            .semanticEvaluation,
+        }
+      : processedOptions
+
   // determine which tags have been deconnected
   if (elementPrev?.tags) {
     tagsToDisconnect = elementPrev.tags
@@ -652,7 +665,7 @@ export async function manipulateElement(
           : basePoints!,
       pointsMultiplier: pointsMultiplier!,
       difficultyLevel: difficultyLevel ?? null,
-      options: processedOptions,
+      options: optionsForPersistence,
       owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
       tags: {
@@ -689,7 +702,7 @@ export async function manipulateElement(
       difficultyLevel:
         typeof difficultyLevel === 'undefined' ? undefined : difficultyLevel,
       version: { increment: 1 },
-      options: options ? processedOptions : undefined,
+      options: options ? optionsForPersistence : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore
       tags: {
         connectOrCreate: tags

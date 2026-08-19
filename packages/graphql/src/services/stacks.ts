@@ -1,4 +1,4 @@
-import { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
+import { createHash } from 'node:crypto'
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
@@ -54,18 +54,19 @@ import type {
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
-import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
-import type { Context } from '../lib/context.js'
+import type { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
+import { createFreeTextAttempt } from './freeTextEvaluation.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -1640,7 +1641,7 @@ export function updateChoicesResults({
   response: ResponseInput
 }): { results: ElementResultsChoices; modified: boolean } {
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   if (
     !('choices' in response) ||
@@ -1678,7 +1679,7 @@ export function updateNumericalResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response
   if (
@@ -1744,7 +1745,7 @@ export function updateFreeTextResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response and check that restrictions are fulfilled
   if (
@@ -1800,7 +1801,7 @@ export function updateSelectionResults({
   }
 
   // increment all values in updatedSelections that are contained in response.selection
-  let updatedSelections = { ...previousResults.selections }
+  const updatedSelections = { ...previousResults.selections }
   response.selection.forEach((ix) => {
     if (ix in updatedSelections && typeof updatedSelections[ix] === 'number') {
       updatedSelections[ix] = updatedSelections[ix] + 1
@@ -1932,11 +1933,13 @@ function updateQuestionResults({
   participation,
   response,
   caseStudySolutions,
+  correctnessOverride,
 }: {
   existingInstance: DB.ElementInstance
   participation: (DB.Participation & { participant: DB.Participant }) | null
   response: ResponseInput
   caseStudySolutions?: CaseStudySolutionsObject
+  correctnessOverride?: number
 }): {
   correctness: number | null
   results: ElementInstanceResults
@@ -1990,9 +1993,11 @@ function updateQuestionResults({
     elementData.type === DB.ElementType.FREE_TEXT &&
     'responses' in previousResults
   ) {
-    correctness = elementData.options.hasSampleSolution
-      ? evaluateFreeTextAnswerCorrectness({ elementData, response })
-      : 1
+    correctness =
+      correctnessOverride ??
+      (elementData.options.hasSampleSolution
+        ? evaluateFreeTextAnswerCorrectness({ elementData, response })
+        : 1)
 
     const res = updateFreeTextResults({
       previousResults,
@@ -2164,7 +2169,7 @@ function computeAggregatedResponsesChoices({
   existingResponse: DB.QuestionResponse | null
   response: ResponseInput
 }): ElementResultsChoices {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsChoices
 
   // update aggregated responses for choices
@@ -2190,7 +2195,7 @@ function computeAggregatedResponsesOpen({
   responseValue: string
   correctness: number
 }) {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
 
   // update aggregated responses for open questions
@@ -2498,7 +2503,7 @@ async function createQuestionResponseDetail({
   practiceQuizId?: string
   microLearningId?: string
 }) {
-  await prisma.questionResponseDetail.create({
+  return await prisma.questionResponseDetail.create({
     data: {
       score,
       pointsAwarded,
@@ -2607,6 +2612,8 @@ export async function respondToQuestion(
     answerTime,
     participation,
     skipTracking,
+    correctnessOverride,
+    freeTextAttemptId,
   }: {
     id: number
     courseId: string
@@ -2614,10 +2621,28 @@ export async function respondToQuestion(
     answerTime: number
     participation: (DB.Participation & { participant: DB.Participant }) | null
     skipTracking?: boolean
+    correctnessOverride?: number
+    freeTextAttemptId?: string
   },
   ctx: Context
 ) {
   const result = await ctx.prisma.$transaction(async (prisma) => {
+    const freeTextAttempt = freeTextAttemptId
+      ? await prisma.freeTextAttempt.findUnique({
+          where: { id: freeTextAttemptId },
+          include: { cycle: true },
+        })
+      : null
+    if (
+      freeTextAttemptId &&
+      (!freeTextAttempt ||
+        freeTextAttempt.questionResponseDetailId !== null ||
+        freeTextAttempt.evaluationStatus !==
+          DB.FreeTextEvaluationStatus.EVALUATED)
+    ) {
+      return null
+    }
+
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
@@ -2651,6 +2676,7 @@ export async function respondToQuestion(
       participation,
       response,
       caseStudySolutions,
+      correctnessOverride,
     })
 
     if (!modified || results === null) {
@@ -2738,7 +2764,7 @@ export async function respondToQuestion(
     }
 
     // compute the awarded points & XP and all associated dates
-    const {
+    let {
       pointsAwarded,
       newPointsFrom,
       lastAwardedAt,
@@ -2752,6 +2778,49 @@ export async function respondToQuestion(
       participation,
       instance: updatedInstance,
     })
+
+    if (freeTextAttempt) {
+      const previousBest = await prisma.freeTextAttempt.aggregate({
+        where: {
+          cycleId: freeTextAttempt.cycleId,
+          id: { not: freeTextAttempt.id },
+          evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+        },
+        _max: { aggregateScore: true },
+      })
+      const previousPercentage = (previousBest._max.aggregateScore ?? 0) / 100
+      const previousScore =
+        previousPercentage *
+        POINTS_PER_INSTANCE *
+        (updatedInstance.options.pointsMultiplier ?? 1)
+      const previousXp = computeAwardedXp({
+        pointsPercentage: previousPercentage,
+      })
+      pointsAwarded = participation.isActive
+        ? freeTextAttempt.cycle.pointsRewardEligible
+          ? Math.max(0, (questionEval.score ?? 0) - previousScore)
+          : 0
+        : null
+      xpAwarded = freeTextAttempt.cycle.xpRewardEligible
+        ? Math.max(0, (questionEval.xp ?? 0) - previousXp)
+        : 0
+      if ((pointsAwarded ?? 0) > 0) {
+        lastAwardedAt = new Date()
+        newPointsFrom = dayjs(lastAwardedAt)
+          .add(
+            updatedInstance.options.resetTimeDays ??
+              POINTS_AWARD_TIMEFRAME_DAYS,
+            'days'
+          )
+          .toDate()
+      }
+      if (xpAwarded > 0) {
+        lastXpAwardedAt = new Date()
+        newXpFrom = dayjs(lastXpAwardedAt)
+          .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+          .toDate()
+      }
+    }
 
     // create a question response detail
     if (!skipTracking) {
@@ -2779,7 +2848,7 @@ export async function respondToQuestion(
         grade: percentile,
       })
 
-      await createQuestionResponseDetail({
+      const responseDetail = await createQuestionResponseDetail({
         prisma,
         id,
         participantId: ctx.user.sub,
@@ -2794,6 +2863,24 @@ export async function respondToQuestion(
         microLearningId:
           updatedInstance.elementStack?.microLearningId ?? undefined,
       })
+
+      if (freeTextAttempt) {
+        await prisma.freeTextAttempt.update({
+          where: { id: freeTextAttempt.id },
+          data: { questionResponseDetailId: responseDetail.id },
+        })
+        await prisma.freeTextPracticeCycle.update({
+          where: { id: freeTextAttempt.cycleId },
+          data: {
+            pointsAwarded: { increment: pointsAwarded ?? 0 },
+            xpAwarded: { increment: xpAwarded },
+            bestXp: Math.max(
+              freeTextAttempt.cycle.bestXp,
+              questionEval.xp ?? 0
+            ),
+          },
+        })
+      }
 
       // upsert the question response
       await upsertQuestionResponse({
@@ -2868,6 +2955,60 @@ export async function respondToQuestion(
 
   return result
 }
+
+export async function applyFreeTextAttemptResponse(
+  { attemptId }: { attemptId: string },
+  prisma: DB.PrismaClient
+) {
+  const attempt = await prisma.freeTextAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      cycle: {
+        include: {
+          participant: true,
+          participation: { include: { participant: true } },
+          practiceQuiz: true,
+        },
+      },
+    },
+  })
+  if (
+    !attempt ||
+    attempt.questionResponseDetailId !== null ||
+    attempt.evaluationStatus !== DB.FreeTextEvaluationStatus.EVALUATED ||
+    attempt.aggregateScore === null
+  ) {
+    return false
+  }
+
+  await respondToQuestion(
+    {
+      id: attempt.cycle.elementInstanceId,
+      courseId: attempt.cycle.practiceQuiz.courseId,
+      response: { value: attempt.answer },
+      answerTime: attempt.answerTime,
+      participation: attempt.cycle.participation,
+      correctnessOverride: attempt.aggregateScore / 100,
+      freeTextAttemptId: attempt.id,
+    },
+    {
+      prisma,
+      user: {
+        sub: attempt.cycle.participantId,
+        role: DB.UserRole.PARTICIPANT,
+        scope: DB.UserLoginScope.READ_ONLY,
+        catalystInstitutional: false,
+        catalystIndividual: false,
+      },
+    } as Context
+  )
+
+  const linked = await prisma.freeTextAttempt.findUnique({
+    where: { id: attempt.id },
+    select: { questionResponseDetailId: true },
+  })
+  return linked?.questionResponseDetailId !== null
+}
 // #endregion
 
 // ! Element & Stack Response & Combination Logic
@@ -2875,6 +3016,7 @@ export async function respondToQuestion(
 interface ElementResponseInput {
   instanceId: number
   type: DB.ElementType
+  clientSubmissionId?: string | null
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
   choicesResponse?: ChoicesResponse[] | null
@@ -3053,6 +3195,71 @@ async function respondToElement({
       }
     }
   } else if (response.type === DB.ElementType.FREE_TEXT) {
+    if (
+      participation &&
+      ctx.user?.role === DB.UserRole.PARTICIPANT &&
+      !skipTracking
+    ) {
+      const instance = await ctx.prisma.elementInstance.findUnique({
+        where: { id: response.instanceId },
+      })
+      const semanticConfig =
+        instance?.elementData.type === DB.ElementType.FREE_TEXT
+          ? instance.elementData.options.semanticEvaluation
+          : null
+      if (semanticConfig) {
+        if (!response.freeTextResponse || !response.clientSubmissionId) {
+          throw new Error(
+            'Semantic free-text responses require an answer and client submission ID'
+          )
+        }
+        const semanticState = await createFreeTextAttempt(
+          {
+            instanceId: response.instanceId,
+            answer: response.freeTextResponse,
+            answerTime,
+            clientSubmissionId: response.clientSubmissionId,
+          },
+          ctx as ContextWithUser
+        )
+        const currentAttempt = semanticState.currentAttempt
+        const grading =
+          currentAttempt?.correctness === DB.FreeTextCorrectnessCategory.CORRECT
+            ? StackFeedbackStatus.CORRECT
+            : currentAttempt?.correctness ===
+                DB.FreeTextCorrectnessCategory.PARTIAL
+              ? StackFeedbackStatus.PARTIAL
+              : currentAttempt?.correctness ===
+                  DB.FreeTextCorrectnessCategory.INCORRECT
+                ? StackFeedbackStatus.INCORRECT
+                : null
+        const score =
+          typeof currentAttempt?.aggregateScore === 'number'
+            ? (currentAttempt.aggregateScore / 100) *
+              POINTS_PER_INSTANCE *
+              (instance?.options.pointsMultiplier ?? 1)
+            : null
+
+        return {
+          grading,
+          score,
+          evaluation: {
+            instanceId: response.instanceId,
+            elementType: DB.ElementType.FREE_TEXT,
+            score: score ?? 0,
+            pointsMultiplier: instance?.options.pointsMultiplier ?? 1,
+            explanation: semanticState.solutionAuthorized
+              ? semanticState.explanation
+              : null,
+            feedbacks: [],
+            answers: [],
+            solutions: [],
+            semanticState,
+          } as InstanceEvaluationFreeText,
+        }
+      }
+    }
+
     const result = await respondToQuestion(
       {
         id: response.instanceId,
@@ -3199,7 +3406,7 @@ export async function respondToElementStack(
     }
   }
 
-  let stackScore: number | undefined = undefined
+  let stackScore: number | undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: InstanceEvaluation[] = []
 

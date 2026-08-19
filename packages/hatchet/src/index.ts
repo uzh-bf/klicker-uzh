@@ -102,6 +102,40 @@ export function prepareHatchetTasks({
     },
   }
 
+  // ! SEMANTIC FREE-TEXT EVALUATION
+  // #region
+  const evaluateFreeTextAttempt = hatchet.workflow<{
+    attemptId: string
+    evaluationRevision: number
+  }>({
+    name: 'evaluate-free-text-attempt-workflow',
+  })
+  evaluateFreeTextAttempt.durableTask({
+    name: 'evaluate-free-text-attempt',
+    retries: 3,
+    concurrency: {
+      expression: 'input.attemptId',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
+    fn: (input, executionContext) =>
+      handlers.handleEvaluateFreeTextAttempt(
+        input,
+        globalContext,
+        executionContext
+      ),
+  })
+  evaluateFreeTextAttempt.onFailure({
+    name: 'mark-free-text-attempt-unavailable',
+    fn: (input, executionContext) =>
+      handlers.handleEvaluateFreeTextAttemptFailure(
+        input,
+        globalContext,
+        executionContext
+      ),
+  })
+  // #endregion
+
   // ! AUDIT LOGGING
   // #region
   const createAuditLogEntry = hatchet.task({
@@ -528,6 +562,7 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    evaluateFreeTextAttempt,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

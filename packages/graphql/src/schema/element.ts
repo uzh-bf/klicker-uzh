@@ -1,7 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityType as ActivityTypeEnum,
-  SortByType as SortByTypeEnum,
+  type ActivityType as ActivityTypeEnum,
   type CaseStudyCaseInput as CaseStudyCaseInputType,
   type CaseStudyCriteriaSolutionInput as CaseStudyCriteriaSolutionInputType,
   type CaseStudyCriterionInput as CaseStudyCriterionInputType,
@@ -44,10 +43,11 @@ import {
   type SingleQuestionResponseValue as SingleQuestionResponseValueType,
   type SingleSelectionResponse as SingleSelectionResponseType,
   type SolutionRangeInput as SolutionRangeInputType,
+  SortByType as SortByTypeEnum,
   type TemplateBlockElementInput as TemplateBlockElementInputType,
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
-import builder from '../builder.js'
+import builder, { JsonScalar } from '../builder.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
@@ -65,6 +65,7 @@ import {
   SelectionElementOptions,
 } from './elementData.js'
 import { FlashcardCorrectness } from './evaluation.js'
+import { FreeTextPracticeStateType } from './freeTextEvaluation.js'
 import {
   CaseStudyCaseResponse,
   ChoicesResponse,
@@ -167,6 +168,7 @@ export const OptionsFreeTextInput = OptionsFreeTextInputRef.implement({
       required: false,
     }),
     solutions: t.stringList({ required: false }),
+    semanticEvaluation: t.field({ type: JsonScalar, required: false }),
     feedback: t.string({ required: false }),
   }),
 })
@@ -533,6 +535,16 @@ export const FreeTextInstanceEvaluation = builder
         nullable: true,
       }),
       solutions: t.exposeStringList('solutions', { nullable: true }),
+      semanticState: t.field({
+        type: FreeTextPracticeStateType,
+        nullable: true,
+        resolve: (evaluation) =>
+          (
+            evaluation as IInstanceEvaluationFreeText & {
+              semanticState?: unknown
+            }
+          ).semanticState as never,
+      }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,
         nullable: true,

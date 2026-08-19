@@ -14,6 +14,7 @@ import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
 import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as FeedbackService from '../services/feedbacks.js'
+import * as FreeTextEvaluationService from '../services/freeTextEvaluation.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
@@ -77,6 +78,10 @@ import {
 } from './elementGeneration.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
+import {
+  FreeTextPracticeStateType,
+  SemanticFreeTextCapability,
+} from './freeTextEvaluation.js'
 import {
   GroupActivity,
   GroupActivityDetails,
@@ -166,6 +171,26 @@ export const Query = builder.queryType({
     const asUserWithCatalyst = { ...asUser, catalyst: true }
 
     return {
+      freeTextPracticeState: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: FreeTextPracticeStateType,
+        args: { instanceId: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await FreeTextEvaluationService.getFreeTextPracticeState(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      semanticFreeTextCapability: t.withAuth(asUser).field({
+        nullable: false,
+        type: SemanticFreeTextCapability,
+        resolve: (_, __, ctx) => {
+          return FreeTextEvaluationService.getSemanticFreeTextCapability(ctx)
+        },
+      }),
+
       self: t.field({
         nullable: true,
         type: Participant,

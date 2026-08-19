@@ -1,5 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import type { ElementOptionsInput } from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
 import validateKPRIMOptions from './validateKPRIMOptions.js'
@@ -81,6 +81,7 @@ function validateAndProcessElementOptions(
         restrictions: {
           maxLength: options.restrictions?.maxLength ?? undefined,
         },
+        semanticEvaluation: options.semanticEvaluation ?? undefined,
       }
     }
 

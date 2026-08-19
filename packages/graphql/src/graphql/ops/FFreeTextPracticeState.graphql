@@ -1,0 +1,62 @@
+fragment FreeTextPracticeStateData on FreeTextPracticeState {
+  instanceId
+  cycleId
+  cycleOrdinal
+  cycleStatus
+  attemptLimit
+  attemptsUsed
+  attemptsRemaining
+  canSubmitAnswer
+  canRetryEvaluation
+  canRevealSolution
+  canPracticeAgain
+  solutionAuthorized
+  referenceSolution
+  explanation
+  peerAnswers {
+    value
+    count
+  }
+  currentAttempt {
+    id
+    ordinal
+    answer
+    evaluationRevision
+    evaluationStatus
+    evaluationSource
+    retryable
+    availabilityReason
+    aggregateScore
+    outcomeBandId
+    outcomeBandLabel
+    correctness
+    evaluatorVersion
+    modelVersion
+    structuredResult
+    pointsAwarded
+    xpAwarded
+    createdAt
+    completedAt
+  }
+  attempts {
+    id
+    ordinal
+    answer
+    evaluationRevision
+    evaluationStatus
+    evaluationSource
+    retryable
+    availabilityReason
+    aggregateScore
+    outcomeBandId
+    outcomeBandLabel
+    correctness
+    evaluatorVersion
+    modelVersion
+    structuredResult
+    pointsAwarded
+    xpAwarded
+    createdAt
+    completedAt
+  }
+}

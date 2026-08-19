@@ -1,0 +1,9 @@
+mutation DecideSemanticEvaluationConsent(
+  $disclosureVersion: String!
+  $accepted: Boolean!
+) {
+  decideSemanticEvaluationConsent(
+    disclosureVersion: $disclosureVersion
+    accepted: $accepted
+  )
+}

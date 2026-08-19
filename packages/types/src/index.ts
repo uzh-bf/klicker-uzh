@@ -287,6 +287,7 @@ export type ChoicesResponse = {
 export type StackResponseInput = {
   instanceId: number
   type: ElementType
+  clientSubmissionId?: string | null
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
   choicesResponse?: ChoicesResponse[] | null
@@ -609,8 +610,8 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
-export interface ElementOptionsFlashcard {}
-export interface ElementOptionsContent {}
+export type ElementOptionsFlashcard = {}
+export type ElementOptionsContent = {}
 
 export type ElementOptions =
   | ElementOptionsChoices

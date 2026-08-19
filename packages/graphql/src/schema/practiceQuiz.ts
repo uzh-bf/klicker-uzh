@@ -1,21 +1,21 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  CaseStudyCaseResponse as CaseStudyCaseResponseType,
-  CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
-  CaseStudyItemResponse as CaseStudyItemResponseType,
-  ChoicesResponse as ChoicesResponseType,
-  ElementBlockInput as ElementBlockInputType,
-  ElementInstanceInput as ElementInstanceInputType,
-  ElementStackInput as ElementStackInputType,
+  type CaseStudyCaseResponse as CaseStudyCaseResponseType,
+  type CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
+  type CaseStudyItemResponse as CaseStudyItemResponseType,
+  type ChoicesResponse as ChoicesResponseType,
+  type ElementBlockInput as ElementBlockInputType,
+  type ElementInstanceInput as ElementInstanceInputType,
+  type ElementStackInput as ElementStackInputType,
   FlashcardCorrectness,
   StackFeedbackStatus as StackFeedbackStatusType,
-  StackResponseInput as StackResponseInputType,
+  type StackResponseInput as StackResponseInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
 import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
-import { IStackFeedback } from './evaluation.js'
+import type { IStackFeedback } from './evaluation.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -122,6 +122,7 @@ export const StackResponseInputRef =
 export const StackResponseInput = StackResponseInputRef.implement({
   fields: (t) => ({
     instanceId: t.int({ required: true }),
+    clientSubmissionId: t.string({ required: false }),
     type: t.field({ type: ElementType, required: true }),
     flashcardResponse: t.field({
       type: FlashcardCorrectnessType,

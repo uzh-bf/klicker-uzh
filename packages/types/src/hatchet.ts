@@ -140,10 +140,30 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleEvaluateFreeTextAttempt: (
+    {
+      attemptId,
+      evaluationRevision,
+    }: { attemptId: string; evaluationRevision: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<{ success: boolean; applied: boolean }>
+  handleEvaluateFreeTextAttemptFailure: (
+    {
+      attemptId,
+      evaluationRevision,
+    }: { attemptId: string; evaluationRevision: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<{ success: boolean; applied: boolean }>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  evaluateFreeTextAttempt: TaskWorkflowDeclaration<
+    { attemptId: string; evaluationRevision: number },
+    { success: boolean; applied: boolean }
+  >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
     { success: boolean }

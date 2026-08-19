@@ -1,0 +1,15 @@
+mutation SubmitFreeTextAttempt(
+  $instanceId: Int!
+  $answer: String!
+  $answerTime: Float!
+  $clientSubmissionId: String!
+) {
+  submitFreeTextAttempt(
+    instanceId: $instanceId
+    answer: $answer
+    answerTime: $answerTime
+    clientSubmissionId: $clientSubmissionId
+  ) {
+    ...FreeTextPracticeStateData
+  }
+}
