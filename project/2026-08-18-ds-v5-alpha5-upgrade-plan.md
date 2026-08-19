@@ -286,7 +286,53 @@ else; leave its styling alone.
       Evidence: `pnpm run build` 22/22, `pnpm run check:all` 24/24.
       Test delta: 0 added / 0 changed / 0 removed — every change is a compile-checked
       call-site signature fix already covered by the build.
-- [ ] Slices 3-7 remaining. Next: slice 3, the CSS entry rework.
+- [x] Slices 3-5 — CSS entry rework, shared token bridge, theme opt-in (`335d65563`)
+      All six stylesheets now import `@uzh-bf/design-system/css` first and unlayered,
+      then Tailwind's theme and utilities without preflight, so the base reset is emitted
+      once. The dead `@source` scan of the package source is gone.
+      The four byte-identical 166-line `@theme` blocks collapsed into
+      `packages/shared-components/src/theme.css` (bridges plus the Klicker-only UZH
+      families) and `theme-app.css` (ring and animation tokens the four Pages Router apps
+      want but chat does not).
+      `data-theme="uzh"` set on all five document roots; v5 defaults to `neutral`.
+      Evidence: `pnpm run build` 22/22, `pnpm run check:all` 24/24, and for all five apps
+      the built CSS emits the preflight exactly once, contains the `[data-theme=uzh]`
+      block, and has zero self-referential custom properties.
+      Test delta: 0 added / 0 changed / 0 removed — the assertions live on the built CSS
+      and the rendered page, neither of which a unit test reaches.
+- [x] Slice 4 (fonts) — `font.ts` and its six call sites removed (`35a12c138`)
+      Each app's CSS now carries exactly the design system's six `@font-face` rules and
+      no `next/font` duplicates; the browser still resolves Source Sans 3 with
+      `document.fonts.check` true. The webfont assets under `shared-components/src/fonts`
+      are now unreferenced and left in place pending a decision.
+- [x] Slice 6 — dual-variant visual review
+      Captured under `uzh`: auth login, manage library/activities/courses, PWA
+      login/start/practice/course/microlearning/question flow, control, chat. Captured
+      under `neutral`: manage library. Both variants render correctly and the neutral
+      switch is live (primary turns black, font falls back to the system stack).
+- [ ] Slice 7 — verification and final review.
+
+#### Decisions taken during slices 3-5
+
+- **The bridge must not reference its own name.** `@theme inline` still emits a `:root`
+  row, so `--color-uzh-blue-60: var(--color-uzh-blue-60)` is self-referential and
+  therefore guaranteed-invalid, silently blanking every utility built from it while the
+  build, type check and linter all stay green. This was caught by grepping the built CSS,
+  not by any check the repository runs. Every bridge now points at a distinct upstream
+  (`--theme-color-primary*`, `--theme-color-secondary*`, the bare shadcn names, `--radius`).
+- **UZH blue is mirrored, not bridged.** The design system declares the ramp as literals
+  with no intermediate variable, so there is nothing to point at. `theme.css` therefore
+  repeats v5's five values with a note to keep them in sync.
+- **v5 re-values the ramp** — `#3353b7 → #001e7c` at the 80 step, and similarly down the
+  scale, so the 80 step is now *darker* than the 100 step rather than a tint of it. Taken
+  per the ratified rule that v5's values win; MIGRATION.md documents the escape hatch
+  (override the five `--theme-color-primary*` on `:root[data-theme='uzh']`) if the ramp
+  is judged worse. Secondary likewise moves from UZH red `#dc6027` to UZH berry `#bf0d3e`.
+- **Chat's `:root:root` block was removed rather than re-valued.** Its documented purpose
+  was to outrank shadcn defaults shipped by a dependency stylesheet, but the only vendor
+  stylesheets chat loads today — `@assistant-ui/react-markdown`'s `dot.css` and katex —
+  declare no such tokens. Keeping literals there would instead shadow the active
+  `data-theme` and de-brand the app, which is the defect slice 5 exists to prevent.
 
 ### Notes carried into later slices
 
