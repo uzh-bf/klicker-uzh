@@ -24,7 +24,10 @@ tags:
   deltas, server-driven actions, and terminal reference solution, explanation,
   readable rubric rationale, and peer-answer details. Revealed rubric feedback now
   summarizes every criterion with a segmented status indicator and accessible
-  per-criterion details. Raw rubric JSON stays hidden.
+  per-criterion details. Each authorized detail card labels the evaluator rationale
+  as the reason for its score and, when present, pairs it with the matching
+  criterion-specific feedback proposal as improvement guidance. Raw rubric JSON
+  stays hidden.
 - Added a localhost-only deterministic Catalyst boundary stub and a focused
   Playwright spec covering consent, partial-to-correct retry, reload recovery,
   neighboring-input locking, decline fallback, exact matching, and exhaustion.
@@ -43,8 +46,12 @@ tags:
 - Real PWA verification covered unavailable fallback, persisted reload, solution
   reveal, exact-match correct, a fresh cycle after **Practice again**, and German
   disclosure copy in an English interface at desktop and mobile widths. The refined
-  accepted-feedback state also covered four mixed rubric outcomes, keyboard disclosure
-  controls, and responsive layout without horizontal overflow.
+  accepted-feedback state also covered four mixed rubric outcomes, exact-ID joins
+  between assessments and feedback proposals, keyboard disclosure controls, and a
+  responsive layout without horizontal overflow. The final 1440 x 1900 and
+  390 x 2400 evidence keeps the question, submitted answer, generic outcome,
+  revealed solution, complete rubric overview, and expanded AI feedback together in
+  the student view.
 - The focused Playwright fixture and evaluator stub both completed global setup and
   test discovery. The local DevPod could not execute Chromium because the pinned
   headless-shell executable is absent from its browser cache. The repository CI uses
@@ -57,13 +64,9 @@ tags:
 
 ### Browser evidence
 
-![Accepted rubric feedback with all criteria on desktop](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png)
+![Complete desktop student view with accepted AI rubric feedback](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png)
 
-![Accepted rubric feedback with all criteria on mobile](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png)
-
-![Solution details on desktop](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-solution-desktop.png)
-
-![Solution details on mobile](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-solution-mobile.png)
+![Complete mobile student view with accepted AI rubric feedback](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png)
 
 ![Exact-match correct result](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-exact-correct-desktop.png)
 

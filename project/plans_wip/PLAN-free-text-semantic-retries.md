@@ -642,6 +642,41 @@ rendered contract exposes stable `semantic-rubric-summary`,
       desktop/mobile rubric-feedback screenshots, commit the Layer 4 refinement, push
       the top stack branch, and re-read the draft PR to verify the rendered links.
 
+## Task 8: Criterion-level AI explanations and complete student evidence
+
+**Files:**
+
+- Modify: `packages/shared-components/src/evaluation/FreeTextRubricBreakdown.tsx`
+- Modify: `packages/i18n/messages/en.ts`
+- Modify: `packages/i18n/messages/de.ts`
+- Modify: `playwright/semantic-evaluator-stub.mjs`
+- Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
+- Update: `docs/log/2026-08-19-formative-free-text-evaluation-participant.md`
+- Replace: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png`
+- Replace: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png`
+
+**Interfaces:** the authorized rubric parser keeps required non-empty assessment
+`rationale` values and joins optional non-empty `feedback_proposals[].feedback` by
+exact `rubric_id`. Each detail card exposes
+`semantic-rubric-ai-feedback-{rubricId}` and keeps all raw evaluator metadata hidden.
+
+- [x] Return criterion-specific German rationales and feedback proposals from the
+      deterministic evaluator stub and assert the complete first-card copy in the
+      focused Playwright behavior contract.
+- [x] Render localized **AI feedback**, **Why this score**, and **How to improve**
+      labels inside the authorized native disclosure without changing GraphQL,
+      persistence, or the evaluator contract.
+- [x] Run shared-components, PWA, and Playwright checks, PWA lint, formatting,
+      `git diff --check`, focused OpenGrep, and the full pre-commit `check:all` suite.
+- [x] Exercise the natural partial answer through the real evaluation handler and
+      deterministic Catalyst boundary; verify keyboard disclosure behavior and no
+      horizontal overflow at 390 px.
+- [x] Replace the cropped rubric-panel evidence with complete 1440 x 1900 and
+      390 x 2400 student views containing the question, answer, generic result,
+      revealed solution, all criteria, and expanded AI feedback together.
+- [ ] Push the participant layer through native stack #5436, replace the duplicate
+      screenshot sections in draft PR #5433, and re-read the PR state and checks.
+
 ## Self-review checklist
 
 - [ ] Every confirmed product decision maps to a task and test.
