@@ -90,7 +90,9 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
     await expect(
       page.getByTestId('semantic-rubric-result-risk-reduction')
-    ).toContainText('Die Antwort erreicht die Stufe „erfüllt“.')
+    ).toContainText(
+      'Die Stufe „erfüllt“ wurde gewählt, weil die Antwort folgendes Kriterium erfüllt: Unsystematisches Risiko und Korrelation werden erklärt.'
+    )
   })
 
   test('declining external evaluation keeps a non-match unavailable and allows reveal', async ({
