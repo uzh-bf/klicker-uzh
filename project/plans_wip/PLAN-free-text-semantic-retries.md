@@ -674,7 +674,7 @@ exact `rubric_id`. Each detail card exposes
 - [x] Replace the cropped rubric-panel evidence with complete 1440 x 1900 and
       390 x 2400 student views containing the question, answer, generic result,
       revealed solution, all criteria, and expanded AI feedback together.
-- [ ] Push the participant layer through native stack #5436, replace the duplicate
+- [x] Push the participant layer through native stack #5436, replace the duplicate
       screenshot sections in draft PR #5433, and re-read the PR state and checks.
 
 ## Self-review checklist
@@ -751,3 +751,12 @@ exact `rubric_id`. Each detail card exposes
   not contain the pinned Chromium executable; CI remains the automated browser gate.
   Committed the refinement as `b66216c5f`, pushed the top stack branch, and updated
   draft PR #5433 so the all-rubric desktop/mobile evidence appears first.
+- **2026-08-19:** Added criterion-level AI feedback that pairs each required score
+  rationale with its optional exact-ID feedback proposal, preserving the existing
+  solution-authorization boundary. Replaced the cropped evidence with complete
+  1440 x 1900 and 390 x 2400 student views, verified keyboard expansion and mobile
+  overflow in the real PWA, and committed the evidence as `0f7c4aed2`. Pushed all
+  four tracked branches through native GitHub stack #5436 and updated draft PR #5433
+  to show only the two integrated student views before the exact-match and disclosure
+  evidence. The PR remained draft and correctly targeted #5432; its new CI runs were
+  pending when checked, with no actionable comments or review threads.
