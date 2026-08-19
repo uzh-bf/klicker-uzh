@@ -1211,6 +1211,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{count, plural, =1 {1 criterion assessed} other {# criteria assessed}}',
       semanticRubricScore: 'Score: {score}%',
       semanticRubricDetails: 'Detailed feedback',
+      semanticAiFeedback: 'AI feedback',
+      semanticWhyThisScore: 'Why this score',
+      semanticHowToImprove: 'How to improve',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

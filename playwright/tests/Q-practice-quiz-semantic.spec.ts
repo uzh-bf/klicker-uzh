@@ -146,6 +146,18 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     await expect(
       page.getByTestId('semantic-rubric-result-risk-reduction')
     ).toHaveAttribute('open', '')
+    const riskReductionFeedback = page.getByTestId(
+      'semantic-rubric-ai-feedback-risk-reduction'
+    )
+    await expect(riskReductionFeedback).toContainText('AI feedback')
+    await expect(riskReductionFeedback).toContainText('Why this score')
+    await expect(riskReductionFeedback).toContainText('How to improve')
+    await expect(riskReductionFeedback).toContainText(
+      'Die Antwort erkennt korrekt'
+    )
+    await expect(riskReductionFeedback).toContainText(
+      'Ergänze, dass sich unternehmensspezifische Schwankungen'
+    )
     const correlationResult = page.getByTestId(
       'semantic-rubric-result-correlation'
     )

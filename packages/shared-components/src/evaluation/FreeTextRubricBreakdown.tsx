@@ -14,6 +14,7 @@ type RubricAssessment = {
   proposedLevel: string
   normalizedScore: number
   rationale: string
+  feedback?: string
 }
 
 type RubricStatus = 'MET' | 'PARTIAL' | 'OPEN'
@@ -55,8 +56,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function getFeedbackByRubric(value: unknown): Map<string, string> {
+  if (!isRecord(value) || !Array.isArray(value.feedback_proposals)) {
+    return new Map()
+  }
+
+  return new Map(
+    value.feedback_proposals.flatMap((proposal) => {
+      if (
+        !isRecord(proposal) ||
+        typeof proposal.rubric_id !== 'string' ||
+        typeof proposal.feedback !== 'string' ||
+        proposal.feedback.trim().length === 0
+      ) {
+        return []
+      }
+
+      return [[proposal.rubric_id, proposal.feedback.trim()] as const]
+    })
+  )
+}
+
 function getRubricAssessments(value: unknown): RubricAssessment[] {
   if (!isRecord(value) || !Array.isArray(value.rubric_assessments)) return []
+  const feedbackByRubric = getFeedbackByRubric(value)
 
   return value.rubric_assessments.flatMap((assessment) => {
     if (
@@ -68,7 +91,8 @@ function getRubricAssessments(value: unknown): RubricAssessment[] {
       !Number.isFinite(assessment.normalized_score) ||
       assessment.normalized_score < 0 ||
       assessment.normalized_score > 100 ||
-      typeof assessment.rationale !== 'string'
+      typeof assessment.rationale !== 'string' ||
+      assessment.rationale.trim().length === 0
     ) {
       return []
     }
@@ -79,7 +103,8 @@ function getRubricAssessments(value: unknown): RubricAssessment[] {
         rubricName: assessment.rubric_name,
         proposedLevel: assessment.proposed_level,
         normalizedScore: assessment.normalized_score,
-        rationale: assessment.rationale,
+        rationale: assessment.rationale.trim(),
+        feedback: feedbackByRubric.get(assessment.rubric_id),
       },
     ]
   })
@@ -220,9 +245,32 @@ function FreeTextRubricBreakdown({ result }: { result: unknown }) {
                   />
                 </summary>
                 <div className="border-t border-gray-200 bg-gray-50 p-3">
-                  <p className="text-sm leading-relaxed text-gray-700">
-                    {assessment.rationale}
-                  </p>
+                  <div
+                    className="border-l-4 border-uzh-blue-100 bg-white p-3"
+                    data-cy={`semantic-rubric-ai-feedback-${assessment.rubricId}`}
+                  >
+                    <div className="text-sm font-semibold text-uzh-blue-100">
+                      {t('pwa.practiceQuiz.semanticAiFeedback')}
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                        {t('pwa.practiceQuiz.semanticWhyThisScore')}
+                      </div>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-700">
+                        {assessment.rationale}
+                      </p>
+                    </div>
+                    {assessment.feedback && (
+                      <div className="mt-3">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                          {t('pwa.practiceQuiz.semanticHowToImprove')}
+                        </div>
+                        <p className="mt-1 text-sm leading-relaxed text-gray-700">
+                          {assessment.feedback}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </details>
             )

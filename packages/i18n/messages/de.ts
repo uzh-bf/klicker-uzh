@@ -1219,6 +1219,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{count, plural, =1 {1 Kriterium bewertet} other {# Kriterien bewertet}}',
       semanticRubricScore: 'Punktwert: {score}%',
       semanticRubricDetails: 'Detailliertes Feedback',
+      semanticAiFeedback: 'KI-Feedback',
+      semanticWhyThisScore: 'Warum diese Bewertung?',
+      semanticHowToImprove: 'So kannst du dich verbessern',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

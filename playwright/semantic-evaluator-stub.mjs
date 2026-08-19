@@ -77,17 +77,98 @@ function selectLevel(rubric, scenario) {
   )
 }
 
+const PARTIAL_COPY_BY_RUBRIC = {
+  'risk-reduction': {
+    rationale: {
+      de: 'Die Antwort erkennt korrekt, dass Diversifikation das anlagespezifische Risiko reduziert.',
+      en: 'The answer correctly recognizes that diversification reduces asset-specific risk.',
+    },
+    feedback: {
+      de: 'Ergänze, dass sich unternehmensspezifische Schwankungen im Portfolio teilweise ausgleichen.',
+      en: 'Add that company-specific fluctuations partially offset each other within a portfolio.',
+    },
+  },
+  'diversification-mechanism': {
+    rationale: {
+      de: 'Die Antwort beschreibt zutreffend, dass das Risiko auf mehrere Anlagen verteilt wird.',
+      en: 'The answer correctly describes how risk is distributed across several investments.',
+    },
+    feedback: {
+      de: 'Nenne zusätzlich, dass die Anlagen unterschiedlichen Risikotreibern ausgesetzt sein sollten.',
+      en: 'Also mention that the investments should be exposed to different risk drivers.',
+    },
+  },
+  correlation: {
+    rationale: {
+      de: 'Die Risikostreuung wird genannt, aber der Zusammenhang mit nicht perfekt korrelierten Renditen fehlt.',
+      en: 'Risk spreading is mentioned, but the connection to imperfectly correlated returns is missing.',
+    },
+    feedback: {
+      de: 'Erkläre, dass der Diversifikationseffekt stärker ist, wenn sich die Renditen nicht vollständig gleich bewegen.',
+      en: 'Explain that diversification is stronger when the returns do not move completely in lockstep.',
+    },
+  },
+  'risk-scope': {
+    rationale: {
+      de: 'Die Antwort unterscheidet nicht zwischen unsystematischem und systematischem Risiko.',
+      en: 'The answer does not distinguish between unsystematic and systematic risk.',
+    },
+    feedback: {
+      de: 'Stelle klar, dass Diversifikation vor allem unsystematisches Risiko reduziert, nicht das allgemeine Marktrisiko.',
+      en: 'Clarify that diversification primarily reduces unsystematic risk, not general market risk.',
+    },
+  },
+}
+
+function getEvaluationCopy({ rubric, level, scenario, isGerman }) {
+  const language = isGerman ? 'de' : 'en'
+  const partialCopy = PARTIAL_COPY_BY_RUBRIC[rubric.id]
+  if (scenario === 'partial' && partialCopy) {
+    return {
+      rationale: partialCopy.rationale[language],
+      feedback: partialCopy.feedback[language],
+    }
+  }
+
+  const levelDescription =
+    typeof level.description === 'string' && level.description.trim().length > 0
+      ? level.description.trim()
+      : rubric.description
+  return isGerman
+    ? {
+        rationale: `Die Stufe „${level.name}“ wurde gewählt, weil die Antwort folgendes Kriterium erfüllt: ${levelDescription}`,
+        feedback:
+          scenario === 'correct'
+            ? 'Behalte diese präzise Begründung in zukünftigen Antworten bei.'
+            : `Ergänze deine Antwort gezielt zu diesem Kriterium: ${rubric.description}`,
+      }
+    : {
+        rationale: `The “${level.name}” level was selected because the answer meets this criterion: ${levelDescription}`,
+        feedback:
+          scenario === 'correct'
+            ? 'Keep using this precise reasoning in future answers.'
+            : `Extend your answer specifically for this criterion: ${rubric.description}`,
+      }
+}
+
 function createEvaluation(request, scenario) {
   const isGerman = request.question.language === 'de'
   const uncertain = scenario === 'uncertain'
+  const rubricEvaluations = request.rubric_schema.rubrics.map((rubric) => {
+    const level = selectLevel(rubric, scenario)
+    return {
+      rubric,
+      level,
+      copy: getEvaluationCopy({ rubric, level, scenario, isGerman }),
+    }
+  })
 
   return {
     contract_version: '1',
     task_bundle_id: request.task_bundle_id,
     evaluator_version: 'playwright-semantic-evaluator-v1',
     model_version: 'deterministic-fixture-v1',
-    rubric_assessments: request.rubric_schema.rubrics.map((rubric) => {
-      const level = selectLevel(rubric, scenario)
+    rubric_assessments: rubricEvaluations.map(({ rubric, level, copy }) => {
       return {
         task_bundle_id: request.task_bundle_id,
         rubric_id: rubric.id,
@@ -108,11 +189,20 @@ function createEvaluation(request, scenario) {
             ? 'Synthetische Unsicherheit.'
             : 'Synthetic uncertainty.'
           : null,
-        rationale: isGerman
-          ? `Die Antwort erreicht die Stufe „${level.name}“.`
-          : `The answer reaches the “${level.name}” level.`,
+        rationale: copy.rationale,
       }
     }),
+    feedback_proposals: rubricEvaluations.map(({ rubric, copy }) => ({
+      task_bundle_id: request.task_bundle_id,
+      rubric_id: rubric.id,
+      rubric_name: rubric.name,
+      feedback: copy.feedback,
+      strengths: [],
+      improvements: [copy.feedback],
+      action_items: [copy.feedback],
+      evidence_ids: [],
+      confidence: uncertain ? 0.2 : 1,
+    })),
   }
 }
 
