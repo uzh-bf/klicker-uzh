@@ -342,6 +342,43 @@ else; leave its styling alone.
       — and is byte-identical to `origin/v3`.
 - [ ] Final review of the integrated branch.
 
+#### v5 re-tunes the component scale, and its migration guide understates it
+
+Raised by review of the slice 6 captures: the screens look like the old design with the
+spacing subtly off. That reading is correct, and the cause is the design system, not the
+integration.
+
+`MIGRATION.md` states "Colors, spacing, and layout are unaffected" and lists only two
+entries under *Visual changes to verify* (`AvatarFallback` and `Tabs`). Comparing v4.1.8's
+published `src/ui/*` against v5's `dist/ui/*` shows **30 of 46 primitives changed their own
+sizing, spacing or type classes**. Verified against the literal class strings:
+
+| Primitive | v4 | v5 |
+| --- | --- | --- |
+| `input` | `h-9 … text-base` | `h-10 … text-sm` |
+| `table` cell | `p-2 px-2`, header `h-10` | `px-4 py-[13px]`, header `px-4 py-3 text-xs uppercase tracking-[0.06em] bg-muted` |
+| `button` | `py-1.5 px-6 size-9 gap-1.5` | `h-8 / h-10 / h-12 px-4 px-5 text-sm` |
+| `card` | `py-6 pt-6 gap-6` | `py-3.5 pt-3 pt-5 pb-2 pb-5 gap-1 gap-2` |
+| `dialog` | `p-5` | `p-6 pt-4` |
+| `dropdown-menu` | `px-2 py-1.5` | `px-2.5 py-0 h-9 pl-4 pt-1.5 pb-1` |
+| `textarea` | `min-h-16 text-base` | `min-h-20` |
+| `tooltip` | `text-sm` | `text-xs` |
+
+Inputs and buttons get taller, table cells get roomier with smaller uppercase headers, and
+cards get tighter. This is v5 doing it deliberately — it is not drift introduced here.
+
+What was ruled out as a cause, each by measurement rather than inference: the design
+system's compiled CSS is properly layered (`theme` / `base` / `components` / `utilities`),
+so the apps' own utilities still win ties; its `base` layer is the complete Tailwind 4
+preflight; every app's root `font-size` is unchanged at 16px; and an audit of the manage
+question pool covering 160 elements and 560 property checks found zero spacing utilities
+resolving to anything other than their declared value.
+
+**Open decision.** Accept v5's new component scale as the product's new baseline, or pin
+the previous values per primitive. Accepting is the smaller change and matches the ratified
+rule that v5's values win; pinning means carrying overrides for roughly thirty primitives,
+which is the maintenance burden this upgrade exists to shed.
+
 #### Decisions taken during slices 3-5
 
 - **The bridge must not reference its own name.** `@theme inline` still emits a `:root`
