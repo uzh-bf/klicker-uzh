@@ -1,0 +1,23 @@
+/*
+ * Theme additions shared by the four Pages Router apps (auth, control, manage,
+ * pwa). Kept out of `theme.css` because chat does not carry these: it uses the
+ * design system's default ring width and none of these animations, and folding
+ * them into the universal file would change chat's focus rings as a side
+ * effect.
+ */
+
+@theme {
+  /* Focus rings are wider and blue by default, matching pre-v5 Klicker. */
+  --default-ring-width: 3px;
+  --default-ring-color: var(--color-blue-500);
+
+  /* Keyframes for these live in the consuming app's stylesheet. */
+  --animate-enter-from-right: enter-from-right 0.25s ease;
+  --animate-enter-from-left: enter-from-left 0.25s ease;
+  --animate-exit-to-right: exit-to-right 0.25s ease;
+  --animate-exit-to-left: exit-to-left 0.25s ease;
+  --animate-scale-in-content: scale-in-content 0.2s ease;
+  --animate-scale-out-content: scale-out-content 0.2s ease;
+  --animate-fade-in: fade-in 0.2s ease;
+  --animate-fade-out: fade-out 0.2s ease;
+}

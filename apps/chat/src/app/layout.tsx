@@ -47,7 +47,7 @@ export default async function RootLayout({
   const t = await getTranslations()
 
   return (
-    <html lang={locale}>
+    <html lang={locale} data-theme="uzh">
       <head>
         <style>{`
           :root {

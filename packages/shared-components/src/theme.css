@@ -1,0 +1,165 @@
+/*
+ * Shared Klicker theme layer for @uzh-bf/design-system v5.
+ *
+ * v5 ships its styles precompiled. Compilation consumes the package's own
+ * `@theme` rule, so nothing in the imported stylesheet tells a consuming app's
+ * Tailwind build which token names exist — the app emits no utility for a name
+ * it has never seen, even though the custom property is present at runtime.
+ * This file re-declares the names the Klicker apps use.
+ *
+ * The bridge block below is `@theme inline` on purpose. Inline mode registers a
+ * name for utility generation without emitting a `:root` row for it, so the
+ * generated utility keeps the `var()` reference and resolves against the design
+ * system's own declaration. A plain `@theme` would instead emit a `:root` row
+ * whose value refers to itself; a self-referential custom property is
+ * guaranteed-invalid, which silently blanks every utility built from it while
+ * the build, the type check and the linter all stay green.
+ *
+ * Values therefore come from the design system, per the upgrade decision that
+ * v5's values win unless visual review shows otherwise.
+ */
+
+@theme inline {
+  /* Fonts. The design system declares `--font-sans` and emits `.font-sans`; it
+     declares neither `--font-mono` nor `.font-mono`, so the mono face has to be
+     bridged here from the runtime theme variable the design system does set. */
+  --font-sans:
+    var(
+      --theme-font-sans,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      "Helvetica Neue",
+      Arial,
+      sans-serif
+    );
+  --font-mono:
+    var(
+      --theme-font-mono,
+      ui-monospace,
+      SFMono-Regular,
+      "SF Mono",
+      Menlo,
+      Monaco,
+      Consolas,
+      "Liberation Mono",
+      "Courier New",
+      monospace
+    );
+
+  /* UZH blue. Owned by the design system, but with no intermediate variable to
+     bridge to: it declares the ramp as literals, so referring to the same name
+     here would be self-referential and silently blank every utility built from
+     it. These therefore mirror the design system's v5 values and must be
+     updated together with it. Note that v5 re-values the ramp — the 80 step is
+     now darker than the 100 step rather than a tint of it. */
+  --color-uzh-blue: #0028a5;
+  --color-uzh-blue-100: #0028a5;
+  --color-uzh-blue-80: #001e7c;
+  --color-uzh-blue-60: #3062ff;
+  --color-uzh-blue-40: #7596ff;
+  --color-uzh-blue-20: #bdc9e8;
+
+  /* Brand ramps, bridged to the design system's theme inputs so the active
+     `data-theme` decides the values: `uzh` supplies UZH blue and berry, while
+     `neutral` supplies its greyscale. */
+  --color-primary-100: var(--theme-color-primary);
+  --color-primary-80: var(--theme-color-primary-80);
+  --color-primary-60: var(--theme-color-primary-60);
+  --color-primary-40: var(--theme-color-primary-40);
+  --color-primary-20: var(--theme-color-primary-20);
+  --color-secondary-100: var(--theme-color-secondary);
+  --color-secondary-80: var(--theme-color-secondary-80);
+  --color-secondary-60: var(--theme-color-secondary-60);
+  --color-secondary-40: var(--theme-color-secondary-40);
+  --color-secondary-20: var(--theme-color-secondary-20);
+
+  /* shadcn surface tokens. The design system declares the bare runtime names
+     (`--background`, `--border`, …) but not their `--color-*` counterparts, so
+     the namespace side stays a Klicker responsibility. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-background: var(--destructive-background);
+  --color-notification: var(--notification);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Corner radii, derived from the design system's `--radius`. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/*
+ * Klicker-only extensions. The design system ships UZH blue and berry; the
+ * remaining UZH corporate colours below are used by Klicker alone, so Klicker
+ * owns their values and they are declared normally rather than bridged.
+ */
+@theme {
+  --color-uzh-grey: #a3adb7;
+  --color-uzh-grey-100: #a3adb7;
+  --color-uzh-grey-80: #b5bdc5;
+  --color-uzh-grey-60: #c8ced4;
+  --color-uzh-grey-40: #dadee2;
+  --color-uzh-grey-20: #edeff1;
+  --color-uzh-red: #dc6027;
+  --color-uzh-red-100: #dc6027;
+  --color-uzh-red-80: #e38052;
+  --color-uzh-red-60: #eaa07d;
+  --color-uzh-red-40: #f1bfa9;
+  --color-uzh-red-20: #f8dfd4;
+  --color-uzh-yellow: #fede00;
+  --color-uzh-yellow-100: #fede00;
+  --color-uzh-yellow-80: #fbe651;
+  --color-uzh-yellow-60: #fcec7c;
+  --color-uzh-yellow-40: #fdf3a8;
+  --color-uzh-yellow-20: #fef9d3;
+  --color-uzh-lightgreen: #91c34a;
+  --color-uzh-lightgreen-100: #91c34a;
+  --color-uzh-lightgreen-80: #aad470;
+  --color-uzh-lightgreen-60: #bfdfc4;
+  --color-uzh-lightgreen-40: #d5e9b7;
+  --color-uzh-lightgreen-20: #eaf4db;
+  --color-uzh-darkgreen: #2a7f62;
+  --color-uzh-darkgreen-100: #2a7f62;
+  --color-uzh-darkgreen-80: #569d85;
+  --color-uzh-darkgreen-60: #80b6a4;
+  --color-uzh-darkgreen-40: #abcec2;
+  --color-uzh-darkgreen-20: #d5e7e1;
+  --color-uzh-turqoise: #0b82a0;
+  --color-uzh-turqoise-100: #0b82a0;
+  --color-uzh-turqoise-80: #3c9fb6;
+  --color-uzh-turqoise-60: #6bb7c7;
+  --color-uzh-turqoise-40: #9ed0d9;
+  --color-uzh-turqoise-20: #cfe8ec;
+}
