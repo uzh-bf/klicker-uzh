@@ -638,7 +638,7 @@ rendered contract exposes stable `semantic-rubric-summary`,
       PWA at desktop and mobile widths, plus the German labels in the English PWA.
       Confirm every criterion is visible in the overview, expand/collapse works by
       keyboard, and content does not overflow.
-- [ ] Replace the insufficient fallback screenshot evidence in PR #5433 with the new
+- [x] Replace the insufficient fallback screenshot evidence in PR #5433 with the new
       desktop/mobile rubric-feedback screenshots, commit the Layer 4 refinement, push
       the top stack branch, and re-read the draft PR to verify the rendered links.
 
@@ -714,3 +714,5 @@ rendered contract exposes stable `semantic-rubric-summary`,
   Playwright type checks, PWA lint, formatting, `git diff --check`, and focused
   OpenGrep all passed. The focused Playwright test reached launch but the DevPod does
   not contain the pinned Chromium executable; CI remains the automated browser gate.
+  Committed the refinement as `b66216c5f`, pushed the top stack branch, and updated
+  draft PR #5433 so the all-rubric desktop/mobile evidence appears first.
