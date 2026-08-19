@@ -61,9 +61,17 @@ function selectLevel(rubric, scenario) {
   if (scenario === 'correct') return levels.at(-1)
   if (scenario === 'incorrect') return levels[0]
 
+  const partialTargetByRubric = {
+    'risk-reduction': 100,
+    'diversification-mechanism': 100,
+    correlation: 60,
+    'risk-scope': 0,
+  }
+  const targetScore = partialTargetByRubric[rubric.id] ?? 60
+
   return levels.reduce((closest, level) =>
-    Math.abs(Number(level.normalized_score) - 60) <
-    Math.abs(Number(closest.normalized_score) - 60)
+    Math.abs(Number(level.normalized_score) - targetScore) <
+    Math.abs(Number(closest.normalized_score) - targetScore)
       ? level
       : closest
   )

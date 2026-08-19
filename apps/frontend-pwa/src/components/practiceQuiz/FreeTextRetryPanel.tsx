@@ -3,6 +3,7 @@ import {
   FreeTextEvaluationStatus,
   type FreeTextPracticeStateDataFragment,
 } from '@klicker-uzh/graphql/dist/ops'
+import FreeTextRubricBreakdown from '@klicker-uzh/shared-components/src/evaluation/FreeTextRubricBreakdown'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -166,6 +167,12 @@ function FreeTextRetryPanel({
           </Button>
         )}
       </div>
+
+      {state.solutionAuthorized && detailsOpen && (
+        <div className="mt-4">
+          <FreeTextRubricBreakdown result={attempt?.structuredResult} />
+        </div>
+      )}
 
       {state.attempts.length > 0 && (
         <details className="mt-4" data-cy="semantic-attempt-history">

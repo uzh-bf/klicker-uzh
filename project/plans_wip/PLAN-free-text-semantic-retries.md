@@ -569,6 +569,79 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
       screenshots to the final draft PR, and update this plan's Progress section with
       exact commands and results.
 
+## Task 7: Rich participant rubric feedback
+
+**Files:**
+
+- Modify: `packages/shared-components/src/evaluation/FreeTextRubricBreakdown.tsx`
+- Modify: `packages/shared-components/src/evaluation/FTEvaluation.tsx`
+- Modify: `apps/frontend-pwa/src/components/practiceQuiz/FreeTextRetryPanel.tsx`
+- Modify: `packages/i18n/messages/en.ts`
+- Modify: `packages/i18n/messages/de.ts`
+- Modify: `playwright/fixtures/Q-practice-quiz.json`
+- Modify: `playwright/semantic-evaluator-stub.mjs`
+- Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
+- Update: `docs/log/2026-08-19-formative-free-text-evaluation-participant.md`
+- Add: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png`
+- Add: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png`
+
+**Interfaces:** `FreeTextRubricBreakdown` continues to consume the authorized
+`structuredResult` JSON. Its parser additionally retains `normalized_score`, and its
+rendered contract exposes stable `semantic-rubric-summary`,
+`semantic-rubric-overview-{rubricId}`, and existing
+`semantic-rubric-result-{rubricId}` hooks. No GraphQL or persistence contract changes.
+
+- [x] Extend the deterministic fixture from one rubric to four equally weighted
+      synthetic diversification criteria. Make the partial scenario return a mix of
+      full, partial, and open achievement levels while keeping correct/incorrect
+      scenarios deterministic for every rubric.
+- [x] Add focused Playwright assertions for all four overview rows, the fully-met
+      count, the first expanded detail row, and the remaining collapsed detail rows.
+      The focused test is discovered and type-checks; local execution reaches browser
+      launch but is blocked by the missing pinned Chromium executable in the DevPod.
+- [x] Extend the parsed assessment shape exactly as follows and keep malformed result
+      objects fail-closed:
+
+  ```ts
+  type RubricAssessment = {
+    rubricId: string
+    rubricName: string
+    proposedLevel: string
+    normalizedScore: number
+    rationale: string
+  }
+
+  type RubricStatus = 'MET' | 'PARTIAL' | 'OPEN'
+
+  function getRubricStatus(normalizedScore: number): RubricStatus {
+    if (normalizedScore >= 100) return 'MET'
+    if (normalizedScore > 0) return 'PARTIAL'
+    return 'OPEN'
+  }
+  ```
+
+- [x] Replace the flat card list with the approved three-layer presentation: a
+      segmented score indicator, every-rubric overview, and native `<details>` rows.
+      Use Font Awesome's existing `faCircleCheck`, `faCircleHalfStroke`,
+      `faCircleXmark`, and `faChevronDown`; the first criterion uses `open` and all
+      rows remain keyboard accessible. Show configured achieved-level labels and
+      evaluator rationales verbatim, but never raw JSON.
+- [x] Add the localized keys `semanticRubricCriteriaMet`,
+      `semanticRubricCriterionCount`, `semanticRubricScore`, and
+      `semanticRubricDetails` in English and German. Keep lecturer-defined level names
+      in the question language rather than translating them in the UI.
+- [x] Run `pnpm --filter @klicker-uzh/shared-components check`,
+      `pnpm --filter @klicker-uzh/frontend-pwa check`, and
+      `pnpm --filter @klicker-uzh/playwright check`; expect exit 0. Run formatting,
+      lint, `git diff --check`, and an OpenGrep scan over the changed source files.
+- [x] Verify the accepted partial-evaluation and revealed rubric state in the real
+      PWA at desktop and mobile widths, plus the German labels in the English PWA.
+      Confirm every criterion is visible in the overview, expand/collapse works by
+      keyboard, and content does not overflow.
+- [ ] Replace the insufficient fallback screenshot evidence in PR #5433 with the new
+      desktop/mobile rubric-feedback screenshots, commit the Layer 4 refinement, push
+      the top stack branch, and re-read the draft PR to verify the rendered links.
+
 ## Self-review checklist
 
 - [ ] Every confirmed product decision maps to a task and test.
@@ -634,3 +707,10 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
   [#5433](https://github.com/uzh-bf/klicker-uzh/pull/5433). The participant PR
   description contains the desktop/mobile solution views, exact-match result, and
   German disclosure screenshot.
+- **2026-08-19:** Refined the accepted-feedback state with a full-width segmented
+  rubric summary, all-criterion overview, and keyboard-accessible criterion details.
+  The four mixed outcomes and German lecturer-defined labels were verified in the
+  real PWA at 1440 px and 390 px without overflow. Shared-components, PWA, and
+  Playwright type checks, PWA lint, formatting, `git diff --check`, and focused
+  OpenGrep all passed. The focused Playwright test reached launch but the DevPod does
+  not contain the pinned Chromium executable; CI remains the automated browser gate.

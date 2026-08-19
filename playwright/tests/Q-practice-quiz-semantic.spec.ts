@@ -112,6 +112,49 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
   })
 
+  test('reveals every rubric criterion after partial feedback', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser5')
+    await submitInitialStack(page, data.partialAnswer)
+    await page.getByTestId('semantic-consent-accept').click()
+
+    const panel = page.getByTestId('semantic-free-text-retry-panel')
+    await expect(panel).toContainText(data.partialLabel)
+    await page.getByTestId('semantic-show-solution').click()
+    await page.getByTestId('semantic-toggle-explanation').click()
+
+    await expect(page.getByTestId('semantic-rubric-summary')).toContainText(
+      '2 of 4 criteria fully met'
+    )
+
+    const rubricIds = [
+      'risk-reduction',
+      'diversification-mechanism',
+      'correlation',
+      'risk-scope',
+    ]
+    for (const rubricId of rubricIds) {
+      await expect(
+        page.getByTestId(`semantic-rubric-overview-${rubricId}`)
+      ).toBeVisible()
+      await expect(
+        page.getByTestId(`semantic-rubric-result-${rubricId}`)
+      ).toBeVisible()
+    }
+
+    await expect(
+      page.getByTestId('semantic-rubric-result-risk-reduction')
+    ).toHaveAttribute('open', '')
+    const correlationResult = page.getByTestId(
+      'semantic-rubric-result-correlation'
+    )
+    await expect(correlationResult).not.toHaveAttribute('open', '')
+    await correlationResult.locator('summary').focus()
+    await page.keyboard.press('Enter')
+    await expect(correlationResult).toHaveAttribute('open', '')
+  })
+
   test('accepts an exact answer without external consent', async ({ page }) => {
     await openQuiz(page, 'testuser3')
     await submitInitialStack(page, data.exactAnswer)

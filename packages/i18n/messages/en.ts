@@ -1206,6 +1206,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       semanticHistoryEvaluated: 'Evaluated',
       semanticRubricFeedback: 'Rubric feedback',
       semanticAchievedLevel: 'Achieved level',
+      semanticRubricCriteriaMet: '{met} of {total} criteria fully met',
+      semanticRubricCriterionCount:
+        '{count, plural, =1 {1 criterion assessed} other {# criteria assessed}}',
+      semanticRubricScore: 'Score: {score}%',
+      semanticRubricDetails: 'Detailed feedback',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

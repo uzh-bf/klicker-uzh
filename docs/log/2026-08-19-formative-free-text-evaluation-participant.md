@@ -22,7 +22,9 @@ tags:
   question language. Decline persists the deterministic exact-match fallback.
 - Added generic custom/default outcome feedback, attempt history, per-attempt reward
   deltas, server-driven actions, and terminal reference solution, explanation,
-  readable rubric rationale, and peer-answer details. Raw rubric JSON stays hidden.
+  readable rubric rationale, and peer-answer details. Revealed rubric feedback now
+  summarizes every criterion with a segmented status indicator and accessible
+  per-criterion details. Raw rubric JSON stays hidden.
 - Added a localhost-only deterministic Catalyst boundary stub and a focused
   Playwright spec covering consent, partial-to-correct retry, reload recovery,
   neighboring-input locking, decline fallback, exact matching, and exhaustion.
@@ -40,18 +42,24 @@ tags:
   change.
 - Real PWA verification covered unavailable fallback, persisted reload, solution
   reveal, exact-match correct, a fresh cycle after **Practice again**, and German
-  disclosure copy in an English interface at desktop and mobile widths.
+  disclosure copy in an English interface at desktop and mobile widths. The refined
+  accepted-feedback state also covered four mixed rubric outcomes, keyboard disclosure
+  controls, and responsive layout without horizontal overflow.
 - The focused Playwright fixture and evaluator stub both completed global setup and
-  test discovery. The local DevPod could not execute Chromium: its browser cache was
-  initially absent, and the interrupted arm64 download left an invalid ICU payload.
-  The repository CI uses the pinned Playwright browser image; the focused spec still
-  requires a green CI/full-runtime execution before merge.
+  test discovery. The local DevPod could not execute Chromium because the pinned
+  headless-shell executable is absent from its browser cache. The repository CI uses
+  the pinned Playwright browser image; the focused spec still requires a green
+  CI/full-runtime execution before merge.
 - The wiki skill's external validator was unavailable at its documented local
   path; Markdown formatting and `git diff --check` passed.
 - The four-layer draft stack was published as GitHub PRs #5430–#5433. The top
   participant PR includes the browser evidence below in its description.
 
 ### Browser evidence
+
+![Accepted rubric feedback with all criteria on desktop](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png)
+
+![Accepted rubric feedback with all criteria on mobile](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png)
 
 ![Solution details on desktop](./assets/2026-08-19-formative-free-text-evaluation-participant/participant-solution-desktop.png)
 

@@ -1213,6 +1213,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       semanticHistoryEvaluated: 'Bewertet',
       semanticRubricFeedback: 'Rubrik-Feedback',
       semanticAchievedLevel: 'Erreichte Stufe',
+      semanticRubricCriteriaMet:
+        '{met} von {total} Kriterien vollständig erfüllt',
+      semanticRubricCriterionCount:
+        '{count, plural, =1 {1 Kriterium bewertet} other {# Kriterien bewertet}}',
+      semanticRubricScore: 'Punktwert: {score}%',
+      semanticRubricDetails: 'Detailliertes Feedback',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

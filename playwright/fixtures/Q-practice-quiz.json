@@ -98,7 +98,7 @@
             "id": "risk-reduction",
             "name": "Risikoreduktion",
             "description": "Die Antwort erklärt die Reduktion des unsystematischen Risikos.",
-            "weight": 1,
+            "weight": 0.25,
             "achievement_levels": [
               {
                 "name": "nicht erfüllt",
@@ -113,6 +113,84 @@
               {
                 "name": "erfüllt",
                 "description": "Unsystematisches Risiko und Korrelation werden erklärt.",
+                "normalized_score": 100
+              }
+            ],
+            "anchors": {
+              "source": "synthetic-playwright-fixture"
+            }
+          },
+          {
+            "id": "diversification-mechanism",
+            "name": "Diversifikationsmechanismus",
+            "description": "Die Antwort beschreibt die Verteilung auf mehrere Anlagen.",
+            "weight": 0.25,
+            "achievement_levels": [
+              {
+                "name": "nicht erfüllt",
+                "description": "Der Mechanismus fehlt.",
+                "normalized_score": 0
+              },
+              {
+                "name": "teilweise erfüllt",
+                "description": "Mehrere Anlagen werden genannt.",
+                "normalized_score": 60
+              },
+              {
+                "name": "erfüllt",
+                "description": "Die Risikostreuung über mehrere Anlagen wird erklärt.",
+                "normalized_score": 100
+              }
+            ],
+            "anchors": {
+              "source": "synthetic-playwright-fixture"
+            }
+          },
+          {
+            "id": "correlation",
+            "name": "Zusammenhang der Korrelation",
+            "description": "Die Antwort stellt den Bezug zwischen Korrelation und Diversifikation her.",
+            "weight": 0.25,
+            "achievement_levels": [
+              {
+                "name": "nicht erfüllt",
+                "description": "Korrelation wird nicht berücksichtigt.",
+                "normalized_score": 0
+              },
+              {
+                "name": "teilweise erfüllt",
+                "description": "Der Zusammenhang wird angedeutet.",
+                "normalized_score": 60
+              },
+              {
+                "name": "erfüllt",
+                "description": "Nicht perfekte Korrelation wird korrekt erklärt.",
+                "normalized_score": 100
+              }
+            ],
+            "anchors": {
+              "source": "synthetic-playwright-fixture"
+            }
+          },
+          {
+            "id": "risk-scope",
+            "name": "Abgrenzung der Risikoarten",
+            "description": "Die Antwort grenzt unsystematisches von systematischem Risiko ab.",
+            "weight": 0.25,
+            "achievement_levels": [
+              {
+                "name": "nicht erfüllt",
+                "description": "Die Risikoarten werden nicht unterschieden.",
+                "normalized_score": 0
+              },
+              {
+                "name": "teilweise erfüllt",
+                "description": "Unsystematisches Risiko wird genannt.",
+                "normalized_score": 60
+              },
+              {
+                "name": "erfüllt",
+                "description": "Die Grenzen der Diversifikation werden korrekt eingeordnet.",
                 "normalized_score": 100
               }
             ],

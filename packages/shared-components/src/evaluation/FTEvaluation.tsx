@@ -4,7 +4,6 @@ import type {
   FreeTextPracticeStateDataFragment,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import FreeTextRubricBreakdown from './FreeTextRubricBreakdown'
 
 interface FTEvaluationProps {
   options: FreeTextElementOptions
@@ -43,9 +42,6 @@ function FTEvaluation({
             <div>{semanticState.referenceSolution}</div>
           </div>
         )}
-        <FreeTextRubricBreakdown
-          result={semanticState.currentAttempt?.structuredResult}
-        />
       </div>
     )
   }
