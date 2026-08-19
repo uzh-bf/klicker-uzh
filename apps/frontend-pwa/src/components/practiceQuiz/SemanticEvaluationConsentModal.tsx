@@ -25,10 +25,12 @@ function SemanticEvaluationConsentModal({
       escapeDisabled
       onClose={() => {}}
       title={t('pwa.practiceQuiz.semanticConsentTitle')}
-      data={{ cy: 'semantic-evaluation-consent' }}
       className={{ content: 'max-w-2xl', title: 'self-start' }}
     >
-      <div className="flex flex-col gap-4 text-sm">
+      <div
+        className="flex flex-col gap-4 text-sm"
+        data-cy="semantic-evaluation-consent"
+      >
         <p>{t('pwa.practiceQuiz.semanticConsentIntro')}</p>
         <div className="rounded-md bg-gray-50 p-3">
           {t('pwa.practiceQuiz.semanticConsentData', { provider })}
