@@ -410,7 +410,7 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
       host-owned Docker wrapper and is not used from inside the DevPod.)
 - [x] Run checks for types, grading, Prisma, GraphQL, Hatchet, and the general worker;
       expect exit 0.
-- [ ] Commit the layer with `feat(graphql): orchestrate semantic free-text attempts`.
+- [x] Commit the layer with `feat(graphql): orchestrate semantic free-text attempts`.
 
 ## Task 4: Lecturer authoring and aggregate analytics
 
@@ -436,28 +436,28 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
 **Interfaces:** the editor round-trips core rubric fields while preserving advanced
 JSON fields; analytics returns aggregate counts/rates only.
 
-- [ ] Add form tests through pure helper/validation tests for 1–10 attempts, question
+- [x] Add form tests through pure helper/validation tests for 1–10 attempts, question
       language, weights, levels, outcome-band coverage, conditional reference solution,
       legacy upgrade, and preservation of unknown advanced fields.
-- [ ] Add a Catalyst-gated semantic-retry section with question language, attempt
+- [x] Add a Catalyst-gated semantic-retry section with question language, attempt
       limit, reveal toggle, accepted exact answers, reference solution, schema metadata,
       rubrics/weights/levels, custom bands, and a collapsed read-only advanced-metadata
       view. Add stable `data-cy` hooks to every control.
-- [ ] Show entitlement and evaluator availability separately. A non-entitled user can
+- [x] Show entitlement and evaluator availability separately. A non-entitled user can
       inspect but cannot change existing semantic configuration.
-- [ ] Aggregate first/best category, attempts used, success rate, reveal rate, and
+- [x] Aggregate first/best category, attempts used, success rate, reveal rate, and
       unavailable count in the Practice Quiz evaluation service. Do not return
       participant-level rationale, confidence, or errors.
-- [ ] Render the retry analytics beside the existing free-text evaluation without
+- [x] Render the retry analytics beside the existing free-text evaluation without
       changing legacy word-cloud/answer views.
-- [ ] Add all English and German authoring, validation, capability, and analytics
+- [x] Add all English and German authoring, validation, capability, and analytics
       strings.
-- [ ] Regenerate GraphQL artifacts, run Manage/GraphQL checks, and run the focused
+- [x] Regenerate GraphQL artifacts, run Manage/GraphQL checks, and run the focused
       GraphQL aggregation test; expect exit 0.
-- [ ] Verify authoring in a real Manage browser in English and German, including a
+- [x] Verify authoring in a real Manage browser in English and German, including a
       narrow viewport and an entitlement-loss read-only state; save screenshots under
       `project/plans_wip/assets/free-text-semantic-retries/`.
-- [ ] Commit the layer with `feat(manage): author semantic free-text retries`.
+- [x] Commit the layer with `feat(manage): author semantic free-text retries`.
 
 ## Task 5: Participant retry, consent, and solution flow
 
@@ -574,3 +574,13 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
   package checks, 19 grading tests, formatting, and Opengrep pass. The full GraphQL
   suite reached 555/558; three unrelated catalog/assessment fixtures fail against the
   already-used local database and also fail when rerun without file parallelism.
+- **2026-08-19:** Completed Layer 3 lecturer authoring, localized defaults,
+  advanced-field preservation, entitlement/availability states, responsive Manage
+  UI, and aggregate Practice Quiz retry analytics. Saved-value round trips and the
+  English, German, narrow, and entitlement-loss states were verified in the real
+  Manage app. The authenticated published-quiz GraphQL query returned the expected
+  zero-state aggregate; the existing dynamic evaluation page returned a baseline
+  Next.js 404 for both the synthetic and seeded published quizzes, so no invalid
+  analytics screenshot was retained. The Manage production bundle compiled, then
+  hit the existing `_app` `NextRouter was not mounted` prerender failure on the 404
+  and answer-collection pages.

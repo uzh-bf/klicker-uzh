@@ -886,6 +886,9 @@ importers:
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../../packages/grading
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql

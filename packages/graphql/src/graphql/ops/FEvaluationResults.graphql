@@ -85,6 +85,25 @@ fragment EvaluationResults on ActivityEvaluation {
         hasSampleSolution
         hasAnswerFeedbacks
 
+        retryAnalytics {
+          cycleCount
+          totalAttempts
+          averageAttempts
+          successRate
+          revealRate
+          unavailableCount
+          first {
+            correct
+            partial
+            incorrect
+          }
+          best {
+            correct
+            partial
+            incorrect
+          }
+        }
+
         results {
           totalAnswers
           anonymousAnswers

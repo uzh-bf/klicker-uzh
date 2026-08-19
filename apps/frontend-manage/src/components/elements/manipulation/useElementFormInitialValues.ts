@@ -4,6 +4,7 @@ import {
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
@@ -129,6 +130,9 @@ function useElementFormInitialValues({
               }
             : undefined,
           solutions: options.solutions,
+          semanticEvaluation:
+            (options.semanticEvaluation as SemanticFreeTextConfig | null) ??
+            undefined,
         },
       }
     } else if (question.__typename === 'SelectionElement') {

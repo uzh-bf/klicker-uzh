@@ -25,6 +25,108 @@ import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
+type FreeTextRetryAnalyticsCycle = {
+  solutionRevealedAt: Date | null
+  attempts: {
+    ordinal: number
+    evaluationStatus: DB.FreeTextEvaluationStatus
+    correctness: DB.FreeTextCorrectnessCategory | null
+  }[]
+}
+
+export type FreeTextRetryAnalyticsData = {
+  cycleCount: number
+  totalAttempts: number
+  averageAttempts: number
+  successRate: number
+  revealRate: number
+  unavailableCount: number
+  first: {
+    correct: number
+    partial: number
+    incorrect: number
+  }
+  best: {
+    correct: number
+    partial: number
+    incorrect: number
+  }
+}
+
+function emptyCategoryCounts() {
+  return { correct: 0, partial: 0, incorrect: 0 }
+}
+
+function incrementCategory(
+  counts: ReturnType<typeof emptyCategoryCounts>,
+  category: DB.FreeTextCorrectnessCategory
+) {
+  if (category === DB.FreeTextCorrectnessCategory.CORRECT) counts.correct++
+  else if (category === DB.FreeTextCorrectnessCategory.PARTIAL) counts.partial++
+  else counts.incorrect++
+}
+
+export function computeFreeTextRetryAnalytics(
+  cycles: FreeTextRetryAnalyticsCycle[]
+): FreeTextRetryAnalyticsData {
+  const first = emptyCategoryCounts()
+  const best = emptyCategoryCounts()
+  let totalAttempts = 0
+  let successfulCycles = 0
+  let revealedCycles = 0
+  let unavailableCount = 0
+
+  const rank = {
+    [DB.FreeTextCorrectnessCategory.INCORRECT]: 0,
+    [DB.FreeTextCorrectnessCategory.PARTIAL]: 1,
+    [DB.FreeTextCorrectnessCategory.CORRECT]: 2,
+  }
+
+  for (const cycle of cycles) {
+    const attempts = [...cycle.attempts].sort(
+      (left, right) => left.ordinal - right.ordinal
+    )
+    totalAttempts += attempts.length
+    unavailableCount += attempts.filter(
+      (attempt) =>
+        attempt.evaluationStatus === DB.FreeTextEvaluationStatus.UNAVAILABLE
+    ).length
+    if (cycle.solutionRevealedAt != null) revealedCycles++
+
+    const evaluatedCategories = attempts.flatMap((attempt) =>
+      attempt.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED &&
+      attempt.correctness != null
+        ? [attempt.correctness]
+        : []
+    )
+    const firstCategory = evaluatedCategories[0]
+    if (firstCategory) incrementCategory(first, firstCategory)
+
+    const bestCategory = evaluatedCategories.reduce<
+      DB.FreeTextCorrectnessCategory | undefined
+    >((current, category) => {
+      return !current || rank[category] > rank[current] ? category : current
+    }, undefined)
+    if (bestCategory) {
+      incrementCategory(best, bestCategory)
+      if (bestCategory === DB.FreeTextCorrectnessCategory.CORRECT) {
+        successfulCycles++
+      }
+    }
+  }
+
+  return {
+    cycleCount: cycles.length,
+    totalAttempts,
+    averageAttempts: cycles.length > 0 ? totalAttempts / cycles.length : 0,
+    successRate: cycles.length > 0 ? successfulCycles / cycles.length : 0,
+    revealRate: cycles.length > 0 ? revealedCycles / cycles.length : 0,
+    unavailableCount,
+    first,
+    best,
+  }
+}
+
 export async function getPracticeQuizData(
   { id }: { id: string },
   ctx: Context
@@ -133,6 +235,51 @@ export async function getPracticeQuizEvaluation(
 
   // compute evaluation
   const stackEvaluation = computeStackEvaluation(practiceQuiz.stacks)
+  const semanticFreeTextInstanceIds = new Set(
+    practiceQuiz.stacks.flatMap((stack) =>
+      stack.elements.flatMap((instance) =>
+        instance.elementType === DB.ElementType.FREE_TEXT &&
+        instance.elementData.type === DB.ElementType.FREE_TEXT &&
+        instance.elementData.options.semanticEvaluation != null
+          ? [instance.id]
+          : []
+      )
+    )
+  )
+  const cycles = await ctx.prisma.freeTextPracticeCycle.findMany({
+    where: { practiceQuizId: id },
+    select: {
+      elementInstanceId: true,
+      solutionRevealedAt: true,
+      attempts: {
+        select: {
+          ordinal: true,
+          evaluationStatus: true,
+          correctness: true,
+        },
+      },
+    },
+  })
+  const cyclesByInstance = new Map<number, typeof cycles>()
+  for (const cycle of cycles) {
+    const instanceCycles = cyclesByInstance.get(cycle.elementInstanceId) ?? []
+    instanceCycles.push(cycle)
+    cyclesByInstance.set(cycle.elementInstanceId, instanceCycles)
+  }
+  const evaluationWithRetryAnalytics = stackEvaluation.map((stack) => ({
+    ...stack,
+    instances: stack.instances.map((instance) =>
+      instance.type === DB.ElementType.FREE_TEXT &&
+      semanticFreeTextInstanceIds.has(instance.id)
+        ? {
+            ...instance,
+            retryAnalytics: computeFreeTextRetryAnalytics(
+              cyclesByInstance.get(instance.id) ?? []
+            ),
+          }
+        : instance
+    ),
+  }))
 
   return {
     id: practiceQuiz.id,
@@ -140,7 +287,7 @@ export async function getPracticeQuizEvaluation(
     displayName: practiceQuiz.displayName,
     description: practiceQuiz.description,
     courseId: practiceQuiz.courseId,
-    results: stackEvaluation,
+    results: evaluationWithRetryAnalytics,
   }
 }
 

@@ -36,6 +36,7 @@ mutation ManipulateFreeTextQuestion(
           maxLength
         }
         solutions
+        semanticEvaluation
       }
       tags {
         id

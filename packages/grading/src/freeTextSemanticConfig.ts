@@ -1,3 +1,7 @@
+import type {
+  FreeTextRubricSchema,
+  SemanticFreeTextConfig,
+} from '@klicker-uzh/types'
 import {
   isBoundedNonEmptyString,
   isBoundedStringArray,
@@ -10,10 +14,127 @@ import {
   MAX_FREE_TEXT_EXACT_ANSWERS,
 } from './freeTextSemanticPrimitives.js'
 import {
+  getDefaultFreeTextOutcomeBands,
   normalizeFreeTextAnswer,
   validateFreeTextOutcomeBands,
 } from './freeTextSemanticScoring.js'
 import { validateFreeTextRubricSchema } from './freeTextSemanticValidation.js'
+
+export function createSemanticFreeTextConfig({
+  language,
+  legacySolutions = [],
+}: {
+  language: SemanticFreeTextConfig['question_language']
+  legacySolutions?: string[]
+}): SemanticFreeTextConfig {
+  const copy =
+    language === 'de'
+      ? {
+          schemaName: 'Freitext-Bewertung',
+          schemaDescription:
+            'Kriterien zur formativen Bewertung dieser Freitextantwort.',
+          rubricName: 'Inhaltliche Qualität',
+          rubricDescription:
+            'Die Antwort behandelt die Frage korrekt und vollständig.',
+          levels: [
+            ['nicht erfüllt', 'Das Kriterium ist nicht erfüllt.', 0],
+            ['teilweise erfüllt', 'Das Kriterium ist teilweise erfüllt.', 50],
+            ['erfüllt', 'Das Kriterium ist erfüllt.', 100],
+          ] as const,
+          outcomeLabels: ['Nicht korrekt', 'Teilweise korrekt', 'Korrekt'],
+        }
+      : {
+          schemaName: 'Free-text evaluation',
+          schemaDescription:
+            'Criteria for the formative evaluation of this free-text response.',
+          rubricName: 'Content quality',
+          rubricDescription:
+            'The answer addresses the question accurately and completely.',
+          levels: [
+            ['not met', 'The criterion is not met.', 0],
+            ['partially met', 'The criterion is partially met.', 50],
+            ['met', 'The criterion is met.', 100],
+          ] as const,
+          outcomeLabels: ['Incorrect', 'Partially correct', 'Correct'],
+        }
+
+  return {
+    contract_version: '1',
+    question_language: language,
+    attempt_limit: 2,
+    solution_reveal_enabled: true,
+    accepted_exact_answers: [...legacySolutions],
+    reference_solution: '',
+    outcome_bands: getDefaultFreeTextOutcomeBands().map((band, index) => ({
+      ...band,
+      label: copy.outcomeLabels[index]!,
+    })),
+    rubric_schema: {
+      schema_version: '1',
+      name: copy.schemaName,
+      description: copy.schemaDescription,
+      rubrics: [
+        {
+          id: 'content-quality',
+          name: copy.rubricName,
+          description: copy.rubricDescription,
+          weight: 1,
+          achievement_levels: copy.levels.map(
+            ([name, description, normalizedScore]) => ({
+              name,
+              description,
+              normalized_score: normalizedScore,
+            })
+          ),
+        },
+      ],
+    },
+  }
+}
+
+export function getSemanticFreeTextAdvancedMetadata(
+  schema: FreeTextRubricSchema
+): Record<string, unknown> {
+  const { schema_version, name, description, rubrics, ...schemaMetadata } =
+    schema
+
+  const rubricMetadata = rubrics.flatMap((rubric) => {
+    const {
+      id,
+      name: rubricName,
+      description: rubricDescription,
+      weight,
+      achievement_levels,
+      ...metadata
+    } = rubric
+    const levelMetadata = achievement_levels.flatMap((level) => {
+      const {
+        name: levelName,
+        description: levelDescription,
+        normalized_score,
+        ...levelAdvanced
+      } = level
+      return Object.keys(levelAdvanced).length > 0
+        ? [{ level: levelName, metadata: levelAdvanced }]
+        : []
+    })
+
+    return Object.keys(metadata).length > 0 || levelMetadata.length > 0
+      ? [
+          {
+            rubric: id,
+            metadata,
+            achievement_levels: levelMetadata,
+          },
+        ]
+      : []
+  })
+
+  return {
+    schema: schemaMetadata,
+    rubrics: rubricMetadata,
+  }
+}
 
 export function validateSemanticFreeTextConfig(value: unknown): string[] {
   if (!isRecord(value)) return ['semantic evaluation config must be an object']

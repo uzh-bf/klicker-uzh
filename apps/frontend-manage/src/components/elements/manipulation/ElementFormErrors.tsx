@@ -180,6 +180,14 @@ function ElementFormErrors({
               'manage.elements.possibleSolutions'
             )}: ${errors.options.solutions}`}</li>
           )}
+        {'options' in errors &&
+          errors.options &&
+          'semanticEvaluation' in errors.options &&
+          errors.options.semanticEvaluation && (
+            <li>{`${t('manage.elements.semanticEvaluation')}: ${String(
+              errors.options.semanticEvaluation
+            )}`}</li>
+          )}
 
         {/* error messages specific to SE / CS questions */}
         {'options' in errors &&

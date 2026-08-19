@@ -96,6 +96,7 @@ query GetSingleElement($id: Int!) {
           maxLength
         }
         solutions
+        semanticEvaluation
       }
 
       tags {

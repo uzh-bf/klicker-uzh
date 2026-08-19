@@ -54,7 +54,12 @@ function ElementformScoringSection({
         </div>
 
         <SampleSolutionSetting
-          disabled={isTemplate || disabled}
+          disabled={
+            isTemplate ||
+            disabled ||
+            (values.type === 'FREE_TEXT' &&
+              values.options.semanticEvaluation != null)
+          }
           type={values.type}
         />
       </div>

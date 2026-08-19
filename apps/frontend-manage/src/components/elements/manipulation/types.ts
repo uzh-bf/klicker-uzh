@@ -3,6 +3,7 @@ import {
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 
 interface SharedQuestionFormProps {
   name: string
@@ -63,6 +64,7 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
       maxLength?: number | string | null
     } | null
     solutions?: string[] | null
+    semanticEvaluation?: SemanticFreeTextConfig | null
   }
 }
 

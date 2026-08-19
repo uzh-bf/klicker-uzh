@@ -12,8 +12,8 @@ tags:
 
 # Formative Free-Text Evaluation
 
-> **Backend contract and orchestration implemented; authoring and participant UI
-> follow in later stack layers.** Implementation is tracked in
+> **Backend contract, orchestration, lecturer authoring, and aggregate analytics
+> implemented; participant UI follows in the next stack layer.** Implementation is tracked in
 > [`PLAN-free-text-semantic-retries.md`](../project/plans_wip/PLAN-free-text-semantic-retries.md).
 
 Semantic retry is an opt-in capability for `FREE_TEXT` elements in formative
@@ -58,6 +58,15 @@ caps, scoring policy, components, adversarial checks, evidence rules, and binary
 checklists are preserved when the core fields are edited. Public v1 does not
 interpret them. The broader bachelor-thesis schema is a compatibility example, not
 the v1 editor surface.
+
+In Manage, an entitled lecturer can enable semantic retries and edit the core
+fields above. Enabling the feature copies legacy `solutions` into accepted exact
+answers, leaves the reference solution empty for the lecturer to author, and forces
+sample-solution support while the semantic configuration is active.
+Unknown advanced fields remain visible in a collapsed read-only JSON view and
+survive core-field edits. Evaluator availability is displayed independently from
+entitlement: a temporary service outage does not prevent authoring, while loss of
+entitlement makes an existing configuration read-only.
 
 Outcome bands are aggregate-score ranges with lecturer-defined labels. Every band
 maps to one stable behavioral category: `CORRECT`, `PARTIAL`, or `INCORRECT`. With
@@ -169,7 +178,9 @@ award window.
 Lecturer analytics expose aggregate first and best outcomes, attempts used, success
 rate, solution-reveal rate, and unavailable-evaluation count. Individual evaluator
 rationales, confidence values, internal errors, and a human review queue are outside
-v1.
+v1. These aggregates are attached only to semantically configured free-text
+instances; the existing free-text answer and word-cloud evaluation remains
+unchanged.
 
 ## Compatibility
 
