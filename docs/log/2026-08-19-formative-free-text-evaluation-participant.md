@@ -33,6 +33,8 @@ tags:
 - GraphQL, PWA, shared-components, and Playwright type checks passed.
 - The complete `pnpm run check:all` pre-commit suite passed after restoring the
   ignored Analytics virtual environment to its documented Python 3.12 runtime.
+- The mandatory pre-push repository build passed all 22 build tasks, including
+  the Manage and PWA production bundles.
 - OpenGrep found no issues in the new participant and Playwright files. Its
   repository-wide scan reported the existing baseline findings outside this
   change.
@@ -46,6 +48,8 @@ tags:
   requires a green CI/full-runtime execution before merge.
 - The wiki skill's external validator was unavailable at its documented local
   path; Markdown formatting and `git diff --check` passed.
+- The four-layer draft stack was published as GitHub PRs #5430–#5433. The top
+  participant PR includes the browser evidence below in its description.
 
 ### Browser evidence
 

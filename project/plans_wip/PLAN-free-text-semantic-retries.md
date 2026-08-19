@@ -497,11 +497,11 @@ booleans.
       data. Never render raw rubric JSON.
 - [x] Keep legacy free-text rendering unchanged when `semanticState` is null.
 - [x] Add English and German participant copy and stable `data-cy` hooks.
-- [ ] Run PWA/shared-components checks and builds; expect exit 0.
+- [x] Run PWA/shared-components checks and builds; expect exit 0.
 - [ ] Verify pending, partial retry, correct explanation, unavailable retry, decline
       fallback, reveal, exhaustion, reload, and Practice again in a real PWA browser at
       desktop and mobile widths; save screenshots with the Manage evidence.
-- [ ] Commit the layer with `feat(pwa): add semantic free-text retry flow`.
+- [x] Commit the layer with `feat(pwa): add semantic free-text retry flow`.
 
 ## Task 6: Deterministic end-to-end proof and documentation completion
 
@@ -535,11 +535,13 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
 - [x] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
 - [ ] Run the focused Practice Quiz Playwright spec against the full local stack with
       both Hatchet workers; expect all semantic and existing legacy workflows to pass.
-- [ ] Run `pnpm run check:all`, `pnpm run build`, and
+- [x] Run `pnpm run check:all`, `pnpm run build`, and
       `opengrep scan --config auto`; classify any unrelated existing failures explicitly.
-- [ ] Run the wiki validator and Markdown formatter, attach the captured desktop/
-      mobile English/German screenshots to the final draft PR, and update this plan's
-      Progress section with exact commands and results.
+- [ ] Run the wiki validator; its documented external script is not installed in
+      this environment.
+- [x] Run the Markdown formatter, attach the captured desktop/mobile English/German
+      screenshots to the final draft PR, and update this plan's Progress section with
+      exact commands and results.
 
 ## Self-review checklist
 
@@ -596,6 +598,13 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
 - **2026-08-19:** Final Layer 4 verification passed the affected package checks,
   17 focused GraphQL integration tests, PWA lint, the complete `check:all` suite,
   `git diff --check`, and an OpenGrep scan of the new files. The PWA production
-  build remains unclaimed because the running development server owns `.next/dev`
-  and caused a duplicate generated-validator identifier; the focused Playwright
-  run remains unclaimed for the browser-cache limitation above.
+  build and complete pre-push build later passed from the clean hook environment;
+  the focused Playwright run remains unclaimed for the browser-cache limitation
+  above.
+- **2026-08-19:** Published the approved draft stack as
+  [#5430](https://github.com/uzh-bf/klicker-uzh/pull/5430),
+  [#5431](https://github.com/uzh-bf/klicker-uzh/pull/5431),
+  [#5432](https://github.com/uzh-bf/klicker-uzh/pull/5432), and
+  [#5433](https://github.com/uzh-bf/klicker-uzh/pull/5433). The participant PR
+  description contains the desktop/mobile solution views, exact-match result, and
+  German disclosure screenshot.
