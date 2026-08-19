@@ -12,8 +12,8 @@ tags:
 
 # Formative Free-Text Evaluation
 
-> **Backend contract, orchestration, lecturer authoring, and aggregate analytics
-> implemented; participant UI follows in the next stack layer.** Implementation is tracked in
+> **Backend contract, orchestration, lecturer authoring, participant retries, and
+> aggregate analytics are implemented.** Implementation is tracked in
 > [`PLAN-free-text-semantic-retries.md`](../project/plans_wip/PLAN-free-text-semantic-retries.md).
 
 Semantic retry is an opt-in capability for `FREE_TEXT` elements in formative
@@ -93,6 +93,17 @@ semantic-retry element then has its own server-owned practice cycle:
 The attempt limit applies per participant, element, and practice cycle. A value of 1
 disables answer retry without disabling semantic feedback.
 
+The PWA restores this state from the server after reload and polls only while the
+current evaluation is pending. Neighboring elements stay locked after the initial
+stack submission; **Try again** reopens only the semantic free-text input and
+prefills the previous answer. Mutations and query responses are reconciled by cycle,
+attempt, evaluation revision, and terminal status so an older response cannot roll
+the UI back after **Practice again**.
+
+Participant-facing feedback uses the question's configured language where the
+content belongs to that question, including the non-dismissible AI disclosure. The
+surrounding PWA actions remain in the participant's selected interface language.
+
 ## Availability and deterministic fallback
 
 Entitlement, service availability, and participant consent are different gates:
@@ -168,6 +179,22 @@ and rationale, and peer answers. Raw rubric JSON is never shown. Solution reveal
 terminal; exhaustion reveals automatically when enabled. If reveal is disabled,
 exhaustion ends with the final generic outcome only. Peer answers remain hidden
 until the cycle is terminal.
+
+Each attempt displays only its own points/XP delta. Cycle totals are not repeated in
+the attempt history.
+
+## Deterministic Playwright boundary
+
+Playwright starts a localhost-only, dependency-free evaluator stub when
+`NODE_ENV=test`. The service validates the outbound v1 request and returns synthetic
+correct, partial, incorrect, uncertain, or failing results selected by explicit
+fixture markers. It refuses to start outside the test environment. The application,
+GraphQL API, database, Hatchet scheduling, and participant UI remain real; only the
+private Catalyst HTTP boundary is replaced.
+
+The local test-origin wrapper sets the stub URL and disclosure version. Set
+`PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` to run a test environment without the
+stub.
 
 ## Rewards and lecturer analytics
 

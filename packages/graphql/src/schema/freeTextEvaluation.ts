@@ -137,6 +137,9 @@ export const FreeTextPracticeStateType = FreeTextPracticeStateRef.implement({
     instanceId: t.exposeInt('instanceId'),
     cycleId: t.exposeString('cycleId'),
     cycleOrdinal: t.exposeInt('cycleOrdinal'),
+    questionLanguage: t.exposeString('questionLanguage'),
+    disclosureVersion: t.exposeString('disclosureVersion'),
+    evaluationProvider: t.exposeString('evaluationProvider'),
     cycleStatus: t.expose('cycleStatus', {
       type: FreeTextPracticeCycleStatus,
     }),

@@ -1,29 +1,30 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CaseStudyCaseResponse,
-  ElementStack as ElementStackType,
+  type CaseStudyCaseResponse,
+  type ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
-  StackFeedbackStatus,
+  type StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement, {
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
+import type {
   CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { ChoicesResponse } from '@klicker-uzh/types'
+import type { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
 import InstanceHeader from './InstanceHeader'
+import PracticeQuizElement from './PracticeQuizElement'
 
 interface ElementStackProps {
   parentId: string
@@ -96,6 +97,21 @@ function ElementStack({
 
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
+  const semanticSubmissionIds = useRef(
+    new Map<number, { answer: string; id: string }>()
+  )
+  const semanticFreeTextInstanceIds = useMemo(
+    () =>
+      new Set(
+        stack.elements?.flatMap((element) =>
+          element.elementData.__typename === 'FreeTextElementData' &&
+          element.elementData.options.hasSemanticEvaluation
+            ? [element.id]
+            : []
+        ) ?? []
+      ),
+    [stack.elements]
+  )
 
   const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
 
@@ -105,15 +121,14 @@ function ElementStack({
         ([key, response]) =>
           response.type === ElementType.Content &&
           typeof response.response === 'undefined' &&
-          !stackStorage?.[parseInt(key)]?.response
+          !stackStorage?.[parseInt(key, 10)]?.response
       )
     ) {
       return true
     } else {
       return false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentResponse])
+  }, [stackStorage, studentResponse])
 
   // initialize student responses
   useStudentResponse({
@@ -347,7 +362,7 @@ function ElementStack({
                   <InstanceHeader
                     index={elementIx}
                     instanceId={element.id}
-                    elementId={parseInt(element.elementData.id)}
+                    elementId={parseInt(element.elementData.id, 10)}
                     name={element.elementData.name}
                     withParticipant={withParticipant}
                     previousElementFeedback={
@@ -375,12 +390,17 @@ function ElementStack({
                         : undefined
                     }
                   />
-                  <StudentElement
+                  <PracticeQuizElement
                     element={element}
                     elementIx={elementIx}
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
+                    semanticEnabled={
+                      withParticipant &&
+                      !previewOnly &&
+                      semanticFreeTextInstanceIds.has(element.id)
+                    }
                     preview={embedded && !openEvaluations.has(element.id)}
                   />
                 </div>
@@ -491,13 +511,13 @@ function ElementStack({
                         }
 
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: ElementType.Flashcard,
                           flashcardResponse: responseValue,
                         }
                       } else if (value.type === ElementType.Content) {
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: ElementType.Content,
                           contentReponse: value.response,
                         }
@@ -512,12 +532,12 @@ function ElementStack({
                         )
                           .filter(([, value]) => value)
                           .map(([key, value]) => ({
-                            ix: parseInt(key),
+                            ix: parseInt(key, 10),
                             selected: value ?? false,
                           }))
 
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: value.type,
                           choicesResponse: responseList,
                         }
@@ -525,19 +545,43 @@ function ElementStack({
                       // submission logic for numerical questions
                       else if (value.type === ElementType.Numerical) {
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: ElementType.Numerical,
                           numericalResponse: parseFloat(value.response!),
                         }
                       } else if (value.type === ElementType.FreeText) {
+                        const answer = value.response ?? ''
+                        let clientSubmissionId: string | undefined
+                        if (
+                          withParticipant &&
+                          !previewOnly &&
+                          semanticFreeTextInstanceIds.has(
+                            parseInt(instanceId, 10)
+                          )
+                        ) {
+                          const previous = semanticSubmissionIds.current.get(
+                            parseInt(instanceId, 10)
+                          )
+                          if (previous?.answer === answer) {
+                            clientSubmissionId = previous.id
+                          } else {
+                            clientSubmissionId = crypto.randomUUID()
+                            semanticSubmissionIds.current.set(
+                              parseInt(instanceId, 10),
+                              { answer, id: clientSubmissionId }
+                            )
+                          }
+                        }
+
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: ElementType.FreeText,
-                          freeTextResponse: value.response,
+                          freeTextResponse: answer,
+                          clientSubmissionId,
                         }
                       } else if (value.type === ElementType.Selection) {
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: ElementType.Selection,
                           selectionResponse: Object.values(value.response!).map(
                             (entry) =>
@@ -555,7 +599,7 @@ function ElementStack({
                                 itemResponses: Object.entries(caseResponse).map(
                                   ([itemId, itemResponse]) => {
                                     return {
-                                      itemId: parseInt(itemId),
+                                      itemId: parseInt(itemId, 10),
                                       criterionResponses: Object.entries(
                                         itemResponse
                                       ).flatMap(
@@ -581,13 +625,13 @@ function ElementStack({
                           )
 
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: value.type,
                           caseStudyResponse,
                         }
                       } else {
                         return {
-                          instanceId: parseInt(instanceId),
+                          instanceId: parseInt(instanceId, 10),
                           type: value.type,
                           response: value.response,
                         }
@@ -613,7 +657,7 @@ function ElementStack({
                       evaluation:
                         result.data!.respondToElementStack!.evaluations?.find(
                           (evaluation) =>
-                            evaluation.instanceId === parseInt(key)
+                            evaluation.instanceId === parseInt(key, 10)
                         ),
                     },
                   }

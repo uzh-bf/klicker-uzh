@@ -96,6 +96,12 @@ attempt is also a recovery checkpoint: if aggregate response/reward side effects
 did not finish, a repeated worker delivery applies them exactly once through the
 attempt's unique `QuestionResponseDetail` relation.
 
+Playwright replaces only the private evaluator HTTP boundary with
+`playwright/semantic-evaluator-stub.mjs`. Global setup starts it on localhost under
+`NODE_ENV=test`, and global teardown stops the exact child process. The test-origin
+wrapper gives the already-running general worker the same localhost evaluator URL.
+The stub validates the request contract and never runs in development or production.
+
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. In the managed devcontainer, `devrouter ensure . --profile live-quiz` starts Response API and both workers, then proves `/healthz` and one live runtime process per worker before reporting ready. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).

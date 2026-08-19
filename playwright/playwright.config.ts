@@ -27,6 +27,7 @@ export default defineConfig({
 
   // Run cleanup + seed once before the whole suite (mirrors cypress before:run hook)
   globalSetup: './global-setup.ts',
+  globalTeardown: './global-teardown.ts',
 
   reporter: isCI
     ? [

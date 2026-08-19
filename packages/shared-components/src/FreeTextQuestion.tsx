@@ -1,6 +1,7 @@
 import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
+  FreeTextPracticeStateDataFragment,
 } from '@klicker-uzh/graphql/dist/ops'
 import { twMerge } from 'tailwind-merge'
 import FTEvaluation from './evaluation/FTEvaluation'
@@ -20,6 +21,9 @@ interface FreeTextQuestionProps {
   existingResponse?: string
   elementIx: number
   evaluation?: FreeTextInstanceEvaluation
+  semanticState?: FreeTextPracticeStateDataFragment | null
+  semanticInputEditable?: boolean
+  showSemanticDetails?: boolean
   noPoints: boolean
   disabled?: boolean
   compact?: boolean
@@ -30,26 +34,42 @@ function FreeTextQuestion({
   content,
   options,
   response,
-  valid,
   setResponse,
   existingResponse,
   elementIx,
   evaluation,
+  semanticState,
+  semanticInputEditable = false,
+  showSemanticDetails = false,
   noPoints,
   disabled,
   compact = false,
 }: FreeTextQuestionProps) {
+  const semanticAnswer = semanticState?.currentAttempt?.answer
+  const displayedResponse = semanticInputEditable
+    ? (response ?? semanticAnswer ?? '')
+    : (semanticAnswer ?? existingResponse ?? response ?? '')
+  const showLegacyEvaluation =
+    !!evaluation?.solutions && evaluation.solutions.length > 0 && !preview
+  const showSemanticEvaluation =
+    !!semanticState?.solutionAuthorized && showSemanticDetails && !preview
+
   return (
     <div className={twMerge('flex flex-col gap-4', !compact && 'md:flex-row')}>
       <div className="flex-1">
         <QuestionContent content={content} noPoints={noPoints} />
 
-        {evaluation?.explanation && (
-          <QuestionExplanation explanation={evaluation.explanation} />
-        )}
+        {semanticState
+          ? showSemanticDetails &&
+            semanticState.explanation && (
+              <QuestionExplanation explanation={semanticState.explanation} />
+            )
+          : evaluation?.explanation && (
+              <QuestionExplanation explanation={evaluation.explanation} />
+            )}
 
         <FREETextAnswerOptions
-          value={existingResponse ?? response ?? ''}
+          value={displayedResponse}
           onChange={(newValue) => {
             const valid = validateFreeTextResponse({
               response: newValue,
@@ -58,12 +78,12 @@ function FreeTextQuestion({
             setResponse(newValue, valid)
           }}
           maxLength={options.restrictions?.maxLength ?? undefined}
-          disabled={disabled || !!existingResponse}
+          disabled={disabled || (!!existingResponse && !semanticInputEditable)}
           elementIx={elementIx}
         />
       </div>
 
-      {evaluation?.solutions && !preview ? (
+      {showLegacyEvaluation || showSemanticEvaluation ? (
         <div
           className={twMerge(
             'col-span-1 mr-2 rounded-md border border-solid bg-slate-50 px-2 py-4',
@@ -72,23 +92,26 @@ function FreeTextQuestion({
           key={`evaluation-${elementIx}`}
         >
           <div className="flex flex-col gap-4 md:px-4">
-            <div className="flex flex-row justify-between">
-              <PracticeQuizPoints
-                evaluation={{
-                  ...evaluation,
-                  xpAwarded:
-                    evaluation.solutions.length === 0
-                      ? null
-                      : evaluation.xpAwarded,
-                }}
-              />
-            </div>
+            {showLegacyEvaluation && evaluation && (
+              <div className="flex flex-row justify-between">
+                <PracticeQuizPoints
+                  evaluation={{
+                    ...evaluation,
+                    xpAwarded:
+                      evaluation.solutions?.length === 0
+                        ? null
+                        : evaluation.xpAwarded,
+                  }}
+                />
+              </div>
+            )}
             <FTEvaluation
               options={{
                 ...options,
-                solutions: evaluation.solutions,
+                solutions: evaluation?.solutions,
               }}
               evaluation={evaluation}
+              semanticState={semanticState}
             />
           </div>
         </div>

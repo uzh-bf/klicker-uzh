@@ -41,5 +41,87 @@
     "nameNonGamified": "Non-Gamified Practice Quiz Details",
     "displayNameNonGamified": "Non-Gamified Practice Quiz Details (Display)",
     "courseNonGamified": "Non-Gamified Course"
+  },
+  "semantic": {
+    "name": "Semantic Free-Text Practice Quiz",
+    "displayName": "Semantic Free-Text Practice Quiz",
+    "description": "Synthetic semantic free-text retry workflow",
+    "question": "Welchen Vorteil bietet Diversifikation?",
+    "explanation": "Diversifikation reduziert das unsystematische Risiko durch die Kombination nicht perfekt korrelierter Anlagen.",
+    "legacyQuestion": "Nennen Sie das Wort Diversifikation.",
+    "legacySolution": "Diversifikation",
+    "partialAnswer": "[semantic:partial] Diversifikation verteilt Risiken.",
+    "correctAnswer": "[semantic:correct] Diversifikation reduziert das unsystematische Risiko durch nicht perfekt korrelierte Anlagen.",
+    "incorrectAnswer": "[semantic:incorrect] Renditen sind immer garantiert.",
+    "exactAnswer": "Diversifikation reduziert das unsystematische Risiko.",
+    "partialLabel": "Teilweise erfüllt",
+    "correctLabel": "Erfüllt",
+    "incorrectLabel": "Noch nicht erfüllt",
+    "semanticEvaluation": {
+      "contract_version": "1",
+      "question_language": "de",
+      "attempt_limit": 2,
+      "solution_reveal_enabled": true,
+      "accepted_exact_answers": [
+        "Diversifikation reduziert das unsystematische Risiko."
+      ],
+      "reference_solution": "Diversifikation reduziert das unsystematische Risiko durch die Kombination nicht perfekt korrelierter Anlagen.",
+      "outcome_bands": [
+        {
+          "id": "not-yet",
+          "label": "Noch nicht erfüllt",
+          "min_score": 0,
+          "max_score": 50,
+          "category": "INCORRECT"
+        },
+        {
+          "id": "partial",
+          "label": "Teilweise erfüllt",
+          "min_score": 50,
+          "max_score": 75,
+          "category": "PARTIAL"
+        },
+        {
+          "id": "correct",
+          "label": "Erfüllt",
+          "min_score": 75,
+          "max_score": 100,
+          "category": "CORRECT"
+        }
+      ],
+      "rubric_schema": {
+        "schema_version": "1.0",
+        "name": "Diversifikation",
+        "description": "Bewertet den Zusammenhang zwischen Diversifikation und unsystematischem Risiko.",
+        "rubrics": [
+          {
+            "id": "risk-reduction",
+            "name": "Risikoreduktion",
+            "description": "Die Antwort erklärt die Reduktion des unsystematischen Risikos.",
+            "weight": 1,
+            "achievement_levels": [
+              {
+                "name": "nicht erfüllt",
+                "description": "Der Zusammenhang fehlt.",
+                "normalized_score": 0
+              },
+              {
+                "name": "teilweise erfüllt",
+                "description": "Risikostreuung wird genannt.",
+                "normalized_score": 60
+              },
+              {
+                "name": "erfüllt",
+                "description": "Unsystematisches Risiko und Korrelation werden erklärt.",
+                "normalized_score": 100
+              }
+            ],
+            "anchors": {
+              "source": "synthetic-playwright-fixture"
+            }
+          }
+        ]
+      }
+    }
   }
 }

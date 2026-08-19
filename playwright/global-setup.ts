@@ -11,12 +11,18 @@
 
 import {
   AchievementType,
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
   ObjectAccess,
   PermissionLevel,
+  PublicationStatus,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 import bcrypt from 'bcryptjs'
+import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import {
   COURSE_ID_TEST,
@@ -33,6 +39,70 @@ import {
   USER_ID_TEST6,
   USER_ID_TEST7,
 } from './util/constants.js'
+
+const SEMANTIC_EVALUATOR_STUB_URL =
+  process.env.CATALYST_FORMATIVE_EVALUATOR_URL ??
+  'http://127.0.0.1:7099/evaluate'
+
+async function waitForSemanticEvaluatorStub() {
+  const healthUrl = new URL('/healthz', SEMANTIC_EVALUATOR_STUB_URL)
+  const deadline = Date.now() + 10_000
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(healthUrl)
+      if (response.ok) return
+    } catch {
+      // The child process can take a moment to bind its port.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+
+  throw new Error('Semantic evaluator stub did not become ready')
+}
+
+async function startSemanticEvaluatorStub() {
+  if (process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB === 'false') return
+  if (process.env.NODE_ENV !== 'test') {
+    if (process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB !== 'true') return
+    throw new Error('The semantic evaluator stub requires NODE_ENV=test')
+  }
+
+  const healthUrl = new URL('/healthz', SEMANTIC_EVALUATOR_STUB_URL)
+  try {
+    const existing = await fetch(healthUrl)
+    if (existing.ok) {
+      console.log('[global-setup] Reusing semantic evaluator stub.')
+      return
+    }
+  } catch {
+    // No existing stub is listening, so this run owns one.
+  }
+
+  const evaluatorUrl = new URL(SEMANTIC_EVALUATOR_STUB_URL)
+  if (
+    evaluatorUrl.hostname !== '127.0.0.1' ||
+    evaluatorUrl.pathname !== '/evaluate'
+  ) {
+    throw new Error('Playwright evaluator stub must use 127.0.0.1/evaluate')
+  }
+
+  const child = spawn(
+    process.execPath,
+    [new URL('./semantic-evaluator-stub.mjs', import.meta.url).pathname],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT: evaluatorUrl.port,
+      },
+      stdio: 'inherit',
+    }
+  )
+  if (!child.pid) throw new Error('Could not start semantic evaluator stub')
+  process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID = String(child.pid)
+  await waitForSemanticEvaluatorStub()
+}
 
 // ---------------------------------------------------------------------------
 // getPrisma — lazily import so DATABASE_URL is read at call time, not at
@@ -568,10 +638,147 @@ export async function seedActivities() {
   }
 }
 
+export async function seedSemanticPracticeQuiz({
+  name,
+  displayName,
+  description,
+  question,
+  explanation,
+  legacyQuestion,
+  legacySolution,
+  semanticEvaluation,
+}: {
+  name: string
+  displayName: string
+  description: string
+  question: string
+  explanation: string
+  legacyQuestion: string
+  legacySolution: string
+  semanticEvaluation: SemanticFreeTextConfig
+}) {
+  const prisma = await getPrisma()
+  const semanticOptions = {
+    hasSampleSolution: true,
+    solutions: semanticEvaluation.accepted_exact_answers,
+    semanticEvaluation,
+  }
+  const legacyOptions = {
+    hasSampleSolution: true,
+    solutions: [legacySolution],
+  }
+  const semanticElement = await prisma.element.create({
+    data: {
+      name: `${name} semantic question`,
+      content: question,
+      explanation,
+      type: ElementType.FREE_TEXT,
+      options: semanticOptions,
+      ownerId: USER_ID_TEST,
+    },
+  })
+  const legacyElement = await prisma.element.create({
+    data: {
+      name: `${name} neighboring question`,
+      content: legacyQuestion,
+      explanation: null,
+      type: ElementType.FREE_TEXT,
+      options: legacyOptions,
+      ownerId: USER_ID_TEST,
+    },
+  })
+  const elementResults = { responses: {}, total: 0 }
+
+  const quiz = await prisma.practiceQuiz.create({
+    data: {
+      name,
+      displayName,
+      description,
+      status: PublicationStatus.PUBLISHED,
+      availableFrom: new Date('2020-01-01T00:00:00.000Z'),
+      isGamificationEnabled: true,
+      courseId: COURSE_ID_TEST,
+      ownerId: USER_ID_TEST,
+      stacks: {
+        create: {
+          order: 0,
+          type: ElementStackType.PRACTICE_QUIZ,
+          courseId: COURSE_ID_TEST,
+          elements: {
+            create: [
+              {
+                order: 0,
+                type: ElementInstanceType.PRACTICE_QUIZ,
+                elementType: ElementType.FREE_TEXT,
+                elementId: semanticElement.id,
+                ownerId: USER_ID_TEST,
+                options: { pointsMultiplier: 1, resetTimeDays: 6 },
+                elementData: {
+                  id: `${semanticElement.id}-v1`,
+                  elementId: semanticElement.id,
+                  name: semanticElement.name,
+                  content: question,
+                  explanation,
+                  type: ElementType.FREE_TEXT,
+                  basePoints: true,
+                  pointsMultiplier: 1,
+                  options: semanticOptions,
+                },
+                results: elementResults,
+                anonymousResults: elementResults,
+                instanceStatistics: { create: {} },
+              },
+              {
+                order: 1,
+                type: ElementInstanceType.PRACTICE_QUIZ,
+                elementType: ElementType.FREE_TEXT,
+                elementId: legacyElement.id,
+                ownerId: USER_ID_TEST,
+                options: { pointsMultiplier: 1, resetTimeDays: 6 },
+                elementData: {
+                  id: `${legacyElement.id}-v1`,
+                  elementId: legacyElement.id,
+                  name: legacyElement.name,
+                  content: legacyQuestion,
+                  explanation: null,
+                  type: ElementType.FREE_TEXT,
+                  basePoints: true,
+                  pointsMultiplier: 1,
+                  options: legacyOptions,
+                },
+                results: elementResults,
+                anonymousResults: elementResults,
+                instanceStatistics: { create: {} },
+              },
+            ],
+          },
+        },
+      },
+    },
+    include: { stacks: { include: { elements: true } } },
+  })
+
+  await prisma.derivedPermission.create({
+    data: {
+      permissionLevel: PermissionLevel.OWNER,
+      practiceQuizId: quiz.id,
+      userId: USER_ID_TEST,
+    },
+  })
+
+  return {
+    id: quiz.id,
+    courseId: quiz.courseId,
+    semanticInstanceId: quiz.stacks[0]!.elements[0]!.id,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
+  console.log('[global-setup] Starting semantic evaluator stub...')
+  await startSemanticEvaluatorStub()
   console.log('[global-setup] Ensuring database views...')
   await ensureDatabaseViews()
   console.log('[global-setup] Cleaning up database...')

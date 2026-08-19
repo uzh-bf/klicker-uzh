@@ -7,6 +7,7 @@ import {
   getPrisma,
   seedActivities,
   seedDatabase,
+  seedSemanticPracticeQuiz,
 } from '../global-setup.js'
 import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
 import {
@@ -1140,6 +1141,9 @@ export async function runTask(name: string, args: any = {}) {
   if (name === 'cleanupDatabase') return cleanupDatabase()
   if (name === 'seedDatabase') return seedDatabase()
   if (name === 'seedActivities') return seedActivities()
+  if (name === 'seedSemanticPracticeQuiz') {
+    return seedSemanticPracticeQuiz(args)
+  }
   if (name === 'removeSoftDeletedPracticeQuiz') {
     return (
       (

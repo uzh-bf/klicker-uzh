@@ -61,6 +61,17 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
+Formative semantic free-text specs use
+`playwright/semantic-evaluator-stub.mjs` as the only replaced boundary. Global
+setup starts the contract-validating stub on localhost under `NODE_ENV=test`,
+and global teardown stops the exact child process. The app, GraphQL API,
+database, Hatchet workflow, and participant UI remain real. The local test-origin
+wrapper configures the evaluator URL automatically; set
+`PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` only when intentionally exercising
+the unavailable fallback. Never enable the stub in development or production.
+
+For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
+
 The launcher starts the full devrouter profile, including response-api and both
 Hatchet workers. Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.

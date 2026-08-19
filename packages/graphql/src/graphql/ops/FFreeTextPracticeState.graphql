@@ -2,6 +2,9 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
   instanceId
   cycleId
   cycleOrdinal
+  questionLanguage
+  disclosureVersion
+  evaluationProvider
   cycleStatus
   stateVersion
   attemptLimit

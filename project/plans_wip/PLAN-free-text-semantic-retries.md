@@ -384,7 +384,7 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
 - [x] Add validation for `SemanticFreeTextConfig` on element manipulation.
       Require Catalyst only when semantic configuration changes; unrelated edits may
       preserve a read-only configuration after entitlement loss.
-- [ ] Split legacy `solutions` from new `accepted_exact_answers` and
+- [x] Split legacy `solutions` from new `accepted_exact_answers` and
       `reference_solution`. On explicit upgrade seed accepted answers from legacy
       solutions, leave the reference solution empty, and require it when reveal is
       enabled.
@@ -479,24 +479,24 @@ initial stack result with persisted state, and preserves a client submission UUI
 across network retries. `FreeTextRetryPanel` renders actions solely from server
 booleans.
 
-- [ ] Keep the initial stack-wide submission. Generate and retain a
+- [x] Keep the initial stack-wide submission. Generate and retain a
       `clientSubmissionId` for each semantic free-text answer and store the returned
       semantic state independently of the locked neighboring elements.
-- [ ] Poll persisted state while pending; stop on evaluated or unavailable. On reload,
+- [x] Poll persisted state while pending; stop on evaluated or unavailable. On reload,
       query by instance and restore the current cycle without trusting localStorage.
-- [ ] Render localized pending, correct, partial, incorrect, and unavailable generic
+- [x] Render localized pending, correct, partial, incorrect, and unavailable generic
       feedback; show attempts remaining and the applicable Try again, Retry evaluation,
       Show solution, View explanation, and Practice again actions.
-- [ ] Reopen only the semantic free-text input with the previous answer as editable
+- [x] Reopen only the semantic free-text input with the previous answer as editable
       text. Render prior attempts without making them resubmittable.
-- [ ] Add the non-dismissible versioned consent modal before the first external
+- [x] Add the non-dismissible versioned consent modal before the first external
       retry. Accept retries the saved answer; decline runs exact fallback without
       sending the answer externally.
-- [ ] Fetch/render reference solution, explanation, per-rubric achieved level and
+- [x] Fetch/render reference solution, explanation, per-rubric achieved level and
       rationale, points/XP delta, and peer answers only after the server returns detailed
       data. Never render raw rubric JSON.
-- [ ] Keep legacy free-text rendering unchanged when `semanticState` is null.
-- [ ] Add English and German participant copy and stable `data-cy` hooks.
+- [x] Keep legacy free-text rendering unchanged when `semanticState` is null.
+- [x] Add English and German participant copy and stable `data-cy` hooks.
 - [ ] Run PWA/shared-components checks and builds; expect exit 0.
 - [ ] Verify pending, partial retry, correct explanation, unavailable retry, decline
       fallback, reveal, exhaustion, reload, and Practice again in a real PWA browser at
@@ -523,15 +523,16 @@ booleans.
 request contract, and returns deterministic correct/partial/incorrect/uncertain/
 failure fixtures selected by synthetic marker text. Production has no fixture mode.
 
-- [ ] Start the no-dependency evaluator stub from Playwright global setup, expose its
+- [x] Start the no-dependency evaluator stub from Playwright global setup, expose its
       localhost URL to the already-running worker through the test environment, and stop
       it in global teardown. Refuse to start outside `NODE_ENV=test`.
-- [ ] Seed one semantic-retry free-text question with a synthetic rubric and accepted
+- [x] Seed one semantic-retry free-text question with a synthetic rubric and accepted
       answer; add no real course or participant data.
-- [ ] Extend `Q-practice-quiz.spec.ts` to prove consent, pending-to-partial, individual
+- [x] Add a focused Practice Quiz semantic spec to prove consent,
+      pending-to-partial, individual
       retry-to-correct, no neighboring unlock, reload recovery, detail gating, reveal,
       exhaustion, exact fallback, and no duplicate reward after a repeated request.
-- [ ] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
+- [x] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
 - [ ] Run the focused Practice Quiz Playwright spec against the full local stack with
       both Hatchet workers; expect all semantic and existing legacy workflows to pass.
 - [ ] Run `pnpm run check:all`, `pnpm run build`, and
@@ -584,3 +585,17 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
   analytics screenshot was retained. The Manage production bundle compiled, then
   hit the existing `_app` `NextRouter was not mounted` prerender failure on the 404
   and answer-collection pages.
+- **2026-08-19:** Completed the Layer 4 participant state hook, localized retry and
+  consent UI, stale-response protection, terminal solution/rubric rendering, and
+  per-attempt reward display. Real browser verification covered exact fallback,
+  decline/unavailable behavior, reload, reveal, fresh-cycle creation, German
+  disclosure copy, and desktop/mobile layouts. Added a contract-validating Catalyst
+  stub and four focused semantic Playwright workflows. Playwright type-checking
+  passes; local browser execution remains pending because the DevPod's initially
+  absent Chromium cache could not be completed cleanly on arm64.
+- **2026-08-19:** Final Layer 4 verification passed the affected package checks,
+  17 focused GraphQL integration tests, PWA lint, the complete `check:all` suite,
+  `git diff --check`, and an OpenGrep scan of the new files. The PWA production
+  build remains unclaimed because the running development server owns `.next/dev`
+  and caused a duplicate generated-validator identifier; the focused Playwright
+  run remains unclaimed for the browser-cache limitation above.
