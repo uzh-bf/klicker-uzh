@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import {
   type Course,
   DecideSemanticEvaluationConsentDocument,
@@ -85,12 +85,10 @@ function PracticeQuiz({
     dataParticipant?.self?.role === UserRole.Participant
   const shouldGateSemanticEvaluation =
     hasSemanticEvaluation && !previewOnly && registeredParticipant
-  const {
-    data: capabilityData,
-    loading: capabilityLoading,
-    error: capabilityError,
-  } = useQuery(SemanticFreeTextCapabilityDocument, {
-    skip: !shouldGateSemanticEvaluation,
+  const [
+    loadSemanticCapability,
+    { data: capabilityData, loading: capabilityLoading },
+  ] = useLazyQuery(SemanticFreeTextCapabilityDocument, {
     fetchPolicy: 'network-only',
   })
   const [decideConsentMutation, consentResult] = useMutation(
@@ -101,23 +99,29 @@ function PracticeQuiz({
   const semanticGateLoading =
     hasSemanticEvaluation &&
     !previewOnly &&
-    (participantLoading ||
-      (registeredParticipant &&
-        (capabilityLoading || (!capability && !capabilityError))))
+    (participantLoading || capabilityLoading)
 
-  const requestQuizStart = (targetIx: number) => {
+  const requestQuizStart = async (targetIx: number) => {
     if (semanticGateLoading) return
-    if (
-      !shouldGateSemanticEvaluation ||
-      capabilityError ||
-      !capability ||
-      capability.consentDecision
-    ) {
+    if (!shouldGateSemanticEvaluation) {
       setCurrentIx(targetIx)
       return
     }
 
-    setConsentTargetIx(targetIx)
+    try {
+      const { data } = await loadSemanticCapability()
+      const currentCapability = data?.semanticFreeTextCapability
+
+      if (!currentCapability || currentCapability.consentDecision) {
+        setCurrentIx(targetIx)
+        return
+      }
+
+      setConsentTargetIx(targetIx)
+    } catch {
+      // Capability failures preserve the deterministic exact-match fallback.
+      setCurrentIx(targetIx)
+    }
   }
 
   const decideConsent = async (accepted: boolean) => {
@@ -142,7 +146,7 @@ function PracticeQuiz({
 
   const setQuizStep = (targetIx: number) => {
     if (currentIx === -1 && targetIx >= 0) {
-      requestQuizStart(targetIx)
+      void requestQuizStart(targetIx)
       return
     }
 
@@ -248,7 +252,7 @@ function PracticeQuiz({
             // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
             // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
             pointsMultiplier={quiz.pointsMultiplier}
-            onStart={() => requestQuizStart(0)}
+            onStart={() => void requestQuizStart(0)}
             startLoading={semanticGateLoading}
             previewOnly={previewOnly}
           />
