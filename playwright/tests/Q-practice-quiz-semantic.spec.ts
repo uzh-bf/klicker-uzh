@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import { test } from '../util/fixtures.js'
-import { env, runTask } from '../util/workflow.js'
+import { env, loginStudentPassword, runTask } from '../util/workflow.js'
 
 const data = JSON.parse(
   fs.readFileSync(
@@ -13,13 +13,7 @@ const data = JSON.parse(
 let quiz: { id: string; courseId: string; semanticInstanceId: number }
 
 async function openQuiz(page: Page, username: string) {
-  await page.context().clearCookies()
-  await page.goto(env('URL_STUDENT_LOGIN'))
-  await page.getByTestId('username-field').fill(username)
-  await page
-    .getByTestId('password-field')
-    .fill(env('STUDENT_PASSWORD') ?? 'abcdabcd')
-  await page.getByTestId('submit-login').click()
+  await loginStudentPassword(page, { username })
   await page.goto(
     `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`,
     { waitUntil: 'commit' }
