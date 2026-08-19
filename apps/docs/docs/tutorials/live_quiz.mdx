@@ -97,7 +97,7 @@ To edit the content of a Live Quiz, open the actions dropdown and select the cor
 <br />
 <br />
 
-All prepared Live Quizzes can be found in the activity list (menu entry "Activities"). Here you can edit your planned quizzes, delete unwanted activities, or start a Live Quiz. Once a Live Quiz is started, it can no longer be edited. Also note that once Live Quizzes are closed, they cannot be reopened, since they contain results submitted by all participating students that should not be overwritten, but can be duplicated to be executed again.
+All prepared Live Quizzes can be found in the activity list (menu entry "Activities"). Here you can edit your planned quizzes, delete unwanted activities, or start a Live Quiz. Once a Live Quiz is started, it can no longer be edited. After a Live Quiz has ended, you can duplicate it to keep the completed run and prepare a new copy. If you intentionally want to discard the completed run and reuse the same quiz, you can [reset it to draft](#how-can-i-reset-and-reuse-an-ended-live-quiz).
 
 Once the Live Quiz has been started, the following actions can be performed on the **lecturer cockpit**:
 
@@ -112,6 +112,45 @@ Additionally, you can access the following important views directly from the lec
 - **Audience View:** Access the view of your students for ongoing quizzes.
 - **Lecturer View:** In large lecture settings, where teaching assistants can answer Live Q&A submissions, a filtered view of only pinned Live Q&A submissions and the aggregated feedback on speed and difficulty **is provided through the lecturer view**.
 - **Evaluation:** Open the continuously updated evaluation while the Live Quiz is running. For an overview of the available features, see the [evaluation section](#how-can-i-evaluate-a-live-quiz).
+
+### How can I monitor incoming responses?
+
+For every element in an active or completed block, the lecturer cockpit shows
+two live counts next to the element name. The inbox count on the left shows how
+many distinct responses KlickerUZH has **received**. The double-check count on
+the right shows how many responses have been **processed** and included in the
+aggregated results.
+
+The two counts will normally match. A temporary difference can occur while new
+responses are being processed. Use these numbers as a quick processing signal,
+not as an exact participant count, queue size, or historical record. A `0 → 0`
+count means that no responses are currently tracked for the element. Scheduled
+elements do not show counts until their block has started.
+
+## How can I reset and reuse an ended Live Quiz?
+
+If you want to run the same regular Live Quiz again and do not need to retain
+its completed run, open the actions menu for the ended quiz and select
+**Reset**. This action is available to the activity owner and users with
+[Admin permission](/tutorials/permissions_groups/).
+
+Before confirming, KlickerUZH shows how much data will be removed. Resetting is
+permanent and deletes the responses, aggregated results, feedback, confusion
+feedback, and session leaderboard from the completed run. Course points, XP,
+timeline rewards, achievements, and awards already received by participants
+remain unchanged.
+
+:::warning
+
+Use **Duplicate** instead if you want to keep the previous run and its
+evaluation. A reset cannot be undone.
+
+:::
+
+After a successful reset, the same Live Quiz—including its existing join
+PIN—returns to **Draft**. You can edit it and start a new run. Only ended,
+regular Live Quizzes can be reset through this workflow; assessment Live
+Quizzes follow separate rules.
 
 ## How can I evaluate a Live Quiz?
 
