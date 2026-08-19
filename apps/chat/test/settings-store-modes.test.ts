@@ -24,6 +24,7 @@ describe('settingsStore mode loading', () => {
     useSettingsStore.setState({
       modeOptions: {},
       modeOptionsChatbotId: null,
+      modeOptionsAreFallback: true,
       selectedMode: 'tutor',
     })
   })
@@ -66,5 +67,80 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().modeOptions).toEqual({
       explainer: 'explainer mode',
     })
+  })
+
+  test('keeps a selected mode whose description is empty', async () => {
+    useSettingsStore.setState({ selectedMode: 'custom' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          systemPrompts: {
+            tutor: { description: 'Tutor mode' },
+            custom: { description: '' },
+          },
+        }),
+      })
+    )
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+
+    expect(useSettingsStore.getState().selectedMode).toBe('custom')
+    expect(useSettingsStore.getState().modeOptions).toEqual({
+      tutor: 'Tutor mode',
+      custom: '',
+    })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
+  })
+
+  test('marks synthesized mode descriptions as the localized fallback', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ systemPrompts: null }),
+      })
+    )
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(true)
+  })
+
+  test('keeps initial chatbot modes when the mode refresh fails', async () => {
+    useSettingsStore.setState({ selectedMode: 'explainer' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1', {
+      explainer: 'Explainer mode',
+    })
+
+    expect(useSettingsStore.getState().selectedMode).toBe('explainer')
+    expect(useSettingsStore.getState().modeOptions).toEqual({
+      explainer: 'Explainer mode',
+    })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
+  })
+
+  test('keeps initial chatbot modes on a non-ok mode refresh', async () => {
+    useSettingsStore.setState({ selectedMode: 'custom' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({}),
+      })
+    )
+
+    await useSettingsStore.getState().loadModeOptions('chatbot-1', {
+      custom: 'Custom mode',
+    })
+
+    expect(useSettingsStore.getState().selectedMode).toBe('custom')
+    expect(useSettingsStore.getState().modeOptions).toEqual({
+      custom: 'Custom mode',
+    })
+    expect(useSettingsStore.getState().modeOptionsAreFallback).toBe(false)
   })
 })

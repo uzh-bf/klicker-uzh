@@ -21,7 +21,23 @@ const config = defineConfig([
       nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
-        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+        rootDir: '.',
+        filterRoot: '.',
+        // Keep Rollup independent from stale TypeScript incremental metadata.
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
+        include: [
+          'src/**/*.cts',
+          'src/**/*.mts',
+          'src/**/*.ts',
+          'src/**/*.tsx',
+          'instrumented/**/*.cts',
+          'instrumented/**/*.mts',
+          'instrumented/**/*.ts',
+          'instrumented/**/*.tsx',
+        ],
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],

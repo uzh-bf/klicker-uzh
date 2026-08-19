@@ -1,17 +1,36 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(opens in new tab)',
+    },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
+      tutorDescription: 'Get patient, step-by-step help with your questions.',
       explainer: 'Explainer',
+      explainerDescription: 'Get clear explanations of difficult concepts.',
     },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',
       selectAiModel: 'Select AI Model',
-      autoSelectionInfo: 'Automatic selection based on credit availability.',
-      usingPrimaryModel: 'Using primary model with available credits.',
-      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      autoModelDescription:
+        'Automatically chooses a suitable model for each message.',
+      reasoningModelDescription:
+        'Built for difficult, multi-step questions. It may take longer and use more credits.',
+      standardModelDescription:
+        'A general-purpose model for everyday questions.',
+      fallbackModelDescription:
+        'Uses fewer credits and remains available when your credits run out.',
+      autoSelectionInfo:
+        'KlickerUZH chooses a suitable model for each message.',
+      usingPrimaryModel:
+        'The standard model is used while credits are available.',
+      usingFallbackModel:
+        'No credits remain, so new messages use the smaller model.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -33,6 +52,8 @@ export default {
       resetNone: 'These credits do not refill automatically.',
       exhausted:
         'You have used up all your credits. However, you can still use the smaller model.',
+      fallbackNotice:
+        'Your credits are used up. New messages use the smaller model.',
     },
     sidebar: {
       newChat: 'New Chat',
@@ -41,6 +62,8 @@ export default {
       toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -53,9 +76,35 @@ export default {
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot not found',
+      notFoundMessage:
+        'This chat link is no longer available. Return to KlickerUZH to choose another course or chatbot.',
+      errorTitle: 'Chatbot unavailable',
+      errorMessage:
+        'We could not load this chatbot. Try again or return to KlickerUZH.',
+      retry: 'Try again',
+      openKlickerUzh: 'Open KlickerUZH',
+    },
     branchPicker: {
-      previous: 'Previous branch',
-      next: 'Next branch',
+      previous: 'Previous version',
+      next: 'Next version',
+    },
+    historyRail: {
+      label: 'Conversation history',
+      mobileLabel: 'History {current}/{total}',
+      item: 'Item {current} of {total}',
+      itemRange: 'Items {start}-{end} of {total}',
+      openHistory: 'Open full history',
+      closeHistory: 'Close full history',
+      turn: 'Conversation turn',
+      you: 'You',
+      assistant: 'Assistant',
+      noText: 'No text',
+      noResponse: 'No response yet',
+      inProgress: 'In progress',
+      partial: 'Partial response',
+      error: 'Error',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
@@ -104,31 +153,42 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
-      welcomeTitle: 'Hello there!',
-      welcomeSubtitle: 'How can I help you?',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
+      welcomeTitle: 'Welcome!',
+      welcomeTo: 'You are chatting with {chatbot}.',
+      welcomeSubtitle: 'Choose a starter or write your own question.',
+      welcomeMode: 'Selected mode: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Conversation starters',
+      editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
       practiceTopicPrompt:
-        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+        'I want to practise a specific topic from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
       workThroughProblem: 'Work through a problem',
       workThroughProblemPrompt:
-        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+        'Help me work through a problem from the course materials step by step. Ask me questions and give hints before revealing the solution.',
       explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+        'Explain a difficult concept from the course materials in simple terms, using one worked example and citations.',
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
-        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+        'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:
@@ -143,6 +203,8 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
@@ -195,8 +257,7 @@ export default {
       title: 'Login Required',
       message:
         'You need to create a KlickerUZH account or log in before you can access this chatbot.',
-      redirectNotice:
-        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      redirectNotice: 'After logging in, you will return to this chatbot.',
       loginButton: 'Go to KlickerUZH Login',
     },
     response: {
@@ -2948,6 +3009,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
+      changeAvailabilityDateMicrolearnings:
+        'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
+      changeAvailabilityDateGroupActivities:
+        'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
+      courseDatesForCourseDuplicationTooltip:
+        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      fixedDateInterval:
+        'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
+      groupCreationDeadlineForCourseDuplicationTooltip:
+        'Changing the course dates recalculates this deadline based on its original offset. You can adjust it afterwards.',
+      copyLiveQuizzesTooltip:
+        'If you activate this setting, all live quizzes in the course will be copied to the new course.',
+      copyPracticeQuizzesTooltip:
+        'If you activate this setting, all practice quizzes in the course will be copied to the new course.',
+      copyMicroLearningsTooltip:
+        'If you activate this setting, all microlearnings in the course will be copied to the new course.',
+      copyGroupActivitiesTooltip:
+        'If you activate this setting, all group activities in the course will be copied to the new course. When disabling group creation, this setting is disabled.',
+      courseDuplicationCopyInfo:
+        'Duplicating a course creates independent activity copies and preserves direct sharing permissions. The copied activity instances still reference the same underlying elements. If you duplicate a course owned by somebody else, the original owner keeps administrative access to the copy.',
+      courseCopySuffix: 'Copy',
+      courseDuplicationEndDateInPast:
+        'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationNoAccess:
+        'You no longer have sufficient permissions to duplicate this course.',
+      courseDuplicationPartialFailure:
+        'Not all selected activities or activity instances could be duplicated. No partial course was created.',
+      courseDuplicationInProgress:
+        'Duplicating large courses can take a while.',
+      courseDuplicationSucceeded:
+        'Course "{name}" has been duplicated successfully.',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',
@@ -3070,7 +3163,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     course: {
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
+      duplicateCourse: 'Duplicate course',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',

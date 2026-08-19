@@ -1343,9 +1343,18 @@ export const Mutation = builder.mutationType({
             validate: { email: true },
           }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          sourceCourseId: t.arg.string({ required: false }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await CourseService.createCourse(args, ctx)
+          if (!args.sourceCourseId) {
+            return await CourseService.createCourse(args, ctx)
+          } else {
+            return await CourseService.duplicateCourse(args, ctx)
+          }
         },
       }),
 

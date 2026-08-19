@@ -1,19 +1,38 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(öffnet in neuem Tab)',
+    },
+    a11y: {
+      skipToContent: 'Zum Inhalt springen',
+    },
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
+      tutorDescription:
+        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
       explainer: 'Erklärer',
+      explainerDescription:
+        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
     },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',
       selectAiModel: 'KI-Modell auswählen',
+      autoModelDescription:
+        'Wählt automatisch für jede Nachricht ein passendes Modell aus.',
+      reasoningModelDescription:
+        'Für schwierige Aufgaben mit mehreren Schritten. Die Antwort kann länger dauern und mehr Credits verbrauchen.',
+      standardModelDescription:
+        'Ein vielseitiges Modell für alltägliche Fragen.',
+      fallbackModelDescription:
+        'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
       autoSelectionInfo:
-        'Automatische Auswahl basierend auf verfügbaren Credits.',
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
       usingPrimaryModel:
-        'Primäres Modell wird mit verfügbaren Credits verwendet.',
-      usingFallbackModel: 'Ausweichmodell wird verwendet (keine Credits mehr).',
+        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+      usingFallbackModel:
+        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -35,6 +54,8 @@ export default {
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
         'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+      fallbackNotice:
+        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
     },
     sidebar: {
       newChat: 'Neuer Chat',
@@ -43,6 +64,8 @@ export default {
       toggleSidebar: 'Seitenleiste umschalten',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -55,9 +78,35 @@ export default {
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot nicht gefunden',
+      notFoundMessage:
+        'Dieser Chat-Link ist nicht mehr verfügbar. Kehre zu KlickerUZH zurück, um einen anderen Kurs oder Chatbot auszuwählen.',
+      errorTitle: 'Chatbot nicht verfügbar',
+      errorMessage:
+        'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      retry: 'Erneut versuchen',
+      openKlickerUzh: 'KlickerUZH öffnen',
+    },
     branchPicker: {
       previous: 'Vorherige Variante',
       next: 'Nächste Variante',
+    },
+    historyRail: {
+      label: 'Gesprächsverlauf',
+      mobileLabel: 'Verlauf {current}/{total}',
+      item: 'Eintrag {current} von {total}',
+      itemRange: 'Einträge {start}-{end} von {total}',
+      openHistory: 'Gesamten Verlauf öffnen',
+      closeHistory: 'Gesamten Verlauf schliessen',
+      turn: 'Gesprächsrunde',
+      you: 'Du',
+      assistant: 'Assistent',
+      noText: 'Kein Text',
+      noResponse: 'Noch keine Antwort',
+      inProgress: 'In Bearbeitung',
+      partial: 'Unvollständige Antwort',
+      error: 'Fehler',
     },
     disclaimer: {
       mediaTitle: 'Haftungsausschluss-Medien',
@@ -107,31 +156,42 @@ export default {
       deleteChat: 'Chat löschen',
       deleteConfirm: 'Löschen?',
       deleteConfirmAria: 'Löschen dieses Chats bestätigen',
+      deleteArmedStatus:
+        'Bestätigung erforderlich: Betätige Löschen erneut, um diesen Chat zu löschen.',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
     },
     thread: {
+      viewportLabel: 'Gesprächsverlauf',
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
-      welcomeTitle: 'Hallo!',
-      welcomeSubtitle: 'Wie kann ich Dir helfen?',
+      runStarted: 'Antwort wird generiert …',
+      runCompleted: 'Antwort abgeschlossen.',
+      runStopped: 'Antwort gestoppt.',
+      runFailed: 'Antwort fehlgeschlagen.',
+      welcomeTitle: 'Willkommen!',
+      welcomeTo: 'Du chattest mit {chatbot}.',
+      welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
+      welcomeMode: 'Ausgewählter Modus: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Gesprächseinstiege',
+      editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
       practiceTopicPrompt:
-        'Ich möchte [ein bestimmtes Thema] aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
+        'Ich möchte ein bestimmtes Thema aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
       workThroughProblem: 'Eine Aufgabe bearbeiten',
       workThroughProblemPrompt:
-        'Hilf mir, diese Aufgabe Schritt für Schritt zu bearbeiten: [füge eine Aufgabe aus den Kursunterlagen ein]. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
       explainConcept: 'Ein Konzept erklären',
       explainConceptPrompt:
-        'Erkläre [ein bestimmtes Konzept] aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+        'Erkläre ein schwieriges Konzept aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
-        'Vergleiche [Konzept A] und [Konzept B] anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+        'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
     },
     message: {
       creditsUsed:
@@ -146,6 +206,8 @@ export default {
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
+      ratingError: 'Bewertung konnte nicht gespeichert werden.',
+      stoppedNotice: 'Du hast diese Antwort gestoppt.',
       toolCallsGroupLabel:
         '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },
@@ -199,8 +261,7 @@ export default {
       title: 'Anmeldung erforderlich',
       message:
         'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
-      redirectNotice:
-        'Kehre nach der Anmeldung zu <url>{redirectUrl}</url> zurück, um Deine Unterhaltung fortzusetzen.',
+      redirectNotice: 'Nach der Anmeldung kehrst Du zu diesem Chatbot zurück.',
       loginButton: 'Zur KlickerUZH-Anmeldung',
     },
     response: {
@@ -2993,6 +3054,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
+      changeAvailabilityDateMicrolearnings:
+        'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      changeAvailabilityDateGroupActivities:
+        'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      courseDatesForCourseDuplicationTooltip:
+        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
+      fixedDateInterval:
+        'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
+      groupCreationDeadlineForCourseDuplicationTooltip:
+        'Wenn Sie die Kursdaten ändern, wird diese Deadline anhand ihres ursprünglichen Abstands neu berechnet. Sie können sie anschliessend anpassen.',
+      copyLiveQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Live-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyPracticeQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Übungs-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyMicroLearningsTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Microlearnings im Kurs in den neuen Kurs kopiert.',
+      copyGroupActivitiesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
+      courseDuplicationCopyInfo:
+        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente. Wenn Sie einen Kurs duplizieren, der einer anderen Person gehört, behält diese Administratorzugriff auf die Kopie.',
+      courseCopySuffix: 'Kopie',
+      courseDuplicationEndDateInPast:
+        'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationNoAccess:
+        'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
+      courseDuplicationPartialFailure:
+        'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
+      courseDuplicationInProgress:
+        'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
@@ -3125,7 +3217,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     course: {
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
+      duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',

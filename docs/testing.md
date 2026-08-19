@@ -31,6 +31,19 @@ index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
 
+For OpenAI-compatible request-policy or prompt-cache changes, also run
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts`. These fixtures capture the
+final synthetic Chat Completions and Responses JSON bodies, verify the default
+exact-response bypass and custom-provider boundary, and assert public
+`usage.inputTokenDetails` values for uncached input, cache reads, and cache
+writes. They use no database, credentials, gateway, Redis, or paid model.
+A passing fixture proves local AI SDK serialization and response conversion;
+it does not prove a LiteLLM/provider cache hit, router resolution, production
+behavior, latency, or cost impact. This is server-side request policy, so it
+does not require browser evidence; add the normal browser path if the change
+also affects UI, auth, redirect, cookie, or user-visible chat behavior.
+
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
 `ReadableStream`; `pauseAfterTextChunk` holds the stream at a deterministic
@@ -62,10 +75,11 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 - The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
-  LiteLLM liveness endpoint and the chat credits response before browser
-  testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
-  `UPSTREAM_OPENAI_API_KEY` is required for a streamed answer; service health
-  alone is not model-call evidence.
+  LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
+  routing decisions in LiteLLM logs, and the chat credits response before
+  browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
+  not classification or answer-stream evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
 - **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.

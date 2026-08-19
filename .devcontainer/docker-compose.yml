@@ -113,7 +113,7 @@ services:
 
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
-    image: ghcr.io/berriai/litellm-database:v1.88.1
+    image: ghcr.io/berriai/litellm-database:v1.96.2@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
@@ -125,6 +125,10 @@ services:
       # Supplied by the user in their local env or .devcontainer.env to enable chat
       - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
       - UPSTREAM_OPENAI_BASE_URL=${UPSTREAM_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LITELLM_LOG=INFO
+      # Responses API callers opt into a visible reasoning summary while each
+      # routed alias keeps its own fixed reasoning effort.
+      - LITELLM_REASONING_AUTO_SUMMARY=true
     healthcheck:
       test:
         - CMD
