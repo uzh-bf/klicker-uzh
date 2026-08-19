@@ -658,6 +658,24 @@ export async function seedSemanticPracticeQuiz({
   semanticEvaluation: SemanticFreeTextConfig
 }) {
   const prisma = await getPrisma()
+  await Promise.all(
+    PARTICIPANT_IDS.slice(0, 5).map((participantId) =>
+      prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId,
+          },
+        },
+        create: {
+          courseId: COURSE_ID_TEST,
+          participantId,
+          isActive: true,
+        },
+        update: { isActive: true },
+      })
+    )
+  )
   const semanticOptions = {
     hasSampleSolution: true,
     solutions: semanticEvaluation.accepted_exact_answers,
