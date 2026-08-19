@@ -194,9 +194,9 @@ function Header({
                     id: 'loggedInAs',
                     type: 'label' as 'label',
                     label: (
-                      <div className="font-bold">
+                      <div>
                         <div>{t('pwa.profile.loggedInAs')}</div>
-                        <div className="font-normal">
+                        <div className="text-foreground text-sm font-normal normal-case tracking-normal">
                           {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
                             ? (participant.institutionalEmail ??
                               participant.email)
@@ -210,7 +210,6 @@ function Header({
                   {
                     id: 'separator',
                     type: 'separator' as 'separator',
-                    className: { item: 'h-1.5!' },
                   },
                 ]
               : []),
@@ -410,7 +409,6 @@ function Header({
               : []),
           ]}
           className={{
-            item: 'h-8 text-sm md:h-8 md:text-base',
             trigger:
               'p-0! relative my-1 border-none bg-transparent hover:bg-transparent',
           }}

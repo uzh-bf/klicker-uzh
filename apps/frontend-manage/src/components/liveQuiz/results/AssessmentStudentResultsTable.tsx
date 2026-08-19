@@ -225,7 +225,7 @@ function AssessmentStudentResultsTable({
           twMerge(
             'cursor-pointer transition-colors',
             row.participantId === selectedParticipantId
-              ? '!bg-primary-20 hover:!bg-primary-30 [&>td]:!bg-primary-20 hover:[&>td]:!bg-primary-30 outline outline-2 outline-primary-100/60'
+              ? '!bg-primary-20 hover:!bg-primary-40 [&>td]:!bg-primary-20 hover:[&>td]:!bg-primary-40 outline outline-2 outline-primary-100/60'
               : 'hover:bg-muted/50'
           )
         }

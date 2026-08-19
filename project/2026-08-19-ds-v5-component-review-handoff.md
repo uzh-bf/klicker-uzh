@@ -112,6 +112,7 @@ Klicker adopts the DS `size` prop **zero** times — every density fix is a hand
 
 - v5 label restyled to 11px bold uppercase `#666` (`label-caps` treatment). Consumers that put usernames/dynamic content in the label slot get them capitalized ("TESTUSER1"). **DS fix:** reserve uppercase for a dedicated eyebrow slot or opt-in prop; don't transform arbitrary label content.
 - Items: `h-9`, `focus:bg-[#FAFAFA]` — hex via B2.
+- The legacy `Dropdown` wrapper twMerges the shared `className.item` into **separators and labels** too, so a consumer item-height class (`h-8`) silently beats the separator's `h-px` and renders a fat gray band (reproduced in the PWA header). **DS fix:** apply the shared item class to interactive items only; separators/labels get their own slots.
 
 ### C6. Tabs
 
