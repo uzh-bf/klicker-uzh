@@ -1,4 +1,4 @@
-# 5. Use GrowthBook for shared feature flags
+# 8. Use GrowthBook for shared feature flags
 
 - **Status:** Accepted — 2026-08-06
 - **Deciders:** KlickerUZH maintainers
@@ -31,10 +31,11 @@ cluster-internal SDK endpoint. Every evaluation supplies request-scoped actor
 attributes instead of mutating global client state, so concurrent users cannot
 leak targeting context into one another.
 
-The shared attributes are stable Klicker id, actor type, role, and environment.
-Email is excluded. Missing configuration and unavailable boolean definitions
-fail closed to false. Flags control rollout and presentation, never
-authentication or authorization.
+The shared actor attributes are stable Klicker id, actor type, and role. Each
+adapter owns the normalized deployment environment and adds it to evaluations.
+Email is excluded. Missing configuration, an invalid non-empty environment,
+and unavailable boolean definitions fail closed to false. Flags control rollout
+and presentation, never authentication or authorization.
 
 Existing preview booleans migrate incrementally. A field remains authoritative
 until every consumer for that behavior has moved; deleting the database or

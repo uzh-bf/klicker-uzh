@@ -14,8 +14,24 @@ describe('feature flag contracts', () => {
     ['test', 'test'],
     ['development', 'development'],
     [undefined, 'development'],
-    ['unexpected', 'development'],
+    ['', 'development'],
   ] as const)('normalizes %s to %s', (input, expected) => {
     expect(normalizeFeatureFlagEnvironment(input)).toBe(expected)
+  })
+
+  it.each([
+    'unexpected',
+    'prod',
+    'Production',
+    'stg',
+  ])('refuses to map the unrecognized environment %s onto a real one', (input) => {
+    const reportedErrors = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    expect(normalizeFeatureFlagEnvironment(input)).toBe('unknown')
+    expect(reportedErrors).toHaveBeenCalledOnce()
+
+    reportedErrors.mockRestore()
   })
 })

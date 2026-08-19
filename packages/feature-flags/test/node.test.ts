@@ -3,6 +3,7 @@ import type { FeatureFlagAttributes } from '../src/index.js'
 import { NodeFeatureFlagClient } from '../src/node.js'
 
 type TestFeatures = {
+  'default-on-flag': boolean
   'targeted-flag': boolean
 }
 
@@ -10,14 +11,12 @@ const enabledAttributes: FeatureFlagAttributes = {
   id: 'enabled-user',
   actorType: 'user',
   role: 'USER',
-  environment: 'test',
 }
 
 const disabledAttributes: FeatureFlagAttributes = {
   id: 'disabled-user',
   actorType: 'user',
   role: 'USER',
-  environment: 'test',
 }
 
 const originalFetch = globalThis.fetch
@@ -31,6 +30,9 @@ describe('NodeFeatureFlagClient', () => {
       new Response(
         JSON.stringify({
           features: {
+            'default-on-flag': {
+              defaultValue: true,
+            },
             'targeted-flag': {
               defaultValue: false,
               rules: [
@@ -64,6 +66,7 @@ describe('NodeFeatureFlagClient', () => {
     const client = new NodeFeatureFlagClient<TestFeatures>({
       apiHost: 'https://growthbook.test',
       clientKey: 'sdk-test',
+      environment: 'test',
     })
 
     expect(await client.initialize()).toBe(true)
@@ -81,14 +84,30 @@ describe('NodeFeatureFlagClient', () => {
     const client = new NodeFeatureFlagClient<TestFeatures>({
       apiHost: 'https://growthbook.test',
       clientKey: 'sdk-test',
+      environment: 'test',
     })
 
     expect(await client.initialize()).toBe(false)
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
   })
 
+  it('fails closed without fetching for an invalid environment', async () => {
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+      environment: 'prod',
+    })
+
+    expect(await client.initialize()).toBe(false)
+    expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
+    expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
   it('fails closed without configuration and does not fetch', async () => {
-    const client = new NodeFeatureFlagClient<TestFeatures>({})
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      environment: 'test',
+    })
 
     expect(await client.initialize()).toBe(false)
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)

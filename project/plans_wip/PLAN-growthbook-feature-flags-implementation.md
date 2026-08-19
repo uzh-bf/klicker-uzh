@@ -26,8 +26,9 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - Never expose a GrowthBook management/admin key to a browser.
 - Use Klicker `User.id`/`Participant.id`, never email, for per-user targeting.
 - Feature flags control rollout, never authentication or authorization.
-- Missing configuration or an unusable feature payload evaluates boolean flags
-  to their application fallback (`false` for learning analytics).
+- Missing configuration, an invalid non-empty deployment environment, or an
+  unusable feature payload evaluates boolean flags to their application
+  fallback (`false` for learning analytics).
 - Do not initialize GrowthBook in an app until that app consumes a flag.
 - Do not remove the Prisma or public GraphQL `publicPreview` field in this
   stack; only remove it from `QUserProfile` after its last frontend consumer is
@@ -50,7 +51,7 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
   Vitest configuration.
 - `packages/feature-flags/vitest.config.ts` — isolated Node test runner.
 - `packages/feature-flags/src/contracts.ts` — flag registry, strict keys,
-  attribute values, actor types, and environment normalization.
+  actor-attribute values and environment normalization.
 - `packages/feature-flags/src/index.ts` — core public entry point.
 - `packages/feature-flags/src/browserClient.ts` — internal GrowthBook browser
   instance factory used by the React adapter and unit tests.
@@ -64,7 +65,7 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 - `packages/feature-flags/test/node.test.ts` — Node SDK fallback, targeting, and
   request-isolation tests.
 - `docs/feature-flags.md` — adoption and operations guide.
-- `docs/adr/0005-use-growthbook-for-feature-flags.md` — architecture decision.
+- `docs/adr/0008-use-growthbook-for-feature-flags.md` — architecture decision.
 - `docs/adr/README.md`, `docs/index.md` — wiki navigation.
 - `docs/log/2026-08-06-growthbook-foundation.md` — wiki change record.
 - `pnpm-lock.yaml` — pinned dependency resolution.
@@ -75,8 +76,8 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
   `learning-analytics: boolean` with fallback `false`.
 - `packages/feature-flags/test/contracts.test.ts` — registry regression test.
 - `apps/frontend-manage/src/components/featureFlags/ManageFeatureFlagProvider.tsx`
-  — map the authenticated lecturer profile and environment into shared
-  attributes.
+  — map the authenticated lecturer profile into shared attributes and the
+  deployment environment into client configuration.
 - `apps/frontend-manage/src/components/Layout.tsx` — activate the provider only
   after `UserProfileDocument` succeeds.
 - `apps/frontend-manage/src/components/common/Header.tsx` — always render the
@@ -144,10 +145,17 @@ describe('feature flag contracts', () => {
     ['test', 'test'],
     ['development', 'development'],
     [undefined, 'development'],
-    ['unexpected', 'development'],
+    ['', 'development'],
   ] as const)('normalizes %s to %s', (input, expected) => {
     expect(normalizeFeatureFlagEnvironment(input)).toBe(expected)
   })
+
+  it.each(['unexpected', 'prod', 'Production', 'stg'])(
+    'refuses to map the unrecognized environment %s onto a real one',
+    (input) => {
+      expect(normalizeFeatureFlagEnvironment(input)).toBe('unknown')
+    }
+  )
 })
 ```
 
@@ -228,6 +236,7 @@ export type FeatureFlagEnvironment =
   | 'test'
   | 'staging'
   | 'production'
+  | 'unknown'
 
 export type FeatureFlagAttributeValue =
   | string
@@ -245,7 +254,6 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
-  environment: FeatureFlagEnvironment
 }
 
 export function normalizeFeatureFlagEnvironment(
@@ -260,7 +268,15 @@ export function normalizeFeatureFlagEnvironment(
     return value
   }
 
-  return 'development'
+  if (value === undefined || value === '') {
+    return 'development'
+  }
+
+  console.error(
+    `[feature-flags] unrecognized environment "${value}"; disabling feature flag evaluation`
+  )
+
+  return 'unknown'
 }
 ```
 
@@ -325,6 +341,7 @@ The tests must assert:
 const client = new NodeFeatureFlagClient<TestFeatures>({
   apiHost: 'https://growthbook.test',
   clientKey: 'sdk-test',
+  environment: 'test',
 })
 
 expect(await client.initialize()).toBe(true)
@@ -333,8 +350,10 @@ expect(client.isEnabled('targeted-flag', disabledAttributes)).toBe(false)
 expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(true)
 ```
 
-Also construct the client with `{}` and assert `initialize()` and every flag
-evaluation return `false` without calling `fetch`.
+Also construct the client with `{ environment: 'test' }` and assert
+`initialize()` and every flag evaluation return `false` without calling
+`fetch`. With a complete host/key but `environment: 'prod'`, assert the same
+no-fetch, false result for both an id-targeted flag and a remote default-on flag.
 
 - [x] **Step 2: Run the Node tests and verify the red state**
 
@@ -348,6 +367,7 @@ Expected: failure because `NodeFeatureFlagClient` is not exported.
 export type NodeFeatureFlagClientConfig = {
   apiHost?: string
   clientKey?: string
+  environment: string | undefined
   timeoutMs?: number
 }
 
@@ -356,17 +376,27 @@ export class NodeFeatureFlagClient<
 > {
   private readonly configured: boolean
   private readonly client: GrowthBookClient<Features>
+  private readonly environment: FeatureFlagEnvironment
   private readonly timeoutMs: number
 
   constructor(config: NodeFeatureFlagClientConfig) {
-    this.configured = Boolean(config.apiHost && config.clientKey)
+    this.environment = normalizeFeatureFlagEnvironment(config.environment)
+    this.configured = Boolean(
+      this.environment !== 'unknown' && config.apiHost && config.clientKey
+    )
     this.timeoutMs = config.timeoutMs ?? 2000
-    this.client = this.configured
-      ? new GrowthBookClient<Features>({
-          apiHost: config.apiHost!,
-          clientKey: config.clientKey!,
-        })
-      : new GrowthBookClient<Features>().initSync({ payload: { features: {} } })
+    this.client = new GrowthBookClient<Features>(
+      this.configured
+        ? {
+            apiHost: config.apiHost,
+            clientKey: config.clientKey,
+          }
+        : undefined
+    )
+
+    if (!this.configured) {
+      this.client.initSync({ payload: { features: {} } })
+    }
   }
 
   async initialize(): Promise<boolean> {
@@ -379,7 +409,9 @@ export class NodeFeatureFlagClient<
     key: BooleanFeatureFlagKey<Features>,
     attributes: FeatureFlagAttributes
   ): boolean {
-    return this.client.isOn(key, { attributes })
+    return this.client.isOn(key, {
+      attributes: { ...attributes, environment: this.environment },
+    })
   }
 
   async refresh(): Promise<void> {
@@ -428,7 +460,9 @@ git commit -m "feat(feature-flags): add Node adapter"
 Mock the SDK endpoint with the same `targeted-flag` payload as Task 2. Assert
 that initialization succeeds, `setAttributes(enabledAttributes)` evaluates
 true, `setAttributes(disabledAttributes)` evaluates false, and missing config
-initializes an empty payload without a fetch.
+initializes an empty payload without a fetch. A complete host/key with an
+invalid environment must also avoid fetching and keep both an id-targeted flag
+and a remote default-on flag false.
 
 - [x] **Step 2: Run the browser test and verify the red state**
 
@@ -442,19 +476,25 @@ Expected: failure because the browser client does not exist.
 export type BrowserFeatureFlagConfig = {
   apiHost?: string
   clientKey?: string
+  environment: string | undefined
   timeoutMs?: number
 }
 
 export function createBrowserFeatureFlagClient<
   Features extends Record<string, unknown>,
 >(config: BrowserFeatureFlagConfig) {
-  const configured = Boolean(config.apiHost && config.clientKey)
-  const growthbook = configured
-    ? new GrowthBook<Features>({
-        apiHost: config.apiHost!,
-        clientKey: config.clientKey!,
-      })
-    : new GrowthBook<Features>()
+  const environment = normalizeFeatureFlagEnvironment(config.environment)
+  const configured = Boolean(
+    environment !== 'unknown' && config.apiHost && config.clientKey
+  )
+  const growthbook = new GrowthBook<Features>(
+    configured
+      ? {
+          apiHost: config.apiHost,
+          clientKey: config.clientKey,
+        }
+      : undefined
+  )
 
   const initialize = async (): Promise<boolean> => {
     if (!configured) {
@@ -466,7 +506,7 @@ export function createBrowserFeatureFlagClient<
     return result.success
   }
 
-  return { growthbook, initialize }
+  return { environment, growthbook, initialize }
 }
 ```
 
@@ -486,13 +526,13 @@ export function FeatureFlagProvider({
   config: BrowserFeatureFlagConfig
   children: ReactNode
 }) {
-  const [{ growthbook, initialize }] = useState(() =>
+  const [{ environment, growthbook, initialize }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
 
   useEffect(() => {
-    growthbook.setAttributes(attributes)
-  }, [attributes, growthbook])
+    growthbook.setAttributes({ ...attributes, environment })
+  }, [attributes, environment, growthbook])
 
   useEffect(() => {
     void initialize()
@@ -536,7 +576,7 @@ git commit -m "feat(feature-flags): add React adapter"
 **Files:**
 
 - Create: `docs/feature-flags.md`
-- Create: `docs/adr/0005-use-growthbook-for-feature-flags.md`
+- Create: `docs/adr/0008-use-growthbook-for-feature-flags.md`
 - Create: `docs/log/2026-08-06-growthbook-foundation.md`
 - Modify: `docs/adr/README.md`
 - Modify: `docs/index.md`
@@ -561,12 +601,13 @@ The wiki must include these exact adoption examples:
 const flags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+  environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
 })
 await flags.initialize()
 flags.isEnabled(featureKey, requestAttributes)
 ```
 
-ADR 0005 records direct browser evaluation as the default for UI-only flags,
+ADR 0008 records direct browser evaluation as the default for UI-only flags,
 process-level `GrowthBookClient` plus request attributes for Node, incremental
 migration from preview booleans, and remote evaluation as the privacy upgrade.
 
@@ -612,8 +653,8 @@ git commit -m "docs: document GrowthBook feature flags"
 
 - Adds strict key `'learning-analytics'` with boolean fallback `false`.
 - `ManageFeatureFlagProvider` accepts the non-null result of
-  `UserProfileDocument` and supplies `id`, `actorType: 'user'`, `role`, and
-  normalized environment.
+  `UserProfileDocument`, supplies `id`, `actorType: 'user'`, and `role` as actor
+  attributes, and supplies the deployment environment as client configuration.
 
 - [ ] **Step 1: Create the top branch with native stack metadata**
 
@@ -671,6 +712,7 @@ Run `pnpm install` to synchronize the lockfile.
 const config = {
   apiHost: process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
   clientKey: process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,
+  environment: process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV,
 }
 
 function ManageFeatureFlagProvider({ user, children }: Props) {
@@ -679,9 +721,6 @@ function ManageFeatureFlagProvider({ user, children }: Props) {
       id: user.id,
       actorType: 'user',
       role: user.role,
-      environment: normalizeFeatureFlagEnvironment(
-        process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV
-      ),
     }),
     [user.id, user.role]
   )
@@ -965,5 +1004,8 @@ deployment.
       build, root production build, Syncpack, formatting, and Opengrep (0
       findings) passed. The wiki validator named by the maintenance skill was
       not installed locally.
+- [x] 2026-08-17: invalid non-empty deployment environments disable both
+      adapters before fetching; id-targeted and remote default-on regression
+      cases now fail closed.
 - [ ] Layer 2 learning-analytics example implemented and browser-verified.
 - [ ] Two draft PRs published and linked as a native stack.

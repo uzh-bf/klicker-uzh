@@ -4,10 +4,12 @@ import type {
   FeatureFlagAttributes,
   KlickerFeatureFlags,
 } from './contracts.js'
+import { normalizeFeatureFlagEnvironment } from './contracts.js'
 
 export type NodeFeatureFlagClientConfig = {
   apiHost?: string
   clientKey?: string
+  environment: string | undefined
   timeoutMs?: number
 }
 
@@ -16,10 +18,16 @@ export class NodeFeatureFlagClient<
 > {
   private readonly client: GrowthBookClient<Features>
   private readonly configured: boolean
+  private readonly environment: ReturnType<
+    typeof normalizeFeatureFlagEnvironment
+  >
   private readonly timeoutMs: number
 
   constructor(config: NodeFeatureFlagClientConfig) {
-    this.configured = Boolean(config.apiHost && config.clientKey)
+    this.environment = normalizeFeatureFlagEnvironment(config.environment)
+    this.configured = Boolean(
+      this.environment !== 'unknown' && config.apiHost && config.clientKey
+    )
     this.timeoutMs = config.timeoutMs ?? 2000
     this.client = new GrowthBookClient<Features>(
       this.configured
@@ -48,7 +56,9 @@ export class NodeFeatureFlagClient<
     key: BooleanFeatureFlagKey<Features>,
     attributes: FeatureFlagAttributes
   ): boolean {
-    return this.client.isOn(key, { attributes })
+    return this.client.isOn(key, {
+      attributes: { ...attributes, environment: this.environment },
+    })
   }
 
   async refresh(): Promise<void> {
