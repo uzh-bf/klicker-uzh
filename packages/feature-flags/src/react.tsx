@@ -26,14 +26,14 @@ export function FeatureFlagProvider({
   config,
   children,
 }: FeatureFlagProviderProps) {
-  const [{ growthbook, initialize }] = useState(() =>
+  const [{ environment, growthbook, initialize }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
   const destroyTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    void growthbook.setAttributes(attributes)
-  }, [attributes, growthbook])
+    void growthbook.setAttributes({ ...attributes, environment })
+  }, [attributes, environment, growthbook])
 
   useEffect(() => {
     if (destroyTimeout.current !== undefined) {
