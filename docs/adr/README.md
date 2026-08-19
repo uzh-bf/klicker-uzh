@@ -13,4 +13,4 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
-- [0005](./0005-use-growthbook-for-feature-flags.md) — Use GrowthBook for shared browser and backend feature flags
+- [0008](./0008-use-growthbook-for-feature-flags.md) — Use GrowthBook for shared browser and backend feature flags
