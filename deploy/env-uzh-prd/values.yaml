@@ -27,7 +27,7 @@ hatchet:
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: v3.4.0-alpha.69
       resources:
         requests:
@@ -66,7 +66,7 @@ hatchet:
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: v3.4.0-alpha.69
       resources:
         requests:
@@ -105,7 +105,7 @@ hatchet:
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: v3.4.0-alpha.69
       resources:
         requests:
@@ -175,7 +175,7 @@ auth:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   ingress:
@@ -328,7 +328,7 @@ chat:
             topologyKey: kubernetes.io/hostname
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   ingress:
@@ -383,7 +383,7 @@ frontendPWA:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   ingress:
@@ -436,7 +436,7 @@ frontendManage:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   ingress:
@@ -474,7 +474,7 @@ frontendControl:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   autoscaling:
@@ -543,7 +543,7 @@ backendGraphql:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   appManageSubdomain: manage
@@ -596,7 +596,7 @@ olatApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   autoscaling:
@@ -669,7 +669,7 @@ lti:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.69
 
   ingress:
@@ -703,7 +703,7 @@ responseApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
     tag: v3.4.0-alpha.69
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   autoscaling:
     enabled: false
@@ -796,7 +796,7 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       tag: v3.4.0-alpha.69
 
     ingress:
@@ -873,7 +873,7 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       tag: v3.4.0-alpha.69
 
     appManageSubdomain: manage
@@ -952,7 +952,7 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       tag: v3.4.0-alpha.69
 
     ingress:
@@ -998,3 +998,4 @@ migrator:
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    pullPolicy: IfNotPresent
