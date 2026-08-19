@@ -102,7 +102,8 @@ function PracticeQuiz({
     hasSemanticEvaluation &&
     !previewOnly &&
     (participantLoading ||
-      (registeredParticipant && capabilityLoading && !capabilityError))
+      (registeredParticipant &&
+        (capabilityLoading || (!capability && !capabilityError))))
 
   const requestQuizStart = (targetIx: number) => {
     if (semanticGateLoading) return
