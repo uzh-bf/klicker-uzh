@@ -93,6 +93,32 @@ worktree is the stack worktree, rooted at
 |     3 | Lecturer editor and aggregate analytics           | Manage check/build and browser authoring evidence        |
 |     4 | Participant retry/consent/solution flow           | PWA check/build, focused Playwright, browser screenshots |
 
+## Approved participant rubric-feedback refinement
+
+The revealed solution state will use a KlickerUZH-native interpretation of the
+provided rubric-feedback reference. The existing generic result remains the only
+feedback shown before solution authorization; rubric names, achieved levels,
+rationales, and the reference solution stay server-gated behind a correct result or
+the existing **Show solution** action.
+
+Once authorized, the solution area contains three progressively detailed layers:
+
+1. a restrained rubric header with the number of fully met criteria and a segmented
+   progress indicator derived from each assessment's normalized score;
+2. an always-visible overview of every assessed rubric, its lecturer/evaluator-defined
+   achieved-level label, and a status icon that distinguishes fully met, partially met,
+   and open criteria without replacing the configured label; and
+3. accessible native disclosure rows for every criterion, with the first row expanded
+   initially and the remaining rows collapsed. Each row shows the rubric name,
+   achieved level, normalized score, and evaluator rationale.
+
+The presentation uses existing KlickerUZH/UZH colors, spacing, typography, icons, and
+semantic HTML. It deliberately excludes the reference application's conversational
+follow-up chips and free-form coaching input because those require a separate LLM
+interaction contract and consent/usage model. The Playwright fixture will contain
+multiple synthetic rubrics with mixed deterministic results so browser evidence proves
+the complete overview and detailed-card behavior at desktop and mobile widths.
+
 ## Canonical public contracts
 
 Create these shared shapes in `packages/types/src/freeTextEvaluation.ts`. Names in
