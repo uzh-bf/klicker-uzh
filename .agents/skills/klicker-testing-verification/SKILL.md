@@ -20,6 +20,12 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
 
+For the manage-list `All` page size, the focused browser evidence must cover
+the finite-to-All-to-50 state transition and explicit selection. A 200-record
+fixture is a bounded acceptance probe: verify the rendered count, batch-modal
+usability, and returned mutation count; do not infer production performance or
+atomicity from it.
+
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
 For OpenAI-compatible chat stream changes, run

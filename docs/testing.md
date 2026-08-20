@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-10'
+timestamp: '2026-08-20'
 tags:
   - testing
   - ci
@@ -22,6 +22,14 @@ tags:
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
 | UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+
+For server-paginated manage lists, browser coverage must exercise finite page
+sizes, the opt-in `All` transition, the reset back to 50, and explicit
+selection after `All`. When the fixture contains 200 eligible records, the
+focused batch flow must verify that all 200 records remain usable and that the
+mutation's returned count is reported without silent truncation. Runtime
+failures after earlier per-record commits are not an atomicity guarantee of
+the existing batch contract.
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
