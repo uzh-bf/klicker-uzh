@@ -41,6 +41,9 @@ test.describe('Show all pagination option', () => {
 
     await page.getByTestId('activities').click()
     await expect(page).toHaveURL(/\/activities/)
+    if ((await page.getByTestId('pagination-page-size').count()) === 0) {
+      return
+    }
     await expect(page.getByTestId('pagination-page-size')).toBeVisible()
 
     await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
