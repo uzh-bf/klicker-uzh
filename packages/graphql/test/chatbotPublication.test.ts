@@ -178,6 +178,9 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
   describe('approveChatbotPublication', () => {
     it('publishes a PENDING bot and stamps publishedAt', async () => {
+      // A real PENDING bot got there via a request, which required the owner's
+      // capability; keep it enabled so the approval-time re-check passes.
+      await enablePublishing()
       const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
         reviewComment: null,
       })
@@ -186,6 +189,24 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
       expect(result?.status).toBe('PUBLISHED')
       expect(result?.publishedAt).toBeInstanceOf(Date)
+    })
+
+    it('refuses to publish when the owner lost publishing capability while pending', async () => {
+      // The bot reached PENDING via a request that required the capability, but
+      // ops revoked aiChatbotPublishingEnabled before the admin acted. The
+      // account-level gate must still hold at the moment the bot goes live, so
+      // enablePublishing() is deliberately NOT called here.
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        approveChatbotPublication({ id: bot.id }, adminCtx)
+      ).rejects.toThrow('no longer approved')
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: { status: true },
+      })
+      expect(row.status).toBe('PENDING_APPROVAL')
     })
 
     it('rejects approving a bot that is not pending (DRAFT)', async () => {

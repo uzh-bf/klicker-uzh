@@ -711,13 +711,28 @@ export async function approveChatbotPublication(
 
   const chatbot = await ctx.prisma.chatbot.findUnique({
     where: { id: args.id },
-    select: { id: true, status: true, publishedAt: true },
+    select: {
+      id: true,
+      status: true,
+      publishedAt: true,
+      // Re-check the owner's account-level publishing capability at approval
+      // time (S3 review): the manual queue can sit for days, and ops may revoke
+      // aiChatbotPublishingEnabled while a request is pending. Checking only at
+      // request time would let an unaware admin publish a bot under an account
+      // that no longer holds the capability. See ADR 0020 (two-tier approval).
+      owner: { select: { aiChatbotPublishingEnabled: true } },
+    },
   })
   if (!chatbot) {
     return null
   }
   if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
     throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
+  }
+  if (!chatbot.owner.aiChatbotPublishingEnabled) {
+    throw new GraphQLError(
+      'Account is no longer approved for chatbot publishing'
+    )
   }
 
   const updated = await ctx.prisma.chatbot.update({
