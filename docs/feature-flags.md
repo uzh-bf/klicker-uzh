@@ -96,7 +96,9 @@ is known, and memoize the attribute object:
 per provider mount, applies new attributes without recreating it, and dedupes
 initialization under React Strict Mode. It loads the feature payload once; a
 flag change is picked up on the next provider mount or page reload. Missing
-configuration initializes an empty payload without a network request.
+configuration initializes an empty payload without a network request. The
+browser adapter disables GrowthBook auto-experiments, visual changes, JavaScript
+injection, and URL redirects; this foundation evaluates feature flags only.
 
 ## Node.js adoption
 
@@ -123,7 +125,9 @@ unknown fields before calling GrowthBook, so direct identifiers cannot cross the
 boundary even when a JavaScript caller supplies a wider object. Never mutate
 global attributes with the current user. Call `getStatus()` from a readiness
 probe and `refresh()` from an intentional lifecycle or refresh hook if the
-service needs new definitions without restarting.
+service needs new definitions without restarting. A refresh marks the client
+healthy only after GrowthBook reports a successful payload update and retains the
+previous payload when a refresh fails.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
