@@ -21,7 +21,10 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
 import ActivityOverviewFilters from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
-import Pagination from '../components/common/Pagination'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '../components/common/Pagination'
 import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
@@ -40,13 +43,16 @@ function Activities() {
   const [searchString, setSearchString] = useState('')
 
   // initialize page size from local storage (if available)
-  const [pageSize, setPageSize] = useState(() => {
+  const [pageSize, setPageSize] = useState<PaginationPageSize>(() => {
     // only try to access localStorage when on the client
     if (typeof window !== 'undefined') {
       try {
         const storedPageSize = localStorage.getItem('activity-page-size')
         if (storedPageSize) {
-          return JSON.parse(storedPageSize)
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (isPaginationPageSize(parsedPageSize)) {
+            return parsedPageSize
+          }
         }
       } catch (error) {
         console.error(
@@ -125,8 +131,8 @@ function Activities() {
       isPinProtected: filters.mode.pinProtected ? true : undefined,
       sortByType: sort.by,
       sortByAsc: sort.asc,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
+      numEntries: pageSize === 'all' ? undefined : pageSize,
+      offset: pageSize === 'all' ? undefined : (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
@@ -144,7 +150,10 @@ function Activities() {
   useEffect(() => {
     if (loadingActivities) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfActivities / pageSize))
+    const maxPage =
+      pageSize === 'all'
+        ? 1
+        : Math.max(1, Math.ceil(numOfActivities / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
@@ -222,7 +231,8 @@ function Activities() {
     Object.values(filters.mode).some((value) => value)
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
+  const totalPages =
+    pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfActivities / pageSize))
 
   return (
     <Layout
@@ -306,6 +316,7 @@ function Activities() {
                       numOfObjects={numOfActivities}
                       pageSize={pageSize}
                       setPageSize={setPageSize}
+                      showAll
                       className="mb-3"
                     />
                   )}

@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-07'
+timestamp: '2026-08-20'
 tags:
   - backend
   - graphql
@@ -44,6 +44,15 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
+
+The `userElements` and `userActivities` list fields accept optional
+`numEntries` and `offset` arguments. Finite page sizes pass both values;
+omitting both returns the current filtered result without a pagination limit.
+This unbounded behavior is intentional for the manage-list `All` option and
+does not change endpoint-specific caps such as verification records. The
+Elements operation, schema field, service signature, and generated artifacts
+must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
+`packages/graphql/src/services/elements.ts:getUserElements`).
 
 ## Subscriptions
 
