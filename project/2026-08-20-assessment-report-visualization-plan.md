@@ -305,14 +305,17 @@ this plan's authority.
   pass, fresh task worktree creation, S1 comparison semantics tests and focused
   GraphQL verification (8 tests passing).
 - Remaining: valid-state browser/PDF proof is blocked because the runtime
-  lacks the pinned Playwright Chromium executable; the repository-wide check
-  suite is blocked by the analytics pandas build and unrelated Redis-backed
-  failures in the broad GraphQL command.
+  still lacks the pinned Playwright Chromium executable after the dependency
+  installation attempt; the repository-wide check suite is blocked by the
+  analytics pandas build and unrelated Redis-backed failures in the broad
+  GraphQL command.
 - Latest evidence: task branch is rebased onto refreshed `origin/v3`; primary
-  checkout remains dirty but untouched. The focused Playwright run seeded its
-  fixture successfully (`CLEANUP` passed) but both browser tests stopped before
-  launch with the missing Chromium executable. The public verification route
-  is reachable in agent-browser and its invalid-token state renders correctly.
+  checkout remains dirty but untouched. The focused GraphQL file passes all 8
+  tests and the frontend-PWA typecheck passes. The focused Playwright run
+  seeded its fixture successfully (`CLEANUP` passed) but both browser tests
+  stopped before launch with the missing Chromium executable. The public
+  verification route is reachable in agent-browser and its invalid-token state
+  renders correctly; a synthetic screenshot was saved outside the repository.
 - Slice review: native reviewer routing failed twice before review; the final
   native review completed after explicit paths and identified three findings,
   all addressed in `9a201fa6a` except the browser/PDF evidence gap.
