@@ -7,14 +7,13 @@ import {
   getChatModelRegistry,
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
-import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -686,8 +685,8 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch chatbot with MCP configurations and system prompt
-  let systemPrompt = ''
+  // fetch the chatbot with its enabled MCP configurations (its stored
+  // systemPrompts feed compileSystemPrompt once the tool set is known below)
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
 
@@ -706,22 +705,6 @@ export async function POST(
         },
       },
     })
-
-    if (chatbot) {
-      // Extract system prompt
-      const systemPrompts = chatbot.systemPrompts as Record<
-        string,
-        Record<string, string>
-      >
-      if (systemPrompts && systemPrompts[selectedMode]) {
-        systemPrompt =
-          systemPrompts[selectedMode].prompt ||
-          DEFAULT_PROMPT[selectedMode]?.prompt ||
-          ''
-      } else {
-        systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
-      }
-    }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
       requestId,
@@ -799,15 +782,16 @@ export async function POST(
 
   const toolNames = Object.keys(mcpTools || {})
 
-  // Append the citation contract only when a doc_query-style RAG tool is
-  // actually available; mutating `systemPrompt` here (rather than deriving a
-  // separate `instructions` variable) keeps the `systemPromptLength` /
-  // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model. The language-style contract applies unconditionally: stored
-  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
-  // orthography must be enforced here, not in the default prompt text.
-  systemPrompt = withLanguageStyleContract(
-    withCitationContract(systemPrompt, toolNames)
+  // Compile the full system prompt now that `toolNames` is known: the resolved
+  // base prompt plus the layered runtime contracts (conditional citation, then
+  // unconditional Swiss High German language style — see compileSystemPrompt).
+  // Assigning the finished value here (rather than a separate `instructions`
+  // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
+  // below truthful to what is actually sent to the model.
+  const systemPrompt = compileSystemPrompt(
+    chatbot.systemPrompts,
+    selectedMode,
+    toolNames
   )
 
   // create a new thread if none exists

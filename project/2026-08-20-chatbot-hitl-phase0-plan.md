@@ -211,7 +211,11 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 ## Progress
 
-- Status: S2 committed. Worktree from `origin/v3`, devcontainer up.
+- Status: S1–S5 code-complete. S4 slice-reviewer PASS + real-route browser
+  smoke DONE (F7 confirmed at HTTP layer). S5 (compile-seam extraction) done +
+  verified, pending its simplifier + slice-reviewer. Worktree from `origin/v3`
+  (4 behind, benign codegen-only rebase — see Base drift). Remaining after S5
+  gates: final-reviewer on integrated outcome, then draft PR against v3.
 - S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
   backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
 - S2 (create/update mutations + owner-type exposure): DONE.
@@ -247,7 +251,66 @@ No separate tasks; nothing crosses a boundary warranting one.
   (draft PR #5453). It must merge before/with the phase-0 PR or the ADR
   references (commit messages + prisma schema comments) dangle — record in the
   phase-0 PR description.
-- Remaining: S4–S5.
+- Base drift (checked 2026-08-20, session resume): branch is 4 behind / 8 ahead
+  of `origin/v3` (the resume hook's "62 behind origin/dev" is a false alarm —
+  `dev` is an unrelated long-lived line, not this branch's base). The 4 new v3
+  commits are GrowthBook feature-flags (#5444) + manage pagination (#5451) +
+  two deploy promotes. They touch NONE of my hand-written source (apiGuards,
+  chatbots.ts, chat.prisma, the migration, resolvers all clean). The only real
+  overlap is 3 generated GraphQL codegen artifacts — `packages/graphql/src/
+  ops.ts`, `ops.schema.json`, `public/schema.graphql` — which both branches
+  regenerated. Rebase resolution = accept both, re-run
+  `pnpm --filter @klicker-uzh/graphql generate`, not a hand-merge. Rebase at
+  PR-open time (one rebase after S5), not mid-slice. Note in the PR body.
+- S4 (participant access gate): DONE (`c3ca4cd9b`). Single guard
+  `getChatbotOr404` always selects `status` and 404s any non-PUBLISHED bot
+  (existence never confirmed); guard-only `status` stripped from the returned
+  row unless the caller selected it, so the one wholesale-serializing route
+  (`GET /api/chatbots/[id]` -> `NextResponse.json`) never leaks owner-only
+  lifecycle metadata (F7). `layout.tsx` mirrors the check at page render;
+  `getParticipantCourseChatbots` filters the course overview to PUBLISHED.
+  Honored S3 carry-forwards: gate on `status`, not `publishedAt` (no TOCTOU on
+  the gate); no `proposedCredits > 0` assumption added. Tests: chat gate unit
+  (7 — PUBLISHED renders + status stripped; each non-PUBLISHED state + missing +
+  malformed 404) + graphql `courseChatbots` DRAFT-hidden participant test; chat
+  `tsc` clean; full graphql suite 560 pass (1 unrelated pre-existing
+  `assessmentRestrictions` flake, fails in isolation, no assessment code touched
+  by phase-0). Reviews DONE: slice-reviewer (security) PASS — all 6 properties
+  CONFIRMED (no-bypass audit of all 9 `[chatbotId]` routes; `chat/route.ts:695`
+  refetch is post-auth + field-by-field, no leak; F7 strip sound, no
+  shared-object/cache risk; 404-not-403 ordering). Sub-threshold, no action: the
+  "caller selects status" strip branch is untested (no caller selects it — YAGNI).
+  Data-hygiene gate false-positive on the documented local test password (a
+  fixture value, not a real credential) bypassed once with user approval.
+- S4 browser smoke: DONE. Real-route HTTP verification against the worktree
+  stack — `GET /api/chatbots/8f9c2e1d-…` (the wholesale-serializing route,
+  auth-exempt per middleware) returned HTTP 200 for the seeded PUBLISHED Benibot
+  with the full participant projection and **zero `status` tokens** in the body
+  (F7 strip confirmed at the live wire layer, not just in unit mocks). The
+  negative path (missing/malformed id, every non-PUBLISHED state) is covered by
+  the 7 gate unit tests + the graphql DRAFT-hidden integration test; the
+  host→Traefik loop for the linked-worktree hostname stayed 404 the whole run
+  (route never re-registered after the recompile restart — known environmental
+  flake, not the app), so the app-level negative case is unit/integration
+  evidence, not live. Authenticated participant chat page covered by Y-chat e2e
+  in CI on the draft-PR push.
+- S5 (compile seam): DONE (this commit). Extracted `compileSystemPrompt` into
+  `apps/chat/src/lib/server/systemPromptCompiler.ts`, capturing both original
+  seam blocks — base resolution from stored `systemPrompts`/`DEFAULT_PROMPT`
+  plus the layered `withLanguageStyleContract(withCitationContract(...))`.
+  `chat/route.ts` now calls it once after `toolNames` is known, dropping the
+  mid-function `let systemPrompt` mutation (the two blocks were separated only
+  because `toolNames` is resolved late; `systemPrompt` is never read between
+  them, verified). Behaviour-preserving — every quirk kept: empty stored prompt
+  falls back to the mode default then '', unknown mode yields '', citation
+  contract conditional on a doc_query tool, language contract unconditional.
+  6 characterization tests (D4 matrix) + the existing contract/gate suites green
+  (26/26 across 4 files); chat `tsc` clean; `biome format` clean. Diff is
+  minimal (13+/29-, imports swapped in place) after reverting an accidental
+  whole-file `organizeImports` churn from `biome check --write` (patch
+  discipline; CI gate is `biome format`, which does not reorder imports).
+  Pending: per-slice simplifier + slice-reviewer (architecture risk).
+- Remaining: final-reviewer on integrated outcome, then draft PR against v3.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
