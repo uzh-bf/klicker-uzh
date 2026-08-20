@@ -43,6 +43,34 @@ export type FeatureFlagAttributes = Record<
   role?: string
 }
 
+export type FeatureFlagEvaluationAttributes = FeatureFlagAttributes & {
+  environment: FeatureFlagEnvironment
+}
+
+export function sanitizeFeatureFlagAttributes(
+  attributes: unknown,
+  environment: FeatureFlagEnvironment
+): FeatureFlagEvaluationAttributes {
+  const source =
+    typeof attributes === 'object' && attributes !== null
+      ? (attributes as Record<string, unknown>)
+      : {}
+  const actorType =
+    source.actorType === 'user' ||
+    source.actorType === 'participant' ||
+    source.actorType === 'anonymous'
+      ? source.actorType
+      : 'anonymous'
+  const sanitized: FeatureFlagEvaluationAttributes = {
+    actorType,
+    environment,
+  }
+
+  if (typeof source.id === 'string') sanitized.id = source.id
+  if (typeof source.role === 'string') sanitized.role = source.role
+  return sanitized
+}
+
 // An absent value is the ordinary local case and stays `development`. A value
 // that is present but unrecognized is a deployment misconfiguration. Both
 // adapters treat `unknown` as unconfigured and initialize an empty payload, so
