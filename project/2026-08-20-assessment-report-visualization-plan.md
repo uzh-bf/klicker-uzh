@@ -299,22 +299,25 @@ this plan's authority.
 
 ## Progress
 
-- Status: implementation and documentation complete locally; runtime stopped
-  pending final delivery decision.
+- Status: implementation and documentation complete locally; final delivery
+  remains blocked on browser binaries and full-suite infrastructure checks.
 - Completed: repository freshness check, current code/PDF review, Sol planner
   pass, fresh task worktree creation, S1 comparison semantics tests and focused
   GraphQL verification (8 tests passing).
-- Remaining: browser/PDF proof is blocked by runtime route readiness; the
-  repository-wide check suite is blocked by the analytics pandas build and a
-  GraphQL check failure requiring separate diagnosis.
-- Latest evidence: task branch is based on `origin/v3` `9f38b4e9a`; primary
-  checkout remains dirty but untouched. Focused GraphQL tests (8) and PWA
-  typecheck pass. Browser route returned `404 page not found` because runtime
-  HTTP readiness failed on certificate verification.
+- Remaining: valid-state browser/PDF proof is blocked because the runtime
+  lacks the pinned Playwright Chromium executable; the repository-wide check
+  suite is blocked by the analytics pandas build and unrelated Redis-backed
+  failures in the broad GraphQL command.
+- Latest evidence: task branch is rebased onto refreshed `origin/v3`; primary
+  checkout remains dirty but untouched. The focused Playwright run seeded its
+  fixture successfully (`CLEANUP` passed) but both browser tests stopped before
+  launch with the missing Chromium executable. The public verification route
+  is reachable in agent-browser and its invalid-token state renders correctly.
 - Slice review: native reviewer routing failed twice before review; the final
   native review completed after explicit paths and identified three findings,
   all addressed in `9a201fa6a` except the browser/PDF evidence gap.
-- Delivery: required layer is a local branch with four scoped commits; push,
+- Delivery: required layer is a local branch with seven scoped commits; push,
   PR, merge, deployment, and production verification remain withheld.
-- Next action: complete browser proof and repository-native checks, then run
-  the integrated final review.
+- Next action: install/restore the runtime's pinned Chromium binary, rerun the
+  focused browser/PDF tests and synthetic locale/viewport screenshots, then
+  stop the exact runtime and run the integrated final review.
