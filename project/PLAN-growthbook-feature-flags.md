@@ -3,8 +3,9 @@
 - **Date:** 2026-08-06
 - **Repository:** `uzh-bf/klicker-uzh`
 - **Stack:**
-  1. `feat/growthbook-foundation` → `v3`
-  2. `feat/growthbook-learning-analytics` → `feat/growthbook-foundation`
+  1. `feat/growthbook-foundation-clean` → `v3`
+  2. `feat/growthbook-learning-analytics-clean` →
+     `feat/growthbook-foundation-clean`
 - **Goal:** establish one typed GrowthBook integration that future Klicker
   frontends and Node.js services can adopt, then prove it by replacing the
   lecturer learning-analytics preview gate.
@@ -140,7 +141,7 @@ empty feature payload and deterministic fallbacks.
 
 ## Stack layer 1 — GrowthBook foundation
 
-**Branch:** `feat/growthbook-foundation`
+**Branch:** `feat/growthbook-foundation-clean`
 
 ### Scope
 
@@ -167,7 +168,7 @@ empty feature payload and deterministic fallbacks.
 
 ## Stack layer 2 — Learning analytics example
 
-**Branch:** `feat/growthbook-learning-analytics`
+**Branch:** `feat/growthbook-learning-analytics-clean`
 
 ### Scope
 
@@ -300,8 +301,8 @@ draft PR.
 - 2026-08-06: repository context and existing preview gates inventoried.
 - 2026-08-06: user approved a two-layer native GitHub stack and the reusable
   foundation-first architecture.
-- 2026-08-06: native stack initialized with `feat/growthbook-foundation` based
-  on `v3`.
+- 2026-08-20: clean replacement stack initialized with
+  `feat/growthbook-foundation-clean` based on `v3`.
 - 2026-08-06: foundation implemented with GrowthBook SDK `1.6.5`, intentionally
   pinned for synchronized core and React packages, and 11 passing contract,
   browser, targeting, and request-isolation tests.

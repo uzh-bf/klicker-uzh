@@ -19,9 +19,9 @@ and React SDK 1.6.5, Vitest 3, Playwright, pnpm 11, Turborepo, native `gh stack`
 
 ## Global Constraints
 
-- Stack bottom: `feat/growthbook-foundation` → `v3`.
-- Stack top: `feat/growthbook-learning-analytics` →
-  `feat/growthbook-foundation`.
+- Stack bottom: `feat/growthbook-foundation-clean` → `v3`.
+- Stack top: `feat/growthbook-learning-analytics-clean` →
+  `feat/growthbook-foundation-clean`.
 - Pin `@growthbook/growthbook` and `@growthbook/growthbook-react` to `1.6.5`.
 - Never expose a GrowthBook management/admin key to a browser.
 - Use Klicker `User.id`/`Participant.id`, never email, for per-user targeting.
@@ -724,10 +724,10 @@ git commit -m "docs: document GrowthBook feature flags"
 
 - [ ] **Step 1: Create the top branch with native stack metadata**
 
-Run: `gh stack add feat/growthbook-learning-analytics`
+Run: `gh stack add feat/growthbook-learning-analytics-clean`
 
 Expected: stack view is
-`v3 ← feat/growthbook-foundation ← feat/growthbook-learning-analytics`.
+`v3 ← feat/growthbook-foundation-clean ← feat/growthbook-learning-analytics-clean`.
 
 - [ ] **Step 2: Change the contract test first**
 
@@ -1027,8 +1027,8 @@ git commit -m "docs: document analytics GrowthBook rollout"
 - [ ] **Step 1: Audit each layer independently**
 
 ```bash
-git diff --check v3...feat/growthbook-foundation
-git diff --check feat/growthbook-foundation...feat/growthbook-learning-analytics
+git diff --check v3...feat/growthbook-foundation-clean
+git diff --check feat/growthbook-foundation-clean...feat/growthbook-learning-analytics-clean
 gh stack view
 ```
 
@@ -1046,7 +1046,7 @@ rationale. Do not mark either PR ready or merge it.
 Run: `gh stack submit --auto`
 
 Expected: two draft PRs, bottom targeting `v3`, top targeting
-`feat/growthbook-foundation`, linked as one GitHub stack.
+`feat/growthbook-foundation-clean`, linked as one GitHub stack.
 
 - [ ] **Step 4: Replace generated PR text with complete branch-aware bodies**
 
@@ -1063,8 +1063,8 @@ deployment.
 
 ## Progress
 
-- [x] 2026-08-06: approved design committed as `0046b8118` on
-  `feat/growthbook-foundation`.
+- [x] 2026-08-20: approved design from `0046b8118` incorporated into the clean
+      replacement foundation.
 - [x] 2026-08-06: native stack support verified with `gh stack`.
 - [x] Layer 1 foundation implemented and verified: 11 tests, package check and
       build, root production build, Syncpack, formatting, and Opengrep (0
