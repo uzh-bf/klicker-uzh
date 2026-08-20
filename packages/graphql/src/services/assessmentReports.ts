@@ -117,6 +117,27 @@ function validateAssessmentReportSnapshot(
   }
 }
 
+const assessmentReportCourseSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    displayName: z.string().min(1),
+  })
+  .strict()
+
+const assessmentReportResultsSchema = z
+  .object({
+    basePoints: nonnegativeNumberSchema,
+    availableBasePoints: nonnegativeNumberSchema,
+    correctnessPoints: nonnegativeNumberSchema,
+    availableCorrectnessPoints: nonnegativeNumberSchema,
+    bonusPoints: nonnegativeNumberSchema,
+    availableBonusPoints: nonnegativeNumberSchema,
+    totalPoints: nonnegativeNumberSchema,
+    availableTotalPoints: nonnegativeNumberSchema,
+  })
+  .strict()
+
 export const assessmentReportSnapshotV1Schema = z
   .object({
     version: z.literal(1),
@@ -126,25 +147,8 @@ export const assessmentReportSnapshotV1Schema = z
         source: z.literal('COURSE_INVITATION'),
       })
       .strict(),
-    course: z
-      .object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        displayName: z.string().min(1),
-      })
-      .strict(),
-    results: z
-      .object({
-        basePoints: nonnegativeNumberSchema,
-        availableBasePoints: nonnegativeNumberSchema,
-        correctnessPoints: nonnegativeNumberSchema,
-        availableCorrectnessPoints: nonnegativeNumberSchema,
-        bonusPoints: nonnegativeNumberSchema,
-        availableBonusPoints: nonnegativeNumberSchema,
-        totalPoints: nonnegativeNumberSchema,
-        availableTotalPoints: nonnegativeNumberSchema,
-      })
-      .strict(),
+    course: assessmentReportCourseSchema,
+    results: assessmentReportResultsSchema,
     comparison: assessmentReportComparisonSchema,
   })
   .strict()
@@ -162,25 +166,8 @@ export const assessmentReportSnapshotV2Schema = z
         source: z.literal('SWITCH_EDUID'),
       })
       .strict(),
-    course: z
-      .object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        displayName: z.string().min(1),
-      })
-      .strict(),
-    results: z
-      .object({
-        basePoints: nonnegativeNumberSchema,
-        availableBasePoints: nonnegativeNumberSchema,
-        correctnessPoints: nonnegativeNumberSchema,
-        availableCorrectnessPoints: nonnegativeNumberSchema,
-        bonusPoints: nonnegativeNumberSchema,
-        availableBonusPoints: nonnegativeNumberSchema,
-        totalPoints: nonnegativeNumberSchema,
-        availableTotalPoints: nonnegativeNumberSchema,
-      })
-      .strict(),
+    course: assessmentReportCourseSchema,
+    results: assessmentReportResultsSchema,
     comparison: assessmentReportComparisonSchema,
   })
   .strict()
