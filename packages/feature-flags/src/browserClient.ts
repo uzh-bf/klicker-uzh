@@ -1,5 +1,8 @@
 import { GrowthBook } from '@growthbook/growthbook'
-import { normalizeFeatureFlagEnvironment } from './contracts.js'
+import {
+  normalizeFeatureFlagEnvironment,
+  sanitizeFeatureFlagAttributes,
+} from './contracts.js'
 
 export type BrowserFeatureFlagConfig = {
   apiHost?: string
@@ -46,5 +49,10 @@ export function createBrowserFeatureFlagClient<
     return initializePromise
   }
 
-  return { environment, growthbook, initialize }
+  const setAttributes = (attributes: unknown) =>
+    growthbook.setAttributes(
+      sanitizeFeatureFlagAttributes(attributes, environment)
+    )
+
+  return { environment, growthbook, initialize, setAttributes }
 }
