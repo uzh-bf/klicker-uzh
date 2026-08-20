@@ -561,6 +561,7 @@ backendGraphql:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+      haproxy.org/timeout-server: 12m
     hosts:
       - host: backend-sls.klicker.uzh.ch
         paths:

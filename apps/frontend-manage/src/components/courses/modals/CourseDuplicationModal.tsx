@@ -4,7 +4,10 @@ import {
   LocaleType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
+  Button,
   FormikNumberField,
   FormikTextField,
   FormLabel,
@@ -581,6 +584,8 @@ function CourseDuplicationModal({
 }: Readonly<CourseDuplicationModalProps>) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseDuplicationFormData>>(null)
+  const submitInFlightRef = useRef(false)
+  const [duplicationInProgress, setDuplicationInProgress] = useState(false)
 
   // fetch user (from cache) to get email for notification field initialization
   const { data: dataUser, loading: loadingUser } = useQuery(
@@ -662,15 +667,24 @@ function CourseDuplicationModal({
           copyMicroLearnings: true,
           copyGroupActivities: initialValues?.isGroupCreationEnabled ?? true,
         }}
-        onSubmit={async (values, { setSubmitting }) =>
-          onSubmit(values, setSubmitting, (errorType) =>
-            toast({
-              type: 'error',
-              message: getCourseDuplicationErrorMessage(t, errorType),
-              options: { duration: 6000 },
-            })
-          )
-        }
+        onSubmit={async (values, { setSubmitting }) => {
+          if (submitInFlightRef.current) return
+
+          submitInFlightRef.current = true
+          setDuplicationInProgress(true)
+          try {
+            await onSubmit(values, setSubmitting, (errorType) =>
+              toast({
+                type: 'error',
+                message: getCourseDuplicationErrorMessage(t, errorType),
+                options: { duration: 6000 },
+              })
+            )
+          } finally {
+            submitInFlightRef.current = false
+            setDuplicationInProgress(false)
+          }
+        }}
         validationSchema={schema}
       >
         {({ values, isValid, isSubmitting, setFieldValue }) => {
@@ -739,8 +753,28 @@ function CourseDuplicationModal({
             )
           }
 
+          const isDuplicating = isSubmitting || duplicationInProgress
+
           return (
-            <Form>
+            <Form className="relative">
+              {isDuplicating && (
+                <div
+                  aria-live="polite"
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 px-4 text-center"
+                  data-cy="course-duplication-loading"
+                  role="status"
+                >
+                  <div className="flex max-w-md flex-col items-center gap-3 rounded-md border border-gray-200 bg-white p-6 shadow-sm">
+                    <Loader basic data={{ cy: 'course-duplication-spinner' }} />
+                    <div className="font-bold text-gray-900">
+                      {t('manage.courseList.courseDuplicationInProgress')}
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {t('manage.courseList.courseDuplicationKeepOpen')}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col gap-2">
                 <CourseInformationFields />
                 <div className="mt-2 flex flex-col gap-6">
@@ -941,21 +975,17 @@ function CourseDuplicationModal({
                 </UserNotification>
               )}
 
-              {isSubmitting && (
-                <div className="mt-3 text-sm text-gray-600">
-                  {t('manage.courseList.courseDuplicationInProgress')}
-                </div>
-              )}
-              <button
-                className="bg-primary-80 hover:bg-primary-100 float-right mt-3 rounded-md px-4 py-2 font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
-                data-cy="manipulate-course-submit"
-                disabled={!isValid || isSubmitting}
+              <Button
+                primary
+                className={{ root: 'float-right mt-3' }}
+                data={{ cy: 'manipulate-course-submit' }}
+                disabled={!isValid || isDuplicating}
+                loading={isDuplicating}
                 type="submit"
               >
-                {isSubmitting
-                  ? t('manage.courseList.courseDuplicationInProgress')
-                  : t('shared.generic.duplicate')}
-              </button>
+                <Button.Icon icon={faCopy} loading={isDuplicating} />
+                <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
+              </Button>
             </Form>
           )
         }}

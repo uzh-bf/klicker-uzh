@@ -15,6 +15,7 @@ import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
+const GRAPHQL_HTTP_TIMEOUT_MS = 12 * 60 * 1000
 
 let prisma = prismaBase
 
@@ -190,5 +191,8 @@ migrate(prisma).then(() => {
       wsServer as Parameters<typeof useServer>[1]
     )
   })
+  // Keep long-running mutations alive beyond the Prisma transaction timeout.
+  server.requestTimeout = GRAPHQL_HTTP_TIMEOUT_MS
+  server.setTimeout(GRAPHQL_HTTP_TIMEOUT_MS)
 })
 // #endregion
