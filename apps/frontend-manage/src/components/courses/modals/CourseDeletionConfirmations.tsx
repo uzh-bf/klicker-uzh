@@ -1,5 +1,5 @@
 import { CourseSummary } from '@klicker-uzh/graphql/dist/ops'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Checkbox, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
 import ConfirmationItem from '../../common/ConfirmationItem'
@@ -9,12 +9,16 @@ interface CourseDeletionConfirmationsProps {
   summary: CourseSummary
   confirmations: CourseDeletionConfirmationType
   setConfirmations: Dispatch<SetStateAction<CourseDeletionConfirmationType>>
+  deleteDraftActivities: boolean
+  setDeleteDraftActivities: Dispatch<SetStateAction<boolean>>
 }
 
 function CourseDeletionConfirmations({
   summary,
   confirmations,
   setConfirmations,
+  deleteDraftActivities,
+  setDeleteDraftActivities,
 }: CourseDeletionConfirmationsProps) {
   const t = useTranslations()
 
@@ -44,13 +48,34 @@ function CourseDeletionConfirmations({
         confirmationType="delete"
         data={{ cy: 'course-deletion-participations-confirm' }}
       />
+      {summary.numOfDraftLiveQuizzes > 0 && (
+        <Checkbox
+          checked={deleteDraftActivities}
+          onCheck={() => {
+            setDeleteDraftActivities((value) => !value)
+            setConfirmations((prev) => ({
+              ...prev,
+              disconnectLiveQuizzes: false,
+            }))
+          }}
+          label={t('manage.courseList.deleteDraftLiveQuizzesOption', {
+            number: summary.numOfDraftLiveQuizzes,
+          })}
+          className={{ root: 'px-2 py-1', label: 'text-sm' }}
+          data={{ cy: 'course-deletion-delete-draft-activities' }}
+        />
+      )}
       <ConfirmationItem
         label={
           summary.numOfLiveQuizzes === 0
             ? t('manage.courseList.noLiveQuizzesDisconnected')
-            : t('manage.courseList.disconnectLiveQuizzes', {
-                number: summary.numOfLiveQuizzes,
-              })
+            : deleteDraftActivities
+              ? t('manage.courseList.deleteDraftLiveQuizzes', {
+                  number: summary.numOfDraftLiveQuizzes,
+                })
+              : t('manage.courseList.disconnectLiveQuizzes', {
+                  number: summary.numOfLiveQuizzes,
+                })
         }
         onClick={() => {
           setConfirmations((prev) => ({
