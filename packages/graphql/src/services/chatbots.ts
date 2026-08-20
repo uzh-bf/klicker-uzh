@@ -221,7 +221,9 @@ export async function getParticipantCourseChatbots(
       description: true,
       avatar: true,
     },
-    where: { courseId },
+    // Participants only see PUBLISHED bots; drafts and in-review bots stay hidden
+    // in the course overview (F2, mirrors the chat-app access gate).
+    where: { courseId, status: DB.ChatbotStatus.PUBLISHED },
   })
 
   return chatbots.map(({ id, name, description, avatar }) => ({
