@@ -711,6 +711,9 @@ git commit -m "docs: document GrowthBook feature flags"
 - Create: `apps/frontend-manage/src/components/featureFlags/ManageFeatureFlagProvider.tsx`
 - Modify: `apps/frontend-manage/src/components/Layout.tsx`
 - Modify: `apps/frontend-manage/package.json`
+- Modify: `apps/frontend-manage/Dockerfile`
+- Modify: `.github/workflows/v3_frontend-manage-docker-stg.yml`
+- Modify: `.github/workflows/v3_frontend-manage-docker-prd.yml`
 - Modify: `turbo.json`
 - Modify: `util/_with_local_test_origins.sh`
 - Modify: `pnpm-lock.yaml`
@@ -753,15 +756,18 @@ Run the contract test again; expected PASS.
 
 - [x] **Step 4: Add deterministic build/test configuration**
 
-Add `@klicker-uzh/feature-flags: "workspace:*"` to Manage. Add all four
-GrowthBook variable names to `turbo.json` `globalEnv`:
+Add `@klicker-uzh/feature-flags: "workspace:*"` to Manage. Register the two
+browser variables in `turbo.json` `globalEnv`:
 
 ```json
-"GROWTHBOOK_API_HOST",
-"GROWTHBOOK_CLIENT_KEY",
 "NEXT_PUBLIC_GROWTHBOOK_API_HOST",
 "NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY"
 ```
+
+Expose both browser variables as Docker build arguments and map the staging and
+production GitHub Actions repository-variable pairs into both image
+architectures. Server-only variables remain adopter-owned and are not
+registered until a backend service consumes a flag.
 
 In `util/_with_local_test_origins.sh`, export:
 
@@ -908,15 +914,19 @@ export async function mockGrowthBookLearningAnalytics(
   page: Page,
   enabled: boolean
 ) {
-  await page.route('https://growthbook.test/api/features/sdk-test*', (route) =>
-    route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        features: {
-          'learning-analytics': { defaultValue: enabled },
-        },
-      }),
-    })
+  const context = page.context()
+  await context.unroute('https://growthbook.test/api/features/sdk-test*')
+  await context.route(
+    'https://growthbook.test/api/features/sdk-test*',
+    (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          features: {
+            'learning-analytics': { defaultValue: enabled },
+          },
+        }),
+      })
   )
 }
 ```
@@ -926,10 +936,11 @@ Keep the private-preview database helper, narrowed to `privatePreview` only.
 
 - [x] **Step 2: Cover both feature states**
 
-The disabled test asserts all analytics controls are attached and disabled.
-The enabled test asserts they are attached and enabled, then opens one safe
-analytics entry point. Existing activity-sharing assertions continue to cover
-`privatePreview: true` and `false` independently.
+The disabled test asserts the header, course menu, asynchronous evaluation,
+practice-quiz action, and microlearning action controls are attached and
+disabled. The enabled test asserts the same surfaces are attached and enabled.
+Existing activity-sharing assertions continue to cover `privatePreview: true`
+and `false` independently.
 
 - [x] **Step 3: Remove `publicPreview` from the user-profile operation**
 

@@ -22,8 +22,9 @@ export async function mockGrowthBookLearningAnalytics(
   page: Page,
   enabled: boolean
 ) {
-  await page.unroute(GROWTHBOOK_FEATURES_URL)
-  await page.route(GROWTHBOOK_FEATURES_URL, (route) =>
+  const context = page.context()
+  await context.unroute(GROWTHBOOK_FEATURES_URL)
+  await context.route(GROWTHBOOK_FEATURES_URL, (route) =>
     route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({
@@ -97,6 +98,15 @@ export async function validateFeatureAvailabilityFixture(
   await expect(
     page.getByTestId(`view-activity-log-${SEED.microlearning}`)
   ).toBeVisible()
+  const microlearningAnalytics = page.getByTestId(
+    'open-analytics-async-activity'
+  )
+  await expect(microlearningAnalytics).toBeVisible()
+  if (options.learningAnalytics) {
+    await expect(microlearningAnalytics).toBeEnabled()
+  } else {
+    await expect(microlearningAnalytics).toBeDisabled()
+  }
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-microlearning-${SEED.microlearning}`)
@@ -106,6 +116,19 @@ export async function validateFeatureAvailabilityFixture(
       page.getByTestId(`share-microlearning-${SEED.microlearning}`)
     ).not.toBeAttached()
   }
+
+  const [evaluationPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByTestId(`evaluation-microlearning-${SEED.microlearning}`).click(),
+  ])
+  const evaluationAnalytics = evaluationPage.getByTestId('quiz-analytics')
+  await expect(evaluationAnalytics).toBeVisible()
+  if (options.learningAnalytics) {
+    await expect(evaluationAnalytics).toBeEnabled()
+  } else {
+    await expect(evaluationAnalytics).toBeDisabled()
+  }
+  await evaluationPage.close()
   await page.keyboard.press('Escape')
 
   // Practice quiz
@@ -114,6 +137,15 @@ export async function validateFeatureAvailabilityFixture(
   await expect(
     page.getByTestId(`view-activity-log-${SEED.practiceQuiz}`)
   ).toBeVisible()
+  const practiceQuizAnalytics = page.getByTestId(
+    'open-analytics-async-activity'
+  )
+  await expect(practiceQuizAnalytics).toBeVisible()
+  if (options.learningAnalytics) {
+    await expect(practiceQuizAnalytics).toBeEnabled()
+  } else {
+    await expect(practiceQuizAnalytics).toBeDisabled()
+  }
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-practice-quiz-${SEED.practiceQuiz}`)

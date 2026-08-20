@@ -120,6 +120,20 @@ its authenticated layout. Its Playwright fixture intercepts only the external
 SDK response so feature states remain deterministic while the real Klicker
 authentication, API, and database are exercised.
 
+Manage's Docker build embeds these public values from GitHub Actions repository
+variables. Configure both architectures with the environment-specific pair:
+
+| Deployment | SDK host variable                     | Client key variable                     |
+| ---------- | ------------------------------------- | --------------------------------------- |
+| Staging    | `NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG` | `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG` |
+| Production | `NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD` | `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD` |
+
+The values are passed as Docker build arguments because Next.js embeds
+`NEXT_PUBLIC_*` variables into the browser bundle at build time. Adding them
+only to the runtime Kubernetes environment cannot configure an already-built
+Manage image. If either repository variable is absent, the provider remains
+unconfigured and the flag fails closed.
+
 ## Node.js adoption
 
 The adopting service maps server-only variables into one process-level client:
