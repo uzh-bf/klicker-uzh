@@ -197,7 +197,7 @@ Use exact GrowthBook versions and subpath exports:
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "build:test": "pnpm run build",
-    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo -p tsconfig.json",
+    "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "dev": "tsc -w -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -307,8 +307,8 @@ Run: `pnpm --filter @klicker-uzh/feature-flags test`
 
 Run: `pnpm --filter @klicker-uzh/feature-flags check`
 
-Expected: contract tests and type-check pass; `pnpm-lock.yaml` contains exact
-GrowthBook 1.6.5 resolutions.
+Expected: contract tests and both production and test type-checks pass;
+`pnpm-lock.yaml` contains exact GrowthBook 1.6.5 resolutions.
 
 - [x] **Step 6: Format and commit the core package**
 
@@ -459,8 +459,35 @@ export class NodeFeatureFlagClient<
   }
 
   async refresh(): Promise<void> {
-    if (!this.configured) return
-    await this.client.refreshFeatures({ timeout: this.timeoutMs })
+    if (!this.configured) {
+      return
+    }
+
+    const previousPayload = this.client.getPayload()
+
+    try {
+      const result = await this.client.init({
+        skipCache: true,
+        timeout: this.timeoutMs,
+      })
+      if (result.success) {
+        this.healthy = true
+        return
+      }
+
+      await this.client.setPayload(previousPayload)
+      this.healthy = false
+      console.warn(
+        '[feature-flags] Node refresh failed; retaining the last usable payload'
+      )
+    } catch (error) {
+      await this.client.setPayload(previousPayload)
+      this.healthy = false
+      console.warn(
+        '[feature-flags] Node refresh failed; retaining the last usable payload'
+      )
+      throw error
+    }
   }
 }
 ```
@@ -506,7 +533,8 @@ that initialization succeeds, `setAttributes(enabledAttributes)` evaluates
 true, `setAttributes(disabledAttributes)` evaluates false, and missing config
 initializes an empty payload without a fetch. A complete host/key with an
 invalid environment must also avoid fetching and keep both an id-targeted flag
-and a remote default-on flag false.
+and a remote default-on flag false. A payload containing visual or URL redirect
+experiments must not trigger injected JavaScript or redirects.
 
 - [x] **Step 2: Run the browser test and verify the red state**
 
@@ -536,29 +564,51 @@ export function createBrowserFeatureFlagClient<
       ? {
           apiHost: config.apiHost,
           clientKey: config.clientKey,
+          disableExperimentsOnLoad: true,
+          disableVisualExperiments: true,
+          disableJsInjection: true,
+          disableUrlRedirectExperiments: true,
+          disableCrossOriginUrlRedirectExperiments: true,
         }
       : undefined
   )
 
-  let initializationPromise: Promise<boolean> | undefined
+  let initializePromise: Promise<boolean> | undefined
 
   const initialize = (): Promise<boolean> => {
-    if (initializationPromise) return initializationPromise
-
-    if (!configured) {
-      growthbook.initSync({ payload: { features: {} } })
-      initializationPromise = Promise.resolve(false)
-    } else {
-      initializationPromise = growthbook
-        .init({ timeout: config.timeoutMs ?? 2000 })
-        .then((result) => result.success)
-        .catch(() => false)
+    if (!initializePromise) {
+      if (configured) {
+        initializePromise = growthbook
+          .init({ timeout: config.timeoutMs ?? 2000 })
+          .then((result) => {
+            if (!result.success) {
+              console.warn(
+                '[feature-flags] browser initialization failed; using false fallbacks'
+              )
+            }
+            return result.success
+          })
+          .catch(() => {
+            console.warn(
+              '[feature-flags] browser initialization failed; using false fallbacks'
+            )
+            return false
+          })
+      } else {
+        growthbook.initSync({ payload: { features: {} } })
+        initializePromise = Promise.resolve(false)
+      }
     }
 
-    return initializationPromise
+    return initializePromise
   }
 
-  return { environment, growthbook, initialize }
+  const setAttributes = (attributes: unknown) =>
+    growthbook.setAttributes(
+      sanitizeFeatureFlagAttributes(attributes, environment)
+    )
+
+  return { environment, growthbook, initialize, setAttributes }
 }
 ```
 
@@ -581,7 +631,9 @@ export function FeatureFlagProvider({
   const [{ growthbook, initialize, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
-  const destroyTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const destroyTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  )
 
   useEffect(() => {
     void setAttributes(attributes)
@@ -1066,8 +1118,10 @@ deployment.
 - [x] 2026-08-06: approved design committed as `0046b8118` on
   `feat/growthbook-foundation`.
 - [x] 2026-08-06: native stack support verified with `gh stack`.
-- [x] Layer 1 foundation implemented and verified: 11 tests, package check and
-      build, root production build, Syncpack, formatting, and Opengrep (0
+- [x] Layer 1 foundation implemented and verified:
+      `pnpm --filter @klicker-uzh/feature-flags test` (27 tests),
+      `pnpm --filter @klicker-uzh/feature-flags check`, package build, root
+      production build, Syncpack, formatting, and Opengrep (0
       findings) passed. The wiki validator named by the maintenance skill was
       not installed locally.
 - [x] 2026-08-17: invalid non-empty deployment environments disable both
