@@ -49,30 +49,28 @@ function CourseDeletionConfirmations({
         data={{ cy: 'course-deletion-participations-confirm' }}
       />
       {summary.numOfDraftLiveQuizzes > 0 && (
-        <Checkbox
-          checked={deleteDraftActivities}
-          onCheck={() => {
-            setDeleteDraftActivities((value) => !value)
-            setConfirmations((prev) => ({
-              ...prev,
-              disconnectLiveQuizzes: false,
-            }))
-          }}
-          label={t('manage.courseList.deleteDraftLiveQuizzesOption', {
-            number: summary.numOfDraftLiveQuizzes,
-          })}
-          className={{ root: 'px-2 py-1', label: 'text-sm' }}
-          data={{ cy: 'course-deletion-delete-draft-activities' }}
-        />
+        <div className="flex min-h-10 flex-row items-center border-b pb-2 pl-2">
+          <Checkbox
+            checked={deleteDraftActivities}
+            onCheck={() => {
+              setDeleteDraftActivities((value) => !value)
+              setConfirmations((prev) => ({
+                ...prev,
+                disconnectLiveQuizzes: false,
+              }))
+            }}
+            label={t('manage.courseList.deleteDraftActivitiesOption')}
+            className={{ label: 'mr-4' }}
+            data={{ cy: 'course-deletion-delete-draft-activities' }}
+          />
+        </div>
       )}
       <ConfirmationItem
         label={
           summary.numOfLiveQuizzes === 0
             ? t('manage.courseList.noLiveQuizzesDisconnected')
             : deleteDraftActivities
-              ? t('manage.courseList.deleteDraftLiveQuizzes', {
-                  number: summary.numOfDraftLiveQuizzes,
-                })
+              ? t('manage.courseList.deleteDraftActivities')
               : t('manage.courseList.disconnectLiveQuizzes', {
                   number: summary.numOfLiveQuizzes,
                 })

@@ -61,7 +61,9 @@ list. The optional `deleteDraftActivities` argument on
 `packages/graphql/src/services/courses.ts:deleteCourse` additionally
 hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
 every other status are still disconnected. The lecturer UI keeps this option
-off by default
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
 (`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
 
 ## Course duplication

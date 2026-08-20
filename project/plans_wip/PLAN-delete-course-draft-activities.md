@@ -73,3 +73,8 @@ associated draft activities.
   blockers. The full data-dependent Playwright scenario remains for CI. The
   skill-referenced wiki validator could not run because its script is absent
   from this environment; repository formatting and consistency checks passed.
+- 2026-08-20: Follow-up aligned the optional checkbox with the confirmation-row
+  grid and changed its English/German presentation from draft-live-quiz wording
+  to the feature-level term “draft activities.” Reverified the default and
+  selected states in both languages, with no browser errors, and passed the
+  frontend typecheck plus focused Biome and Prettier checks.

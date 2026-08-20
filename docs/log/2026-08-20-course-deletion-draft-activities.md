@@ -12,6 +12,7 @@ tags:
 ## 2026-08-20
 
 - **Update:** [Domain Model](../domain-model.md) documents which activity types
-  are cascaded, disconnected, or optionally deleted with a course.
+  are cascaded, disconnected, or optionally deleted with a course, including
+  why the lecturer-facing option uses activity-level terminology.
 - **Update:** [GraphQL API Layer](../graphql-api-layer.md) records the optional
   boolean argument pattern used by the `deleteCourse` mutation.
