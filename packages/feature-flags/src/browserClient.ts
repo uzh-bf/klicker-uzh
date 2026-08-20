@@ -20,6 +20,11 @@ export function createBrowserFeatureFlagClient<
       ? {
           apiHost: config.apiHost,
           clientKey: config.clientKey,
+          disableExperimentsOnLoad: true,
+          disableVisualExperiments: true,
+          disableJsInjection: true,
+          disableUrlRedirectExperiments: true,
+          disableCrossOriginUrlRedirectExperiments: true,
         }
       : undefined
   )
