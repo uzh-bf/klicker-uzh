@@ -299,18 +299,22 @@ this plan's authority.
 
 ## Progress
 
-- Status: S3 documentation complete locally; verification and final review
-  remain.
+- Status: implementation and documentation complete locally; runtime stopped
+  pending final delivery decision.
 - Completed: repository freshness check, current code/PDF review, Sol planner
   pass, fresh task worktree creation, S1 comparison semantics tests and focused
   GraphQL verification (8 tests passing).
-- Remaining: S2 browser proof and review; full checks, runtime shutdown, and
-  final review.
+- Remaining: browser/PDF proof is blocked by runtime route readiness; the
+  repository-wide check suite is blocked by the analytics pandas build and a
+  GraphQL check failure requiring separate diagnosis.
 - Latest evidence: task branch is based on `origin/v3` `9f38b4e9a`; primary
-  checkout remains dirty but untouched.
-- Slice review: not required yet — S1 is a test-only slice; S2 review will run
-  after its immutable commit range is complete.
-- Delivery: required layer is a local branch ready for a draft PR; achieved
-  layer is the plan artifact only.
+  checkout remains dirty but untouched. Focused GraphQL tests (8) and PWA
+  typecheck pass. Browser route returned `404 page not found` because runtime
+  HTTP readiness failed on certificate verification.
+- Slice review: native reviewer routing failed twice before review; the final
+  native review completed after explicit paths and identified three findings,
+  all addressed in `9a201fa6a` except the browser/PDF evidence gap.
+- Delivery: required layer is a local branch with four scoped commits; push,
+  PR, merge, deployment, and production verification remain withheld.
 - Next action: complete browser proof and repository-native checks, then run
   the integrated final review.
