@@ -184,15 +184,14 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
 
       <div
         className="mt-5"
-        aria-label={t('pwa.assessment.percentileText', {
-          percentile: comparison.percentile,
-        })}
+        aria-hidden="true"
       >
         <div className="relative h-3 rounded-full bg-slate-200">
           <div
             className="absolute -top-1 h-5 w-1 rounded-full bg-uzh-blue"
             style={{
-              left: `${Math.min(Math.max(comparison.percentile, 0), 100)}%`,
+              left: `clamp(2px, ${Math.min(Math.max(comparison.percentile, 0), 100)}%, calc(100% - 2px))`,
+              transform: 'translateX(-50%)',
             }}
           />
         </div>
