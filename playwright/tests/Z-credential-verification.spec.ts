@@ -30,11 +30,15 @@ type LoginFactory = (
 const assessmentManageUrl = process.env.URL_MANAGE ?? URL_MANAGE
 const assessmentStudentUrl = process.env.URL_STUDENT ?? URL_STUDENT
 
-async function loginAssessmentStudent(loginFactory: LoginFactory) {
+async function loginAssessmentStudent(
+  loginFactory: LoginFactory,
+  identity?: { givenName: string; surname: string }
+) {
   await loginFactory(
     {
       email: ASSESSMENT_REPORT_SUBJECT_EMAIL,
       sub: ASSESSMENT_REPORT_PARTICIPANT_IDS[0]!,
+      ...(identity ?? {}),
       role: 'PARTICIPANT',
       scope: 'ACCOUNT_OWNER',
       catalystInstitutional: false,
@@ -278,7 +282,10 @@ test.describe('Assessment report credential lifecycle', () => {
     page,
     loginFactory,
   }) => {
-    await loginAssessmentStudent(loginFactory)
+    await loginAssessmentStudent(loginFactory, {
+      givenName: 'Assessment',
+      surname: 'Report Student',
+    })
     const { token } = await exportAssessmentReport(page)
     const requestUrls: string[] = []
     const requestBodies: string[] = []
@@ -295,10 +302,11 @@ test.describe('Assessment report credential lifecycle', () => {
     await expect(
       page.getByText(ASSESSMENT_REPORT_COURSE_REFERENCE)
     ).toBeVisible()
-    await expect(page.getByText(ASSESSMENT_REPORT_SUBJECT_EMAIL)).toBeVisible()
+    await expect(page.getByText('Assessment Report Student')).toBeVisible()
+    await expect(page.getByText(ASSESSMENT_REPORT_SUBJECT_EMAIL)).toHaveCount(0)
     await expect(
       page.getByText('Accepted assessment-course invitation email')
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       page.getByText('Comparison cohort: 10 active participants')
     ).toBeVisible()
