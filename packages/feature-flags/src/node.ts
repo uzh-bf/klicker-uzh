@@ -103,9 +103,25 @@ export class NodeFeatureFlagClient<
       return
     }
 
+    const previousPayload = this.client.getPayload()
+
     try {
-      await this.client.refreshFeatures({ timeout: this.timeoutMs })
+      const result = await this.client.init({
+        skipCache: true,
+        timeout: this.timeoutMs,
+      })
+      if (result.success) {
+        this.healthy = true
+        return
+      }
+
+      await this.client.setPayload(previousPayload)
+      this.healthy = false
+      console.warn(
+        '[feature-flags] Node refresh failed; retaining the last usable payload'
+      )
     } catch (error) {
+      await this.client.setPayload(previousPayload)
       this.healthy = false
       console.warn(
         '[feature-flags] Node refresh failed; retaining the last usable payload'

@@ -102,7 +102,7 @@ describe('NodeFeatureFlagClient', () => {
   })
 
   it('does not report an unsuccessful refresh as healthy', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    mockFetch.mockRejectedValue(new Error('GrowthBook unavailable'))
     const client = new NodeFeatureFlagClient<TestFeatures>({
       apiHost: 'https://growthbook.test',
       clientKey: 'sdk-test',
@@ -113,6 +113,21 @@ describe('NodeFeatureFlagClient', () => {
     await client.refresh()
 
     expect(client.getStatus().healthy).toBe(false)
+  })
+
+  it('recovers health after a successful refresh', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+      environment: 'test',
+    })
+
+    expect(await client.initialize()).toBe(false)
+    await client.refresh()
+
+    expect(client.getStatus().healthy).toBe(true)
+    expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(true)
   })
 
   it('fails closed without fetching for an invalid environment', async () => {
