@@ -225,7 +225,15 @@ No separate tasks; nothing crosses a boundary warranting one.
   -> fixed (added asUserFullAccess scope to both mutations, matching the 23
   sibling catalyst mutations); simplifier #2/#3 applied, #1 (defer pub fields)
   rejected as plan-directed. Re-verified: codegen/typecheck/4 tests green.
-- Remaining: S3–S5.
+- S3 (publication workflow): DONE. `requestChatbotPublication`
+  (catalyst+full-access, ownership -> DB-row capability gate -> DRAFT/REJECTED
+  ->PENDING, clears reviewComment, writes useCase/count + flat credit budget),
+  admin `approveChatbotPublication` (PENDING->PUBLISHED, stamps publishedAt once)
+  + `rejectChatbotPublication` (PENDING->REJECTED + comment) — both asAdmin with
+  a service-level role check (D3). Codegen+typecheck green; 10 service tests
+  pass (legal/illegal transitions, capability gate, admin gate, non-owner).
+  Per-slice reviewers pending.
+- Remaining: S4–S5.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 

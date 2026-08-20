@@ -627,3 +627,158 @@ export async function updateChatbot(
     courses: updated.course ? [updated.course] : [],
   }
 }
+
+type RequestChatbotPublicationArgs = {
+  id: string
+  useCase: string
+  expectedStudentCount: number
+  proposedCredits: number
+}
+
+export async function requestChatbotPublication(
+  args: RequestChatbotPublicationArgs,
+  ctx: ContextWithUser
+) {
+  // Ownership/existence first: a non-owner gets null (not found) and never
+  // learns anything about the account capability below.
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.id, ownerId: ctx.user.sub },
+    select: { id: true, status: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+
+  // Account-level capability gate (D1, ADR 0020): read the live User row, never
+  // a JWT claim — ops flips this flag out of band after the token was issued.
+  const owner = await ctx.prisma.user.findUniqueOrThrow({
+    where: { id: ctx.user.sub },
+    select: { aiChatbotPublishingEnabled: true },
+  })
+  if (!owner.aiChatbotPublishingEnabled) {
+    throw new GraphQLError('Account is not approved for chatbot publishing')
+  }
+
+  // Only a DRAFT or a previously REJECTED bot may (re-)enter review.
+  if (
+    chatbot.status !== DB.ChatbotStatus.DRAFT &&
+    chatbot.status !== DB.ChatbotStatus.REJECTED
+  ) {
+    throw new GraphQLError(
+      `Cannot request publication from status ${chatbot.status}`
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.update({
+    where: { id: chatbot.id },
+    data: {
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+      publicationUseCase: args.useCase,
+      expectedStudentCount: args.expectedStudentCount,
+      reviewComment: null, // clear any prior rejection note on re-request
+      // Proposed credit budget (gated cost class, D2): flat model — initial =
+      // reset amount = max = proposedCredits; the reset period keeps its
+      // configured value. Student-inert until PUBLISHED (S4 gates access).
+      creditInitialCredits: args.proposedCredits,
+      creditResetAmount: args.proposedCredits,
+      creditMaxCredits: args.proposedCredits,
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return {
+    ...updated,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      updated.allowedReasoningEffortsByModel
+    ),
+    courses: updated.course ? [updated.course] : [],
+  }
+}
+
+export async function approveChatbotPublication(
+  args: { id: string },
+  ctx: ContextWithUser
+) {
+  // Service-level admin check (D3): the schema layer already gates on asAdmin,
+  // but service tests bypass Pothos, so this is the check the admin-authz test
+  // exercises.
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbot = await ctx.prisma.chatbot.findUnique({
+    where: { id: args.id },
+    select: { id: true, status: true, publishedAt: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
+    throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
+  }
+
+  const updated = await ctx.prisma.chatbot.update({
+    where: { id: chatbot.id },
+    data: {
+      status: DB.ChatbotStatus.PUBLISHED,
+      // Stamp the first go-live only; a later re-approval keeps the original.
+      publishedAt: chatbot.publishedAt ?? new Date(),
+      reviewComment: null,
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return {
+    ...updated,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      updated.allowedReasoningEffortsByModel
+    ),
+    courses: updated.course ? [updated.course] : [],
+  }
+}
+
+export async function rejectChatbotPublication(
+  args: { id: string; comment: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbot = await ctx.prisma.chatbot.findUnique({
+    where: { id: args.id },
+    select: { id: true, status: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
+    throw new GraphQLError(`Cannot reject from status ${chatbot.status}`)
+  }
+
+  const updated = await ctx.prisma.chatbot.update({
+    where: { id: chatbot.id },
+    data: {
+      status: DB.ChatbotStatus.REJECTED,
+      reviewComment: args.comment,
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return {
+    ...updated,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      updated.allowedReasoningEffortsByModel
+    ),
+    courses: updated.course ? [updated.course] : [],
+  }
+}

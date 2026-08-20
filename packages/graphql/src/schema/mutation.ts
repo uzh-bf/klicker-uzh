@@ -117,6 +117,7 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
@@ -1484,6 +1485,45 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
+
+      requestChatbotPublication: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          useCase: t.arg.string({ required: true }),
+          expectedStudentCount: t.arg.int({ required: true }),
+          proposedCredits: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.requestChatbotPublication(args, ctx)
+        },
+      }),
+
+      approveChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.approveChatbotPublication(args, ctx)
+        },
+      }),
+
+      rejectChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          comment: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.rejectChatbotPublication(args, ctx)
         },
       }),
 
