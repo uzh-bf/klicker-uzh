@@ -232,7 +232,21 @@ No separate tasks; nothing crosses a boundary warranting one.
   + `rejectChatbotPublication` (PENDING->REJECTED + comment) — both asAdmin with
   a service-level role check (D3). Codegen+typecheck green; 10 service tests
   pass (legal/illegal transitions, capability gate, admin gate, non-owner).
-  Per-slice reviewers pending.
+  Reviews DONE: slice-reviewer (authz/state-machine) CHANGES-REQUIRED -> fixed
+  in `f57cf865c` (re-check owner capability at approval time + regression test;
+  11 tests green, typecheck green). Simplifier terminated without a flushed
+  verdict; adopted disposition recorded in `_local/reviews/2026-08-20-chatbot-s3-slice.md`.
+- Deferred cleanup (from S3 simplifier): extract shared `toChatbotInfo(row)`
+  mapper for the repeated return-tail across ~7 owner-facing functions. Deferred
+  (not folded into phase 0) because it edits already-reviewed S2 code for a
+  behavior-preserving DRY win — own micro-refactor or follow-up.
+- Carry to S4 (S3 LOW findings): gate participant access on `status ===
+  'PUBLISHED'`, never `publishedAt != null` (TOCTOU); credit path must not
+  assume `proposedCredits > 0` (no validation in phase 0).
+- Dependency: ADR 0020 lives only on `docs/chatbot-hitl-config-roadmap`
+  (draft PR #5453). It must merge before/with the phase-0 PR or the ADR
+  references (commit messages + prisma schema comments) dangle — record in the
+  phase-0 PR description.
 - Remaining: S4–S5.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
