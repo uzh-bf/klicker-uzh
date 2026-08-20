@@ -309,8 +309,38 @@ No separate tasks; nothing crosses a boundary warranting one.
   minimal (13+/29-, imports swapped in place) after reverting an accidental
   whole-file `organizeImports` churn from `biome check --write` (patch
   discipline; CI gate is `biome format`, which does not reorder imports).
-  Pending: per-slice simplifier + slice-reviewer (architecture risk).
-- Remaining: final-reviewer on integrated outcome, then draft PR against v3.
+- S5 gates: DONE. Simplifier → NO-CHANGE (two-function split proportionate,
+  single call site still nets a testability win, `DEFAULT_PROMPT` import live at
+  route.ts:174, `systemPrompts: unknown` param fine). Slice-reviewer
+  (architecture) → PASS with one low finding, **refuted with evidence**: it
+  claimed a `{ tutor: null }` per-mode entry now 500s uncaught (was swallowed by
+  the findUnique `try`), but the `.prompt` access is truthy-guarded in BOTH the
+  original (`if (systemPrompts && systemPrompts[selectedMode])`) and the
+  refactor (`if (stored?.[selectedMode])`) — the null value is falsy, so the
+  guard fails and both fall through to the mode default without dereferencing.
+  No behaviour delta, no latent 500. Residual valid point (the shape was
+  untested) closed with one **test-only** characterization case
+  (`{ tutor: null }` → default); production files unchanged. S5 commit amended
+  `babe4a87f` → `520afeabd`; 7/7 compiler tests, chat tsc + biome format clean.
+  Reports: `project/_local/reviews/2026-08-20-chatbot-s5-slice.md`.
+- Integrated verification: DONE and clean. chat 346/346; graphql + chat tsc
+  clean; my 3 graphql files pass in isolation, in the 3-file batch, and inside
+  the full CI-faithful suite. The only full-suite failures are pre-existing,
+  local-only, and in files I never touched: `assessmentRestrictions` (helpers.ts
+  hardcodes Redis to 127.0.0.1:6379/6380 — the CI port-map convention,
+  unreachable in the local devcontainer where Redis is at
+  `redis_exec`/`redis_assessment`) and, once Redis is bridged,
+  `activitySharing` (shared-live-DB collision). Proven not mine by an
+  exclude-my-3-files bridged run reproducing the identical `activitySharing`
+  failure with my files never loaded. CI resets a dedicated Postgres once, runs
+  a deterministic order, and is green on v3. Report:
+  `project/_local/reviews/2026-08-20-chatbot-phase0-integrated-verify.md`.
+- Substantive size = **1195 added / 80 deleted** (`git diff --numstat`, excl.
+  codegen ops.ts/ops.schema.json/public schema, pnpm-lock, plan/ADR docs) —
+  full-path package, well above the floor.
+- Remaining: final-reviewer on integrated outcome (`9f38b4e9a..520afeabd`, 6
+  code slices) — DISPATCHED (read-only). Then draft PR against v3 — WITHHELD
+  pending explicit push/PR authorization.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
