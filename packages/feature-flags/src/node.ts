@@ -105,8 +105,8 @@ export class NodeFeatureFlagClient<
 
     try {
       await this.client.refreshFeatures({ timeout: this.timeoutMs })
-      this.healthy = true
     } catch (error) {
+      this.healthy = false
       console.warn(
         '[feature-flags] Node refresh failed; retaining the last usable payload'
       )

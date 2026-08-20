@@ -101,6 +101,20 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
   })
 
+  it('does not report an unsuccessful refresh as healthy', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+      environment: 'test',
+    })
+
+    expect(await client.initialize()).toBe(false)
+    await client.refresh()
+
+    expect(client.getStatus().healthy).toBe(false)
+  })
+
   it('fails closed without fetching for an invalid environment', async () => {
     const client = new NodeFeatureFlagClient<TestFeatures>({
       apiHost: 'https://growthbook.test',
