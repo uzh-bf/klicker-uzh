@@ -1,4 +1,7 @@
 ---
+type: Solution
+title: Repeat Production Seeds Must Validate Prior Mutable State
+description: Validate the production state a follow-up seed extends before applying additive points, XP, or achievement changes.
 module: prisma-data
 date: 2026-07-16
 problem_type: best_practice

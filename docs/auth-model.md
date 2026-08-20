@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-08-04'
+timestamp: '2026-08-10'
 tags:
   - backend
   - auth
@@ -43,6 +43,16 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 Two related properties of that resolver are worth knowing before changing it: it resolves by `ssoId` and then falls back to matching `Participant.email`, and both happen **before** the `allowCreate` gate — so `allowCreate: false` constrains account creation only, never account resolution. Any new launch path must therefore be verified before it reaches this function, not inside it.
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
+
+## Participant privacy migration constraints
+
+The current participant auth model still treats email as a broad account and linking key. `Participant.email`, `ParticipantAccount.ssoEmail`, and `ParticipantInvitation.email` are read or written by account creation, magic links, LTI account linking, Edu-ID assessment linking, invitation handling, lecturer leaderboard views, assessment result views, and export code (`packages/prisma/src/prisma/schema/participant.prisma`, `packages/graphql/src/services/accounts.ts`, `apps/auth/src/lib/helpers.ts`, `packages/graphql/src/services/courses.ts`, `packages/export/src/exportCourse.ts`). Privacy work that removes email from non-assessment participants must stop new writes and replace these lookup paths before deleting fields.
+
+LTI is not email-free today. LTI 1.3 stores the launch email inside the short-lived `lti-token` and exposes it through `/info` when present (`apps/lti/src/index.ts`). LTI 1.1 is retired and the GraphQL resolver rejects any non-LTI-1.3 scope, but verified LTI 1.3 resolution still matches `Participant.email` and writes `ParticipantAccount.ssoEmail` before its `allowCreate` gate (`packages/graphql/src/services/accounts.ts:resolveOrCreateParticipantForLti`). The privacy migration therefore still has to replace that email fallback with a platform identity derived from the verified subject.
+
+Duplicate-account merging must be course-aware. `ParticipantAccount` is unique by `[participantId, ssoType]`, so one participant cannot currently hold multiple same-type LTI links. Participant-owned data includes reassignable rows such as chat threads and group messages as well as participant/course, participant/instance, and participant/chatbot uniqueness constraints on participations, responses, leaderboards, analytics, achievements, and chat credits (`packages/prisma/src/prisma/schema/participant.prisma`, `packages/prisma/src/prisma/schema/response.prisma`, `packages/prisma/src/prisma/schema/analytics.prisma`, `packages/prisma/src/prisma/schema/chat.prisma`). A merge flow needs a dry-run planner, per-course selected-side decisions when both accounts are enrolled, and recomputation of derived analytics and leaderboards rather than blind summing.
+
+There is no reliable general participant inbox for a migration notice. `GroupMessage` is group-scoped, `PushSubscription` exists, and `handleSendPushNotifications` currently has the delivery code commented out while returning success (`packages/prisma/src/prisma/schema/participant.prisma`, `packages/graphql/src/services/notifications.ts`). A migration that purges legacy email should send the email notice before purge and add an in-app checklist or notice surface if existing students must be reached inside KlickerUZH.
 
 ## Login return targets
 

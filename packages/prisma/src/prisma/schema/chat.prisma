@@ -87,7 +87,7 @@ model ChatAttachment {
 
   type             ChatAttachmentType
   position         Int
-  imageBase64      String?            @db.Text // base64 data URL for display 
+  imageBase64      String?            @db.Text // base64 data URL for display
   imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
   imageDescription String?            @db.Text // AI-generated description for context injection
 
