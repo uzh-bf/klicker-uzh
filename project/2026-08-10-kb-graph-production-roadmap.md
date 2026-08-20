@@ -1,7 +1,9 @@
 # KB knowledge graph production roadmap
 
-Status: M1 execution approved and in progress; W1/W2/W3 package evidence is
-locally reviewed, while cross-package compatibility and external delivery gates remain.
+Status: M1 execution approved and in progress. W3 is closed at the merged
+delivery layer in both provider repositories. W1 and W2 remain at locally
+reviewed evidence, and cross-package compatibility and external delivery gates
+remain.
 
 Date: 2026-08-10
 
@@ -1048,3 +1050,55 @@ is independently safe to land.
   caveat: Turbopack cannot load `@klicker-uzh/knowledge-graph` via
   `createRequire`, so the live dev API degrades all graph errors to 503;
   the 409 branch is proven by direct probe only.
+
+- 2026-08-20: **W3 is closed at the merged delivery layer.** This supersedes the
+  2026-08-16 W3 statements above, which placed the transfer ledger at
+  `48ba5ff0` in data-ingestion and called the W3 plan's close-out bookkeeping
+  stale; neither describes the delivered shape.
+  - The original W3 carrier package was **withdrawn** on 2026-08-19. MR !119 was
+    closed and its remote branch deleted because, once current `origin/main` was
+    merged in, the one genuinely generic change collapsed to zero delta and the
+    package became entirely Klicker KG content inside the provider repository —
+    contradicting W3's own boundary. Its review gates checked the package against
+    the ledger and never checked the plan against the boundary.
+  - W3's Do steps 3 and 4 were then satisfied by a different shape, recorded as
+    ADR 0018 `docs/adr/0018-providers-ship-launchers-consumers-run-e2e.md`
+    (`1a80d7833`, inside PR #5424 on this branch): the provider ships a supported
+    launcher for its own path, and the consumer's E2E runner invokes it rather
+    than reassembling the provider.
+  - Provider deliverable: data-ingestion
+    [!121](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/121)
+    merged as `39df49e` on `origin/main`. 29 commits, substantive 1347 added /
+    39 removed. `scripts/start_ingestion_workers.sh --with-resource-path` starts
+    the resource API, `resource_dispatcher`, and `resource_fetch_worker`, with
+    per-session port and Compose-project isolation, an
+    `INGESTION_PRODUCER_REGISTRY_DIR` seam so a consumer supplies its own producer
+    registry, process-scoped status and stop, and a synthetic default fixture that
+    carries a secret reference and no credential value.
+  - Transfer ledger: moved to Catalyst as kg-content-generation
+    [!8](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/8),
+    now at `lightrag_research/project/2026-08-15-kb-graph-ingestion-transfer-plan.md`
+    on Catalyst `main`. No withdrawal note was owed in data-ingestion: the file sat
+    on zero remote branches there, so the local copy was simply removed.
+  - W3 Check criteria: the ledger accounts for every harness and launcher change
+    and names its destination. The provider MR contains no Catalyst, FalkorDB,
+    GraphML, or Klicker orchestration — `git diff origin/main...HEAD` excluding
+    `project/` has 0 matches for `klicker|catalyst|lightrag|falkor|kg-content` and
+    0 paths under `src/ingestion/project_configs/`. Pipelines 647854 (`0ca20d7`)
+    and 647856 (`9134dd3`) each passed all 7 jobs, including `check`, `unit`, and
+    `e2e`. `gitleaks` is clean on all nine changed files.
+  - **Evidence limit carried forward:** no `ingestion.workers.*` process has ever
+    started on the development host, because `uv sync` for `modules/ingestion`
+    returns 401 for `uzh-doc-processing-client==0.1.1` and
+    `uzh-web-scraping-client==0.3.2` from the private index. Every worker-level
+    check used a stub or stand-in, and the launcher's live `--with-resource-path`
+    path is proven only by CI's suite, not by a running local fleet. W5 must not
+    treat the launcher as locally exercised.
+  - M1 remaining: **W1** (Catalyst graph worker, at `reviewed` local evidence per
+    2026-08-16, not published) and **W2** (Klicker stack, PR #5424 open and
+    non-draft, mergeable but unstable with GitGuardian Security Checks failing;
+    the user reports it not ready). Both are P1 and the delivery-topology table
+    declares them parallel, so this entry orders nothing new. The M1 exit
+    criterion is unchanged, and no W4 or M2 staging action is implied.
+  - This reconciliation performed no merge, deployment, cluster access, paid run,
+    or production mutation.
