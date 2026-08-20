@@ -16,7 +16,9 @@ import {
 } from '@uzh-bf/design-system'
 import { useLocale, useTranslations } from 'next-intl'
 import { useDeferredValue, useEffect, useState } from 'react'
-import Pagination, { type PaginationPageSize } from '../common/Pagination'
+import Pagination, {
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import CourseVerifiableCredentialsList, {
   type AssessmentReportRecord,
 } from './CourseVerifiableCredentialsList'

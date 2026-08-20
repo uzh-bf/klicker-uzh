@@ -24,7 +24,7 @@ import ActivityDetailsModal from '../components/activities/overview/details/Acti
 import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
-} from '../components/common/Pagination'
+} from '@components/common/Pagination'
 import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,

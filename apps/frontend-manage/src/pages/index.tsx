@@ -17,7 +17,7 @@ import SuspendedCreationButtons from '../components/activities/creation/Suspende
 import Pagination, {
   isPaginationPageSize,
   type PaginationPageSize,
-} from '../components/common/Pagination'
+} from '@components/common/Pagination'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
