@@ -47,7 +47,7 @@ test.describe('Show all pagination option', () => {
     await expect(page.getByTestId('pagination-page-size')).toContainText('All')
     await expect(page.getByTestId('pagination-next')).toHaveCount(0)
     const totalActivities = await expectAllResultsLoaded(page)
-    await expect(page.locator('[data-cy^="activity-item-"]')).toHaveCount(
+    await expect(page.locator('[data-cy-row^="activity-item-"]')).toHaveCount(
       totalActivities
     )
     await expect(page.getByTestId('activity-batch-operations')).toHaveCount(0)
