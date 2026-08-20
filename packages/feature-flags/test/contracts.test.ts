@@ -1,6 +1,7 @@
 import {
   FEATURE_FLAG_DEFAULTS,
   normalizeFeatureFlagEnvironment,
+  sanitizeFeatureFlagAttributes,
 } from '../src/index.js'
 
 describe('feature flag contracts', () => {
@@ -33,5 +34,32 @@ describe('feature flag contracts', () => {
     expect(reportedErrors).toHaveBeenCalledOnce()
 
     reportedErrors.mockRestore()
+  })
+
+  it('keeps only the approved non-identifying evaluation attributes', () => {
+    expect(
+      sanitizeFeatureFlagAttributes(
+        {
+          id: 'user-id',
+          actorType: 'user',
+          role: 'LECTURER',
+          email: 'user@example.com',
+          name: 'User Name',
+        },
+        'test'
+      )
+    ).toEqual({
+      id: 'user-id',
+      actorType: 'user',
+      role: 'LECTURER',
+      environment: 'test',
+    })
+
+    expect(
+      sanitizeFeatureFlagAttributes(
+        { actorType: 'unexpected', email: 'user@example.com' },
+        'test'
+      )
+    ).toEqual({ actorType: 'anonymous', environment: 'test' })
   })
 })

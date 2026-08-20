@@ -238,22 +238,39 @@ export type FeatureFlagEnvironment =
   | 'production'
   | 'unknown'
 
-export type FeatureFlagAttributeValue =
-  | string
-  | number
-  | boolean
-  | string[]
-  | number[]
-  | null
-  | undefined
-
-export type FeatureFlagAttributes = Record<
-  string,
-  FeatureFlagAttributeValue
-> & {
+export type FeatureFlagAttributes = {
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
+}
+
+export type FeatureFlagEvaluationAttributes = FeatureFlagAttributes & {
+  environment: FeatureFlagEnvironment
+}
+
+export function sanitizeFeatureFlagAttributes(
+  attributes: unknown,
+  environment: FeatureFlagEnvironment
+): FeatureFlagEvaluationAttributes {
+  const source =
+    typeof attributes === 'object' && attributes !== null
+      ? (attributes as Record<string, unknown>)
+      : {}
+  const actorType =
+    source.actorType === 'user' ||
+    source.actorType === 'participant' ||
+    source.actorType === 'anonymous'
+      ? source.actorType
+      : 'anonymous'
+  const sanitized: FeatureFlagEvaluationAttributes = {
+    actorType,
+    environment,
+  }
+
+  if (typeof source.id === 'string') sanitized.id = source.id
+  if (typeof source.role === 'string') sanitized.role = source.role
+
+  return sanitized
 }
 
 export function normalizeFeatureFlagEnvironment(
@@ -378,6 +395,9 @@ export class NodeFeatureFlagClient<
   private readonly client: GrowthBookClient<Features>
   private readonly environment: FeatureFlagEnvironment
   private readonly timeoutMs: number
+  private initializationPromise: Promise<boolean> | undefined
+  private initialized = false
+  private healthy = false
 
   constructor(config: NodeFeatureFlagClientConfig) {
     this.environment = normalizeFeatureFlagEnvironment(config.environment)
@@ -401,8 +421,23 @@ export class NodeFeatureFlagClient<
 
   async initialize(): Promise<boolean> {
     if (!this.configured) return false
-    const result = await this.client.init({ timeout: this.timeoutMs })
-    return result.success
+
+    if (!this.initializationPromise) {
+      this.initializationPromise = this.client
+        .init({ timeout: this.timeoutMs })
+        .then((result) => {
+          this.initialized = true
+          this.healthy = result.success
+          return result.success
+        })
+        .catch(() => {
+          this.initialized = true
+          this.healthy = false
+          return false
+        })
+    }
+
+    return this.initializationPromise
   }
 
   isEnabled(
@@ -410,13 +445,22 @@ export class NodeFeatureFlagClient<
     attributes: FeatureFlagAttributes
   ): boolean {
     return this.client.isOn(key, {
-      attributes: { ...attributes, environment: this.environment },
+      attributes: sanitizeFeatureFlagAttributes(attributes, this.environment),
     })
+  }
+
+  getStatus() {
+    return {
+      configured: this.configured,
+      environment: this.environment,
+      initialized: this.initialized,
+      healthy: this.healthy,
+    }
   }
 
   async refresh(): Promise<void> {
     if (!this.configured) return
-    await this.client.refreshFeatures()
+    await this.client.refreshFeatures({ timeout: this.timeoutMs })
   }
 }
 ```
@@ -496,14 +540,22 @@ export function createBrowserFeatureFlagClient<
       : undefined
   )
 
-  const initialize = async (): Promise<boolean> => {
+  let initializationPromise: Promise<boolean> | undefined
+
+  const initialize = (): Promise<boolean> => {
+    if (initializationPromise) return initializationPromise
+
     if (!configured) {
       growthbook.initSync({ payload: { features: {} } })
-      return false
+      initializationPromise = Promise.resolve(false)
+    } else {
+      initializationPromise = growthbook
+        .init({ timeout: config.timeoutMs ?? 2000 })
+        .then((result) => result.success)
+        .catch(() => false)
     }
 
-    const result = await growthbook.init({ timeout: config.timeoutMs ?? 2000 })
-    return result.success
+    return initializationPromise
   }
 
   return { environment, growthbook, initialize }
@@ -526,17 +578,31 @@ export function FeatureFlagProvider({
   config: BrowserFeatureFlagConfig
   children: ReactNode
 }) {
-  const [{ environment, growthbook, initialize }] = useState(() =>
+  const [{ growthbook, initialize, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
   )
+  const destroyTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
-    growthbook.setAttributes({ ...attributes, environment })
-  }, [attributes, environment, growthbook])
+    void setAttributes(attributes)
+  }, [attributes, setAttributes])
 
   useEffect(() => {
+    if (destroyTimeout.current !== undefined) {
+      clearTimeout(destroyTimeout.current)
+      destroyTimeout.current = undefined
+    }
+
     void initialize()
-    return () => growthbook.destroy()
+
+    return () => {
+      // Let Strict Mode's next setup cancel destruction during its cleanup/setup
+      // cycle before releasing the client.
+      destroyTimeout.current = setTimeout(() => {
+        growthbook.destroy()
+        destroyTimeout.current = undefined
+      })
+    }
   }, [growthbook, initialize])
 
   return (
@@ -580,8 +646,8 @@ git commit -m "feat(feature-flags): add React adapter"
 - Create: `docs/log/2026-08-06-growthbook-foundation.md`
 - Modify: `docs/adr/README.md`
 - Modify: `docs/index.md`
-- Modify: `project/plans_wip/PLAN-growthbook-feature-flags.md`
-- Modify: `project/plans_wip/PLAN-growthbook-feature-flags-implementation.md`
+- Modify: `project/PLAN-growthbook-feature-flags.md`
+- Modify: `project/PLAN-growthbook-feature-flags-implementation.md`
 
 **Interfaces:** Documents the package entry points, config names, attribute
 contract, browser/public and Node/internal connectivity, cache/fallback model,
@@ -630,7 +696,7 @@ finding. Record the exact evidence in the design plan progress log.
 Inspect `git diff v3...HEAD`, verify no app imports the package, then:
 
 ```bash
-git add docs project/plans_wip
+git add docs project/PLAN-growthbook-feature-flags.md project/PLAN-growthbook-feature-flags-implementation.md
 git commit -m "docs: document GrowthBook feature flags"
 ```
 
@@ -919,7 +985,7 @@ Run the app/test processes inside the resulting container using
 
 - [ ] **Step 3: Verify in a browser**
 
-Use `npx agent-browser` against the branch-local Manage URL. Intercept only the
+Use `npx agent-browser@0.32.2` against the branch-local Manage URL. Intercept only the
 external GrowthBook SDK payload; use the real local Klicker auth, API, and DB.
 Capture desktop screenshots for:
 
@@ -948,7 +1014,7 @@ failures in the plan progress log.
 - [ ] **Step 5: Commit docs and verification record**
 
 ```bash
-git add docs project/plans_wip
+git add docs project/PLAN-growthbook-feature-flags.md project/PLAN-growthbook-feature-flags-implementation.md
 git commit -m "docs: document analytics GrowthBook rollout"
 ```
 

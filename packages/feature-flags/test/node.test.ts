@@ -5,6 +5,7 @@ import { NodeFeatureFlagClient } from '../src/node.js'
 type TestFeatures = {
   'default-on-flag': boolean
   'targeted-flag': boolean
+  'identifier-flag': boolean
 }
 
 const enabledAttributes: FeatureFlagAttributes = {
@@ -38,6 +39,15 @@ describe('NodeFeatureFlagClient', () => {
               rules: [
                 {
                   condition: { id: 'enabled-user' },
+                  force: true,
+                },
+              ],
+            },
+            'identifier-flag': {
+              defaultValue: false,
+              rules: [
+                {
+                  condition: { email: 'user@example.com' },
                   force: true,
                 },
               ],
@@ -102,6 +112,47 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
     expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(false)
     expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('filters direct identifiers before request-scoped evaluation', async () => {
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+      environment: 'test',
+    })
+
+    await client.initialize()
+
+    expect(
+      client.isEnabled('identifier-flag', {
+        id: 'user-id',
+        actorType: 'user',
+        role: 'USER',
+        email: 'user@example.com',
+      } as unknown as FeatureFlagAttributes)
+    ).toBe(false)
+  })
+
+  it('reports initialization status for service readiness checks', async () => {
+    const client = new NodeFeatureFlagClient<TestFeatures>({
+      apiHost: 'https://growthbook.test',
+      clientKey: 'sdk-test',
+      environment: 'test',
+    })
+
+    expect(client.getStatus()).toEqual({
+      configured: true,
+      environment: 'test',
+      initialized: false,
+      healthy: false,
+    })
+    await client.initialize()
+    expect(client.getStatus()).toEqual({
+      configured: true,
+      environment: 'test',
+      initialized: true,
+      healthy: true,
+    })
   })
 
   it('fails closed without configuration and does not fetch', async () => {
