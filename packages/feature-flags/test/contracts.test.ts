@@ -1,0 +1,65 @@
+import {
+  FEATURE_FLAG_DEFAULTS,
+  normalizeFeatureFlagEnvironment,
+  sanitizeFeatureFlagAttributes,
+} from '../src/index.js'
+
+describe('feature flag contracts', () => {
+  it('starts without active product flags', () => {
+    expect(FEATURE_FLAG_DEFAULTS).toEqual({})
+  })
+
+  it.each([
+    ['production', 'production'],
+    ['staging', 'staging'],
+    ['test', 'test'],
+    ['development', 'development'],
+    [undefined, 'development'],
+    ['', 'development'],
+  ] as const)('normalizes %s to %s', (input, expected) => {
+    expect(normalizeFeatureFlagEnvironment(input)).toBe(expected)
+  })
+
+  it.each([
+    'unexpected',
+    'prod',
+    'Production',
+    'stg',
+  ])('refuses to map the unrecognized environment %s onto a real one', (input) => {
+    const reportedErrors = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    expect(normalizeFeatureFlagEnvironment(input)).toBe('unknown')
+    expect(reportedErrors).toHaveBeenCalledOnce()
+
+    reportedErrors.mockRestore()
+  })
+
+  it('keeps only the approved non-identifying evaluation attributes', () => {
+    expect(
+      sanitizeFeatureFlagAttributes(
+        {
+          id: 'user-id',
+          actorType: 'user',
+          role: 'LECTURER',
+          email: 'user@example.com',
+          name: 'User Name',
+        },
+        'test'
+      )
+    ).toEqual({
+      id: 'user-id',
+      actorType: 'user',
+      role: 'LECTURER',
+      environment: 'test',
+    })
+
+    expect(
+      sanitizeFeatureFlagAttributes(
+        { actorType: 'unexpected', email: 'user@example.com' },
+        'test'
+      )
+    ).toEqual({ actorType: 'anonymous', environment: 'test' })
+  })
+})
