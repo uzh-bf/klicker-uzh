@@ -727,10 +727,15 @@ type Chatbot {
   creditResetPeriod: CreditResetPeriod!
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
+  expectedStudentCount: Int
   id: ID!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
   modelSelection: Boolean!
   name: String!
+  publicationUseCase: String
+  publishedAt: Date
+  reviewComment: String
+  status: ChatbotStatus!
   updatedAt: Date
   usageSummary: ChatbotUsageSummary
 }
@@ -770,6 +775,14 @@ type ChatbotReasoningConfig {
 input ChatbotReasoningConfigInput {
   efforts: [String!]!
   modelId: String!
+}
+
+enum ChatbotStatus {
+  DRAFT
+  PAUSED
+  PENDING_APPROVAL
+  PUBLISHED
+  REJECTED
 }
 
 type ChatbotUsageSummary {
@@ -1977,6 +1990,7 @@ type Mutation {
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createAssessmentParticipantInvitations(courseId: String!, invitations: [AssessmentParticipantInvitationInput!]!): CreateAssessmentParticipantInvitationsPayload
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
+  createChatbot(avatar: String, courseId: String!, description: String, name: String!): Chatbot!
   createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
@@ -2098,6 +2112,7 @@ type Mutation {
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  updateChatbot(avatar: String, description: String, id: String!, name: String): Chatbot
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]

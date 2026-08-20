@@ -1456,6 +1456,33 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      createChatbot: t.withAuth(asUserWithCatalyst).field({
+        type: Chatbot,
+        args: {
+          name: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.createChatbot(args, ctx)
+        },
+      }),
+
+      updateChatbot: t.withAuth(asUserWithCatalyst).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          name: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          avatar: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
+
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: { courseId: t.arg.string({ required: true }) },

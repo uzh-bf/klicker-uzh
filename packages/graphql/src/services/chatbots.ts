@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
+import { GraphQLError } from 'graphql'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 const chatModelSchema = z
@@ -231,23 +232,36 @@ export async function getParticipantCourseChatbots(
   }))
 }
 
+// Owner-facing column projection shared by every service that returns the
+// full (lecturer) Chatbot shape. Keeping it in one place ensures newly added
+// owner fields (e.g. lifecycle status) are selected everywhere IChatbot is
+// returned, so the GraphQL type never sees a missing non-nullable field.
+const chatbotOwnerSelect = {
+  id: true,
+  name: true,
+  description: true,
+  avatar: true,
+  modelSelection: true,
+  allowedModelIds: true,
+  allowedReasoningEffortsByModel: true,
+  creditInitialCredits: true,
+  creditResetPeriod: true,
+  creditResetAmount: true,
+  creditMaxCredits: true,
+  status: true,
+  publicationUseCase: true,
+  expectedStudentCount: true,
+  reviewComment: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ChatbotSelect
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
       disclaimer: { select: { id: true, name: true, title: true } },
       mcpConfigurations: {
@@ -419,19 +433,7 @@ export async function updateChatbotModelSettings(
       ownerId: ctx.user.sub,
     },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
     },
   })
@@ -514,19 +516,105 @@ export async function updateChatbotModelSettings(
           : Prisma.DbNull,
     },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return {
+    ...updated,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      updated.allowedReasoningEffortsByModel
+    ),
+    courses: updated.course ? [updated.course] : [],
+  }
+}
+
+type CreateChatbotArgs = {
+  name: string
+  description?: string | null
+  avatar?: string | null
+  courseId: string
+}
+
+export async function createChatbot(
+  args: CreateChatbotArgs,
+  ctx: ContextWithUser
+) {
+  // Resource-level authorization: the target course must belong to the
+  // requesting lecturer. Pothos already checked authenticate + catalyst; this
+  // is the third (execute-time ownership) layer of the auth model.
+  const course = await ctx.prisma.course.findFirst({
+    where: { id: args.courseId, ownerId: ctx.user.sub },
+    select: { id: true },
+  })
+  if (!course) {
+    throw new GraphQLError('Course not found')
+  }
+
+  const created = await ctx.prisma.chatbot.create({
+    data: {
+      name: args.name,
+      description: args.description ?? null,
+      avatar: args.avatar ?? null,
+      status: DB.ChatbotStatus.DRAFT,
+      owner: { connect: { id: ctx.user.sub } },
+      course: { connect: { id: args.courseId } },
+      // systemPrompts intentionally left unset (null): when no modes are
+      // configured, the chat runtime derives a tutor-only default from
+      // DEFAULT_PROMPT (getSupportedChatModes). Custom modes are added and
+      // reviewed post-approval — see docs/adr/0021.
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return {
+    ...created,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      created.allowedReasoningEffortsByModel
+    ),
+    courses: created.course ? [created.course] : [],
+  }
+}
+
+type UpdateChatbotArgs = {
+  id: string
+  name?: string | null
+  description?: string | null
+  avatar?: string | null
+}
+
+export async function updateChatbot(
+  args: UpdateChatbotArgs,
+  ctx: ContextWithUser
+) {
+  // Ownership guard: scope the lookup by ownerId so a non-owner cannot target
+  // another lecturer's chatbot. Returns null (not found) when the guard fails.
+  const existing = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.id, ownerId: ctx.user.sub },
+    select: { id: true },
+  })
+  if (!existing) {
+    return null
+  }
+
+  const updated = await ctx.prisma.chatbot.update({
+    where: { id: existing.id },
+    data: {
+      // name is a required column, so only overwrite it when a value is given.
+      ...(args.name != null ? { name: args.name } : {}),
+      // description/avatar are nullable: an explicit null clears them, an
+      // omitted (undefined) arg leaves them untouched.
+      ...(args.description !== undefined
+        ? { description: args.description }
+        : {}),
+      ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+    },
+    select: {
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
     },
   })

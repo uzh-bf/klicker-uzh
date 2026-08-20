@@ -211,10 +211,20 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 ## Progress
 
-- Status: plan finalized (planner edits folded). Worktree from `origin/v3`.
-  Devcontainer stack starting. No slices started.
-- Remaining: S1–S5.
-- Runtime: worktree devcontainer stack coming up.
+- Status: S2 committed. Worktree from `origin/v3`, devcontainer up.
+- S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
+  backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
+- S2 (create/update mutations + owner-type exposure): DONE.
+  `ChatbotStatus` GraphQL enum + owner-facing `Chatbot` fields (status +
+  publication) exposed; `ChatbotPublic` left clean (F7). `createChatbot`
+  (asUserWithCatalyst, course-ownership check, DRAFT, tutor-only via null
+  systemPrompts) + `updateChatbot` (ownership filter, free knobs name/desc/
+  avatar). Shared `chatbotOwnerSelect` prevents projection drift. Codegen +
+  typecheck green; 4 service tests pass (create/update happy-path + non-owner
+  rejection). Slice-reviewer (contract+authz risk) pending.
+- Remaining: S3–S5.
+- Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
+  dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
 ## MR/PR evidence expected
 
