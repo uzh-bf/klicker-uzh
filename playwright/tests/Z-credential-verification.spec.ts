@@ -204,7 +204,10 @@ test.describe('Assessment report credential lifecycle', () => {
       content.matchAll(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/g),
       (match) => Number(match[1])
     )
-    expect(histogramBarWidths[0]).toBeGreaterThan(histogramBarWidths[1]!)
+    expect(histogramBarWidths[0]).toBeCloseTo(histogramBarWidths[1]!, 5)
+    expect(content).toContain('stroke="#0028a5" stroke-width="2"')
+    expect(content).toContain('>0</text>')
+    expect(content).toContain('>100</text>')
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.token).toBe(token)
