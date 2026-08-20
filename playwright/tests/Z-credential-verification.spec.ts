@@ -38,7 +38,9 @@ async function loginAssessmentStudent(
     {
       email: ASSESSMENT_REPORT_SUBJECT_EMAIL,
       sub: ASSESSMENT_REPORT_PARTICIPANT_IDS[0]!,
-      ...(identity ?? {}),
+      ...(identity
+        ? { given_name: identity.givenName, family_name: identity.surname }
+        : {}),
       role: 'PARTICIPANT',
       scope: 'ACCOUNT_OWNER',
       catalystInstitutional: false,
