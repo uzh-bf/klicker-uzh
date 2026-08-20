@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
+import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
   type Course,
   LocaleType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import {
   Button,
   FormikNumberField,
@@ -20,6 +20,7 @@ import dayjs from 'dayjs'
 import { Form, Formik, type FormikProps, useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useId, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
 import CourseInformationFields from './CourseInformationFields'
 
@@ -55,16 +56,22 @@ export interface CourseDuplicationFormData {
 
 interface CourseDuplicationProgressProps {
   className?: string
+  surface?: boolean
 }
 
 export function CourseDuplicationProgress({
   className = '',
+  surface = true,
 }: Readonly<CourseDuplicationProgressProps>) {
   const t = useTranslations()
 
   return (
     <div
-      className={`flex max-w-md flex-col items-center gap-3 rounded-md border border-gray-200 bg-white p-6 text-center shadow-sm ${className}`}
+      className={twMerge(
+        'flex max-w-md flex-col items-center gap-3 text-center',
+        surface && 'rounded-md border border-gray-200 bg-white p-6 shadow-sm',
+        className
+      )}
     >
       <Loader basic data={{ cy: 'course-duplication-spinner' }} />
       <div className="font-bold text-gray-900">
@@ -77,7 +84,11 @@ export function CourseDuplicationProgress({
   )
 }
 
-export type CourseDuplicationErrorType = 'access' | 'partial' | 'generic'
+export type CourseDuplicationErrorType =
+  | 'access'
+  | 'generic'
+  | 'inProgress'
+  | 'partial'
 
 type CourseDuplicationTranslationKey =
   | 'manage.courseList.changeAvailabilityDateGroupActivities'
@@ -85,9 +96,12 @@ type CourseDuplicationTranslationKey =
   | 'manage.courseList.courseColorReq'
   | 'manage.courseList.courseCopySuffix'
   | 'manage.courseList.courseDisplayNameReq'
+  | 'manage.courseList.courseDuplicationAlreadyInProgress'
   | 'manage.courseList.courseDuplicationEndDateInPast'
   | 'manage.courseList.courseDuplicationFailed'
+  | 'manage.courseList.courseDuplicationBackgroundInfo'
   | 'manage.courseList.courseDuplicationNoAccess'
+  | 'manage.courseList.courseDuplicationInProgress'
   | 'manage.courseList.courseDuplicationPartialFailure'
   | 'manage.courseList.courseEndReq'
   | 'manage.courseList.courseNameReq'
@@ -293,6 +307,10 @@ function getCourseDuplicationErrorMessage(
 
   if (errorType === 'partial') {
     return t('manage.courseList.courseDuplicationPartialFailure')
+  }
+
+  if (errorType === 'inProgress') {
+    return t('manage.courseList.courseDuplicationAlreadyInProgress')
   }
 
   return t('manage.courseList.courseDuplicationFailed')

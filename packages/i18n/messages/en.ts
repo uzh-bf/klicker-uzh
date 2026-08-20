@@ -3033,6 +3033,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
       courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationAlreadyInProgress:
+        'This course is already being duplicated.',
       courseDuplicationNoAccess:
         'You no longer have sufficient permissions to duplicate this course.',
       courseDuplicationPartialFailure:
@@ -3041,6 +3043,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Duplicating large courses can take a while.',
       courseDuplicationBackgroundInfo:
         'You can close this dialog. The duplicated course will open automatically when it is ready.',
+      courseDuplicationStatusTab: 'Course duplications',
+      courseDuplicationStatusCount:
+        '{count} active course duplication requests',
+      courseDuplicationStatusTitle: 'Active course duplications',
+      courseDuplicationStatusDescription:
+        'You can continue working while these courses are copied.',
+      courseDuplicationStatusSource: 'Copying from "{source}"',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
       noCoursesFound: 'No courses found. Please create a new course.',
