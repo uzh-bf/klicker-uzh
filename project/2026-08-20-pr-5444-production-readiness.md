@@ -33,7 +33,7 @@ The reviewed slice contains the package, tests, documentation, plans, and review
 | GitHub checks for #5444 | Required current-head gates | The PR description records the final completed GitHub run; local pre-push gates passed for the reviewed source head. |
 | Review feedback | Resolved | Six CodeRabbit plan findings were verified and corrected; all six threads are resolved. The configured code-owner review is approved. |
 
-The substantive branch diff is 24 files with 1,291 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 29 files with 2,955 additions and 20 deletions, including this refreshed report.
+The substantive branch diff is 24 files with 1,291 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 29 files with 2,965 additions and 20 deletions, including this refreshed report.
 
 ## Findings carried forward
 
