@@ -25,10 +25,10 @@ import CourseInformationFields from './CourseInformationFields'
 
 interface CourseDuplicationModalProps {
   initialValues?: Course
+  isDuplicating: boolean
   onModalClose: () => void
   onSubmit: (
     values: CourseDuplicationFormData,
-    setSubmitting: (isSubmitting: boolean) => void,
     onError: (errorType?: CourseDuplicationErrorType) => void
   ) => Promise<void>
 }
@@ -51,6 +51,30 @@ export interface CourseDuplicationFormData {
   copyPracticeQuizzes: boolean
   copyMicroLearnings: boolean
   copyGroupActivities: boolean
+}
+
+interface CourseDuplicationProgressProps {
+  className?: string
+}
+
+export function CourseDuplicationProgress({
+  className = '',
+}: Readonly<CourseDuplicationProgressProps>) {
+  const t = useTranslations()
+
+  return (
+    <div
+      className={`flex max-w-md flex-col items-center gap-3 rounded-md border border-gray-200 bg-white p-6 text-center shadow-sm ${className}`}
+    >
+      <Loader basic data={{ cy: 'course-duplication-spinner' }} />
+      <div className="font-bold text-gray-900">
+        {t('manage.courseList.courseDuplicationInProgress')}
+      </div>
+      <p className="text-sm text-gray-600">
+        {t('manage.courseList.courseDuplicationBackgroundInfo')}
+      </p>
+    </div>
+  )
 }
 
 export type CourseDuplicationErrorType = 'access' | 'partial' | 'generic'
@@ -579,13 +603,13 @@ function FormikNativeSwitch({
 
 function CourseDuplicationModal({
   initialValues,
+  isDuplicating,
   onModalClose,
   onSubmit,
 }: Readonly<CourseDuplicationModalProps>) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseDuplicationFormData>>(null)
   const submitInFlightRef = useRef(false)
-  const [duplicationInProgress, setDuplicationInProgress] = useState(false)
 
   // fetch user (from cache) to get email for notification field initialization
   const { data: dataUser, loading: loadingUser } = useQuery(
@@ -667,13 +691,12 @@ function CourseDuplicationModal({
           copyMicroLearnings: true,
           copyGroupActivities: initialValues?.isGroupCreationEnabled ?? true,
         }}
-        onSubmit={async (values, { setSubmitting }) => {
+        onSubmit={async (values) => {
           if (submitInFlightRef.current) return
 
           submitInFlightRef.current = true
-          setDuplicationInProgress(true)
           try {
-            await onSubmit(values, setSubmitting, (errorType) =>
+            await onSubmit(values, (errorType) =>
               toast({
                 type: 'error',
                 message: getCourseDuplicationErrorMessage(t, errorType),
@@ -682,7 +705,6 @@ function CourseDuplicationModal({
             )
           } finally {
             submitInFlightRef.current = false
-            setDuplicationInProgress(false)
           }
         }}
         validationSchema={schema}
@@ -753,26 +775,18 @@ function CourseDuplicationModal({
             )
           }
 
-          const isDuplicating = isSubmitting || duplicationInProgress
+          const submitDisabled = isSubmitting || isDuplicating
 
           return (
             <Form className="relative">
-              {isDuplicating && (
+              {submitDisabled && (
                 <div
                   aria-live="polite"
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 px-4 text-center"
                   data-cy="course-duplication-loading"
                   role="status"
                 >
-                  <div className="flex max-w-md flex-col items-center gap-3 rounded-md border border-gray-200 bg-white p-6 shadow-sm">
-                    <Loader basic data={{ cy: 'course-duplication-spinner' }} />
-                    <div className="font-bold text-gray-900">
-                      {t('manage.courseList.courseDuplicationInProgress')}
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {t('manage.courseList.courseDuplicationKeepOpen')}
-                    </p>
-                  </div>
+                  <CourseDuplicationProgress />
                 </div>
               )}
               <div className="flex flex-col gap-2">
@@ -979,11 +993,11 @@ function CourseDuplicationModal({
                 primary
                 className={{ root: 'float-right mt-3' }}
                 data={{ cy: 'manipulate-course-submit' }}
-                disabled={!isValid || isDuplicating}
-                loading={isDuplicating}
+                disabled={!isValid || submitDisabled}
+                loading={submitDisabled}
                 type="submit"
               >
-                <Button.Icon icon={faCopy} loading={isDuplicating} />
+                <Button.Icon icon={faCopy} loading={submitDisabled} />
                 <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
               </Button>
             </Form>

@@ -34,6 +34,7 @@ import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
+  CourseDuplicationProgress,
   type CourseDuplicationErrorType,
   type CourseDuplicationFormData,
 } from './modals/CourseDuplicationModal'
@@ -155,6 +156,8 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
+  const [courseDuplicationInProgress, setCourseDuplicationInProgress] =
+    useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -357,12 +360,10 @@ function CourseOverviewHeader({
       {duplicationModal && (
         <CourseDuplicationModal
           initialValues={course}
+          isDuplicating={courseDuplicationInProgress}
           onModalClose={() => setDuplicationModal(false)}
-          onSubmit={async (
-            values: CourseDuplicationFormData,
-            setSubmitting,
-            onError
-          ) => {
+          onSubmit={async (values: CourseDuplicationFormData, onError) => {
+            setCourseDuplicationInProgress(true)
             try {
               // convert dates to UTC
               const startDateUTC = dayjs(values.startDate).utc().toISOString()
@@ -440,15 +441,25 @@ function CourseOverviewHeader({
                     ? getCourseDuplicationErrorType(mutationError)
                     : 'access'
                 )
-                setSubmitting(false)
               }
             } catch (error) {
               onError(getCourseDuplicationErrorType(error))
-              setSubmitting(false)
               console.error(error)
+            } finally {
+              setCourseDuplicationInProgress(false)
             }
           }}
         />
+      )}
+      {courseDuplicationInProgress && !duplicationModal && (
+        <div
+          aria-live="polite"
+          className="fixed right-4 bottom-4 z-30 w-[min(24rem,calc(100vw-2rem))]"
+          data-cy="course-duplication-loading"
+          role="status"
+        >
+          <CourseDuplicationProgress className="w-full" />
+        </div>
       )}
       {courseSettingsModal && (
         <CourseManipulationModal

@@ -3039,8 +3039,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Not all selected activities or activity instances could be duplicated. No partial course was created.',
       courseDuplicationInProgress:
         'Duplicating large courses can take a while.',
-      courseDuplicationKeepOpen:
-        'Please keep this window open. You will be redirected to the duplicated course automatically.',
+      courseDuplicationBackgroundInfo:
+        'You can close this dialog. The duplicated course will open automatically when it is ready.',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
       noCoursesFound: 'No courses found. Please create a new course.',

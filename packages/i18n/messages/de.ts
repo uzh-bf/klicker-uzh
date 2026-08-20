@@ -3084,8 +3084,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
       courseDuplicationInProgress:
         'Das Duplizieren grosser Kurse kann einen Moment dauern.',
-      courseDuplicationKeepOpen:
-        'Bitte lassen Sie dieses Fenster geöffnet. Sie werden automatisch zum duplizierten Kurs weitergeleitet.',
+      courseDuplicationBackgroundInfo:
+        'Sie können diesen Dialog schliessen. Der duplizierte Kurs wird automatisch geöffnet, sobald er bereit ist.',
       courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
