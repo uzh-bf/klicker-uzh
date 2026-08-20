@@ -299,17 +299,18 @@ this plan's authority.
 
 ## Progress
 
-- Status: S2 complete locally; review and S3 remain.
+- Status: S3 documentation complete locally; verification and final review
+  remain.
 - Completed: repository freshness check, current code/PDF review, Sol planner
   pass, fresh task worktree creation, S1 comparison semantics tests and focused
   GraphQL verification (8 tests passing).
-- Remaining: S2 browser proof and review; S3 documentation, full checks,
-  runtime shutdown, and final review.
+- Remaining: S2 browser proof and review; full checks, runtime shutdown, and
+  final review.
 - Latest evidence: task branch is based on `origin/v3` `9f38b4e9a`; primary
   checkout remains dirty but untouched.
 - Slice review: not required yet — S1 is a test-only slice; S2 review will run
   after its immutable commit range is complete.
 - Delivery: required layer is a local branch ready for a draft PR; achieved
   layer is the plan artifact only.
-- Next action: run the required S2 simplifier and slice-reviewer passes, then
-  complete browser proof and documentation.
+- Next action: complete browser proof and repository-native checks, then run
+  the integrated final review.
