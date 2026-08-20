@@ -299,14 +299,16 @@ this plan's authority.
 
 ## Progress
 
-- Status: plan written; implementation not started.
+- Status: S1 complete; S2 implementation in progress.
 - Completed: repository freshness check, current code/PDF review, Sol planner
-  pass, fresh task worktree creation.
-- Remaining: S1 comparison tests; S2 shared visual implementation and browser
+  pass, fresh task worktree creation, S1 comparison semantics tests and focused
+  GraphQL verification (8 tests passing).
+- Remaining: S2 shared visual implementation and browser
   proof; S3 documentation, full checks, runtime shutdown, and final review.
 - Latest evidence: task branch is based on `origin/v3` `9f38b4e9a`; primary
   checkout remains dirty but untouched.
-- Slice review: not required yet — no implementation slice committed.
+- Slice review: not required yet — S1 is a test-only slice; S2 review will run
+  after its immutable commit range is complete.
 - Delivery: required layer is a local branch ready for a draft PR; achieved
   layer is the plan artifact only.
-- Next action after plan approval: execute S1 in the fresh task worktree.
+- Next action: implement S2 frontend visualization and percentile presentation.

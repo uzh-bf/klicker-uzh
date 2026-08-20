@@ -167,6 +167,18 @@ describe('assessment report snapshots', () => {
     ).toBeNull()
   })
 
+  it('counts inclusive ties and rounds the percentile to the nearest integer', () => {
+    const comparison = buildAssessmentReportComparison({
+      scores: [0, 1, 2, 3, 3, 4, 5, 6, 7, 8, 9],
+      studentScore: 3,
+      availableTotalPoints: 10,
+    })
+
+    expect(comparison).not.toBeNull()
+    expect(comparison!.cohortSize).toBe(11)
+    expect(comparison!.percentile).toBe(45)
+  })
+
   it('preserves distinct bins for a very small non-zero score range', () => {
     const comparison = buildAssessmentReportComparison({
       scores: Array(10).fill(0.005),
@@ -199,5 +211,6 @@ describe('assessment report snapshots', () => {
       comparison!.cohortSize
     )
     expect(comparison!.histogram.every((bin) => bin.count >= 3)).toBe(true)
+    expect(comparison!.histogram.at(-1)?.binEnd).toBe(100)
   })
 })
