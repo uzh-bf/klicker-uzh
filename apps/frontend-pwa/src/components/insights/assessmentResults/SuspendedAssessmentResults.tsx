@@ -370,6 +370,11 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
               })
             : '',
           percentileExplanation: t('pwa.assessment.percentileExplanation'),
+          cohortSizeText: comparison
+            ? t('pwa.assessment.cohortSizeLabel', {
+                count: comparison.cohortSize,
+              })
+            : '',
           histogramTitle: t('pwa.assessment.histogramTitle'),
           histogramDescription: t('pwa.assessment.histogramDescription'),
           histogramUserRange,

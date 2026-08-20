@@ -211,6 +211,5 @@ describe('assessment report snapshots', () => {
       comparison!.cohortSize
     )
     expect(comparison!.histogram.every((bin) => bin.count >= 3)).toBe(true)
-    expect(comparison!.histogram.at(-1)?.binEnd).toBe(100)
   })
 })

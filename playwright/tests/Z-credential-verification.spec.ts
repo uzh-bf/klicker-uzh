@@ -208,6 +208,7 @@ test.describe('Assessment report credential lifecycle', () => {
     expect(content).toContain('stroke="#0028a5" stroke-width="2"')
     expect(content).toContain('>0</text>')
     expect(content).toContain('>100</text>')
+    expect(content).toContain('Comparison cohort: 10 active participants')
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.token).toBe(token)

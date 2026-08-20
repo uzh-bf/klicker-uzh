@@ -22,6 +22,7 @@ export interface ExportReportTexts {
   comparisonTitle: string
   percentileText: string
   percentileExplanation: string
+  cohortSizeText: string
   histogramTitle: string
   histogramDescription: string
   histogramUserRange: string
@@ -80,9 +81,9 @@ function createHistogramSvg({
   locale: string
 }) {
   const width = 640
-  const height = 340
+  const height = 360
   const top = 36
-  const bottom = 78
+  const bottom = 90
   const left = 52
   const right = 20
   const plotWidth = width - left - right
@@ -126,7 +127,7 @@ function createHistogramSvg({
       )}`
       return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" />
         <text x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle" font-weight="600">${bin.count}</text>
-        <text x="${x + barWidth / 2}" y="${top + plotHeight + 20}" text-anchor="middle" font-size="10">${escapeHtml(range)}</text>
+        <text x="${x + barWidth / 2}" y="${top + plotHeight + 18}" text-anchor="middle" font-size="10">${escapeHtml(range)}</text>
         ${
           isUserBin
             ? `<text x="${x + barWidth / 2}" y="${y - 22}" text-anchor="middle" fill="#0028a5" font-weight="700">${escapeHtml(texts.yourScore)}</text>`
@@ -135,8 +136,12 @@ function createHistogramSvg({
     })
     .join('')
 
+  const percentileRadius = 5
   const percentileX =
-    left + (Math.min(Math.max(percentile, 0), 100) / 100) * plotWidth
+    left +
+    percentileRadius +
+    (Math.min(Math.max(percentile, 0), 100) / 100) *
+      (plotWidth - percentileRadius * 2)
   const percentileRulerY = height - 42
   const percentileRuler = `<line x1="${left}" y1="${percentileRulerY}" x2="${width - right}" y2="${percentileRulerY}" stroke="#0028a5" stroke-width="2" />
     <circle cx="${percentileX}" cy="${percentileRulerY}" r="5" fill="#0028a5" />
@@ -156,7 +161,7 @@ function createHistogramSvg({
       <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#666" />
       ${percentileRuler}
       ${bars}
-      <text x="${left + plotWidth / 2}" y="${height - 64}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
+      <text x="${left + plotWidth / 2}" y="${height - 58}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
       <text x="14" y="${top + plotHeight / 2}" text-anchor="middle" transform="rotate(-90 14 ${top + plotHeight / 2})">${escapeHtml(texts.participantCount)}</text>
     </g>
   </svg>`
@@ -258,6 +263,7 @@ export function createAssessmentReport({
   const comparison = snapshot.comparison
     ? `<p class="percentile">${escapeHtml(texts.percentileText)}</p>
        <p>${escapeHtml(texts.percentileExplanation)}</p>
+       <p>${escapeHtml(texts.cohortSizeText)}</p>
        <h3>${escapeHtml(texts.histogramTitle)}</h3>
        <p>${escapeHtml(texts.histogramDescription)}</p>
        <div class="chart">${createHistogramSvg({
