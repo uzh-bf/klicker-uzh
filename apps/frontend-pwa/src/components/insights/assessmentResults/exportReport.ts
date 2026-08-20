@@ -338,7 +338,7 @@ export function createAssessmentReport({
       th, td { padding: 3px 7px; }
       .percentile { padding: 5px 8px; font-size: 12px; }
       .chart { overflow: visible; }
-      .chart svg { min-width: 0; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+      .chart svg { min-width: 0; width: 100%; max-width: 420px; max-height: 76mm; height: auto; margin: 0 auto; }
       .histogram-table { margin-top: 4px; font-size: 8px; }
       .histogram-table th, .histogram-table td { padding: 2px 5px; }
       .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
