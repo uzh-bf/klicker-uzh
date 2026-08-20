@@ -3,15 +3,20 @@
 ## Scope and merge posture
 
 - Pull request: [#5444](https://github.com/uzh-bf/klicker-uzh/pull/5444), the replacement for closed PR #5322.
-- Base: `v3` at `365f07873f1023a7597b131caa97e810a0c6b7f2`.
-- Head: `bd5122d3920bc4c201a4c01f08b7fd7db31a5c40`.
-- Source behavior is unchanged from the reviewed implementation head `1e377e32a`; later commits update readiness evidence, runtime documentation, and this current-head report.
+- Base: `v3` at `215249bf1fae201bb6997be59fc4021557206b36`.
+- Reviewed foundation source head: `d0012347cb880257df8c5a4c209279e977e7f3fc`.
+- The current source and plan examples are aligned; this report refresh records
+  the final merge evidence without approving the merge or deployment.
 
 **Verdict: ready to merge as the no-consumer foundation; not ready for first production adoption.**
 
 The branch adds the shared GrowthBook package but no application import, active product flag, live endpoint, service, migration, or production data operation. The user decision is to defer adopter-only findings until the first consumer implementation, where browser and Node behavior can be exercised in a real integration.
 
-GitHub currently reports `mergeable: MERGEABLE`; checks for the current documentation-only head are still rerunning. The PR remains `BLOCKED` because no code-owner review is recorded. This report does not authorize merging or deployment.
+GitHub reports the foundation as `MERGEABLE` with a `CLEAN` merge state after
+the v3 synchronization. The configured code-owner review is approved. The
+final current-head check result and review-thread state are recorded in the PR
+itself immediately before handoff. This report does not authorize merging or
+deployment.
 
 ## Evidence boundary
 
@@ -25,10 +30,10 @@ The reviewed slice contains the package, tests, documentation, plans, and review
 | Feature-flags typecheck and build | Passed | Local package checks |
 | Repository check and build | Passed: 25/25 checks and 23/23 build tasks | Local repository gates; Node 26 warning against the pinned Node 24 toolchain remained non-fatal |
 | Commit and pre-push gates | Passed | Hooks ran without `--no-verify`; local gitleaks reported zero leaks |
-| GitHub checks for #5444 | Rerunning | The current `bd5122d` run has completed passes for security analysis, builds, and several checks; repository checks, SonarCloud, and test jobs remain in progress. |
-| Review feedback | None pending | No unresolved threads or submitted reviews; CodeRabbit posted only a rate-limit notice |
+| GitHub checks for #5444 | Required current-head gates | The PR description records the final completed GitHub run; local pre-push gates passed for the reviewed source head. |
+| Review feedback | Resolved | Six CodeRabbit plan findings were verified and corrected; all six threads are resolved. The configured code-owner review is approved. |
 
-The substantive branch diff is 24 files with 1,289 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 29 files with 2,899 additions and 20 deletions, including this refreshed report.
+The substantive branch diff is 24 files with 1,291 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 29 files with 2,955 additions and 20 deletions, including this refreshed report.
 
 ## Findings carried forward
 
@@ -45,8 +50,10 @@ The detailed earlier evidence remains in [the PR #5322 readiness report](2026-08
 
 ## Blocking before merge
 
-- Obtain the required code-owner review configured by `CODEOWNERS` (`@rschlaefli`).
-- No code, CI, or security finding currently blocks the foundation merge.
+- The configured code-owner review from `@rschlaefli` is approved.
+- No source, CI, security, or review finding remains blocking on the reviewed
+  foundation slice. The PR must retain its passing current-head checks and
+  `MERGEABLE`/`CLEAN` state at merge time.
 
 ## Follow-up after merge
 
@@ -55,4 +62,7 @@ The detailed earlier evidence remains in [the PR #5322 readiness report](2026-08
 
 ## Review method
 
-The current source head is the same implementation reviewed for PR #5322, with only evidence/documentation commits after `1e377e32a`. This report refreshes the PR identity, current GitHub checks, merge posture, and the explicit decision to defer adopter-only findings until they can be tested at a consumer boundary.
+The current source head contains the foundation implementation and the verified
+review corrections described above. This report refreshes the PR identity,
+current GitHub checks, merge posture, and the explicit decision to defer
+adopter-only findings until they can be tested at a consumer boundary.
