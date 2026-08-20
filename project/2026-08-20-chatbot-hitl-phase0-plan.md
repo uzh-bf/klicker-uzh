@@ -221,7 +221,10 @@ No separate tasks; nothing crosses a boundary warranting one.
   systemPrompts) + `updateChatbot` (ownership filter, free knobs name/desc/
   avatar). Shared `chatbotOwnerSelect` prevents projection drift. Codegen +
   typecheck green; 4 service tests pass (create/update happy-path + non-owner
-  rejection). Slice-reviewer (contract+authz risk) pending.
+  rejection). Reviews DONE: slice-reviewer (contract+authz) CHANGES-REQUIRED
+  -> fixed (added asUserFullAccess scope to both mutations, matching the 23
+  sibling catalyst mutations); simplifier #2/#3 applied, #1 (defer pub fields)
+  rejected as plan-directed. Re-verified: codegen/typecheck/4 tests green.
 - Remaining: S3–S5.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.

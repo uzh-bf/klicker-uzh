@@ -1456,7 +1456,9 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createChatbot: t.withAuth(asUserWithCatalyst).field({
+      createChatbot: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
         type: Chatbot,
         args: {
           name: t.arg.string({ required: true }),
@@ -1469,7 +1471,9 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateChatbot: t.withAuth(asUserWithCatalyst).field({
+      updateChatbot: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
         nullable: true,
         type: Chatbot,
         args: {

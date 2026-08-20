@@ -591,8 +591,8 @@ export async function updateChatbot(
   args: UpdateChatbotArgs,
   ctx: ContextWithUser
 ) {
-  // Ownership guard: scope the lookup by ownerId so a non-owner cannot target
-  // another lecturer's chatbot. Returns null (not found) when the guard fails.
+  // Ownership guard: a failed ownerId-scoped lookup returns null rather than a
+  // throw, so a non-owner cannot distinguish "not yours" from "does not exist".
   const existing = await ctx.prisma.chatbot.findFirst({
     where: { id: args.id, ownerId: ctx.user.sub },
     select: { id: true },
