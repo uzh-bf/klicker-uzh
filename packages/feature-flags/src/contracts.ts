@@ -25,22 +25,43 @@ export type FeatureFlagEnvironment =
   | 'production'
   | 'unknown'
 
-export type FeatureFlagAttributeValue =
-  | string
-  | number
-  | boolean
-  | string[]
-  | number[]
-  | null
-  | undefined
-
-export type FeatureFlagAttributes = Record<
-  string,
-  FeatureFlagAttributeValue
-> & {
+export type FeatureFlagAttributes = {
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
+}
+
+export type FeatureFlagEvaluationAttributes = FeatureFlagAttributes & {
+  environment: FeatureFlagEnvironment
+}
+
+export function sanitizeFeatureFlagAttributes(
+  attributes: unknown,
+  environment: FeatureFlagEnvironment
+): FeatureFlagEvaluationAttributes {
+  const source =
+    typeof attributes === 'object' && attributes !== null
+      ? (attributes as Record<string, unknown>)
+      : {}
+  const actorType =
+    source.actorType === 'user' ||
+    source.actorType === 'participant' ||
+    source.actorType === 'anonymous'
+      ? source.actorType
+      : 'anonymous'
+  const sanitized: FeatureFlagEvaluationAttributes = {
+    actorType,
+    environment,
+  }
+
+  if (typeof source.id === 'string') {
+    sanitized.id = source.id
+  }
+  if (typeof source.role === 'string') {
+    sanitized.role = source.role
+  }
+
+  return sanitized
 }
 
 // An absent value is the ordinary local case and stays `development`. A value
@@ -63,9 +84,14 @@ export function normalizeFeatureFlagEnvironment(
     return 'development'
   }
 
-  console.error(
-    `[feature-flags] unrecognized environment "${value}"; disabling feature flag evaluation`
-  )
+  if (!reportedUnknownEnvironments.has(value)) {
+    reportedUnknownEnvironments.add(value)
+    console.error(
+      '[feature-flags] unrecognized environment; disabling feature flag evaluation'
+    )
+  }
 
   return 'unknown'
 }
+
+const reportedUnknownEnvironments = new Set<string>()

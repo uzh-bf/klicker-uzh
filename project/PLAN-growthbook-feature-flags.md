@@ -93,7 +93,8 @@ The React adapter owns SDK construction, initialization, attribute updates,
 and cleanup. It receives `apiHost`, `clientKey`, deployment `environment`, and
 actor attributes from the host application. Missing configuration, invalid
 environment, loading, unknown flags, timeouts, and network failures all
-evaluate to the declared fallback.
+evaluate to the declared fallback when no usable cached payload exists. A
+usable cached payload remains active after a network error.
 
 `frontend-manage` activates the adapter inside its authenticated `Layout`,
 after `UserProfileDocument` has returned the lecturer. Login and unauthenticated
@@ -148,7 +149,8 @@ empty feature payload and deterministic fallbacks.
 - Add pinned GrowthBook SDK dependencies and synchronized lockfile changes.
 - Implement fail-closed initialization and typed boolean-value evaluation.
 - Unit-test browser and server adapters with in-memory feature payloads; tests
-  make no external network requests.
+  make no external network requests, including cached and uncached network-error
+  branches.
 - Document browser versus internal Node connectivity, configuration, attribute
   privacy, lifecycle, fallbacks, and adoption steps.
 - Add ADR 0008 recording the decision to replace database-wide preview
@@ -272,7 +274,7 @@ pnpm run format:check
 ```
 
 Run the manage application through devrouter, validate targeted `true` and
-`false` states with `npx agent-browser`, and retain screenshots for the second
+`false` states with `npx agent-browser@0.32.2`, and retain screenshots for the second
 draft PR.
 
 ## Documentation
@@ -300,8 +302,8 @@ draft PR.
   foundation-first architecture.
 - 2026-08-06: native stack initialized with `feat/growthbook-foundation` based
   on `v3`.
-- 2026-08-06: foundation implemented with GrowthBook SDK `1.6.5` (the latest
-  versions published for both core and React packages) and 11 passing contract,
+- 2026-08-06: foundation implemented with GrowthBook SDK `1.6.5`, intentionally
+  pinned for synchronized core and React packages, and 11 passing contract,
   browser, targeting, and request-isolation tests.
 - 2026-08-06: foundation verification passed package check/build, Syncpack,
   repository formatting, and Opengrep (213 rules, 0 findings). No application
