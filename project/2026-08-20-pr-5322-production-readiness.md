@@ -4,9 +4,9 @@
 
 - Repository: `uzh-bf/klicker-uzh`
 - Pull request: [#5322](https://github.com/uzh-bf/klicker-uzh/pull/5322)
-- Reviewed range: `365f07873f1023a7597b131caa97e810a0c6b7f2..eb0aa446a`
+- Reviewed range: `365f07873f1023a7597b131caa97e810a0c6b7f2..1e377e32a`
 - Base: `v3` at `365f07873f1023a7597b131caa97e810a0c6b7f2`
-- Implementation head: `eb0aa446a` (`fix(feature-flags): constrain GrowthBook runtime`)
+- Implementation head: `1e377e32a` (`fix(feature-flags): restore refresh health state`)
 - Review date: 2026-08-20
 
 **Verdict: not-ready.** The old merge-conflict blocker is resolved: GitHub reports
@@ -37,7 +37,7 @@ base is an ancestor of the implementation head.
 
 | Check | Result | Evidence boundary |
 | --- | --- | --- |
-| Feature-flags tests | Passed: 26 tests in 3 files | Local Vitest run with `CI=true` |
+| Feature-flags tests | Passed: 27 tests in 3 files | Local Vitest run with `CI=true` |
 | Feature-flags typecheck | Passed | Local package check |
 | Feature-flags build | Passed | Local package build |
 | Repository build | Passed: 23/23 Turbo tasks | Local build; existing toolchain warnings remained non-fatal |
@@ -55,7 +55,7 @@ size, live network, or deployment behavior.
 | ID | Severity / confidence | Finding and evidence | Required disposition |
 | --- | --- | --- | --- |
 | PR-01 | **Blocker / confirmed** | The current PR head is mergeable, but GitHub reports `mergeStateStatus: BLOCKED` because `GitGuardian Security Checks` failed; the other required checks were still pending. GitHub exposes no diagnostic for the failed dashboard check through the PR API. | Inspect the GitGuardian result in its dashboard, remediate or explicitly clear a false positive, then wait for all required checks. Do not merge while the check is failed or pending. |
-| FF-01 | **Resolved / high** | The initial audit found that Node `refresh()` changed `healthy` to true after GrowthBook 1.6.5 resolved an unsuccessful HTTP/network refresh. Commit `eb0aa446a` removes that assignment, clears health on a thrown refresh, and adds a failed-initialization/refresh regression (`packages/feature-flags/src/node.ts:101-116`, `test/node.test.ts`). | Keep the status contract explicit before a Node consumer uses it; the SDK still does not expose a result-bearing `refreshFeatures()` response. |
+| FF-01 | **Resolved / high** | The initial audit found that Node `refresh()` changed `healthy` to true after GrowthBook 1.6.5 resolved an unsuccessful HTTP/network refresh. Commit `1e377e32a` uses the SDK's result-bearing `init({ skipCache: true })` seam, restores the prior payload on failure, updates health only from `result.success`, and tests both failure retention and later recovery (`packages/feature-flags/src/node.ts:101-131`, `test/node.test.ts`). | Keep the status contract explicit before a Node consumer uses it; the SDK's lower-level `refreshFeatures()` response remains result-less. |
 | FF-02 | **Major / high** | The two-second SDK timeout bounds the caller but does not abort a never-settling fetch. GrowthBook keeps the shared active-fetch promise until it settles, so later retries can reuse a stuck request. Evidence: browser/node adapter timeout options and pinned SDK `util.ts:400-422`, `feature-repository.ts:380-445`. | Supply an abortable fetch/deadline integration or qualify an SDK version with cancellation. Add a hung-request test proving later recovery. |
 | FF-03 | **Major / high** | Initialization reduces GrowthBook's `success`, `source`, and `error` diagnostics to a boolean and generic warning. `getStatus().healthy` has no stable meaning across unconfigured, loading, cached, and degraded states. The React provider has no status or telemetry channel. Evidence: `packages/feature-flags/src/browserClient.ts:31-64`, `src/node.ts:47-114`, `src/react.tsx:24-58`; SDK `types/growthbook.ts:389-403`. | Define sanitized diagnostic states/reason codes and timestamps; document them as dependency diagnostics rather than application readiness. Add an optional provider status/telemetry hook without exposing keys, payloads, actor attributes, or raw errors. |
 | FF-04 | **Major / high** | A failed initialization promise is memoized permanently. Browser recovery requires reload/remount; Node recovery depends on a separate refresh or restart. | Clear failed initialization after settlement while preserving concurrent single-flight behavior, and define bounded retry ownership for adopters. Add outage-to-recovery tests. |
@@ -103,4 +103,4 @@ evidence from the immutable range and pinned SDK source. The native `explore`
 route failed twice with encrypted payload errors; the approved fallback used
 `gpt-5.6-sol` at `xhigh` effort. The integrated final review first covered the
 pre-hardening head and found the two resolved items above; it was then re-run
-against `eb0aa446a` with the immutable base and path boundary.
+against `1e377e32a` with the immutable base and path boundary.
