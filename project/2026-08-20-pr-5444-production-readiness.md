@@ -4,14 +4,14 @@
 
 - Pull request: [#5444](https://github.com/uzh-bf/klicker-uzh/pull/5444), the replacement for closed PR #5322.
 - Base: `v3` at `365f07873f1023a7597b131caa97e810a0c6b7f2`.
-- Head: `416f22ed58282fc150f5433fa4da3cb902c0112e`.
-- Source behavior is unchanged from the reviewed implementation head `1e377e32a`; later commits update readiness evidence and runtime documentation.
+- Head: `bd5122d3920bc4c201a4c01f08b7fd7db31a5c40`.
+- Source behavior is unchanged from the reviewed implementation head `1e377e32a`; later commits update readiness evidence, runtime documentation, and this current-head report.
 
 **Verdict: ready to merge as the no-consumer foundation; not ready for first production adoption.**
 
 The branch adds the shared GrowthBook package but no application import, active product flag, live endpoint, service, migration, or production data operation. The user decision is to defer adopter-only findings until the first consumer implementation, where browser and Node behavior can be exercised in a real integration.
 
-GitHub currently reports `mergeable: MERGEABLE` and all checks pass. The PR remains `BLOCKED` because no code-owner review is recorded. This report does not authorize merging or deployment.
+GitHub currently reports `mergeable: MERGEABLE`; checks for the current documentation-only head are still rerunning. The PR remains `BLOCKED` because no code-owner review is recorded. This report does not authorize merging or deployment.
 
 ## Evidence boundary
 
@@ -25,10 +25,10 @@ The reviewed slice contains the package, tests, documentation, plans, and review
 | Feature-flags typecheck and build | Passed | Local package checks |
 | Repository check and build | Passed: 25/25 checks and 23/23 build tasks | Local repository gates; Node 26 warning against the pinned Node 24 toolchain remained non-fatal |
 | Commit and pre-push gates | Passed | Hooks ran without `--no-verify`; local gitleaks reported zero leaks |
-| GitHub checks for #5444 | Passed | `gh pr checks 5444` reports green CodeQL, GitGuardian, SonarCloud, builds, checks, tests, and Playwright runs |
+| GitHub checks for #5444 | Rerunning | The current `bd5122d` run has completed passes for security analysis, builds, and several checks; repository checks, SonarCloud, and test jobs remain in progress. |
 | Review feedback | None pending | No unresolved threads or submitted reviews; CodeRabbit posted only a rate-limit notice |
 
-The substantive branch diff is 24 files with 1,289 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 28 files with 2,841 additions and 20 deletions.
+The substantive branch diff is 24 files with 1,289 additions and 20 deletions, excluding `pnpm-lock.yaml` and `project/` planning/readiness artifacts. The complete three-dot diff is 29 files with 2,899 additions and 20 deletions, including this refreshed report.
 
 ## Findings carried forward
 
