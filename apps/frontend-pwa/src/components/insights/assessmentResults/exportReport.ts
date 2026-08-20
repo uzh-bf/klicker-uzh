@@ -66,12 +66,14 @@ function formatNumber(value: number, locale: string) {
 
 function createHistogramSvg({
   histogram,
+  percentile,
   totalPoints,
   availableTotalPoints,
   texts,
   locale,
 }: {
   histogram: NonNullable<AssessmentReportSnapshot['comparison']>['histogram']
+  percentile: number
   totalPoints: number
   availableTotalPoints: number
   texts: ExportReportTexts
@@ -133,6 +135,13 @@ function createHistogramSvg({
     })
     .join('')
 
+  const percentileX =
+    left + (Math.min(Math.max(percentile, 0), 100) / 100) * plotWidth
+  const percentileRuler = `<line x1="${percentileX}" y1="${top - 8}" x2="${percentileX}" y2="${top + plotHeight + 8}" stroke="#0028a5" stroke-width="3" />
+    <text x="${percentileX}" y="${top - 14}" text-anchor="middle" fill="#0028a5" font-weight="700">${escapeHtml(texts.percentileText)}</text>
+    <text x="${left}" y="${height - 28}" text-anchor="start" font-size="10">0</text>
+    <text x="${width - right}" y="${height - 28}" text-anchor="end" font-size="10">100</text>`
+
   const accessibleDescription = [
     texts.histogramDescription,
     texts.histogramUserRange,
@@ -144,6 +153,7 @@ function createHistogramSvg({
     <g fill="#333" font-family="Arial, sans-serif" font-size="11">
       ${grid}
       <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#666" />
+      ${percentileRuler}
       ${bars}
       <text x="${left + plotWidth / 2}" y="${height - 8}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
       <text x="14" y="${top + plotHeight / 2}" text-anchor="middle" transform="rotate(-90 14 ${top + plotHeight / 2})">${escapeHtml(texts.participantCount)}</text>
@@ -251,6 +261,7 @@ export function createAssessmentReport({
        <p>${escapeHtml(texts.histogramDescription)}</p>
        <div class="chart">${createHistogramSvg({
          histogram: snapshot.comparison.histogram,
+         percentile: snapshot.comparison.percentile,
          totalPoints: snapshot.results.totalPoints,
          availableTotalPoints: snapshot.results.availableTotalPoints,
          texts,
