@@ -30,9 +30,10 @@ Applications initialize GrowthBook only when they adopt their first flag.
 | `@klicker-uzh/feature-flags/react` | Browser `FeatureFlagProvider` and typed `useFeatureFlag`               |
 | `@klicker-uzh/feature-flags/node`  | Multi-user `NodeFeatureFlagClient` for process-level backend instances |
 
-Both GrowthBook dependencies are pinned to `1.6.5`
-(`packages/feature-flags/package.json`). Package tests mock only the SDK HTTP
-response and run without Klicker services (**verified 2026-08-06**):
+Both GrowthBook dependencies are intentionally pinned to `1.6.5` for a
+synchronized core and React SDK pair
+(`packages/feature-flags/package.json`). The package checks below run without
+Klicker services:
 
 ```bash
 pnpm --filter @klicker-uzh/feature-flags test
@@ -50,6 +51,7 @@ supplies the actor contract from
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
 - `actorType`: `user`, `participant`, or `anonymous`;
 - `role`: the Klicker role when applicable;
+- `environment`: added by each adapter after normalizing its deployment config;
 
 `normalizeFeatureFlagEnvironment` maps an unset value to `development`. A
 recognized value (`development`, `test`, `staging`, or `production`) allows the
@@ -94,7 +96,9 @@ is known, and memoize the attribute object:
 per provider mount, applies new attributes without recreating it, and dedupes
 initialization under React Strict Mode. It loads the feature payload once; a
 flag change is picked up on the next provider mount or page reload. Missing
-configuration initializes an empty payload without a network request.
+configuration initializes an empty payload without a network request. The
+browser adapter disables GrowthBook auto-experiments, visual changes, JavaScript
+injection, and URL redirects; this foundation evaluates feature flags only.
 
 ## Node.js adoption
 
@@ -115,10 +119,15 @@ flags.isEnabled(featureKey, requestAttributes)
 ```
 
 `packages/feature-flags/src/node.ts:NodeFeatureFlagClient` keeps the downloaded
-feature payload on the process client while passing attributes as request-local
-`userContext` to every evaluation. Never mutate global attributes with the
-current user. Call `refresh()` from an intentional lifecycle or refresh hook if
-the service needs new definitions without restarting.
+feature payload on the process client while passing the request-local
+`FeatureFlagAttributes` as `attributes` to every evaluation. The adapter filters
+unknown fields before calling GrowthBook, so direct identifiers cannot cross the
+boundary even when a JavaScript caller supplies a wider object. Never mutate
+global attributes with the current user. Call `getStatus()` from a readiness
+probe and `refresh()` from an intentional lifecycle or refresh hook if the
+service needs new definitions without restarting. A refresh marks the client
+healthy only after GrowthBook reports a successful payload update and retains the
+previous payload when a refresh fails.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
@@ -133,7 +142,8 @@ to distinguish staging from production because both normally run with
   flags false, even if the remote definition would match the actor or default
   to true.
 - Network or unusable-payload initialization leaves unavailable flags false;
-  GrowthBook may use its own valid cached payload when one exists.
+  GrowthBook keeps a usable cached payload when one exists, while a missing or
+  unusable cache stays on the false fallback.
 - `initialize()` reports whether the SDK loaded successfully; application
   startup must not depend on a true result.
 - Feature definitions and targeting rules are managed in GrowthBook, not by a
