@@ -4,9 +4,9 @@
 
 - Repository: `uzh-bf/klicker-uzh`
 - Pull request: [#5322](https://github.com/uzh-bf/klicker-uzh/pull/5322)
-- Reviewed range: `365f07873f1023a7597b131caa97e810a0c6b7f2..377333f388d0dad7fe1106393dfba5432c39d214`
+- Reviewed range: `365f07873f1023a7597b131caa97e810a0c6b7f2..eb0aa446a`
 - Base: `v3` at `365f07873f1023a7597b131caa97e810a0c6b7f2`
-- Head: `377333f388d0dad7fe1106393dfba5432c39d214`
+- Implementation head: `eb0aa446a` (`fix(feature-flags): constrain GrowthBook runtime`)
 - Review date: 2026-08-20
 
 **Verdict: not-ready.** The old merge-conflict blocker is resolved: GitHub reports
@@ -28,21 +28,22 @@ operation. GrowthBook 1.6.5 behavior was checked from the pinned installed sourc
 SDK payloads remain mocked in unit tests. No service, cluster, live GrowthBook
 endpoint, or production secret was accessed.
 
-The local review worktree is clean. The current branch contains the reviewed tree
-and the old PR head as a second parent, so the publication did not require a
-force-push. `git diff --check` is clean and the base is an ancestor of the head.
+The local review worktree is clean after the implementation fix. The branch
+contains the reviewed tree and the old PR head as a second parent, so the
+publication did not require a force-push. `git diff --check` is clean and the
+base is an ancestor of the implementation head.
 
 ## Verification completed
 
 | Check | Result | Evidence boundary |
 | --- | --- | --- |
-| Feature-flags tests | Passed: 24 tests in 3 files | Local Vitest run with `CI=true` |
+| Feature-flags tests | Passed: 26 tests in 3 files | Local Vitest run with `CI=true` |
 | Feature-flags typecheck | Passed | Local package check |
 | Feature-flags build | Passed | Local package build |
 | Repository build | Passed: 23/23 Turbo tasks | Local build; existing toolchain warnings remained non-fatal |
 | Repository typecheck | Passed: 25/25 Turbo tasks | Local check |
 | Commit/pre-push gates | Passed | Hooks ran without `--no-verify`; local gitleaks reported zero leaks |
-| GitHub PR publication | Passed | Head is `377333f3…`; `mergeable: MERGEABLE` against `v3` |
+| GitHub PR publication | Passed | The implementation head was published and reported `mergeable: MERGEABLE` against `v3` |
 | GitHub required checks | Blocked | GitGuardian failed; remaining required checks were pending at review time |
 
 No browser or adopting service was run. Consequently, local package checks do not
@@ -54,7 +55,7 @@ size, live network, or deployment behavior.
 | ID | Severity / confidence | Finding and evidence | Required disposition |
 | --- | --- | --- | --- |
 | PR-01 | **Blocker / confirmed** | The current PR head is mergeable, but GitHub reports `mergeStateStatus: BLOCKED` because `GitGuardian Security Checks` failed; the other required checks were still pending. GitHub exposes no diagnostic for the failed dashboard check through the PR API. | Inspect the GitGuardian result in its dashboard, remediate or explicitly clear a false positive, then wait for all required checks. Do not merge while the check is failed or pending. |
-| FF-01 | **Major / high** | Node `refresh()` sets `healthy = true` after `refreshFeatures()` resolves. GrowthBook 1.6.5 converts ordinary HTTP/network failures into a resolved unsuccessful result and the SDK discards that result, so the wrapper can report healthy while the dependency is unavailable. Evidence: `packages/feature-flags/src/node.ts:101-114`; pinned SDK `feature-repository.ts` and `GrowthBookClient.ts` failure path. | Use a result-bearing refresh seam or leave health unchanged on a resolved refresh. Add failed-refresh tests for both cached and uncached states before a Node consumer relies on status. |
+| FF-01 | **Resolved / high** | The initial audit found that Node `refresh()` changed `healthy` to true after GrowthBook 1.6.5 resolved an unsuccessful HTTP/network refresh. Commit `eb0aa446a` removes that assignment, clears health on a thrown refresh, and adds a failed-initialization/refresh regression (`packages/feature-flags/src/node.ts:101-116`, `test/node.test.ts`). | Keep the status contract explicit before a Node consumer uses it; the SDK still does not expose a result-bearing `refreshFeatures()` response. |
 | FF-02 | **Major / high** | The two-second SDK timeout bounds the caller but does not abort a never-settling fetch. GrowthBook keeps the shared active-fetch promise until it settles, so later retries can reuse a stuck request. Evidence: browser/node adapter timeout options and pinned SDK `util.ts:400-422`, `feature-repository.ts:380-445`. | Supply an abortable fetch/deadline integration or qualify an SDK version with cancellation. Add a hung-request test proving later recovery. |
 | FF-03 | **Major / high** | Initialization reduces GrowthBook's `success`, `source`, and `error` diagnostics to a boolean and generic warning. `getStatus().healthy` has no stable meaning across unconfigured, loading, cached, and degraded states. The React provider has no status or telemetry channel. Evidence: `packages/feature-flags/src/browserClient.ts:31-64`, `src/node.ts:47-114`, `src/react.tsx:24-58`; SDK `types/growthbook.ts:389-403`. | Define sanitized diagnostic states/reason codes and timestamps; document them as dependency diagnostics rather than application readiness. Add an optional provider status/telemetry hook without exposing keys, payloads, actor attributes, or raw errors. |
 | FF-04 | **Major / high** | A failed initialization promise is memoized permanently. Browser recovery requires reload/remount; Node recovery depends on a separate refresh or restart. | Clear failed initialization after settlement while preserving concurrent single-flight behavior, and define bounded retry ownership for adopters. Add outage-to-recovery tests. |
@@ -68,6 +69,7 @@ size, live network, or deployment behavior.
 | FF-12 | **Minor / high** | Node-only consumers inherit React SDK dependencies and the React peer from the package manifest. | Accept and document the packaging cost or separate the Node dependency boundary before backend adoption. |
 | FF-13 | **Minor / high** | Package tests are not a dedicated root CI gate; the package script is not included in the repository's standard check path. | Add a path-filtered package test gate or an explicit test workflow before relying on the foundation as a shared dependency. |
 | FF-14 | **Minor / high** | The docs explain initialization and fallback but do not yet provide a rollback/incident runbook for the first adopter. | Add operator steps for cache/degraded behavior, rollback order, configuration diagnosis, and the non-emergency nature of remote flag disablement. |
+| FF-15 | **Resolved / high** | The integrated review found that GrowthBook 1.6.5 enables payload-driven auto experiments by default. Commit `eb0aa446a` explicitly disables experiments-on-load, visual experiments, JavaScript injection, and URL redirects in the browser adapter; a regression payload test proves no experiment result or redirect is applied while ordinary feature evaluation remains active (`packages/feature-flags/src/browserClient.ts:21-31`, `test/browserClient.test.ts`). | Retain these options as part of the browser security boundary. Any future experiment support requires a separately reviewed contract and browser test. |
 
 ## Dimension coverage
 
@@ -99,7 +101,6 @@ size, live network, or deployment behavior.
 The eight readiness dimensions were reviewed as separate read-only waves with
 evidence from the immutable range and pinned SDK source. The native `explore`
 route failed twice with encrypted payload errors; the approved fallback used
-`gpt-5.6-sol` at `xhigh` effort. A final integrated review was re-dispatched with
-the immutable base/head and path boundary after its first attempt rejected an
-underspecified boundary; its result is recorded separately from the readiness
-findings.
+`gpt-5.6-sol` at `xhigh` effort. The integrated final review first covered the
+pre-hardening head and found the two resolved items above; it was then re-run
+against `eb0aa446a` with the immutable base and path boundary.
