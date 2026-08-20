@@ -749,6 +749,10 @@ export async function getAssessmentResultsLiveQuiz(
     acc[participation.participantId] = {
       participantId: participation.participantId,
       participantEmail: email,
+      assessmentGivenName: participation.assessmentGivenName,
+      assessmentSurname: participation.assessmentSurname,
+      assessmentMatriculationNumber:
+        participation.assessmentMatriculationNumber,
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
@@ -803,6 +807,9 @@ export async function getAssessmentResultsLiveQuiz(
               quizAcc.students[response.participantId] = {
                 participantId: response.participantId,
                 participantEmail: email,
+                assessmentGivenName: null,
+                assessmentSurname: null,
+                assessmentMatriculationNumber: null,
                 basePoints: response.basePoints,
                 correctnessPoints: response.correctnessPoints,
                 bonusPoints: response.bonusPoints,
@@ -855,26 +862,43 @@ export async function getAssessmentResultsCourse(
   const scores = await calculateAssessmentCourseScores({ courseId }, ctx)
   if (!scores) return null
 
-  const participants = await ctx.prisma.participant.findMany({
+  const participations = await ctx.prisma.participation.findMany({
     where: {
-      id: { in: scores.studentResults.map((result) => result.participantId) },
+      courseId,
+      participantId: {
+        in: scores.studentResults.map((result) => result.participantId),
+      },
     },
     select: {
-      id: true,
-      email: true,
-      accounts: {
-        where: { ssoType: preferredAffiliation },
-        select: { ssoEmail: true },
-        take: 1,
+      participantId: true,
+      assessmentGivenName: true,
+      assessmentSurname: true,
+      assessmentMatriculationNumber: true,
+      participant: {
+        select: {
+          email: true,
+          accounts: {
+            where: { ssoType: preferredAffiliation },
+            select: { ssoEmail: true },
+            take: 1,
+          },
+        },
       },
     },
   })
-  const emails = new Map(
-    participants.map((participant) => [
-      participant.id,
-      participant.accounts[0]?.ssoEmail ??
-        participant.email ??
-        'Missing E-Mail',
+  const participantData = new Map(
+    participations.map((participation) => [
+      participation.participantId,
+      {
+        participantEmail:
+          participation.participant.accounts[0]?.ssoEmail ??
+          participation.participant.email ??
+          'Missing E-Mail',
+        assessmentGivenName: participation.assessmentGivenName,
+        assessmentSurname: participation.assessmentSurname,
+        assessmentMatriculationNumber:
+          participation.assessmentMatriculationNumber,
+      },
     ])
   )
 
@@ -882,7 +906,12 @@ export async function getAssessmentResultsCourse(
     ...scores,
     studentResults: scores.studentResults.map((result) => ({
       ...result,
-      participantEmail: emails.get(result.participantId) ?? 'Missing E-Mail',
+      ...(participantData.get(result.participantId) ?? {
+        participantEmail: 'Missing E-Mail',
+        assessmentGivenName: null,
+        assessmentSurname: null,
+        assessmentMatriculationNumber: null,
+      }),
     })),
   }
 }

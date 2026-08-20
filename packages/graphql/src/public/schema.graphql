@@ -316,6 +316,7 @@ type AssessmentReportHistogramBin {
 
 enum AssessmentReportIdentitySource {
   COURSE_INVITATION
+  SWITCH_EDUID
 }
 
 type AssessmentReportResults {
@@ -339,7 +340,10 @@ type AssessmentReportSnapshot {
 
 type AssessmentReportSubject {
   email: String!
+  givenName: String
+  matriculationNumber: String
   source: AssessmentReportIdentitySource!
+  surname: String
 }
 
 enum AssessmentReportVerificationStatus {
@@ -2402,8 +2406,13 @@ type PublicAssessmentReportSnapshot {
   comparison: AssessmentReportComparison
   course: PublicAssessmentReportCourse!
   results: AssessmentReportResults!
-  subject: AssessmentReportSubject!
+  subject: PublicAssessmentReportSubject!
   version: Int!
+}
+
+type PublicAssessmentReportSubject {
+  name: String
+  source: AssessmentReportIdentitySource!
 }
 
 type PublicAssessmentReportVerification {
@@ -2855,6 +2864,9 @@ type StudentAssessmentResults {
 }
 
 type StudentAssessmentResultsItem {
+  assessmentGivenName: String
+  assessmentMatriculationNumber: String
+  assessmentSurname: String
   basePoints: Float!
   bonusPoints: Float!
   correctnessPoints: Float!

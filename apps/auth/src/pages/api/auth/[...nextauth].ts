@@ -1,16 +1,3 @@
-import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
-import {
-  createOrLinkParticipant,
-  createUserAffiliations,
-  decode,
-  encode,
-  ExtendedProfile,
-  ExtendedUser,
-  getAuthContext,
-  getLecturerHosts,
-  getStudentHosts,
-} from '@/lib/helpers'
-import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
@@ -26,6 +13,19 @@ import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
+import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
+import {
+  createOrLinkParticipant,
+  createUserAffiliations,
+  decode,
+  ExtendedProfile,
+  ExtendedUser,
+  encode,
+  getAuthContext,
+  getLecturerHosts,
+  getStudentHosts,
+} from '@/lib/helpers'
+import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
@@ -76,6 +76,9 @@ function getParticipantConfig({
                   sub: { essential: true },
                   email: { essential: true },
                   swissEduPersonUniqueID: { essential: true },
+                  given_name: { essential: true },
+                  family_name: { essential: true },
+                  swissEduPersonMatriculationNumber: { essential: false },
                   swissEduIDLinkedAffiliation: { essential: false },
                   swissEduIDLinkedAffiliationMail: { essential: false },
                   swissEduIDLinkedAffiliationUniqueID: { essential: false },
@@ -90,7 +93,7 @@ function getParticipantConfig({
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile:', profile)
+              console.error('Missing sub in EduID profile')
               throw new Error('Missing sub in EduID profile')
             }
 

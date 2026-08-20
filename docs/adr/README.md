@@ -19,6 +19,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
 - [0006](./0006-public-catalyst-capability-floor.md) — What public KlickerUZH keeps when Catalyst is absent
 - [0007](./0007-reintegrate-v3-ai-behind-feature-flags.md) — Reintegrate `v3-ai` into `v3` behind feature flags, after VK2
+- [0008](./0008-assessment-identity-boundary-and-public-projection.md) — Keep assessment identity course-scoped and minimize public credential identity
 
 `0001` and `0003` are each used twice — the deployment and chat lines numbered
 independently before this index existed. Numbers are not reassigned, because existing

@@ -1,4 +1,3 @@
-import { sendTeamsNotifications } from '@/lib/util'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import type { CollectedInvitationEmails, JWTPayload } from '@klicker-uzh/util'
@@ -7,9 +6,9 @@ import {
   extractProviderFromAffiliationId,
   generateRandomString,
   InvitationEmailMode,
+  PrismaTransactionClient,
   parseCookiesHeader,
   parseCsvHosts,
-  PrismaTransactionClient,
   signJWT,
   verifyJWT,
 } from '@klicker-uzh/util'
@@ -19,6 +18,7 @@ import { NextApiRequest } from 'next'
 import type { Profile } from 'next-auth'
 import { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
+import { sendTeamsNotifications } from '@/lib/util'
 import {
   DEFAULT_LECTURER_HOSTS,
   DEFAULT_STUDENT_HOSTS,
@@ -28,6 +28,9 @@ import {
 
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
+  given_name?: string
+  family_name?: string
+  swissEduPersonMatriculationNumber?: string
   swissEduIDLinkedAffiliation?: string[]
   swissEduIDLinkedAffiliationMail?: string[]
   swissEduIDLinkedAffiliationUniqueID?: string[]
@@ -365,6 +368,39 @@ async function createParticipantAffiliations(
   return [...processedAffiliations]
 }
 
+function normalizeEduIdClaim(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    return normalized.length > 0 ? normalized : null
+  }
+
+  if (Array.isArray(value) && value.length === 1) {
+    return normalizeEduIdClaim(value[0])
+  }
+
+  return null
+}
+
+async function updateAssessmentParticipantIdentity(
+  tx: PrismaTransactionClient,
+  participantId: string,
+  profile: ExtendedProfile
+) {
+  await tx.participation.updateMany({
+    where: {
+      participantId,
+      course: { isAssessmentEnabled: true },
+    },
+    data: {
+      assessmentGivenName: normalizeEduIdClaim(profile.given_name),
+      assessmentSurname: normalizeEduIdClaim(profile.family_name),
+      assessmentMatriculationNumber: normalizeEduIdClaim(
+        profile.swissEduPersonMatriculationNumber
+      ),
+    },
+  })
+}
+
 // Enhanced participant authentication helper function
 export async function createOrLinkParticipant(profile: ExtendedProfile) {
   const randomUsername = generateRandomString(10)
@@ -410,6 +446,12 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
           error
         )
       }
+
+      await updateAssessmentParticipantIdentity(
+        tx,
+        existing.participantId,
+        profile
+      )
 
       await tx.participant.update({
         where: { id: existing.participantId },
@@ -512,6 +554,8 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         error
       )
     }
+
+    await updateAssessmentParticipantIdentity(tx, participant.id, profile)
 
     // Ensure the transaction returns the participant for the caller
     return participant

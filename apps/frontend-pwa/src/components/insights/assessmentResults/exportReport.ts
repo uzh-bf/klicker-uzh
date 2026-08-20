@@ -10,7 +10,9 @@ export interface ExportReportTexts {
   timeZone: string
   course: string
   courseReference: string
-  student: string
+  studentName: string
+  studentEmail: string
+  matriculationNumber: string
   identitySource: string
   pointsSummary: string
   achieved: string
@@ -213,6 +215,10 @@ export function createAssessmentReport({
     timeStyle: 'short',
     timeZone: REPORT_TIME_ZONE,
   }).format(new Date(issuedAt))
+  const studentName = [snapshot.subject.givenName, snapshot.subject.surname]
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+  const matriculationNumber = snapshot.subject.matriculationNumber
   const resultRows = [
     [
       texts.basePoints,
@@ -349,7 +355,9 @@ export function createAssessmentReport({
   <dl>
     <dt>${escapeHtml(texts.course)}</dt><dd>${escapeHtml(snapshot.course.displayName)}</dd>
     <dt>${escapeHtml(texts.courseReference)}</dt><dd>${escapeHtml(snapshot.course.name)}</dd>
-    <dt>${escapeHtml(texts.student)}</dt><dd>${escapeHtml(snapshot.subject.email)}</dd>
+    ${studentName ? `<dt>${escapeHtml(texts.studentName)}</dt><dd>${escapeHtml(studentName)}</dd>` : ''}
+    <dt>${escapeHtml(texts.studentEmail)}</dt><dd>${escapeHtml(snapshot.subject.email)}</dd>
+    ${matriculationNumber ? `<dt>${escapeHtml(texts.matriculationNumber)}</dt><dd>${escapeHtml(matriculationNumber)}</dd>` : ''}
     <dt>${escapeHtml(texts.identitySource)}</dt><dd>${escapeHtml(identitySourceLabel)}</dd>
   </dl>
 
