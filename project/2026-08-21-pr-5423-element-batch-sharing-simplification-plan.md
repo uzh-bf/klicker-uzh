@@ -13,7 +13,7 @@ gaps that must be closed before the feature can be considered ready.
 - PR head: `54d0e395cd2eef692cb5dffdf9d1ace26a8d7e04` on
   `feat/element-batch-sharing`.
 - Current base: `origin/v3` at
-  `65b4ac4a983e6dc2fe01880c9409a87e30dbbc7`.
+  `df10f524ecf453fe2f43a3b08797a590f962c191`.
 - The PR is open, non-draft, and currently `DIRTY`/`CONFLICTING`.
 - The branch changes 28 paths with approximately 4,154 added and 349 deleted
   lines.
@@ -66,9 +66,9 @@ no unresolved source-level CI findings within the changed scope.
 | Item | Boundary |
 | --- | --- |
 | Execution owner | Main session in the existing `trees/pr5423-readiness` worktree |
-| Worktree | `/Users/rschlae/Git/klicker/klicker-uzh/trees/pr5423-readiness` |
+| Worktree | `trees/pr5423-readiness` |
 | Source | PR head `54d0e395…`; the remote source branch is not rewritten |
-| Base | Fresh `origin/v3` `65b4ac4…` |
+| Base | Fresh `origin/v3` `df10f524…` |
 | Local authority | Approved plan permits local branch setup, edits, checks, and commits |
 | Withheld authority | Push, PR update, stack mutation, merge, deployment, and runtime start unless separately named |
 | Terminal condition | Local layers committed and verified; final review complete; exact publish action reported but not executed |
