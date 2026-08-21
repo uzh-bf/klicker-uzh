@@ -338,9 +338,39 @@ No separate tasks; nothing crosses a boundary warranting one.
 - Substantive size = **1195 added / 80 deleted** (`git diff --numstat`, excl.
   codegen ops.ts/ops.schema.json/public schema, pnpm-lock, plan/ADR docs) —
   full-path package, well above the floor.
-- Remaining: final-reviewer on integrated outcome (`9f38b4e9a..520afeabd`, 6
-  code slices) — DISPATCHED (read-only). Then draft PR against v3 — WITHHELD
-  pending explicit push/PR authorization.
+- Final-reviewer (integrated `9f38b4e9a..520afeabd`): **CHANGES-REQUESTED,
+  mechanical only** — no correctness/authz/data-integrity defect. It positively
+  verified the three-layer auth on create/update, the admin gate on
+  approve/reject, the approval-time `aiChatbotPublishingEnabled` re-read, the
+  participant published-gate across all 11 apps/chat route handlers + layout +
+  `getParticipantCourseChatbots`, the migration ordering (CREATE TYPE → ADD
+  COLUMN DEFAULT DRAFT → UPDATE existing to PUBLISHED, one txn), and the
+  compile-seam extraction. Four findings, all dispositioned:
+  - #1 [med] 4 files failed `biome format` (repo-wide `format:check` CI gate) →
+    FIXED. `biome format --write` on exactly those files;
+    `format:check` now green ("Checked 1674 files. No fixes applied."). `git
+    diff -w` confirmed line-reflow only. Commit `672c9e292`.
+  - #2 [med] `docs/chat-platform.md` contradicted the code ("no visibility
+    field"; auth-guard section omitted the gate) → FIXED. Commit `9ee8e635b`.
+  - #3 [low] `apps/chat/src/services/chatbots.ts` `getChatbotById` (unused, no
+    callers) had no status filter → FIXED with a `findFirst` + PUBLISHED filter
+    so the seam can't leak a draft if wired up later. Commit `bdc597192`.
+  - #4 [low] schema/service comments cite `docs/adr/0020`/`0021`, which live on
+    branch `docs/chatbot-hitl-config-roadmap` (draft PR #5453), not an ancestor
+    → known merge-order dependency; state it in the PR description (merge #5453
+    first, or cherry-pick ADRs 0019-0022). No code change.
+  Corrections were mechanical (format, dead-code one-liner, docs); verified
+  directly (format:check green, chat tsc green, reformatted tests 14/14 + 11/11
+  + 5/5) rather than re-running the heavy final-reviewer. Report:
+  `project/_local/reviews/` (final-review captured in the integrated-verify doc
+  context).
+- Base drift: the resume hook flagged `origin/dev`, but `dev` is a stale
+  divergent branch (3559 commits apart), NOT the base. Branch targets `v3`
+  (`origin/HEAD`): 4 behind, 13 ahead, and none of v3's 4 new commits touch my
+  changed files (overlap empty excl. codegen) — a rebase would be a clean
+  codegen-only re-run.
+- Remaining: draft PR against v3 — WITHHELD pending explicit push/PR
+  authorization. HEAD `9ee8e635b`.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
