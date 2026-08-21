@@ -21,6 +21,7 @@ model ParticipantInvitation {
 
   @@unique([email, courseId])
   @@index([email])
+  @@index([courseId, invitedAt, id])
 }
 
 model ParticipantAccount {
