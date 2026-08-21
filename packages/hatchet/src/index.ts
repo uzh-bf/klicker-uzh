@@ -7,6 +7,13 @@ import type { Redis } from 'ioredis'
 
 export * from './client.js'
 
+type AuditLogMessage = Record<string, string | undefined> & {
+  correlationId?: string
+  info: string
+}
+
+type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
+
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
 export function prepareHatchetTasks({
@@ -43,17 +50,14 @@ export function prepareHatchetTasks({
     retries: 3,
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
-    fn: (
-      {
-        message,
-      }: {
-        message: Record<string, string | undefined> & {
-          correlationId?: string
-          info: string
-        }
-      },
-      ctx
-    ) => {
+    fn: (input: AuditLogInput, ctx) => {
+      // GraphQL task calls use the declared envelope; event producers send the
+      // audit message directly.
+      const messageInput = (input as { message?: unknown }).message
+      const message: AuditLogMessage =
+        typeof messageInput === 'object' && messageInput !== null
+          ? (messageInput as AuditLogMessage)
+          : (input as AuditLogMessage)
       const { info, ...args } = message
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
