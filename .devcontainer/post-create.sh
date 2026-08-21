@@ -57,14 +57,15 @@ retry 12 "prisma reset/push" bash -c '
 echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
 
-# response-api + both hatchet workers run `tsx --watch --env-file=.env`, and node
-# 24 HARD-ERRORS if .env is missing (it's --env-file, not --env-file-if-exists).
-# We keep no per-app .env in the container — every var comes from the inherited
-# container env (devcontainer.env). Seed an EMPTY .env in each dir so the flag
-# resolves; empty adds nothing, so the container env wins. (Copying .env.example
+# response-api uses `tsx --watch --env-file=.env`; both Hatchet workers use
+# nodemon with `node --env-file .env`. Node 24 HARD-ERRORS if .env is missing
+# (it's --env-file, not --env-file-if-exists). We keep no per-app .env contents
+# in the container — every var comes from the inherited container env
+# (devcontainer.env). Seed an EMPTY .env in each dir so the runners resolve the
+# file; empty adds nothing, so the container env wins. (Copying .env.example
 # would wrongly override the compose-DNS hosts with localhost.) touch is
 # idempotent and never clobbers existing contents. (GOTCHAS #28)
-echo "[post-create] Seeding empty per-app .env files (tsx --env-file needs the file present)..."
+echo "[post-create] Seeding empty per-app .env files (dev runners need the file present)..."
 for app in response-api hatchet-worker-general hatchet-worker-response-processor; do
   touch "/workspaces/klicker-uzh/apps/${app}/.env"
 done

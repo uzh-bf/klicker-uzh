@@ -133,3 +133,11 @@ large, deterministic activity set for manual stress testing.
   `fix-course-duplication-timeout` DevPod is running with four registered
   routes; Manage, assessment results, and Auth return HTTP 200, and both
   Hatchet workers are running without the prior watch-mode crash signature.
+- 2026-08-21: A Sol review found the Auth Webpack switch was based on one cold
+  compile observation, not a general incompatibility. Auth now restores
+  Turbopack for the default `dev` command and exposes `dev:webpack` as the
+  explicit fallback; the Hatchet Rollup plus nodemon runners remain in place.
+- 2026-08-21: Updated the DevPod notes, frontend conventions, and worker
+  solution pointer to match the runner behavior. Prettier, Auth, and both
+  worker package checks passed; the wiki validator still reports unrelated
+  pre-existing ADR and solution frontmatter errors.
