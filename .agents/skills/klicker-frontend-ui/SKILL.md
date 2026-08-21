@@ -15,6 +15,7 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
    - Data via generated documents from `@klicker-uzh/graphql/dist/ops` only — a new op means the codegen ritual in `klicker-graphql-api` runs first.
    - Every new user-visible string in BOTH `packages/i18n/messages/de.ts` and `en.ts`, matching namespace; access via full-path keys (`t('manage.…')`).
    - Every new interactive element gets `data-cy` (design-system prop form: `data={{ cy: '…' }}`); pick names consistent with the sibling elements.
+   - For shared pagination, keep `All` explicitly opt-in, validate persisted page-size values, reset to page 1 on every page-size change, and verify finite/All/switch-back states in the browser. Keep bounded consumers opted out.
    - Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Use one contextual primary action and a labelled overflow menu for low-frequency actions; keep visible buttons and the overflow trigger in one action cluster, letting that cluster wrap as a unit across viewports.
    - App typography comes from the shared local font definitions in
      `packages/shared-components/src/font.ts`; preserve their exports and CSS

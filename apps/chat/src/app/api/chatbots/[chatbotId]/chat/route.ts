@@ -15,6 +15,10 @@ import {
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
+import {
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
+} from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
@@ -41,6 +45,7 @@ import {
   streamText,
   type ModelMessage,
   type StepResult,
+  type ToolSet,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -162,6 +167,12 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
+}
+
+function getSupportedChatModes(systemPrompts: unknown): Set<string> {
+  const configuredModes = asObject(systemPrompts)
+  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
+  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -686,7 +697,6 @@ export async function POST(
       include: {
         mcpConfigurations: {
           where: {
-            chatMode: selectedMode,
             isEnabled: true,
           },
           include: {
@@ -711,28 +721,6 @@ export async function POST(
       } else {
         systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
       }
-
-      // Prepare MCP server configurations
-      mcpServersWithConfigs =
-        chatbot.mcpConfigurations
-          ?.filter((config) => config.mcpServer?.isActive === true)
-          ?.map((config) => ({
-            server: {
-              id: config.mcpServer.id,
-              name: config.mcpServer.name,
-              url: config.mcpServer.url,
-              authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret ?? '',
-              parameters: config.mcpServer.parameters,
-              passChatbotId: config.mcpServer.passChatbotId,
-              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-            },
-            config: {
-              allowedTools: config.allowedTools as string[] | undefined,
-              parameters: config.parameters,
-              priority: config.priority,
-            },
-          })) || []
     }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
@@ -740,6 +728,87 @@ export async function POST(
       error,
     })
   }
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+    return NextResponse.json(
+      { error: `Unsupported chat mode: ${selectedMode}` },
+      { status: 400 }
+    )
+  }
+
+  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
+  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
+    (config) => config.chatMode === selectedMode
+  )
+  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
+  }
+
+  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
+    server: {
+      id: config.mcpServer.id,
+      name: config.mcpServer.name,
+      url: config.mcpServer.url,
+      authType: config.mcpServer.authType,
+      authSecret: config.mcpServer.authSecret ?? '',
+      parameters: config.mcpServer.parameters,
+      isActive: config.mcpServer.isActive,
+      passChatbotId: config.mcpServer.passChatbotId,
+      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+    },
+    config: {
+      allowedTools: config.allowedTools as string[] | undefined,
+      parameters: config.parameters,
+      priority: config.priority,
+    },
+  }))
+
+  // MCP availability is checked before creating a thread or doing any model,
+  // credit, image-generation, or message-persistence work.
+  let mcpTools: ToolSet
+  try {
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
+
+  const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -772,25 +841,6 @@ export async function POST(
     role: msg.role,
     content: msg.content,
   }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
-
-  // Append the citation contract only when a doc_query-style RAG tool is
-  // actually available; mutating `systemPrompt` here (rather than deriving a
-  // separate `instructions` variable) keeps the `systemPromptLength` /
-  // `systemPromptHash` telemetry below truthful to what is actually sent to
-  // the model. The language-style contract applies unconditionally: stored
-  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
-  // orthography must be enforced here, not in the default prompt text.
-  systemPrompt = withLanguageStyleContract(
-    withCitationContract(systemPrompt, toolNames)
-  )
-
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
-  }
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -1483,12 +1533,9 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // save partial message
-        if (
-          currentThreadId &&
-          owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        // save partial message (always non-empty: `buildAbortedAssistantContent`
+        // closes every aborted turn with the `chat-stopped` marker part)
+        if (currentThreadId && owningThread) {
           try {
             const metadata = {
               chatMode: selectedMode,
@@ -1547,11 +1594,7 @@ export async function POST(
               error,
             })
           }
-        } else if (
-          currentThreadId &&
-          !owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        } else if (currentThreadId && !owningThread) {
           console.warn(
             'Skipping assistant message save: thread ownership mismatch',
             {

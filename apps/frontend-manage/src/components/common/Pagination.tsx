@@ -13,6 +13,14 @@ import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import usePaginationPageNumbers from '../../lib/hooks/usePaginationPageNumbers'
 
+export type PaginationPageSize = 10 | 20 | 50 | 'all'
+
+export function isPaginationPageSize(
+  value: unknown
+): value is PaginationPageSize {
+  return value === 10 || value === 20 || value === 50 || value === 'all'
+}
+
 function Pagination({
   totalPages,
   currentPage,
@@ -20,14 +28,16 @@ function Pagination({
   numOfObjects,
   pageSize,
   setPageSize,
+  showAll = false,
   className,
 }: {
   totalPages: number
   currentPage: number
   setCurrentPage: Dispatch<SetStateAction<number>>
   numOfObjects: number
-  pageSize: number
-  setPageSize: Dispatch<SetStateAction<number>>
+  pageSize: PaginationPageSize
+  setPageSize: (value: PaginationPageSize) => void
+  showAll?: boolean
   className?: string
 }) {
   const t = useTranslations()
@@ -49,8 +59,11 @@ function Pagination({
         <div />
         <div className="text-muted-foreground order-2 text-center text-sm lg:order-1">
           {t('manage.general.showingResults', {
-            start: (currentPage - 1) * pageSize + 1,
-            end: Math.min(currentPage * pageSize, numOfObjects),
+            start: pageSize === 'all' ? 1 : (currentPage - 1) * pageSize + 1,
+            end:
+              pageSize === 'all'
+                ? numOfObjects
+                : Math.min(currentPage * pageSize, numOfObjects),
             total: numOfObjects,
           })}
         </div>
@@ -71,9 +84,25 @@ function Pagination({
               label: t('manage.general.NEntriesPerPage', { N: 50 }),
               data: { cy: 'pagination-page-size-50' },
             },
+            ...(showAll
+              ? [
+                  {
+                    value: 'all',
+                    label: t('manage.catalog.all'),
+                    data: { cy: 'pagination-page-size-all' },
+                  },
+                ]
+              : []),
           ]}
           value={String(pageSize)}
-          onChange={(value) => setPageSize(parseInt(value, 10))}
+          onChange={(value) => {
+            setCurrentPage(1)
+            const parsedPageSize =
+              value === 'all' ? 'all' : Number.parseInt(value, 10)
+            if (isPaginationPageSize(parsedPageSize)) {
+              setPageSize(parsedPageSize)
+            }
+          }}
           className={{
             root: 'order-1 mb-2.5 justify-end self-end lg:order-2 lg:mb-0',
             trigger: 'h-7.5 w-52 text-sm',
