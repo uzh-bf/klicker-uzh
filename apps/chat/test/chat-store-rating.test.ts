@@ -47,6 +47,10 @@ function currentRating(messageId = 'message-1') {
   )
 }
 
+function currentRatingError(messageId = 'message-1') {
+  return useChatStore.getState().ratingErrors[messageId] === true
+}
+
 function resetStore() {
   const message = assistantMessage()
   const secondMessage = { ...assistantMessage(), id: 'message-2' }
@@ -67,6 +71,7 @@ function resetStore() {
     participationRequired: false,
     participationMessage: null,
     threadsLoadError: false,
+    ratingErrors: {},
   })
 }
 
@@ -114,6 +119,42 @@ describe('chatStore message ratings', () => {
       fetchSpy.mock.calls.map((call) => JSON.parse(call[1].body).rating)
     ).toEqual(['UP', 'DOWN', 'UP'])
     expect(currentRating()).toBe('UP')
+    // The stale failure was neither rolled back nor surfaced: the rating on
+    // screen comes from a newer, successful request.
+    expect(currentRatingError()).toBe(false)
+  })
+
+  test('surfaces a failed rating and clears it on the next attempt', async () => {
+    const first = deferred<ReturnType<typeof failedResponse>>()
+    const second = deferred<ReturnType<typeof successfulResponse>>()
+    const fetchSpy = vi
+      .fn()
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const firstRating = useChatStore
+      .getState()
+      .rateMessage('chatbot-1', 'message-1', 'UP')
+
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1))
+    first.resolve(failedResponse())
+    await firstRating
+
+    expect(currentRating()).toBe(null)
+    expect(currentRatingError()).toBe(true)
+
+    const secondRating = useChatStore
+      .getState()
+      .rateMessage('chatbot-1', 'message-1', 'UP')
+
+    expect(currentRatingError()).toBe(false)
+    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2))
+    second.resolve(successfulResponse())
+    await secondRating
+
+    expect(currentRating()).toBe('UP')
+    expect(currentRatingError()).toBe(false)
   })
 
   test('rolls the latest failed rating back to the last confirmed rating', async () => {
