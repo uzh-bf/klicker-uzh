@@ -78,5 +78,10 @@ large, deterministic activity set for manual stress testing.
   run under nodemon, and both worker types connect and remain alive.
 - 2026-08-21: Removed the generated PR documentation, readiness report, and
   screenshots per request; this plan remains the only active project artifact.
-- Next: complete the authenticated browser check, final review, and normal
-  push to `origin/fix/course-duplication-timeout`.
+- 2026-08-21: The local Auth page's cold Turbopack compile stalled indefinitely;
+  the supported Webpack development fallback now serves the same page. After
+  clearing the generated Manage cache, the browser delegated-login flow opens
+  the stress course, renders all 200 activities, and opens the duplication
+  dialog without submitting a job.
+- Next: run the final review, commit this local-dev fallback, and push normally
+  to `origin/fix/course-duplication-timeout`.
