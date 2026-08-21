@@ -83,6 +83,7 @@ async function exportAssessmentReport(page: Page) {
     printBackground: true,
     preferCSSPageSize: true,
   })
+  await expect(reportPage.locator('.histogram-table')).toBeVisible()
   const qrCodeSize = await reportPage
     .getByRole('img', { name: 'QR code for the KlickerUZH verification page' })
     .evaluate((image: HTMLImageElement) => ({

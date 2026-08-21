@@ -338,16 +338,15 @@ export function createAssessmentReport({
       th, td { padding: 3px 7px; }
       .percentile { padding: 5px 8px; font-size: 12px; }
       .chart { overflow: visible; }
-      .chart svg { min-width: 0; width: 100%; max-width: 420px; max-height: 76mm; height: auto; margin: 0 auto; }
-      .histogram-table { margin-top: 4px; font-size: 8px; }
-      .histogram-table th, .histogram-table td { padding: 2px 5px; }
+      .chart svg { min-width: 0; width: 100%; max-width: 420px; max-height: 58mm; height: auto; margin: 0 auto; }
+      .histogram-table { margin-top: 2px; font-size: 7px; line-height: 1.1; }
+      .histogram-table th, .histogram-table td { padding: 1px 3px; }
       .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
       .verification img { width: 72px; height: 72px; }
       .verification h2 { margin: 0 0 3px; }
       .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
       .privacy h3 { font-size: 10px; }
       .chart, .verification, .pdf-avoid { break-inside: avoid; }
-      .histogram-table { display: none; }
     }
 
   </style>
