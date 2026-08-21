@@ -18,6 +18,7 @@ import type { ContextWithUser } from '../lib/context.js'
 
 const invitationEmailSchema = z.string().email()
 const invitationTransactionRetryLimit = 3
+type InvitationTransactionErrorCode = 'P2002' | 'P2034'
 
 export interface InvitationResult {
   email: string
@@ -67,7 +68,7 @@ export function deduplicateParticipantInvitationInputs(
   return [...uniqueInvitations.values()]
 }
 
-function isPrismaError(error: unknown, code: 'P2002' | 'P2034') {
+function isPrismaError(error: unknown, code: InvitationTransactionErrorCode) {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -85,7 +86,8 @@ export function isSoleEligibleParticipant(
 
 export async function withSerializableInvitationTransaction<T>(
   prismaClient: PrismaClient,
-  operation: (tx: Prisma.TransactionClient) => Promise<T>
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  retryableCodes: readonly InvitationTransactionErrorCode[] = ['P2034']
 ): Promise<T> {
   for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
     try {
@@ -94,7 +96,7 @@ export async function withSerializableInvitationTransaction<T>(
       })
     } catch (error) {
       if (
-        !isPrismaError(error, 'P2034') ||
+        !retryableCodes.some((code) => isPrismaError(error, code)) ||
         attempt === invitationTransactionRetryLimit - 1
       ) {
         throw error
@@ -263,58 +265,46 @@ async function createOrRecordPendingInvitation(
   matriculationNumber: string | null,
   prismaClient: PrismaClient
 ): Promise<InvitationResult> {
-  for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
-    try {
-      return await withSerializableInvitationTransaction(
-        prismaClient,
-        async (tx) => {
-          const existingInvitation = await tx.participantInvitation.findUnique({
-            where: {
-              email_courseId: {
-                email: normalizedEmail,
-                courseId,
-              },
-            },
-          })
-
-          if (existingInvitation) {
-            const duplicateResult = await recordDuplicateInvitation(
-              existingInvitation,
-              normalizedEmail,
-              matriculationNumber,
-              tx
-            )
-
-            if (duplicateResult) return duplicateResult
-          }
-
-          const invitation = await tx.participantInvitation.create({
-            data: {
-              email: normalizedEmail,
-              courseId,
-              status: InvitationStatus.PENDING,
-              matriculationNumber,
-            },
-          })
-
-          return {
+  return withSerializableInvitationTransaction(
+    prismaClient,
+    async (tx) => {
+      const existingInvitation = await tx.participantInvitation.findUnique({
+        where: {
+          email_courseId: {
             email: normalizedEmail,
-            status: 'created',
-            invitationId: invitation.id,
-          }
-        }
-      )
-    } catch (error) {
-      if (
-        !isPrismaError(error, 'P2002') ||
-        attempt === invitationTransactionRetryLimit - 1
-      ) {
-        throw error
-      }
-    }
-  }
+            courseId,
+          },
+        },
+      })
 
-  throw new Error('Invitation transaction retry limit exceeded')
+      if (existingInvitation) {
+        const duplicateResult = await recordDuplicateInvitation(
+          existingInvitation,
+          normalizedEmail,
+          matriculationNumber,
+          tx
+        )
+
+        if (duplicateResult) return duplicateResult
+      }
+
+      const invitation = await tx.participantInvitation.create({
+        data: {
+          email: normalizedEmail,
+          courseId,
+          status: InvitationStatus.PENDING,
+          matriculationNumber,
+        },
+      })
+
+      return {
+        email: normalizedEmail,
+        status: 'created',
+        invitationId: invitation.id,
+      }
+    },
+    ['P2002', 'P2034']
+  )
 }
 
 async function recordDuplicateInvitation(

@@ -50,6 +50,26 @@ describe('Assessment participant invitation management', () => {
     return course
   }
 
+  function createTransactionTestPrisma(
+    participantInvitation: unknown
+  ): PrismaClient {
+    const transactionClient = { participantInvitation }
+
+    return {
+      course: {
+        findUnique: prisma.course.findUnique.bind(prisma.course),
+      },
+      participantAccount: {
+        findMany: prisma.participantAccount.findMany.bind(
+          prisma.participantAccount
+        ),
+      },
+      participantInvitation,
+      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
+        operation(transactionClient),
+    } as unknown as PrismaClient
+  }
+
   it('lists invitations newest first', async () => {
     const course = await createAssessmentCourse()
     const oldest = await prisma.participantInvitation.create({
@@ -436,22 +456,9 @@ describe('Assessment participant invitation management', () => {
       findUnique: vi.fn().mockResolvedValue(invitation),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     }
-    const transactionClient = {
-      participantInvitation: transactionParticipantInvitation,
-    }
-    const testPrisma = {
-      course: {
-        findUnique: prisma.course.findUnique.bind(prisma.course),
-      },
-      participantAccount: {
-        findMany: prisma.participantAccount.findMany.bind(
-          prisma.participantAccount
-        ),
-      },
-      participantInvitation: transactionParticipantInvitation,
-      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
-        operation(transactionClient),
-    } as unknown as PrismaClient
+    const testPrisma = createTransactionTestPrisma(
+      transactionParticipantInvitation
+    )
 
     const result = await createAssessmentParticipantInvitations(
       {
@@ -505,22 +512,9 @@ describe('Assessment participant invitation management', () => {
         prisma.participantInvitation
       ),
     }
-    const transactionClient = {
-      participantInvitation: transactionParticipantInvitation,
-    }
-    const testPrisma = {
-      course: {
-        findUnique: prisma.course.findUnique.bind(prisma.course),
-      },
-      participantAccount: {
-        findMany: prisma.participantAccount.findMany.bind(
-          prisma.participantAccount
-        ),
-      },
-      participantInvitation: transactionParticipantInvitation,
-      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
-        operation(transactionClient),
-    } as unknown as PrismaClient
+    const testPrisma = createTransactionTestPrisma(
+      transactionParticipantInvitation
+    )
 
     const result = await createAssessmentParticipantInvitations(
       {
@@ -597,22 +591,9 @@ describe('Assessment participant invitation management', () => {
       ),
       create: vi.fn().mockRejectedValue(new Error('database detail')),
     }
-    const transactionClient = {
-      participantInvitation: transactionParticipantInvitation,
-    }
-    const failingPrisma = {
-      course: {
-        findUnique: prisma.course.findUnique.bind(prisma.course),
-      },
-      participantAccount: {
-        findMany: prisma.participantAccount.findMany.bind(
-          prisma.participantAccount
-        ),
-      },
-      participantInvitation: transactionParticipantInvitation,
-      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
-        operation(transactionClient),
-    } as unknown as PrismaClient
+    const failingPrisma = createTransactionTestPrisma(
+      transactionParticipantInvitation
+    )
 
     await expect(
       createParticipantInvitations(

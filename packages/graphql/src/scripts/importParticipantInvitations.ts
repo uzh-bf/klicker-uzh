@@ -144,9 +144,13 @@ async function run() {
       console.log(`Emails to process: ${invitations.length}`)
 
       try {
+        const uniqueInvitations =
+          deduplicateParticipantInvitationInputs(invitations)
         const normalizedUniqueEmails = Array.from(
           new Set(
-            invitations.map((invitation) => invitation.email.toLowerCase())
+            uniqueInvitations.map((invitation) =>
+              invitation.email.toLowerCase()
+            )
           )
         )
 
@@ -172,13 +176,13 @@ async function run() {
             invitation.email.toLowerCase()
           )
         )
-        const latestMatriculationByEmail = new Map<string, string>()
+        const matriculationByEmail = new Map<string, string>()
 
-        for (const invitation of invitations) {
+        for (const invitation of uniqueInvitations) {
           const normalizedEmail = invitation.email.toLowerCase()
 
           if (invitation.matriculationNumber) {
-            latestMatriculationByEmail.set(
+            matriculationByEmail.set(
               normalizedEmail,
               invitation.matriculationNumber
             )
@@ -208,7 +212,7 @@ async function run() {
         const updatedExistingMatriculationCount =
           await updateExistingInvitationMatriculationNumbers(
             existingInvitations,
-            latestMatriculationByEmail,
+            matriculationByEmail,
             DRY_RUN
           )
 
@@ -218,8 +222,6 @@ async function run() {
           )
         }
 
-        const uniqueInvitations =
-          deduplicateParticipantInvitationInputs(invitations)
         const filteredInvitations = uniqueInvitations.filter(
           (invitation) => !existingEmailSet.has(invitation.email.toLowerCase())
         )
