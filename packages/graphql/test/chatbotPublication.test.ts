@@ -134,7 +134,12 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
       await expect(
         requestChatbotPublication(
-          { id: bot.id, useCase: 'x', expectedStudentCount: 1, proposedCredits: 1 },
+          {
+            id: bot.id,
+            useCase: 'x',
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
           userOneCtx
         )
       ).rejects.toThrow('Cannot request publication from status PUBLISHED')
@@ -146,7 +151,12 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
       await expect(
         requestChatbotPublication(
-          { id: bot.id, useCase: 'x', expectedStudentCount: 1, proposedCredits: 1 },
+          {
+            id: bot.id,
+            useCase: 'x',
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
           userOneCtx
         )
       ).rejects.toThrow('not approved')
@@ -163,7 +173,12 @@ describe('Integration tests for the chatbot publication workflow', () => {
       const bot = await seedChatbot(ChatbotStatus.DRAFT)
 
       const result = await requestChatbotPublication(
-        { id: bot.id, useCase: 'x', expectedStudentCount: 1, proposedCredits: 1 },
+        {
+          id: bot.id,
+          useCase: 'x',
+          expectedStudentCount: 1,
+          proposedCredits: 1,
+        },
         userTwoCtx
       )
 

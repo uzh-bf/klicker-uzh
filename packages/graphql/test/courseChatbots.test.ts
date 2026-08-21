@@ -1,5 +1,9 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { ChatbotStatus, PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotStatus,
+  PrismaClient,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getParticipantCourseChatbots } from '../src/services/chatbots.js'

@@ -49,19 +49,21 @@ describe('getChatbotOr404 publication gate', () => {
 
   // Every non-PUBLISHED lifecycle state must 404 exactly like a missing bot, so
   // a participant can never confirm that a draft/in-review/paused bot exists.
-  test.each(['DRAFT', 'PENDING_APPROVAL', 'PAUSED', 'REJECTED'])(
-    'returns 404 for a non-PUBLISHED (%s) chatbot',
-    async (status) => {
-      mocks.findUnique.mockResolvedValue({ courseId: 'course-1', status })
+  test.each([
+    'DRAFT',
+    'PENDING_APPROVAL',
+    'PAUSED',
+    'REJECTED',
+  ])('returns 404 for a non-PUBLISHED (%s) chatbot', async (status) => {
+    mocks.findUnique.mockResolvedValue({ courseId: 'course-1', status })
 
-      const result = await getChatbotOr404(VALID_ID, { courseId: true })
+    const result = await getChatbotOr404(VALID_ID, { courseId: true })
 
-      expect('response' in result).toBe(true)
-      if ('response' in result) {
-        expect(result.response.status).toBe(404)
-      }
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(404)
     }
-  )
+  })
 
   test('returns 404 when the chatbot does not exist', async () => {
     mocks.findUnique.mockResolvedValue(null)

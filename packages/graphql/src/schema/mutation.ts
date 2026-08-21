@@ -1460,49 +1460,49 @@ export const Mutation = builder.mutationType({
       createChatbot: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
-        type: Chatbot,
-        args: {
-          name: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          avatar: t.arg.string({ required: false }),
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.createChatbot(args, ctx)
-        },
-      }),
+          type: Chatbot,
+          args: {
+            name: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            avatar: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.createChatbot(args, ctx)
+          },
+        }),
 
       updateChatbot: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: false }),
-          description: t.arg.string({ required: false }),
-          avatar: t.arg.string({ required: false }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbot(args, ctx)
-        },
-      }),
+          nullable: true,
+          type: Chatbot,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: false }),
+            description: t.arg.string({ required: false }),
+            avatar: t.arg.string({ required: false }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.updateChatbot(args, ctx)
+          },
+        }),
 
       requestChatbotPublication: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          useCase: t.arg.string({ required: true }),
-          expectedStudentCount: t.arg.int({ required: true }),
-          proposedCredits: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublication(args, ctx)
-        },
-      }),
+          nullable: true,
+          type: Chatbot,
+          args: {
+            id: t.arg.string({ required: true }),
+            useCase: t.arg.string({ required: true }),
+            expectedStudentCount: t.arg.int({ required: true }),
+            proposedCredits: t.arg.int({ required: true }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.requestChatbotPublication(args, ctx)
+          },
+        }),
 
       approveChatbotPublication: t.withAuth(asAdmin).field({
         nullable: true,
