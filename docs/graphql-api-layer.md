@@ -20,7 +20,11 @@ tags:
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
 
-Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
+Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on
+courseId, plus a nullable boolean that preserves the existing behavior when
+omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
+Existing fields use `t.withAuth(...)` exclusively — follow them rather than
+inventing `authScopes` variants.
 
 ## Layering contract
 
@@ -45,6 +49,12 @@ pnpm --filter @klicker-uzh/graphql generate
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
 
+Rolling deployments also require keeping the persisted hashes used by the
+previous frontend. When an existing operation needs new fields or variables,
+add a newly named operation for the updated client and leave the original
+operation document unchanged. Removing its old hash from `server.json` breaks
+already-open clients because arbitrary GraphQL operations are disabled outside
+development and test.
 The `userElements` and `userActivities` list fields accept optional
 `numEntries` and `offset` arguments. Finite page sizes pass both values;
 omitting both returns the current filtered result without a pagination limit.
