@@ -61,11 +61,14 @@ insufficient permissions are `SKIPPED`; unexpected transaction errors are
 reported as the generic `FAILED / SHARING_FAILED`. Invalid/self users and
 unavailable groups are target-level errors and produce no per-Element writes.
 
-Each eligible Element uses its own sequential transaction. A successful
-transaction upserts a non-propagating direct permission, removes matching user
-access requests, recomputes derived permissions, and records a
-`PERMISSION_GRANTED` audit entry. Permission invalidation happens after commit;
-an invalidation-listener error is logged but does not turn an already committed
+Each eligible Element uses its own sequential serializable transaction. The
+transaction rechecks the current non-deleted state and caller `ADMIN`/`OWNER`
+permission immediately before the upsert, with bounded conflict retries. A
+successful transaction upserts a non-propagating direct permission, removes
+matching user access requests, recomputes derived permissions, and records a
+`PERMISSION_GRANTED` audit entry. Element processing has a bounded deadline
+after target resolution. Permission invalidation happens after commit; an
+invalidation-listener error is logged but does not turn an already committed
 grant into a failed outcome. This boundary permits partial success without
 exposing database errors to clients.
 
