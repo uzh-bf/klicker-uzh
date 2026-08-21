@@ -240,20 +240,21 @@ async function run() {
         }
 
         const manualResults: InvitationResult[] = []
-        const remainingInvitations: CreateParticipantInvitationInput[] = []
+        let remainingInvitations = uniqueFilteredInvitations
 
-        for (const invitation of uniqueFilteredInvitations) {
-          const manualResult = await resolveParticipantWithoutInvitation(
-            invitation,
-            courseId,
-            emailMode,
-            DRY_RUN
-          )
+        if (DRY_RUN) {
+          remainingInvitations = []
+          for (const invitation of uniqueFilteredInvitations) {
+            const previewResult = await previewParticipantWithoutInvitation(
+              invitation,
+              emailMode
+            )
 
-          if (manualResult) {
-            manualResults.push(manualResult)
-          } else {
-            remainingInvitations.push(invitation)
+            if (previewResult) {
+              manualResults.push(previewResult)
+            } else {
+              remainingInvitations.push(invitation)
+            }
           }
         }
 
@@ -499,11 +500,9 @@ function summarizeInvitationResults(results: InvitationResult[]) {
   )
 }
 
-async function resolveParticipantWithoutInvitation(
+async function previewParticipantWithoutInvitation(
   invitation: CreateParticipantInvitationInput,
-  courseId: string,
-  emailMode: InvitationEmailMode,
-  dryRun: boolean
+  emailMode: InvitationEmailMode
 ): Promise<InvitationResult | null> {
   const normalizedEmail = invitation.email.toLowerCase()
   const matriculationNumber = invitation.matriculationNumber ?? null
@@ -520,58 +519,16 @@ async function resolveParticipantWithoutInvitation(
 
   const participantId = participantIds[0]
 
-  if (dryRun) {
-    const matriculationSuffix = matriculationNumber
-      ? ` and set matriculation number "${matriculationNumber}"`
-      : ''
-    console.log(
-      `  Dry run: would create ACCEPTED invitation for ${normalizedEmail}${matriculationSuffix} and preserve or create inactive participation for participant ${participantId}.`
-    )
-
-    return {
-      email: invitation.email,
-      status: 'auto_accepted',
-      participantId,
-    }
-  }
-
-  const invitationId = await prisma.$transaction(async (tx) => {
-    const invitation = await tx.participantInvitation.create({
-      data: {
-        email: normalizedEmail,
-        courseId,
-        status: InvitationStatus.ACCEPTED,
-        participantId,
-        acceptedAt: new Date(),
-        matriculationNumber,
-      },
-    })
-
-    await tx.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId,
-        },
-      },
-      create: {
-        courseId,
-        participantId,
-      },
-      update: {},
-    })
-
-    return invitation.id
-  })
-
+  const matriculationSuffix = matriculationNumber
+    ? ` and set matriculation number "${matriculationNumber}"`
+    : ''
   console.log(
-    `  Linked participant ${participantId} to new ACCEPTED invitation for ${normalizedEmail}; preserved or created inactive participation.`
+    `  Dry run: would create ACCEPTED invitation for ${normalizedEmail}${matriculationSuffix} and preserve or create inactive participation for participant ${participantId}.`
   )
 
   return {
     email: invitation.email,
     status: 'auto_accepted',
-    invitationId,
     participantId,
   }
 }

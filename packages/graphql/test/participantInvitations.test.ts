@@ -7,6 +7,7 @@ import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createAssessmentParticipantInvitations,
+  createParticipantInvitations,
   deletePendingAssessmentParticipantInvitation,
   getAssessmentParticipantInvitations,
 } from '../src/services/participantInvitations.js'
@@ -369,12 +370,19 @@ describe('Assessment participant invitation management', () => {
 
   it('does not update matriculation numbers on accepted invitations', async () => {
     const course = await createAssessmentCourse()
+    const participant = await prisma.participant.create({
+      data: {
+        username: `accepted-duplicate-${randomUUID()}`,
+        password: 'not-used',
+      },
+    })
     const invitation = await prisma.participantInvitation.create({
       data: {
         courseId: course.id,
         email: 'accepted-duplicate@example.org',
         matriculationNumber: 'immutable-number',
         status: InvitationStatus.ACCEPTED,
+        participantId: participant.id,
         acceptedAt: new Date(),
       },
     })
@@ -486,23 +494,32 @@ describe('Assessment participant invitation management', () => {
 
   it('does not turn unexpected database errors into row results', async () => {
     const course = await createAssessmentCourse()
-    const createInvitation = vi
-      .spyOn(prisma.participantInvitation, 'create')
-      .mockRejectedValueOnce(new Error('database detail'))
+    const failingPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        if (property !== 'participantInvitation') {
+          return Reflect.get(target, property, receiver)
+        }
 
-    try {
-      await expect(
-        createAssessmentParticipantInvitations(
-          {
-            courseId: course.id,
-            invitations: [{ email: 'database-error@example.org' }],
+        const participantInvitation = Reflect.get(target, property, receiver)
+        return new Proxy(participantInvitation, {
+          get(model, method, modelReceiver) {
+            if (method === 'create') {
+              return vi.fn().mockRejectedValue(new Error('database detail'))
+            }
+            return Reflect.get(model, method, modelReceiver)
           },
-          lecturerCtx
-        )
-      ).rejects.toThrow('database detail')
-    } finally {
-      createInvitation.mockRestore()
-    }
+        })
+      },
+    }) as unknown as PrismaClient
+
+    await expect(
+      createParticipantInvitations(
+        course.id,
+        [{ email: 'database-error@example.org' }],
+        {},
+        failingPrisma
+      )
+    ).rejects.toThrow('database detail')
   })
 
   it('rejects invitation management for non-assessment courses', async () => {

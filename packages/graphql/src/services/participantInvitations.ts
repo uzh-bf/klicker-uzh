@@ -143,32 +143,36 @@ export async function createParticipantInvitations(
           courseId,
           participantId,
           normalizedMatriculationNumber,
+          emailMode,
           prismaClient
         )
 
-        results.push({
-          email: normalizedEmail,
-          status: 'auto_accepted',
-          invitationId,
-          participantId,
-        })
-      } else {
-        // Create pending invitation
-        const invitation = await prismaClient.participantInvitation.create({
-          data: {
+        if (invitationId !== null) {
+          results.push({
             email: normalizedEmail,
-            courseId,
-            status: InvitationStatus.PENDING,
-            matriculationNumber: normalizedMatriculationNumber,
-          },
-        })
-
-        results.push({
-          email: normalizedEmail,
-          status: 'created',
-          invitationId: invitation.id,
-        })
+            status: 'auto_accepted',
+            invitationId,
+            participantId,
+          })
+          continue
+        }
       }
+
+      // Create pending invitation
+      const invitation = await prismaClient.participantInvitation.create({
+        data: {
+          email: normalizedEmail,
+          courseId,
+          status: InvitationStatus.PENDING,
+          matriculationNumber: normalizedMatriculationNumber,
+        },
+      })
+
+      results.push({
+        email: normalizedEmail,
+        status: 'created',
+        invitationId: invitation.id,
+      })
     } catch (error: unknown) {
       if (!isPrismaError(error, 'P2002')) throw error
 
@@ -253,7 +257,7 @@ async function recordDuplicateInvitation(
 async function findEligibleParticipantId(
   normalizedEmail: string,
   emailMode: InvitationEmailMode,
-  prismaClient: PrismaClient
+  prismaClient: Pick<PrismaClient, 'participantAccount'>
 ): Promise<string | null> {
   const participantIds = await findEligibleParticipantIds(
     normalizedEmail,
@@ -266,7 +270,7 @@ async function findEligibleParticipantId(
 export async function findEligibleParticipantIds(
   normalizedEmail: string,
   emailMode: InvitationEmailMode,
-  prismaClient: PrismaClient
+  prismaClient: Pick<PrismaClient, 'participantAccount'>
 ): Promise<string[]> {
   const accounts = await prismaClient.participantAccount.findMany({
     where: {
@@ -288,10 +292,24 @@ async function autoAcceptInvitation(
   courseId: string,
   participantId: string,
   matriculationNumber: string | null,
+  emailMode: InvitationEmailMode,
   prismaClient: PrismaClient
-): Promise<number> {
+): Promise<number | null> {
   // Use transaction to ensure data consistency
   return prismaClient.$transaction(async (tx) => {
+    const eligibleParticipantIds = await findEligibleParticipantIds(
+      email,
+      emailMode,
+      tx
+    )
+
+    if (
+      eligibleParticipantIds.length !== 1 ||
+      eligibleParticipantIds[0] !== participantId
+    ) {
+      return null
+    }
+
     // Create the invitation as ACCEPTED
     const invitation = await tx.participantInvitation.create({
       data: {
