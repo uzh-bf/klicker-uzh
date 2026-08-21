@@ -72,8 +72,8 @@ transaction rechecks the current non-deleted state and caller `ADMIN`/`OWNER`
 permission immediately before the upsert, with bounded conflict retries. A
 successful transaction upserts a non-propagating direct permission, removes
 matching user access requests, recomputes derived permissions, and records a
-`PERMISSION_GRANTED` audit entry. The whole operation also has a bounded
-deadline. Permission invalidation happens after commit; an
+`PERMISSION_GRANTED` audit entry. Element processing has a bounded deadline
+after target resolution. Permission invalidation happens after commit; an
 invalidation-listener error is logged but does not turn an already committed
 grant into a failed outcome. This boundary permits partial success without
 exposing database errors to clients.
