@@ -94,6 +94,7 @@ async function exportAssessmentReport(page: Page) {
     .locator('.histogram-table tbody tr')
     .count()
   if (histogramRowCount > 0) {
+    await reportPage.emulateMedia({ media: 'print' })
     await expect(reportPage.locator('.histogram-table')).toBeVisible()
   }
   await reportPage.close()
