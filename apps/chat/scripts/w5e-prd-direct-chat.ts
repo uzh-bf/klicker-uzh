@@ -1436,8 +1436,8 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
   const signalHandler = () => {
     interrupted = true
   }
-  process.once('SIGINT', signalHandler)
-  process.once('SIGTERM', signalHandler)
+  process.on('SIGINT', signalHandler)
+  process.on('SIGTERM', signalHandler)
   try {
     let fixtureState: FixtureState | undefined
     let failure: unknown
