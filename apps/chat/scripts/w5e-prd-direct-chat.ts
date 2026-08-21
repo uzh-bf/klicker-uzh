@@ -378,7 +378,7 @@ export function createReceiptStore(path: string): ReceiptStore {
     current: W5eReceipt,
     next: W5eReceipt
   ): void {
-    const immutable = (receipt: W5eReceipt) => ({
+    const identity = (receipt: W5eReceipt) => ({
       receiptVersion: receipt.receiptVersion,
       wItem: receipt.wItem,
       environment: receipt.environment,
@@ -386,15 +386,32 @@ export function createReceiptStore(path: string): ReceiptStore {
       createdAt: receipt.createdAt,
       identity: receipt.identity,
       provenance: receipt.provenance,
-      fixture: { ...receipt.fixture, participationId: null },
-      prior: receipt.prior,
+      fixture: {
+        ownerId: receipt.fixture.ownerId,
+        courseId: receipt.fixture.courseId,
+        participantId: receipt.fixture.participantId,
+        chatbotId: receipt.fixture.chatbotId,
+        legacyConfigId: receipt.fixture.legacyConfigId,
+        candidateServerId: receipt.fixture.candidateServerId,
+        candidateConfigId: receipt.fixture.candidateConfigId,
+      },
     })
+    if (JSON.stringify(identity(current)) !== JSON.stringify(identity(next)))
+      fail('RECEIPT_IMMUTABLE', 'receipt identity or provenance changed')
+
     const bootstrap = current.state === 'planned' && next.state === 'prepared'
     if (
       !bootstrap &&
-      JSON.stringify(immutable(current)) !== JSON.stringify(immutable(next))
+      JSON.stringify({
+        participationId: current.fixture.participationId,
+        prior: current.prior,
+      }) !==
+        JSON.stringify({
+          participationId: next.fixture.participationId,
+          prior: next.prior,
+        })
     )
-      fail('RECEIPT_IMMUTABLE', 'receipt identity or provenance changed')
+      fail('RECEIPT_IMMUTABLE', 'receipt recovery fields changed')
   }
 
   return {

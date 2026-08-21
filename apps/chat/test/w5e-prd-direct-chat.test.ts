@@ -75,6 +75,50 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     }
   })
 
+  test('freezes recovery identity and participation cleanup ownership after prepare', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-immutable-'))
+    const path = join(directory, 'receipt.json')
+    try {
+      const store = createReceiptStore(path)
+      const receipt = initialReceipt(
+        'run-immutable',
+        { ...ids },
+        { ...provenance }
+      )
+      await store.write(receipt)
+      const prepared = updatedReceipt(receipt, {
+        state: 'prepared',
+        fixture: { ...ids, participationId: 42 },
+        prior: {
+          legacyConfig: null,
+          legacyServer: null,
+        },
+      })
+      await store.write(prepared)
+
+      await expect(
+        store.write(updatedReceipt(prepared, { runId: 'other-run' }))
+      ).rejects.toThrow('RECEIPT_IMMUTABLE')
+      await expect(
+        store.write(
+          updatedReceipt(prepared, {
+            fixture: { ...prepared.fixture, participationId: 43 },
+          })
+        )
+      ).rejects.toThrow('RECEIPT_IMMUTABLE')
+      await expect(
+        store.write(
+          updatedReceipt(receipt, {
+            state: 'prepared',
+            fixture: { ...ids, ownerId: '00000000-0000-4000-8000-000000000099' },
+          })
+        )
+      ).rejects.toThrow('RECEIPT_IMMUTABLE')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   test('suppresses noisy child-consumer output and returns only safe result fields', async () => {
     const log = vi.spyOn(console, 'log')
     const error = vi.spyOn(console, 'error')
