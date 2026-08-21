@@ -212,10 +212,11 @@ No separate tasks; nothing crosses a boundary warranting one.
 ## Progress
 
 - Status: S1–S5 code-complete. S4 slice-reviewer PASS + real-route browser
-  smoke DONE (F7 confirmed at HTTP layer). S5 (compile-seam extraction) done +
-  verified, pending its simplifier + slice-reviewer. Worktree from `origin/v3`
-  (4 behind, benign codegen-only rebase — see Base drift). Remaining after S5
-  gates: final-reviewer on integrated outcome, then draft PR against v3.
+  smoke DONE (F7 confirmed at HTTP layer). S5 compile-seam extraction and its
+  simplifier/slice-review gates are DONE. The staged GraphQL selection fix,
+  migration backfill guard, and synthetic-password cleanup are committed and
+  pushed at `3e0bf1b13` for [PR #5460](https://github.com/uzh-bf/klicker-uzh/pull/5460);
+  fresh CI and the integrated final-review gate remain in progress.
 - S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
   backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
 - S2 (create/update mutations + owner-type exposure): DONE.
@@ -247,10 +248,10 @@ No separate tasks; nothing crosses a boundary warranting one.
 - Carry to S4 (S3 LOW findings): gate participant access on `status ===
   'PUBLISHED'`, never `publishedAt != null` (TOCTOU); credit path must not
   assume `proposedCredits > 0` (no validation in phase 0).
-- Dependency: ADR 0020 lives only on `docs/chatbot-hitl-config-roadmap`
-  (draft PR #5453). It must merge before/with the phase-0 PR or the ADR
-  references (commit messages + prisma schema comments) dangle — record in the
-  phase-0 PR description.
+- Dependency: ADR 0020 and ADRs 0019–0022 were folded into this branch by merge
+  commit `1fd19330f`, so the former [PR #5453](https://github.com/uzh-bf/klicker-uzh/pull/5453)
+  merge-order dependency is resolved. Closing #5453 remains a separate,
+  explicitly authorized repository action.
 - Base drift (checked 2026-08-20, session resume): branch is 4 behind / 8 ahead
   of `origin/v3` (the resume hook's "62 behind origin/dev" is a false alarm —
   `dev` is an unrelated long-lived line, not this branch's base). The 4 new v3
@@ -369,8 +370,14 @@ No separate tasks; nothing crosses a boundary warranting one.
   (`origin/HEAD`): 4 behind, 13 ahead, and none of v3's 4 new commits touch my
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
-- Remaining: draft PR against v3 — WITHHELD pending explicit push/PR
-  authorization. HEAD `9ee8e635b`.
+- Base reconciliation (2026-08-21): the authoritative `git ls-remote` refs show
+  `origin/v3` at `784469db3` and this branch at `3e0bf1b13`, 0 behind / 20 ahead.
+  The common Git `FETCH_HEAD` file is not writable in this linked worktree, so
+  remote freshness was verified with `git ls-remote` rather than inferred from
+  local fetch state.
+- Remaining: fresh CI classification, the integrated final-reviewer pass, and
+  an updated whole-branch PR description. Marking the PR ready and merging it
+  remain outside this task's authority.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
