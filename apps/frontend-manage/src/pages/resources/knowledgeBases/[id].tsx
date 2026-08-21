@@ -1,5 +1,5 @@
 import { KnowledgeBaseDetail } from '@klicker-uzh/kb-management'
-import { GetServerSidePropsContext } from 'next'
+import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../../../components/Layout'
 
@@ -13,15 +13,22 @@ function KnowledgeBasePage({ kbId }: { kbId: string }) {
   )
 }
 
-export async function getServerSideProps({
+export async function getStaticProps({
   locale,
   params,
-}: GetServerSidePropsContext) {
+}: GetStaticPropsContext) {
   return {
     props: {
       messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
       kbId: params?.id,
     },
+  }
+}
+
+export function getStaticPaths() {
+  return {
+    paths: [],
+    fallback: 'blocking',
   }
 }
 
