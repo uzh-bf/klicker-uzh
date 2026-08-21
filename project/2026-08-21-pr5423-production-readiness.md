@@ -54,6 +54,7 @@ evidence was available because the approved plan withheld those actions.
 | High | Group targets recompute object-wide derived permissions for every element, with no group-size or fan-out work ceiling. | Measure the largest supported group and 50-element batch against production-like PostgreSQL/pod limits; add a cost ceiling or queue/chunk path before enablement if it exceeds the budget. |
 | High | Deadline exhaustion and post-commit invalidation failures have no structured counter, durable retry, or reconciliation path. | Add low-cardinality completion/failure telemetry and a bounded reconciliation procedure, then prove alerting and recovery. |
 | Medium | Target resolution is an ordinary Prisma query outside the 60-second processing budget, and request disconnect is not propagated as cancellation. | Add supported query/request cancellation or document a lower-layer timeout; verify stalled lookup and disconnect behavior. |
+| Medium | The authorization-race tests mock the transaction callback and do not exercise overlapping PostgreSQL commits or transaction-option wiring. | Run one controlled service-level interleaving with a second Prisma client for group membership, permission revocation, and deletion; require no unauthorized grant. |
 | Medium | A failed or ambiguous response leaves only a read-only result with Close; there is no sharing-only retry or result focus handoff. | Decide whether the preview can ship with this recovery UX; otherwise preserve form state and add retry/focus behavior. |
 | Medium | Enabling sharing still uses the existing full user-group roster query although the card only needs ID, name, and member count. | Add a slim group-options operation or accept the cost with representative account-size evidence. |
 | Advisory | `privatePreview` remains a Manage-only gate; the persisted GraphQL mutation is callable for an authorized caller. | Confirm that the flag is advisory. If it is a kill switch, enforce it server-side before rollout. |
@@ -65,8 +66,9 @@ evidence was available because the approved plan withheld those actions.
   withheld runtime startup, so the changed modal, loading behavior, responsive
   layout, keyboard flow, and real GraphQL result state remain unobserved.
 - No database-backed test, largest-batch load, concurrent-request test,
-  proxy-timeout test, disconnect test, invalidation-consumer recovery, backup,
-  staging, rollout, rollback, cluster, or production check was performed.
+  authorization-race interleaving, proxy-timeout test, disconnect test,
+  invalidation-consumer recovery, backup, staging, rollout, rollback, cluster,
+  or production check was performed.
 - The focused Vitest suite fails during module collection solely because the
   environment lacks `HATCHET_CLIENT_TOKEN`; the token was not inspected or
   supplied.
@@ -76,4 +78,5 @@ evidence was available because the approved plan withheld those actions.
 Treat this branch as a locally verified implementation handoff, not a production
 approval. The final package review is complete. The next authorized owner must
 obtain the capacity, cancellation, telemetry/reconciliation, browser, staging,
-and fresh-CI evidence listed above before requesting merge or deployment.
+real-PostgreSQL interleaving, and fresh-CI evidence listed above before
+requesting merge or deployment.
