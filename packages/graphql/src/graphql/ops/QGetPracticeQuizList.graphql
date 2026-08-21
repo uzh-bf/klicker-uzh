@@ -2,6 +2,8 @@ query GetPracticeQuizList {
   getPracticeQuizList {
     id
     displayName
+    personalElementCount
+    personalDueCount
     practiceQuizzes {
       id
       displayName

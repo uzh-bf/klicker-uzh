@@ -20,6 +20,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
+import * as PersonalElementService from '../services/personalElements.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
@@ -76,6 +77,10 @@ import {
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
+  PersonalElement,
+  PersonalElementCandidateInput,
+} from './personalElement.js'
+import {
   AvatarSettingsInput,
   GroupMessage,
   LeaveCourseParticipation,
@@ -97,6 +102,7 @@ import {
   ElementStackInput,
   PracticeQuiz,
   ReviewStatus,
+  FlashcardCorrectnessType,
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
@@ -619,6 +625,90 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.bookmarkElementStack(args, ctx)
+        },
+      }),
+
+      createPersonalElements: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: [PersonalElement],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          candidates: t.arg({
+            type: [PersonalElementCandidateInput],
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.createPersonalElements(
+            {
+              courseId: args.courseId,
+              candidates: args.candidates.map((candidate) => ({
+                ...candidate,
+                sources: candidate.sources.map((source) => ({
+                  ...source,
+                  title: source.title ?? undefined,
+                  url: source.url ?? undefined,
+                })),
+              })),
+            },
+            {
+              prisma: ctx.prisma,
+              actor: { participantId: ctx.user.sub, role: ctx.user.role },
+            }
+          )
+        },
+      }),
+
+      respondToPersonalElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          id: t.arg.string({ required: true }),
+          response: t.arg({ type: FlashcardCorrectnessType, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.respondToPersonalElement(args, {
+            prisma: ctx.prisma,
+            actor: { participantId: ctx.user.sub, role: ctx.user.role },
+          })
+        },
+      }),
+
+      updatePersonalElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedVersion: t.arg.int({ required: true }),
+          name: t.arg.string({ required: false }),
+          content: t.arg.string({ required: false }),
+          explanation: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.updatePersonalElement(
+            {
+              id: args.id,
+              expectedVersion: args.expectedVersion,
+              name: args.name ?? undefined,
+              content: args.content ?? undefined,
+              explanation: args.explanation ?? undefined,
+            },
+            {
+              prisma: ctx.prisma,
+              actor: { participantId: ctx.user.sub, role: ctx.user.role },
+            }
+          )
+        },
+      }),
+
+      deletePersonalElement: t.withAuth(asParticipant).id({
+        nullable: true,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.deletePersonalElement(args, {
+            prisma: ctx.prisma,
+            actor: { participantId: ctx.user.sub, role: ctx.user.role },
+          })
         },
       }),
 

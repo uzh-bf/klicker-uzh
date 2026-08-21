@@ -37,6 +37,11 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    or access control: it is only the participant's course-leaderboard opt-in.
    Student MCP practice additionally requires the exact chatbot/course pair.
 
+   For participant-owned practice cards, keep the service importable from the
+   server-only GraphQL entry and pass an explicit actor (`participantId` plus
+   `UserRole.PARTICIPANT`) from both GraphQL and Chat. The service still performs
+   course-participation and row-ownership checks; a role gate alone is not enough.
+
    Multi-object batch fields are the deliberate exception: `withPermission`
    accepts one object selector and can only return one nullable field. Protect
    the batch with the appropriate `t.withAuth(...)` scope, then have the service

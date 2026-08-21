@@ -55,6 +55,26 @@ revision-history model. Deleting the chatbot cascades through the set, examples,
 and evidence references. Synthetic candidates and evidence-eligible fixtures
 are created only by local and test setup, not by a production caller.
 
+### Student-owned practice elements
+
+`PersonalElement` (`personalElement.prisma`) is a participant-owned,
+course-bound practice card. It is deliberately separate from the lecturer-owned
+`Element` table and currently stores only `FLASHCARD` content. A participant
+must have a `Participation` row for the course, and temporary participants are
+not eligible. Course and participant deletion cascade to the cards.
+
+The row keeps its own SM-2 state (`eFactor`, `interval`, streak and response
+counters, and `nextDueAt`). The GraphQL service caps a participant at 500 cards
+per course, validates source metadata (up to 32 chunk references, bounded IDs,
+titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
+AI-generated cards remain `UNVERIFIED`; revisions increment `version` and
+return the card to `UNVERIFIED` without changing its SM-2 state.
+
+`ChatGenerationApproval` is the durable claim for an approved Chat generation.
+Its participant, chatbot, thread, plan message, and optional generated message
+relations are separate from the card content, with a unique
+participant/plan-message/tool-call key and a lease expiry for retry recovery.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.

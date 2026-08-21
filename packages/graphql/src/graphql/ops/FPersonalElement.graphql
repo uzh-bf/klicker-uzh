@@ -1,0 +1,35 @@
+fragment FPersonalElement on PersonalElement {
+  id
+  courseId
+  type
+  version
+  name
+  content
+  explanation
+  sources {
+    sourceId
+    chunkId
+    title
+    url
+    metadata
+  }
+  origin
+  verification
+  sourceMessageId
+  sourceToolCallId
+  candidateId
+  eFactor
+  interval
+  correctCountStreak
+  correctCount
+  partialCorrectCount
+  wrongCount
+  nextDueAt
+  lastAnsweredAt
+  lastCorrectAt
+  lastPartialCorrectAt
+  lastWrongAt
+  lastResponseCorrectness
+  createdAt
+  updatedAt
+}
