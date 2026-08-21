@@ -40,6 +40,7 @@ export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
   participantId: string
   liveQuizId: string
   instanceId: string
+  elementBlockExecution?: number
   response: LiveQuizResponseInput
   cookie?: string
   responseTimestamp: number
@@ -59,6 +60,7 @@ processAssessmentResponseWorkflow.durableTask({
         await clearPendingAssessmentResponseAcceptance({
           instanceId: Number(input.instanceId),
           participantId: input.participantId,
+          elementBlockExecution: input.elementBlockExecution,
           correlationId: input.correlationId,
         })
       }

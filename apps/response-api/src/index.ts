@@ -294,17 +294,35 @@ async function handleAddAssessmentResponse(
     },
     select: {
       id: true,
-      elementBlock: { select: { execution: true, liveQuizId: true } },
+      elementBlock: {
+        select: {
+          execution: true,
+          liveQuizId: true,
+          liveQuiz: { select: { courseId: true } },
+        },
+      },
     },
   })
 
   const elementBlock = instance?.elementBlock
-  if (!elementBlock) {
+  if (!elementBlock || !elementBlock.liveQuiz.courseId) {
+    return badRequest(req, res, 'invalid_submission')
+  }
+  const courseId = elementBlock.liveQuiz.courseId
+
+  if (Number(correlationData.execution) !== elementBlock.execution) {
+    hatchetClient.events.push('create-audit-log-entry', {
+      correlationId,
+      info: `[ERROR] [AddResponse Assessment] Invalid block execution in correlationKey for response ${JSON.stringify(
+        payload
+      )}`,
+    })
     return badRequest(req, res, 'invalid_submission')
   }
 
-  // Serialize acceptance with correction-audience snapshots. The snapshot
-  // acquires the same quiz-level lock before reading acceptedAt markers.
+  // Serialize acceptance with correction-audience snapshots and response
+  // corrections. The transaction acquires both shared locks before reading or
+  // writing the acceptance marker.
   const acceptance = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw(
       Prisma.sql`
@@ -314,6 +332,32 @@ async function handleAddAssessmentResponse(
       `
     )
 
+    // Match the worker and correction transaction lock for this response
+    // identity before reading or creating the acceptance marker.
+    await tx.$executeRaw(
+      Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${`${instance.id}:${elementBlock.execution}:${user.sub}`},
+            0
+          )
+        )
+      `
+    )
+
+    const participation = await tx.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: user.sub,
+        },
+      },
+      select: { participantId: true },
+    })
+    if (!participation) {
+      return { status: 'not_participant' as const }
+    }
+
     const existingResponse = await tx.liveQuizResponse.findUnique({
       where: {
         instanceId_elementBlockExecution_participantId: {
@@ -322,11 +366,20 @@ async function handleAddAssessmentResponse(
           participantId: user.sub,
         },
       },
-      select: { id: true, correctionOnly: true, correlationId: true },
+      select: {
+        id: true,
+        correctionOnly: true,
+        correlationId: true,
+        acceptedAt: true,
+        assessmentResponseEffect: { select: { id: true } },
+      },
     })
 
     if (existingResponse && !existingResponse.correctionOnly) {
-      return { status: 'duplicate' as const }
+      return existingResponse.correlationId === correlationId &&
+        existingResponse.assessmentResponseEffect
+        ? { status: 'retry' as const }
+        : { status: 'duplicate' as const }
     }
 
     if (
@@ -340,7 +393,7 @@ async function handleAddAssessmentResponse(
       await tx.liveQuizResponse.update({
         where: { id: existingResponse.id },
         data: {
-          acceptedAt: { set: new Date() },
+          acceptedAt: existingResponse.acceptedAt ?? new Date(),
           correlationId,
         },
       })
@@ -367,6 +420,13 @@ async function handleAddAssessmentResponse(
     return { status: 'accepted' as const }
   })
 
+  if (acceptance.status === 'not_participant') {
+    return sendJson(req, res, 403, {
+      error: 'invalid_assessment_participation',
+      responseTimestamp,
+    })
+  }
+
   if (acceptance.status === 'duplicate') {
     hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
@@ -384,6 +444,7 @@ async function handleAddAssessmentResponse(
     participantId: user.sub,
     liveQuizId: String(liveQuizId),
     instanceId: String(instanceId),
+    elementBlockExecution: elementBlock.execution,
     response, // pass through as-is; worker validates
     responseTimestamp,
   }
@@ -394,10 +455,26 @@ async function handleAddAssessmentResponse(
   console.log('Starting assessment response workflow with payload', message)
 
   try {
-    await hatchetClient.runAndWait(
+    const workflowResult = (await hatchetClient.runAndWait(
       'process-assessment-response-workflow',
       message
-    )
+    )) as { status?: number; error?: string }
+
+    if (workflowResult?.status === 409) {
+      return sendJson(req, res, 409, {
+        error: workflowResult.error ?? 'response_after_block_closed',
+        responseTimestamp,
+      })
+    }
+
+    // Fail closed when an old or incompatible worker returns a terminal
+    // duplicate without materializing the acceptance marker.
+    if (workflowResult?.status !== 200) {
+      return sendJson(req, res, 503, {
+        error: 'response_processing_unavailable',
+        responseTimestamp,
+      })
+    }
   } catch (error) {
     try {
       await hatchetClient.events.push('create-audit-log-entry', {

@@ -1132,7 +1132,7 @@ async function getLiveQuizParticipantIds(
   liveQuizId: string,
   prisma: PrismaTransactionClient,
   cutoff: Date
-): Promise<string[] | null> {
+): Promise<string[]> {
   const participants = await prisma.$queryRaw<Array<{ participantId: string }>>(
     DB.Prisma.sql`
       SELECT DISTINCT response."participantId" AS "participantId"
@@ -1141,7 +1141,13 @@ async function getLiveQuizParticipantIds(
         ON instance.id = response."instanceId"
       INNER JOIN "ElementBlock" AS block
         ON block.id = instance."elementBlockId"
+      INNER JOIN "LiveQuiz" AS quiz
+        ON quiz.id = block."liveQuizId"
+      INNER JOIN "Participation" AS participation
+        ON participation."courseId" = quiz."courseId"
+        AND participation."participantId" = response."participantId"
       WHERE block."liveQuizId" = ${liveQuizId}
+        AND quiz."courseId" IS NOT NULL
         AND response."elementBlockExecution" = block.execution
         AND (
           (
@@ -1155,6 +1161,25 @@ async function getLiveQuizParticipantIds(
   )
 
   return participants.map(({ participantId }) => participantId)
+}
+
+async function getLockedLiveQuizParticipantIds(
+  liveQuizId: string,
+  prisma: PrismaTransactionClient,
+  cutoff: Date
+): Promise<string[]> {
+  await prisma.$executeRaw(
+    DB.Prisma.sql`
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          ${`assessment-audience:${liveQuizId}`},
+          0
+        )
+      )
+    `
+  )
+
+  return getLiveQuizParticipantIds(liveQuizId, prisma, cutoff)
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1436,84 +1461,73 @@ export async function correctAssessmentPointsInstance(
   if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
     const cutoff = new Date()
     const participantIds = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw(
-        DB.Prisma.sql`
-          SELECT pg_advisory_xact_lock(
-            hashtextextended(
-              ${`assessment-audience:${liveQuizId}`},
-              0
-            )
-          )
-        `
-      )
-
-      return getLiveQuizParticipantIds(liveQuizId, tx, cutoff)
+      return getLockedLiveQuizParticipantIds(liveQuizId, tx, cutoff)
     })
 
-    if (!participantIds?.length) return null
+    if (!participantIds.length) return null
 
-    let committedLogEntries: { message: { info: string } }[] = []
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
-        const correction = await tx.pointCorrection.create({
-          data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
-            reason,
-            studentReason,
-            type: PointCorrectionType.PARTICIPATING_QUIZ,
-            correctedBy: { connect: { id: ctx.user.sub } },
-            instance: { connect: { id: instanceId } },
-          },
-          include: { correctedBy: true, instance: true },
-        })
+    const { correction: createdCorrection, logEntries } =
+      await ctx.prisma.$transaction(
+        async (tx) => {
+          const correction = await tx.pointCorrection.create({
+            data: {
+              basePoints: awardBasePoints
+                ? true
+                : deductBasePoints
+                  ? false
+                  : null,
+              correctnessPoints: awardCorrectnessPoints
+                ? true
+                : deductCorrectnessPoints
+                  ? false
+                  : null,
+              bonusPoints: awardBonusPoints
+                ? true
+                : deductBonusPoints
+                  ? false
+                  : null,
+              reason,
+              studentReason,
+              type: PointCorrectionType.PARTICIPATING_QUIZ,
+              correctedBy: { connect: { id: ctx.user.sub } },
+              instance: { connect: { id: instanceId } },
+            },
+            include: { correctedBy: true, instance: true },
+          })
 
-        committedLogEntries = []
-        for (const participantId of participantIds) {
-          committedLogEntries.push(
-            await upsertResponseAppliedCorrection(
-              {
-                correctionId: correction.id,
-                instance: instance as DB.ElementInstance & {
-                  elementBlock: DB.ElementBlock
+          const logEntries: { message: { info: string } }[] = []
+          for (const participantId of participantIds) {
+            logEntries.push(
+              await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: instance as DB.ElementInstance & {
+                    elementBlock: DB.ElementBlock
+                  },
+                  participantId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
                 },
-                participantId,
-                awardBasePoints,
-                awardCorrectnessPoints,
-                awardBonusPoints,
-                deductBasePoints,
-                deductCorrectnessPoints,
-                deductBonusPoints,
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
-              },
-              tx,
-              ctx
+                tx,
+                ctx
+              )
             )
-          )
-        }
+          }
 
-        return correction
-      },
-      { timeout: 300000 }
-    )
+          return { correction, logEntries }
+        },
+        { timeout: 300000 }
+      )
 
     try {
-      await ctx.tasks.createAuditLogEntry.runNoWait(committedLogEntries)
+      await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
     } catch (error) {
       // The correction is already committed; audit delivery must not make a
       // successful mutation appear failed or invite a duplicate retry.
@@ -1847,18 +1861,10 @@ export async function correctAssessmentPointsLiveQuiz(
   if (scope === PointCorrectionType.PARTICIPATING) {
     const cutoff = new Date()
     const participantIds = await ctx.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw(
-        DB.Prisma.sql`
-          SELECT pg_advisory_xact_lock(
-            hashtextextended(${`assessment-audience:${liveQuiz.id}`}, 0)
-          )
-        `
-      )
-
-      return getLiveQuizParticipantIds(liveQuiz.id, tx, cutoff)
+      return getLockedLiveQuizParticipantIds(liveQuiz.id, tx, cutoff)
     })
 
-    if (!participantIds?.length) return null
+    if (!participantIds.length) return null
 
     // update the responses of all participants that have submitted at least one response to the live quiz
     const createdCorrection = await ctx.prisma.$transaction(

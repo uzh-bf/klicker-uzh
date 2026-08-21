@@ -46,16 +46,20 @@ primary checkout and earlier readiness worktree remain untouched.
 Add acceptance fields and the effect migration. The response API writes an
 accepted marker under the shared quiz lock, runs the named Hatchet workflow with
 `runAndWait`, returns success only after persistence and Redis effects complete,
-and returns a retryable 503 when workflow execution fails. The worker creates or
-materializes the response and effect atomically, recognizes exact retries, and
-does not treat a pending effect as a duplicate.
+and returns a retryable 503 when workflow execution fails or an incompatible
+worker returns a terminal duplicate. It validates course participation, binds
+the signed block execution through the workflow, preserves the first acceptance
+timestamp, and returns a non-success result for late responses. The worker
+creates or materializes the response and effect atomically, recognizes exact
+retries, and does not treat a pending effect as a duplicate.
 
 ### S2 — idempotent aggregation
 
 Run votes, result counters, response hashes, leaderboards, XP, and a per-response
 completion marker in one watched Redis transaction on a dedicated connection.
-Delete the database effect only after the transaction succeeds or its marker
-proves it already succeeded.
+Validate every target key and counter before the transaction, reject command
+level errors, and delete the database effect only after the transaction
+succeeds or its marker proves it already succeeded.
 
 ### S3 — bounded correction reads and writes
 

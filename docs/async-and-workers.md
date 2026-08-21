@@ -34,12 +34,16 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
 Non-assessment responses (`handleAddResponse`) emit
 `response-received:authenticated|anonymous`. The assessment path
 (`handleAddAssessmentResponse`) verifies a JWT correlation key, writes a
-`LiveQuizResponse` acceptance marker under the quiz audience lock, and waits
-for `process-assessment-response-workflow`. It returns success only after the
-worker has persisted the response and applied its Redis effects; workflow
-failure returns a retryable `503`. Audit-log events (`create-audit-log-entry`)
-remain best effort. Live-quiz versus assessment behavior switches on the
-`ASSESSMENT_MODE` env var.
+`LiveQuizResponse` acceptance marker under the quiz and response-identity locks,
+checks course participation, and waits for
+`process-assessment-response-workflow`. The signed block execution is copied
+into the workflow input and must still match the cache before persistence. It
+returns success only after the worker has persisted the response and applied
+its Redis effects; a late response returns `409`, and workflow failure or an
+incompatible worker returns a retryable `503`. A genuine response with a
+pending `AssessmentResponseEffect` resumes the workflow on retry. Audit-log
+events (`create-audit-log-entry`) remain best effort. Live-quiz versus
+assessment behavior switches on the `ASSESSMENT_MODE` env var.
 
 ## Worker task catalog
 
@@ -56,9 +60,12 @@ Assessment response persistence creates an `AssessmentResponseEffect` row in
 the same transaction as the genuine response or correction-only materialization.
 The worker removes that row only after a watched Redis transaction has applied
 the vote, result counters, response hashes, leaderboards, XP, and completion
-marker. A retry with the same correlation ID resumes the row; terminally
-rejected or late submissions clear their pending marker. Pre-migration
-responses without an effect row remain compatible as already-complete data.
+marker. Before the transaction, it validates target key types and counter
+values; command-level errors never count as completion. A retry with the same
+correlation ID resumes the row, while a genuine response without a pending
+effect remains a completed legacy duplicate. Terminally rejected or late
+submissions clear their pending marker. Pre-migration responses without an
+effect row remain compatible as already-complete data.
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 

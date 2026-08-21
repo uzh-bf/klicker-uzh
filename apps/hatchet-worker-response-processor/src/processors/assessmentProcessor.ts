@@ -10,7 +10,6 @@ import {
   ElementType,
   Prisma,
   ResponseCorrectness,
-  UserRole,
 } from '@klicker-uzh/prisma/client'
 import type {
   FreeTextRestrictions,
@@ -31,7 +30,6 @@ import {
   getFreeTextQuestionPointsDetails,
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
-  updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
 import {
@@ -57,8 +55,7 @@ function isUniqueConstraintError(error: unknown) {
   )
 }
 
-type AssessmentResponseEffectPayload = {
-  responseId: number
+type AssessmentResponseEffectFields = {
   correlationId: string
   participantId: string
   liveQuizId: string
@@ -69,6 +66,14 @@ type AssessmentResponseEffectPayload = {
   pointsAwarded: number
   xpAwarded: number
   response: LiveQuizResponseInput
+}
+
+type AssessmentAggregationInput = AssessmentResponseEffectFields & {
+  responseId?: number
+}
+
+type AssessmentResponseEffectPayload = AssessmentResponseEffectFields & {
+  responseId: number
 }
 
 type PersistedAssessmentResponse = {
@@ -279,10 +284,12 @@ export async function persistAssessmentResponse({
 export async function clearPendingAssessmentResponseAcceptance({
   instanceId,
   participantId,
+  elementBlockExecution,
   correlationId,
 }: {
   instanceId: number
   participantId: string
+  elementBlockExecution?: number
   correlationId: string
 }) {
   await prisma.liveQuizResponse.updateMany({
@@ -291,6 +298,7 @@ export async function clearPendingAssessmentResponseAcceptance({
       participantId,
       correlationId,
       correctionOnly: true,
+      elementBlockExecution,
     },
     data: {
       acceptedAt: null,
@@ -305,6 +313,7 @@ export async function processAssessmentResponse(
     participantId: string
     liveQuizId: string
     instanceId: string
+    elementBlockExecution?: number
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
@@ -387,6 +396,18 @@ export async function processAssessmentResponse(
     blockClosedAt,
   } = instanceInfo
 
+  const persistedExecution =
+    message.elementBlockExecution ?? parseInt(blockExecution ?? '0', 10)
+  if (
+    !Number.isFinite(persistedExecution) ||
+    (message.elementBlockExecution !== undefined &&
+      Number(blockExecution) !== message.elementBlockExecution)
+  ) {
+    throw new NonRetryableError(
+      `Response for instance ${message.instanceId} belongs to a different block execution.`
+    )
+  }
+
   // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
   if (!type || !courseId || !sessionBlockId) {
     throw new NonRetryableError(
@@ -401,10 +422,10 @@ export async function processAssessmentResponse(
     await clearPendingAssessmentResponseAcceptance({
       instanceId: Number(message.instanceId),
       participantId: message.participantId,
+      elementBlockExecution: message.elementBlockExecution,
       correlationId: message.correlationId,
     })
-    ctx.cancel()
-    return { status: 200 }
+    return { status: 409, error: 'response_after_block_closed' }
   }
 
   // ! Step 1.2 Validation of response format
@@ -705,7 +726,7 @@ export async function processAssessmentResponse(
     persistence = await persistAssessmentResponse({
       instanceId: Number(message.instanceId),
       participantId: message.participantId,
-      elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+      elementBlockExecution: persistedExecution,
       correlationId: message.correlationId,
       effectPayload,
       responseTimestamp,
@@ -747,26 +768,161 @@ export async function processAssessmentResponse(
   }
 }
 
+type RedisHashIncrement = {
+  key: string
+  field: string
+  amount: number
+}
+
+type RedisHashSet = {
+  key: string
+  field: string
+  value: string
+}
+
+type RedisAggregationPlan = {
+  markerKey: string
+  expectedTypes: Map<string, 'hash' | 'string'>
+  increments: RedisHashIncrement[]
+  sets: RedisHashSet[]
+}
+
+function buildRedisAggregationPlan(
+  message: AssessmentAggregationInput
+): RedisAggregationPlan {
+  const liveQuizKey = `lq:${message.liveQuizId}`
+  const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
+  const markerKey = `lq:${message.liveQuizId}:processedResponse:${message.correlationId}`
+  const expectedTypes = new Map<string, 'hash' | 'string'>()
+  const increments: RedisHashIncrement[] = []
+  const sets: RedisHashSet[] = []
+
+  const expectType = (key: string, type: 'hash' | 'string') => {
+    const existingType = expectedTypes.get(key)
+    if (existingType && existingType !== type) {
+      throw new Error(`Redis aggregation key ${key} has conflicting types`)
+    }
+    expectedTypes.set(key, type)
+  }
+  const addIncrement = (key: string, field: string, amount: number) => {
+    if (!Number.isSafeInteger(amount)) {
+      throw new Error(
+        `Redis aggregation increment for ${key}:${field} is not an integer`
+      )
+    }
+    expectType(key, 'hash')
+    increments.push({ key, field, amount })
+  }
+  const addSet = (key: string, field: string, value: string) => {
+    expectType(key, 'hash')
+    sets.push({ key, field, value })
+  }
+
+  expectType(`${instanceKey}:votes`, 'hash')
+  addSet(`${instanceKey}:votes`, message.correlationId, 'true')
+
+  if (
+    message.isGamificationEnabled &&
+    message.elementType !== ElementType.CONTENT
+  ) {
+    addIncrement(
+      `${liveQuizKey}:b:${message.blockId}:lb`,
+      message.participantId,
+      message.pointsAwarded
+    )
+    addIncrement(
+      `${liveQuizKey}:lb`,
+      message.participantId,
+      message.pointsAwarded
+    )
+    addIncrement(`${liveQuizKey}:xp`, message.participantId, message.xpAwarded)
+  }
+
+  const resultsKey = `${instanceKey}:results`
+  const responseHashesKey = `${instanceKey}:responseHashes`
+  switch (message.elementType) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM:
+      message.response
+        .choices!.filter((choice) => choice.selected)
+        .forEach((choice) => addIncrement(resultsKey, String(choice.ix), 1))
+      addIncrement(resultsKey, 'participants', 1)
+      break
+
+    case ElementType.NUMERICAL: {
+      const value = String(message.response.value!)
+      const responseHash = createHash('md5').update(value).digest('hex')
+      addIncrement(resultsKey, responseHash, 1)
+      addSet(responseHashesKey, responseHash, value)
+      addIncrement(resultsKey, 'participants', 1)
+      break
+    }
+
+    case ElementType.FREE_TEXT: {
+      const value = message.response.value!.trim()
+      const responseHash = createHash('md5').update(value).digest('hex')
+      addIncrement(resultsKey, responseHash, 1)
+      addSet(responseHashesKey, responseHash, value)
+      addIncrement(resultsKey, 'participants', 1)
+      break
+    }
+
+    case ElementType.SELECTION:
+      message.response.selection!.forEach((answerId) => {
+        if (answerId !== -1 && answerId !== null) {
+          addIncrement(resultsKey, String(answerId), 1)
+        }
+      })
+      addIncrement(resultsKey, 'participants', 1)
+      break
+
+    case ElementType.CASE_STUDY:
+      Object.entries(message.response.assessment!).forEach(
+        ([caseId, caseData]) => {
+          Object.entries(caseData).forEach(([itemId, itemData]) => {
+            Object.entries(itemData).forEach(
+              ([criterionId, criterionResponse]) => {
+                if (
+                  criterionResponse === null ||
+                  typeof criterionResponse !== 'number'
+                ) {
+                  return
+                }
+
+                const responseHash = createHash('md5')
+                  .update(String(criterionResponse))
+                  .digest('hex')
+                const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
+                addIncrement(resultsKey, combinedHash, 1)
+                addSet(
+                  responseHashesKey,
+                  combinedHash,
+                  String(criterionResponse)
+                )
+              }
+            )
+          })
+        }
+      )
+      addIncrement(resultsKey, 'participants', 1)
+      break
+
+    case ElementType.CONTENT:
+      addIncrement(resultsKey, 'participants', 1)
+      break
+  }
+
+  expectType(markerKey, 'string')
+  return { markerKey, expectedTypes, increments, sets }
+}
+
 export async function aggregateAssessmentResponses(
-  message: {
-    responseId?: number
-    correlationId: string
-    participantId: string
-    liveQuizId: string
-    blockId: string
-    instanceId: string
-    elementType: ElementType
-    isGamificationEnabled: boolean
-    pointsAwarded: number
-    xpAwarded: number
-    response: LiveQuizResponseInput
-  },
+  message: AssessmentAggregationInput,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   // Older queued aggregation events do not carry responseId. The correlation
   // ID therefore remains the shared idempotency key for both delivery paths.
-  const effectKey = message.correlationId
-  const processedResponseKey = `lq:${message.liveQuizId}:processedResponse:${effectKey}`
   const redis = redisExec.duplicate()
 
   const finish = async () => {
@@ -785,147 +941,67 @@ export async function aggregateAssessmentResponses(
   }
 
   try {
+    const plan = buildRedisAggregationPlan(message)
+
     // WATCH/MULTI keeps all cache effects and the completion marker atomic.
     // Use a dedicated connection because WATCH state is connection-scoped.
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      await redis.watch(processedResponseKey)
-      if (await redis.exists(processedResponseKey)) {
+      const watchedKeys = [...plan.expectedTypes.keys()]
+      await redis.watch(...watchedKeys)
+
+      const invalidType = (
+        await Promise.all(
+          watchedKeys.map(async (key) => {
+            const actualType = await redis.type(key)
+            const expectedType = plan.expectedTypes.get(key)
+            return actualType !== 'none' && actualType !== expectedType
+              ? `${key} is ${actualType}, expected ${expectedType}`
+              : null
+          })
+        )
+      ).find(Boolean)
+      if (invalidType) {
+        await redis.unwatch()
+        throw new Error(`Redis aggregation key type mismatch: ${invalidType}`)
+      }
+
+      if (await redis.exists(plan.markerKey)) {
         await redis.unwatch()
         return finish()
       }
 
+      const invalidCounter = (
+        await Promise.all(
+          plan.increments.map(async ({ key, field }) => {
+            const value = await redis.hget(key, field)
+            return value !== null && !/^-?\d+$/.test(value)
+              ? `${key}:${field} is not an integer`
+              : null
+          })
+        )
+      ).find(Boolean)
+      if (invalidCounter) {
+        await redis.unwatch()
+        throw new Error(
+          `Redis aggregation counter is invalid: ${invalidCounter}`
+        )
+      }
+
       const transaction = redis.multi()
-      const {
-        participantId,
-        liveQuizId,
-        blockId,
-        instanceId,
-        elementType,
-        isGamificationEnabled,
-        pointsAwarded,
-        xpAwarded,
-        response,
-      } = message
+      plan.sets.forEach(({ key, field, value }) => {
+        transaction.hset(key, field, value)
+      })
+      plan.increments.forEach(({ key, field, amount }) => {
+        transaction.hincrby(key, field, amount)
+      })
 
-      const liveQuizKey = `lq:${liveQuizId}`
-      const instanceKey = `${liveQuizKey}:i:${instanceId}`
-
-      transaction.hset(`${instanceKey}:votes`, message.correlationId, 'true')
-
-      if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
-        updateLeaderboards({
-          redisMulti: transaction,
-          participantId,
-          participantRole: UserRole.PARTICIPANT,
-          liveQuizKey,
-          sessionBlockId: blockId,
-          pointsAwarded,
-          xpAwarded,
-        })
-      }
-
-      switch (elementType) {
-        case ElementType.SC:
-        case ElementType.MC:
-        case ElementType.KPRIM: {
-          response
-            .choices!.filter((choice) => choice.selected)
-            .forEach((choice) => {
-              transaction.hincrby(
-                `${instanceKey}:results`,
-                String(choice.ix),
-                1
-              )
-            })
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-
-        case ElementType.NUMERICAL: {
-          const MD5 = createHash('md5')
-          MD5.update(response.value!)
-          const responseHash = MD5.digest('hex')
-          transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
-          transaction.hset(
-            `${instanceKey}:responseHashes`,
-            responseHash,
-            response.value!
-          )
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-
-        case ElementType.FREE_TEXT: {
-          const cleanResponseValue = response.value!.trim()
-          const MD5 = createHash('md5')
-          MD5.update(cleanResponseValue)
-          const responseHash = MD5.digest('hex')
-          transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
-          transaction.hset(
-            `${instanceKey}:responseHashes`,
-            responseHash,
-            cleanResponseValue
-          )
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-
-        case ElementType.SELECTION: {
-          response.selection!.forEach((answerId: number) => {
-            if (
-              answerId === -1 ||
-              typeof answerId === 'undefined' ||
-              answerId === null
-            ) {
-              return
-            }
-
-            transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
-          })
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-
-        case ElementType.CASE_STUDY: {
-          Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
-            Object.entries(caseData).forEach(([itemId, itemData]) => {
-              Object.entries(itemData).forEach(
-                ([criterionId, criterionResponse]) => {
-                  if (
-                    criterionResponse === null ||
-                    typeof criterionResponse !== 'number'
-                  ) {
-                    return
-                  }
-
-                  const MD5 = createHash('md5')
-                  MD5.update(String(criterionResponse))
-                  const responseHash = MD5.digest('hex')
-                  const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
-
-                  transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
-                  transaction.hset(
-                    `${instanceKey}:responseHashes`,
-                    combinedHash,
-                    String(criterionResponse)
-                  )
-                }
-              )
-            })
-          })
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-
-        case ElementType.CONTENT: {
-          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
-          break
-        }
-      }
-
-      transaction.set(processedResponseKey, 'true')
+      transaction.set(plan.markerKey, 'true')
       const result = await transaction.exec()
-      if (result !== null) return finish()
+      if (result !== null) {
+        const commandError = result.find(([error]) => error !== null)?.[0]
+        if (commandError) throw commandError
+        return finish()
+      }
     }
 
     throw new Error('Redis aggregation transaction conflicted repeatedly')

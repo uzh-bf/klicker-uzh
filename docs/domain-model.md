@@ -71,8 +71,10 @@ and applied by
 `packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
 The query runs under the quiz audience lock and uses a cutoff: genuine rows
 submitted by the cutoff and durable acceptance markers (`acceptedAt`) at or
-before it are eligible, while stale executions and correction-only rows are
-excluded.
+before it are eligible, while stale executions, non-participants, and
+correction-only rows are excluded. The response API preserves the first
+non-null acceptance timestamp on retries, and the signed block execution is
+carried into the worker so a response cannot drift into a later attempt.
 
 Assessment submissions create the acceptance marker before the worker runs so a
 queued response cannot disappear from a later quiz-participant snapshot. The
