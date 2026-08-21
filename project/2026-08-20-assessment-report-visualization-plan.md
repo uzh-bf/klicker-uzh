@@ -7,20 +7,19 @@
 - Base: fresh `origin/v3` at `9f38b4e9a`
 - Worktree: `trees/assessment-report-visualization`
 - Target: `v3`
-- PR: not opened
+- PR: https://github.com/uzh-bf/klicker-uzh/pull/5459
 - Topology: one cohesive full-path PR; no stack unless a later ruling adds a
   new data or privacy contract
 
 ## Authority, terminal state, and pause conditions
 
 - Authority: the user requested this plan artifact and the named local
-  planning workflow. That authorizes the reversible local planning work,
-  implementation work named by a later plan approval, repository-native
-  checks, local commits, and browser evidence. It does not authorize pushing,
-  opening or merging a PR, deployment, or production changes.
-- Terminal state: the branch is locally ready for a draft PR after all slices,
-  checks, browser evidence, documentation updates, and the integrated final
-  review pass. Push and PR creation remain separate decisions.
+  planning workflow. The user subsequently authorized the implementation,
+  push, and PR creation. Merging, deployment, and production changes remain
+  outside this plan's authority.
+- Terminal state: the branch is pushed and PR #5459 is open after the slices,
+  repository checks, documentation updates, and integrated review passes.
+  Merge, deployment, and production verification remain separate decisions.
 - Pause and re-plan if implementation would publish an observed cohort maximum,
   add an exact rank or peer-score aggregate, change the percentile definition,
   add a V2 snapshot field, or otherwise change the public privacy contract.
@@ -188,7 +187,7 @@ stronger evidence than duplicating the same assertions through GraphQL wiring.
 |---|---|---|---|
 | S1 — preserve comparison semantics | Native executor | None | Focused GraphQL tests pass with inclusive ties, rounding, thresholds, sparse merging, endpoint, and count integrity. |
 | S2 — render one comparison consistently | Native executor; main owns integration | S1 | Export and verification use equal slots, shared selection, percentile ruler/copy, accessible table, and one-page A4 output. |
-| S3 — document and prove integrated result | Main session | S1 and S2 | Wiki/log updates, root checks/build, browser screenshots, runtime shutdown, and final review are complete. |
+| S3 — document and prove integrated result | Main session | S1 and S2 | Wiki updates, root checks/build, browser screenshots, runtime shutdown, and final review are complete. |
 
 S2 crosses the UI/public-contract seam. After its commit, run exactly one
 `simplifier` and one `slice-reviewer` in parallel over the same immutable range.
@@ -261,8 +260,6 @@ package has repository-native and live UI evidence.
   ruler, table, V1 compatibility, and privacy boundary;
 - update the relevant `klicker-frontend-ui` skill guidance if the shared
   report pattern is now a maintained UI convention;
-- add `docs/log/2026-08-20-assessment-report-visualization.md` with the
-  problem, accepted design, and evidence boundary;
 - update this plan's `Progress` section after each meaningful milestone.
 
 **Check:** run focused GraphQL and PWA tests, formatting, `pnpm run check:all`,
@@ -294,33 +291,32 @@ The package is complete only when all of the following are true:
 - `check:all`, build, focused tests, formatting, and final review pass;
 - the exact task runtime is stopped and its stopped state is verified.
 
-Push, PR creation, merge, deployment, and production verification are outside
-this plan's authority.
+The branch is pushed and PR #5459 is open. Merge, deployment, and production
+verification remain outside this plan's authority.
 
 ## Progress
 
-- Status: implementation and documentation complete locally; final delivery
-  remains blocked on browser binaries and full-suite infrastructure checks.
+- Status: implementation and documentation are complete; PR #5459 is open and
+  its repository checks are green. Local browser screenshots remain blocked by
+  the missing pinned Chromium executable.
 - Completed: repository freshness check, current code/PDF review, Sol planner
   pass, fresh task worktree creation, S1 comparison semantics tests and focused
   GraphQL verification (8 tests passing).
-- Remaining: valid-state browser/PDF proof is blocked because the runtime
-  still lacks the pinned Playwright Chromium executable after the dependency
-  installation attempt; the repository-wide check suite is blocked by the
-  analytics pandas build and unrelated Redis-backed failures in the broad
-  GraphQL command.
-- Latest evidence: task branch is rebased onto refreshed `origin/v3`; primary
-  checkout remains dirty but untouched. The focused GraphQL file passes all 8
-  tests and the frontend-PWA typecheck passes. The focused Playwright run
-  seeded its fixture successfully (`CLEANUP` passed) but both browser tests
-  stopped before launch with the missing Chromium executable. The public
-  verification route is reachable in agent-browser and its invalid-token state
-  renders correctly; a synthetic screenshot was saved outside the repository.
+- Remaining: local browser screenshots and manual PDF inspection are blocked
+  because the runtime lacks the pinned Playwright Chromium executable after
+  the dependency installation attempt. CI run `32472888911` passed the
+  build, all eight Playwright shards, the one-page PDF assertions, and the
+  Playwright status gate.
+- Latest evidence: the task branch is pushed at `71bd44860`, PR #5459 is open,
+  and `gh pr checks 5459` reports every listed check as passing. The focused
+  GraphQL file passes all 8 tests and the frontend-PWA typecheck passes. The
+  public verification route's invalid-token state was verified in
+  agent-browser; a synthetic screenshot was saved outside the repository.
 - Slice review: native reviewer routing failed twice before review; the final
   native review completed after explicit paths and identified three findings,
   all addressed in `9a201fa6a` except the browser/PDF evidence gap.
-- Delivery: required layer is a local branch with seven scoped commits; push,
-  PR, merge, deployment, and production verification remain withheld.
-- Next action: install/restore the runtime's pinned Chromium binary, rerun the
-  focused browser/PDF tests and synthetic locale/viewport screenshots, then
-  stop the exact runtime and run the integrated final review.
+- Delivery: the required layer is the pushed branch and open PR #5459; merge,
+  deployment, and production verification remain withheld.
+- Next action: restore the runtime's pinned Chromium binary if local visual
+  inspection is required; otherwise use the green CI PDF evidence and complete
+  the integrated final review.
