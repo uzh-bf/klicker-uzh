@@ -102,7 +102,7 @@ describe('Integration tests for the public courseChatbots query', () => {
   it('returns an empty list for a participant that is not enrolled in the course', async () => {
     const { course } = await seedCourseWithChatbot()
     const participant = await prisma.participant.create({
-      data: { username: 'chatbotParticipantUnenrolled', password: 'abcdabcd' },
+      data: { username: 'chatbotParticipantUnenrolled', password: 'not-used' },
     })
 
     const chatbots = await getParticipantCourseChatbots(
@@ -118,7 +118,7 @@ describe('Integration tests for the public courseChatbots query', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'chatbotParticipantEnrolled',
-        password: 'abcdabcd',
+        password: 'not-used',
         participations: { create: [{ courseId: course.id }] },
       },
     })
@@ -153,7 +153,7 @@ describe('Integration tests for the public courseChatbots query', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'chatbotParticipantDraft',
-        password: 'abcdabcd',
+        password: 'not-used',
         participations: { create: [{ courseId: course.id }] },
       },
     })
