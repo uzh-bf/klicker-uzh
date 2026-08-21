@@ -163,7 +163,7 @@ Markdown, and MDX files.
 Move the two feature-specific superpowers documents into
 `project/plans_wip/`, update references and stale status/path text, preserve
 unique decisions, retire the duplicate WIP plan after migration, and delete
-only `docs/log/2026-08-17-element-batch-sharing-api.md`.
+only the feature-specific dated `docs/log` entry.
 
 **Acceptance:** Playwright test listing and focused execution use the existing
 element-operations format; Prettier check passes; `rg` finds no live reference
@@ -205,8 +205,8 @@ made while push is withheld.
 | --- | --- | --- |
 | Repository and PR inventory | Main session | Complete; specialist route unavailable |
 | Planning challenge | Native planner | Complete; corrections incorporated |
-| API implementation and integration | Main session | Pending approval |
-| UI simplification | Main session | Pending approval; specialist executor route unavailable |
+| API implementation and integration | Main session | Complete locally; focused Vitest is blocked by missing `HATCHET_CLIENT_TOKEN` |
+| UI simplification | Main session | Complete locally; native specialist executor route unavailable |
 | Simplifier and risk review | Native specialists | Requested after slices; fallback will be recorded if route remains unavailable |
 | Final package review | Native final reviewer | Requested after integration; no completion claim without evidence |
 
@@ -216,9 +216,9 @@ made while push is withheld.
 - [x] Prior production-readiness report retained in the task worktree.
 - [x] Planning review completed and raw-cap/deadline/concurrency corrections
   incorporated.
-- [ ] User approval for local implementation and commits.
-- [ ] S0 source refresh and conflict resolution.
-- [ ] S1 API correctness and tests.
-- [ ] S2 UI simplification.
-- [ ] S3 Playwright and project-plan migration.
+- [x] User approval for local implementation and commits.
+- [x] S0 source refresh and conflict resolution (`edc890b61` on current `origin/v3`).
+- [x] S1 API correctness and tests (`5b21e8c46`, `84944f64e`); focused Vitest remains blocked by missing `HATCHET_CLIENT_TOKEN`.
+- [x] S2 UI simplification (`5e357e6c8`); Manage typecheck passes after building existing workspace dependencies.
+- [x] S3 Playwright and project-plan migration; Playwright typecheck and Prettier pass, browser execution remains pending runtime availability.
 - [ ] S4 integrated checks and final review.

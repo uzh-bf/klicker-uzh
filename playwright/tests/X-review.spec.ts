@@ -6,7 +6,6 @@
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
 import {
-  chooseActionByTestId,
   chooseActivityAction,
   chooseCourseAction,
   type ActivityActionType,
