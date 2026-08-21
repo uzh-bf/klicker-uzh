@@ -213,10 +213,13 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 - Status: S1–S5 code-complete. S4 slice-reviewer PASS + real-route browser
   smoke DONE (F7 confirmed at HTTP layer). S5 compile-seam extraction and its
-  simplifier/slice-review gates are DONE. The staged GraphQL selection fix,
-  migration backfill guard, and synthetic-password cleanup are committed and
-  pushed at `3e0bf1b13` for [PR #5460](https://github.com/uzh-bf/klicker-uzh/pull/5460);
-  fresh CI and the integrated final-review gate remain in progress.
+  simplifier/slice-review gates are DONE. The GraphQL selection fix, migration
+  backfill guard, and synthetic-fixture cleanup are committed and pushed in
+  [PR #5460](https://github.com/uzh-bf/klicker-uzh/pull/5460). Current-head CI
+  is terminal with 44 successful checks and one historical GitGuardian failure;
+  the integrated final-reviewer pass is DONE_WITH_CONCERNS with two medium
+  approval-boundary findings and two low documentation findings. No merge,
+  readiness change, issue closure, or history rewrite was performed.
 - S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
   backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
 - S2 (create/update mutations + owner-type exposure): DONE.
@@ -370,16 +373,20 @@ No separate tasks; nothing crosses a boundary warranting one.
   (`origin/HEAD`): 4 behind, 13 ahead, and none of v3's 4 new commits touch my
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
-- Base reconciliation (2026-08-21): the authoritative `git ls-remote` refs show
-  `origin/v3` at `65b4ac4a9` and this branch at `2de6c9988`, 1 behind / 21 ahead.
-  The new v3 commit is #5449 (draft-activity course deletion), which overlaps
-  generated GraphQL artifacts but not the chatbot implementation; GitHub reports
-  the PR mergeable. No rebase was performed. The common Git `FETCH_HEAD` file is
-  not writable in this linked worktree, so freshness was verified with
-  `git ls-remote` rather than inferred from local fetch state.
-- Remaining: fresh CI classification, the integrated final-reviewer pass, and
-  an updated whole-branch PR description. Marking the PR ready and merging it
-  remain outside this task's authority.
+- Base reconciliation (2026-08-21): the latest authoritative `git ls-remote`
+  refs show `origin/v3` at `df10f524e` and this branch at `029dd921d`, 2 behind /
+  22 ahead. The target-only commits since the earlier snapshot are #5449
+  (draft-activity course deletion) and #5461 (staging promotion); the current
+  three-dot PR diff remains 33 paths and the new target files do not overlap the
+  chatbot implementation. GitHub reports the PR mergeable but behind. No rebase
+  was performed. The common Git `FETCH_HEAD` file is not writable in this linked
+  worktree, so freshness was verified with `git ls-remote` rather than inferred
+  from fetch state.
+- Remaining: resolve or explicitly disposition the two medium final-review
+  findings, handle GitGuardian incident 36437584, reconcile the branch with the
+  current `v3` head before merge, and correct the roadmap/plan documentation.
+  Marking the PR ready, merging it, and closing #5453 remain outside this task's
+  authority.
 - Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
   dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
