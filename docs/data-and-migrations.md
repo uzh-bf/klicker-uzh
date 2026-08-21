@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-21'
 tags:
   - backend
   - prisma
@@ -50,6 +50,62 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 - **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its floating `v3` tag is rebuilt on every merge.
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
+
+### Refreshing STG from PRD
+
+The operator-run
+[`util/backup/refresh-stg-from-prd.sh`](../util/backup/refresh-stg-from-prd.sh)
+replaces the disposable Klicker STG PostgreSQL database with a consistent
+logical PRD dump. It does not copy Redis, Blob Storage, Hatchet state, or other
+components. The dump is not sanitized, so the workflow requires an explicit
+acknowledgement that STG may contain raw PRD data and assumes STG integrations
+and access controls are appropriate for it.
+
+The script is read-only by default. During an approved execution it validates
+the fixed PRD/STG hosts and database metadata, creates and verifies an encrypted
+custom-format dump, disables ArgoCD automated sync, and scales the
+`app-klicker` Deployments to zero. Azure's administration role owns `public`,
+while the Klicker application role owns its contents. The refresh therefore
+preserves the schema and its grants, removes only application-owned objects in
+one transaction, and filters schema creation/ownership entries from the restore
+catalog. Preflight rejects unowned or unsupported objects, non-public
+application schemas, and PostgreSQL large objects before maintenance mode. A
+hook-based sync submitted directly through the self-hosted ArgoCD `Application`
+custom resource then reapplies the existing `PreSync` hook; this is intentional
+because ArgoCD runs hooks on a requested sync even if the rendered manifests are
+unchanged. The script identifies and waits for its exact operation rather than
+accepting a stale successful status. The successful sync applies forward
+migrations from the STG migrator image and restores desired replicas. This path
+uses `kubectl` and Kubernetes RBAC (`get`/`patch` on the `Application`); it does
+not require the local `argocd` CLI.
+
+PostgreSQL client commands go through
+`util/backup/refresh-stg-from-prd.sh:run_database_command`, which validates and
+decomposes each URL into libpq connection variables. Do not put a full URI in
+`PGDATABASE`: libpq treats that environment value as the database name and can
+fall back to the local Unix socket. The wrapper keeps the URL out of process
+arguments while preserving the remote host, credentials, and supported SSL
+settings. `pg_restore` is the exception for database selection: it does not use
+`PGDATABASE` unless direct-to-database mode is selected, so the script also
+passes the already-validated, non-secret STG database name through `--dbname`.
+
+This command and resource selection are config-derived and fake-tested; the
+implementation workflow does not execute a real environment refresh.
+
+The source schema must not be newer than the STG release. Prisma migrations are
+forward-only: copying a newer PRD database into an older STG release is not a
+downgrade strategy. On any failure after workloads stop, automated sync remains
+disabled and Deployments remain at zero for inspection. A normal subsequent run
+refuses to adopt that unfinished state. When reset completed but restore did
+not, the operator must not trigger an ArgoCD sync against the incomplete
+database. `RESUME_FAILED_RUN_ID` enables a receipt-bound retry only while ArgoCD
+is still manual, the exact recorded Deployment set remains stopped, the receipt
+matches the current endpoints and prior automated policy, and no successful
+after receipt exists. The retry creates a fresh encrypted dump and restores the
+saved policy only after restore verification and the hook-based sync succeed.
+The complete operator procedure, confirmation gates, prerequisites, receipts,
+and recovery behavior
+are documented in the [backup README](../util/backup/README.md#refresh-the-stg-database-from-prd).
 
 ### Recovering a failed migration hook
 

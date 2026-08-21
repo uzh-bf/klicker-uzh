@@ -2,6 +2,138 @@
 
 Production-ready backup and restore scripts for PostgreSQL databases and Redis data across development, staging, and production environments.
 
+## Refresh the STG database from PRD
+
+[`refresh-stg-from-prd.sh`](./refresh-stg-from-prd.sh) replaces the Klicker STG
+PostgreSQL database with a transactionally consistent logical dump of PRD. It
+then submits a hook-based sync directly to the self-hosted `app-klicker` ArgoCD
+`Application` resource, which runs the existing STG `PreSync` migration hook
+before restoring the desired Deployment replicas. The local `argocd` CLI is not
+required.
+
+This is a **database-only** operation. It does not copy Redis, Hatchet state,
+Azure Blob Storage, or other services, and it does not preserve the previous STG
+database. It also does not sanitize the dump: after a successful run, raw PRD
+data—including personal data—is present in STG. Run it only when STG is approved
+for that data classification and its outbound integrations are safely isolated.
+
+### Prerequisites
+
+- Private-network access to both Azure PostgreSQL Flexible Servers.
+- `infisical` access to `DIRECT_DATABASE_URL` in the `prd` and `stg`
+  environments and `BACKUP_ENCRYPTION_KEY` in `prd` on the self-hosted
+  `https://inf.prd.df-app.ch/api` instance, project
+  `d071be96-5136-4f23-a6cb-e0c7f9b9a6c8`. The secrets default to path `/`;
+  override `INFISICAL_SECRET_PATH` if they are stored in a folder.
+- A working `aks-stg-apps` kubectl context with permission to list and scale the
+  release Deployments.
+- Kubernetes access to the ArgoCD control-plane cluster, with `get` and `patch`
+  permission for `applications.argoproj.io/app-klicker` in the `argocd`
+  namespace. This defaults to the same `aks-stg-apps` context; set
+  `ARGOCD_KUBE_CONTEXT` and `ARGOCD_NAMESPACE` if ArgoCD runs elsewhere.
+- PostgreSQL client tools (`pg_dump`, `pg_restore`, and `psql`) version 17 or
+  newer, plus `gpg`, `jq`, Node.js, and standard Unix utilities.
+- A STG release whose database schema is the same as or newer than PRD. The hook
+  can migrate forward; it cannot downgrade a newer PRD schema for an older app.
+
+Run the read-only preflight first from the repository root:
+
+```bash
+./util/backup/refresh-stg-from-prd.sh
+```
+
+The preflight validates the exact source and target hostnames, PostgreSQL client
+compatibility, source size against STG capacity, Prisma migration health,
+STG object ownership, ArgoCD state, and the set of STG Deployments. The database
+must use only the `public` application schema and must not contain PostgreSQL
+large objects. It creates no dump and changes no external state.
+
+After reviewing that output, execute the refresh with all three gates:
+
+```bash
+DRY_RUN=false \
+CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+ALLOW_RAW_PRD_DATA_IN_STG=true \
+./util/backup/refresh-stg-from-prd.sh
+```
+
+The script streams `pg_dump` directly into an AES-256 GPG archive; it never
+writes a plaintext dump. Before changing STG it validates the archive, disables
+ArgoCD automated sync/self-heal, and scales every Deployment in the Klicker
+release to zero. Azure owns the `public` schema, so the script preserves the
+schema and its grants, transactionally removes only objects owned by the STG
+application role, and excludes `public` schema creation/ownership entries from
+the restore catalog. It restores with an explicit
+`pg_restore --dbname=<STG-database> --exit-on-error --single-transaction`,
+verifies aggregate table and migration counts, and patches
+`Application.operation.sync` with ArgoCD's hook sync strategy. It then waits
+for the operation carrying this run's unique initiator to reach `Succeeded`. A
+successful sync runs the PreSync migrator and restores the Git-declared replica
+counts; a failed hook fails the operation.
+
+The database URLs are validated and decomposed into libpq's `PGHOST`, `PGPORT`,
+`PGUSER`, `PGPASSWORD`, `PGDATABASE`, and supported SSL environment variables.
+The URLs are never placed in process arguments, and `PGDATABASE` receives only
+the database name rather than the full URI. PostgreSQL's `pg_restore` does not
+use `PGDATABASE` to select direct-to-database mode, so the non-secret database
+name is also supplied explicitly with `--dbname`; the host, username, and
+password remain environment-only.
+
+For a self-hosted ArgoCD control plane in another Kubernetes context, run both
+the preflight and execution with the overrides, for example:
+
+```bash
+ARGOCD_KUBE_CONTEXT=aks-platform \
+ARGOCD_NAMESPACE=argocd \
+./util/backup/refresh-stg-from-prd.sh
+```
+
+The Infisical endpoint defaults to the production self-hosted instance. If the
+CLI is authenticated against another host, log in to this instance before the
+preflight:
+
+```bash
+infisical login --domain=https://inf.prd.df-app.ch/api
+```
+
+Metadata-only receipts are written below
+`util/backup/dumps/prd-to-stg-refresh/<run-id>/`, which is gitignored. The
+encrypted archive is deleted after the run unless
+`KEEP_ENCRYPTED_ARCHIVE=true` is explicitly set.
+
+If anything fails after maintenance mode starts, the script deliberately leaves
+automated sync disabled and the selected Deployments at zero. Do not simply
+restart them. If the restore was not verified, do **not** submit an ArgoCD hook
+sync against the incomplete database. Inspect the failed run's metadata-only
+`before.json` and `deployments.tsv`, then validate the guarded resume in
+read-only mode with a fresh default `RUN_ID`:
+
+```bash
+RESUME_FAILED_RUN_ID=<failed-run-id> \
+./util/backup/refresh-stg-from-prd.sh
+```
+
+The resume is accepted only when the failed run has no `after.json`, its source
+and target match the current fixed endpoints, its saved policy was automated,
+ArgoCD is still manual with no active operation, and the exact recorded
+Deployment set remains at zero desired and running replicas. After reviewing
+that preflight, rerun with the same failed-run ID and the three execution gates:
+
+```bash
+RESUME_FAILED_RUN_ID=<failed-run-id> \
+DRY_RUN=false \
+CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+ALLOW_RAW_PRD_DATA_IN_STG=true \
+./util/backup/refresh-stg-from-prd.sh
+```
+
+The resume creates and validates a fresh encrypted PRD dump under a new run ID;
+it never reuses a partial archive. It resets any remaining application-owned
+STG objects, restores the snapshot, runs the PreSync hook, and only then
+restores the exact automated-sync policy saved by the failed run. A normal
+refresh still refuses to adopt an unfinished manual Argo state, and a failed
+run never mutates PRD.
+
 **Main Interface:** Use `dump.sh` and `restore.sh` for all operations - these unified wrappers provide consistent commands for both database and Redis operations.
 
 ## Prerequisites
