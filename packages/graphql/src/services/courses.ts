@@ -3083,6 +3083,11 @@ export async function startCourseDuplication(
 
     if (lockedJob && !isTerminalCourseDuplicationStatus(lockedJob.status)) {
       await deleteCourseDuplicationJob(ctx.redisExec, job.id)
+
+      if (lockedJob.status === 'PENDING') {
+        await publishCourseDuplicationEvent(ctx.hatchet, lockedJob.id)
+      }
+
       return getPublicCourseDuplicationStatus(lockedJob)
     }
 

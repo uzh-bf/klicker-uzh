@@ -54,6 +54,13 @@ async function seedCourseDuplicationStress() {
 
   assertLocalDatabase()
 
+  if (process.env.COURSE_DUPLICATION_STRESS_WRITE !== 'true') {
+    console.log(
+      'Dry run only. Set COURSE_DUPLICATION_STRESS_WRITE=true to write the stress fixture.'
+    )
+    return
+  }
+
   const owner = await prisma.user.findUnique({
     where: { id: USER_ID_TEST },
     select: { id: true },

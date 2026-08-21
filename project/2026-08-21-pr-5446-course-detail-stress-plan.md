@@ -24,10 +24,11 @@ large, deterministic activity set for manual stress testing.
 - First test a route relocation from `[id]/index.tsx` to `[id].tsx`; preserve the
   nested assessment routes and adjust only imports made relative to the moved
   file. Keep the change only if both the manifest and runtime prove discovery.
-- Add a development-only `seed:course-duplication-stress` script. It upserts one
-  fixed course owned by the seeded lecturer and 200 fixed-ID, empty, DRAFT live
-  quizzes. The fixture is intentionally not part of `seed:raw`; rerunning it
-  must leave exactly the same course and activity counts.
+- Add a development-only `seed:course-duplication-stress` script. It requires
+  `COURSE_DUPLICATION_STRESS_WRITE=true` before it writes one fixed course owned
+  by the seeded lecturer and 200 fixed-ID, empty, DRAFT live quizzes. The
+  fixture is intentionally not part of `seed:raw`; rerunning it must leave
+  exactly the same course and activity counts.
 
 ## Slice list and acceptance
 
@@ -37,10 +38,12 @@ large, deterministic activity set for manual stress testing.
    the A/B check confirms the fix, run the Manage package check, and verify the
    detail route plus both assessment child routes are discoverable.
 3. **S2 — Stress seed.** Add the script and package command with an
-   `ENV=development` guard, upsert the fixed course and 200 activities, run one
-   course-level derived-permission recomputation, and run the seed twice. Verify
-   one fixture course, exactly 200 expected quiz IDs, zero blocks, ownership and
-   course linkage, readable derived permissions, and unchanged counts on rerun.
+   `ENV=development` guard plus an explicit
+   `COURSE_DUPLICATION_STRESS_WRITE=true` write opt-in, upsert the fixed course
+   and 200 activities, run one course-level derived-permission recomputation,
+   and run the seed twice. Verify one fixture course, exactly 200 expected quiz
+   IDs, zero blocks, ownership and course linkage, readable derived permissions,
+   and unchanged counts on rerun.
 4. **S3 — Integrated verification.** Run repository-native checks in the
    container. Use the authenticated browser path to open `/courses`, the stress
    course detail, all 200 activities, and the duplication modal without
@@ -121,3 +124,8 @@ large, deterministic activity set for manual stress testing.
   final review remain before the normal push to
   `origin/fix/course-duplication-timeout`. No full `check:all` or build claim is
   made for the repository hook.
+- 2026-08-21: The final review also required lease-aware retry spacing, pending
+  job republishing on lock contention, and an explicit stress-seed write
+  opt-in. Hatchet now backs off 60 seconds before the first retry, both
+  pending-job paths republish the stable id, and the seed defaults to dry-run
+  until `COURSE_DUPLICATION_STRESS_WRITE=true` is provided.

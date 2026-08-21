@@ -300,6 +300,7 @@ export function prepareHatchetTasks({
   const processCourseDuplication = hatchet.task({
     name: 'process-course-duplication',
     retries: 3,
+    backoff: { factor: 60, maxSeconds: 120 },
     executionTimeout: '15m',
     defaultPriority: Priority.LOW,
     onEvents: ['process-course-duplication'],
