@@ -14,7 +14,6 @@ set -Eeuo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 DRY_RUN="${DRY_RUN:-true}"
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
@@ -30,20 +29,35 @@ INFISICAL_SECRET_PATH="${INFISICAL_SECRET_PATH:-/}"
 
 EXPECTED_PRD_DB_HOST="${EXPECTED_PRD_DB_HOST:-db-server-prd-apps.postgres.database.azure.com}"
 EXPECTED_STG_DB_HOST="${EXPECTED_STG_DB_HOST:-db-server-stg-apps.postgres.database.azure.com}"
-STG_STORAGE_GIB="${STG_STORAGE_GIB:-32}"
+EXPECTED_PRD_DB_NAME="${EXPECTED_PRD_DB_NAME:-klicker}"
+EXPECTED_STG_DB_NAME="${EXPECTED_STG_DB_NAME:-klicker}"
+REQUIRED_DB_SSLMODE="${REQUIRED_DB_SSLMODE:-require}"
+STG_FREE_STORAGE_GIB="${STG_FREE_STORAGE_GIB:-}"
 MAX_SOURCE_STORAGE_PERCENT="${MAX_SOURCE_STORAGE_PERCENT:-75}"
 
 KUBE_CONTEXT="${KUBE_CONTEXT:-aks-stg-apps}"
 ARGOCD_KUBE_CONTEXT="${ARGOCD_KUBE_CONTEXT:-$KUBE_CONTEXT}"
-ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argo}"
+ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 ARGOCD_APP="${ARGOCD_APP:-app-klicker}"
+WORKLOAD_NAMESPACE="${WORKLOAD_NAMESPACE:-}"
+EXPECTED_STG_CLUSTER_UID="${EXPECTED_STG_CLUSTER_UID:-}"
+EXPECTED_ARGOCD_CLUSTER_UID="${EXPECTED_ARGOCD_CLUSTER_UID:-$EXPECTED_STG_CLUSTER_UID}"
+KUBECTL_REQUEST_TIMEOUT="${KUBECTL_REQUEST_TIMEOUT:-30s}"
+REFRESH_LEASE_NAME="${REFRESH_LEASE_NAME:-${ARGOCD_APP}-prd-to-stg-refresh}"
+REFRESH_LEASE_NAMESPACE="${REFRESH_LEASE_NAMESPACE:-$ARGOCD_NAMESPACE}"
+REFRESH_LEASE_DURATION_SECONDS="${REFRESH_LEASE_DURATION_SECONDS:-7200}"
+MIGRATOR_SECRET_NAME="${MIGRATOR_SECRET_NAME:-${ARGOCD_APP}-secret-backend-graphql}"
+MIGRATOR_SECRET_KEY="${MIGRATOR_SECRET_KEY:-DATABASE_URL}"
 ARGOCD_TIMEOUT_SECONDS="${ARGOCD_TIMEOUT_SECONDS:-1200}"
+ARGOCD_TERMINATION_TIMEOUT_SECONDS="${ARGOCD_TERMINATION_TIMEOUT_SECONDS:-120}"
 ARGOCD_POLL_SECONDS="${ARGOCD_POLL_SECONDS:-2}"
 WORKLOAD_SELECTOR="${WORKLOAD_SELECTOR:-app.kubernetes.io/instance=app-klicker}"
 WORKLOAD_DRAIN_TIMEOUT_SECONDS="${WORKLOAD_DRAIN_TIMEOUT_SECONDS:-300}"
 
 CONFIRM_PRD_TO_STG_REFRESH="${CONFIRM_PRD_TO_STG_REFRESH:-}"
 ALLOW_RAW_PRD_DATA_IN_STG="${ALLOW_RAW_PRD_DATA_IN_STG:-false}"
+RAW_PRD_DATA_APPROVAL_REF="${RAW_PRD_DATA_APPROVAL_REF:-}"
+STG_OUTBOUND_INTEGRATIONS_ISOLATED="${STG_OUTBOUND_INTEGRATIONS_ISOLATED:-false}"
 
 PRD_DATABASE_URL="${PRD_DATABASE_URL:-}"
 STG_DATABASE_URL="${STG_DATABASE_URL:-}"
@@ -62,6 +76,7 @@ WORKLOADS_SCALED=false
 TARGET_MUTATED=false
 RESTORE_VERIFIED=false
 RESUMING_MAINTENANCE=false
+REFRESH_LEASE_HELD=false
 
 ORIGINAL_AUTOMATED_SYNC=false
 ORIGINAL_AUTOMATED_JSON="null"
@@ -93,6 +108,12 @@ STG_CAN_CREATE_IN_PUBLIC=""
 STG_SUPPORTED_OBJECT_COUNT=""
 STG_UNOWNED_OBJECT_COUNT=""
 STG_UNSUPPORTED_OBJECT_COUNT=""
+WORKLOAD_SET_HASH=""
+PRD_MIGRATION_HISTORY=""
+MIGRATOR_DATABASE_URL=""
+MIGRATED_SIZE_BYTES=""
+MIGRATED_TABLE_COUNT=""
+MIGRATED_APPLIED_MIGRATIONS=""
 
 print_help() {
   cat <<'EOF'
@@ -129,17 +150,31 @@ Important configuration variables:
   ARGOCD_KUBE_CONTEXT                ArgoCD control-plane context; defaults to KUBE_CONTEXT
   ARGOCD_NAMESPACE                   Application namespace; default: argocd
   ARGOCD_APP                         default: app-klicker
+  WORKLOAD_NAMESPACE                 exact STG workload namespace; otherwise derived from the Application
+  EXPECTED_STG_CLUSTER_UID           expected stable UID for the STG workload cluster
+  EXPECTED_ARGOCD_CLUSTER_UID        expected stable UID for the ArgoCD cluster; defaults to STG UID
+  KUBECTL_REQUEST_TIMEOUT             per-request Kubernetes API timeout; default: 30s
+  REFRESH_LEASE_NAME                 exclusive maintenance Lease name
+  REFRESH_LEASE_NAMESPACE            namespace for the maintenance Lease; default: argocd
+  MIGRATOR_SECRET_NAME               Secret containing the PreSync DATABASE_URL
+  MIGRATOR_SECRET_KEY                Secret key containing the PreSync DATABASE_URL
+  ARGOCD_TERMINATION_TIMEOUT_SECONDS timeout for draining a timed-out operation
   INFISICAL_API_URL                  default: https://inf.prd.df-app.ch/api
   INFISICAL_PROJECT_ID               default: d071be96-5136-4f23-a6cb-e0c7f9b9a6c8
   INFISICAL_SECRET_PATH              default: /
   WORKLOAD_SELECTOR                   default: app.kubernetes.io/instance=app-klicker
   EXPECTED_PRD_DB_HOST                fail-closed PRD hostname
   EXPECTED_STG_DB_HOST                fail-closed STG hostname
-  STG_STORAGE_GIB                     default: 32
+  EXPECTED_PRD_DB_NAME                fail-closed PRD database name
+  EXPECTED_STG_DB_NAME                fail-closed STG database name
+  REQUIRED_DB_SSLMODE                 minimum PostgreSQL SSL mode; default: require
+  STG_FREE_STORAGE_GIB                current free STG storage evidence; required for execution
   MAX_SOURCE_STORAGE_PERCENT          default: 75
   RUN_ID                              unique receipt identifier
   RESUME_FAILED_RUN_ID                failed run receipt to resume while STG is stopped
   KEEP_ENCRYPTED_ARCHIVE              default: false
+  RAW_PRD_DATA_APPROVAL_REF           ticket/ADR reference approving raw PRD data in STG
+  STG_OUTBOUND_INTEGRATIONS_ISOLATED  must be true for execution
 
 Failure after workload shutdown intentionally leaves ArgoCD auto-sync disabled
 and STG workloads stopped. If reset completed but restore did not, do not submit
@@ -191,14 +226,18 @@ validate_resume_failed_run_id() {
     || die "RESUME_FAILED_RUN_ID must differ from the new RUN_ID"
 }
 
+kubectl_safe() {
+  kubectl --request-timeout="$KUBECTL_REQUEST_TIMEOUT" "$@"
+}
+
 get_argocd_application() {
-  kubectl --context "$ARGOCD_KUBE_CONTEXT" -n "$ARGOCD_NAMESPACE" \
+  kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$ARGOCD_NAMESPACE" \
     get application.argoproj.io "$ARGOCD_APP" -o json
 }
 
 patch_argocd_application() {
   local patch_payload="$1"
-  kubectl --context "$ARGOCD_KUBE_CONTEXT" -n "$ARGOCD_NAMESPACE" \
+  kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$ARGOCD_NAMESPACE" \
     patch application.argoproj.io "$ARGOCD_APP" --type merge \
     --patch "$patch_payload"
 }
@@ -219,10 +258,69 @@ build_argocd_policy_patch() {
     '{spec: {syncPolicy: {automated: $automated}}}'
 }
 
+refresh_lease_holder() {
+  printf 'prd-to-stg-refresh-%s' "$RUN_ID"
+}
+
+acquire_refresh_lease() {
+  local holder_identity lease_manifest
+  holder_identity="$(refresh_lease_holder)"
+  lease_manifest="$(jq -cn \
+    --arg name "$REFRESH_LEASE_NAME" \
+    --arg holderIdentity "$holder_identity" \
+    --argjson duration "$REFRESH_LEASE_DURATION_SECONDS" \
+    '{
+      apiVersion: "coordination.k8s.io/v1",
+      kind: "Lease",
+      metadata: {name: $name},
+      spec: {
+        holderIdentity: $holderIdentity,
+        leaseDurationSeconds: $duration
+      }
+    }')"
+
+  kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$REFRESH_LEASE_NAMESPACE" \
+    create -f - <<<"$lease_manifest" >/dev/null \
+    || die "Refresh Lease '$REFRESH_LEASE_NAMESPACE/$REFRESH_LEASE_NAME' is already held or cannot be created"
+  REFRESH_LEASE_HELD=true
+  log "Acquired refresh Lease '$REFRESH_LEASE_NAMESPACE/$REFRESH_LEASE_NAME'"
+}
+
+renew_refresh_lease() {
+  [[ "$REFRESH_LEASE_HELD" == "true" ]] || return 0
+  local holder_identity renew_time current_holder
+  holder_identity="$(refresh_lease_holder)"
+  renew_time="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  current_holder="$(kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$REFRESH_LEASE_NAMESPACE" \
+    get lease "$REFRESH_LEASE_NAME" -o jsonpath='{.spec.holderIdentity}')" \
+    || die "Could not read refresh Lease ownership"
+  [[ "$current_holder" == "$holder_identity" ]] \
+    || die "Refresh Lease ownership changed during run"
+  kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$REFRESH_LEASE_NAMESPACE" \
+    patch lease "$REFRESH_LEASE_NAME" --type merge \
+    --patch "$(jq -cn --arg renewTime "$renew_time" '{spec: {renewTime: $renewTime}}')" \
+    >/dev/null \
+    || die "Could not renew refresh Lease"
+}
+
+release_refresh_lease() {
+  [[ "$REFRESH_LEASE_HELD" == "true" ]] || return 0
+  local holder_identity current_holder
+  holder_identity="$(refresh_lease_holder)"
+  current_holder="$(kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$REFRESH_LEASE_NAMESPACE" \
+    get lease "$REFRESH_LEASE_NAME" -o jsonpath='{.spec.holderIdentity}' 2>/dev/null)" || true
+  if [[ "$current_holder" == "$holder_identity" ]]; then
+    kubectl_safe --context "$ARGOCD_KUBE_CONTEXT" -n "$REFRESH_LEASE_NAMESPACE" \
+      delete lease "$REFRESH_LEASE_NAME" --wait=false >/dev/null || return 1
+    log "Released refresh Lease '$REFRESH_LEASE_NAMESPACE/$REFRESH_LEASE_NAME'"
+  fi
+  REFRESH_LEASE_HELD=false
+}
+
 cleanup() {
   local exit_code=$?
 
-  unset PRD_DATABASE_URL STG_DATABASE_URL BACKUP_ENCRYPTION_KEY
+  unset PRD_DATABASE_URL STG_DATABASE_URL BACKUP_ENCRYPTION_KEY MIGRATOR_DATABASE_URL
 
   if [[ "$KEEP_ENCRYPTED_ARCHIVE" != "true" ]]; then
     if [[ -n "$ARCHIVE_PATH" && -f "$ARCHIVE_PATH" ]]; then
@@ -237,6 +335,9 @@ cleanup() {
   fi
 
   if [[ $exit_code -ne 0 && "$ARGOCD_POLICY_PAUSED" == "true" ]]; then
+    if [[ "$WORKLOADS_SCALED" != "true" ]]; then
+      best_effort_scale_stg_workloads_down || log "WARNING: fail-safe workload scale-down could not be confirmed"
+    fi
     log "ArgoCD application: $ARGOCD_APP (automated sync disabled)"
     if [[ "$WORKLOADS_SCALED" == "true" ]]; then
       log "STG remains in fail-safe maintenance mode."
@@ -267,6 +368,10 @@ cleanup() {
       log "After confirming the restored snapshot is intact, retry the hook sync: kubectl --context $ARGOCD_KUBE_CONTEXT -n $ARGOCD_NAMESPACE patch application.argoproj.io $ARGOCD_APP --type merge --patch '$recovery_sync_patch'"
       log "Then restore the prior policy: kubectl --context $ARGOCD_KUBE_CONTEXT -n $ARGOCD_NAMESPACE patch application.argoproj.io $ARGOCD_APP --type merge --patch '$recovery_policy_patch'"
     fi
+  fi
+
+  if [[ "$REFRESH_LEASE_HELD" == "true" ]]; then
+    release_refresh_lease || log "WARNING: could not release refresh Lease '$REFRESH_LEASE_NAMESPACE/$REFRESH_LEASE_NAME'; remove it only after confirming this run is no longer active"
   fi
 
   return "$exit_code"
@@ -352,6 +457,7 @@ run_database_command() (
   export PGUSER="$username"
   export PGPASSWORD="$password"
   export PGDATABASE="$database"
+  unset PGSSLMODE PGSSLNEGOTIATION PGCHANNELBINDING PGTARGETSESSIONATTRS
   [[ -z "$sslmode" ]] || export PGSSLMODE="$sslmode"
   [[ -z "$sslnegotiation" ]] || export PGSSLNEGOTIATION="$sslnegotiation"
   [[ -z "$channel_binding" ]] || export PGCHANNELBINDING="$channel_binding"
@@ -434,7 +540,34 @@ validate_endpoints() {
     || die "PRD host '$PRD_DB_HOST' does not equal expected host '$EXPECTED_PRD_DB_HOST'"
   [[ "$STG_DB_HOST" == "$EXPECTED_STG_DB_HOST" ]] \
     || die "STG host '$STG_DB_HOST' does not equal expected host '$EXPECTED_STG_DB_HOST'"
+  [[ "$PRD_DB_NAME" == "$EXPECTED_PRD_DB_NAME" ]] \
+    || die "PRD database '$PRD_DB_NAME' does not equal expected database '$EXPECTED_PRD_DB_NAME'"
+  [[ "$STG_DB_NAME" == "$EXPECTED_STG_DB_NAME" ]] \
+    || die "STG database '$STG_DB_NAME' does not equal expected database '$EXPECTED_STG_DB_NAME'"
   [[ "$PRD_DB_HOST" != "$STG_DB_HOST" ]] || die "PRD and STG resolve to the same configured host"
+
+  local prd_sslmode stg_sslmode
+  prd_sslmode="$(parse_database_url_field "$PRD_DATABASE_URL" sslmode)"
+  stg_sslmode="$(parse_database_url_field "$STG_DATABASE_URL" sslmode)"
+  case "$REQUIRED_DB_SSLMODE" in
+    require)
+      case "$prd_sslmode:$stg_sslmode" in
+        require:require|require:verify-ca|require:verify-full|verify-ca:require|verify-ca:verify-ca|verify-ca:verify-full|verify-full:require|verify-full:verify-ca|verify-full:verify-full) ;;
+        *) die "PRD and STG URLs must use at least sslmode=require" ;;
+      esac
+      ;;
+    verify-ca)
+      [[ "$prd_sslmode" == "verify-ca" || "$prd_sslmode" == "verify-full" ]] \
+        || die "PRD URL must use at least sslmode=verify-ca"
+      [[ "$stg_sslmode" == "verify-ca" || "$stg_sslmode" == "verify-full" ]] \
+        || die "STG URL must use at least sslmode=verify-ca"
+      ;;
+    verify-full)
+      [[ "$prd_sslmode" == "verify-full" ]] || die "PRD URL must use sslmode=verify-full"
+      [[ "$stg_sslmode" == "verify-full" ]] || die "STG URL must use sslmode=verify-full"
+      ;;
+    *) die "REQUIRED_DB_SSLMODE must be require, verify-ca, or verify-full" ;;
+  esac
 }
 
 read_database_metadata() {
@@ -503,6 +636,70 @@ load_database_metadata() {
   fi
   [[ -n "$metadata" ]] || die "$environment database metadata is empty"
   printf -v "$output_variable" '%s' "$metadata"
+}
+
+read_database_identity() {
+  local database_url="$1"
+  local identity_query
+  identity_query=$(cat <<'SQL'
+/* klicker_database_identity */
+SELECT current_database(), COALESCE(inet_server_addr()::text, ''), inet_server_port();
+SQL
+)
+
+  run_database_command "$database_url" \
+    psql -X -v ON_ERROR_STOP=1 -At -F '|' -c "$identity_query"
+}
+
+load_database_identity() {
+  local output_variable="$1"
+  local database_url="$2"
+  local environment="$3"
+  local identity
+
+  if ! identity="$(read_database_identity "$database_url")"; then
+    die "Could not read $environment database identity"
+  fi
+  [[ -n "$identity" ]] || die "$environment database identity is empty"
+  printf -v "$output_variable" '%s' "$identity"
+}
+
+read_migration_history() {
+  local database_url="$1"
+  local migration_history_query
+  migration_history_query=$(cat <<'SQL'
+/* klicker_database_migration_history */
+SELECT CASE
+  WHEN to_regclass('public."_prisma_migrations"') IS NULL THEN ''
+  ELSE COALESCE(
+    (
+      SELECT string_agg(
+        migration_name || '|' || COALESCE(checksum, ''), E'\n'
+        ORDER BY finished_at, migration_name
+      )
+      FROM public."_prisma_migrations"
+      WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL
+    ),
+    ''
+  )
+END;
+SQL
+)
+
+  run_database_command "$database_url" \
+    psql -X -v ON_ERROR_STOP=1 -At -c "$migration_history_query"
+}
+
+load_migration_history() {
+  local output_variable="$1"
+  local database_url="$2"
+  local environment="$3"
+  local migration_history
+
+  if ! migration_history="$(read_migration_history "$database_url")"; then
+    die "Could not read $environment migration history"
+  fi
+  printf -v "$output_variable" '%s' "$migration_history"
 }
 
 parse_prd_metadata() {
@@ -680,9 +877,14 @@ validate_client_and_capacity() {
     die "STG PostgreSQL major $stg_major is older than PRD PostgreSQL major $prd_major"
   fi
 
-  local stg_capacity_bytes=$((STG_STORAGE_GIB * 1024 * 1024 * 1024))
-  if (( PRD_SIZE_BYTES * 100 > stg_capacity_bytes * MAX_SOURCE_STORAGE_PERCENT )); then
-    die "PRD database size exceeds ${MAX_SOURCE_STORAGE_PERCENT}% of the configured ${STG_STORAGE_GIB} GiB STG storage capacity"
+  if [[ -z "$STG_FREE_STORAGE_GIB" ]]; then
+    log "STG_FREE_STORAGE_GIB is not supplied; capacity is checked only for read-only preflight"
+    return
+  fi
+
+  local stg_free_capacity_bytes=$((STG_FREE_STORAGE_GIB * 1024 * 1024 * 1024))
+  if (( PRD_SIZE_BYTES * 100 > stg_free_capacity_bytes * MAX_SOURCE_STORAGE_PERCENT )); then
+    die "PRD database size exceeds ${MAX_SOURCE_STORAGE_PERCENT}% of the supplied ${STG_FREE_STORAGE_GIB} GiB STG free-storage evidence"
   fi
 }
 
@@ -727,6 +929,15 @@ load_argocd_state() {
   application_json="$(get_argocd_application)" \
     || die "Could not read ArgoCD Application '$ARGOCD_NAMESPACE/$ARGOCD_APP' using context '$ARGOCD_KUBE_CONTEXT'"
 
+  local application_namespace
+  application_namespace="$(jq -r '.spec.destination.namespace // empty' <<<"$application_json")"
+  [[ -n "$application_namespace" ]] \
+    || die "ArgoCD Application '$ARGOCD_APP' has no destination namespace"
+  if [[ -n "$WORKLOAD_NAMESPACE" && "$WORKLOAD_NAMESPACE" != "$application_namespace" ]]; then
+    die "WORKLOAD_NAMESPACE '$WORKLOAD_NAMESPACE' does not match ArgoCD destination namespace '$application_namespace'"
+  fi
+  WORKLOAD_NAMESPACE="$application_namespace"
+
   local operation_phase
   operation_phase="$(jq -r '.status.operationState.phase // "Unknown"' <<<"$application_json")"
   if jq -e '.operation != null' >/dev/null <<<"$application_json"; then
@@ -754,9 +965,102 @@ load_argocd_state() {
   load_failed_run_receipt
 }
 
+read_cluster_namespace_uid() {
+  local context="$1"
+  kubectl_safe --context "$context" get namespace kube-system \
+    -o jsonpath='{.metadata.uid}'
+}
+
+validate_cluster_identity() {
+  local stg_cluster_uid argocd_cluster_uid
+  stg_cluster_uid="$(read_cluster_namespace_uid "$KUBE_CONTEXT")" \
+    || die "Could not read kube-system namespace identity from STG context '$KUBE_CONTEXT'"
+  argocd_cluster_uid="$(read_cluster_namespace_uid "$ARGOCD_KUBE_CONTEXT")" \
+    || die "Could not read kube-system namespace identity from ArgoCD context '$ARGOCD_KUBE_CONTEXT'"
+  [[ -n "$stg_cluster_uid" && "$stg_cluster_uid" == "$EXPECTED_STG_CLUSTER_UID" ]] \
+    || die "STG Kubernetes context '$KUBE_CONTEXT' does not match expected cluster identity"
+  [[ -n "$argocd_cluster_uid" && "$argocd_cluster_uid" == "$EXPECTED_ARGOCD_CLUSTER_UID" ]] \
+    || die "ArgoCD Kubernetes context '$ARGOCD_KUBE_CONTEXT' does not match expected cluster identity"
+}
+
+require_kubernetes_permission() {
+  local context="$1"
+  shift
+  local result
+  result="$(kubectl_safe --context "$context" auth can-i "$@")" \
+    || die "Could not verify Kubernetes permission for '$*' in context '$context'"
+  [[ "$result" == "yes" ]] \
+    || die "Kubernetes permission denied for '$*' in context '$context'"
+}
+
+validate_kubernetes_permissions() {
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    get application.argoproj.io "$ARGOCD_APP" -n "$ARGOCD_NAMESPACE"
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    patch application.argoproj.io "$ARGOCD_APP" -n "$ARGOCD_NAMESPACE"
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    get lease "$REFRESH_LEASE_NAME" -n "$REFRESH_LEASE_NAMESPACE"
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    patch lease "$REFRESH_LEASE_NAME" -n "$REFRESH_LEASE_NAMESPACE"
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    create leases -n "$REFRESH_LEASE_NAMESPACE"
+  require_kubernetes_permission "$ARGOCD_KUBE_CONTEXT" \
+    delete lease "$REFRESH_LEASE_NAME" -n "$REFRESH_LEASE_NAMESPACE"
+  require_kubernetes_permission "$KUBE_CONTEXT" \
+    get deployments -n "$WORKLOAD_NAMESPACE"
+  require_kubernetes_permission "$KUBE_CONTEXT" \
+    update deployments/scale -n "$WORKLOAD_NAMESPACE"
+  require_kubernetes_permission "$KUBE_CONTEXT" \
+    get secret "$MIGRATOR_SECRET_NAME" -n "$WORKLOAD_NAMESPACE"
+}
+
+load_migrator_database_url() {
+  local encoded_url
+  encoded_url="$(kubectl_safe --context "$KUBE_CONTEXT" -n "$WORKLOAD_NAMESPACE" \
+    get secret "$MIGRATOR_SECRET_NAME" \
+    -o "jsonpath={.data.$MIGRATOR_SECRET_KEY}")" \
+    || die "Could not read the migrator Secret '$WORKLOAD_NAMESPACE/$MIGRATOR_SECRET_NAME'"
+  [[ -n "$encoded_url" ]] \
+    || die "Migrator Secret '$WORKLOAD_NAMESPACE/$MIGRATOR_SECRET_NAME' has no '$MIGRATOR_SECRET_KEY' value"
+  if ! MIGRATOR_DATABASE_URL="$(
+    printf '%s' "$encoded_url" | base64 --decode 2>/dev/null ||
+      printf '%s' "$encoded_url" | base64 -D
+  )"; then
+    die "Could not decode the migrator database URL from Secret '$WORKLOAD_NAMESPACE/$MIGRATOR_SECRET_NAME'"
+  fi
+  [[ -n "$MIGRATOR_DATABASE_URL" ]] \
+    || die "Migrator database URL is empty"
+}
+
+validate_migrator_secret_target() {
+  load_migrator_database_url
+
+  local migrator_host migrator_port migrator_database migrator_sslmode
+  migrator_host="$(parse_database_url_field "$MIGRATOR_DATABASE_URL" host)"
+  migrator_port="$(parse_database_url_field "$MIGRATOR_DATABASE_URL" port)"
+  migrator_database="$(parse_database_url_field "$MIGRATOR_DATABASE_URL" database)"
+  migrator_sslmode="$(parse_database_url_field "$MIGRATOR_DATABASE_URL" sslmode)"
+  [[ "$migrator_host" == "$STG_DB_HOST" ]] \
+    || die "Migrator Secret points to host '$migrator_host', not the validated STG host '$STG_DB_HOST'"
+  [[ "$migrator_port" == "$(parse_database_url_field "$STG_DATABASE_URL" port)" ]] \
+    || die "Migrator Secret points to port '$migrator_port', not the validated STG port"
+  [[ "$migrator_database" == "$STG_DB_NAME" ]] \
+    || die "Migrator Secret points to database '$migrator_database', not '$STG_DB_NAME'"
+  case "$REQUIRED_DB_SSLMODE:$migrator_sslmode" in
+    require:require|require:verify-ca|require:verify-full|verify-ca:verify-ca|verify-ca:verify-full|verify-full:verify-full) ;;
+    *) die "Migrator Secret database URL does not meet sslmode=$REQUIRED_DB_SSLMODE" ;;
+  esac
+
+  local stg_identity migrator_identity
+  load_database_identity stg_identity "$STG_DATABASE_URL" STG
+  load_database_identity migrator_identity "$MIGRATOR_DATABASE_URL" migrator
+  [[ "$stg_identity" == "$migrator_identity" ]] \
+    || die "Migrator Secret and STG database URLs resolve to different database identities"
+}
+
 load_workload_state() {
   local deployments_json
-  deployments_json="$(kubectl --context "$KUBE_CONTEXT" get deployments -A \
+  deployments_json="$(kubectl_safe --context "$KUBE_CONTEXT" -n "$WORKLOAD_NAMESPACE" get deployments \
     -l "$WORKLOAD_SELECTOR" -o json)" \
     || die "Could not list STG deployments using context '$KUBE_CONTEXT'"
 
@@ -767,6 +1071,33 @@ load_workload_state() {
     || die "No STG deployments matched selector '$WORKLOAD_SELECTOR'"
 
   printf '%s' "$deployments_json"
+}
+
+workload_set_hash() {
+  jq -c '[.items[] | {namespace: .metadata.namespace, name: .metadata.name, uid: (.metadata.uid // "")}] | sort_by(.namespace, .name, .uid)' \
+    | shasum -a 256 | awk '{print $1}'
+}
+
+validate_stg_database_identity() {
+  local stg_identity stg_database
+  load_database_identity stg_identity "$STG_DATABASE_URL" STG
+  stg_database="$(printf '%s' "$stg_identity" | cut -d'|' -f1)"
+  [[ "$stg_database" == "$STG_DB_NAME" ]] \
+    || die "STG database identity '$stg_database' does not match expected database '$STG_DB_NAME'"
+}
+
+record_preflight_workload_set() {
+  local deployments_json="$1"
+  WORKLOAD_SET_HASH="$(workload_set_hash <<<"$deployments_json")"
+}
+
+validate_preflight_workload_set() {
+  local deployments_json="$1"
+  [[ -n "$WORKLOAD_SET_HASH" ]] || return 0
+  local current_hash
+  current_hash="$(workload_set_hash <<<"$deployments_json")"
+  [[ "$current_hash" == "$WORKLOAD_SET_HASH" ]] \
+    || die "Selected STG Deployments changed after preflight; refusing mutation"
 }
 
 validate_resume_workload_state() {
@@ -800,12 +1131,18 @@ validate_resume_workload_state() {
 }
 
 print_preflight_summary() {
-  local deployment_count="$1"
+  local deployments_json="$1"
+  local deployment_count
+  deployment_count="$(jq '.items | length' <<<"$deployments_json")"
   log "Preflight complete"
   log "Source: $PRD_DB_HOST/$PRD_DB_NAME (PostgreSQL $((PRD_VERSION_NUM / 10000)), $PRD_SIZE_BYTES bytes, $PRD_TABLE_COUNT tables)"
   log "Target: $STG_DB_HOST/$STG_DB_NAME (PostgreSQL $((STG_BEFORE_VERSION_NUM / 10000)), current size $STG_BEFORE_SIZE_BYTES bytes)"
   log "ArgoCD Application: $ARGOCD_NAMESPACE/$ARGOCD_APP via context $ARGOCD_KUBE_CONTEXT"
   log "STG deployments to stop: $deployment_count"
+  while IFS=$'\t' read -r namespace deployment; do
+    [[ -n "$namespace" && -n "$deployment" ]] || continue
+    log "  - $namespace/$deployment"
+  done < <(jq -r '.items[] | [.metadata.namespace, .metadata.name] | @tsv' <<<"$deployments_json")
   log "STG reset: remove $STG_SUPPORTED_OBJECT_COUNT objects owned by $STG_CONNECTED_ROLE; preserve public schema owned by $STG_PUBLIC_SCHEMA_OWNER"
   log "Raw PRD data, including personal data, will be present in STG after execution."
 }
@@ -950,15 +1287,24 @@ scale_stg_workloads_down() {
   local deployments_json
   WORKLOADS_SCALED=false
   deployments_json="$(load_workload_state)"
-  jq -r '.items[] | [.metadata.namespace, .metadata.name, (.spec.replicas // 1)] | @tsv' \
-    <<<"$deployments_json" >"$DEPLOYMENT_RECEIPT"
+  validate_preflight_workload_set "$deployments_json"
+  if [[ ! -s "$DEPLOYMENT_RECEIPT" ]]; then
+    jq -r '.items[] | [.metadata.namespace, .metadata.name, (.spec.replicas // 1)] | @tsv' \
+      <<<"$deployments_json" >"$DEPLOYMENT_RECEIPT"
+  fi
 
+  local scale_failed=false
   while IFS=$'\t' read -r namespace deployment replicas; do
     [[ -n "$namespace" && -n "$deployment" ]] || continue
     log "Scaling $namespace/deployment/$deployment from $replicas to 0"
-    kubectl --context "$KUBE_CONTEXT" -n "$namespace" \
-      scale "deployment/$deployment" --replicas=0 >/dev/null
+    if ! kubectl_safe --context "$KUBE_CONTEXT" -n "$namespace" \
+      scale "deployment/$deployment" --replicas=0 >/dev/null; then
+      scale_failed=true
+    fi
   done <"$DEPLOYMENT_RECEIPT"
+
+  [[ "$scale_failed" == "false" ]] \
+    || return 1
 
   local deadline=$((SECONDS + WORKLOAD_DRAIN_TIMEOUT_SECONDS))
   while true; do
@@ -977,6 +1323,21 @@ scale_stg_workloads_down() {
 
   WORKLOADS_SCALED=true
   log "All selected STG workloads are stopped"
+}
+
+best_effort_scale_stg_workloads_down() {
+  local deployments_json
+  deployments_json="$(kubectl_safe --context "$KUBE_CONTEXT" -n "$WORKLOAD_NAMESPACE" \
+    get deployments -l "$WORKLOAD_SELECTOR" -o json 2>/dev/null)" || return 1
+  local scale_failed=false
+  while IFS=$'\t' read -r namespace deployment; do
+    [[ -n "$namespace" && -n "$deployment" ]] || continue
+    if ! kubectl_safe --context "$KUBE_CONTEXT" -n "$namespace" \
+      scale "deployment/$deployment" --replicas=0 >/dev/null; then
+      scale_failed=true
+    fi
+  done < <(jq -r '.items[] | [.metadata.namespace, .metadata.name] | @tsv' <<<"$deployments_json")
+  [[ "$scale_failed" == "false" ]]
 }
 
 reset_stg_owned_objects() {
@@ -1146,7 +1507,34 @@ validate_restored_snapshot() {
   [[ "$extra_schema_count" == "0" && "$large_object_count" == "0" ]] \
     || die "Restored snapshot contains unsupported schemas or large objects"
 
+  local restored_migration_history
+  load_migration_history restored_migration_history "$STG_DATABASE_URL" STG
+  [[ "$restored_migration_history" == "$PRD_MIGRATION_HISTORY" ]] \
+    || die "Restored migration names and checksums do not exactly match the PRD snapshot"
+
   log "Logical restore matches the PRD table and migration metadata"
+}
+
+terminate_argocd_operation() {
+  log "Terminating the timed-out ArgoCD operation before recovery"
+  patch_argocd_application '{"operation":null}' >/dev/null \
+    || return 1
+
+  local deadline=$((SECONDS + ARGOCD_TERMINATION_TIMEOUT_SECONDS))
+  while (( SECONDS < deadline )); do
+    local application_json operation_phase
+    application_json="$(get_argocd_application)" || {
+      sleep "$ARGOCD_POLL_SECONDS"
+      continue
+    }
+    operation_phase="$(jq -r '.status.operationState.phase // "Unknown"' <<<"$application_json")"
+    if ! jq -e '.operation != null' >/dev/null <<<"$application_json" && \
+      [[ "$operation_phase" != "Running" && "$operation_phase" != "Terminating" ]]; then
+      return 0
+    fi
+    sleep "$ARGOCD_POLL_SECONDS"
+  done
+  return 1
 }
 
 run_presync_hook() {
@@ -1206,6 +1594,10 @@ run_presync_hook() {
     sleep "$ARGOCD_POLL_SECONDS"
   done
 
+  if ! terminate_argocd_operation; then
+    die "Timed out waiting for the submitted ArgoCD operation and could not confirm its termination"
+  fi
+  renew_refresh_lease
   log "Timed out waiting for the submitted ArgoCD operation; forcing STG Deployments back to zero"
   scale_stg_workloads_down
   die "ArgoCD sync did not complete within $ARGOCD_TIMEOUT_SECONDS seconds"
@@ -1222,8 +1614,13 @@ validate_migrated_target() {
   local failed_migrations extra_schema_count large_object_count
   IFS='|' read -r database_name version_num size_bytes table_count applied_migrations \
     failed_migrations extra_schema_count large_object_count <<<"$metadata"
+  MIGRATED_SIZE_BYTES="$size_bytes"
+  MIGRATED_TABLE_COUNT="$table_count"
+  MIGRATED_APPLIED_MIGRATIONS="$applied_migrations"
 
   local error=""
+  local migrated_migration_history
+  load_migration_history migrated_migration_history "$STG_DATABASE_URL" STG
   if [[ "$database_name" != "$STG_DB_NAME" ]]; then
     error="Post-migration metadata came from unexpected database '$database_name'"
   elif [[ ! "$version_num" =~ ^[0-9]+$ ||
@@ -1240,6 +1637,10 @@ validate_migrated_target() {
     error="Post-migration applied count $applied_migrations is lower than PRD snapshot count $PRD_APPLIED_MIGRATIONS"
   elif [[ "$failed_migrations" != "0" ]]; then
     error="Post-migration database contains $failed_migrations unresolved Prisma migration(s)"
+  elif [[ -n "$PRD_MIGRATION_HISTORY" &&
+    "$migrated_migration_history" != "$PRD_MIGRATION_HISTORY" &&
+    "$migrated_migration_history" != "$PRD_MIGRATION_HISTORY"$'\n'* ]]; then
+    error="Post-migration migration names and checksums do not extend the PRD history"
   elif [[ "$extra_schema_count" != "0" || "$large_object_count" != "0" ]]; then
     error="Post-migration database contains unsupported schemas or large objects"
   fi
@@ -1249,14 +1650,18 @@ validate_migrated_target() {
     die "$error"
   fi
 
+  log "Post-sync verification passed: $table_count tables, $applied_migrations applied migrations"
+}
+
+write_after_receipt() {
   jq -n \
     --arg runId "$RUN_ID" \
     --arg completedAt "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
     --arg targetHost "$STG_DB_HOST" \
     --arg targetDatabase "$STG_DB_NAME" \
-    --argjson targetSizeBytes "$size_bytes" \
-    --argjson targetTableCount "$table_count" \
-    --argjson targetAppliedMigrations "$applied_migrations" \
+    --argjson targetSizeBytes "$MIGRATED_SIZE_BYTES" \
+    --argjson targetTableCount "$MIGRATED_TABLE_COUNT" \
+    --argjson targetAppliedMigrations "$MIGRATED_APPLIED_MIGRATIONS" \
     '{
       runId: $runId,
       completedAt: $completedAt,
@@ -1269,13 +1674,12 @@ validate_migrated_target() {
         unresolvedMigrations: 0
       }
     }' >"$AFTER_RECEIPT"
-
-  log "Post-sync verification passed: $table_count tables, $applied_migrations applied migrations"
 }
 
 restore_argocd_policy() {
   local policy_patch
   policy_patch="$(build_argocd_policy_patch "$ORIGINAL_AUTOMATED_JSON")"
+  renew_refresh_lease
   patch_argocd_application "$policy_patch" >/dev/null
 
   local application_json
@@ -1303,14 +1707,23 @@ validate_configuration() {
   validate_boolean DRY_RUN "$DRY_RUN"
   validate_boolean KEEP_ENCRYPTED_ARCHIVE "$KEEP_ENCRYPTED_ARCHIVE"
   validate_boolean ALLOW_RAW_PRD_DATA_IN_STG "$ALLOW_RAW_PRD_DATA_IN_STG"
-  validate_positive_integer STG_STORAGE_GIB "$STG_STORAGE_GIB"
+  validate_boolean STG_OUTBOUND_INTEGRATIONS_ISOLATED "$STG_OUTBOUND_INTEGRATIONS_ISOLATED"
   validate_positive_integer MAX_SOURCE_STORAGE_PERCENT "$MAX_SOURCE_STORAGE_PERCENT"
+  if [[ -n "$STG_FREE_STORAGE_GIB" ]]; then
+    validate_positive_integer STG_FREE_STORAGE_GIB "$STG_FREE_STORAGE_GIB"
+  fi
+  validate_positive_integer REFRESH_LEASE_DURATION_SECONDS "$REFRESH_LEASE_DURATION_SECONDS"
   validate_positive_integer ARGOCD_TIMEOUT_SECONDS "$ARGOCD_TIMEOUT_SECONDS"
+  validate_positive_integer ARGOCD_TERMINATION_TIMEOUT_SECONDS "$ARGOCD_TERMINATION_TIMEOUT_SECONDS"
   validate_positive_integer ARGOCD_POLL_SECONDS "$ARGOCD_POLL_SECONDS"
   validate_positive_integer WORKLOAD_DRAIN_TIMEOUT_SECONDS "$WORKLOAD_DRAIN_TIMEOUT_SECONDS"
+  [[ -n "$EXPECTED_STG_CLUSTER_UID" ]] \
+    || die "EXPECTED_STG_CLUSTER_UID is required for Kubernetes target binding"
+  [[ -n "$EXPECTED_ARGOCD_CLUSTER_UID" ]] \
+    || die "EXPECTED_ARGOCD_CLUSTER_UID is required for Kubernetes target binding"
   validate_run_id
   validate_resume_failed_run_id
-  (( STG_STORAGE_GIB > 0 )) || die "STG_STORAGE_GIB must be greater than zero"
+  (( REFRESH_LEASE_DURATION_SECONDS > 0 )) || die "REFRESH_LEASE_DURATION_SECONDS must be greater than zero"
   (( ARGOCD_POLL_SECONDS > 0 )) || die "ARGOCD_POLL_SECONDS must be greater than zero"
   (( MAX_SOURCE_STORAGE_PERCENT > 0 && MAX_SOURCE_STORAGE_PERCENT <= 95 )) \
     || die "MAX_SOURCE_STORAGE_PERCENT must be between 1 and 95"
@@ -1323,10 +1736,16 @@ validate_execution_gates() {
     || die "Execution requires CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD"
   [[ "$ALLOW_RAW_PRD_DATA_IN_STG" == "true" ]] \
     || die "Execution requires ALLOW_RAW_PRD_DATA_IN_STG=true"
+  [[ -n "$RAW_PRD_DATA_APPROVAL_REF" ]] \
+    || die "Execution requires RAW_PRD_DATA_APPROVAL_REF=<approved ticket or ADR reference>"
+  [[ "$STG_OUTBOUND_INTEGRATIONS_ISOLATED" == "true" ]] \
+    || die "Execution requires STG_OUTBOUND_INTEGRATIONS_ISOLATED=true"
+  [[ -n "$STG_FREE_STORAGE_GIB" ]] \
+    || die "Execution requires STG_FREE_STORAGE_GIB=<current free storage evidence>"
 }
 
 validate_tools() {
-  local tools=(awk cat gpg grep jq kubectl mv node pg_dump pg_restore psql sed shasum)
+  local tools=(awk base64 cat cut gpg grep jq kubectl mv node pg_dump pg_restore psql sed shasum)
   local tool
   for tool in "${tools[@]}"; do
     require_command "$tool"
@@ -1351,16 +1770,19 @@ main() {
   load_database_metadata stg_before_metadata "$STG_DATABASE_URL" STG
   parse_prd_metadata "$prd_metadata"
   parse_stg_before_metadata "$stg_before_metadata"
+  load_migration_history PRD_MIGRATION_HISTORY "$PRD_DATABASE_URL" PRD
   validate_stg_reset_capabilities
   validate_client_and_capacity
+  validate_cluster_identity
   load_argocd_state
+  validate_kubernetes_permissions
+  validate_migrator_secret_target
 
   local deployments_json
   deployments_json="$(load_workload_state)"
   validate_resume_workload_state "$deployments_json"
-  local deployment_count
-  deployment_count="$(jq '.items | length' <<<"$deployments_json")"
-  print_preflight_summary "$deployment_count"
+  record_preflight_workload_set "$deployments_json"
+  print_preflight_summary "$deployments_json"
 
   if [[ "$DRY_RUN" == "true" ]]; then
     log "DRY_RUN=true: no dump was created and no external state was changed."
@@ -1368,11 +1790,15 @@ main() {
     return 0
   fi
 
+  acquire_refresh_lease
   prepare_run_directory
   encrypt_prd_dump
+  renew_refresh_lease
   write_before_receipt
 
   pause_argocd_policy
+  renew_refresh_lease
+  validate_preflight_workload_set "$(load_workload_state)"
   scale_stg_workloads_down
 
   # Re-verify the pause immediately before the first destructive database action.
@@ -1383,6 +1809,8 @@ main() {
     die "ArgoCD automated sync was re-enabled before database replacement"
   fi
 
+  renew_refresh_lease
+  validate_stg_database_identity
   reset_stg_owned_objects
   restore_stg_database
   local restored_metadata
@@ -1390,11 +1818,20 @@ main() {
   validate_restored_snapshot "$restored_metadata"
   RESTORE_VERIFIED=true
 
+  renew_refresh_lease
   run_presync_hook
   local migrated_metadata
-  load_database_metadata migrated_metadata "$STG_DATABASE_URL" STG
+  if ! migrated_metadata="$(read_database_metadata "$STG_DATABASE_URL")"; then
+    scale_stg_workloads_down
+    die "Could not read STG database metadata after the migration hook"
+  fi
+  [[ -n "$migrated_metadata" ]] || {
+    scale_stg_workloads_down
+    die "STG database metadata after the migration hook is empty"
+  }
   validate_migrated_target "$migrated_metadata"
   restore_argocd_policy
+  write_after_receipt
 
   log "PRD-to-STG database refresh completed successfully"
   log "Receipts: $BEFORE_RECEIPT and $AFTER_RECEIPT"

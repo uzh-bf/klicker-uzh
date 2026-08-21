@@ -32,10 +32,10 @@ fake_infisical() {
   fake_log "infisical get $secret_name from $environment via self-hosted project"
   case "$secret_name:$environment" in
     DIRECT_DATABASE_URL:prd)
-      printf '%s\n' 'postgresql://prd-user:synthetic@db-server-prd-apps.postgres.database.azure.com/klicker?schema=public'
+      printf '%s\n' 'postgresql://prd-user:synthetic@db-server-prd-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require'
       ;;
     DIRECT_DATABASE_URL:stg)
-      printf '%s\n' 'postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public'
+      printf '%s\n' 'postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require'
       ;;
     BACKUP_ENCRYPTION_KEY:prd)
       printf '%s\n' 'synthetic-test-key'
@@ -61,6 +61,10 @@ fake_argocd_application_json() {
   if [[ -n "$initiator" ]]; then
     local phase="Succeeded"
     local message="successfully synced (all tasks run)"
+    if [[ "${FAKE_ARGO_OPERATION_RUNNING:-false}" == "true" ]]; then
+      phase="Running"
+      message="synthetic operation still running"
+    fi
     if [[ "${FAKE_ARGO_SYNC_FAIL:-false}" == "true" ]]; then
       phase="Failed"
       message="synthetic migration failure"
@@ -72,7 +76,10 @@ fake_argocd_application_json() {
       --arg phase "$phase" \
       --arg message "$message" \
       '{
-        spec: {syncPolicy: {automated: $automated}},
+        spec: {
+          destination: {namespace: "stg-klicker"},
+          syncPolicy: {automated: $automated}
+        },
         status: {
           operationState: {
             phase: $phase,
@@ -90,7 +97,10 @@ fake_argocd_application_json() {
     jq -cn \
       --argjson automated "$automated" \
       '{
-        spec: {syncPolicy: {automated: $automated}},
+        spec: {
+          destination: {namespace: "stg-klicker"},
+          syncPolicy: {automated: $automated}
+        },
         status: {
           operationState: {
             phase: "Succeeded",
@@ -102,7 +112,50 @@ fake_argocd_application_json() {
 }
 
 fake_kubectl() {
-  if [[ " $* " == *" get application.argoproj.io "* ]]; then
+  if [[ " $* " == *" auth can-i "* ]]; then
+    if [[ "${FAKE_KUBE_CAN_I:-allow}" == "deny" ]]; then
+      printf '%s\n' no
+    else
+      printf '%s\n' yes
+    fi
+  elif [[ " $* " == *" get namespace kube-system "* ]]; then
+    printf '%s' synthetic-cluster-uid
+  elif [[ " $* " == *" get secret "* ]]; then
+    printf '%s' "${FAKE_MIGRATOR_URL:-postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require}" | base64
+  elif [[ " $* " == *" create -f - "* ]]; then
+    local lease_payload
+    lease_payload="$(cat)"
+    [[ ! -e "$FAKE_LEASE_FILE" ]] || return 1
+    printf '%s' "$lease_payload" >"$FAKE_LEASE_FILE"
+    fake_log 'kubectl lease create'
+  elif [[ " $* " == *" get lease "* ]]; then
+    [[ -f "$FAKE_LEASE_FILE" ]] || return 1
+    if [[ " $* " == *" jsonpath={.spec.holderIdentity} "* ]]; then
+      jq -r '.spec.holderIdentity' "$FAKE_LEASE_FILE"
+    else
+      cat "$FAKE_LEASE_FILE"
+    fi
+  elif [[ " $* " == *" patch lease "* ]]; then
+    [[ -f "$FAKE_LEASE_FILE" ]] || return 1
+    local patch_payload=""
+    local expect_patch=false
+    local argument
+    for argument in "$@"; do
+      if [[ "$expect_patch" == "true" ]]; then
+        patch_payload="$argument"
+        break
+      elif [[ "$argument" == "--patch" ]]; then
+        expect_patch=true
+      fi
+    done
+    jq -s '.[0] * .[1]' "$FAKE_LEASE_FILE" <(printf '%s' "$patch_payload") \
+      >"$FAKE_LEASE_FILE.tmp"
+    mv -- "$FAKE_LEASE_FILE.tmp" "$FAKE_LEASE_FILE"
+    fake_log 'kubectl lease renew'
+  elif [[ " $* " == *" delete lease "* ]]; then
+    rm -f -- "$FAKE_LEASE_FILE"
+    fake_log 'kubectl lease delete'
+  elif [[ " $* " == *" get application.argoproj.io "* ]]; then
     fake_argocd_application_json
   elif [[ " $* " == *" patch application.argoproj.io "* ]]; then
     local patch_payload=""
@@ -118,7 +171,10 @@ fake_kubectl() {
     done
     [[ -n "$patch_payload" ]] || return 2
 
-    if jq -e '.operation.sync != null' <<<"$patch_payload" >/dev/null; then
+    if jq -e 'has("operation") and .operation == null' <<<"$patch_payload" >/dev/null; then
+      rm -f -- "$FAKE_ARGO_OPERATION_INITIATOR_FILE"
+      fake_log 'kubectl app operation terminate'
+    elif jq -e '.operation.sync != null' <<<"$patch_payload" >/dev/null; then
       jq -r '.operation.initiatedBy.username' <<<"$patch_payload" \
         >"$FAKE_ARGO_OPERATION_INITIATOR_FILE"
       fake_log 'kubectl app sync hook'
@@ -161,6 +217,7 @@ fake_pg_dump() {
   [[ "${PGPORT:-}" == '5432' ]] || return 2
   [[ "${PGUSER:-}" == 'prd-user' ]] || return 2
   [[ "${PGPASSWORD:-}" == 'synthetic' ]] || return 2
+  [[ "${PGSSLMODE:-}" == 'require' ]] || return 2
   fake_log 'pg_dump source'
   printf '%s\n' 'synthetic custom archive'
 }
@@ -223,6 +280,7 @@ fake_pg_restore() {
   [[ "${PGPORT:-}" == '5432' ]] || return 2
   [[ "${PGUSER:-}" == 'stg-user' ]] || return 2
   [[ "${PGPASSWORD:-}" == 'synthetic' ]] || return 2
+  [[ "${PGSSLMODE:-}" == 'require' ]] || return 2
   local restore_database=""
   local restore_list=""
   local expect_database=false
@@ -291,11 +349,16 @@ fake_psql() {
   fi
 
   [[ "${PGDATABASE:-}" == 'klicker' ]] || return 2
+  [[ "${PGSSLMODE:-}" == 'require' ]] || return 2
   if [[ "${PGHOST:-}" == 'db-server-prd-apps.postgres.database.azure.com' ]]; then
     [[ "${PGUSER:-}" == 'prd-user' ]] || return 2
     [[ "${PGPASSWORD:-}" == 'synthetic' ]] || return 2
     fake_log 'psql metadata source'
-    if [[ " $* " == *" klicker_database_metadata_core "* ]]; then
+    if [[ " $* " == *" klicker_database_identity "* ]]; then
+      printf '%s\n' 'klicker|10.0.0.5|5432'
+    elif [[ " $* " == *" klicker_database_migration_history "* ]]; then
+      printf '%s\n' '001_init|checksum-a'
+    elif [[ " $* " == *" klicker_database_metadata_core "* ]]; then
       printf '%s\n' 'klicker|170000|1048576|200|1|0|0'
     elif [[ " $* " == *" klicker_database_metadata_migrations "* ]]; then
       printf '%s\n' '180|0'
@@ -312,7 +375,17 @@ fake_psql() {
   fake_log 'psql metadata target'
   local count=0
   [[ -f "$FAKE_STG_METADATA_COUNTER" ]] && count="$(<"$FAKE_STG_METADATA_COUNTER")"
-  if [[ " $* " == *" klicker_database_metadata_core "* ]]; then
+  if [[ " $* " == *" klicker_database_identity "* ]]; then
+    printf '%s\n' 'klicker|10.0.0.5|5432'
+  elif [[ " $* " == *" klicker_database_migration_history "* ]]; then
+    if [[ "${FAKE_MIGRATION_HISTORY_MODE:-prefix}" == "divergent" ]] && (( count >= 3 )); then
+      printf '%s\n' '999_wrong|checksum-z'
+    elif (( count >= 3 )); then
+      printf '%s\n' $'001_init|checksum-a\n002_forward|checksum-b'
+    else
+      printf '%s\n' '001_init|checksum-a'
+    fi
+  elif [[ " $* " == *" klicker_database_metadata_core "* ]]; then
     count=$((count + 1))
     printf '%s' "$count" >"$FAKE_STG_METADATA_COUNTER"
     if [[ "${FAKE_STG_EMPTY_BEFORE:-false}" == "true" && "$count" == "1" ]]; then
@@ -407,6 +480,7 @@ new_case() {
   FAKE_LOG="$CASE_DIR/fake.log"
   FAKE_ARGO_POLICY_FILE="$CASE_DIR/argocd-policy"
   FAKE_ARGO_OPERATION_INITIATOR_FILE="$CASE_DIR/argocd-operation-initiator"
+  FAKE_LEASE_FILE="$CASE_DIR/refresh-lease.json"
   FAKE_WORKLOADS_SCALED_FILE="$CASE_DIR/workloads-scaled"
   FAKE_STG_METADATA_COUNTER="$CASE_DIR/stg-metadata-counter"
   FAKE_STG_RESTORED_FILE="$CASE_DIR/stg-restored"
@@ -427,12 +501,17 @@ run_refresh() {
     FAKE_LOG="$FAKE_LOG" \
     FAKE_ARGO_POLICY_FILE="$FAKE_ARGO_POLICY_FILE" \
     FAKE_ARGO_OPERATION_INITIATOR_FILE="$FAKE_ARGO_OPERATION_INITIATOR_FILE" \
+    FAKE_LEASE_FILE="$FAKE_LEASE_FILE" \
     FAKE_WORKLOADS_SCALED_FILE="$FAKE_WORKLOADS_SCALED_FILE" \
     FAKE_STG_METADATA_COUNTER="$FAKE_STG_METADATA_COUNTER" \
     FAKE_STG_RESTORED_FILE="$FAKE_STG_RESTORED_FILE" \
     FAKE_PG_RESTORE_FAIL="${FAKE_PG_RESTORE_FAIL:-false}" \
     FAKE_PSQL_CONNECT_FAIL="${FAKE_PSQL_CONNECT_FAIL:-false}" \
     FAKE_ARGO_SYNC_FAIL="${FAKE_ARGO_SYNC_FAIL:-false}" \
+    FAKE_ARGO_OPERATION_RUNNING="${FAKE_ARGO_OPERATION_RUNNING:-false}" \
+    FAKE_MIGRATOR_URL="${FAKE_MIGRATOR_URL:-postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require}" \
+    FAKE_MIGRATION_HISTORY_MODE="${FAKE_MIGRATION_HISTORY_MODE:-prefix}" \
+    FAKE_KUBE_CAN_I="${FAKE_KUBE_CAN_I:-allow}" \
     FAKE_CATALOG_READS_PREFIX_ONLY="${FAKE_CATALOG_READS_PREFIX_ONLY:-false}" \
     FAKE_PUBLIC_SCHEMA_NOT_OWNED="${FAKE_PUBLIC_SCHEMA_NOT_OWNED:-false}" \
     FAKE_STG_EMPTY_BEFORE="${FAKE_STG_EMPTY_BEFORE:-false}" \
@@ -442,10 +521,17 @@ run_refresh() {
     DRY_RUN="${DRY_RUN:-true}" \
     CONFIRM_PRD_TO_STG_REFRESH="${CONFIRM_PRD_TO_STG_REFRESH:-}" \
     ALLOW_RAW_PRD_DATA_IN_STG="${ALLOW_RAW_PRD_DATA_IN_STG:-false}" \
-    PRD_DATABASE_URL="${PRD_DATABASE_URL_OVERRIDE-postgresql://prd-user:synthetic@db-server-prd-apps.postgres.database.azure.com/klicker?schema=public}" \
-    STG_DATABASE_URL="${STG_DATABASE_URL_OVERRIDE-postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public}" \
+    RAW_PRD_DATA_APPROVAL_REF="${RAW_PRD_DATA_APPROVAL_REF-TEST-APPROVAL}" \
+    STG_OUTBOUND_INTEGRATIONS_ISOLATED="${STG_OUTBOUND_INTEGRATIONS_ISOLATED:-true}" \
+    STG_FREE_STORAGE_GIB="${STG_FREE_STORAGE_GIB:-64}" \
+    EXPECTED_STG_CLUSTER_UID="${EXPECTED_STG_CLUSTER_UID:-synthetic-cluster-uid}" \
+    EXPECTED_ARGOCD_CLUSTER_UID="${EXPECTED_ARGOCD_CLUSTER_UID:-synthetic-cluster-uid}" \
+    WORKLOAD_NAMESPACE="${WORKLOAD_NAMESPACE:-}" \
+    ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}" \
+    PRD_DATABASE_URL="${PRD_DATABASE_URL_OVERRIDE-postgresql://prd-user:synthetic@db-server-prd-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require}" \
+    STG_DATABASE_URL="${STG_DATABASE_URL_OVERRIDE-postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?schema=public&sslmode=require}" \
     BACKUP_ENCRYPTION_KEY="${BACKUP_ENCRYPTION_KEY_OVERRIDE-synthetic-test-key}" \
-    "$SCRIPT_UNDER_TEST" "$@" >"$OUTPUT_FILE" 2>&1
+    "$SCRIPT_UNDER_TEST" >"$OUTPUT_FILE" 2>&1
 }
 
 write_failed_run_receipt() {
@@ -494,7 +580,7 @@ test_help() {
 
 test_dry_run() {
   new_case dry-run
-  if BACKUP_ENCRYPTION_KEY_OVERRIDE= run_refresh &&
+  if BACKUP_ENCRYPTION_KEY_OVERRIDE='' run_refresh &&
     assert_contains "$OUTPUT_FILE" 'DRY_RUN=true' &&
     assert_not_contains "$FAKE_LOG" 'pg_dump source' &&
     assert_not_contains "$FAKE_LOG" 'gpg encrypt' &&
@@ -526,8 +612,10 @@ test_host_guard() {
   if ! env \
     PATH="$FAKE_BIN:$PATH" \
     FAKE_LOG="$FAKE_LOG" \
-    PRD_DATABASE_URL='postgresql://prd-user:synthetic@unexpected.example.com/klicker' \
-    STG_DATABASE_URL='postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker' \
+    EXPECTED_STG_CLUSTER_UID=synthetic-cluster-uid \
+    EXPECTED_ARGOCD_CLUSTER_UID=synthetic-cluster-uid \
+    PRD_DATABASE_URL='postgresql://prd-user:synthetic@unexpected.example.com/klicker?sslmode=require' \
+    STG_DATABASE_URL='postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?sslmode=require' \
     BACKUP_ENCRYPTION_KEY='synthetic-test-key' \
     "$SCRIPT_UNDER_TEST" >"$OUTPUT_FILE" 2>&1 &&
     assert_contains "$OUTPUT_FILE" "does not equal expected host" &&
@@ -535,6 +623,104 @@ test_host_guard() {
     pass 'unexpected database host fails closed before connections'
   else
     fail 'unexpected database host fails closed before connections'
+  fi
+}
+
+test_database_name_guard() {
+  new_case database-name-guard
+  if ! env \
+    PATH="$FAKE_BIN:$PATH" \
+    FAKE_LOG="$FAKE_LOG" \
+    EXPECTED_STG_CLUSTER_UID=synthetic-cluster-uid \
+    EXPECTED_ARGOCD_CLUSTER_UID=synthetic-cluster-uid \
+    PRD_DATABASE_URL='postgresql://prd-user:synthetic@db-server-prd-apps.postgres.database.azure.com/not-klicker?sslmode=require' \
+    STG_DATABASE_URL='postgresql://stg-user:synthetic@db-server-stg-apps.postgres.database.azure.com/klicker?sslmode=require' \
+    BACKUP_ENCRYPTION_KEY='synthetic-test-key' \
+    "$SCRIPT_UNDER_TEST" >"$OUTPUT_FILE" 2>&1 &&
+    assert_contains "$OUTPUT_FILE" "does not equal expected database" &&
+    [[ ! -s "$FAKE_LOG" ]]; then
+    pass 'unexpected database name fails closed before connections'
+  else
+    fail 'unexpected database name fails closed before connections'
+  fi
+}
+
+test_cluster_identity_guard() {
+  new_case cluster-identity-guard
+  if ! EXPECTED_STG_CLUSTER_UID=wrong-cluster run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'does not match expected cluster identity' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl lease create' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl scale'; then
+    pass 'unexpected Kubernetes cluster identity fails closed before mutation'
+  else
+    fail 'unexpected Kubernetes cluster identity fails closed before mutation'
+  fi
+}
+
+test_workload_namespace_guard() {
+  new_case workload-namespace-guard
+  if ! WORKLOAD_NAMESPACE=unexpected-namespace run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'does not match ArgoCD destination namespace' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl lease create' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl scale'; then
+    pass 'unexpected workload namespace fails closed before mutation'
+  else
+    fail 'unexpected workload namespace fails closed before mutation'
+  fi
+}
+
+test_migrator_target_guard() {
+  new_case migrator-target-guard
+  if ! FAKE_MIGRATOR_URL='postgresql://stg-user:synthetic@other-stg.postgres.database.azure.com/klicker?sslmode=require' run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'Migrator Secret points to host' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl lease create' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl scale'; then
+    pass 'migrator Secret target must match the validated STG target'
+  else
+    fail 'migrator Secret target must match the validated STG target'
+  fi
+}
+
+test_existing_refresh_lease_guard() {
+  new_case existing-refresh-lease
+  jq -n --arg holder 'other-refresh' '{spec: {holderIdentity: $holder}}' >"$FAKE_LEASE_FILE"
+  if ! DRY_RUN=false \
+    CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+    ALLOW_RAW_PRD_DATA_IN_STG=true \
+    run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'Refresh Lease' &&
+    assert_not_contains "$FAKE_LOG" 'pg_dump source' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl scale'; then
+    pass 'an existing refresh Lease blocks a competing execution'
+  else
+    fail 'an existing refresh Lease blocks a competing execution'
+  fi
+}
+
+test_write_rbac_guard() {
+  new_case write-rbac-guard
+  if ! FAKE_KUBE_CAN_I=deny run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'Kubernetes permission denied' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl lease create' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl scale'; then
+    pass 'missing Kubernetes write permission fails during preflight'
+  else
+    fail 'missing Kubernetes write permission fails during preflight'
+  fi
+}
+
+test_raw_data_approval_guard() {
+  new_case raw-data-approval-guard
+  if ! DRY_RUN=false \
+    CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+    ALLOW_RAW_PRD_DATA_IN_STG=true \
+    RAW_PRD_DATA_APPROVAL_REF='' \
+    run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'RAW_PRD_DATA_APPROVAL_REF' &&
+    assert_not_contains "$FAKE_LOG" 'pg_dump source'; then
+    pass 'raw production-data execution requires an approval reference'
+  else
+    fail 'raw production-data execution requires an approval reference'
   fi
 }
 
@@ -551,9 +737,9 @@ test_run_id_guard() {
 
 test_self_hosted_infisical_credentials() {
   new_case self-hosted-infisical
-  if PRD_DATABASE_URL_OVERRIDE= \
-    STG_DATABASE_URL_OVERRIDE= \
-    BACKUP_ENCRYPTION_KEY_OVERRIDE= \
+  if PRD_DATABASE_URL_OVERRIDE='' \
+    STG_DATABASE_URL_OVERRIDE='' \
+    BACKUP_ENCRYPTION_KEY_OVERRIDE='' \
     DRY_RUN=false \
     CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
     ALLOW_RAW_PRD_DATA_IN_STG=true \
@@ -757,6 +943,39 @@ test_migration_failure() {
   fi
 }
 
+test_timeout_terminates_operation() {
+  new_case timeout-terminates-operation
+  if ! DRY_RUN=false \
+    ARGOCD_TIMEOUT_SECONDS=1 \
+    ARGOCD_POLL_SECONDS=1 \
+    CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+    ALLOW_RAW_PRD_DATA_IN_STG=true \
+    FAKE_ARGO_OPERATION_RUNNING=true \
+    run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'did not complete within 1 seconds' &&
+    assert_contains "$FAKE_LOG" 'kubectl app operation terminate' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl app policy automated'; then
+    pass 'a timed-out ArgoCD operation is terminated before recovery'
+  else
+    fail 'a timed-out ArgoCD operation is terminated before recovery'
+  fi
+}
+
+test_migration_history_guard() {
+  new_case migration-history-guard
+  if ! DRY_RUN=false \
+    CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
+    ALLOW_RAW_PRD_DATA_IN_STG=true \
+    FAKE_MIGRATION_HISTORY_MODE=divergent \
+    run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'do not extend the PRD history' &&
+    assert_not_contains "$FAKE_LOG" 'kubectl app policy automated'; then
+    pass 'divergent migration history fails closed after the hook'
+  else
+    fail 'divergent migration history fails closed after the hook'
+  fi
+}
+
 test_replay_lock() {
   new_case replay-lock
   if DRY_RUN=false \
@@ -778,6 +997,13 @@ test_help
 test_dry_run
 test_confirmation_gate
 test_host_guard
+test_database_name_guard
+test_cluster_identity_guard
+test_workload_namespace_guard
+test_migrator_target_guard
+test_existing_refresh_lease_guard
+test_write_rbac_guard
+test_raw_data_approval_guard
 test_run_id_guard
 test_self_hosted_infisical_credentials
 test_prd_connection_failure
@@ -790,6 +1016,8 @@ test_catalog_validation_drains_decrypted_archive
 test_public_schema_owner_is_not_required
 test_restore_failure
 test_migration_failure
+test_timeout_terminates_operation
+test_migration_history_guard
 test_replay_lock
 
 printf '1..%s\n' "$TEST_COUNT"
