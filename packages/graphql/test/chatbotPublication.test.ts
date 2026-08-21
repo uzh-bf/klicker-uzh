@@ -212,9 +212,51 @@ describe('Integration tests for the chatbot publication workflow', () => {
         reviewComment: null,
       })
 
+      let initialReads = 0
+      let releaseInitialReads!: () => void
+      const initialReadsReady = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve
+      })
+      const chatbotDelegate = adminCtx.prisma.chatbot
+      const gatedChatbotDelegate = new Proxy(chatbotDelegate, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver)
+          if (property !== 'findUnique') {
+            return typeof value === 'function' ? value.bind(target) : value
+          }
+
+          const findUnique = target.findUnique.bind(target)
+          return async (
+            ...args: Parameters<typeof chatbotDelegate.findUnique>
+          ) => {
+            const result = await findUnique(...args)
+            const select = args[0]?.select as unknown as
+              | {
+                  owner?: {
+                    select?: { aiChatbotPublishingEnabled?: boolean }
+                  }
+                }
+              | undefined
+            if (select?.owner?.select?.aiChatbotPublishingEnabled) {
+              initialReads += 1
+              if (initialReads === 2) releaseInitialReads()
+              await initialReadsReady
+            }
+            return result
+          }
+        },
+      })
+      const gatedPrisma = new Proxy(adminCtx.prisma, {
+        get(target, property, receiver) {
+          if (property === 'chatbot') return gatedChatbotDelegate
+          return Reflect.get(target, property, receiver)
+        },
+      })
+      const gatedAdminCtx = { ...adminCtx, prisma: gatedPrisma }
+
       const results = await Promise.allSettled([
-        approveChatbotPublication({ id: bot.id }, adminCtx),
-        approveChatbotPublication({ id: bot.id }, adminCtx),
+        approveChatbotPublication({ id: bot.id }, gatedAdminCtx),
+        approveChatbotPublication({ id: bot.id }, gatedAdminCtx),
       ])
 
       expect(
