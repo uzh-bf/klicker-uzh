@@ -14,6 +14,7 @@
     "@fortawesome/react-fontawesome": "0.2.2",
     "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
+    "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/knowledge-graph": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
@@ -60,7 +61,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "~3.3.5",
-    "@klicker-uzh/graphql": "workspace:*",
     "@tailwindcss/aspect-ratio": "~0.4.2",
     "@tailwindcss/forms": "~0.5.11",
     "@tailwindcss/postcss": "~4.1.11",

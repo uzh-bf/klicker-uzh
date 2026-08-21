@@ -1,0 +1,92 @@
+enum PersonalElementOrigin {
+  AI_GENERATED
+  AUTHORED
+}
+
+enum PersonalElementVerification {
+  UNVERIFIED
+  VERIFIED
+}
+
+enum ChatGenerationApprovalStatus {
+  CLAIMED
+  COMPLETED
+  ABORTED
+}
+
+model PersonalElement {
+  id String @id @default(uuid()) @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  version     Int        @default(1)
+  type        ElementType
+  name        String
+  content     String     @db.Text
+  explanation String     @db.Text
+
+  /// [PrismaPersonalElementOptions]
+  options Json
+
+  /// [PrismaPersonalElementSources]
+  sources Json?
+
+  origin       PersonalElementOrigin       @default(AI_GENERATED)
+  verification PersonalElementVerification @default(UNVERIFIED)
+
+  sourceMessageId  String? @db.Uuid
+  sourceToolCallId String?
+  candidateId      String?
+
+  eFactor              Float              @default(2.5)
+  interval             Int                @default(1)
+  correctCountStreak   Int                @default(0)
+  correctCount         Int                @default(0)
+  partialCorrectCount  Int                @default(0)
+  wrongCount           Int                @default(0)
+  nextDueAt            DateTime?
+  lastAnsweredAt       DateTime?
+  lastCorrectAt        DateTime?
+  lastPartialCorrectAt DateTime?
+  lastWrongAt          DateTime?
+  lastResponseCorrectness ResponseCorrectness?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, sourceMessageId, sourceToolCallId, candidateId])
+  @@index([participantId, courseId, nextDueAt])
+}
+
+model ChatGenerationApproval {
+  id String @id @default(uuid()) @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  thread   ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  threadId String      @db.Uuid
+
+  planMessage   ChatMessage @relation("ChatGenerationApprovalPlanMessage", fields: [planMessageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  planMessageId String      @db.Uuid
+
+  planToolCallId String
+  status         ChatGenerationApprovalStatus @default(CLAIMED)
+  leaseExpiresAt DateTime
+
+  generatedAssistantMessage   ChatMessage? @relation("ChatGenerationApprovalGeneratedMessage", fields: [generatedAssistantMessageId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  generatedAssistantMessageId String?      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, planMessageId, planToolCallId])
+  @@index([threadId, status, leaseExpiresAt])
+}

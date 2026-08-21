@@ -9,7 +9,7 @@ const config = defineConfig([
     input:
       process.env.NODE_ENV === 'test'
         ? ['instrumented/index.ts', 'instrumented/ops.ts']
-        : ['src/index.ts', 'src/ops.ts'],
+        : ['src/index.ts', 'src/ops.ts', 'src/server.ts'],
     output: {
       dir: 'dist',
       format: 'esm',

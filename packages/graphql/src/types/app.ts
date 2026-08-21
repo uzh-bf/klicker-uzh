@@ -86,6 +86,14 @@ declare global {
     type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
     type PrismaElementGenerationProvenance =
       QuestionGenerationQuestionProvenance
+    type PrismaPersonalElementOptions = Record<string, never>
+    type PrismaPersonalElementSources = Array<{
+      sourceId: string
+      chunkId: string
+      title?: string
+      url?: string
+      metadata?: Record<string, string | number | boolean | null>
+    }>
   }
 }
 // #endregion
