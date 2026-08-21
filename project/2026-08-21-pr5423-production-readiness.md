@@ -16,9 +16,9 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- |
 | Branch | `rs/pr5423-element-batch-simplification` |
 | Base | Fresh `origin/v3` at `df10f524ecf453fe2f43a3b08797a590f962c191` |
-| Integrated head | `c6d7c85ca` |
+| Integrated head | `9c657a70d` |
 | Source PR | [#5423](https://github.com/uzh-bf/klicker-uzh/pull/5423), unchanged remotely |
-| Scope | `df10f524..c6d7c85ca`, 29 tracked paths |
+| Scope | `df10f524..9c657a70d`, 29 tracked paths |
 | Runtime boundary | No local stack, browser, database, staging, cluster, or production access |
 
 ## Gate status
