@@ -298,7 +298,7 @@ test.describe('Assessment report credential lifecycle', () => {
     await expect(page.getByText(ASSESSMENT_REPORT_SUBJECT_EMAIL)).toHaveCount(0)
     await expect(
       page.getByText('Accepted assessment-course invitation email')
-    ).toHaveCount(0)
+    ).toBeVisible()
     await expect(
       page.getByText('Comparison cohort: 10 active participants')
     ).toBeVisible()
