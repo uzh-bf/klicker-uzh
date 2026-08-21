@@ -97,7 +97,12 @@ large, deterministic activity set for manual stress testing.
 - 2026-08-21: A controlled retry of that completed job found the existing
   course, returned the job to `COMPLETED`, preserved the stable ID, and did not
   create another copy.
-- Next: complete the post-fix final review, record its disposition, and push
+- 2026-08-21: The freshness gate found `origin/v3` advanced to `f58986faa`
+  (`#5467`); a normal merge into this branch completed without conflicts. The
+  merged GraphQL package rebuilt successfully, and the Manage, Hatchet, and
+  Prisma-data focused checks passed. The generated build changed only
+  newline-only artifacts, which were restored.
+- Next: complete the post-merge final review, record its disposition, and push
   normally to `origin/fix/course-duplication-timeout`. The repository hook still
   reports an unrelated existing Chat route-type failure; no full `check:all` or
   build claim is made.
