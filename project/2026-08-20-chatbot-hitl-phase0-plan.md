@@ -371,10 +371,12 @@ No separate tasks; nothing crosses a boundary warranting one.
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
 - Base reconciliation (2026-08-21): the authoritative `git ls-remote` refs show
-  `origin/v3` at `784469db3` and this branch at `3e0bf1b13`, 0 behind / 20 ahead.
-  The common Git `FETCH_HEAD` file is not writable in this linked worktree, so
-  remote freshness was verified with `git ls-remote` rather than inferred from
-  local fetch state.
+  `origin/v3` at `65b4ac4a9` and this branch at `2de6c9988`, 1 behind / 21 ahead.
+  The new v3 commit is #5449 (draft-activity course deletion), which overlaps
+  generated GraphQL artifacts but not the chatbot implementation; GitHub reports
+  the PR mergeable. No rebase was performed. The common Git `FETCH_HEAD` file is
+  not writable in this linked worktree, so freshness was verified with
+  `git ls-remote` rather than inferred from local fetch state.
 - Remaining: fresh CI classification, the integrated final-reviewer pass, and
   an updated whole-branch PR description. Marking the PR ready and merging it
   remain outside this task's authority.
