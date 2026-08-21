@@ -1516,7 +1516,13 @@ export async function correctAssessmentPointsInstance(
       { timeout: 300000 }
     )
 
-    await ctx.tasks.createAuditLogEntry.runNoWait(committedLogEntries)
+    try {
+      await ctx.tasks.createAuditLogEntry.runNoWait(committedLogEntries)
+    } catch (error) {
+      // The correction is already committed; audit delivery must not make a
+      // successful mutation appear failed or invite a duplicate retry.
+      console.error('Failed to enqueue correction audit log entries:', error)
+    }
 
     return createdCorrection
   }

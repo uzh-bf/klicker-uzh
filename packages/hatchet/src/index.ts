@@ -44,9 +44,13 @@ export function prepareHatchetTasks({
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
     fn: (
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
+      {
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId?: string
+          info: string
+        }
       },
       ctx
     ) => {
