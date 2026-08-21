@@ -1,6 +1,5 @@
 import { faCheck, faMinus, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { Element } from '@klicker-uzh/graphql/dist/ops'
 import {
   ShadcnTable,
   ShadcnTableBody,
@@ -11,28 +10,23 @@ import {
   Tooltip,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ObjectPermissionLevel from '../../../sharing/ObjectPermissionLevel'
 import type { ElementBatchAffectedElement } from './deriveElementBatchEligibility'
 
 function SelectedElementsList({
-  selectedElements,
   affectedElements,
   updatesConfigured,
   sharingEnabled,
 }: {
-  selectedElements: Element[]
   affectedElements: ElementBatchAffectedElement[]
   updatesConfigured: boolean
   sharingEnabled: boolean
 }) {
   const t = useTranslations()
 
-  // check if user has owner / admin permissions on all elements
-  const allAdminPermissions = useMemo(
-    () => selectedElements.every((element) => element.isManager),
-    [selectedElements]
+  const allAdminPermissions = affectedElements.every(
+    (element) => element.isManager
   )
 
   return (

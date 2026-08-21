@@ -25,11 +25,22 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
   const permissionLevelSelectItems = usePermissionLevelSelection({
     type: ObjectType.Element,
   })
+  const {
+    values,
+    errors,
+    touched,
+    submitCount,
+    setFieldTouched,
+    setFieldValue,
+  } = useFormikContext<ElementBatchSharingFormValues>()
   const { data, loading } = useQuery(GetUserGroupsUserDocument, {
     fetchPolicy: 'cache-and-network',
+    skip: !values.enabled,
   })
-  const { values, errors, touched, setFieldTouched, setValues } =
-    useFormikContext<ElementBatchSharingFormValues>()
+  const showRecipientError =
+    values.enabled &&
+    submitCount > 0 &&
+    Boolean(errors.shortnameOrEmail ?? errors.userGroupId)
 
   return (
     <Card
@@ -49,7 +60,7 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
             id="element-batch-sharing-enabled"
             checked={values.enabled}
             onCheck={() => {
-              void setValues({ ...values, enabled: !values.enabled })
+              void setFieldValue('enabled', !values.enabled)
             }}
             disabled={disabled}
             data={{ cy: 'element-batch-sharing-checkbox' }}
@@ -63,19 +74,20 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
             </div>
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
               <div className="min-w-0">
-                <div className="mb-1 text-sm font-medium">
+                <label
+                  htmlFor="element-batch-sharing-user"
+                  className="mb-1 block text-sm font-medium"
+                >
                   {t('manage.questionPool.batchSharingUserOrEmail')}
-                </div>
+                </label>
                 <TextField
+                  id="element-batch-sharing-user"
                   value={values.shortnameOrEmail}
                   error={errors.shortnameOrEmail}
                   isTouched={touched.shortnameOrEmail}
                   onChange={(shortnameOrEmail) => {
-                    void setValues({
-                      ...values,
-                      shortnameOrEmail,
-                      userGroupId: undefined,
-                    })
+                    void setFieldValue('shortnameOrEmail', shortnameOrEmail)
+                    void setFieldValue('userGroupId', undefined)
                     void setFieldTouched('shortnameOrEmail', true, false)
                   }}
                   placeholder={`${t('shared.generic.shortname')} / ${t('shared.generic.email')}`}
@@ -87,10 +99,14 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                 />
               </div>
               <div className="min-w-0">
-                <div className="mb-1 text-sm font-medium">
+                <label
+                  htmlFor="element-batch-sharing-user-group"
+                  className="mb-1 block text-sm font-medium"
+                >
                   {t('manage.questionPool.batchSharingGroup')}
-                </div>
+                </label>
                 <SelectField
+                  id="element-batch-sharing-user-group"
                   key={`batch-sharing-group-${values.userGroupId}`}
                   disabled={
                     disabled ||
@@ -104,11 +120,9 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }
                   value={values.userGroupId}
                   onChange={(userGroupId) => {
-                    void setValues({
-                      ...values,
-                      shortnameOrEmail: '',
-                      userGroupId,
-                    })
+                    void setFieldValue('shortnameOrEmail', '')
+                    void setFieldValue('userGroupId', userGroupId)
+                    void setFieldTouched('userGroupId', true, false)
                   }}
                   items={
                     loading || !data?.getUserGroupsUser
@@ -143,9 +157,12 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                 />
               </div>
               <div className="min-w-0 xl:col-span-2">
-                <div className="mb-1 text-sm font-medium">
+                <label
+                  htmlFor="element-batch-sharing-permission-level"
+                  className="mb-1 block text-sm font-medium"
+                >
                   {t('manage.questionPool.batchSharingPermission')}
-                </div>
+                </label>
                 <FormikSelectField
                   name="permissionLevel"
                   id="element-batch-sharing-permission-level"
@@ -164,6 +181,11 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }}
                 />
               </div>
+              {showRecipientError ? (
+                <p role="alert" className="text-sm text-red-700 xl:col-span-2">
+                  {errors.shortnameOrEmail ?? errors.userGroupId}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
