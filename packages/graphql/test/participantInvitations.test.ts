@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { InvitationStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'node:crypto'
+import type { EventEmitter } from 'node:events'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createAssessmentParticipantInvitations,
@@ -208,7 +209,127 @@ describe('Assessment participant invitation management', () => {
           },
         },
       })
-    ).resolves.toMatchObject({ isActive: true })
+    ).resolves.toMatchObject({ isActive: false })
+  })
+
+  it.each([
+    false,
+    true,
+  ])('preserves existing leaderboard participation state (%s)', async (isActive) => {
+    const course = await createAssessmentCourse()
+    const email = `existing-${isActive}-${randomUUID()}@example.org`
+    const participant = await prisma.participant.create({
+      data: {
+        username: `existing-${randomUUID()}`,
+        password: 'not-used',
+        isSSOAccount: true,
+        accounts: {
+          create: {
+            ssoId: `sso-${randomUUID()}`,
+            ssoType: `affiliation-${randomUUID()}`,
+            ssoEmail: email,
+            type: 'affiliation',
+            isVerified: true,
+          },
+        },
+      },
+    })
+    await prisma.participation.create({
+      data: { courseId: course.id, participantId: participant.id, isActive },
+    })
+
+    await createAssessmentParticipantInvitations(
+      {
+        courseId: course.id,
+        invitations: [{ email }],
+      },
+      lecturerCtx
+    )
+
+    await expect(
+      prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: course.id,
+            participantId: participant.id,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ isActive })
+  })
+
+  it('deduplicates verified accounts for the same participant', async () => {
+    const course = await createAssessmentCourse()
+    const email = 'duplicate-accounts@example.org'
+    const participant = await prisma.participant.create({
+      data: {
+        username: `duplicate-accounts-${randomUUID()}`,
+        password: 'not-used',
+        isSSOAccount: true,
+        accounts: {
+          create: [
+            {
+              ssoId: `sso-one-${randomUUID()}`,
+              ssoType: `affiliation-one-${randomUUID()}`,
+              ssoEmail: email,
+              type: 'affiliation',
+              isVerified: true,
+            },
+            {
+              ssoId: `sso-two-${randomUUID()}`,
+              ssoType: `affiliation-two-${randomUUID()}`,
+              ssoEmail: email,
+              type: 'affiliation',
+              isVerified: true,
+            },
+          ],
+        },
+      },
+    })
+
+    const result = await createAssessmentParticipantInvitations(
+      { courseId: course.id, invitations: [{ email }] },
+      lecturerCtx
+    )
+
+    expect(result).toMatchObject({ autoAccepted: 1, errors: 0 })
+    await expect(
+      prisma.participantInvitation.findUnique({
+        where: { email_courseId: { email, courseId: course.id } },
+      })
+    ).resolves.toMatchObject({
+      participantId: participant.id,
+      status: InvitationStatus.ACCEPTED,
+    })
+  })
+
+  it('keeps invitations pending for inactive participants', async () => {
+    const course = await createAssessmentCourse()
+    const email = 'inactive-participant@example.org'
+    await prisma.participant.create({
+      data: {
+        username: `inactive-${randomUUID()}`,
+        password: 'not-used',
+        isSSOAccount: true,
+        isActive: false,
+        accounts: {
+          create: {
+            ssoId: `sso-${randomUUID()}`,
+            ssoType: `affiliation-${randomUUID()}`,
+            ssoEmail: email,
+            type: 'affiliation',
+            isVerified: true,
+          },
+        },
+      },
+    })
+
+    const result = await createAssessmentParticipantInvitations(
+      { courseId: course.id, invitations: [{ email }] },
+      lecturerCtx
+    )
+
+    expect(result).toMatchObject({ created: 1, autoAccepted: 0 })
   })
 
   it('updates the matriculation number on a duplicate invitation', async () => {
@@ -244,6 +365,102 @@ describe('Assessment participant invitation management', () => {
         where: { id: invitation.id },
       })
     ).resolves.toMatchObject({ matriculationNumber: 'new-number' })
+  })
+
+  it('does not update matriculation numbers on accepted invitations', async () => {
+    const course = await createAssessmentCourse()
+    const invitation = await prisma.participantInvitation.create({
+      data: {
+        courseId: course.id,
+        email: 'accepted-duplicate@example.org',
+        matriculationNumber: 'immutable-number',
+        status: InvitationStatus.ACCEPTED,
+        acceptedAt: new Date(),
+      },
+    })
+
+    const result = await createAssessmentParticipantInvitations(
+      {
+        courseId: course.id,
+        invitations: [
+          {
+            email: invitation.email,
+            matriculationNumber: 'new-number',
+          },
+        ],
+      },
+      lecturerCtx
+    )
+
+    expect(result).toMatchObject({
+      created: 0,
+      duplicates: 1,
+      results: [{ status: 'duplicate' }],
+    })
+    await expect(
+      prisma.participantInvitation.findUnique({ where: { id: invitation.id } })
+    ).resolves.toMatchObject({ matriculationNumber: 'immutable-number' })
+  })
+
+  it('keeps ambiguous verified identities pending', async () => {
+    const course = await createAssessmentCourse()
+    const email = 'ambiguous@example.org'
+
+    for (const suffix of ['one', 'two']) {
+      await prisma.participant.create({
+        data: {
+          username: `ambiguous-${suffix}-${randomUUID()}`,
+          password: 'not-used',
+          isSSOAccount: true,
+          accounts: {
+            create: {
+              ssoId: `sso-${suffix}-${randomUUID()}`,
+              ssoType: `affiliation-${suffix}-${randomUUID()}`,
+              ssoEmail: email,
+              type: 'affiliation',
+              isVerified: true,
+            },
+          },
+        },
+      })
+    }
+
+    const result = await createAssessmentParticipantInvitations(
+      { courseId: course.id, invitations: [{ email }] },
+      lecturerCtx
+    )
+
+    expect(result).toMatchObject({
+      created: 1,
+      autoAccepted: 0,
+      results: [{ status: 'created' }],
+    })
+    await expect(
+      prisma.participantInvitation.findUnique({
+        where: { email_courseId: { email, courseId: course.id } },
+      })
+    ).resolves.toMatchObject({ status: InvitationStatus.PENDING })
+  })
+
+  it('does not turn unexpected database errors into row results', async () => {
+    const course = await createAssessmentCourse()
+    const createInvitation = vi
+      .spyOn(prisma.participantInvitation, 'create')
+      .mockRejectedValueOnce(new Error('database detail'))
+
+    try {
+      await expect(
+        createAssessmentParticipantInvitations(
+          {
+            courseId: course.id,
+            invitations: [{ email: 'database-error@example.org' }],
+          },
+          lecturerCtx
+        )
+      ).rejects.toThrow('database detail')
+    } finally {
+      createInvitation.mockRestore()
+    }
   })
 
   it('rejects invitation management for non-assessment courses', async () => {
