@@ -23,6 +23,9 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
      services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
+   - Assessment comparison charts use equal-width categorical bars and a
+     labelled 0–100 percentile ruler; keep the exact range/count table and
+     highlight the student's containing range.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.
    - **Host-based Setup:** You are authorized to start the dev servers needed for this verification, and must clean up after with `./_down.sh`. Bring-up per [docs/getting-started.md](../../../docs/getting-started.md) (localhost `dev:raw` path works without secrets).

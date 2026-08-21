@@ -30,19 +30,10 @@ export function getHistogramBinGeometry(
   histogram: AssessmentReportHistogramBin[],
   index: number
 ) {
-  const first = histogram[0]
-  const last = histogram.at(-1)
-  const bin = histogram[index]
-  if (!first || !last || !bin) return { startRatio: 0, widthRatio: 0 }
+  if (!histogram[index]) return { startRatio: 0, widthRatio: 0 }
 
-  const totalRange = last.binEnd - first.binStart
-  if (totalRange <= 0) {
-    const fallbackWidth = 1 / histogram.length
-    return { startRatio: index * fallbackWidth, widthRatio: fallbackWidth }
-  }
-
-  return {
-    startRatio: (bin.binStart - first.binStart) / totalRange,
-    widthRatio: (bin.binEnd - bin.binStart) / totalRange,
-  }
+  // Bins are categorical privacy-preserving groups, not a continuous scale.
+  // Equal slots keep a wide numeric range from making one bar visually tiny.
+  const slotWidth = 1 / histogram.length
+  return { startRatio: index * slotWidth, widthRatio: slotWidth }
 }
