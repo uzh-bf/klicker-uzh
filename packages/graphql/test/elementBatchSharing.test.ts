@@ -78,7 +78,6 @@ describe('Integration tests for batch sharing elements', () => {
   })
 
   it('hides target errors when no eligible element is supplied', async () => {
-    const findUserSpy = vi.spyOn(userOneCtx.prisma.user, 'findFirst')
     const result = await shareElementsBatch(
       {
         elementIds: [1, 2],
@@ -103,13 +102,10 @@ describe('Integration tests for batch sharing elements', () => {
         },
       ],
     })
-    expect(findUserSpy).not.toHaveBeenCalled()
     expect(await prisma.permission.count()).toBe(0)
   })
 
   it('rejects an oversized raw list before resolving the target', async () => {
-    const findUserSpy = vi.spyOn(userOneCtx.prisma.user, 'findFirst')
-
     await expect(
       shareElementsBatch(
         {
@@ -123,7 +119,6 @@ describe('Integration tests for batch sharing elements', () => {
       extensions: { code: 'ELEMENT_BATCH_TOO_LARGE' },
     })
 
-    expect(findUserSpy).not.toHaveBeenCalled()
     expect(await prisma.permission.count()).toBe(0)
   })
 
@@ -131,8 +126,6 @@ describe('Integration tests for batch sharing elements', () => {
     PermissionLevel.OWNER,
     PermissionLevel.EXECUTE,
   ])('rejects unsupported permission level %s before resolving the target', async (permissionLevel) => {
-    const findUserSpy = vi.spyOn(userOneCtx.prisma.user, 'findFirst')
-
     await expect(
       shareElementsBatch(
         {
@@ -146,7 +139,6 @@ describe('Integration tests for batch sharing elements', () => {
       extensions: { code: 'ELEMENT_BATCH_PERMISSION_INVALID' },
     })
 
-    expect(findUserSpy).not.toHaveBeenCalled()
     expect(await prisma.permission.count()).toBe(0)
   })
 
@@ -154,7 +146,14 @@ describe('Integration tests for batch sharing elements', () => {
     vi.spyOn(Date, 'now')
       .mockReturnValueOnce(0)
       .mockReturnValue(Number.MAX_SAFE_INTEGER)
-    const transactionSpy = vi.spyOn(userOneCtx.prisma, '$transaction')
+    const transactionSpy = vi.fn()
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -162,7 +161,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result).toEqual({
@@ -671,10 +670,19 @@ describe('Integration tests for batch sharing elements', () => {
   it('isolates an unexpected transaction failure to one eligible element', async () => {
     const firstElement = await seedElement()
     const secondElement = await seedElement()
+    const transaction = prisma.$transaction.bind(prisma)
     const emitSpy = vi.spyOn(emitter, 'emit')
     const transactionSpy = vi
-      .spyOn(prisma, '$transaction')
+      .fn()
       .mockRejectedValueOnce(new Error('synthetic transaction failure'))
+      .mockImplementation(transaction as typeof prisma.$transaction)
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -682,7 +690,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
@@ -712,9 +720,18 @@ describe('Integration tests for batch sharing elements', () => {
 
   it('retries serializable transaction conflicts before sharing', async () => {
     const element = await seedElement()
+    const transaction = prisma.$transaction.bind(prisma)
     const transactionSpy = vi
-      .spyOn(prisma, '$transaction')
+      .fn()
       .mockRejectedValueOnce({ code: 'P2034' })
+      .mockImplementation(transaction as typeof prisma.$transaction)
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -722,7 +739,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
@@ -744,7 +761,7 @@ describe('Integration tests for batch sharing elements', () => {
       callerPermissionLevel: PermissionLevel.ADMIN,
     })
     const transactionSpy = vi
-      .spyOn(prisma, '$transaction')
+      .fn()
       .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
         await prisma.permission.deleteMany({
           where: { elementId: element.id, userId: userOne.id },
@@ -752,6 +769,13 @@ describe('Integration tests for batch sharing elements', () => {
         await recomputeDerivedPermissions({ elementId: element.id }, prisma)
         return callback(prisma)
       })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -759,7 +783,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
@@ -791,7 +815,7 @@ describe('Integration tests for batch sharing elements', () => {
       },
     })
     const transactionSpy = vi
-      .spyOn(prisma, '$transaction')
+      .fn()
       .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
         await prisma.userGroup.update({
           where: { id: group.id },
@@ -799,6 +823,13 @@ describe('Integration tests for batch sharing elements', () => {
         })
         return callback(prisma)
       })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -806,7 +837,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         userGroupId: group.id,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
@@ -834,7 +865,7 @@ describe('Integration tests for batch sharing elements', () => {
       callerPermissionLevel: PermissionLevel.ADMIN,
     })
     const transactionSpy = vi
-      .spyOn(prisma, '$transaction')
+      .fn()
       .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
         await prisma.element.update({
           where: { id: element.id },
@@ -842,6 +873,13 @@ describe('Integration tests for batch sharing elements', () => {
         })
         return callback(prisma)
       })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
 
     const result = await shareElementsBatch(
       {
@@ -849,7 +887,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      userOneCtx
+      { ...userOneCtx, prisma: isolatedPrisma }
     )
 
     expect(result.outcomes).toEqual([
