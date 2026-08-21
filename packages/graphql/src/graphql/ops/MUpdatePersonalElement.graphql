@@ -1,0 +1,17 @@
+mutation MUpdatePersonalElement(
+  $id: String!
+  $expectedVersion: Int!
+  $name: String
+  $content: String
+  $explanation: String
+) {
+  updatePersonalElement(
+    id: $id
+    expectedVersion: $expectedVersion
+    name: $name
+    content: $content
+    explanation: $explanation
+  ) {
+    ...FPersonalElement
+  }
+}

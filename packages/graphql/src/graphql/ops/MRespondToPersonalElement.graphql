@@ -1,0 +1,8 @@
+mutation MRespondToPersonalElement(
+  $id: String!
+  $response: FlashcardCorrectnessType!
+) {
+  respondToPersonalElement(id: $id, response: $response) {
+    ...FPersonalElement
+  }
+}

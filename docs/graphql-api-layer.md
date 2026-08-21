@@ -42,6 +42,23 @@ omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
+## Student-owned practice elements
+
+Personal-element resolvers use `t.withAuth(asParticipant)` and delegate to
+`services/personalElements.ts`. The service receives an explicit participant
+actor together with the Prisma client so the same server-only entry can be
+used by GraphQL and the Chat route. It re-checks course participation and row
+ownership, rejects temporary participants, and reports conflicts through
+`GraphQLError.extensions.code`.
+
+The participant API consists of `getPersonalElements`,
+`createPersonalElements`, `respondToPersonalElement`,
+`updatePersonalElement`, and `deletePersonalElement`. The generated operations
+are the `QPersonalElements` and `M*PersonalElement*` documents in
+`packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
+their selection sets change. `getPracticeQuizList` includes courses that have
+personal cards and exposes `personalElementCount` and `personalDueCount`.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

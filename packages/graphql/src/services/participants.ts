@@ -838,6 +838,10 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
               isDeleted: false,
             },
           },
+          personalElements: {
+            where: { participantId: ctx.user.sub },
+            select: { nextDueAt: true },
+          },
         },
       },
     },
@@ -846,9 +850,18 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
   if (!participations || participations.length === 0) return []
 
   const courses = participations
-    .map((p) => p.course)
+    .map((p) => ({
+      ...p.course,
+      personalElementCount: p.course.personalElements.length,
+      personalDueCount: p.course.personalElements.filter(
+        (element) => element.nextDueAt && element.nextDueAt <= new Date()
+      ).length,
+    }))
     .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))
-    .filter((course) => course.practiceQuizzes.length !== 0)
+    .filter(
+      (course) =>
+        course.practiceQuizzes.length !== 0 || course.personalElementCount > 0
+    )
 
   return courses
 }

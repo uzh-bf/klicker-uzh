@@ -1,0 +1,5 @@
+query QPersonalElements($courseId: String!) {
+  personalElements(courseId: $courseId) {
+    ...FPersonalElement
+  }
+}

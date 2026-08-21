@@ -1151,6 +1151,8 @@ type CourseOverview {
   liveQuizzes: [ReducedActivityInfo!]
   microLearnings: [ReducedActivityInfo!]
   name: String
+  personalDueCount: Int
+  personalElementCount: Int
   practiceQuizzes: [ReducedActivityInfo!]
 }
 
@@ -2533,6 +2535,7 @@ type Mutation {
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
+  createPersonalElements(candidates: [PersonalElementCandidateInput!]!, courseId: String!): [PersonalElement!]
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
@@ -2555,6 +2558,7 @@ type Mutation {
   deleteMicroLearning(id: String!, onlyIfUnpublished: Boolean): MicroLearning
   deleteParticipantAccount: Boolean
   deletePendingAssessmentParticipantInvitation(courseId: String!, invitationId: Int!): AssessmentParticipantInvitation
+  deletePersonalElement(id: String!): ID
   deletePracticeQuiz(id: String!, onlyIfUnpublished: Boolean): PracticeQuiz
   deleteTag(id: Int!): Tag
   deleteUserGroup(groupId: Int!): Boolean!
@@ -2638,6 +2642,7 @@ type Mutation {
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   retryElementGeneration(input: ElementGenerationBuildInput!): ElementGenerationBuild!
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
+  respondToPersonalElement(id: String!, response: FlashcardCorrectnessType!): PersonalElement
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
@@ -2673,6 +2678,7 @@ type Mutation {
   updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
+  updatePersonalElement(content: String, expectedVersion: Int!, explanation: String, id: String!, name: String): PersonalElement
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
@@ -3026,6 +3032,72 @@ type PermissionsList {
   permissions: [PermissionInfo!]!
 }
 
+type PersonalElement {
+  candidateId: String
+  content: String!
+  correctCount: Int!
+  correctCountStreak: Int!
+  courseId: ID!
+  createdAt: Date!
+  eFactor: Float!
+  explanation: String!
+  id: ID!
+  interval: Int!
+  lastAnsweredAt: Date
+  lastCorrectAt: Date
+  lastPartialCorrectAt: Date
+  lastResponseCorrectness: ResponseCorrectness
+  lastWrongAt: Date
+  name: String!
+  nextDueAt: Date
+  origin: PersonalElementOrigin!
+  partialCorrectCount: Int!
+  sourceMessageId: String
+  sourceToolCallId: String
+  sources: [PersonalElementSource!]
+  type: ElementType!
+  updatedAt: Date!
+  verification: PersonalElementVerification!
+  version: Int!
+  wrongCount: Int!
+}
+
+input PersonalElementCandidateInput {
+  candidateId: String!
+  content: String!
+  explanation: String!
+  name: String!
+  sourceMessageId: String!
+  sourceToolCallId: String!
+  sources: [PersonalElementSourceInput!]!
+}
+
+enum PersonalElementOrigin {
+  AI_GENERATED
+  AUTHORED
+}
+
+type PersonalElementSource {
+  chunkId: String!
+  metadata: Json
+  sourceId: String!
+  title: String
+  url: String
+}
+
+input PersonalElementSourceInput {
+  chunkId: String!
+  metadata: Json
+  sourceId: String!
+  title: String
+  url: String
+}
+
+enum PersonalElementVerification {
+  UNVERIFIED
+  VERIFIED
+}
+
 type PointCorrection {
   basePoints: Boolean
   bonusPoints: Boolean
@@ -3229,6 +3301,7 @@ type Query {
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
+  personalElements(courseId: String!): [PersonalElement!]
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
