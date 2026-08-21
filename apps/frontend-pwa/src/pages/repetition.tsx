@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faRepeat } from '@fortawesome/free-solid-svg-icons'
-import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeQuizListWithPersonalElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -11,7 +11,9 @@ import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
 
 function Repetition() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetPracticeQuizListDocument)
+  const { data, loading } = useQuery(
+    GetPracticeQuizListWithPersonalElementsDocument
+  )
 
   if (loading) {
     return (

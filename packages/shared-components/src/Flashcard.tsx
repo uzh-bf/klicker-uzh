@@ -49,7 +49,18 @@ function Flashcard({
             'transform-3d flex flex-col rounded-lg border border-gray-300 p-4 shadow [transition:transform_0.6s]',
             isFlipped ? 'rotate-y-180' : 'cursor-pointer hover:shadow-xl'
           )}
+          role={!isFlipped ? 'button' : undefined}
+          tabIndex={!isFlipped ? 0 : -1}
+          aria-label={
+            !isFlipped ? t('pwa.practiceQuiz.flashcardClick') : undefined
+          }
           onClick={!isFlipped ? handleFlip : () => null}
+          onKeyDown={(event) => {
+            if (!isFlipped && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault()
+              handleFlip()
+            }
+          }}
         >
           <FlashcardFront
             isFlipped={isFlipped}

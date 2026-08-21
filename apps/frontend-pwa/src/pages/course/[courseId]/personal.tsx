@@ -13,7 +13,7 @@ import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Layout from '../../../components/Layout'
 
 function PersonalElements() {
@@ -25,53 +25,90 @@ function PersonalElements() {
     Record<string, FlashcardCorrectness>
   >({})
 
-  const { data: courseData, loading: courseLoading } = useQuery(
-    GetBasicCourseInformationDocument,
-    { variables: { courseId }, skip: !courseId }
-  )
-  const { data, loading, refetch } = useQuery(QPersonalElementsDocument, {
+  const {
+    data: courseData,
+    error: courseError,
+    loading: courseLoading,
+  } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId },
     skip: !courseId,
   })
-  const [respond] = useMutation(MRespondToPersonalElementDocument)
-  const [remove] = useMutation(MDeletePersonalElementDocument)
+  const {
+    data,
+    error: elementsError,
+    loading,
+    refetch,
+  } = useQuery(QPersonalElementsDocument, {
+    variables: { courseId },
+    skip: !courseId,
+  })
+  const [respond, { error: respondError }] = useMutation(
+    MRespondToPersonalElementDocument
+  )
+  const [remove, { error: deleteError }] = useMutation(
+    MDeletePersonalElementDocument
+  )
+  const [actionError, setActionError] = useState(false)
 
   const elements = data?.personalElements ?? []
-  const current = elements[currentIx]
-  const dueCount = useMemo(
+  const dueCards = useMemo(
     () =>
       elements.filter(
         (element) =>
           !element.nextDueAt || new Date(element.nextDueAt) <= new Date()
-      ).length,
+      ),
     [elements]
   )
+  const dueCount = dueCards.length
+  const current = dueCards[currentIx]
+
+  useEffect(() => {
+    setCurrentIx((index) => Math.min(index, Math.max(dueCards.length - 1, 0)))
+  }, [dueCards.length])
 
   const handleResponse = async (
     elementId: string,
     response: FlashcardCorrectness
   ) => {
+    setActionError(false)
     setResponses((previous) => ({ ...previous, [elementId]: response }))
-    await respond({
-      variables: {
-        id: elementId,
-        response:
-          response === FlashcardCorrectness.Correct
-            ? FlashcardCorrectnessType.Correct
-            : response === FlashcardCorrectness.Partial
-              ? FlashcardCorrectnessType.Partial
-              : FlashcardCorrectnessType.Incorrect,
-      },
-    })
-    await refetch()
+    try {
+      await respond({
+        variables: {
+          id: elementId,
+          response:
+            response === FlashcardCorrectness.Correct
+              ? FlashcardCorrectnessType.Correct
+              : response === FlashcardCorrectness.Partial
+                ? FlashcardCorrectnessType.Partial
+                : FlashcardCorrectnessType.Incorrect,
+        },
+      })
+      await refetch()
+    } catch {
+      setResponses((previous) => {
+        const next = { ...previous }
+        delete next[elementId]
+        return next
+      })
+      setActionError(true)
+    }
   }
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(t('pwa.personalElements.deleteConfirm'))) return
-    await remove({ variables: { id } })
-    setCurrentIx((index) => Math.max(0, Math.min(index, elements.length - 2)))
-    await refetch()
+    setActionError(false)
+    try {
+      await remove({ variables: { id } })
+      await refetch()
+    } catch {
+      setActionError(true)
+    }
   }
+
+  const hasError =
+    actionError ||
+    Boolean(courseError || elementsError || respondError || deleteError)
 
   if (loading || courseLoading) {
     return (
@@ -96,28 +133,26 @@ function PersonalElements() {
           </span>
         </div>
 
+        {hasError ? (
+          <UserNotification type="error">
+            {t('pwa.personalElements.error')}
+          </UserNotification>
+        ) : null}
+
         {elements.length === 0 ? (
           <UserNotification type="info">
             {t('pwa.personalElements.empty')}
           </UserNotification>
         ) : (
           <>
-            {current ? (
+            {dueCards.length > 0 && current ? (
               <div data-cy="personal-element-runner">
                 <p className="mb-2 font-semibold">{current.name}</p>
                 <Flashcard
+                  key={current.id}
                   content={current.content}
                   explanation={current.explanation}
                   response={responses[current.id]}
-                  existingResponse={
-                    current.lastResponseCorrectness
-                      ? current.lastResponseCorrectness === 'CORRECT'
-                        ? FlashcardCorrectness.Correct
-                        : current.lastResponseCorrectness === 'PARTIAL'
-                          ? FlashcardCorrectness.Partial
-                          : FlashcardCorrectness.Incorrect
-                      : undefined
-                  }
                   setResponse={(response) =>
                     void handleResponse(current.id, response)
                   }
@@ -127,6 +162,7 @@ function PersonalElements() {
                   <Button
                     basic
                     disabled={currentIx === 0}
+                    data={{ cy: 'personal-element-previous' }}
                     onClick={() =>
                       setCurrentIx((index) => Math.max(0, index - 1))
                     }
@@ -137,10 +173,11 @@ function PersonalElements() {
                   </Button>
                   <Button
                     basic
-                    disabled={currentIx >= elements.length - 1}
+                    disabled={currentIx >= dueCards.length - 1}
+                    data={{ cy: 'personal-element-next' }}
                     onClick={() =>
                       setCurrentIx((index) =>
-                        Math.min(elements.length - 1, index + 1)
+                        Math.min(dueCards.length - 1, index + 1)
                       )
                     }
                   >
@@ -150,6 +187,11 @@ function PersonalElements() {
                   </Button>
                 </div>
               </div>
+            ) : null}
+            {dueCards.length === 0 ? (
+              <UserNotification type="info">
+                {t('pwa.personalElements.noDue')}
+              </UserNotification>
             ) : null}
 
             <div
