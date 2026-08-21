@@ -309,8 +309,46 @@ async function handleAddAssessmentResponse(
     return badRequest(req, res, 'invalid_submission')
   }
   const courseId = elementBlock.liveQuiz.courseId
+  const requestedExecution = Number(correlationData.execution)
 
-  if (Number(correlationData.execution) !== elementBlock.execution) {
+  // A response may already be durably persisted while its Redis effect is
+  // pending. Allow that exact retry to resume even after the live quiz has
+  // closed or advanced to a later block execution.
+  const pendingEffectRetry = Number.isInteger(requestedExecution)
+    ? await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`
+            SELECT pg_advisory_xact_lock(
+              hashtextextended(
+                ${`${instance.id}:${requestedExecution}:${user.sub}`},
+                0
+              )
+            )
+          `
+        )
+
+        return tx.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId: instance.id,
+              elementBlockExecution: requestedExecution,
+              participantId: user.sub,
+            },
+          },
+          select: {
+            correctionOnly: true,
+            correlationId: true,
+            assessmentResponseEffect: { select: { id: true } },
+          },
+        })
+      })
+    : null
+  const isPendingEffectRetry =
+    pendingEffectRetry?.correlationId === correlationId &&
+    !pendingEffectRetry.correctionOnly &&
+    !!pendingEffectRetry.assessmentResponseEffect
+
+  if (requestedExecution !== elementBlock.execution && !isPendingEffectRetry) {
     hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
       info: `[ERROR] [AddResponse Assessment] Invalid block execution in correlationKey for response ${JSON.stringify(
@@ -323,19 +361,21 @@ async function handleAddAssessmentResponse(
   // Serialize acceptance with correction-audience snapshots and response
   // corrections. The transaction acquires both shared locks before reading or
   // writing the acceptance marker.
-  const acceptance = await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw(
-      Prisma.sql`
+  const acceptance = isPendingEffectRetry
+    ? ({ status: 'retry' as const } as const)
+    : await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`
         SELECT pg_advisory_xact_lock(
           hashtextextended(${`assessment-audience:${liveQuizId}`}, 0)
         )
       `
-    )
+        )
 
-    // Match the worker and correction transaction lock for this response
-    // identity before reading or creating the acceptance marker.
-    await tx.$executeRaw(
-      Prisma.sql`
+        // Match the worker and correction transaction lock for this response
+        // identity before reading or creating the acceptance marker.
+        await tx.$executeRaw(
+          Prisma.sql`
         SELECT pg_advisory_xact_lock(
           hashtextextended(
             ${`${instance.id}:${elementBlock.execution}:${user.sub}`},
@@ -343,82 +383,82 @@ async function handleAddAssessmentResponse(
           )
         )
       `
-    )
+        )
 
-    const participation = await tx.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: user.sub,
-        },
-      },
-      select: { participantId: true },
-    })
-    if (!participation) {
-      return { status: 'not_participant' as const }
-    }
+        const participation = await tx.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId,
+              participantId: user.sub,
+            },
+          },
+          select: { participantId: true },
+        })
+        if (!participation) {
+          return { status: 'not_participant' as const }
+        }
 
-    const existingResponse = await tx.liveQuizResponse.findUnique({
-      where: {
-        instanceId_elementBlockExecution_participantId: {
-          instanceId: instance.id,
-          elementBlockExecution: elementBlock.execution,
-          participantId: user.sub,
-        },
-      },
-      select: {
-        id: true,
-        correctionOnly: true,
-        correlationId: true,
-        acceptedAt: true,
-        assessmentResponseEffect: { select: { id: true } },
-      },
-    })
+        const existingResponse = await tx.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId: instance.id,
+              elementBlockExecution: elementBlock.execution,
+              participantId: user.sub,
+            },
+          },
+          select: {
+            id: true,
+            correctionOnly: true,
+            correlationId: true,
+            acceptedAt: true,
+            assessmentResponseEffect: { select: { id: true } },
+          },
+        })
 
-    if (existingResponse && !existingResponse.correctionOnly) {
-      return existingResponse.correlationId === correlationId &&
-        existingResponse.assessmentResponseEffect
-        ? { status: 'retry' as const }
-        : { status: 'duplicate' as const }
-    }
+        if (existingResponse && !existingResponse.correctionOnly) {
+          return existingResponse.correlationId === correlationId &&
+            existingResponse.assessmentResponseEffect
+            ? { status: 'retry' as const }
+            : { status: 'duplicate' as const }
+        }
 
-    if (
-      existingResponse?.correlationId &&
-      existingResponse.correlationId !== correlationId
-    ) {
-      return { status: 'duplicate' as const }
-    }
+        if (
+          existingResponse?.correlationId &&
+          existingResponse.correlationId !== correlationId
+        ) {
+          return { status: 'duplicate' as const }
+        }
 
-    if (existingResponse) {
-      await tx.liveQuizResponse.update({
-        where: { id: existingResponse.id },
-        data: {
-          acceptedAt: existingResponse.acceptedAt ?? new Date(),
-          correlationId,
-        },
+        if (existingResponse) {
+          await tx.liveQuizResponse.update({
+            where: { id: existingResponse.id },
+            data: {
+              acceptedAt: existingResponse.acceptedAt ?? new Date(),
+              correlationId,
+            },
+          })
+          return { status: 'retry' as const }
+        }
+
+        await tx.liveQuizResponse.create({
+          data: {
+            submittedAt: new Date(responseTimestamp),
+            acceptedAt: new Date(),
+            correlationId,
+            timeSpent: -1,
+            correctness: ResponseCorrectness.CORRECT,
+            basePoints: 0,
+            correctnessPoints: 0,
+            bonusPoints: 0,
+            correctionOnly: true,
+            elementBlockExecution: elementBlock.execution,
+            instance: { connect: { id: instance.id } },
+            participant: { connect: { id: user.sub } },
+          },
+        })
+
+        return { status: 'accepted' as const }
       })
-      return { status: 'retry' as const }
-    }
-
-    await tx.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(responseTimestamp),
-        acceptedAt: new Date(),
-        correlationId,
-        timeSpent: -1,
-        correctness: ResponseCorrectness.CORRECT,
-        basePoints: 0,
-        correctnessPoints: 0,
-        bonusPoints: 0,
-        correctionOnly: true,
-        elementBlockExecution: elementBlock.execution,
-        instance: { connect: { id: instance.id } },
-        participant: { connect: { id: user.sub } },
-      },
-    })
-
-    return { status: 'accepted' as const }
-  })
 
   if (acceptance.status === 'not_participant') {
     return sendJson(req, res, 403, {
@@ -444,7 +484,9 @@ async function handleAddAssessmentResponse(
     participantId: user.sub,
     liveQuizId: String(liveQuizId),
     instanceId: String(instanceId),
-    elementBlockExecution: elementBlock.execution,
+    elementBlockExecution: isPendingEffectRetry
+      ? requestedExecution
+      : elementBlock.execution,
     response, // pass through as-is; worker validates
     responseTimestamp,
   }

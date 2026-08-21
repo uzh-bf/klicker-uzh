@@ -5,6 +5,7 @@ import {
   getResponseState,
   type PointCorrectionInstruction,
   replayPointCorrections,
+  validateRedisCounterTransitions,
 } from './responseState.js'
 
 function correction(
@@ -208,6 +209,26 @@ describe('assessment response state', () => {
           deductedBasePoints: 0,
         },
       ]
+    )
+  })
+
+  it('rejects Redis counter overflow before writing the completion marker', () => {
+    assert.equal(
+      validateRedisCounterTransitions(
+        [{ key: 'results', field: 'participants', amount: 1 }],
+        new Map([['results\u0000participants', '9223372036854775807']])
+      ),
+      'results:participants would overflow Redis integer range'
+    )
+  })
+
+  it('accepts counters within Redis signed 64-bit range', () => {
+    assert.equal(
+      validateRedisCounterTransitions(
+        [{ key: 'results', field: 'participants', amount: 1 }],
+        new Map([['results\u0000participants', '9223372036854775806']])
+      ),
+      null
     )
   })
 })

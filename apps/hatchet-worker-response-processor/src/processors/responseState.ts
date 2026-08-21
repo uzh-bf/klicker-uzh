@@ -23,6 +23,50 @@ export type ReplayedPointCorrection = {
   deductedBonusPoints: number
 }
 
+export type RedisCounterIncrement = {
+  key: string
+  field: string
+  amount: number
+}
+
+const REDIS_INT64_MIN = -(1n << 63n)
+const REDIS_INT64_MAX = (1n << 63n) - 1n
+
+export function validateRedisCounterTransitions(
+  increments: readonly RedisCounterIncrement[],
+  existingValues: ReadonlyMap<string, string | null>
+) {
+  const counterValues = new Map<string, bigint>()
+
+  for (const { key, field, amount } of increments) {
+    const counterKey = `${key}\u0000${field}`
+    let current = counterValues.get(counterKey)
+    if (current === undefined) {
+      const value = existingValues.get(counterKey) ?? null
+      if (value !== null && !/^-?\d+$/.test(value)) {
+        return `${key}:${field} is not an integer`
+      }
+
+      try {
+        current = BigInt(value ?? 0)
+      } catch {
+        return `${key}:${field} is not an integer`
+      }
+      if (current < REDIS_INT64_MIN || current > REDIS_INT64_MAX) {
+        return `${key}:${field} is outside Redis integer range`
+      }
+    }
+
+    current += BigInt(amount)
+    if (current < REDIS_INT64_MIN || current > REDIS_INT64_MAX) {
+      return `${key}:${field} would overflow Redis integer range`
+    }
+    counterValues.set(counterKey, current)
+  }
+
+  return null
+}
+
 export function getSampleSolutionAvailability({
   type,
   cachedFlag,

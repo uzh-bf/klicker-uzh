@@ -35,6 +35,7 @@ import {
 import {
   getSampleSolutionAvailability,
   getResponseState,
+  validateRedisCounterTransitions,
   type ResponsePoints,
   replayPointCorrections,
 } from './responseState.js'
@@ -80,6 +81,58 @@ type PersistedAssessmentResponse = {
   status: 'created' | 'duplicate' | 'materialized' | 'retry'
   responseId: number
   effect: AssessmentResponseEffectPayload | null
+}
+
+async function getPendingAssessmentResponseEffect({
+  instanceId,
+  participantId,
+  elementBlockExecution,
+  correlationId,
+}: {
+  instanceId: number
+  participantId: string
+  elementBlockExecution: number
+  correlationId: string
+}): Promise<AssessmentResponseEffectPayload | null> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(
+      Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${`${instanceId}:${elementBlockExecution}:${participantId}`},
+            0
+          )
+        )
+      `
+    )
+
+    const existingResponse = await tx.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId,
+          elementBlockExecution,
+          participantId,
+        },
+      },
+      select: {
+        correctionOnly: true,
+        correlationId: true,
+        assessmentResponseEffect: { select: { payload: true } },
+      },
+    })
+
+    if (
+      !existingResponse ||
+      existingResponse.correctionOnly ||
+      existingResponse.correlationId !== correlationId ||
+      !existingResponse.assessmentResponseEffect
+    ) {
+      return null
+    }
+
+    return existingResponse.assessmentResponseEffect
+      .payload as AssessmentResponseEffectPayload
+  })
 }
 
 export async function persistAssessmentResponse({
@@ -346,6 +399,38 @@ export async function processAssessmentResponse(
       await fetch(process.env.FUNCTION_HEARTBEAT_URL)
     }
     return { status: 200 }
+  }
+
+  // A response can be persisted before block closure while its Redis effect
+  // is still pending. Resume that durable effect before validating the current
+  // cache state, which may already describe a closed or later execution.
+  if (message.elementBlockExecution !== undefined) {
+    const pendingEffect = await getPendingAssessmentResponseEffect({
+      instanceId: Number(message.instanceId),
+      participantId: message.participantId,
+      elementBlockExecution: message.elementBlockExecution,
+      correlationId: message.correlationId,
+    })
+    if (pendingEffect) {
+      if (
+        pendingEffect.liveQuizId !== message.liveQuizId ||
+        pendingEffect.instanceId !== message.instanceId
+      ) {
+        throw new NonRetryableError(
+          `Pending response effect does not match response ${message.correlationId}.`
+        )
+      }
+
+      await aggregateAssessmentResponses(
+        pendingEffect,
+        ctx as unknown as DurableContext<JsonObject, {}>
+      )
+      return {
+        status: 200,
+        pointsAwarded: pendingEffect.pointsAwarded,
+        xpAwarded: pendingEffect.xpAwarded,
+      }
+    }
   }
 
   // extract the relevant information from the redis cache
@@ -970,16 +1055,17 @@ export async function aggregateAssessmentResponses(
         return finish()
       }
 
-      const invalidCounter = (
-        await Promise.all(
-          plan.increments.map(async ({ key, field }) => {
-            const value = await redis.hget(key, field)
-            return value !== null && !/^-?\d+$/.test(value)
-              ? `${key}:${field} is not an integer`
-              : null
-          })
-        )
-      ).find(Boolean)
+      const existingCounterValues = new Map<string, string | null>()
+      for (const { key, field } of plan.increments) {
+        const counterKey = `${key}\u0000${field}`
+        if (!existingCounterValues.has(counterKey)) {
+          existingCounterValues.set(counterKey, await redis.hget(key, field))
+        }
+      }
+      const invalidCounter = validateRedisCounterTransitions(
+        plan.increments,
+        existingCounterValues
+      )
       if (invalidCounter) {
         await redis.unwatch()
         throw new Error(
