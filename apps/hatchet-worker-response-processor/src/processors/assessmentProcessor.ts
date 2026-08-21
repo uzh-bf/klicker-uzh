@@ -250,7 +250,6 @@ export async function persistAssessmentResponse({
         await tx.assessmentResponseEffect.create({
           data: {
             responseId: createdResponse.id,
-            correlationId,
             payload: effect as unknown as Prisma.InputJsonValue,
           },
         })
@@ -307,11 +306,9 @@ export async function persistAssessmentResponse({
         where: { responseId: existingResponse.id },
         create: {
           responseId: existingResponse.id,
-          correlationId,
           payload: effect as unknown as Prisma.InputJsonValue,
         },
         update: {
-          correlationId,
           payload: effect as unknown as Prisma.InputJsonValue,
         },
       })

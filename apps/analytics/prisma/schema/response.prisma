@@ -156,18 +156,14 @@ model LiveQuizResponse {
 /// The row is created with the response and removed only after the effect is
 /// applied, so a worker retry can resume after a post-commit failure.
 model AssessmentResponseEffect {
-  id Int @id @default(autoincrement())
-
+  // The response identity is also the effect identity: at most one pending
+  // Redis effect can exist for a persisted response.
   response   LiveQuizResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
-  responseId Int              @unique
+  responseId Int              @id
 
-  correlationId String
-  payload       Json
-
+  /// Frozen aggregation input needed to replay the Redis side effects.
+  payload   Json
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([correlationId])
 }
 
 enum PointCorrectionType {

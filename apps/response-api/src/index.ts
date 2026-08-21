@@ -338,7 +338,7 @@ async function handleAddAssessmentResponse(
           select: {
             correctionOnly: true,
             correlationId: true,
-            assessmentResponseEffect: { select: { id: true } },
+            assessmentResponseEffect: { select: { responseId: true } },
           },
         })
       })
@@ -411,7 +411,7 @@ async function handleAddAssessmentResponse(
             correctionOnly: true,
             correlationId: true,
             acceptedAt: true,
-            assessmentResponseEffect: { select: { id: true } },
+            assessmentResponseEffect: { select: { responseId: true } },
           },
         })
 
