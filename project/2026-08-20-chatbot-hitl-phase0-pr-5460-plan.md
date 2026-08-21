@@ -256,6 +256,15 @@ No separate tasks; nothing crosses a boundary warranting one.
   determinism gap; the read barrier above fixed it. The fallback found no
   implementation defect. This route limitation remains an evidence caveat
   for the final package review.
+- Final-review correction: the native final reviewer found one medium
+  data-integrity issue in the lifecycle migration: the schema changes and
+  existing-row backfill were not explicitly transactional despite the plan's
+  one-transaction claim. Commit `ffd447811` adds `BEGIN`/`COMMIT` around the
+  complete PostgreSQL migration. The planner fallback reviewed the immutable
+  migration and PASSed; the Prisma package check and repository pre-commit
+  hook also pass. The native final-reviewer rerun then PASSed over current
+  `ffd447811`; no actionable code, authorization, data-integrity, policy,
+  documentation, test-portfolio, or plan-compliance findings remain.
 - S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
   backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
 - S2 (create/update mutations + owner-type exposure): DONE.
@@ -409,18 +418,20 @@ No separate tasks; nothing crosses a boundary warranting one.
   (`origin/HEAD`): 4 behind, 13 ahead, and none of v3's 4 new commits touch my
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
-- Forge snapshot (2026-08-21, read-only `gh`): `v3` is at
-  `3f3af82953ab91c6c51a38dfef44f6bc8e72bc85`, the remote PR head remains
-  `ab8d1424d`, and PR #5460 is open, non-draft, mergeable, but **BEHIND**. Its
-  current checks are 42 successful, 3 failed (GitGuardian and the Playwright
-  shard/status pair), and 1 skipped. The local commits through `ec71b5222`
-  are not on the remote PR yet. The SSH `git ls-remote` freshness path was
-  unavailable during this readback (connection closed), so the GitHub API is
-  the authoritative ref source for this snapshot. No rebase or push was
-  performed.
-- Remaining: complete the native final package review, handle GitGuardian
-  incident 36437584, and reconcile the branch with the current `v3` head
-  before merge. The approved usage-funding policy is documented for its
+- Forge snapshot (2026-08-21, read-only `gh`): current `v3` is at
+  `f58986faa8cfa4ff78d20a1ebeb1666473343d38`; the remote PR head remains
+  `ab8d1424d`, and PR #5460 is open, non-draft, mergeable, but **BEHIND**.
+  GitHub compare reports the remote PR branch 23 commits ahead and 6 behind
+  `v3`; the local reviewed head `ffd447811` adds 7 unpushed commits, for 30
+  local commits ahead and 6 behind. The remote PR checks are 42 successful,
+  3 failed (GitGuardian and the Playwright shard/status pair), and 1 skipped;
+  they do not cover the unpushed local commits. The SSH `git ls-remote`
+  freshness path was unavailable during this readback (connection closed), so
+  the GitHub API is the authoritative ref source for this snapshot. No rebase
+  or push was performed.
+- Remaining: handle GitGuardian incident 36437584, reconcile the branch with
+  current `v3`, publish the reviewed local commits, and obtain fresh CI before
+  merge. The approved usage-funding policy is documented for its
   implementation follow-up. The PR is already non-draft; merging it and
   closing #5453 remain outside this task's authority.
 - Runtime: worktree devcontainer stack stopped after verification. Start it
