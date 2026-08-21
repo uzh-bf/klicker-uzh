@@ -21,6 +21,7 @@ const CANDIDATE_SERVICE_URL =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
 const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
 const REQUEST_TIMEOUT_MS = 15_000
+const DB_TIMEOUT_MS = 30_000
 
 const EXPECTED_TOOLS = [
   'banking_expert',
@@ -728,10 +729,17 @@ type RunOptions = {
   candidateUrl: string
   proofUrl: string
   bearer: string
+  isInterrupted: () => boolean
+}
+
+function assertNotInterrupted(options: RunOptions): void {
+  if (options.isInterrupted())
+    fail('INTERRUPTED', 'operator requested bounded cleanup')
 }
 
 async function createFixture(options: RunOptions): Promise<FixtureState> {
   const { client, receipt, candidateUrl, bearer } = options
+  assertNotInterrupted(options)
   const ids = receipt.fixture
   const result = await client.$transaction(
     async (tx) => {
@@ -845,7 +853,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
         preparedCandidateConfig: safeConfigSnapshot(candidateConfig),
       }
     },
-    { isolationLevel: 'Serializable' }
+    { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
   const fixture = {
     ids: { ...ids, participationId: result.participationId },
@@ -879,6 +887,7 @@ async function switchFixture(
   fixture: FixtureState
 ): Promise<void> {
   const { client, receipt } = options
+  assertNotInterrupted(options)
   options.receipt = updatedReceipt(receipt, { state: 'switching' })
   await options.store.write(options.receipt)
   await client.$transaction(
@@ -939,7 +948,7 @@ async function switchFixture(
       if (configUpdated.count !== 1)
         fail('CONCURRENT_EDIT', 'candidate binding changed during switch')
     },
-    { isolationLevel: 'Serializable' }
+    { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
   const [activeCandidateServer, activeCandidateConfig] = await Promise.all([
     client.chatbotMCPServer.findUnique({
@@ -968,6 +977,7 @@ async function runLiveProof(
   options: RunOptions,
   fixture: FixtureState
 ): Promise<void> {
+  assertNotInterrupted(options)
   const [candidate, candidateConfig] = await Promise.all([
     options.client.chatbotMCPServer.findUnique({
       where: { id: fixture.ids.candidateServerId },
@@ -1061,7 +1071,7 @@ async function restoreAndDeleteBinding(
       if (deletedServer.count !== 1)
         fail('CONCURRENT_EDIT', 'candidate server could not be deleted')
     },
-    { isolationLevel: 'Serializable' }
+    { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
   options.receipt = updatedReceipt(options.receipt, {
     cleanup: { ...options.receipt.cleanup, restoredLegacy: true },
@@ -1114,7 +1124,7 @@ async function deletePreparedBinding(
           'prepared candidate server could not be deleted'
         )
     },
-    { isolationLevel: 'Serializable' }
+    { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
   options.receipt = updatedReceipt(options.receipt, {
     cleanup: { ...options.receipt.cleanup, restoredLegacy: true },
@@ -1233,7 +1243,7 @@ async function deleteFixture(
       if (owner.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic owner was not deleted')
     },
-    { isolationLevel: 'Serializable' }
+    { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
 }
 
@@ -1387,6 +1397,7 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
   }
   let receipt = initialReceipt(randomUUID(), fixture, provenance)
   await store.write(receipt)
+  let interrupted = false
   const options: RunOptions = {
     client: prisma,
     store,
@@ -1394,40 +1405,52 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
     candidateUrl,
     proofUrl,
     bearer,
+    isInterrupted: () => interrupted,
   }
-  let fixtureState: FixtureState | undefined
-  let failure: unknown
+  const signalHandler = () => {
+    interrupted = true
+  }
+  process.once('SIGINT', signalHandler)
+  process.once('SIGTERM', signalHandler)
   try {
-    await assertCandidateReachable(options, fixture.chatbotId)
-    fixtureState = await createFixture(options)
-    if (!fixtureState.receiptPersisted) {
-      fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
-    }
-    await switchFixture(options, fixtureState)
-    await runLiveProof(options, fixtureState)
-  } catch (error) {
-    failure = error
-  } finally {
-    if (fixtureState) {
-      try {
-        await attemptCleanup(options, fixtureState)
-      } catch (cleanupError) {
-        failure = cleanupError
-        options.receipt = updatedReceipt(options.receipt, {
-          state: 'recovery_required',
-        })
-        await store.write(options.receipt)
+    let fixtureState: FixtureState | undefined
+    let failure: unknown
+    try {
+      assertNotInterrupted(options)
+      await assertCandidateReachable(options, fixture.chatbotId)
+      fixtureState = await createFixture(options)
+      if (!fixtureState.receiptPersisted) {
+        fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
       }
+      await switchFixture(options, fixtureState)
+      await runLiveProof(options, fixtureState)
+    } catch (error) {
+      failure = error
+    } finally {
+      if (fixtureState) {
+        try {
+          await attemptCleanup(options, fixtureState)
+        } catch (cleanupError) {
+          failure = cleanupError
+          options.receipt = updatedReceipt(options.receipt, {
+            state: 'recovery_required',
+          })
+          await store.write(options.receipt)
+        }
+      }
+      receipt = options.receipt
     }
-    receipt = options.receipt
+    if (failure) {
+      process.stdout.write(`${JSON.stringify(safeResult(receipt, failure))}\n`)
+      process.exitCode = 1
+    } else {
+      process.stdout.write(`${JSON.stringify(safeResult(receipt))}\n`)
+    }
+    return safeResult(receipt, failure)
+  } finally {
+    process.removeListener('SIGINT', signalHandler)
+    process.removeListener('SIGTERM', signalHandler)
   }
-  if (failure) {
-    process.stdout.write(`${JSON.stringify(safeResult(receipt, failure))}\n`)
-    process.exitCode = 1
-  } else {
-    process.stdout.write(`${JSON.stringify(safeResult(receipt))}\n`)
-  }
-  return safeResult(receipt, failure)
 }
 
 if (process.argv[1]?.endsWith('w5e-prd-direct-chat.ts')) {
