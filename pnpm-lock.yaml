@@ -383,6 +383,9 @@ importers:
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
+      '@klicker-uzh/graphql':
+        specifier: workspace:*
+        version: link:../../packages/graphql
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -519,9 +522,6 @@ importers:
       '@eslint/eslintrc':
         specifier: ~3.3.5
         version: 3.3.5
-      '@klicker-uzh/graphql':
-        specifier: workspace:*
-        version: link:../../packages/graphql
       '@tailwindcss/aspect-ratio':
         specifier: ~0.4.2
         version: 0.4.2(tailwindcss@4.1.12)

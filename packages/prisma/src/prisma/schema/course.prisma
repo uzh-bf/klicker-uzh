@@ -54,6 +54,7 @@ model Course {
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
+  personalElements           PersonalElement[]
   participantInvitations     ParticipantInvitation[]
 
   directPermissions  Permission[]
