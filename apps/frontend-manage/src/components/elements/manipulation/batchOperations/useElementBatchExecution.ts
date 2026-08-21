@@ -18,6 +18,30 @@ import type {
 
 type AffectedElement = Pick<Element, 'id'> & { actionsApplied: boolean }
 
+function getMultiplierValue(multiplier?: string) {
+  return multiplier && multiplier !== '' ? parseInt(multiplier, 10) : null
+}
+
+function isSuccessful(
+  updateResult: ElementBatchUpdateExecutionResult,
+  sharingResult: ElementBatchSharingExecutionResult,
+  expectedSharingCount: number
+) {
+  const updateSuccessful =
+    updateResult.status === 'NOT_REQUESTED' ||
+    updateResult.status === 'SUCCEEDED'
+  const sharingSuccessful =
+    sharingResult.status === 'NOT_REQUESTED' ||
+    (sharingResult.status === 'COMPLETED' &&
+      !sharingResult.response.targetError &&
+      sharingResult.response.outcomes.length === expectedSharingCount &&
+      sharingResult.response.outcomes.every(
+        (outcome) => outcome.status === ElementBatchSharingStatus.Shared
+      ))
+
+  return updateSuccessful && sharingSuccessful
+}
+
 function useElementBatchExecution({
   selectionSnapshot,
   affectedElements,
@@ -47,74 +71,68 @@ function useElementBatchExecution({
   )
   const [shareElementsBatch] = useMutation(ShareElementsBatchDocument)
 
+  async function runUpdate(): Promise<ElementBatchUpdateExecutionResult> {
+    if (!updatesConfigured) return { status: 'NOT_REQUESTED' }
+    if (numOfUpdatedElements === 0) return { status: 'SKIPPED' }
+
+    try {
+      const { data } = await applyElementBatchOperations({
+        variables: {
+          elementIds: affectedElements
+            .filter((element) => element.actionsApplied)
+            .map((element) => element.id),
+          archive: selectedActions.archive,
+          unarchive: selectedActions.unarchive,
+          status: selectedActions.status ?? undefined,
+          multiplier: getMultiplierValue(selectedActions.multiplier),
+          basePoints: selectedActions.basePoints ?? undefined,
+          updateInstances: selectedActions.updateInstances,
+          updateTemplateInstances: selectedActions.updateTemplateInstances,
+        },
+      })
+      const updatedCount = data?.applyElementBatchOperations
+      return typeof updatedCount === 'number'
+        ? {
+            status:
+              updatedCount === numOfUpdatedElements ? 'SUCCEEDED' : 'PARTIAL',
+            expectedCount: numOfUpdatedElements,
+            updatedCount,
+          }
+        : { status: 'FAILED' }
+    } catch (error) {
+      console.error(error)
+      return { status: 'FAILED' }
+    }
+  }
+
+  async function runSharing(
+    sharingValues: ElementBatchSharingFormValues
+  ): Promise<ElementBatchSharingExecutionResult> {
+    if (!sharingValues.enabled) return { status: 'NOT_REQUESTED' }
+
+    try {
+      const { data } = await shareElementsBatch({
+        variables: {
+          elementIds: selectionSnapshot.map((element) => element.id),
+          permissionLevel: sharingValues.permissionLevel,
+          shortnameOrEmail: sharingValues.shortnameOrEmail.trim() || undefined,
+          userGroupId: sharingValues.userGroupId?.trim()
+            ? parseInt(sharingValues.userGroupId, 10)
+            : undefined,
+        },
+      })
+      return data?.shareElementsBatch
+        ? { status: 'COMPLETED', response: data.shareElementsBatch }
+        : { status: 'REQUEST_FAILED' }
+    } catch (error) {
+      console.error(error)
+      return { status: 'REQUEST_FAILED' }
+    }
+  }
+
   return async function execute(sharingValues: ElementBatchSharingFormValues) {
-    let updateResult: ElementBatchUpdateExecutionResult = {
-      status: 'NOT_REQUESTED',
-    }
-    let sharingResult: ElementBatchSharingExecutionResult = {
-      status: 'NOT_REQUESTED',
-    }
-
-    if (updatesConfigured && numOfUpdatedElements === 0) {
-      updateResult = { status: 'SKIPPED' }
-    } else if (updatesConfigured) {
-      try {
-        const { data } = await applyElementBatchOperations({
-          variables: {
-            elementIds: affectedElements
-              .filter((element) => element.actionsApplied)
-              .map((element) => element.id),
-            archive: selectedActions.archive,
-            unarchive: selectedActions.unarchive,
-            status: selectedActions.status ?? undefined,
-            multiplier:
-              typeof selectedActions.multiplier !== 'undefined' &&
-              selectedActions.multiplier !== ''
-                ? parseInt(selectedActions.multiplier, 10)
-                : null,
-            basePoints: selectedActions.basePoints ?? undefined,
-            updateInstances: selectedActions.updateInstances,
-            updateTemplateInstances: selectedActions.updateTemplateInstances,
-          },
-        })
-        const updatedCount = data?.applyElementBatchOperations
-        updateResult =
-          typeof updatedCount === 'number'
-            ? {
-                status:
-                  updatedCount === numOfUpdatedElements
-                    ? 'SUCCEEDED'
-                    : 'PARTIAL',
-                expectedCount: numOfUpdatedElements,
-                updatedCount,
-              }
-            : { status: 'FAILED' }
-      } catch (error) {
-        console.error(error)
-        updateResult = { status: 'FAILED' }
-      }
-    }
-
-    if (sharingValues.enabled) {
-      const userGroupId = sharingValues.userGroupId?.trim()
-      try {
-        const { data } = await shareElementsBatch({
-          variables: {
-            elementIds: selectionSnapshot.map((element) => element.id),
-            permissionLevel: sharingValues.permissionLevel,
-            shortnameOrEmail:
-              sharingValues.shortnameOrEmail.trim() || undefined,
-            userGroupId: userGroupId ? parseInt(userGroupId, 10) : undefined,
-          },
-        })
-        sharingResult = data?.shareElementsBatch
-          ? { status: 'COMPLETED', response: data.shareElementsBatch }
-          : { status: 'REQUEST_FAILED' }
-      } catch (error) {
-        console.error(error)
-        sharingResult = { status: 'REQUEST_FAILED' }
-      }
-    }
+    const updateResult = await runUpdate()
+    const sharingResult = await runSharing(sharingValues)
 
     let refreshFailed = false
     try {
@@ -124,19 +142,10 @@ function useElementBatchExecution({
       refreshFailed = true
     }
 
-    const updateSuccessful =
-      updateResult.status === 'NOT_REQUESTED' ||
-      updateResult.status === 'SUCCEEDED'
-    const sharingSuccessful =
-      sharingResult.status === 'NOT_REQUESTED' ||
-      (sharingResult.status === 'COMPLETED' &&
-        !sharingResult.response.targetError &&
-        sharingResult.response.outcomes.length === selectionSnapshot.length &&
-        sharingResult.response.outcomes.every(
-          (outcome) => outcome.status === ElementBatchSharingStatus.Shared
-        ))
-
-    if (updateSuccessful && sharingSuccessful && !refreshFailed) {
+    if (
+      isSuccessful(updateResult, sharingResult, selectionSnapshot.length) &&
+      !refreshFailed
+    ) {
       resetSelectedElements()
       toast({
         type: 'success',
