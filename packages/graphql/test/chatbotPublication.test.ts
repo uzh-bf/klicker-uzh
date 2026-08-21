@@ -230,18 +230,9 @@ describe('Integration tests for the chatbot publication workflow', () => {
             ...args: Parameters<typeof chatbotDelegate.findUnique>
           ) => {
             const result = await findUnique(...args)
-            const select = args[0]?.select as unknown as
-              | {
-                  owner?: {
-                    select?: { aiChatbotPublishingEnabled?: boolean }
-                  }
-                }
-              | undefined
-            if (select?.owner?.select?.aiChatbotPublishingEnabled) {
-              initialReads += 1
-              if (initialReads === 2) releaseInitialReads()
-              await initialReadsReady
-            }
+            initialReads += 1
+            if (initialReads === 2) releaseInitialReads()
+            await initialReadsReady
             return result
           }
         },
