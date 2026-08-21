@@ -52,6 +52,7 @@ import {
   createLiveQuiz as createLiveQuizActivity,
   createMicroLearning as createMicroLearningActivity,
   createPracticeQuiz as createPracticeQuizActivity,
+  selectOption,
 } from '../util/fixtures/activities.js'
 import {
   attachCourseCompetencyTree,
@@ -2469,6 +2470,97 @@ test.describe('Part 4b: Assessment participant invitations', () => {
       await page.getByTestId('assessment-invitation-confirm-delete').click()
       await expect(pendingRow).not.toBeAttached()
       await expect(acceptedRow).toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
+  })
+
+  test('Paginates invitation history and rejects oversized CSV imports', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Capacity Course'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+
+    for (let index = 0; index < 51; index++) {
+      await createParticipantInvitationRecord({
+        courseId: course.id,
+        email: `capacity-${index}@example.org`,
+        matriculationNumber: `${String(index).padStart(2, '0')}-123-456`,
+      })
+    }
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(page.getByText('51 invitations')).toBeVisible()
+      await expect(page.getByTestId('pagination-page-size')).toContainText(
+        '50 entries per page'
+      )
+      await expect(page.getByTestId('pagination-page-size-all')).toHaveCount(0)
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', '10')
+      await expect(page.getByTestId('pagination-page-2')).toBeVisible()
+      await page.getByTestId('pagination-page-2').click()
+      await expect(
+        page.getByText(/Showing 11 to 20 of 51 results/)
+      ).toBeVisible()
+      await expect(page.getByRole('row')).toHaveCount(11)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'oversized-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.alloc(1024 * 1024 + 1, 'a'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvTooLarge)
+
+      const rows = Array.from(
+        { length: 201 },
+        (_, index) => `capacity-import-${index}@example.org,${index}-123-456`
+      ).join('\n')
+      await csvInput.setInputFiles({
+        name: 'too-many-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(`email,matriculationNumber\n${rows}`),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(
+        messages.manage.assessment.invitationCsvTooManyRows.replace(
+          '{count}',
+          '200'
+        )
+      )
+      await expect(
+        page.getByTestId('assessment-invitations-import')
+      ).not.toBeVisible()
     } finally {
       await deleteCourseWithActivitiesByName({
         courseName,
