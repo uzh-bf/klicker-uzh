@@ -596,7 +596,7 @@ async function fixedRouteStatus(
       id: 1,
       method: 'initialize',
       params: {
-      protocolVersion: MCP_PROTOCOL_VERSION,
+        protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: {},
         clientInfo: { name: 'w5e', version: '1' },
       },
