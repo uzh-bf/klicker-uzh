@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { InvitationStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import type { EventEmitter } from 'node:events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -400,6 +400,48 @@ describe('Assessment participant invitation management', () => {
     await expect(
       prisma.participantInvitation.findUnique({ where: { id: invitation.id } })
     ).resolves.toMatchObject({ matriculationNumber: 'immutable-number' })
+  })
+
+  it('does not report a stale matriculation update after a concurrent change', async () => {
+    const course = await createAssessmentCourse()
+    const invitation = await prisma.participantInvitation.create({
+      data: {
+        courseId: course.id,
+        email: 'concurrent-duplicate@example.org',
+        matriculationNumber: 'old-number',
+      },
+    })
+    const updateInvitation = vi
+      .spyOn(prisma.participantInvitation, 'updateMany')
+      .mockResolvedValueOnce({ count: 0 })
+
+    try {
+      const result = await createAssessmentParticipantInvitations(
+        {
+          courseId: course.id,
+          invitations: [
+            {
+              email: invitation.email,
+              matriculationNumber: 'new-number',
+            },
+          ],
+        },
+        lecturerCtx
+      )
+
+      expect(result).toMatchObject({
+        created: 0,
+        duplicates: 1,
+        results: [{ status: 'duplicate' }],
+      })
+      await expect(
+        prisma.participantInvitation.findUnique({
+          where: { id: invitation.id },
+        })
+      ).resolves.toMatchObject({ matriculationNumber: 'old-number' })
+    } finally {
+      updateInvitation.mockRestore()
+    }
   })
 
   it('keeps ambiguous verified identities pending', async () => {

@@ -138,7 +138,7 @@ export async function createParticipantInvitations(
 
       if (participantId) {
         // Auto-accept invitation for existing verified user
-        const result = await autoAcceptInvitation(
+        const invitationId = await autoAcceptInvitation(
           normalizedEmail,
           courseId,
           participantId,
@@ -149,7 +149,7 @@ export async function createParticipantInvitations(
         results.push({
           email: normalizedEmail,
           status: 'auto_accepted',
-          invitationId: result,
+          invitationId,
           participantId,
         })
       } else {
@@ -225,10 +225,22 @@ async function recordDuplicateInvitation(
     existingInvitation.matriculationNumber !== normalizedMatriculationNumber
 
   if (matriculationUpdated) {
-    await prismaClient.participantInvitation.update({
-      where: { id: existingInvitation.id },
+    const updateResult = await prismaClient.participantInvitation.updateMany({
+      where: {
+        id: existingInvitation.id,
+        status: InvitationStatus.PENDING,
+        matriculationNumber: existingInvitation.matriculationNumber,
+      },
       data: { matriculationNumber: normalizedMatriculationNumber },
     })
+
+    if (updateResult.count === 0) {
+      return {
+        email: normalizedEmail,
+        status: 'duplicate',
+        invitationId: existingInvitation.id,
+      }
+    }
   }
 
   return {
@@ -279,7 +291,7 @@ async function autoAcceptInvitation(
   prismaClient: PrismaClient
 ): Promise<number> {
   // Use transaction to ensure data consistency
-  const result = await prismaClient.$transaction(async (tx) => {
+  return prismaClient.$transaction(async (tx) => {
     // Create the invitation as ACCEPTED
     const invitation = await tx.participantInvitation.create({
       data: {
@@ -309,8 +321,6 @@ async function autoAcceptInvitation(
 
     return invitation.id
   })
-
-  return result
 }
 
 async function requireAssessmentCourse(
