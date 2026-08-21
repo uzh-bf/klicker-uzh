@@ -55,7 +55,9 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 group for multiple Elements. The mutation uses `asUserFullAccess`; the service
 then rechecks every non-deleted Element and shares only those on which the
 caller has `ADMIN` or `OWNER`. Exactly one of `shortnameOrEmail` and
-`userGroupId` must be supplied.
+`userGroupId` must be supplied. Sharing does not propagate access to activities;
+linked answer collections receive the derived READ access required by the
+permission model.
 
 The service rejects more than 50 raw element IDs before target lookup or other
 database work, accepts only `READ`, `WRITE`, and `ADMIN`, deduplicates IDs in

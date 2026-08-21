@@ -4246,12 +4246,19 @@ async function shareElementWithResolvedTarget(
     { timeout: 60000 }
   )
 
-  invalidateElementPermission(
-    { elementId: args.elementId, permissionId: permission.id },
-    ctx
-  )
+  emitElementPermissionInvalidation({ permissionId: permission.id }, ctx)
 
   return permission
+}
+
+function emitElementPermissionInvalidation(
+  { permissionId }: { permissionId: number },
+  ctx: ContextWithUser
+) {
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permissionId,
+  })
 }
 
 function invalidateElementPermission(
@@ -4259,10 +4266,7 @@ function invalidateElementPermission(
   ctx: ContextWithUser
 ) {
   try {
-    ctx.emitter.emit('invalidate', {
-      typename: 'Permission',
-      id: permissionId,
-    })
+    emitElementPermissionInvalidation({ permissionId }, ctx)
   } catch (error) {
     console.error(
       'Failed to invalidate permission %s after sharing element %s',
@@ -4388,6 +4392,26 @@ async function shareElementForBatch(
     try {
       const result = await ctx.prisma.$transaction(
         async (prisma) => {
+          if (
+            target.kind === 'USER_GROUP' &&
+            !(await prisma.userGroup.findFirst({
+              where: {
+                id: target.id,
+                OR: [
+                  { ownerId: ctx.user.sub },
+                  { admins: { some: { id: ctx.user.sub } } },
+                  { members: { some: { id: ctx.user.sub } } },
+                ],
+              },
+              select: { id: true },
+            }))
+          ) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'INSUFFICIENT_PERMISSION' as const,
+            }
+          }
+
           const element = await prisma.element.findUnique({
             where: { id: elementId },
             select: {

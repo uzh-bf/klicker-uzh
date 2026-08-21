@@ -33,6 +33,8 @@ import {
   INITIAL_ELEMENT_BATCH_OPERATIONS,
 } from './types'
 
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+
 function BatchOperationSummary({
   updatesConfigured,
   updatedCount,
@@ -179,6 +181,8 @@ function ElementBatchOperationsModal({
     () => affectedElements.filter((element) => element.sharingApplied).length,
     [affectedElements]
   )
+  const sharingLimitExceeded =
+    selectionSnapshot.length > ELEMENT_BATCH_SHARING_MAX_ELEMENTS
 
   const sharingValidationSchema = useMemo(
     () =>
@@ -336,7 +340,16 @@ function ElementBatchOperationsModal({
                     />
                   </div>
                   {userData?.userProfile?.privatePreview ? (
-                    <ElementBatchSharingCard disabled={isSubmitting} />
+                    <>
+                      <ElementBatchSharingCard disabled={isSubmitting} />
+                      {sharingValues.enabled && sharingLimitExceeded ? (
+                        <p className="text-sm text-red-600" role="alert">
+                          {t('manage.questionPool.batchSharingLimit', {
+                            max: ELEMENT_BATCH_SHARING_MAX_ELEMENTS,
+                          })}
+                        </p>
+                      ) : null}
+                    </>
                   ) : null}
                   <div className="flex items-end justify-end gap-5">
                     <BatchOperationSummary
@@ -351,6 +364,7 @@ function ElementBatchOperationsModal({
                       disabled={
                         isSubmitting ||
                         (sharingValues.enabled && !sharingFormValid) ||
+                        (sharingValues.enabled && sharingLimitExceeded) ||
                         !(
                           (updatesConfigured && numOfUpdatedElements > 0) ||
                           (sharingValues.enabled && numOfSharedElements > 0)
