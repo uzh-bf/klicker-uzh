@@ -182,10 +182,7 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
         </p>
       </div>
 
-      <div
-        className="mt-5"
-        aria-hidden="true"
-      >
+      <div className="mt-5" aria-hidden="true">
         <div className="relative h-3 rounded-full bg-slate-200">
           <div
             className="absolute -top-1 h-5 w-1 rounded-full bg-uzh-blue"
