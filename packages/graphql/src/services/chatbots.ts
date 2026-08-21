@@ -737,14 +737,27 @@ export async function approveChatbotPublication(
     )
   }
 
-  const updated = await ctx.prisma.chatbot.update({
-    where: { id: chatbot.id },
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+      owner: { aiChatbotPublishingEnabled: true },
+    },
     data: {
       status: DB.ChatbotStatus.PUBLISHED,
       // Stamp the first go-live only; a later re-approval keeps the original.
       publishedAt: chatbot.publishedAt ?? new Date(),
       reviewComment: null,
     },
+  })
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot approval could not be completed because its status or account capability changed'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
@@ -779,12 +792,24 @@ export async function rejectChatbotPublication(
     throw new GraphQLError(`Cannot reject from status ${chatbot.status}`)
   }
 
-  const updated = await ctx.prisma.chatbot.update({
-    where: { id: chatbot.id },
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+    },
     data: {
       status: DB.ChatbotStatus.REJECTED,
       reviewComment: args.comment,
     },
+  })
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot rejection could not be completed because its status changed'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },

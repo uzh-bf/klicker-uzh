@@ -206,6 +206,31 @@ describe('Integration tests for the chatbot publication workflow', () => {
       expect(result?.publishedAt).toBeInstanceOf(Date)
     })
 
+    it('allows only one concurrent approval to publish a PENDING bot', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
+        reviewComment: null,
+      })
+
+      const results = await Promise.allSettled([
+        approveChatbotPublication({ id: bot.id }, adminCtx),
+        approveChatbotPublication({ id: bot.id }, adminCtx),
+      ])
+
+      expect(
+        results.filter((result) => result.status === 'fulfilled')
+      ).toHaveLength(1)
+      expect(
+        results.find((result) => result.status === 'rejected')?.reason.message
+      ).toContain('approval could not be completed')
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true },
+        })
+      ).resolves.toMatchObject({ status: ChatbotStatus.PUBLISHED })
+    })
+
     it('refuses to publish when the owner lost publishing capability while pending', async () => {
       // The bot reached PENDING via a request that required the capability, but
       // ops revoked aiChatbotPublishingEnabled before the admin acted. The
