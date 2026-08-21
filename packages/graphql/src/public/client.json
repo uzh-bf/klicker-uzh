@@ -135,6 +135,7 @@
    "SendMagicLink": "42b3b78e15609209fbf353cefd8f38d2e456234f5dfa815a4f8935e058733aed",
    "SetActivityReviewStatus": "83985b6a0eae86d4346adbcce03ceedaae4c493cca39fea66cd403c1a827586a",
    "SetLiveQuizPin": "aa3336fbe64a06f64d6d664db179ddc22cb32dab78536cad2b3c5ad34cb2221a",
+   "ShareElementsBatch": "cd9a8481fde02ab6f7e8d4b412f24fedcd25fdb7b05174bbdfb7d6b7cf0add40",
    "ShareObject": "4ed36d7d73dd1f400325c9d06b8e856e9755feeaa99f29f11dd31f4b34a75a6d",
    "StartGroupActivity": "bcb2a2dcaa54c5dfb990f99f48816ad6e39bd9ba9b8284a8822776dcbcf5733f",
    "StartLiveQuiz": "98a4afe83460254fb8ed6763bf83cad14ef9e3be3798952aee9f6b0677cc0bbb",
