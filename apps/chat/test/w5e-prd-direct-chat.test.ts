@@ -198,7 +198,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     })
     expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
       method: 'initialize',
-      params: { protocolVersion: '2025-06-18' },
+      params: { protocolVersion: '2025-11-25' },
     })
     expect(JSON.stringify(accepted)).not.toContain('synthetic-bearer-token')
 
@@ -240,6 +240,23 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     expect(refused).toEqual({
       path: 'local-forward',
       outcome: 'connection_refused',
+      statusClass: 'none',
+    })
+
+    const redirect = await probeFixedRoute(
+      'http://127.0.0.1:1417/mcp/klicker',
+      undefined,
+      undefined,
+      'local-forward',
+      vi.fn(async (..._args: Parameters<typeof fetch>) => {
+        throw Object.assign(new Error('synthetic-fetch-failed'), {
+          cause: { message: 'unexpected redirect' },
+        })
+      })
+    )
+    expect(redirect).toEqual({
+      path: 'local-forward',
+      outcome: 'redirect_refused',
       statusClass: 'none',
     })
 

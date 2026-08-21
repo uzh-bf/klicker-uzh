@@ -1,7 +1,6 @@
 import { encrypt } from '@klicker-uzh/util'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
-import { LATEST_PROTOCOL_VERSION as MCP_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createHash, randomUUID } from 'node:crypto'
 import {
   mkdir,
@@ -23,6 +22,8 @@ const CANDIDATE_SERVICE_URL =
 const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
 const REQUEST_TIMEOUT_MS = 15_000
 const DB_TIMEOUT_MS = 30_000
+// Keep this aligned with @ai-sdk/mcp's initialize request version.
+const MCP_PROTOCOL_VERSION = '2025-11-25'
 
 const EXPECTED_TOOLS = [
   'banking_expert',
@@ -629,6 +630,18 @@ function transportErrorCode(error: unknown): string | undefined {
 }
 
 function transportErrorOutcome(error: unknown): TransportOutcome {
+  const cause =
+    error && typeof error === 'object' && 'cause' in error
+      ? error.cause
+      : undefined
+  if (
+    cause &&
+    typeof cause === 'object' &&
+    'message' in cause &&
+    cause.message === 'unexpected redirect'
+  ) {
+    return 'redirect_refused'
+  }
   if (error instanceof Error) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
       return 'timeout'
