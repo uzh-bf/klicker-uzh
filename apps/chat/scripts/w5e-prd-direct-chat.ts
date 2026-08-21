@@ -1,6 +1,7 @@
 import { encrypt } from '@klicker-uzh/util'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import { LATEST_PROTOCOL_VERSION as MCP_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createHash, randomUUID } from 'node:crypto'
 import {
   mkdir,
@@ -22,7 +23,6 @@ const CANDIDATE_SERVICE_URL =
 const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
 const REQUEST_TIMEOUT_MS = 15_000
 const DB_TIMEOUT_MS = 30_000
-const MCP_PROTOCOL_VERSION = '2025-11-25'
 
 const EXPECTED_TOOLS = [
   'banking_expert',
@@ -73,6 +73,26 @@ type State =
   | 'recovery_required'
 
 type Status = 'planned' | 'passed' | 'failed' | 'not_run'
+
+export type TransportPath = 'local-forward' | 'chat-pod'
+export type TransportStatusClass = 'none' | '2xx' | '3xx' | '4xx' | '5xx'
+export type TransportOutcome =
+  | 'not_run'
+  | 'accepted'
+  | 'auth_rejected'
+  | 'negotiation_rejected'
+  | 'http_4xx'
+  | 'http_5xx'
+  | 'redirect_refused'
+  | 'connection_refused'
+  | 'timeout'
+  | 'network_error'
+
+export type TransportDiagnostic = {
+  path: TransportPath
+  outcome: TransportOutcome
+  statusClass: TransportStatusClass
+}
 
 const STATE_RANK: Record<State, number> = {
   planned: 0,
@@ -150,6 +170,7 @@ export type W5eReceipt = {
     argoRevision: string
     networkPolicySourceCommit: string
   }
+  reachability: TransportDiagnostic
   proof: {
     status: Status
     toolCount: number | null
@@ -283,6 +304,11 @@ export function initialReceipt(
       config: null,
     },
     provenance,
+    reachability: {
+      path: 'local-forward',
+      outcome: 'not_run',
+      statusClass: 'none',
+    },
     proof: {
       status: 'not_run',
       toolCount: null,
@@ -574,19 +600,59 @@ export function suppressOutput<T>(fn: () => Promise<T>): Promise<T> {
   })
 }
 
+function transportStatusClass(status: number): TransportStatusClass {
+  if (status >= 200 && status < 300) return '2xx'
+  if (status >= 300 && status < 400) return '3xx'
+  if (status >= 400 && status < 500) return '4xx'
+  if (status >= 500 && status < 600) return '5xx'
+  return 'none'
+}
+
+function transportOutcome(status: number): TransportOutcome {
+  if (status >= 200 && status < 300) return 'accepted'
+  if (status === 401 || status === 403) return 'auth_rejected'
+  if (status === 406 || status === 415) return 'negotiation_rejected'
+  if (status >= 400 && status < 500) return 'http_4xx'
+  if (status >= 500 && status < 600) return 'http_5xx'
+  if (status >= 300 && status < 400) return 'redirect_refused'
+  return 'network_error'
+}
+
+function transportErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+  const cause = 'cause' in error ? error.cause : undefined
+  if (!cause || typeof cause !== 'object' || !('code' in cause)) {
+    return undefined
+  }
+  const code = cause.code
+  return typeof code === 'string' ? code : undefined
+}
+
+function transportErrorOutcome(error: unknown): TransportOutcome {
+  if (error instanceof Error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      return 'timeout'
+    }
+  }
+  const code = transportErrorCode(error)
+  if (code === 'ECONNREFUSED') return 'connection_refused'
+  if (code === 'UND_ERR_REDIRECT') return 'redirect_refused'
+  return 'network_error'
+}
+
 async function fixedRouteStatus(
   url: string,
   bearer?: string,
-  chatbotId?: string
+  chatbotId?: string,
+  fetchImpl: typeof fetch = fetch
 ): Promise<number> {
   const headers: Record<string, string> = {
     accept: 'application/json, text/event-stream',
     'content-type': 'application/json',
-    'mcp-protocol-version': MCP_PROTOCOL_VERSION,
   }
   if (bearer) headers.authorization = `Bearer ${bearer}`
   if (chatbotId) headers['Chatbot-ID'] = chatbotId
-  const response = await fetch(url, {
+  const response = await fetchImpl(url, {
     method: 'POST',
     redirect: 'error',
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -605,16 +671,42 @@ async function fixedRouteStatus(
   return response.status
 }
 
+export async function probeFixedRoute(
+  url: string,
+  bearer: string | undefined,
+  chatbotId: string | undefined,
+  path: TransportPath = 'local-forward',
+  fetchImpl: typeof fetch = fetch
+): Promise<TransportDiagnostic> {
+  try {
+    const status = await fixedRouteStatus(url, bearer, chatbotId, fetchImpl)
+    return {
+      path,
+      outcome: transportOutcome(status),
+      statusClass: transportStatusClass(status),
+    }
+  } catch (error) {
+    return {
+      path,
+      outcome: transportErrorOutcome(error),
+      statusClass: 'none',
+    }
+  }
+}
+
 async function assertCandidateReachable(
   options: RunOptions,
   chatbotId: string
 ): Promise<void> {
-  const status = await fixedRouteStatus(
+  const reachability = await probeFixedRoute(
     options.proofUrl,
     options.bearer,
-    chatbotId
+    chatbotId,
+    'local-forward'
   )
-  if (status >= 400)
+  options.receipt = updatedReceipt(options.receipt, { reachability })
+  await options.store.write(options.receipt)
+  if (reachability.outcome !== 'accepted')
     fail('BEARER_REJECTED', 'stored bearer did not reach the candidate route')
 }
 
@@ -1404,6 +1496,7 @@ export function safeResult(
     status: receipt.state,
     phase: receipt.state,
     runId: receipt.runId,
+    reachability: receipt.reachability.outcome,
     proof: receipt.proof.status,
     cleanup: receipt.cleanup.exactZeroReadback ? 'exact-zero' : 'incomplete',
     ...(error ? { error: 'transaction_failed' } : {}),

@@ -5,6 +5,7 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   createReceiptStore,
   initialReceipt,
+  probeFixedRoute,
   safeResult,
   suppressOutput,
   updatedReceipt,
@@ -164,9 +165,100 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       status: 'planned',
       phase: 'planned',
       runId: 'run-2',
+      reachability: 'not_run',
       proof: 'not_run',
       cleanup: 'incomplete',
       error: 'transaction_failed',
+    })
+  })
+
+  test('classifies source-matched transport outcomes without retaining request data', async () => {
+    let request: Parameters<typeof fetch> | undefined
+    const acceptedFetch = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      request = args
+      return new Response(null, { status: 200 })
+    })
+    const accepted = await probeFixedRoute(
+      'http://127.0.0.1:1417/mcp/klicker',
+      'synthetic-bearer-token',
+      'synthetic-chatbot-id',
+      'local-forward',
+      acceptedFetch
+    )
+    expect(accepted).toEqual({
+      path: 'local-forward',
+      outcome: 'accepted',
+      statusClass: '2xx',
+    })
+    expect(request?.[1]?.headers).toEqual({
+      accept: 'application/json, text/event-stream',
+      'content-type': 'application/json',
+      authorization: 'Bearer synthetic-bearer-token',
+      'Chatbot-ID': 'synthetic-chatbot-id',
+    })
+    expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
+      method: 'initialize',
+      params: { protocolVersion: '2025-06-18' },
+    })
+    expect(JSON.stringify(accepted)).not.toContain('synthetic-bearer-token')
+
+    const statusCases = [
+      [401, 'auth_rejected', '4xx'],
+      [406, 'negotiation_rejected', '4xx'],
+      [404, 'http_4xx', '4xx'],
+      [503, 'http_5xx', '5xx'],
+    ] as const
+    for (const [status, outcome, statusClass] of statusCases) {
+      const result = await probeFixedRoute(
+        'http://127.0.0.1:1417/mcp/klicker',
+        undefined,
+        undefined,
+        'local-forward',
+        vi.fn(
+          async (..._args: Parameters<typeof fetch>) =>
+            new Response(null, { status })
+        )
+      )
+      expect(result).toEqual({
+        path: 'local-forward',
+        outcome,
+        statusClass,
+      })
+    }
+
+    const refused = await probeFixedRoute(
+      'http://127.0.0.1:1417/mcp/klicker',
+      undefined,
+      undefined,
+      'local-forward',
+      vi.fn(async (..._args: Parameters<typeof fetch>) => {
+        throw Object.assign(new Error('synthetic-network-error'), {
+          cause: { code: 'ECONNREFUSED' },
+        })
+      })
+    )
+    expect(refused).toEqual({
+      path: 'local-forward',
+      outcome: 'connection_refused',
+      statusClass: 'none',
+    })
+
+    const timeoutError = Object.assign(new Error('synthetic-timeout'), {
+      name: 'TimeoutError',
+    })
+    const timeout = await probeFixedRoute(
+      'http://127.0.0.1:1417/mcp/klicker',
+      undefined,
+      undefined,
+      'local-forward',
+      vi.fn(async (..._args: Parameters<typeof fetch>) => {
+        throw timeoutError
+      })
+    )
+    expect(timeout).toEqual({
+      path: 'local-forward',
+      outcome: 'timeout',
+      statusClass: 'none',
     })
   })
 })
