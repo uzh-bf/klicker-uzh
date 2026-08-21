@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { InvitationStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  InvitationStatus,
+  type ParticipantInvitation,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -100,9 +104,10 @@ describe('Assessment participant invitation management', () => {
   it('returns finite invitation pages with a stable total', async () => {
     const course = await createAssessmentCourse()
     const invitedAt = new Date('2026-01-02T10:00:00Z')
-    const invitations = await Promise.all(
-      ['first', 'second', 'third'].map((label) =>
-        prisma.participantInvitation.create({
+    const invitations: ParticipantInvitation[] = []
+    for (const label of ['first', 'second', 'third']) {
+      invitations.push(
+        await prisma.participantInvitation.create({
           data: {
             courseId: course.id,
             email: `${label}@example.org`,
@@ -110,7 +115,7 @@ describe('Assessment participant invitation management', () => {
           },
         })
       )
-    )
+    }
 
     await expect(
       getAssessmentParticipantInvitationPage(
@@ -139,9 +144,9 @@ describe('Assessment participant invitation management', () => {
     ).resolves.toMatchObject({
       totalCount: 3,
       invitations: expect.arrayContaining([
-        { id: invitations[0]?.id },
-        { id: invitations[1]?.id },
-        { id: invitations[2]?.id },
+        expect.objectContaining({ id: invitations[0]?.id }),
+        expect.objectContaining({ id: invitations[1]?.id }),
+        expect.objectContaining({ id: invitations[2]?.id }),
       ]),
     })
   })
