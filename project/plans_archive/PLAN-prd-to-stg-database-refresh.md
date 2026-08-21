@@ -45,14 +45,16 @@ Kubernetes RBAC to read and patch the self-hosted ArgoCD `Application`.
   plaintext dump is written to disk or passed as a process argument.
 - The encrypted archive is listed with `pg_restore` before STG is touched.
 - ArgoCD automated sync/self-heal is disabled before scaling workloads down.
-- The target `public` schema is dropped only after all STG workloads report zero
-  replicas.
+- Application-owned objects in the target `public` schema are removed only
+  after all STG workloads report zero replicas; the Azure-owned `public` schema
+  and its grants are preserved.
 - `pg_restore` uses `--exit-on-error` and `--single-transaction`; restore errors
   cannot be converted into success.
 - A hook-based `Application.operation.sync` submitted through Kubernetes runs
   the existing `PreSync` hook. A failed hook prevents the Sync phase, leaving
   workloads stopped.
-- Automated sync policy is restored only after post-sync database verification.
+- Automated sync policy is restored only after post-sync database verification,
+  migrator-target identity verification, and ordered migration-history checks.
 - Receipts contain aggregate metadata and archive hashes only, never row data or
   connection strings. Reusing a run ID is refused.
 
@@ -66,7 +68,8 @@ workflow is permitted only when STG is approved for that data classification.
 ## Verification
 
 - Shell syntax (`bash -n`) and ShellCheck when available.
-- A self-contained fake-tool test proves dry-run immutability, host and approval
+- A self-contained fake-tool test proves dry-run immutability, host/database and
+  cluster-identity guards, Lease ownership, timeout termination, approval,
   guards, phase ordering, encrypted-archive verification, fail-closed restore,
   direct Kubernetes sync submission, exact-operation polling, policy
   restoration, and receipt generation.

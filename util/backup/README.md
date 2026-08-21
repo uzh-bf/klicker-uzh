@@ -26,15 +26,28 @@ for that data classification and its outbound integrations are safely isolated.
   `d071be96-5136-4f23-a6cb-e0c7f9b9a6c8`. The secrets default to path `/`;
   override `INFISICAL_SECRET_PATH` if they are stored in a folder.
 - A working `aks-stg-apps` kubectl context with permission to list and scale the
-  release Deployments.
+  release Deployments. Set `EXPECTED_STG_CLUSTER_UID` to the stable UID of the
+  intended cluster; the script rejects a repointed context.
 - Kubernetes access to the ArgoCD control-plane cluster, with `get` and `patch`
   permission for `applications.argoproj.io/app-klicker` in the `argocd`
   namespace. This defaults to the same `aks-stg-apps` context; set
-  `ARGOCD_KUBE_CONTEXT` and `ARGOCD_NAMESPACE` if ArgoCD runs elsewhere.
+  `ARGOCD_KUBE_CONTEXT` and `ARGOCD_NAMESPACE` if ArgoCD runs elsewhere, and
+  set `EXPECTED_ARGOCD_CLUSTER_UID` to that cluster's stable UID.
+- The ArgoCD Application destination namespace must be the intended STG
+  workload namespace. Set `WORKLOAD_NAMESPACE` to bind it explicitly; the
+  script refuses a mismatch and never lists Deployments cluster-wide.
+- The operator must be able to create, read, patch, and delete the refresh
+  Lease, patch the ArgoCD Application, update Deployment scale, and read the
+  migrator Secret. These write checks run before the dump.
 - PostgreSQL client tools (`pg_dump`, `pg_restore`, and `psql`) version 17 or
   newer, plus `gpg`, `jq`, Node.js, and standard Unix utilities.
+- Both database URLs must use at least `sslmode=require`, must name the exact
+  expected databases (`EXPECTED_PRD_DB_NAME` and `EXPECTED_STG_DB_NAME`), and
+  must point to the expected hosts.
 - A STG release whose database schema is the same as or newer than PRD. The hook
   can migrate forward; it cannot downgrade a newer PRD schema for an older app.
+- Current free STG storage evidence in `STG_FREE_STORAGE_GIB`, with enough
+  headroom for the dump, restore, WAL, temporary indexes, and migrations.
 
 Run the read-only preflight first from the repository root:
 
@@ -42,18 +55,26 @@ Run the read-only preflight first from the repository root:
 ./util/backup/refresh-stg-from-prd.sh
 ```
 
-The preflight validates the exact source and target hostnames, PostgreSQL client
-compatibility, source size against STG capacity, Prisma migration health,
-STG object ownership, ArgoCD state, and the set of STG Deployments. The database
-must use only the `public` application schema and must not contain PostgreSQL
-large objects. It creates no dump and changes no external state.
+The preflight validates the exact source and target hostnames and database
+names, TLS mode, PostgreSQL client compatibility, supplied free-storage
+evidence, Prisma migration names and checksums, STG object ownership, the
+ArgoCD and workload cluster identities, write RBAC, the migrator Secret's
+database identity, and the exact set of STG Deployments. The database must use
+only the `public` application schema and must not contain PostgreSQL large
+objects. It creates no dump and changes no external state.
 
-After reviewing that output, execute the refresh with all three gates:
+After reviewing that output, execute the refresh with the required execution
+gates:
 
 ```bash
 DRY_RUN=false \
 CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
 ALLOW_RAW_PRD_DATA_IN_STG=true \
+RAW_PRD_DATA_APPROVAL_REF=<approved-ticket-or-ADR> \
+STG_OUTBOUND_INTEGRATIONS_ISOLATED=true \
+STG_FREE_STORAGE_GIB=<current-free-gib> \
+EXPECTED_STG_CLUSTER_UID=<stg-cluster-uid> \
+EXPECTED_ARGOCD_CLUSTER_UID=<argocd-cluster-uid> \
 ./util/backup/refresh-stg-from-prd.sh
 ```
 
@@ -65,11 +86,13 @@ schema and its grants, transactionally removes only objects owned by the STG
 application role, and excludes `public` schema creation/ownership entries from
 the restore catalog. It restores with an explicit
 `pg_restore --dbname=<STG-database> --exit-on-error --single-transaction`,
-verifies aggregate table and migration counts, and patches
+verifies table metadata and ordered migration names/checksums, and patches
 `Application.operation.sync` with ArgoCD's hook sync strategy. It then waits
 for the operation carrying this run's unique initiator to reach `Succeeded`. A
-successful sync runs the PreSync migrator and restores the Git-declared replica
-counts; a failed hook fails the operation.
+successful sync runs the PreSync migrator, proves that its Secret still points
+to the restored database, verifies post-hook migration history, and restores
+the Git-declared replica counts. A failed hook fails the operation. A timed-out
+operation is terminated and drained before workloads are recovered.
 
 The database URLs are validated and decomposed into libpq's `PGHOST`, `PGPORT`,
 `PGUSER`, `PGPASSWORD`, `PGDATABASE`, and supported SSL environment variables.
@@ -113,17 +136,29 @@ RESUME_FAILED_RUN_ID=<failed-run-id> \
 ./util/backup/refresh-stg-from-prd.sh
 ```
 
+If the operator process crashes while it holds the refresh Lease, first verify
+that no refresh process is still active. Then remove only the exact configured
+Lease (`REFRESH_LEASE_NAMESPACE` and `REFRESH_LEASE_NAME`) before retrying; do
+not delete a Lease held by another run. Preserve the failed run's receipt and
+logs for diagnosis before removing the stale ownership record.
+
 The resume is accepted only when the failed run has no `after.json`, its source
 and target match the current fixed endpoints, its saved policy was automated,
 ArgoCD is still manual with no active operation, and the exact recorded
 Deployment set remains at zero desired and running replicas. After reviewing
-that preflight, rerun with the same failed-run ID and the three execution gates:
+that preflight, rerun with the same failed-run ID and the required execution
+gates:
 
 ```bash
 RESUME_FAILED_RUN_ID=<failed-run-id> \
 DRY_RUN=false \
 CONFIRM_PRD_TO_STG_REFRESH=ERASE_STG_AND_COPY_PRD \
 ALLOW_RAW_PRD_DATA_IN_STG=true \
+RAW_PRD_DATA_APPROVAL_REF=<approved-ticket-or-ADR> \
+STG_OUTBOUND_INTEGRATIONS_ISOLATED=true \
+STG_FREE_STORAGE_GIB=<current-free-gib> \
+EXPECTED_STG_CLUSTER_UID=<stg-cluster-uid> \
+EXPECTED_ARGOCD_CLUSTER_UID=<argocd-cluster-uid> \
 ./util/backup/refresh-stg-from-prd.sh
 ```
 
@@ -134,7 +169,10 @@ restores the exact automated-sync policy saved by the failed run. A normal
 refresh still refuses to adopt an unfinished manual Argo state, and a failed
 run never mutates PRD.
 
-**Main Interface:** Use `dump.sh` and `restore.sh` for all operations - these unified wrappers provide consistent commands for both database and Redis operations.
+After a successful run, the operator still must check the ArgoCD Application,
+migrator Job logs, backend health, and an isolated synthetic STG request before
+declaring the environment usable. The script records control-plane evidence but
+does not claim live application health or cross-service proof.
 
 ## Prerequisites
 

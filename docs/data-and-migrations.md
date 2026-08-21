@@ -62,22 +62,30 @@ acknowledgement that STG may contain raw PRD data and assumes STG integrations
 and access controls are appropriate for it.
 
 The script is read-only by default. During an approved execution it validates
-the fixed PRD/STG hosts and database metadata, creates and verifies an encrypted
-custom-format dump, disables ArgoCD automated sync, and scales the
-`app-klicker` Deployments to zero. Azure's administration role owns `public`,
-while the Klicker application role owns its contents. The refresh therefore
-preserves the schema and its grants, removes only application-owned objects in
-one transaction, and filters schema creation/ownership entries from the restore
-catalog. Preflight rejects unowned or unsupported objects, non-public
-application schemas, and PostgreSQL large objects before maintenance mode. A
-hook-based sync submitted directly through the self-hosted ArgoCD `Application`
-custom resource then reapplies the existing `PreSync` hook; this is intentional
-because ArgoCD runs hooks on a requested sync even if the rendered manifests are
-unchanged. The script identifies and waits for its exact operation rather than
-accepting a stale successful status. The successful sync applies forward
-migrations from the STG migrator image and restores desired replicas. This path
-uses `kubectl` and Kubernetes RBAC (`get`/`patch` on the `Application`); it does
-not require the local `argocd` CLI.
+the fixed PRD/STG hosts and database names, TLS mode, current free-storage
+evidence, Kubernetes cluster identities, the exact Application destination
+namespace, write RBAC, and an exclusive refresh Lease before creating and
+verifying an encrypted custom-format dump. It disables ArgoCD automated sync
+and scales the `app-klicker` Deployments to zero. Azure's administration role
+owns `public`, while the Klicker application role owns its contents. The
+refresh therefore preserves the schema and its grants, removes only
+application-owned objects in one transaction, and filters schema
+creation/ownership entries from the restore catalog. Preflight rejects
+unowned or unsupported objects, non-public application schemas, and PostgreSQL
+large objects before maintenance mode.
+
+A hook-based sync submitted directly through the self-hosted ArgoCD
+`Application` custom resource then reapplies the existing `PreSync` hook; this
+is intentional because ArgoCD runs hooks on a requested sync even if the
+rendered manifests are unchanged. The script identifies and waits for its
+exact operation rather than accepting a stale successful status. If the
+operation times out, the script terminates it and waits for a terminal state
+before recovering workloads. The successful sync applies forward migrations
+from the STG migrator image, proves that the migrator Secret and validated STG
+URL resolve to the same database identity, compares ordered migration names
+and checksums, restores desired replicas, and writes the terminal receipt only
+after policy restoration. This path uses `kubectl` and Kubernetes RBAC; it
+does not require the local `argocd` CLI.
 
 PostgreSQL client commands go through
 `util/backup/refresh-stg-from-prd.sh:run_database_command`, which validates and
@@ -90,7 +98,13 @@ settings. `pg_restore` is the exception for database selection: it does not use
 passes the already-validated, non-secret STG database name through `--dbname`.
 
 This command and resource selection are config-derived and fake-tested; the
-implementation workflow does not execute a real environment refresh.
+implementation workflow does not execute a real environment refresh. The
+execution gate also requires an approval reference for raw PRD data,
+`STG_OUTBOUND_INTEGRATIONS_ISOLATED=true`, and current `STG_FREE_STORAGE_GIB`
+evidence. After a successful run, the operator must separately verify the
+ArgoCD Application, migrator Job logs, backend health, and an isolated
+synthetic STG request; the script does not provide live application or
+cross-service proof.
 
 The source schema must not be newer than the STG release. Prisma migrations are
 forward-only: copying a newer PRD database into an older STG release is not a
@@ -111,7 +125,9 @@ are documented in the [backup README](../util/backup/README.md#refresh-the-stg-d
 
 A failed hook blocks **every** sync to that environment, by design. Recovery order:
 
-Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+The refresh receipt and failure log are the durable run-scoped evidence. There
+is still no external alerting for a failed hook; detection remains whoever is
+watching ArgoCD. Operators must collect the failed Job logs before recovery.
 
 1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
