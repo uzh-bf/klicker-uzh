@@ -4308,7 +4308,55 @@ export async function shareElementsBatch(
     )
   }
 
+  const uniqueElementIds = [...new Set(elementIds)]
+  if (uniqueElementIds.length === 0) {
+    return { targetError: 'INVALID_OR_SELF_TARGET', outcomes: [] }
+  }
+
   const deadlineAt = Date.now() + ELEMENT_BATCH_SHARING_DEADLINE_MS
+  if (Date.now() >= deadlineAt) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'FAILED' as const,
+        reason: 'SHARING_FAILED' as const,
+      })),
+    }
+  }
+
+  const authorizedElement = await ctx.prisma.element.findFirst({
+    where: {
+      id: { in: uniqueElementIds },
+      isDeleted: false,
+      OR: [
+        { ownerId: ctx.user.sub },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  })
+
+  if (!authorizedElement) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'SKIPPED' as const,
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+      })),
+    }
+  }
+
   const resolvedTarget = await resolveSharingTarget(
     { shortnameOrEmail, userGroupId },
     ctx,
@@ -4322,7 +4370,6 @@ export async function shareElementsBatch(
     }
   }
 
-  const uniqueElementIds = [...new Set(elementIds)]
   const outcomes: ElementBatchSharingOutcome[] = []
 
   for (let index = 0; index < uniqueElementIds.length; index++) {
