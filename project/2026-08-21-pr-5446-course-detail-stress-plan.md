@@ -107,9 +107,13 @@ large, deterministic activity set for manual stress testing.
   timeout. The producer now retries the same job id and keeps its source lock
   when publication remains ambiguous; generic worker errors are rethrown for
   Hatchet retries; and the global HTTP and ingress timeout changes are removed.
-  GraphQL build and check passed after the fix; generated newline-only outputs
-  were restored. The repository hook still reports an unrelated existing Chat
-  route-type failure.
+- 2026-08-21: A follow-up review found that a crashed worker could leave the
+  per-job process lock until its long stale interval. The lock now uses a
+  renewable 60-second lease with an execution token, and lock collisions fail
+  the task so Hatchet can retry. The GraphQL check, GraphQL build, Manage route
+  checks, and worker liveness checks passed after the fix; generated
+  newline-only outputs were restored. The repository hook still reports an
+  unrelated existing Chat route-type failure.
 - Next: run the final post-fix review, record its disposition, and push normally
   to `origin/fix/course-duplication-timeout`. No full `check:all` or build claim
   is made for the repository hook.

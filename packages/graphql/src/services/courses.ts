@@ -53,6 +53,8 @@ const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
 const COURSE_DUPLICATION_STALE_AFTER_MS = 30 * 60 * 1000
+const COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS = 60
+const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
 const COURSE_DUPLICATION_STATUS_KEY_PREFIX = 'course-duplication:job'
 const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
@@ -2898,6 +2900,23 @@ async function releaseCourseDuplicationLockValue(
   )
 }
 
+async function renewCourseDuplicationProcessLock(
+  redis: Redis,
+  lockKey: string,
+  value: string
+) {
+  await redis.eval(
+    `if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("expire", KEYS[1], ARGV[2])
+    end
+    return 0`,
+    1,
+    lockKey,
+    value,
+    COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS
+  )
+}
+
 async function updateCourseDuplicationJob(
   redis: Redis,
   job: CourseDuplicationJob,
@@ -3128,15 +3147,30 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     const processLockKey = getCourseDuplicationProcessLockKey(pendingJob.id)
+    const processLockValue = randomUUID()
     const processLockAcquired = await redis.set(
       processLockKey,
-      '1',
+      processLockValue,
       'EX',
-      Math.ceil(COURSE_DUPLICATION_STALE_AFTER_MS / 1000),
+      COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS,
       'NX'
     )
 
-    if (processLockAcquired !== 'OK') return true
+    if (processLockAcquired !== 'OK') {
+      throw new Error('Course duplication job is already being processed')
+    }
+
+    const processLockRenewal = setInterval(() => {
+      void renewCourseDuplicationProcessLock(
+        redis,
+        processLockKey,
+        processLockValue
+      ).catch((error) => {
+        executionCtx.logger.warn(
+          `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
+        )
+      })
+    }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
 
     let job = pendingJob
     let committedCourseId: string | null = null
@@ -3217,7 +3251,12 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       return false
     } finally {
-      await redis.del(processLockKey)
+      clearInterval(processLockRenewal)
+      await releaseCourseDuplicationLockValue(
+        redis,
+        processLockKey,
+        processLockValue
+      )
     }
   }
 
