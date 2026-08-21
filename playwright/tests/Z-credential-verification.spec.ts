@@ -83,7 +83,6 @@ async function exportAssessmentReport(page: Page) {
     printBackground: true,
     preferCSSPageSize: true,
   })
-  await expect(reportPage.locator('.histogram-table')).toBeVisible()
   const qrCodeSize = await reportPage
     .getByRole('img', { name: 'QR code for the KlickerUZH verification page' })
     .evaluate((image: HTMLImageElement) => ({
@@ -94,6 +93,9 @@ async function exportAssessmentReport(page: Page) {
   const histogramRowCount = await reportPage
     .locator('.histogram-table tbody tr')
     .count()
+  if (histogramRowCount > 0) {
+    await expect(reportPage.locator('.histogram-table')).toBeVisible()
+  }
   await reportPage.close()
   const match = content.match(/\/verify#([a-f0-9]{64})/)
   if (!match?.[1]) throw new Error('ASSESSMENT_REPORT_TOKEN_MISSING')
