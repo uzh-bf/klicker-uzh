@@ -77,7 +77,8 @@ describe('Integration tests for batch sharing elements', () => {
     await testCleanup(prisma)
   })
 
-  it('rejects an unknown individual target before processing elements', async () => {
+  it('hides target errors when no eligible element is supplied', async () => {
+    const findUserSpy = vi.spyOn(userOneCtx.prisma.user, 'findFirst')
     const result = await shareElementsBatch(
       {
         elementIds: [1, 2],
@@ -88,9 +89,21 @@ describe('Integration tests for batch sharing elements', () => {
     )
 
     expect(result).toEqual({
-      targetError: 'INVALID_OR_SELF_TARGET',
-      outcomes: [],
+      targetError: null,
+      outcomes: [
+        {
+          elementId: 1,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+        },
+        {
+          elementId: 2,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+        },
+      ],
     })
+    expect(findUserSpy).not.toHaveBeenCalled()
     expect(await prisma.permission.count()).toBe(0)
   })
 
