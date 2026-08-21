@@ -2,7 +2,7 @@
 
 ## Verdict
 
-**Not ready for merge or production rollout.** The repair branch now contains the current `v3` base, removes the PR documentation logs, and fixes the invitation data-integrity, failure-handling, and new Manage capacity issues found in the earlier audit. The fresh native Sol review passed over the complete current range, including the course-scoped history index and migration, with no remaining verified backend invitation defect. The reviewed branch is published to the PR source branch at `b4d92c8cc`; its new-head CI is running. Legacy rolling compatibility, frontend accessibility and localization findings, operational recovery, and release-level CI evidence remain open.
+**Not ready for merge or production rollout.** The repair branch now contains the current `v3` base, removes the PR documentation logs, and fixes the invitation data-integrity, failure-handling, and new Manage capacity issues found in the earlier audit. The fresh native Sol review passed over the complete backend range through `b4d92c8cc`, including the course-scoped history index and migration, with no remaining verified backend invitation defect. The reviewed code and its readiness evidence are published to the PR source branch; new-head CI is queued or running. Legacy rolling compatibility, frontend accessibility and localization findings, operational recovery, and release-level CI evidence remain open.
 
 This report is limited to the local branch `rs/pr-5394-backend-repair` at the current local repair commits:
 
@@ -25,14 +25,16 @@ This report is limited to the local branch `rs/pr-5394-backend-repair` at the cu
 - `73c89d36f` — add the course-scoped invitation history index and migration.
 - `f32495158` — make the paginated invitation fixture deterministic.
 - `b4d92c8cc` — record indexed invitation verification and publish-readiness evidence.
+- The latest branch commit adds only the publication/readiness record; it does not
+  change backend or frontend behavior.
 
-The authoritative current `origin/v3` readback is `4e5f1d368ef579aac44027ea73f36b21754397f1`; it is an ancestor of the repair branch. The remote PR head is now `b4d92c8cc3ff47ff2b21d30fddfb5f7af5b4a3ca`; its new-head checks are running.
+The authoritative current `origin/v3` readback is `4e5f1d368ef579aac44027ea73f36b21754397f1`; it is an ancestor of the repair branch. The remote PR source branch now contains the reviewed code and the final readiness-only follow-up; its new-head checks are queued or running.
 
 ## Findings
 
 | dimension | current result | disposition |
 | --- | --- | --- |
-| Deploy and rollback | The branch is based on current `v3`, the former three-way documentation conflicts are resolved, and the reviewed head is published to the PR source branch. No image, deployment, rollback, or production action was performed. | **Open:** finish new-head CI and establish backend-before-Manage rollout plus accepted-invitation recovery sequencing before release. |
+| Deploy and rollback | The branch is based on current `v3`, the former three-way documentation conflicts are resolved, and the reviewed code plus readiness evidence are published to the PR source branch. No image, deployment, rollback, or production action was performed. | **Open:** finish new-head CI and establish backend-before-Manage rollout plus accepted-invitation recovery sequencing before release. |
 | Failure modes and resilience | Unexpected database failures in `createParticipantInvitations` now rethrow instead of becoming successful row results. A lightweight invitation precheck is followed by a serializable recheck for observed rows, while pending creation owns the create-or-repair race and retries only the configured `P2002`/`P2034` cases. Conditional matriculation updates refetch the row after a lost compare-and-set and fall through to recreation when deletion wins. Auto-acceptance and accepted-row repair use the shared serializable transaction wrapper. The import script deduplicates once before both existing-row updates and shared-service processing, so stale prefetches cannot bypass race handling. | **Backend slice fixed locally;** the focused database suite passes 20/20. Cross-process import races still need an integration run and new-head CI. |
 | Data safety and domain contract | Auto-accept requires exactly one distinct participant resolved from verified, eligible accounts whose participant is active. Multiple participants, missing accounts, and inactive participants remain pending. New participation uses the schema default (`isActive: false`); existing participation is upserted with `update: {}` and retains its value. Accepted invitation matriculation metadata is immutable; pending metadata may be updated conditionally. | **Former blockers fixed in code and tests.** A read-only remediation procedure for any historical mistaken auto-acceptance is still needed before rollout. |
 | Observability | Expected validation outcomes remain structured invitation results, while unexpected infrastructure errors reach GraphQL error handling. The service and importer expose counts, but there is no server-side aggregate metric or PII-free audit event for invitation outcomes. | **Open:** add or explicitly accept operational telemetry and alerting for created, accepted, duplicate, failed, and repaired rows. |
@@ -62,12 +64,12 @@ The authoritative current `origin/v3` readback is `4e5f1d368ef579aac44027ea73f36
 | Final Sol reviewer | passed natively over `origin/v3..b4d92c8cc`; no remaining verified backend invitation finding. The reviewer did not run new-head CI, headless Playwright, production query plans, migration timing, or cross-process race tests |
 | Full `check:all` | failed at `@klicker-uzh/analytics#lint`: uv could not build pandas 2.2.2 because the runtime image has no `cc`, `gcc`, or `clang`; dependent aggregate tasks were cancelled. No analytics files changed afterward, so this remains an environment blocker rather than a PR finding |
 | Browser verification | manual Agent Browser verification passed in English and German, including finite 10/20/50 choices and page two. The focused Playwright test is committed, but the disposable runtime lacked Playwright's headless shell after the install attempt, so that spec remains a CI/runtime follow-up |
-| Build and new-head CI | the final current-head build passed: 23 tasks successful in 2m53.857s, with existing warnings only. The published head `b4d92c8cc` has new-head CI running; the current readback shows checks in progress and no failed conclusion |
+| Build and new-head CI | the final current-head build passed: 23 tasks successful in 2m53.857s, with existing warnings only. New-head CI for the published branch was queued after the readiness-only follow-up; the current readback shows checks pending and no failed conclusion |
 | Native simplifier and slice-reviewer | native Gemini route rejected the configured effort; trusted Luna fallback completed the final read-only passes and found no material simplification or data-integrity concern |
 
 ## Not checked
 
-- The reviewed head `b4d92c8cc` was pushed to `feat/assessment-participant-invitations`; no merge, deployment, production access, rollback, or worktree deletion has been performed. The additive invitation-history migration was applied only to the disposable PR database; production migration timing and query plans remain unchecked. New-head CI is still running at this readback.
+- The reviewed code head `b4d92c8cc` and the subsequent readiness-only publication update were pushed to `feat/assessment-participant-invitations`; no merge, deployment, production access, rollback, or worktree deletion has been performed. The additive invitation-history migration was applied only to the disposable PR database; production migration timing and query plans remain unchecked. New-head CI is queued or running at this readback.
 - The exact DevRouter runtime for `/Users/rschlae/Git/klicker/klicker-uzh/trees/pr-5394` was used successfully for Node 24 checks, then stopped. `devpod status` reports `Stopped`; the exact-path workspace readback reports `routeCount: 0` and no hosts.
 - No production workload, large-file stress test beyond the bounded 51-record browser fixture, cross-process import race, telemetry collector, or operator recovery system was inspected.
 - No broad security scan was run; this audit stays within the requested production-readiness and bounded backend review scope.
@@ -76,4 +78,4 @@ The authoritative current `origin/v3` readback is `4e5f1d368ef579aac44027ea73f36
 
 1. Keep the legacy unbounded field during the rolling window; remove it only in a separate follow-up after deployment evidence shows that old clients have drained.
 2. Address the frontend accessibility/localization findings, operational recovery procedure, and PII-free invitation outcome telemetry in their respective slices.
-3. Monitor the new-head CI for `b4d92c8cc`, then complete the release-readiness evidence. Do not merge or deploy in this task.
+3. Monitor new-head CI for the published branch, then complete the release-readiness evidence. Do not merge or deploy in this task.
