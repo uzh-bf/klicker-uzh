@@ -51,7 +51,7 @@
     "build": "next build --turbopack",
     "build:test": "cross-env NODE_ENV=test next build --turbopack",
     "check": "next typegen && tsc --noEmit",
-    "dev": "next dev --turbopack --port 3010",
+    "dev": "next dev --webpack --port 3010",
     "dev:assessment": "pnpm run dev",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "next dev --turbopack --port 3010",
