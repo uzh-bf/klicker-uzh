@@ -509,7 +509,6 @@ backendGraphql:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
-      haproxy.org/timeout-server: 12m
     hosts:
       - host: api.klicker.stg.df-app.ch
         paths:

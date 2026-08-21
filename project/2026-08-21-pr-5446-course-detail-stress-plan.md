@@ -102,7 +102,14 @@ large, deterministic activity set for manual stress testing.
   merged GraphQL package rebuilt successfully, and the Manage, Hatchet, and
   Prisma-data focused checks passed. The generated build changed only
   newline-only artifacts, which were restored.
-- Next: complete the post-merge final review, record its disposition, and push
-  normally to `origin/fix/course-duplication-timeout`. The repository hook still
-  reports an unrelated existing Chat route-type failure; no full `check:all` or
-  build claim is made.
+- 2026-08-21: The integrated review found an ambiguous Hatchet publication
+  acknowledgement, swallowed generic worker errors, and a legacy global HTTP
+  timeout. The producer now retries the same job id and keeps its source lock
+  when publication remains ambiguous; generic worker errors are rethrown for
+  Hatchet retries; and the global HTTP and ingress timeout changes are removed.
+  GraphQL build and check passed after the fix; generated newline-only outputs
+  were restored. The repository hook still reports an unrelated existing Chat
+  route-type failure.
+- Next: run the final post-fix review, record its disposition, and push normally
+  to `origin/fix/course-duplication-timeout`. No full `check:all` or build claim
+  is made for the repository hook.

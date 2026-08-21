@@ -3067,14 +3067,18 @@ export async function startCourseDuplication(
       jobId: job.id,
     })
   } catch {
-    await updateCourseDuplicationJob(ctx.redisExec, job, {
-      status: 'FAILED',
-      errorType: 'generic',
-      errorMessage: 'Course duplication could not be started.',
-    })
-    throw new GraphQLError('Course duplication could not be started', {
-      extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
-    })
+    // Hatchet may have accepted the event before the client observed an
+    // acknowledgement. Retry the same job id and keep the source lock when
+    // both attempts fail so a caller cannot create a second copy concurrently.
+    try {
+      await ctx.hatchet.events.push('process-course-duplication', {
+        jobId: job.id,
+      })
+    } catch {
+      throw new GraphQLError('Course duplication could not be started', {
+        extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+      })
+    }
   }
 
   return getPublicCourseDuplicationStatus(job)
@@ -3194,16 +3198,20 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
         `Course duplication job ${jobId} failed: ${getErrorMessage(error)}`
       )
 
-      if (committedCourseId) {
+      const errorType = getCourseDuplicationJobErrorType(error)
+
+      if (committedCourseId || errorType === 'generic') {
         executionCtx.logger.error(
-          `Course duplication job ${jobId} committed course ${committedCourseId}; leaving the job retryable.`
+          committedCourseId
+            ? `Course duplication job ${jobId} committed course ${committedCourseId}; leaving the job retryable.`
+            : `Course duplication job ${jobId} encountered a retryable error.`
         )
         throw error
       }
 
       await updateCourseDuplicationJob(redis, job, {
         status: 'FAILED',
-        errorType: getCourseDuplicationJobErrorType(error),
+        errorType,
         errorMessage: getCourseDuplicationJobErrorMessage(error),
       })
 
