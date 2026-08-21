@@ -578,7 +578,10 @@ async function fixedRouteStatus(
   bearer?: string,
   chatbotId?: string
 ): Promise<number> {
-  const headers: Record<string, string> = { 'content-type': 'application/json' }
+  const headers: Record<string, string> = {
+    accept: 'application/json, text/event-stream',
+    'content-type': 'application/json',
+  }
   if (bearer) headers.authorization = `Bearer ${bearer}`
   if (chatbotId) headers['Chatbot-ID'] = chatbotId
   const response = await fetch(url, {
