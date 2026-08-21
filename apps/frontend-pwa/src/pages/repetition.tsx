@@ -1,10 +1,12 @@
 import { useQuery } from '@apollo/client'
+import { faRepeat } from '@fortawesome/free-solid-svg-icons'
 import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
+import LinkButton from '../components/common/LinkButton'
 import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
 
 function Repetition() {
@@ -27,6 +29,8 @@ function Repetition() {
     return {
       id: course.id,
       displayName: course.displayName,
+      personalElementCount: course.personalElementCount ?? 0,
+      personalDueCount: course.personalDueCount ?? 0,
       elements:
         course.practiceQuizzes?.map((element) => {
           return {
@@ -46,12 +50,24 @@ function Repetition() {
         <H2>{t('shared.generic.practiceQuizzes')}</H2>
         {courses?.length
           ? courses.map((course) => (
-              <CourseCollapsible
-                key={`list-${course.id}`}
-                courseId={course.id}
-                courseName={course.displayName}
-                elements={course.elements}
-              />
+              <div key={`list-${course.id}`} className="flex flex-col gap-2">
+                <CourseCollapsible
+                  courseId={course.id}
+                  courseName={course.displayName}
+                  elements={course.elements}
+                />
+                {course.personalElementCount > 0 ? (
+                  <LinkButton
+                    href={`/course/${course.id}/personal`}
+                    icon={faRepeat}
+                    data={{ cy: `personal-elements-course-${course.id}` }}
+                  >
+                    {t('pwa.personalElements.repetitionLink', {
+                      count: course.personalDueCount,
+                    })}
+                  </LinkButton>
+                ) : null}
+              </div>
             ))
           : null}
 

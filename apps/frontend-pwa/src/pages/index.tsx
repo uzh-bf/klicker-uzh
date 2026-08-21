@@ -289,6 +289,13 @@ function Index() {
                 {t('shared.generic.practiceQuizzes')}
               </LinkButton>
               <LinkButton
+                data={{ cy: 'personal-elements' }}
+                href="/repetition"
+                icon={faRepeat}
+              >
+                {t('pwa.personalElements.homeLink')}
+              </LinkButton>
+              <LinkButton
                 data={{ cy: 'bookmarks' }}
                 href="/bookmarks"
                 icon={faBookmark}
