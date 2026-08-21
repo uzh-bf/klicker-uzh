@@ -519,6 +519,79 @@ describe('Assessment participant invitation management', () => {
     ).resolves.toMatchObject({ matriculationNumber: 'immutable-number' })
   })
 
+  it('keeps concurrent auto-accept imports idempotent', async () => {
+    const course = await createAssessmentCourse()
+    const email = `concurrent-auto-accept-${randomUUID()}@example.org`
+    const participant = await prisma.participant.create({
+      data: {
+        username: `concurrent-auto-accept-${randomUUID()}`,
+        password: 'not-used',
+        isSSOAccount: true,
+        accounts: {
+          create: {
+            ssoId: `sso-${randomUUID()}`,
+            ssoType: 'affiliation',
+            ssoEmail: email,
+            type: 'affiliation',
+            isVerified: true,
+          },
+        },
+      },
+    })
+    await prisma.participation.create({
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        isActive: false,
+      },
+    })
+
+    const clientA = prisma.$extends({}) as unknown as PrismaClient
+    const clientB = prisma.$extends({}) as unknown as PrismaClient
+    const [firstResult, secondResult] = await Promise.all([
+      createAssessmentParticipantInvitations(
+        { courseId: course.id, invitations: [{ email }] },
+        { ...lecturerCtx, prisma: clientA }
+      ),
+      createAssessmentParticipantInvitations(
+        { courseId: course.id, invitations: [{ email }] },
+        { ...lecturerCtx, prisma: clientB }
+      ),
+    ])
+
+    expect([firstResult, secondResult]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          autoAccepted: 1,
+          duplicates: 0,
+          errors: 0,
+          results: [expect.objectContaining({ status: 'auto_accepted' })],
+        }),
+        expect.objectContaining({
+          autoAccepted: 0,
+          duplicates: 1,
+          errors: 0,
+          results: [expect.objectContaining({ status: 'duplicate' })],
+        }),
+      ])
+    )
+    await expect(
+      prisma.participantInvitation.count({
+        where: { courseId: course.id, email },
+      })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: course.id,
+            participantId: participant.id,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ isActive: false })
+  })
+
   it('does not report a stale matriculation update after a concurrent change', async () => {
     const course = await createAssessmentCourse()
     const invitation = await prisma.participantInvitation.create({
