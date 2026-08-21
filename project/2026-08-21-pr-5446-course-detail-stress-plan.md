@@ -66,4 +66,17 @@ large, deterministic activity set for manual stress testing.
 - 2026-08-21: Confirmed the 404 is Next route discovery, not a missing course;
   the source exists while the runtime manifest omits the dynamic page.
 - 2026-08-21: Rebased the branch by a normal merge of current `origin/v3`.
-- Next: run the route A/B proof, then implement only the confirmed correction.
+- 2026-08-21: Relocated the detail page to `courses/[id].tsx`, adjusted its
+  relative imports, and proved Manage and both assessment child routes return
+  HTTP 200. The focused Manage typecheck and route simplifier passed.
+- 2026-08-21: Added the opt-in stress seed with a local-database target guard,
+  fixed UUIDv5 activity IDs, and course plus live-quiz OWNER permission checks.
+  The container typecheck passed and two consecutive runs produced exactly 200
+  empty DRAFT live quizzes.
+- 2026-08-21: Diagnosed Hatchet as an environment and worker-runner issue,
+  not a Hatchet service outage. The managed workers now compile with Rollup,
+  run under nodemon, and both worker types connect and remain alive.
+- 2026-08-21: Removed the generated PR documentation, readiness report, and
+  screenshots per request; this plan remains the only active project artifact.
+- Next: complete the authenticated browser check, final review, and normal
+  push to `origin/fix/course-duplication-timeout`.
