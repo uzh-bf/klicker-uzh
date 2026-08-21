@@ -1,16 +1,17 @@
-import { ICourse, type ILeaderboardEntry } from '@/schema/course.js'
+import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ActivityStudentPerformance,
+  type ActivityStudentPerformance,
   ActivityType,
-  AssessmentResultsCourse,
-  AssessmentResultsLiveQuiz,
+  type AssessmentResultsCourse,
+  type AssessmentResultsLiveQuiz,
+  type HatchetHandlers,
   PointCorrectionType,
   SharingType,
-  StudentAssessmentBlockResponse,
-  StudentAssessmentInstanceResponse,
-  StudentAssessmentResultsItem,
-  StudentPointCorrection,
+  type StudentAssessmentBlockResponse,
+  type StudentAssessmentInstanceResponse,
+  type StudentAssessmentResultsItem,
+  type StudentPointCorrection,
 } from '@klicker-uzh/types'
 import {
   levelFromXp,
@@ -22,8 +23,10 @@ import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
+import type { Redis } from 'ioredis'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
+import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
@@ -48,6 +51,10 @@ const COURSE_DUPLICATION_TIME_ZONE = 'Europe/Zurich'
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
+const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
+const COURSE_DUPLICATION_STALE_AFTER_MS = 30 * 60 * 1000
+const COURSE_DUPLICATION_STATUS_KEY_PREFIX = 'course-duplication:job'
+const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
 function courseDuplicationPartialFailure(message: string) {
   return new GraphQLError(message, {
@@ -504,7 +511,7 @@ function getStudentAssessmentQuizPerformance({
   )
 
   // deduplicate the corrections on quiz level -> only one entry per correction on student view
-  let deduplicatedCorrections: (StudentPointCorrection & {
+  const deduplicatedCorrections: (StudentPointCorrection & {
     createdAt: Date
   })[] = []
   if (quizResults.corrections.length > 0) {
@@ -539,7 +546,7 @@ function getStudentAssessmentQuizPerformance({
           return acc
         },
         {
-          id: parseInt(correctionId),
+          id: parseInt(correctionId, 10),
           createdAt: corrections[0]!.createdAt,
           lecturerReason: corrections[0]!.lecturerReason,
           studentReason: corrections[0]!.studentReason,
@@ -2055,7 +2062,7 @@ export async function getPreviousPointCorrections(
 
     return instance?.corrections
       ? instance.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           let participants = correction.participants
           if (!participant && !participants) return correction
 
@@ -2139,7 +2146,7 @@ export async function getPreviousPointCorrections(
     const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
       block.elements.flatMap((element) =>
         element.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           let participants = correction.participants
           if (!participant && !participants)
             return { ...correction, instance: element }
@@ -2167,7 +2174,7 @@ export async function getPreviousPointCorrections(
     )
 
     const quizCorrections = liveQuiz?.corrections.map((correction) => {
-      let participant = correction.participant
+      const participant = correction.participant
       let participants = correction.participants
       if (!participant && !participants) return correction
 
@@ -2241,7 +2248,7 @@ export async function getPreviousPointCorrections(
     lq.blocks.flatMap((block) =>
       block.elements.flatMap((element) =>
         element.corrections.map((correction) => {
-          let participant = correction.participant
+          const participant = correction.participant
           if (!participant) return { ...correction, instance: element }
 
           participant['email'] =
@@ -2261,7 +2268,7 @@ export async function getPreviousPointCorrections(
 
   const quizCorrections = course?.liveQuizzes.flatMap((lq) =>
     lq.corrections.map((correction) => {
-      let participant = correction.participant
+      const participant = correction.participant
       if (!participant) return correction
 
       participant['email'] =
@@ -2676,6 +2683,498 @@ export async function createCourse(
 
   return course
 }
+
+export type CourseDuplicationJobStatus =
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'PENDING'
+  | 'RUNNING'
+
+export type CourseDuplicationErrorType = 'access' | 'generic' | 'partial'
+
+type CourseDuplicationJobArgs = Omit<
+  CreateCourseArgs,
+  | 'groupDeadlineDate'
+  | 'isGroupCreationEnabled'
+  | 'maxGroupSize'
+  | 'preferredGroupSize'
+  | 'sourceCourseId'
+> & {
+  groupDeadlineDate: Date
+  isGroupCreationEnabled: boolean
+  maxGroupSize: number
+  preferredGroupSize: number
+  sourceCourseId: string
+}
+
+export interface CourseDuplicationStatus {
+  id: string
+  status: CourseDuplicationJobStatus
+  sourceCourseId: string
+  sourceCourseName: string
+  targetCourseName: string
+  createdCourseId?: string | null
+  errorType?: CourseDuplicationErrorType | null
+  errorMessage?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface CourseDuplicationJob extends CourseDuplicationStatus {
+  userId: string
+  userRole: DB.UserRole
+  userScope: DB.UserLoginScope
+  catalystInstitutional: boolean
+  catalystIndividual: boolean
+  args: CourseDuplicationJobArgs
+}
+
+function getCourseDuplicationStatusKey(jobId: string) {
+  return `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:${jobId}`
+}
+
+function getCourseDuplicationSourceLockKey({
+  sourceCourseId,
+  userId,
+}: {
+  sourceCourseId: string
+  userId: string
+}) {
+  return `${COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX}:${userId}:${sourceCourseId}`
+}
+
+function getCourseDuplicationProcessLockKey(jobId: string) {
+  return `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:${jobId}:processing`
+}
+
+function isTerminalCourseDuplicationStatus(status: CourseDuplicationJobStatus) {
+  return status === 'COMPLETED' || status === 'FAILED'
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+
+  if (error && typeof error === 'object') {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') return message
+  }
+
+  return String(error)
+}
+
+function getGraphQLErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined
+
+  const extensions = (error as { extensions?: { code?: unknown } }).extensions
+  if (typeof extensions?.code === 'string') return extensions.code
+
+  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
+  for (const graphQLError of graphQLErrors ?? []) {
+    const code = getGraphQLErrorCode(graphQLError)
+    if (code) return code
+  }
+
+  const errors = (error as { errors?: unknown[] }).errors
+  for (const nestedError of errors ?? []) {
+    const code = getGraphQLErrorCode(nestedError)
+    if (code) return code
+  }
+
+  return undefined
+}
+
+function getCourseDuplicationJobErrorType(
+  error: unknown
+): CourseDuplicationErrorType {
+  const code = getGraphQLErrorCode(error)
+  if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) return 'partial'
+
+  const message = getErrorMessage(error).toLowerCase()
+  if (message.includes('not all')) return 'partial'
+  if (message.includes('access') || message.includes('permission')) {
+    return 'access'
+  }
+
+  return 'generic'
+}
+
+function getCourseDuplicationJobErrorMessage(error: unknown) {
+  const errorType = getCourseDuplicationJobErrorType(error)
+
+  switch (errorType) {
+    case 'access':
+      return 'Course duplication failed because the required access is missing.'
+    case 'partial':
+      return getErrorMessage(error)
+    default:
+      return 'Course duplication failed.'
+  }
+}
+
+function parseCourseDuplicationDate(value: unknown) {
+  const date = new Date(String(value))
+  return Number.isNaN(date.getTime()) ? new Date() : date
+}
+
+function parseCourseDuplicationJob(
+  rawJob: string | null
+): CourseDuplicationJob | null {
+  if (!rawJob) return null
+
+  try {
+    const parsedJob = JSON.parse(rawJob) as CourseDuplicationJob
+
+    return {
+      ...parsedJob,
+      createdAt: parseCourseDuplicationDate(parsedJob.createdAt),
+      updatedAt: parseCourseDuplicationDate(parsedJob.updatedAt),
+      args: {
+        ...parsedJob.args,
+        startDate: parseCourseDuplicationDate(parsedJob.args.startDate),
+        endDate: parseCourseDuplicationDate(parsedJob.args.endDate),
+        groupDeadlineDate: parseCourseDuplicationDate(
+          parsedJob.args.groupDeadlineDate
+        ),
+      },
+    } satisfies CourseDuplicationJob
+  } catch (error) {
+    console.error('Failed to parse course duplication job status:', error)
+    return null
+  }
+}
+
+async function getCourseDuplicationJob(redis: Redis, jobId: string) {
+  return parseCourseDuplicationJob(
+    await redis.get(getCourseDuplicationStatusKey(jobId))
+  )
+}
+
+async function persistCourseDuplicationJob(
+  redis: Redis,
+  job: CourseDuplicationJob
+) {
+  await redis.set(
+    getCourseDuplicationStatusKey(job.id),
+    JSON.stringify(job),
+    'EX',
+    COURSE_DUPLICATION_STATUS_TTL_SECONDS
+  )
+}
+
+async function deleteCourseDuplicationJob(redis: Redis, jobId: string) {
+  await redis.del(getCourseDuplicationStatusKey(jobId))
+}
+
+async function releaseCourseDuplicationSourceLock(
+  redis: Redis,
+  job: CourseDuplicationJob
+) {
+  const lockKey = getCourseDuplicationSourceLockKey({
+    sourceCourseId: job.sourceCourseId,
+    userId: job.userId,
+  })
+  await releaseCourseDuplicationLockValue(redis, lockKey, job.id)
+}
+
+async function releaseCourseDuplicationLockValue(
+  redis: Redis,
+  lockKey: string,
+  value: string
+) {
+  await redis.eval(
+    `if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+    end
+    return 0`,
+    1,
+    lockKey,
+    value
+  )
+}
+
+async function updateCourseDuplicationJob(
+  redis: Redis,
+  job: CourseDuplicationJob,
+  patch: Partial<
+    Pick<
+      CourseDuplicationJob,
+      'createdCourseId' | 'errorMessage' | 'errorType' | 'status'
+    >
+  >
+) {
+  const updatedJob = {
+    ...job,
+    ...patch,
+    updatedAt: new Date(),
+  } satisfies CourseDuplicationJob
+
+  await persistCourseDuplicationJob(redis, updatedJob)
+
+  if (isTerminalCourseDuplicationStatus(updatedJob.status)) {
+    await releaseCourseDuplicationSourceLock(redis, updatedJob)
+  }
+
+  return updatedJob
+}
+
+function getPublicCourseDuplicationStatus(
+  job: CourseDuplicationJob
+): CourseDuplicationStatus {
+  return {
+    id: job.id,
+    status: job.status,
+    sourceCourseId: job.sourceCourseId,
+    sourceCourseName: job.sourceCourseName,
+    targetCourseName: job.targetCourseName,
+    createdCourseId: job.createdCourseId,
+    errorType: job.errorType,
+    errorMessage: job.errorMessage,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+  }
+}
+
+async function normalizeStaleCourseDuplicationJob(
+  redis: Redis,
+  job: CourseDuplicationJob
+) {
+  if (
+    isTerminalCourseDuplicationStatus(job.status) ||
+    Date.now() - job.updatedAt.getTime() < COURSE_DUPLICATION_STALE_AFTER_MS
+  ) {
+    return job
+  }
+
+  return await updateCourseDuplicationJob(redis, job, {
+    status: 'FAILED',
+    errorType: 'generic',
+    errorMessage: 'Course duplication did not finish in time.',
+  })
+}
+
+export async function startCourseDuplication(
+  args: CourseDuplicationJobArgs,
+  ctx: ContextWithUser
+) {
+  const hasDuplicationAccess = await checkAccess(
+    [
+      {
+        courseId: args.sourceCourseId,
+        minimumPermissionLevel: DB.PermissionLevel.ADMIN,
+      },
+    ],
+    ctx
+  )
+  if (!hasDuplicationAccess) return null
+
+  const sourceCourse = await ctx.prisma.course.findUnique({
+    where: { id: args.sourceCourseId },
+    select: { name: true },
+  })
+  if (!sourceCourse) return null
+
+  const lockKey = getCourseDuplicationSourceLockKey({
+    sourceCourseId: args.sourceCourseId,
+    userId: ctx.user.sub,
+  })
+  const existingJobId = await ctx.redisExec.get(lockKey)
+  const existingJob = existingJobId
+    ? await getCourseDuplicationJob(ctx.redisExec, existingJobId)
+    : null
+
+  if (existingJob && !isTerminalCourseDuplicationStatus(existingJob.status)) {
+    const normalizedExistingJob = await normalizeStaleCourseDuplicationJob(
+      ctx.redisExec,
+      existingJob
+    )
+
+    if (!isTerminalCourseDuplicationStatus(normalizedExistingJob.status)) {
+      return getPublicCourseDuplicationStatus(normalizedExistingJob)
+    }
+  }
+
+  const now = new Date()
+  const job: CourseDuplicationJob = {
+    id: randomUUID(),
+    status: 'PENDING',
+    sourceCourseId: args.sourceCourseId,
+    sourceCourseName: sourceCourse.name,
+    targetCourseName: args.name,
+    createdCourseId: null,
+    errorType: null,
+    errorMessage: null,
+    createdAt: now,
+    updatedAt: now,
+    userId: ctx.user.sub,
+    userRole: ctx.user.role,
+    userScope: ctx.user.scope,
+    catalystInstitutional: ctx.user.catalystInstitutional,
+    catalystIndividual: ctx.user.catalystIndividual,
+    args,
+  }
+
+  await persistCourseDuplicationJob(ctx.redisExec, job)
+
+  const lockAcquired = await ctx.redisExec.set(
+    lockKey,
+    job.id,
+    'EX',
+    COURSE_DUPLICATION_STATUS_TTL_SECONDS,
+    'NX'
+  )
+
+  if (lockAcquired !== 'OK') {
+    const lockedJobId = await ctx.redisExec.get(lockKey)
+    const lockedJob = lockedJobId
+      ? await getCourseDuplicationJob(ctx.redisExec, lockedJobId)
+      : null
+
+    if (lockedJob && !isTerminalCourseDuplicationStatus(lockedJob.status)) {
+      await deleteCourseDuplicationJob(ctx.redisExec, job.id)
+      return getPublicCourseDuplicationStatus(lockedJob)
+    }
+
+    if (lockedJobId) {
+      await releaseCourseDuplicationLockValue(
+        ctx.redisExec,
+        lockKey,
+        lockedJobId
+      )
+    }
+
+    const retryLockAcquired = await ctx.redisExec.set(
+      lockKey,
+      job.id,
+      'EX',
+      COURSE_DUPLICATION_STATUS_TTL_SECONDS,
+      'NX'
+    )
+
+    if (retryLockAcquired !== 'OK') {
+      await deleteCourseDuplicationJob(ctx.redisExec, job.id)
+      return null
+    }
+  }
+
+  try {
+    await ctx.hatchet.events.push('process-course-duplication', {
+      jobId: job.id,
+    })
+  } catch {
+    await updateCourseDuplicationJob(ctx.redisExec, job, {
+      status: 'FAILED',
+      errorType: 'generic',
+      errorMessage: 'Course duplication could not be started.',
+    })
+    throw new GraphQLError('Course duplication could not be started', {
+      extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+    })
+  }
+
+  return getPublicCourseDuplicationStatus(job)
+}
+
+export async function getCourseDuplicationStatuses(
+  { ids }: { ids: string[] },
+  ctx: ContextWithUser
+) {
+  const uniqueIds = [...new Set(ids)].slice(0, 50)
+  const jobs = await Promise.all(
+    uniqueIds.map((jobId) => getCourseDuplicationJob(ctx.redisExec, jobId))
+  )
+
+  const statuses: CourseDuplicationStatus[] = []
+
+  for (const job of jobs) {
+    if (!job || job.userId !== ctx.user.sub) continue
+
+    const normalizedJob = await normalizeStaleCourseDuplicationJob(
+      ctx.redisExec,
+      job
+    )
+    statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
+  }
+
+  return statuses
+}
+
+export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCourseDuplication'] =
+  async ({ jobId }, globalCtx, executionCtx) => {
+    const redis = globalCtx.redisExec
+    const pendingJob = await getCourseDuplicationJob(redis, jobId)
+
+    if (!pendingJob) {
+      executionCtx.logger.warn(
+        `Course duplication job ${jobId} disappeared before processing.`
+      )
+      return false
+    }
+
+    if (isTerminalCourseDuplicationStatus(pendingJob.status)) return true
+
+    const processLockKey = getCourseDuplicationProcessLockKey(pendingJob.id)
+    const processLockAcquired = await redis.set(
+      processLockKey,
+      '1',
+      'EX',
+      Math.ceil(COURSE_DUPLICATION_STALE_AFTER_MS / 1000),
+      'NX'
+    )
+
+    if (processLockAcquired !== 'OK') return true
+
+    let job = pendingJob
+
+    try {
+      job = await updateCourseDuplicationJob(redis, job, { status: 'RUNNING' })
+
+      const duplicatedCourse = await duplicateCourse(job.args, {
+        prisma: globalCtx.prisma,
+        redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
+        pubSub: globalCtx.pubSub,
+        emitter: globalCtx.emitter,
+        hatchet: globalCtx.hatchet,
+        tasks: globalCtx.tasks,
+        req: undefined as never,
+        res: undefined as never,
+        user: {
+          sub: job.userId,
+          role: job.userRole,
+          scope: job.userScope,
+          catalystInstitutional: job.catalystInstitutional,
+          catalystIndividual: job.catalystIndividual,
+        },
+      })
+
+      if (!duplicatedCourse) {
+        throw new GraphQLError('Course duplication access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        })
+      }
+
+      await updateCourseDuplicationJob(redis, job, {
+        status: 'COMPLETED',
+        createdCourseId: duplicatedCourse.id,
+      })
+
+      return true
+    } catch (error) {
+      executionCtx.logger.error(
+        `Course duplication job ${jobId} failed: ${getErrorMessage(error)}`
+      )
+      await updateCourseDuplicationJob(redis, job, {
+        status: 'FAILED',
+        errorType: getCourseDuplicationJobErrorType(error),
+        errorMessage: getCourseDuplicationJobErrorMessage(error),
+      })
+
+      return false
+    } finally {
+      await redis.del(processLockKey)
+    }
+  }
 
 type CourseDuplicationPermissionTarget =
   | { courseId: string }

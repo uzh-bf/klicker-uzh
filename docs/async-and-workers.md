@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-08-20'
 tags:
   - backend
   - hatchet
@@ -40,6 +40,7 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
 - `create-audit-log-entry` (event-driven)
+- `process-course-duplication` — async course duplication worker. The GraphQL mutation stores job state in Redis and returns a job id; the manage frontend polls `courseDuplicationStatuses` until the job completes or fails.
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`

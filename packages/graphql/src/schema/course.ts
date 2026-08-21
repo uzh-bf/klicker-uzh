@@ -1,28 +1,68 @@
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
   ActivityInfo,
-  IActivityInfo,
-  IReducedActivityInfo,
+  type IActivityInfo,
+  type IReducedActivityInfo,
   ReducedActivityInfo,
 } from './activities.js'
-import { GroupActivity, IGroupActivity } from './groupActivity.js'
-import { ILiveQuiz, LiveQuiz } from './liveQuiz.js'
-import { IMicroLearning, MicroLearning } from './microLearning.js'
+import { GroupActivity, type IGroupActivity } from './groupActivity.js'
+import { type ILiveQuiz, LiveQuiz } from './liveQuiz.js'
+import { type IMicroLearning, MicroLearning } from './microLearning.js'
 import {
+  GroupAssignmentPoolEntryRef,
   type IGroupAssignmentPoolEntryRef,
   type IParticipant,
   type IParticipantGroup,
   type IParticipation,
-  GroupAssignmentPoolEntryRef,
   ParticipantGroupRef,
   ParticipantRef,
   ParticipationRef,
 } from './participant.js'
-import { IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
+import { type IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
 import { type IUser, LocaleType, UserRef } from './user.js'
+
+export const CourseDuplicationJobStatus = builder.enumType(
+  'CourseDuplicationJobStatus',
+  {
+    values: ['COMPLETED', 'FAILED', 'PENDING', 'RUNNING'] as const,
+  }
+)
+
+export interface ICourseDuplicationStatus {
+  id: string
+  status: 'COMPLETED' | 'FAILED' | 'PENDING' | 'RUNNING'
+  sourceCourseId: string
+  sourceCourseName: string
+  targetCourseName: string
+  createdCourseId?: string | null
+  errorType?: string | null
+  errorMessage?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export const CourseDuplicationStatusRef =
+  builder.objectRef<ICourseDuplicationStatus>('CourseDuplicationStatus')
+export const CourseDuplicationStatus = builder.objectType(
+  CourseDuplicationStatusRef,
+  {
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      status: t.expose('status', { type: CourseDuplicationJobStatus }),
+      sourceCourseId: t.exposeString('sourceCourseId'),
+      sourceCourseName: t.exposeString('sourceCourseName'),
+      targetCourseName: t.exposeString('targetCourseName'),
+      createdCourseId: t.exposeString('createdCourseId', { nullable: true }),
+      errorType: t.exposeString('errorType', { nullable: true }),
+      errorMessage: t.exposeString('errorMessage', { nullable: true }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    }),
+  }
+)
 
 export interface ICourse extends DB.Course {
   numOfParticipants?: number

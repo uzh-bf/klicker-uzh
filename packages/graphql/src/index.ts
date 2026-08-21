@@ -38,6 +38,7 @@ import './schema/subscription.js'
 //   })
 // }
 
+import { handleProcessCourseDuplication } from './services/courses.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
@@ -82,4 +83,5 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleProcessCourseDuplication,
 }

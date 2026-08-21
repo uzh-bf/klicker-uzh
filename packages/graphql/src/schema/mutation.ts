@@ -21,7 +21,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course } from './course.js'
+import { Course, CourseDuplicationStatus } from './course.js'
 import {
   Element,
   ElementInstance,
@@ -1356,6 +1356,41 @@ export const Mutation = builder.mutationType({
             return await CourseService.duplicateCourse(args, ctx)
           }
         },
+      }),
+
+      startCourseDuplication: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CourseDuplicationStatus,
+        args: {
+          name: t.arg.string({ required: true }),
+          displayName: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+          color: t.arg.string({ required: false }),
+          startDate: t.arg({ type: 'Date', required: true }),
+          endDate: t.arg({ type: 'Date', required: true }),
+          isGroupCreationEnabled: t.arg.boolean({ required: true }),
+          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+          maxGroupSize: t.arg.int({ required: true }),
+          preferredGroupSize: t.arg.int({ required: true }),
+          language: t.arg({ type: LocaleType, required: true }),
+          notificationEmail: t.arg.string({
+            required: false,
+            validate: { email: true },
+          }),
+          isGamificationEnabled: t.arg.boolean({ required: true }),
+          sourceCourseId: t.arg.string({ required: true }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.sourceCourseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.startCourseDuplication(args, ctx)
+          }
+        ),
       }),
 
       updateCourseSettings: t.withAuth(asUserFullAccess).field({

@@ -1,11 +1,14 @@
-import { useMutation } from '@apollo/client'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   type Course,
-  CreateCourseDocument,
+  CourseDuplicationJobStatus,
+  type CourseDuplicationStatus as CourseDuplicationStatusData,
+  GetCourseDuplicationStatusesDocument,
   GetUserCoursesDocument,
+  StartCourseDuplicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -22,13 +25,15 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
-import type {
-  CourseDuplicationErrorType,
-  CourseDuplicationFormData,
+import {
+  type CourseDuplicationErrorType,
+  type CourseDuplicationFormData,
+  getCourseDuplicationErrorMessage,
 } from './modals/CourseDuplicationModal'
 
 type CourseDuplicationSourceCourse = Pick<
@@ -40,12 +45,19 @@ type CourseDuplicationSourceCourse = Pick<
   | 'preferredGroupSize'
 >
 
-interface CourseDuplicationJob {
-  id: string
-  sourceCourseId: string
-  sourceCourseName: string
-  targetCourseName: string
-}
+type CourseDuplicationJob = Pick<
+  CourseDuplicationStatusData,
+  | 'createdAt'
+  | 'createdCourseId'
+  | 'errorMessage'
+  | 'errorType'
+  | 'id'
+  | 'sourceCourseId'
+  | 'sourceCourseName'
+  | 'status'
+  | 'targetCourseName'
+  | 'updatedAt'
+>
 
 interface StartCourseDuplicationArgs {
   course: CourseDuplicationSourceCourse
@@ -55,9 +67,7 @@ interface StartCourseDuplicationArgs {
 
 interface CourseDuplicationStatusContextValue {
   isSourceCourseDuplicating: (sourceCourseId: string) => boolean
-  startCourseDuplication: (
-    args: StartCourseDuplicationArgs
-  ) => Promise<Course | null>
+  startCourseDuplication: (args: StartCourseDuplicationArgs) => Promise<boolean>
 }
 
 const CourseDuplicationStatusContext =
@@ -65,6 +75,8 @@ const CourseDuplicationStatusContext =
 
 const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
+const COURSE_DUPLICATION_STORAGE_KEY = 'course-duplication-job-ids'
+const COURSE_DUPLICATION_POLL_INTERVAL = 5000
 
 function getCourseDuplicationGroupSize(
   value: number | string | null | undefined,
@@ -137,8 +149,73 @@ function getCourseDuplicationErrorType(
   return 'generic'
 }
 
-function getCourseDuplicationJobId(courseId: string) {
-  return globalThis.crypto?.randomUUID?.() ?? `${courseId}-${Date.now()}`
+function getStatusErrorType(
+  errorType?: string | null
+): CourseDuplicationErrorType {
+  if (
+    errorType === 'access' ||
+    errorType === 'inProgress' ||
+    errorType === 'partial'
+  ) {
+    return errorType
+  }
+
+  return 'generic'
+}
+
+function isActiveCourseDuplicationStatus(
+  status: CourseDuplicationJob['status']
+) {
+  return (
+    status === CourseDuplicationJobStatus.Pending ||
+    status === CourseDuplicationJobStatus.Running
+  )
+}
+
+function isTerminalCourseDuplicationStatus(
+  status: CourseDuplicationJob['status']
+) {
+  return (
+    status === CourseDuplicationJobStatus.Completed ||
+    status === CourseDuplicationJobStatus.Failed
+  )
+}
+
+function readStoredCourseDuplicationJobIds() {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const storedValue = window.localStorage.getItem(
+      COURSE_DUPLICATION_STORAGE_KEY
+    )
+    const parsedValue = storedValue ? JSON.parse(storedValue) : []
+
+    return Array.isArray(parsedValue)
+      ? parsedValue.filter(
+          (value): value is string => typeof value === 'string'
+        )
+      : []
+  } catch (error) {
+    console.error('Failed to read course duplication jobs from storage', error)
+    return []
+  }
+}
+
+function writeStoredCourseDuplicationJobIds(jobIds: string[]) {
+  if (typeof window === 'undefined') return
+
+  try {
+    if (jobIds.length === 0) {
+      window.localStorage.removeItem(COURSE_DUPLICATION_STORAGE_KEY)
+    } else {
+      window.localStorage.setItem(
+        COURSE_DUPLICATION_STORAGE_KEY,
+        JSON.stringify(jobIds)
+      )
+    }
+  } catch (error) {
+    console.error('Failed to persist course duplication jobs', error)
+  }
 }
 
 function CourseDuplicationStatusDropdown({
@@ -226,21 +303,128 @@ export function CourseDuplicationProvider({
 }: Readonly<{ children: ReactNode }>) {
   const router = useRouter()
   const t = useTranslations()
-  const [createCourse] = useMutation(CreateCourseDocument)
-  const [activeJobs, setActiveJobs] = useState<CourseDuplicationJob[]>([])
-  const activeJobsRef = useRef<CourseDuplicationJob[]>([])
+  const client = useApolloClient()
+  const [startCourseDuplicationMutation] = useMutation(
+    StartCourseDuplicationDocument
+  )
+  const [jobIds, setJobIds] = useState<string[]>([])
+  const [jobsById, setJobsById] = useState<
+    Record<string, CourseDuplicationJob>
+  >({})
+  const [storageInitialized, setStorageInitialized] = useState(false)
+  const handledTerminalJobIdsRef = useRef(new Set<string>())
 
-  const addJob = useCallback((job: CourseDuplicationJob) => {
-    const nextJobs = [...activeJobsRef.current, job]
-    activeJobsRef.current = nextJobs
-    setActiveJobs(nextJobs)
+  const { data: statusData } = useQuery(GetCourseDuplicationStatusesDocument, {
+    variables: { ids: jobIds },
+    skip: jobIds.length === 0,
+    pollInterval:
+      jobIds.length > 0 ? COURSE_DUPLICATION_POLL_INTERVAL : undefined,
+    fetchPolicy: 'network-only',
+    notifyOnNetworkStatusChange: true,
+    onError: (error) => {
+      console.error('Failed to poll course duplication status', error)
+    },
+  })
+
+  useEffect(() => {
+    setJobIds(readStoredCourseDuplicationJobIds())
+    setStorageInitialized(true)
   }, [])
 
-  const removeJob = useCallback((jobId: string) => {
-    const nextJobs = activeJobsRef.current.filter((job) => job.id !== jobId)
-    activeJobsRef.current = nextJobs
-    setActiveJobs(nextJobs)
+  useEffect(() => {
+    if (!storageInitialized) return
+
+    writeStoredCourseDuplicationJobIds(jobIds)
+  }, [jobIds, storageInitialized])
+
+  const addJobId = useCallback((jobId: string) => {
+    setJobIds((currentIds) =>
+      currentIds.includes(jobId) ? currentIds : [...currentIds, jobId]
+    )
   }, [])
+
+  const removeJobId = useCallback((jobId: string) => {
+    setJobIds((currentIds) => currentIds.filter((id) => id !== jobId))
+    setJobsById((currentJobs) => {
+      const { [jobId]: _removedJob, ...nextJobs } = currentJobs
+      return nextJobs
+    })
+  }, [])
+
+  const upsertJob = useCallback((job: CourseDuplicationJob) => {
+    setJobsById((currentJobs) => ({
+      ...currentJobs,
+      [job.id]: job,
+    }))
+  }, [])
+
+  useEffect(() => {
+    const statuses = statusData?.courseDuplicationStatuses
+    if (!statuses) return
+
+    const returnedJobIds = new Set(statuses.map((job) => job.id))
+
+    for (const jobId of jobIds) {
+      if (!returnedJobIds.has(jobId)) {
+        removeJobId(jobId)
+      }
+    }
+
+    for (const job of statuses) {
+      if (isActiveCourseDuplicationStatus(job.status)) {
+        upsertJob(job)
+        continue
+      }
+
+      if (!isTerminalCourseDuplicationStatus(job.status)) continue
+      if (handledTerminalJobIdsRef.current.has(job.id)) continue
+
+      handledTerminalJobIdsRef.current.add(job.id)
+      removeJobId(job.id)
+
+      if (
+        job.status === CourseDuplicationJobStatus.Completed &&
+        job.createdCourseId
+      ) {
+        toast({
+          type: 'success',
+          message: t('manage.courseList.courseDuplicationSucceeded', {
+            name: job.targetCourseName,
+          }),
+        })
+        void client.refetchQueries({ include: [GetUserCoursesDocument] })
+        void router.push(`/courses/${job.createdCourseId}`)
+      } else {
+        toast({
+          type: 'error',
+          message: getCourseDuplicationErrorMessage(
+            t,
+            getStatusErrorType(job.errorType)
+          ),
+          options: { duration: 6000 },
+        })
+      }
+    }
+  }, [
+    client,
+    jobIds,
+    removeJobId,
+    router,
+    statusData?.courseDuplicationStatuses,
+    t,
+    upsertJob,
+  ])
+
+  const activeJobs = useMemo(
+    () =>
+      Object.values(jobsById)
+        .filter((job) => isActiveCourseDuplicationStatus(job.status))
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        ),
+    [jobsById]
+  )
 
   const isSourceCourseDuplicating = useCallback(
     (sourceCourseId: string) =>
@@ -250,21 +434,10 @@ export function CourseDuplicationProvider({
 
   const startCourseDuplication = useCallback(
     async ({ course, values, onError }: StartCourseDuplicationArgs) => {
-      if (
-        activeJobsRef.current.some((job) => job.sourceCourseId === course.id)
-      ) {
+      if (activeJobs.some((job) => job.sourceCourseId === course.id)) {
         onError('inProgress')
-        return null
+        return false
       }
-
-      const job: CourseDuplicationJob = {
-        id: getCourseDuplicationJobId(course.id),
-        sourceCourseId: course.id,
-        sourceCourseName: course.name,
-        targetCourseName: values.name,
-      }
-
-      addJob(job)
 
       try {
         const startDateUTC = dayjs(values.startDate).utc().toISOString()
@@ -281,7 +454,7 @@ export function CourseDuplicationProvider({
           course.preferredGroupSize
         )
 
-        const result = await createCourse({
+        const result = await startCourseDuplicationMutation({
           variables: {
             name: values.name,
             displayName: values.displayName,
@@ -306,49 +479,25 @@ export function CourseDuplicationProvider({
             duplicateMicrolearnings: values.copyMicroLearnings,
             duplicateGroupActivities: values.copyGroupActivities,
           },
-          update: (cache, { data }) => {
-            if (!data?.createCourse) return
-
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => {
-              if (!qData?.userCourses) return qData
-
-              return {
-                userCourses: [...qData.userCourses, data.createCourse!],
-              }
-            })
-          },
         })
 
-        const duplicatedCourse = result.data?.createCourse
-        const mutationError = result.errors?.[0]
+        const job = result.data?.startCourseDuplication
 
-        if (duplicatedCourse) {
-          toast({
-            type: 'success',
-            message: t('manage.courseList.courseDuplicationSucceeded', {
-              name: duplicatedCourse.name,
-            }),
-          })
-          await router.push(`/courses/${duplicatedCourse.id}`)
-
-          return duplicatedCourse
+        if (job) {
+          upsertJob(job)
+          addJobId(job.id)
+          return true
         }
 
-        onError(
-          mutationError
-            ? getCourseDuplicationErrorType(mutationError)
-            : 'access'
-        )
+        onError('access')
       } catch (error) {
         onError(getCourseDuplicationErrorType(error))
         console.error(error)
-      } finally {
-        removeJob(job.id)
       }
 
-      return null
+      return false
     },
-    [addJob, createCourse, removeJob, router, t]
+    [activeJobs, addJobId, startCourseDuplicationMutation, upsertJob]
   )
 
   const value = useMemo(

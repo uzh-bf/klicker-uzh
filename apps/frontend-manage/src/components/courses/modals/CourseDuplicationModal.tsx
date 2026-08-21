@@ -31,7 +31,7 @@ interface CourseDuplicationModalProps {
   onSubmit: (
     values: CourseDuplicationFormData,
     onError: (errorType?: CourseDuplicationErrorType) => void
-  ) => Promise<void>
+  ) => Promise<boolean>
 }
 
 export interface CourseDuplicationFormData {
@@ -297,7 +297,7 @@ function getCourseDuplicationSchema({
   })
 }
 
-function getCourseDuplicationErrorMessage(
+export function getCourseDuplicationErrorMessage(
   t: TranslationFn,
   errorType: CourseDuplicationErrorType = 'generic'
 ) {

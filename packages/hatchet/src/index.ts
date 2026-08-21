@@ -1,13 +1,12 @@
-import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
+import type EventEmitter from 'node:events'
+import { type HatchetClient, Priority } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
-import type EventEmitter from 'events'
+import type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
+export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 export * from './client.js'
-
-export type { HatchetHandlers } from '@klicker-uzh/types'
 
 export function prepareHatchetTasks({
   hatchet,
@@ -34,6 +33,7 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
+    tasks: {} as PreparedHatchetTasks,
   }
 
   // ! AUDIT LOGGING
@@ -44,9 +44,13 @@ export function prepareHatchetTasks({
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
     fn: (
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
+      {
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId?: string
+          info: string
+        }
       },
       ctx
     ) => {
@@ -54,6 +58,7 @@ export function prepareHatchetTasks({
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
       ctx.logger.info(`Audit log entry: ${info}`, args)
+      return { success: true }
     },
   })
   // #endregion
@@ -279,7 +284,7 @@ export function prepareHatchetTasks({
     name: 'send-push-notifications',
     // retries: 3,
     // onCrons: ['*/5 * * * *'], // runs every 5 minutes
-    fn: async (_, executionContext) => {
+    fn: async (_, _executionContext) => {
       // TODO: clean implementation
       return { success: true }
       // const success = await handlers.handleSendPushNotifications({}, globalContext, executionContext)
@@ -288,7 +293,22 @@ export function prepareHatchetTasks({
   })
   // #endregion
 
-  return {
+  const processCourseDuplication = hatchet.task({
+    name: 'process-course-duplication',
+    retries: 0,
+    defaultPriority: Priority.LOW,
+    onEvents: ['process-course-duplication'],
+    fn: async ({ jobId }: { jobId: string }, executionContext) => {
+      const success = await handlers.handleProcessCourseDuplication(
+        { jobId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const tasks = {
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
@@ -303,8 +323,10 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
+    processCourseDuplication,
   }
-}
 
-// Export the inferred type of the tasks dictionary so other packages can import it
-export type PreparedHatchetTasks = ReturnType<typeof prepareHatchetTasks>
+  Object.assign(globalContext.tasks, tasks)
+
+  return tasks
+}

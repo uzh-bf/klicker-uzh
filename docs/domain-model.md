@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-11'
+timestamp: '2026-08-20'
 tags:
   - backend
   - prisma
@@ -53,7 +53,7 @@ Scheduled publication/ending is executed by the Hatchet general worker — witho
 
 ## Course duplication
 
-**Copies share Elements with the source — only the instances are new.** `createCourse(id: …)` routes to `packages/graphql/src/services/courses.ts:duplicateCourse`, which runs the entire copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx:getCourseDuplicationErrorType`).
+**Copies share Elements with the source — only the instances are new.** The manage frontend starts duplication through `startCourseDuplication`, which stores a Redis-backed job status, emits the `process-course-duplication` Hatchet event, and returns the job id immediately. The frontend persists that id in `localStorage`, polls `courseDuplicationStatuses`, and opens the copied course when the job reaches `COMPLETED`; failed, missing, or stale jobs are removed from the active notification UI. The worker still calls `packages/graphql/src/services/courses.ts:duplicateCourse`, which runs the actual copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. The legacy `createCourse(sourceCourseId: …)` path still routes directly to `duplicateCourse` for compatibility. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:getCourseDuplicationErrorMessage`).
 
 - **Permission contract (fail-closed):** course-level ADMIN (checked, then re-checked after `recomputeDerivedPermissions`), ADMIN on every selected activity, and ADMIN/OWNER **derived** permission on the Element behind every selected instance (`courses.ts:assertCourseDuplicationActivityAccess`, `courses.ts:assertCourseDuplicationInstanceAccess`). Any missing permission aborts the whole duplication.
 - **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. If a non-owner ADMIN duplicates, the source owner is granted ADMIN on the copy (`courses.ts:grantDuplicatedCourseAccessToSourceOwner`); the duplicator becomes OWNER.

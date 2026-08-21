@@ -280,15 +280,17 @@ function CourseOverviewHeader({
           isDuplicating={courseDuplicationInProgress}
           onModalClose={() => setDuplicationModal(false)}
           onSubmit={async (values: CourseDuplicationFormData, onError) => {
-            const duplicatedCourse = await startCourseDuplication({
+            const jobStarted = await startCourseDuplication({
               course,
               values,
               onError,
             })
 
-            if (duplicatedCourse) {
+            if (jobStarted) {
               setDuplicationModal(false)
             }
+
+            return jobStarted
           }}
         />
       )}

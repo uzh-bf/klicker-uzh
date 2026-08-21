@@ -1,6 +1,6 @@
-import { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
@@ -42,6 +42,7 @@ import {
 import {
   AssessmentParticipant,
   Course,
+  CourseDuplicationStatus,
   CourseLeaderboard,
   CourseListEntry,
   CourseOverview,
@@ -96,9 +97,9 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  ChatModelCapability,
   Chatbot,
   ChatbotPublic,
+  ChatModelCapability,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -322,6 +323,16 @@ export const Query = builder.queryType({
         type: [Course],
         resolve: async (_, __, ctx) => {
           return await CourseService.getUserCourses(ctx)
+        },
+      }),
+
+      courseDuplicationStatuses: t.withAuth(asUser).field({
+        type: [CourseDuplicationStatus],
+        args: {
+          ids: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getCourseDuplicationStatuses(args, ctx)
         },
       }),
 
@@ -1663,7 +1674,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  answerCollectionId: parseInt(args.objectId),
+                  answerCollectionId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1674,7 +1685,7 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getAnswerCollectionPermissions(
-              { id: parseInt(args.objectId) },
+              { id: parseInt(args.objectId, 10) },
               ctx
             )
           } else if (args.objectType === DB.ObjectType.ELEMENT) {
@@ -1682,7 +1693,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  elementId: parseInt(args.objectId),
+                  elementId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1693,7 +1704,7 @@ export const Query = builder.queryType({
             }
 
             return await SharingService.getElementPermissions(
-              { id: parseInt(args.objectId) },
+              { id: parseInt(args.objectId, 10) },
               ctx
             )
           } else if (args.objectType === DB.ObjectType.COURSE) {
@@ -1813,7 +1824,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  answerCollectionId: parseInt(args.objectId),
+                  answerCollectionId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1825,7 +1836,7 @@ export const Query = builder.queryType({
 
             return (
               (await SharingService.getDerivedAnswerCollectionPermissions(
-                { id: parseInt(args.objectId) },
+                { id: parseInt(args.objectId, 10) },
                 ctx
               )) ?? []
             )
@@ -1834,7 +1845,7 @@ export const Query = builder.queryType({
             const validAccess = await checkAccess(
               [
                 {
-                  elementId: parseInt(args.objectId),
+                  elementId: parseInt(args.objectId, 10),
                   minimumPermissionLevel: DB.PermissionLevel.ADMIN,
                 },
               ],
@@ -1846,7 +1857,7 @@ export const Query = builder.queryType({
 
             return (
               (await SharingService.getDerivedElementPermissions(
-                { id: parseInt(args.objectId) },
+                { id: parseInt(args.objectId, 10) },
                 ctx
               )) ?? []
             )
@@ -1986,7 +1997,7 @@ export const Query = builder.queryType({
               ...(args.objectType === DB.ObjectType.ELEMENT
                 ? [
                     {
-                      elementId: parseInt(args.objectId),
+                      elementId: parseInt(args.objectId, 10),
                       minimumPermissionLevel: DB.PermissionLevel.READ,
                     },
                   ]
@@ -1994,7 +2005,7 @@ export const Query = builder.queryType({
               ...(args.objectType === DB.ObjectType.ANSWER_COLLECTION
                 ? [
                     {
-                      answerCollectionId: parseInt(args.objectId),
+                      answerCollectionId: parseInt(args.objectId, 10),
                       minimumPermissionLevel: DB.PermissionLevel.READ,
                     },
                   ]

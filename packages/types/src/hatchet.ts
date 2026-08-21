@@ -1,10 +1,10 @@
+import type EventEmitter from 'node:events'
 import type {
   Context,
   HatchetClient,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
-import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
@@ -16,6 +16,7 @@ export interface HatchetHandlerGlobalContext {
   redisAssessmentExec: Redis
   redisCache?: Redis
   prisma: PrismaClient
+  tasks: PreparedHatchetTasks
 }
 
 // Shared contract for Hatchet task handler injections.
@@ -24,29 +25,29 @@ export interface HatchetHandlers {
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
-  ) => Promise<unknown> | void
+  ) => Promise<unknown> | undefined
   handleUpdateGroupAverageScores: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleRunningRandomGroupAssignments: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleFinalRandomGroupAssignments: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleUpdateWeeklyTimelineEntries: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleSendPushNotifications: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -87,6 +88,11 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
   handleStandardLiveQuizBlockClosureAggregation: (
     { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleProcessCourseDuplication: (
+    { jobId }: { jobId: string },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -133,6 +139,10 @@ export interface PreparedHatchetTasks {
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
     { liveQuizId: string; blockId: number },
+    { success: boolean }
+  >
+  processCourseDuplication: TaskWorkflowDeclaration<
+    { jobId: string },
     { success: boolean }
   >
 }
