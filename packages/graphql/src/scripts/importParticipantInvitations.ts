@@ -17,6 +17,7 @@ import type {
 } from '../services/participantInvitations.js'
 import {
   createParticipantInvitations,
+  deduplicateParticipantInvitationInputs,
   findEligibleParticipantIds,
 } from '../services/participantInvitations.js'
 
@@ -218,14 +219,8 @@ async function run() {
         const filteredInvitations = invitations.filter(
           (invitation) => !existingEmailSet.has(invitation.email.toLowerCase())
         )
-        const uniqueFilteredInvitations = Array.from(
-          new Map(
-            filteredInvitations.map((invitation) => [
-              invitation.email.toLowerCase(),
-              invitation,
-            ])
-          ).values()
-        )
+        const uniqueFilteredInvitations =
+          deduplicateParticipantInvitationInputs(filteredInvitations)
         const existingInvitationCount =
           invitations.length - filteredInvitations.length
         const duplicateInputCount =

@@ -44,6 +44,27 @@ export interface CreateParticipantInvitationInput {
   matriculationNumber?: string | null
 }
 
+export function deduplicateParticipantInvitationInputs(
+  invitations: CreateParticipantInvitationInput[]
+): CreateParticipantInvitationInput[] {
+  const uniqueInvitations = new Map<string, CreateParticipantInvitationInput>()
+
+  for (const invitation of invitations) {
+    const normalizedEmail = invitation.email.toLowerCase()
+    const existingInvitation = uniqueInvitations.get(normalizedEmail)
+
+    if (
+      !existingInvitation ||
+      (existingInvitation.matriculationNumber == null &&
+        invitation.matriculationNumber != null)
+    ) {
+      uniqueInvitations.set(normalizedEmail, invitation)
+    }
+  }
+
+  return [...uniqueInvitations.values()]
+}
+
 function isPrismaError(error: unknown, code: 'P2002') {
   return (
     typeof error === 'object' &&

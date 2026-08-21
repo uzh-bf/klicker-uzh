@@ -8,6 +8,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createAssessmentParticipantInvitations,
   createParticipantInvitations,
+  deduplicateParticipantInvitationInputs,
   deletePendingAssessmentParticipantInvitation,
   getAssessmentParticipantInvitations,
 } from '../src/services/participantInvitations.js'
@@ -118,6 +119,18 @@ describe('Assessment participant invitation management', () => {
       matriculationNumber: '12-345-678',
       status: InvitationStatus.PENDING,
     })
+  })
+
+  it('keeps a non-empty matriculation number when deduplicating import rows', () => {
+    expect(
+      deduplicateParticipantInvitationInputs([
+        { email: 'duplicate@example.org', matriculationNumber: 'first' },
+        { email: 'DUPLICATE@example.org' },
+        { email: 'duplicate@example.org', matriculationNumber: 'second' },
+      ])
+    ).toEqual([
+      { email: 'duplicate@example.org', matriculationNumber: 'first' },
+    ])
   })
 
   it('rejects malformed emails without aborting valid rows', async () => {
@@ -494,23 +507,22 @@ describe('Assessment participant invitation management', () => {
 
   it('does not turn unexpected database errors into row results', async () => {
     const course = await createAssessmentCourse()
-    const failingPrisma = new Proxy(prisma, {
-      get(target, property, receiver) {
-        if (property !== 'participantInvitation') {
-          return Reflect.get(target, property, receiver)
-        }
-
-        const participantInvitation = Reflect.get(target, property, receiver)
-        return new Proxy(participantInvitation, {
-          get(model, method, modelReceiver) {
-            if (method === 'create') {
-              return vi.fn().mockRejectedValue(new Error('database detail'))
-            }
-            return Reflect.get(model, method, modelReceiver)
-          },
-        })
+    const failingPrisma = {
+      course: {
+        findUnique: prisma.course.findUnique.bind(prisma.course),
       },
-    }) as unknown as PrismaClient
+      participantAccount: {
+        findMany: prisma.participantAccount.findMany.bind(
+          prisma.participantAccount
+        ),
+      },
+      participantInvitation: {
+        findUnique: prisma.participantInvitation.findUnique.bind(
+          prisma.participantInvitation
+        ),
+        create: vi.fn().mockRejectedValue(new Error('database detail')),
+      },
+    } as unknown as PrismaClient
 
     await expect(
       createParticipantInvitations(
