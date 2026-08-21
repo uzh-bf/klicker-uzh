@@ -549,14 +549,20 @@ describe('Assessment participant invitation management', () => {
     let reachedCreateCount = 0
     let releaseCreateBarrier!: () => void
     const createBarrier = new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new Error('Concurrent create barrier timed out')),
+      let settled = false
+      let timeout: ReturnType<typeof setTimeout>
+      const settle = (error?: Error) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timeout)
+        if (error) reject(error)
+        else resolve()
+      }
+      timeout = setTimeout(
+        () => settle(new Error('Concurrent create barrier timed out')),
         5000
       )
-      releaseCreateBarrier = () => {
-        clearTimeout(timeout)
-        resolve()
-      }
+      releaseCreateBarrier = () => settle()
     })
     const concurrentPrisma = prisma.$extends({
       query: {
@@ -570,49 +576,53 @@ describe('Assessment participant invitation management', () => {
         },
       },
     }) as unknown as PrismaClient
-    const [firstResult, secondResult] = await Promise.all([
-      createAssessmentParticipantInvitations(
-        { courseId: course.id, invitations: [{ email }] },
-        { ...lecturerCtx, prisma: concurrentPrisma }
-      ),
-      createAssessmentParticipantInvitations(
-        { courseId: course.id, invitations: [{ email }] },
-        { ...lecturerCtx, prisma: concurrentPrisma }
-      ),
-    ])
-
-    expect(reachedCreateCount).toBe(2)
-    expect([firstResult, secondResult]).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          autoAccepted: 1,
-          duplicates: 0,
-          errors: 0,
-          results: [expect.objectContaining({ status: 'auto_accepted' })],
-        }),
-        expect.objectContaining({
-          autoAccepted: 0,
-          duplicates: 1,
-          errors: 0,
-          results: [expect.objectContaining({ status: 'duplicate' })],
-        }),
+    try {
+      const [firstResult, secondResult] = await Promise.all([
+        createAssessmentParticipantInvitations(
+          { courseId: course.id, invitations: [{ email }] },
+          { ...lecturerCtx, prisma: concurrentPrisma }
+        ),
+        createAssessmentParticipantInvitations(
+          { courseId: course.id, invitations: [{ email }] },
+          { ...lecturerCtx, prisma: concurrentPrisma }
+        ),
       ])
-    )
-    await expect(
-      prisma.participantInvitation.count({
-        where: { courseId: course.id, email },
-      })
-    ).resolves.toBe(1)
-    await expect(
-      prisma.participation.findUnique({
-        where: {
-          courseId_participantId: {
-            courseId: course.id,
-            participantId: participant.id,
+
+      expect(reachedCreateCount).toBe(2)
+      expect([firstResult, secondResult]).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            autoAccepted: 1,
+            duplicates: 0,
+            errors: 0,
+            results: [expect.objectContaining({ status: 'auto_accepted' })],
+          }),
+          expect.objectContaining({
+            autoAccepted: 0,
+            duplicates: 1,
+            errors: 0,
+            results: [expect.objectContaining({ status: 'duplicate' })],
+          }),
+        ])
+      )
+      await expect(
+        prisma.participantInvitation.count({
+          where: { courseId: course.id, email },
+        })
+      ).resolves.toBe(1)
+      await expect(
+        prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId: course.id,
+              participantId: participant.id,
+            },
           },
-        },
-      })
-    ).resolves.toMatchObject({ isActive: false })
+        })
+      ).resolves.toMatchObject({ isActive: false })
+    } finally {
+      releaseCreateBarrier()
+    }
   })
 
   it('does not report a stale matriculation update after a concurrent change', async () => {
