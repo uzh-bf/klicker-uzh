@@ -7,7 +7,7 @@
  */
 
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
-import { type Page } from '@playwright/test'
+import { type Page, type Response } from '@playwright/test'
 import {
   chooseActivityAction,
   chooseCourseAction,
@@ -298,6 +298,7 @@ const PERM_EXECUTE = 'Execution'
 const PERM_ADMIN = 'Admin'
 const PERM_OWNER = 'Owner'
 const COURSE_DUPLICATION_RESPONSE_TIMEOUT = 120_000
+const COURSE_DUPLICATION_STATUS_TIMEOUT = 150_000
 const COURSE_DUPLICATION_TEST_TIMEOUT = 180_000
 const SHARING_COURSE_GROUP_DEADLINE = new Date(
   new Date().getFullYear(),
@@ -967,41 +968,143 @@ async function submitCourseDuplication(page: Page, copyName?: string) {
     await page.getByTestId('course-display-name').fill(copyName)
   }
 
-  await submitCourseFormAndWaitForCreateCourse(page)
+  await submitCourseFormAndWaitForDuplication(page)
 }
 
-async function submitCourseFormAndWaitForCreateCourse(
+async function submitCourseFormAndWaitForDuplication(
   page: Page,
   { expectSuccess = true }: { expectSuccess?: boolean } = {}
 ) {
-  const createCourseResponse = page.waitForResponse(
+  const courseNameInput = page.getByTestId('course-name')
+  const targetCourseName = await courseNameInput.inputValue()
+  let jobId: string | undefined
+  let terminalStatus: string | undefined
+  const statusesById = new Map<string, string>()
+  let resolveStatus: (() => void) | undefined
+  let rejectStatus: ((error: Error) => void) | undefined
+  const statusPromise = new Promise<void>((resolve, reject) => {
+    resolveStatus = resolve
+    rejectStatus = reject
+  })
+
+  const statusResponseListener = (statusResponse: Response) => {
+    if (
+      statusResponse.request().method() !== 'POST' ||
+      !statusResponse
+        .request()
+        .postData()
+        ?.includes('GetCourseDuplicationStatuses') ||
+      !statusResponse.ok()
+    ) {
+      return
+    }
+
+    void (async () => {
+      const statusBody = (await statusResponse.json().catch(() => null)) as {
+        data?: {
+          courseDuplicationStatuses?: Array<{
+            id?: unknown
+            status?: unknown
+          }>
+        }
+      } | null
+
+      const statuses = statusBody?.data?.courseDuplicationStatuses
+      if (!Array.isArray(statuses)) return
+
+      for (const status of statuses) {
+        if (
+          typeof status.id === 'string' &&
+          typeof status.status === 'string'
+        ) {
+          statusesById.set(status.id, status.status)
+        }
+      }
+
+      if (!jobId) return
+
+      const status = statusesById.get(jobId)
+      if (status === 'COMPLETED' || status === 'FAILED') {
+        terminalStatus = status
+        resolveStatus?.()
+      }
+    })().catch(() => undefined)
+  }
+
+  page.on('response', statusResponseListener)
+
+  const startCourseDuplicationResponse = page.waitForResponse(
     (response) => {
       const request = response.request()
       const postData = request.postData() ?? ''
 
       return (
         request.method() === 'POST' &&
-        postData.includes('CreateCourse') &&
+        postData.includes('StartCourseDuplication') &&
         response.status() < 500
       )
     },
     { timeout: COURSE_DUPLICATION_RESPONSE_TIMEOUT }
   )
 
-  await page.getByTestId('manipulate-course-submit').click()
-  const response = await createCourseResponse
-  const body = (await response.json().catch(() => null)) as {
-    errors?: unknown[]
-  } | null
+  try {
+    await page.getByTestId('manipulate-course-submit').click()
+    const response = await startCourseDuplicationResponse
+    const body = (await response.json().catch(() => null)) as {
+      errors?: unknown[]
+      data?: {
+        startCourseDuplication?: {
+          id?: unknown
+        } | null
+      }
+    } | null
 
-  if (expectSuccess) {
     expect(response.ok()).toBeTruthy()
     expect(body?.errors ?? []).toEqual([])
-    await expect(page.getByTestId('course-name')).not.toBeVisible({
-      timeout: 30_000,
-    })
-  } else {
-    expect(body?.errors?.length ?? 0).toBeGreaterThan(0)
+    const parsedJobId = body?.data?.startCourseDuplication?.id
+    expect(parsedJobId).toEqual(expect.any(String))
+    if (typeof parsedJobId !== 'string') {
+      throw new Error('Course duplication response did not contain a job ID')
+    }
+    jobId = parsedJobId
+    const duplicationJobId = parsedJobId
+
+    await expect(courseNameInput).not.toBeVisible({ timeout: 30_000 })
+
+    const timeout = setTimeout(() => {
+      rejectStatus?.(
+        new Error(
+          `Course duplication job ${jobId} did not reach a terminal status within ${COURSE_DUPLICATION_STATUS_TIMEOUT}ms`
+        )
+      )
+    }, COURSE_DUPLICATION_STATUS_TIMEOUT)
+
+    try {
+      const knownStatus = statusesById.get(duplicationJobId)
+      if (knownStatus === 'COMPLETED' || knownStatus === 'FAILED') {
+        terminalStatus = knownStatus
+      } else {
+        await statusPromise
+        terminalStatus = statusesById.get(duplicationJobId)
+      }
+    } finally {
+      clearTimeout(timeout)
+    }
+
+    expect(terminalStatus).toBe(expectSuccess ? 'COMPLETED' : 'FAILED')
+
+    if (expectSuccess) {
+      await expect(
+        page.getByText(
+          messages.manage.courseList.courseDuplicationSucceeded.replace(
+            '{name}',
+            targetCourseName
+          )
+        )
+      ).toBeVisible({ timeout: 30_000 })
+    }
+  } finally {
+    page.off('response', statusResponseListener)
   }
 }
 
@@ -2544,7 +2647,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await openCourseInManage(page, SHARING.course)
     await chooseCourseAction(page, 'course-duplicate-button')
     const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page)
-    await submitCourseFormAndWaitForCreateCourse(page)
+    await submitCourseFormAndWaitForDuplication(page)
 
     await expect(
       page.getByText(
@@ -2700,7 +2803,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       'unchecked'
     )
     await expect(page.getByTestId('course-group-activities')).toBeDisabled()
-    await submitCourseFormAndWaitForCreateCourse(page)
+    await submitCourseFormAndWaitForDuplication(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -2738,28 +2841,14 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       await chooseCourseAction(page, 'course-duplicate-button')
       await page.getByTestId('course-name').fill(copyName)
       await page.getByTestId('course-display-name').fill(copyName)
-      const errorMessages = [
-        messages.manage.courseList.courseDuplicationPartialFailure,
-        messages.manage.courseList.courseDuplicationNoAccess,
-        messages.manage.courseList.courseDuplicationFailed,
-      ]
-      const visibleErrorToast = Promise.race(
-        errorMessages.map(async (message) => {
-          await page
-            .getByText(message)
-            .waitFor({ state: 'visible', timeout: 15_000 })
-          return message
-        })
-      )
-      const [errorMessage] = await Promise.all([
-        visibleErrorToast,
-        submitCourseFormAndWaitForCreateCourse(page, {
-          expectSuccess: false,
-        }),
-      ])
-      expect(errorMessage).toBe(
-        messages.manage.courseList.courseDuplicationPartialFailure
-      )
+      await submitCourseFormAndWaitForDuplication(page, {
+        expectSuccess: false,
+      })
+      await expect(
+        page.getByText(
+          messages.manage.courseList.courseDuplicationPartialFailure
+        )
+      ).toBeVisible({ timeout: 30_000 })
       await expect(async () => {
         const summary = await getCourseDuplicationSummary({
           courseName: copyName,
@@ -3139,7 +3228,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         'unchecked'
       )
     }
-    await submitCourseFormAndWaitForCreateCourse(page)
+    await submitCourseFormAndWaitForDuplication(page)
 
     await page.getByTestId('courses').click()
     await expect(
@@ -3699,6 +3788,8 @@ test.describe('Part 5b: Course Sharing - User group permissions', () => {
     loginLecturer,
     page,
   }) => {
+    test.setTimeout(COURSE_DUPLICATION_TEST_TIMEOUT)
+
     const copyName = `${SHARING.course} Copy`
     const updatedLiveQuizElementContent = `Updated sharing live quiz question content ${Date.now()}`
 
