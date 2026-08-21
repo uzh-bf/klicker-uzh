@@ -607,9 +607,9 @@ Two rulings are required before implementation:
 - 2026-08-21: grill rounds 1 and 2 settled; CONTEXT.md terms recorded; ADRs
   0026 and 0027 written, ADR 0006 row amended; the task moved to
   `trees/student-generated-practice-elements-plan` and was synchronized
-  read-only against the fresh `origin/v3` ref. The base synchronization is
-  still an uncommitted merge in that worktree; no delivery action has been
-  taken.
+  against the fresh `origin/v3` ref. The synchronization and plan artifacts
+  are committed locally as `02533ba35` and `54fb7c8df`; no delivery action has
+  been taken.
 - 2026-08-21: first planner pass completed with status
   `DONE_WITH_CONCERNS`. The full report is retained outside Git at
   `project/_local/reviews/2026-08-21-student-generated-practice-elements-plan-planner.md`.
@@ -624,6 +624,14 @@ Two rulings are required before implementation:
   Those corrections are now in the draft. The final confirmation pass found
   two presentation fixes (explicit test-obligation classifications and removal
   of conditional Playwright work); both are applied. **Status: corrected draft,
-  awaiting the two rulings and plan approval.** No tests, builds, browser
-  checks, devrouter runtime, external model calls, commits, pushes, PRs,
-  merges, or deployments were performed for this task.
+  awaiting the two rulings and plan approval.** The user then approved
+  autonomous local execution with pushes, PRs, merges, deployments, live
+  checks, and paid external-model runs withheld.
+- 2026-08-21: the exact task DevPod was started and verified through DevRouter
+  at the worktree path. The local MCP health and direct `doc_query.execute`
+  prototype passed, returning the stable `KLICKER_LOCAL_MCP_OK` fixture marker
+  and one source. The auto-router structured-output prototype could not run:
+  the DevPod has no configured non-paid model key, and the safety boundary
+  rejected an attempt that could forward to a paid external provider. S0
+  therefore remains blocked at its explicit authority gate; no product code or
+  temporary harness was kept.
