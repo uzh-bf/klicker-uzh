@@ -57,7 +57,9 @@ then rechecks every non-deleted Element and shares only those on which the
 caller has `ADMIN` or `OWNER`. Exactly one of `shortnameOrEmail` and
 `userGroupId` must be supplied. Sharing does not propagate access to activities;
 linked answer collections receive the derived READ access required by the
-permission model.
+permission model. Before resolving a target, the caller must control at least
+one supplied non-deleted Element; otherwise the service returns uniform
+unavailable outcomes without revealing target or element existence.
 
 The service rejects more than 50 raw element IDs before target lookup or other
 database work, accepts only `READ`, `WRITE`, and `ADMIN`, deduplicates IDs in
