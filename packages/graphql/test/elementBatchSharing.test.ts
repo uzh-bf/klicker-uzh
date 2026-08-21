@@ -144,6 +144,31 @@ describe('Integration tests for batch sharing elements', () => {
     expect(await prisma.permission.count()).toBe(0)
   })
 
+  it('returns bounded failures after the batch deadline expires', async () => {
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValue(Number.MAX_SAFE_INTEGER)
+    const transactionSpy = vi.spyOn(userOneCtx.prisma, '$transaction')
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [1, 2],
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      userOneCtx
+    )
+
+    expect(result).toEqual({
+      targetError: null,
+      outcomes: [
+        { elementId: 1, status: 'FAILED', reason: 'SHARING_FAILED' },
+        { elementId: 2, status: 'FAILED', reason: 'SHARING_FAILED' },
+      ],
+    })
+    expect(transactionSpy).not.toHaveBeenCalled()
+  })
+
   it('returns generic target errors for invalid or unavailable targets', async () => {
     const element = await seedElement()
     const unavailableGroup = await prisma.userGroup.create({
