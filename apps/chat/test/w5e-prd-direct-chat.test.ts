@@ -184,6 +184,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       CANDIDATE_PROOF_URL: 'http://127.0.0.1:1417/mcp/klicker',
       RECEIPT_PATH: receiptPath,
       DOC_QUERY_JWT_TOKEN_KLICKER: 'synthetic-bearer-token',
+      APP_SECRET: 'synthetic-app-secret',
       KLICKER_SOURCE_SHA: 'source-sha',
       CHAT_IMAGE_DIGEST: 'chat-image',
       DOC_QUERY_IMAGE_DIGEST: 'doc-query-image',
@@ -258,6 +259,54 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         else process.env[name] = value
       }
       process.exitCode = previousExitCode
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('refuses a missing encryption secret before network or receipt work', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-env-failure-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const env = {
+      CANDIDATE_URL:
+        'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker',
+      CANDIDATE_PROOF_URL: 'http://127.0.0.1:1417/mcp/klicker',
+      RECEIPT_PATH: receiptPath,
+      DOC_QUERY_JWT_TOKEN_KLICKER: 'synthetic-bearer-token',
+      KLICKER_SOURCE_SHA: 'source-sha',
+      CHAT_IMAGE_DIGEST: 'chat-image',
+      DOC_QUERY_IMAGE_DIGEST: 'doc-query-image',
+      ARGO_REVISION: 'argo-revision',
+      NETWORK_POLICY_SOURCE_COMMIT: 'network-policy',
+    }
+    const previousEnv = new Map<string, string | undefined>()
+    for (const [name, value] of Object.entries(env)) {
+      previousEnv.set(name, process.env[name])
+      process.env[name] = value
+    }
+    const previousAppSecret = process.env.APP_SECRET
+    delete process.env.APP_SECRET
+    const transaction = vi.fn()
+    const client = {
+      $transaction: transaction,
+    } as unknown as PrismaClient
+    const fetchImpl = vi.fn()
+
+    try {
+      await expect(runW5eTransaction({ client, fetchImpl })).rejects.toThrow(
+        'ENV_REQUIRED: APP_SECRET is required'
+      )
+      expect(fetchImpl).not.toHaveBeenCalled()
+      expect(transaction).not.toHaveBeenCalled()
+      await expect(readFile(receiptPath, 'utf8')).rejects.toMatchObject({
+        code: 'ENOENT',
+      })
+    } finally {
+      for (const [name, value] of previousEnv) {
+        if (value === undefined) delete process.env[name]
+        else process.env[name] = value
+      }
+      if (previousAppSecret === undefined) delete process.env.APP_SECRET
+      else process.env.APP_SECRET = previousAppSecret
       await rm(directory, { recursive: true, force: true })
     }
   })

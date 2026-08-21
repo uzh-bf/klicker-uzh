@@ -1555,6 +1555,7 @@ export async function runW5eTransaction(
   )
   const receiptPath = requiredEnv('RECEIPT_PATH')
   const bearer = requiredEnv('DOC_QUERY_JWT_TOKEN_KLICKER')
+  void requiredEnv('APP_SECRET')
   const provenance: W5eReceipt['provenance'] = {
     klickerSourceSha: requiredEnv('KLICKER_SOURCE_SHA'),
     chatImageDigest: requiredEnv('CHAT_IMAGE_DIGEST'),
