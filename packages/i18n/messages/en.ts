@@ -243,6 +243,18 @@ export default {
       searchCourseMaterialFailed: 'Course material search failed',
       imageAnalyzed: 'Image analyzed',
     },
+    personalElements: {
+      planTitle: 'Card plan',
+      cardNumber: 'Card {number}',
+      approve: 'Generate these cards',
+      generating: 'Generating cards...',
+      approvalMessage: 'Please generate the proposed cards for {topic}.',
+      superseded: 'This card plan was replaced by a newer plan.',
+      saved: 'Saved',
+      saveSelected: 'Save selected',
+      saveAll: 'Save all',
+      practiceNow: 'Practice now',
+    },
     sources: {
       title: 'Sources',
       page: 'p. {page}',
@@ -1088,6 +1100,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invalidPin: 'PIN invalid',
       genericError:
         'There was an error when trying to join the course. Please try again or ask your lecturer for assistance.',
+    },
+    personalElements: {
+      title: 'My cards',
+      dueCount:
+        '{count, plural, =0 {Nothing due} one {# card due} other {# cards due}}',
+      empty: 'You have not saved any personal cards for this course yet.',
+      noDue: 'You have no cards due right now. Come back later.',
+      error: 'The cards could not be loaded or updated. Please try again.',
+      aiGenerated: 'AI-generated',
+      authored: 'Authored',
+      verified: 'verified',
+      unverified: 'unverified',
+      previous: 'Previous',
+      next: 'Next',
+      delete: 'Delete',
+      deleteConfirm: 'Delete this card? This cannot be undone.',
+      homeLink: 'My personal cards',
+      repetitionLink:
+        '{count, plural, =0 {My personal cards} one {My personal cards · # due} other {My personal cards · # due}}',
     },
     practiceQuiz: {
       flashcardClick: 'Click to turn card',

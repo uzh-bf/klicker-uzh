@@ -247,6 +247,18 @@ export default {
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
     },
+    personalElements: {
+      planTitle: 'Kartenplan',
+      cardNumber: 'Karte {number}',
+      approve: 'Diese Karten erstellen',
+      generating: 'Karten werden erstellt...',
+      approvalMessage: 'Bitte erstelle die vorgeschlagenen Karten zu {topic}.',
+      superseded: 'Dieser Kartenplan wurde durch einen neueren Plan ersetzt.',
+      saved: 'Gespeichert',
+      saveSelected: 'Auswahl speichern',
+      saveAll: 'Alle speichern',
+      practiceNow: 'Jetzt üben',
+    },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',
@@ -1096,6 +1108,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invalidPin: 'PIN ungültig',
       genericError:
         'Beim Versuch, dem Kurs beizutreten, ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Dozenten.',
+    },
+    personalElements: {
+      title: 'Meine Karten',
+      dueCount:
+        '{count, plural, =0 {Nichts fällig} one {# Karte fällig} other {# Karten fällig}}',
+      empty:
+        'Sie haben für diesen Kurs noch keine persönlichen Karten gespeichert.',
+      noDue: 'Im Moment ist keine Karte fällig. Kommen Sie später wieder.',
+      error:
+        'Die Karten konnten nicht geladen oder aktualisiert werden. Bitte versuchen Sie es erneut.',
+      aiGenerated: 'KI-generiert',
+      authored: 'Selbst erstellt',
+      verified: 'verifiziert',
+      unverified: 'unverifiziert',
+      previous: 'Zurück',
+      next: 'Weiter',
+      delete: 'Löschen',
+      deleteConfirm:
+        'Diese Karte löschen? Dies kann nicht rückgängig gemacht werden.',
+      homeLink: 'Meine persönlichen Karten',
+      repetitionLink:
+        '{count, plural, =0 {Meine persönlichen Karten} one {Meine persönlichen Karten · # fällig} other {Meine persönlichen Karten · # fällig}}',
     },
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
