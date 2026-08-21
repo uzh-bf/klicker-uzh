@@ -1871,6 +1871,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Elements - Batch Operations',
+      batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
         'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
       batchElementName: 'Element',
@@ -1888,7 +1889,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nElementsWillBeUpdated: '{number} elements will be updated',
       batchSharing: 'Share elements',
       batchSharingDescription:
-        'Grant the same direct permission on all selected elements. Sharing does not propagate to dependent objects.',
+        'Grant the same direct permission on all selected elements. Sharing does not propagate to activities, but linked answer collections receive the required derived read access.',
+      batchSharingLimit:
+        'Sharing is limited to {max} elements per operation. Reduce the selection or disable sharing.',
       batchSharingUserOrEmail: 'User',
       batchSharingGroup: 'User group',
       batchSharingPermission: 'Permission',
@@ -1930,7 +1933,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
 <li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
 <li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
 <li>Element status changes can be performed by all users.</li>
-<li>Sharing requires at least admin permissions for each element and does not propagate to dependent objects.</li>
+<li>Sharing requires at least admin permissions for each element. It does not propagate to activities, but linked answer collections receive the required derived read access.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:

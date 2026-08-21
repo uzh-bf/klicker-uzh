@@ -11,6 +11,7 @@ import {
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -4032,6 +4033,12 @@ export const ELEMENT_BATCH_SHARING_TARGET_ERRORS = [
 export type ElementBatchSharingTargetError =
   (typeof ELEMENT_BATCH_SHARING_TARGET_ERRORS)[number]
 
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+const ELEMENT_BATCH_SHARING_DEADLINE_MS = 60_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS = 15_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS = 5_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT = 3
+
 export interface ElementBatchSharingOutcome {
   elementId: number
   status: ElementBatchSharingStatus
@@ -4055,6 +4062,19 @@ type ResolvedSharingTarget =
       id: number
       name: string
     }
+
+function isPrismaSerializationConflict(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2034'
+  )
+}
+
+function elementBatchSharingError(code: string, message: string) {
+  return new GraphQLError(message, { extensions: { code } })
+}
 
 async function resolveSharingTarget(
   {
@@ -4226,12 +4246,19 @@ async function shareElementWithResolvedTarget(
     { timeout: 60000 }
   )
 
-  invalidateElementPermission(
-    { elementId: args.elementId, permissionId: permission.id },
-    ctx
-  )
+  emitElementPermissionInvalidation({ permissionId: permission.id }, ctx)
 
   return permission
+}
+
+function emitElementPermissionInvalidation(
+  { permissionId }: { permissionId: number },
+  ctx: ContextWithUser
+) {
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permissionId,
+  })
 }
 
 function invalidateElementPermission(
@@ -4239,10 +4266,7 @@ function invalidateElementPermission(
   ctx: ContextWithUser
 ) {
   try {
-    ctx.emitter.emit('invalidate', {
-      typename: 'Permission',
-      id: permissionId,
-    })
+    emitElementPermissionInvalidation({ permissionId }, ctx)
   } catch (error) {
     console.error(
       'Failed to invalidate permission %s after sharing element %s',
@@ -4267,6 +4291,72 @@ export async function shareElementsBatch(
   },
   ctx: ContextWithUser
 ): Promise<ElementBatchSharingResult> {
+  if (elementIds.length > ELEMENT_BATCH_SHARING_MAX_ELEMENTS) {
+    throw elementBatchSharingError(
+      'ELEMENT_BATCH_TOO_LARGE',
+      `A maximum of ${ELEMENT_BATCH_SHARING_MAX_ELEMENTS} elements can be shared at once.`
+    )
+  }
+  if (
+    permissionLevel !== DB.PermissionLevel.READ &&
+    permissionLevel !== DB.PermissionLevel.WRITE &&
+    permissionLevel !== DB.PermissionLevel.ADMIN
+  ) {
+    throw elementBatchSharingError(
+      'ELEMENT_BATCH_PERMISSION_INVALID',
+      'Element batch sharing supports READ, WRITE, and ADMIN permissions only.'
+    )
+  }
+
+  const uniqueElementIds = [...new Set(elementIds)]
+  if (uniqueElementIds.length === 0) {
+    return { targetError: 'INVALID_OR_SELF_TARGET', outcomes: [] }
+  }
+
+  const deadlineAt = Date.now() + ELEMENT_BATCH_SHARING_DEADLINE_MS
+  if (Date.now() >= deadlineAt) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'FAILED' as const,
+        reason: 'SHARING_FAILED' as const,
+      })),
+    }
+  }
+
+  const authorizedElement = await ctx.prisma.element.findFirst({
+    where: {
+      id: { in: uniqueElementIds },
+      isDeleted: false,
+      OR: [
+        { ownerId: ctx.user.sub },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  })
+
+  if (!authorizedElement) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'SKIPPED' as const,
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+      })),
+    }
+  }
+
   const resolvedTarget = await resolveSharingTarget(
     { shortnameOrEmail, userGroupId },
     ctx,
@@ -4280,66 +4370,184 @@ export async function shareElementsBatch(
     }
   }
 
-  const uniqueElementIds = [...new Set(elementIds)]
-  const elements = await ctx.prisma.element.findMany({
-    where: { id: { in: uniqueElementIds }, isDeleted: false },
-    select: {
-      id: true,
-      permissions: {
-        where: { userId: ctx.user.sub },
-        select: { permissionLevel: true },
-      },
-    },
-  })
-  const elementsById = new Map(elements.map((element) => [element.id, element]))
   const outcomes: ElementBatchSharingOutcome[] = []
 
-  for (const elementId of uniqueElementIds) {
-    const element = elementsById.get(elementId)
-    if (!element) {
-      outcomes.push({
-        elementId,
-        status: 'SKIPPED',
-        reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
-      })
-      continue
-    }
-
-    const callerPermission = element.permissions[0]?.permissionLevel
-    if (
-      callerPermission !== DB.PermissionLevel.ADMIN &&
-      callerPermission !== DB.PermissionLevel.OWNER
-    ) {
-      outcomes.push({
-        elementId,
-        status: 'SKIPPED',
-        reason: 'INSUFFICIENT_PERMISSION',
-      })
-      continue
-    }
-
-    try {
-      await shareElementWithResolvedTarget(
-        {
+  for (let index = 0; index < uniqueElementIds.length; index++) {
+    if (Date.now() >= deadlineAt) {
+      outcomes.push(
+        ...uniqueElementIds.slice(index).map((elementId) => ({
           elementId,
+          status: 'FAILED' as const,
+          reason: 'SHARING_FAILED' as const,
+        }))
+      )
+      break
+    }
+
+    outcomes.push(
+      await shareElementForBatch(
+        {
+          elementId: uniqueElementIds[index]!,
           permissionLevel,
-          propagation: false,
           target: resolvedTarget.target,
+          deadlineAt,
         },
         ctx
       )
-      outcomes.push({ elementId, status: 'SHARED', reason: null })
-    } catch (error) {
-      console.error('Failed to share element %s', elementId, error)
-      outcomes.push({
-        elementId,
-        status: 'FAILED',
-        reason: 'SHARING_FAILED',
-      })
-    }
+    )
   }
 
   return { targetError: null, outcomes }
+}
+
+async function shareElementForBatch(
+  {
+    elementId,
+    permissionLevel,
+    target,
+    deadlineAt,
+  }: {
+    elementId: number
+    permissionLevel: DB.PermissionLevel
+    target: ResolvedSharingTarget
+    deadlineAt: number
+  },
+  ctx: ContextWithUser
+): Promise<ElementBatchSharingOutcome> {
+  for (
+    let attempt = 0;
+    attempt < ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT;
+    attempt++
+  ) {
+    const remainingMs = deadlineAt - Date.now()
+    if (remainingMs < 2) {
+      return {
+        elementId,
+        status: 'FAILED',
+        reason: 'SHARING_FAILED',
+      }
+    }
+    const transactionMaxWaitMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS,
+      Math.floor(remainingMs / 2)
+    )
+    const transactionTimeoutMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS,
+      remainingMs - transactionMaxWaitMs
+    )
+
+    try {
+      const result = await ctx.prisma.$transaction(
+        async (prisma) => {
+          if (
+            target.kind === 'USER_GROUP' &&
+            !(await prisma.userGroup.findFirst({
+              where: {
+                id: target.id,
+                OR: [
+                  { ownerId: ctx.user.sub },
+                  { admins: { some: { id: ctx.user.sub } } },
+                  { members: { some: { id: ctx.user.sub } } },
+                ],
+              },
+              select: { id: true },
+            }))
+          ) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'INSUFFICIENT_PERMISSION' as const,
+            }
+          }
+
+          const element = await prisma.element.findUnique({
+            where: { id: elementId },
+            select: {
+              isDeleted: true,
+              permissions: {
+                where: { userId: ctx.user.sub },
+                select: { permissionLevel: true },
+              },
+            },
+          })
+
+          if (!element || element.isDeleted) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+            }
+          }
+
+          const callerPermission = element.permissions[0]?.permissionLevel
+          if (typeof callerPermission === 'undefined') {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+            }
+          }
+          if (
+            callerPermission !== DB.PermissionLevel.ADMIN &&
+            callerPermission !== DB.PermissionLevel.OWNER
+          ) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'INSUFFICIENT_PERMISSION' as const,
+            }
+          }
+
+          const permission = await grantElementPermission(
+            {
+              elementId,
+              permissionLevel,
+              propagation: false,
+              target,
+              sourceUserId: ctx.user.sub,
+            },
+            prisma
+          )
+          return {
+            status: 'SHARED' as const,
+            reason: null,
+            permissionId: permission.id,
+          }
+        },
+        {
+          isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: transactionMaxWaitMs,
+          timeout: transactionTimeoutMs,
+        }
+      )
+
+      if (result.status === 'SHARED') {
+        invalidateElementPermission(
+          { elementId, permissionId: result.permissionId },
+          ctx
+        )
+      }
+
+      return { elementId, status: result.status, reason: result.reason }
+    } catch (error) {
+      if (
+        isPrismaSerializationConflict(error) &&
+        attempt < ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT - 1 &&
+        Date.now() < deadlineAt
+      ) {
+        continue
+      }
+
+      console.error('Failed to share element %s', elementId, error)
+      return {
+        elementId,
+        status: 'FAILED',
+        reason: 'SHARING_FAILED',
+      }
+    }
+  }
+
+  return {
+    elementId,
+    status: 'FAILED',
+    reason: 'SHARING_FAILED',
+  }
 }
 
 export async function shareObject(

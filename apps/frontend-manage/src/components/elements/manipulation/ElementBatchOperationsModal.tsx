@@ -33,6 +33,71 @@ import {
   INITIAL_ELEMENT_BATCH_OPERATIONS,
 } from './types'
 
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+
+function BatchOperationSummary({
+  updatesConfigured,
+  updatedCount,
+  sharedCount,
+  sharingEnabled,
+  totalCount,
+}: {
+  updatesConfigured: boolean
+  updatedCount: number
+  sharedCount: number
+  sharingEnabled: boolean
+  totalCount: number
+}) {
+  const t = useTranslations()
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {updatesConfigured ? (
+        <span
+          className={twMerge(
+            'text-sm text-green-700',
+            updatedCount === 0 && 'text-red-600'
+          )}
+        >
+          <FontAwesomeIcon
+            icon={updatedCount === 0 ? faX : faCheck}
+            className="mr-1.5"
+          />
+          {updatedCount === 0
+            ? t('manage.questionPool.noElementsWillBeUpdated')
+            : t('manage.questionPool.nElementsWillBeUpdated', {
+                number:
+                  updatedCount === totalCount
+                    ? updatedCount
+                    : `${updatedCount}/${totalCount}`,
+              })}
+        </span>
+      ) : null}
+      {sharingEnabled ? (
+        <span
+          className={twMerge(
+            'text-sm text-green-700',
+            sharedCount === 0 && 'text-red-600'
+          )}
+        >
+          <FontAwesomeIcon
+            icon={sharedCount === 0 ? faX : faCheck}
+            className="mr-1.5"
+          />
+          {sharedCount === 0
+            ? t('manage.questionPool.noElementsWillBeShared')
+            : t('manage.questionPool.nElementsWillBeShared', {
+                number:
+                  sharedCount === totalCount
+                    ? sharedCount
+                    : `${sharedCount}/${totalCount}`,
+              })}
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
 function ElementBatchOperationsModal({
   selectedElements,
   onClose,
@@ -104,39 +169,34 @@ function ElementBatchOperationsModal({
     [selectionSnapshot, selectedActions, t]
   )
 
-  const numOfUpdatedElements = useMemo(
-    () => affectedElements.filter((element) => element.actionsApplied).length,
+  const updateElementIds = useMemo(
+    () =>
+      affectedElements
+        .filter((element) => element.actionsApplied)
+        .map((element) => element.id),
     [affectedElements]
   )
+  const numOfUpdatedElements = updateElementIds.length
   const numOfSharedElements = useMemo(
     () => affectedElements.filter((element) => element.sharingApplied).length,
     [affectedElements]
   )
+  const sharingLimitExceeded =
+    selectionSnapshot.length > ELEMENT_BATCH_SHARING_MAX_ELEMENTS
 
   const sharingValidationSchema = useMemo(
     () =>
-      Yup.object().shape({
+      Yup.object({
         enabled: Yup.boolean().required(),
         shortnameOrEmail: Yup.string()
           .trim()
           .test(
-            'either-shortname-or-group',
-            t('manage.sharing.shortnameEmailOrGroupRequired'),
-            function (value) {
-              if (!this.parent.enabled) return true
-              const userGroupId = this.parent.userGroupId
-              return (
-                (typeof userGroupId === 'string' &&
-                  userGroupId.trim() !== '') ||
-                (typeof value === 'string' && value.trim() !== '')
-              )
-            }
-          )
-          .test(
             'not-self',
             t('manage.sharing.noSelfSharing'),
-            function (value) {
-              if (!this.parent.enabled || !value || !userData?.userProfile) {
+            (value, validationContext) => {
+              const values =
+                validationContext.parent as ElementBatchSharingFormValues
+              if (!values.enabled || !value || !userData?.userProfile) {
                 return true
               }
 
@@ -152,31 +212,30 @@ function ElementBatchOperationsModal({
                 )
             }
           ),
-        userGroupId: Yup.string()
-          .trim()
-          .test(
-            'either-group-or-shortname',
-            t('manage.sharing.shortnameEmailOrGroupRequired'),
-            function (value) {
-              if (!this.parent.enabled) return true
-              return (
-                (typeof this.parent.shortnameOrEmail === 'string' &&
-                  this.parent.shortnameOrEmail.trim() !== '') ||
-                (typeof value === 'string' && value.trim() !== '')
-              )
-            }
-          ),
+        userGroupId: Yup.string().trim(),
         permissionLevel: Yup.string().required(),
-      }),
+      }).test(
+        'recipient-required',
+        t('manage.sharing.shortnameEmailOrGroupRequired'),
+        (values, validationContext) => {
+          if (
+            !values?.enabled ||
+            values.shortnameOrEmail?.trim() ||
+            values.userGroupId?.trim()
+          ) {
+            return true
+          }
+          return validationContext.createError({ path: 'shortnameOrEmail' })
+        }
+      ),
     [t, userData?.userProfile]
   )
 
   const applyConfiguredOperations = useElementBatchExecution({
     selectionSnapshot,
-    affectedElements,
+    updateElementIds,
     selectedActions,
     updatesConfigured,
-    numOfUpdatedElements,
     refetchElements,
     resetSelectedElements,
     onClose,
@@ -239,7 +298,6 @@ function ElementBatchOperationsModal({
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto">
                   <SelectedElementsList
-                    selectedElements={selectionSnapshot}
                     affectedElements={affectedElements}
                     updatesConfigured={updatesConfigured}
                     sharingEnabled={sharingValues.enabled}
@@ -282,60 +340,31 @@ function ElementBatchOperationsModal({
                     />
                   </div>
                   {userData?.userProfile?.privatePreview ? (
-                    <ElementBatchSharingCard disabled={isSubmitting} />
+                    <>
+                      <ElementBatchSharingCard disabled={isSubmitting} />
+                      {sharingValues.enabled && sharingLimitExceeded ? (
+                        <p className="text-sm text-red-600" role="alert">
+                          {t('manage.questionPool.batchSharingLimit', {
+                            max: ELEMENT_BATCH_SHARING_MAX_ELEMENTS,
+                          })}
+                        </p>
+                      ) : null}
+                    </>
                   ) : null}
                   <div className="flex items-end justify-end gap-5">
-                    <div className="flex flex-col items-end gap-1">
-                      {updatesConfigured ? (
-                        <span
-                          className={twMerge(
-                            'text-sm text-green-700',
-                            numOfUpdatedElements === 0 && 'text-red-600'
-                          )}
-                        >
-                          <FontAwesomeIcon
-                            icon={numOfUpdatedElements === 0 ? faX : faCheck}
-                            className="mr-1.5"
-                          />
-                          {numOfUpdatedElements === 0
-                            ? t('manage.questionPool.noElementsWillBeUpdated')
-                            : t('manage.questionPool.nElementsWillBeUpdated', {
-                                number:
-                                  numOfUpdatedElements ===
-                                  selectionSnapshot.length
-                                    ? numOfUpdatedElements
-                                    : `${numOfUpdatedElements}/${selectionSnapshot.length}`,
-                              })}
-                        </span>
-                      ) : null}
-                      {sharingValues.enabled ? (
-                        <span
-                          className={twMerge(
-                            'text-sm text-green-700',
-                            numOfSharedElements === 0 && 'text-red-600'
-                          )}
-                        >
-                          <FontAwesomeIcon
-                            icon={numOfSharedElements === 0 ? faX : faCheck}
-                            className="mr-1.5"
-                          />
-                          {numOfSharedElements === 0
-                            ? t('manage.questionPool.noElementsWillBeShared')
-                            : t('manage.questionPool.nElementsWillBeShared', {
-                                number:
-                                  numOfSharedElements ===
-                                  selectionSnapshot.length
-                                    ? numOfSharedElements
-                                    : `${numOfSharedElements}/${selectionSnapshot.length}`,
-                              })}
-                        </span>
-                      ) : null}
-                    </div>
+                    <BatchOperationSummary
+                      updatesConfigured={updatesConfigured}
+                      updatedCount={numOfUpdatedElements}
+                      sharedCount={numOfSharedElements}
+                      sharingEnabled={sharingValues.enabled}
+                      totalCount={selectionSnapshot.length}
+                    />
                     <Button
                       primary
                       disabled={
                         isSubmitting ||
                         (sharingValues.enabled && !sharingFormValid) ||
+                        (sharingValues.enabled && sharingLimitExceeded) ||
                         !(
                           (updatesConfigured && numOfUpdatedElements > 0) ||
                           (sharingValues.enabled && numOfSharedElements > 0)
@@ -347,7 +376,9 @@ function ElementBatchOperationsModal({
                       className={{ root: 'h-9' }}
                       data={{ cy: 'apply-batch-operations' }}
                     >
-                      {t('shared.generic.apply')}
+                      {isSubmitting
+                        ? t('manage.questionPool.batchOperationsApplying')
+                        : t('shared.generic.apply')}
                     </Button>
                   </div>
                 </fieldset>

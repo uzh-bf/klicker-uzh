@@ -77,7 +77,7 @@ describe('Integration tests for batch sharing elements', () => {
     await testCleanup(prisma)
   })
 
-  it('rejects an unknown individual target before processing elements', async () => {
+  it('hides target errors when no eligible element is supplied', async () => {
     const result = await shareElementsBatch(
       {
         elementIds: [1, 2],
@@ -88,10 +88,90 @@ describe('Integration tests for batch sharing elements', () => {
     )
 
     expect(result).toEqual({
-      targetError: 'INVALID_OR_SELF_TARGET',
-      outcomes: [],
+      targetError: null,
+      outcomes: [
+        {
+          elementId: 1,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+        },
+        {
+          elementId: 2,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+        },
+      ],
     })
     expect(await prisma.permission.count()).toBe(0)
+  })
+
+  it('rejects an oversized raw list before resolving the target', async () => {
+    await expect(
+      shareElementsBatch(
+        {
+          elementIds: Array.from({ length: 51 }, () => 1),
+          permissionLevel: PermissionLevel.READ,
+          shortnameOrEmail: 'unknown-user',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ELEMENT_BATCH_TOO_LARGE' },
+    })
+
+    expect(await prisma.permission.count()).toBe(0)
+  })
+
+  it.each([
+    PermissionLevel.OWNER,
+    PermissionLevel.EXECUTE,
+  ])('rejects unsupported permission level %s before resolving the target', async (permissionLevel) => {
+    await expect(
+      shareElementsBatch(
+        {
+          elementIds: [1],
+          permissionLevel,
+          shortnameOrEmail: 'unknown-user',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ELEMENT_BATCH_PERMISSION_INVALID' },
+    })
+
+    expect(await prisma.permission.count()).toBe(0)
+  })
+
+  it('returns bounded failures after the batch deadline expires', async () => {
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValue(Number.MAX_SAFE_INTEGER)
+    const transactionSpy = vi.fn()
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [1, 2],
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      { ...userOneCtx, prisma: isolatedPrisma }
+    )
+
+    expect(result).toEqual({
+      targetError: null,
+      outcomes: [
+        { elementId: 1, status: 'FAILED', reason: 'SHARING_FAILED' },
+        { elementId: 2, status: 'FAILED', reason: 'SHARING_FAILED' },
+      ],
+    })
+    expect(transactionSpy).not.toHaveBeenCalled()
   })
 
   it('returns generic target errors for invalid or unavailable targets', async () => {
@@ -217,6 +297,7 @@ describe('Integration tests for batch sharing elements', () => {
       ownerId: userThree.id,
       callerPermissionLevel: PermissionLevel.READ,
     })
+    const inaccessibleElement = await seedElement({ ownerId: userThree.id })
     const deletedElement = await seedElement({ isDeleted: true })
     const missingId = deletedElement.id + 10_000
 
@@ -227,6 +308,7 @@ describe('Integration tests for batch sharing elements', () => {
           ownerElement.id,
           adminElement.id,
           readElement.id,
+          inaccessibleElement.id,
           deletedElement.id,
           missingId,
         ],
@@ -245,6 +327,11 @@ describe('Integration tests for batch sharing elements', () => {
           elementId: readElement.id,
           status: 'SKIPPED',
           reason: 'INSUFFICIENT_PERMISSION',
+        },
+        {
+          elementId: inaccessibleElement.id,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
         },
         {
           elementId: deletedElement.id,
@@ -469,31 +556,23 @@ describe('Integration tests for batch sharing elements', () => {
     ).resolves.toBeNull()
   })
 
-  it('keeps direct element sharing propagation and response behavior compatible', async () => {
+  it('keeps direct element sharing propagation and invalidation behavior compatible', async () => {
     const element = await seedElement()
     emitter.once('invalidate', () => {
       throw new Error('synthetic direct invalidation failure')
     })
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const result = await shareObject(
-      {
-        elementId: element.id,
-        permissionLevel: PermissionLevel.WRITE,
-        propagation: true,
-        shortnameOrEmail: userTwo.shortname,
-      },
-      userOneCtx
-    )
-
-    expect(result).toMatchObject({
-      userId: userTwo.id,
-      username: userTwo.shortname,
-      userEmail: userTwo.email,
-      permissionLevel: PermissionLevel.WRITE,
-      propagation: true,
-      isOwn: false,
-    })
+    await expect(
+      shareObject(
+        {
+          elementId: element.id,
+          permissionLevel: PermissionLevel.WRITE,
+          propagation: true,
+          shortnameOrEmail: userTwo.shortname,
+        },
+        userOneCtx
+      )
+    ).rejects.toThrow('synthetic direct invalidation failure')
     expect(
       await prisma.permission.findUnique({
         where: {
@@ -504,12 +583,6 @@ describe('Integration tests for batch sharing elements', () => {
       permissionLevel: PermissionLevel.WRITE,
       propagation: true,
     })
-    expect(errorSpy).toHaveBeenCalledWith(
-      'Failed to invalidate permission %s after sharing element %s',
-      expect.any(Number),
-      expect.any(Number),
-      expect.any(Error)
-    )
   })
 
   it('enforces full-access lecturer auth at the GraphQL boundary', async () => {
@@ -599,14 +672,14 @@ describe('Integration tests for batch sharing elements', () => {
     const secondElement = await seedElement()
     const transaction = prisma.$transaction.bind(prisma)
     const emitSpy = vi.spyOn(emitter, 'emit')
-    const transactionMock = vi
+    const transactionSpy = vi
       .fn()
       .mockRejectedValueOnce(new Error('synthetic transaction failure'))
       .mockImplementation(transaction as typeof prisma.$transaction)
     const isolatedPrisma = new Proxy(prisma, {
       get(target, property, receiver) {
         return property === '$transaction'
-          ? transactionMock
+          ? transactionSpy
           : Reflect.get(target, property, receiver)
       },
     })
@@ -642,6 +715,195 @@ describe('Integration tests for batch sharing elements', () => {
       typename: 'Permission',
       id: committedPermission!.id,
     })
-    expect(prisma.$transaction).toBeTypeOf('function')
+    expect(transactionSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries serializable transaction conflicts before sharing', async () => {
+    const element = await seedElement()
+    const transaction = prisma.$transaction.bind(prisma)
+    const transactionSpy = vi
+      .fn()
+      .mockRejectedValueOnce({ code: 'P2034' })
+      .mockImplementation(transaction as typeof prisma.$transaction)
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [element.id],
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      { ...userOneCtx, prisma: isolatedPrisma }
+    )
+
+    expect(result.outcomes).toEqual([
+      { elementId: element.id, status: 'SHARED', reason: null },
+    ])
+    expect(transactionSpy).toHaveBeenCalledTimes(2)
+    expect(
+      await prisma.permission.findUnique({
+        where: {
+          elementId_userId: { elementId: element.id, userId: userTwo.id },
+        },
+      })
+    ).not.toBeNull()
+  })
+
+  it('rechecks caller permission inside the element transaction', async () => {
+    const element = await seedElement({
+      ownerId: userThree.id,
+      callerPermissionLevel: PermissionLevel.ADMIN,
+    })
+    const transactionSpy = vi
+      .fn()
+      .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
+        await prisma.permission.deleteMany({
+          where: { elementId: element.id, userId: userOne.id },
+        })
+        await recomputeDerivedPermissions({ elementId: element.id }, prisma)
+        return callback(prisma)
+      })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [element.id],
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      { ...userOneCtx, prisma: isolatedPrisma }
+    )
+
+    expect(result.outcomes).toEqual([
+      {
+        elementId: element.id,
+        status: 'SKIPPED',
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+      },
+    ])
+    expect(
+      await prisma.permission.findUnique({
+        where: {
+          elementId_userId: { elementId: element.id, userId: userTwo.id },
+        },
+      })
+    ).toBeNull()
+    expect(transactionSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechecks group access inside the element transaction', async () => {
+    const element = await seedElement({
+      callerPermissionLevel: PermissionLevel.ADMIN,
+    })
+    const group = await prisma.userGroup.create({
+      data: {
+        name: 'Batch sharing group access check',
+        ownerId: userThree.id,
+        members: { connect: { id: userOne.id } },
+      },
+    })
+    const transactionSpy = vi
+      .fn()
+      .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
+        await prisma.userGroup.update({
+          where: { id: group.id },
+          data: { members: { disconnect: { id: userOne.id } } },
+        })
+        return callback(prisma)
+      })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [element.id],
+        permissionLevel: PermissionLevel.READ,
+        userGroupId: group.id,
+      },
+      { ...userOneCtx, prisma: isolatedPrisma }
+    )
+
+    expect(result.outcomes).toEqual([
+      {
+        elementId: element.id,
+        status: 'SKIPPED',
+        reason: 'INSUFFICIENT_PERMISSION',
+      },
+    ])
+    expect(
+      await prisma.permission.findUnique({
+        where: {
+          elementId_userGroupId: {
+            elementId: element.id,
+            userGroupId: group.id,
+          },
+        },
+      })
+    ).toBeNull()
+    expect(transactionSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechecks deletion inside the element transaction', async () => {
+    const element = await seedElement({
+      callerPermissionLevel: PermissionLevel.ADMIN,
+    })
+    const transactionSpy = vi
+      .fn()
+      .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
+        await prisma.element.update({
+          where: { id: element.id },
+          data: { isDeleted: true },
+        })
+        return callback(prisma)
+      })
+    const isolatedPrisma = new Proxy(prisma, {
+      get(target, property, receiver) {
+        return property === '$transaction'
+          ? transactionSpy
+          : Reflect.get(target, property, receiver)
+      },
+    })
+
+    const result = await shareElementsBatch(
+      {
+        elementIds: [element.id],
+        permissionLevel: PermissionLevel.READ,
+        shortnameOrEmail: userTwo.shortname,
+      },
+      { ...userOneCtx, prisma: isolatedPrisma }
+    )
+
+    expect(result.outcomes).toEqual([
+      {
+        elementId: element.id,
+        status: 'SKIPPED',
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
+      },
+    ])
+    expect(
+      await prisma.permission.findUnique({
+        where: {
+          elementId_userId: { elementId: element.id, userId: userTwo.id },
+        },
+      })
+    ).toBeNull()
+    expect(transactionSpy).toHaveBeenCalledTimes(1)
   })
 })

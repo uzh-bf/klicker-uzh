@@ -51,7 +51,11 @@ and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `sr
 group for multiple Elements. The mutation uses `asUserFullAccess`; the service
 then rechecks every non-deleted Element and shares only those on which the
 caller has `ADMIN` or `OWNER`. Exactly one of `shortnameOrEmail` and
-`userGroupId` must be supplied.
+`userGroupId` must be supplied. Sharing does not propagate access to activities;
+linked answer collections receive the derived READ access required by the
+permission model. Before resolving a target, the caller must control at least
+one supplied non-deleted Element; otherwise the service returns uniform
+unavailable outcomes without revealing target or element existence.
 
 The service resolves the target once, deduplicates Element IDs in first-seen
 order, and returns one outcome per unique ID. Missing/deleted Elements and
@@ -59,11 +63,14 @@ insufficient permissions are `SKIPPED`; unexpected transaction errors are
 reported as the generic `FAILED / SHARING_FAILED`. Invalid/self users and
 unavailable groups are target-level errors and produce no per-Element writes.
 
-Each eligible Element uses its own sequential transaction. A successful
-transaction upserts a non-propagating direct permission, removes matching user
-access requests, recomputes derived permissions, and records a
-`PERMISSION_GRANTED` audit entry. Permission invalidation happens after commit;
-an invalidation-listener error is logged but does not turn an already committed
+Each eligible Element uses its own sequential serializable transaction. The
+transaction rechecks the current non-deleted state and caller `ADMIN`/`OWNER`
+permission immediately before the upsert, with bounded conflict retries. A
+successful transaction upserts a non-propagating direct permission, removes
+matching user access requests, recomputes derived permissions, and records a
+`PERMISSION_GRANTED` audit entry. Element processing has a bounded deadline
+after target resolution. Permission invalidation happens after commit; an
+invalidation-listener error is logged but does not turn an already committed
 grant into a failed outcome. This boundary permits partial success without
 exposing database errors to clients.
 

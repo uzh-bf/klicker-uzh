@@ -1881,6 +1881,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
       batchOperationsElements: 'Elemente - Batch-Operationen',
+      batchOperationsApplying: 'Batch-Operationen werden angewendet…',
       selectedElementsDescription:
         'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       batchElementName: 'Element',
@@ -1898,7 +1899,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nElementsWillBeUpdated: '{number} Elemente werden angepasst',
       batchSharing: 'Elemente teilen',
       batchSharingDescription:
-        'Erteilen Sie dieselbe direkte Berechtigung für alle ausgewählten Elemente. Die Freigabe wird nicht auf abhängige Objekte übertragen.',
+        'Erteilen Sie dieselbe direkte Berechtigung für alle ausgewählten Elemente. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.',
+      batchSharingLimit:
+        'Das Teilen ist auf {max} Elemente pro Vorgang beschränkt. Reduzieren Sie die Auswahl oder deaktivieren Sie das Teilen.',
       batchSharingUserOrEmail: 'Benutzer:in',
       batchSharingGroup: 'Benutzergruppe',
       batchSharingPermission: 'Berechtigung',
@@ -1941,7 +1944,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
 <li>Multiplikatoren können nur für Fragen mit einer definierten Musterlösung geändert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
-<li>Das Teilen erfordert für jedes Element mindestens Adminrechte und wird nicht auf abhängige Objekte übertragen.</li>
+<li>Das Teilen erfordert für jedes Element mindestens Adminrechte. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:

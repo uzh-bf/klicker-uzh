@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  type ElementBatchSharingOutcome,
   ElementBatchSharingReason,
   ElementBatchSharingStatus,
   ElementBatchSharingTargetError,
@@ -14,12 +15,91 @@ import {
   ShadcnTable,
   ShadcnTableBody,
   ShadcnTableCell,
+  ShadcnTableHead,
+  ShadcnTableHeader,
   ShadcnTableRow,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { ElementBatchExecutionResult } from './types'
+
+function UpdateResultNotice({
+  result,
+}: {
+  result: Exclude<
+    ElementBatchExecutionResult['update'],
+    { status: 'NOT_REQUESTED' }
+  >
+}) {
+  const t = useTranslations()
+  const isSkipped = result.status === 'SKIPPED'
+  const isSuccess = result.status === 'SUCCEEDED'
+  const label = isSkipped
+    ? t('manage.questionPool.batchUpdateResultSkipped')
+    : result.status === 'FAILED'
+      ? t('manage.questionPool.batchUpdateResultFailed')
+      : isSuccess
+        ? t('manage.questionPool.batchUpdateResultSuccess')
+        : t('manage.questionPool.batchUpdateResultPartial', {
+            updated: result.updatedCount,
+            total: result.expectedCount,
+          })
+
+  return (
+    <div
+      className={twMerge(
+        'rounded border px-3 py-2 text-sm',
+        isSkipped
+          ? 'border-orange-200 bg-orange-50 text-orange-800'
+          : isSuccess
+            ? 'border-green-200 bg-green-50 text-green-800'
+            : 'border-red-200 bg-red-50 text-red-800'
+      )}
+      data-cy="element-batch-update-result"
+    >
+      <FontAwesomeIcon
+        icon={isSkipped ? faMinus : isSuccess ? faCheck : faX}
+        className="mr-2"
+      />
+      {label}
+    </div>
+  )
+}
+
+function SharingOutcomeRow({
+  outcome,
+  elementName,
+}: {
+  outcome: ElementBatchSharingOutcome
+  elementName: string
+}) {
+  const t = useTranslations()
+  const shared = outcome.status === ElementBatchSharingStatus.Shared
+  const label = shared
+    ? t('manage.questionPool.batchSharingResultShared')
+    : outcome.reason === ElementBatchSharingReason.InsufficientPermission
+      ? t('manage.questionPool.batchSharingResultSkippedInsufficientPermission')
+      : outcome.reason === ElementBatchSharingReason.ElementNotFoundOrDeleted
+        ? t('manage.questionPool.batchSharingResultElementUnavailable')
+        : outcome.reason === ElementBatchSharingReason.SharingFailed
+          ? t('manage.questionPool.batchSharingResultFailed')
+          : t('manage.questionPool.batchSharingResultNotProcessed')
+
+  return (
+    <ShadcnTableRow data-cy={`element-batch-sharing-result-${elementName}`}>
+      <ShadcnTableCell>{elementName}</ShadcnTableCell>
+      <ShadcnTableCell
+        className={twMerge(
+          'text-right',
+          shared ? 'text-green-700' : 'text-red-700'
+        )}
+      >
+        <FontAwesomeIcon icon={shared ? faCheck : faX} className="mr-2" />
+        {label}
+      </ShadcnTableCell>
+    </ShadcnTableRow>
+  )
+}
 
 function ElementBatchOperationsResult({
   result,
@@ -27,10 +107,8 @@ function ElementBatchOperationsResult({
   result: ElementBatchExecutionResult
 }) {
   const t = useTranslations()
-  const selectedElements = useMemo(
-    () =>
-      new Map(result.selectedElements.map((element) => [element.id, element])),
-    [result.selectedElements]
+  const selectedElements = new Map(
+    result.selectedElements.map((element) => [element.id, element])
   )
   const sharingOutcomes =
     result.sharing.status === 'COMPLETED'
@@ -42,7 +120,12 @@ function ElementBatchOperationsResult({
       : undefined
 
   return (
-    <div className="flex flex-col gap-4" data-cy="element-batch-result">
+    <div
+      className="flex flex-col gap-4"
+      data-cy="element-batch-result"
+      role="status"
+      aria-live="polite"
+    >
       <div>
         <h3 className="font-bold">
           {t('manage.questionPool.batchOperationsResult')}
@@ -53,38 +136,7 @@ function ElementBatchOperationsResult({
       </div>
 
       {result.update.status !== 'NOT_REQUESTED' ? (
-        <div
-          className={twMerge(
-            'rounded border px-3 py-2 text-sm',
-            result.update.status === 'SKIPPED'
-              ? 'border-orange-200 bg-orange-50 text-orange-800'
-              : result.update.status === 'SUCCEEDED'
-                ? 'border-green-200 bg-green-50 text-green-800'
-                : 'border-red-200 bg-red-50 text-red-800'
-          )}
-          data-cy="element-batch-update-result"
-        >
-          <FontAwesomeIcon
-            icon={
-              result.update.status === 'SKIPPED'
-                ? faMinus
-                : result.update.status === 'SUCCEEDED'
-                  ? faCheck
-                  : faX
-            }
-            className="mr-2"
-          />
-          {result.update.status === 'SKIPPED'
-            ? t('manage.questionPool.batchUpdateResultSkipped')
-            : result.update.status === 'FAILED'
-              ? t('manage.questionPool.batchUpdateResultFailed')
-              : result.update.status === 'SUCCEEDED'
-                ? t('manage.questionPool.batchUpdateResultSuccess')
-                : t('manage.questionPool.batchUpdateResultPartial', {
-                    updated: result.update.updatedCount,
-                    total: result.update.expectedCount,
-                  })}
-        </div>
+        <UpdateResultNotice result={result.update} />
       ) : null}
 
       {result.sharing.status !== 'NOT_REQUESTED' ? (
@@ -106,57 +158,26 @@ function ElementBatchOperationsResult({
           ) : null}
           {sharingOutcomes.length > 0 ? (
             <ShadcnTable>
+              <ShadcnTableHeader>
+                <ShadcnTableRow>
+                  <ShadcnTableHead>
+                    {t('manage.questionPool.batchElementName')}
+                  </ShadcnTableHead>
+                  <ShadcnTableHead>
+                    {t('manage.questionPool.batchSharingResult')}
+                  </ShadcnTableHead>
+                </ShadcnTableRow>
+              </ShadcnTableHeader>
               <ShadcnTableBody>
                 {sharingOutcomes.map((outcome) => {
                   const element = selectedElements.get(outcome.elementId)
                   const elementName = element?.name ?? String(outcome.elementId)
-                  const shared =
-                    outcome.status === ElementBatchSharingStatus.Shared
-                  let label = t(
-                    'manage.questionPool.batchSharingResultNotProcessed'
-                  )
-
-                  if (shared) {
-                    label = t('manage.questionPool.batchSharingResultShared')
-                  } else if (
-                    outcome.reason ===
-                    ElementBatchSharingReason.InsufficientPermission
-                  ) {
-                    label = t(
-                      'manage.questionPool.batchSharingResultSkippedInsufficientPermission'
-                    )
-                  } else if (
-                    outcome.reason ===
-                    ElementBatchSharingReason.ElementNotFoundOrDeleted
-                  ) {
-                    label = t(
-                      'manage.questionPool.batchSharingResultElementUnavailable'
-                    )
-                  } else if (
-                    outcome.reason === ElementBatchSharingReason.SharingFailed
-                  ) {
-                    label = t('manage.questionPool.batchSharingResultFailed')
-                  }
-
                   return (
-                    <ShadcnTableRow
+                    <SharingOutcomeRow
                       key={outcome.elementId}
-                      data-cy={`element-batch-sharing-result-${elementName}`}
-                    >
-                      <ShadcnTableCell>{elementName}</ShadcnTableCell>
-                      <ShadcnTableCell
-                        className={twMerge(
-                          'text-right',
-                          shared ? 'text-green-700' : 'text-red-700'
-                        )}
-                      >
-                        <FontAwesomeIcon
-                          icon={shared ? faCheck : faX}
-                          className="mr-2"
-                        />
-                        {label}
-                      </ShadcnTableCell>
-                    </ShadcnTableRow>
+                      outcome={outcome}
+                      elementName={elementName}
+                    />
                   )
                 })}
               </ShadcnTableBody>
