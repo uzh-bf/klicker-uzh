@@ -4,6 +4,7 @@ query GetChatbotsInfo {
     name
     description
     avatar
+    status
     modelSelection
     allowedModelIds
     allowedReasoningEffortsByModel {
