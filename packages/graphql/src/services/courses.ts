@@ -1001,7 +1001,6 @@ async function upsertResponseAppliedCorrection(
   {
     correctionId,
     instance,
-    response,
     participantId,
     awardBasePoints,
     awardCorrectnessPoints,
@@ -1015,7 +1014,6 @@ async function upsertResponseAppliedCorrection(
   }: {
     correctionId: number
     instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
-    response?: DB.LiveQuizResponse | null
     participantId: string
     awardBasePoints?: boolean | null // true = award, null / undefined = no change
     awardCorrectnessPoints?: boolean | null // true = award, null / undefined = no change
@@ -1030,12 +1028,31 @@ async function upsertResponseAppliedCorrection(
   tx: PrismaTransactionClient,
   ctx: ContextWithUser
 ) {
+  // Match the response worker's transaction lock so corrections read the
+  // materialized response instead of overwriting a concurrent update.
+  await tx.$executeRaw(
+    DB.Prisma.sql`
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          ${`${instance.id}:${instance.elementBlock.execution}:${participantId}`},
+          0
+        )
+      )
+    `
+  )
+  const currentResponse = await tx.liveQuizResponse.findUnique({
+    where: {
+      instanceId_elementBlockExecution_participantId: {
+        instanceId: instance.id,
+        elementBlockExecution: instance.elementBlock.execution,
+        participantId,
+      },
+    },
+  })
+
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
-    where:
-      response !== null && typeof response !== 'undefined'
-        ? { id: response.id }
-        : { id: -1 },
+    where: currentResponse ? { id: currentResponse.id } : { id: -1 },
     // response is not set -> defaults to null (setting it to null explicitly does not work, since this would be interpreted as the JSON value being null -> violates DB constraint)
     create: {
       correctionOnly: true,
@@ -1078,24 +1095,25 @@ async function upsertResponseAppliedCorrection(
       // awarded and deducted points (true as award, false as deduction, null as no change)
       awardedBasePoints:
         awardBasePoints === true
-          ? availableBasePoints - (response?.basePoints ?? 0)
+          ? availableBasePoints - (currentResponse?.basePoints ?? 0)
           : 0,
       awardedCorrectnessPoints:
         awardCorrectnessPoints === true
-          ? availableCorrectnessPoints - (response?.correctnessPoints ?? 0)
+          ? availableCorrectnessPoints -
+            (currentResponse?.correctnessPoints ?? 0)
           : 0,
       awardedBonusPoints:
         awardBonusPoints === true
-          ? availableBonusPoints - (response?.bonusPoints ?? 0)
+          ? availableBonusPoints - (currentResponse?.bonusPoints ?? 0)
           : 0,
       deductedBasePoints:
-        deductBasePoints === true ? (response?.basePoints ?? 0) : 0,
+        deductBasePoints === true ? (currentResponse?.basePoints ?? 0) : 0,
       deductedCorrectnessPoints:
         deductCorrectnessPoints === true
-          ? (response?.correctnessPoints ?? 0)
+          ? (currentResponse?.correctnessPoints ?? 0)
           : 0,
       deductedBonusPoints:
-        deductBonusPoints === true ? (response?.bonusPoints ?? 0) : 0,
+        deductBonusPoints === true ? (currentResponse?.bonusPoints ?? 0) : 0,
       // link to point correction
       pointCorrection: { connect: { id: correctionId } },
       // upsert live quiz response with corresponding points
@@ -1110,54 +1128,49 @@ async function upsertResponseAppliedCorrection(
   }
 }
 
-type ParticipantResponseMap = Record<
-  string,
-  Record<number, DB.LiveQuizResponse>
->
-
-async function getLiveQuizParticipantResponseMap(
+async function getLiveQuizParticipantIds(
   liveQuizId: string,
   prisma: DB.PrismaClient
-): Promise<ParticipantResponseMap | null> {
+): Promise<string[] | null> {
   const liveQuiz = await prisma.liveQuiz.findUnique({
     where: { id: liveQuizId },
-    include: {
+    select: {
       blocks: {
-        include: { elements: { include: { liveQuizResponses: true } } },
+        select: {
+          execution: true,
+          elements: {
+            select: {
+              liveQuizResponses: {
+                select: {
+                  participantId: true,
+                  elementBlockExecution: true,
+                  correctionOnly: true,
+                },
+              },
+            },
+          },
+        },
       },
     },
   })
 
   if (!liveQuiz) return null
 
-  const participantResponseMap = liveQuiz.blocks.reduce<ParticipantResponseMap>(
-    (blockAcc, block) => {
-      block.elements.forEach((instance) => {
-        instance.liveQuizResponses
-          .filter(
-            (response) => response.elementBlockExecution === block.execution
-          )
-          .forEach((response) => {
-            if (!blockAcc[response.participantId]) {
-              blockAcc[response.participantId] = {}
-            }
-
-            blockAcc[response.participantId]![instance.id] = response
-          })
+  const participantIds = new Set<string>()
+  liveQuiz.blocks.forEach((block) =>
+    block.elements.forEach((instance) =>
+      instance.liveQuizResponses.forEach((response) => {
+        if (
+          response.elementBlockExecution === block.execution &&
+          !response.correctionOnly
+        ) {
+          participantIds.add(response.participantId)
+        }
       })
-
-      return blockAcc
-    },
-    {}
-  )
-
-  return Object.fromEntries(
-    Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
-      Object.values(instanceResponseMap).some(
-        (response) => response.correctionOnly === false
-      )
     )
   )
+
+  return [...participantIds].sort()
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1282,16 +1295,6 @@ export async function correctAssessmentPointsInstance(
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
-    const response = await ctx.prisma.liveQuizResponse.findUnique({
-      where: {
-        instanceId_elementBlockExecution_participantId: {
-          instanceId,
-          elementBlockExecution: instance.elementBlock.execution,
-          participantId,
-        },
-      },
-    })
-
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1330,7 +1333,6 @@ export async function correctAssessmentPointsInstance(
             instance: instance as DB.ElementInstance & {
               elementBlock: DB.ElementBlock
             },
-            response,
             participantId,
             awardBasePoints,
             awardCorrectnessPoints,
@@ -1410,7 +1412,6 @@ export async function correctAssessmentPointsInstance(
                 instance: instance as DB.ElementInstance & {
                   elementBlock: DB.ElementBlock
                 },
-                response,
                 participantId: response.participantId,
                 awardBasePoints,
                 awardCorrectnessPoints,
@@ -1446,12 +1447,12 @@ export async function correctAssessmentPointsInstance(
   // if the points of all quiz participants should be modified, update the
   // selected instance for everyone with at least one genuine quiz response
   if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
-    const participantResponseMap = await getLiveQuizParticipantResponseMap(
+    const participantIds = await getLiveQuizParticipantIds(
       instance.elementBlock.liveQuiz.id,
       ctx.prisma
     )
 
-    if (!participantResponseMap) return null
+    if (!participantIds?.length) return null
 
     const createdCorrection = await ctx.prisma.$transaction(
       async (tx) => {
@@ -1481,35 +1482,28 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, instance: true },
         })
 
-        const logEntries: { message: { info: string } }[] = []
-
-        await Promise.all(
-          Object.entries(participantResponseMap).map(
-            async ([pId, instanceResponseMap]) => {
-              const logEntry = await upsertResponseAppliedCorrection(
-                {
-                  correctionId: correction.id,
-                  instance: instance as DB.ElementInstance & {
-                    elementBlock: DB.ElementBlock
-                  },
-                  response: instanceResponseMap[instanceId],
-                  participantId: pId,
-                  awardBasePoints,
-                  awardCorrectnessPoints,
-                  awardBonusPoints,
-                  deductBasePoints,
-                  deductCorrectnessPoints,
-                  deductBonusPoints,
-                  availableBasePoints,
-                  availableCorrectnessPoints,
-                  availableBonusPoints,
+        const logEntries = await Promise.all(
+          participantIds.map((participantId) =>
+            upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: instance as DB.ElementInstance & {
+                  elementBlock: DB.ElementBlock
                 },
-                tx,
-                ctx
-              )
-
-              logEntries.push(logEntry)
-            }
+                participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
+            )
           )
         )
 
@@ -1528,7 +1522,7 @@ export async function correctAssessmentPointsInstance(
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // find all participants of the course and the corresponding responses for the given instance
+    // find all participants of the course for the given instance
     const participations = await ctx.prisma.participation.findMany({
       where: {
         courseId: instance.elementBlock.liveQuiz.courseId!,
@@ -1538,16 +1532,7 @@ export async function correctAssessmentPointsInstance(
             : undefined,
       },
       include: {
-        participant: {
-          include: {
-            liveQuizResponses: {
-              where: {
-                instanceId,
-                elementBlockExecution: instance.elementBlock.execution,
-              },
-            },
-          },
-        },
+        participant: true,
       },
     })
 
@@ -1596,7 +1581,6 @@ export async function correctAssessmentPointsInstance(
                 instance: instance as DB.ElementInstance & {
                   elementBlock: DB.ElementBlock
                 },
-                response: participation.participant.liveQuizResponses[0],
                 participantId: participation.participantId,
                 awardBasePoints,
                 awardCorrectnessPoints,
@@ -1821,22 +1805,10 @@ export async function correctAssessmentPointsLiveQuiz(
                   availableBonusPoints,
                 } = availablePoints[instance.id]!
 
-                // try to find an existing response of the participant for the instance
-                const response = await tx.liveQuizResponse.findUnique({
-                  where: {
-                    instanceId_elementBlockExecution_participantId: {
-                      instanceId: instance.id,
-                      elementBlockExecution: block.execution,
-                      participantId,
-                    },
-                  },
-                })
-
                 const logEntry = await upsertResponseAppliedCorrection(
                   {
                     correctionId: correction.id,
                     instance: { ...instance, elementBlock: block },
-                    response,
                     participantId,
                     awardBasePoints,
                     awardCorrectnessPoints,
@@ -1870,14 +1842,15 @@ export async function correctAssessmentPointsLiveQuiz(
     return createdCorrection
   }
 
-  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  // if the points of all participating students should be modified, update
+  // every instance for participants with a genuine response in the quiz
   if (scope === PointCorrectionType.PARTICIPATING) {
-    const participantResponseMap = await getLiveQuizParticipantResponseMap(
+    const participantIds = await getLiveQuizParticipantIds(
       liveQuiz.id,
       ctx.prisma
     )
 
-    if (!participantResponseMap) return null
+    if (!participantIds?.length) return null
 
     // update the responses of all participants that have submitted at least one response to the live quiz
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1924,34 +1897,29 @@ export async function correctAssessmentPointsLiveQuiz(
                 } = availablePoints[instance.id]!
 
                 await Promise.all(
-                  Object.entries(participantResponseMap).map(
-                    async ([pId, instanceResponseMap]) => {
-                      const response = instanceResponseMap[instance.id]
+                  participantIds.map(async (participantId) => {
+                    const logEntry = await upsertResponseAppliedCorrection(
+                      {
+                        correctionId: correction.id,
+                        instance: { ...instance, elementBlock: block },
+                        participantId,
+                        awardBasePoints,
+                        awardCorrectnessPoints,
+                        awardBonusPoints,
+                        deductBasePoints,
+                        deductCorrectnessPoints,
+                        deductBonusPoints,
+                        availableBasePoints,
+                        availableCorrectnessPoints,
+                        availableBonusPoints,
+                      },
+                      tx,
+                      ctx
+                    )
 
-                      const logEntry = await upsertResponseAppliedCorrection(
-                        {
-                          correctionId: correction.id,
-                          instance: { ...instance, elementBlock: block },
-                          response,
-                          participantId: pId,
-                          awardBasePoints,
-                          awardCorrectnessPoints,
-                          awardBonusPoints,
-                          deductBasePoints,
-                          deductCorrectnessPoints,
-                          deductBonusPoints,
-                          availableBasePoints,
-                          availableCorrectnessPoints,
-                          availableBonusPoints,
-                        },
-                        tx,
-                        ctx
-                      )
-
-                      // push the log object to the list of log entries
-                      logEntries.push(logEntry)
-                    }
-                  )
+                    // push the log object to the list of log entries
+                    logEntries.push(logEntry)
+                  })
                 )
               })
             )
@@ -2037,21 +2005,10 @@ export async function correctAssessmentPointsLiveQuiz(
                 await Promise.all(
                   participations.map(async (participation) => {
                     const pId = participation.participantId
-                    const response = await tx.liveQuizResponse.findUnique({
-                      where: {
-                        instanceId_elementBlockExecution_participantId: {
-                          instanceId: instance.id,
-                          elementBlockExecution: block.execution,
-                          participantId: pId,
-                        },
-                      },
-                    })
-
                     const logEntry = await upsertResponseAppliedCorrection(
                       {
                         correctionId: correction.id,
                         instance: { ...instance, elementBlock: block },
-                        response,
                         participantId: pId,
                         awardBasePoints,
                         awardCorrectnessPoints,

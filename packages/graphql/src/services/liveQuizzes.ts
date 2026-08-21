@@ -1182,6 +1182,10 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      hasSampleSolution:
+        'hasSampleSolution' in elementData.options
+          ? (elementData.options.hasSampleSolution ?? false)
+          : false,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }

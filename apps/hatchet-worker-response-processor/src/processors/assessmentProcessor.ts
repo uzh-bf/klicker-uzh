@@ -8,6 +8,7 @@ import {
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementType,
+  Prisma,
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma/client'
@@ -76,6 +77,19 @@ async function persistAssessmentResponse({
 }): Promise<'created' | 'duplicate' | 'materialized'> {
   const persist = () =>
     prisma.$transaction(async (tx) => {
+      // Serialize response processing with point corrections for this identity,
+      // including the period before a response row exists.
+      await tx.$executeRaw(
+        Prisma.sql`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(
+              ${`${instanceId}:${elementBlockExecution}:${participantId}`},
+              0
+            )
+          )
+        `
+      )
+
       const existingResponse = await tx.liveQuizResponse.findUnique({
         where: {
           instanceId_elementBlockExecution_participantId: {
@@ -84,9 +98,12 @@ async function persistAssessmentResponse({
             participantId,
           },
         },
-        include: {
+        select: {
+          id: true,
+          correctionOnly: true,
           appliedCorrections: {
-            include: {
+            select: {
+              id: true,
               pointCorrection: {
                 select: {
                   id: true,
@@ -104,13 +121,17 @@ async function persistAssessmentResponse({
       const state = getResponseState(existingResponse)
       if (state === 'duplicate') return 'duplicate'
 
+      const responseData = {
+        submittedAt: new Date(responseTimestamp),
+        response,
+        timeSpent: -1, // TODO: set this in future improvements
+        correctness,
+      }
+
       if (state === 'create') {
         await tx.liveQuizResponse.create({
           data: {
-            submittedAt: new Date(responseTimestamp),
-            response,
-            timeSpent: -1, // TODO: set this in future improvements
-            correctness,
+            ...responseData,
             basePoints: responsePoints.basePoints,
             correctnessPoints: responsePoints.correctnessPoints,
             bonusPoints: responsePoints.bonusPoints,
@@ -131,9 +152,8 @@ async function persistAssessmentResponse({
         rawPoints: responsePoints,
         availablePoints,
         corrections: existingResponse.appliedCorrections.map(
-          ({ id, createdAt, pointCorrection }) => ({
+          ({ id, pointCorrection }) => ({
             appliedCorrectionId: id,
-            createdAt,
             pointCorrection,
           })
         ),
@@ -142,10 +162,7 @@ async function persistAssessmentResponse({
       await tx.liveQuizResponse.update({
         where: { id: existingResponse.id },
         data: {
-          submittedAt: new Date(responseTimestamp),
-          response,
-          timeSpent: -1, // TODO: set this in future improvements
-          correctness,
+          ...responseData,
           basePoints: replayedCorrections.points.basePoints,
           correctnessPoints: replayedCorrections.points.correctnessPoints,
           bonusPoints: replayedCorrections.points.bonusPoints,
@@ -153,30 +170,13 @@ async function persistAssessmentResponse({
         },
       })
 
-      await Promise.all(
-        replayedCorrections.appliedCorrections.map(
-          ({
-            appliedCorrectionId,
-            awardedBasePoints,
-            awardedCorrectnessPoints,
-            awardedBonusPoints,
-            deductedBasePoints,
-            deductedCorrectnessPoints,
-            deductedBonusPoints,
-          }) =>
-            tx.appliedPointCorrection.update({
-              where: { id: appliedCorrectionId },
-              data: {
-                awardedBasePoints,
-                awardedCorrectnessPoints,
-                awardedBonusPoints,
-                deductedBasePoints,
-                deductedCorrectnessPoints,
-                deductedBonusPoints,
-              },
-            })
-        )
-      )
+      for (const correction of replayedCorrections.appliedCorrections) {
+        const { appliedCorrectionId, ...correctionDelta } = correction
+        await tx.appliedPointCorrection.update({
+          where: { id: appliedCorrectionId },
+          data: correctionDelta,
+        })
+      }
 
       return 'materialized'
     })
@@ -274,6 +274,7 @@ export async function processAssessmentResponse(
     defaultPoints,
     defaultCorrectPoints,
     maxBonusPoints,
+    hasSampleSolution,
     pointsMultiplier,
     blockExecution,
     blockClosedAt,
@@ -503,16 +504,17 @@ export async function processAssessmentResponse(
     bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
   }
   const parsedPointsMultiplier = parsePointValue(pointsMultiplier, 1)
+  const sampleSolutionAvailable = hasSampleSolution === 'true'
   const availablePoints: ResponsePoints = {
     basePoints:
       basePoints === 'true'
         ? parsePointValue(defaultPoints, DEFAULT_POINTS)
         : 0,
-    correctnessPoints: parsedSolutions
+    correctnessPoints: sampleSolutionAvailable
       ? parsedPointsMultiplier *
         parsePointValue(defaultCorrectPoints, DEFAULT_CORRECT_POINTS)
       : 0,
-    bonusPoints: parsedSolutions
+    bonusPoints: sampleSolutionAvailable
       ? parsedPointsMultiplier *
         parsePointValue(maxBonusPoints, MAX_BONUS_POINTS)
       : 0,

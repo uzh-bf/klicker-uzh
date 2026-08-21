@@ -6,7 +6,6 @@ export type ResponsePoints = {
 
 export type PointCorrectionInstruction = {
   appliedCorrectionId: number
-  createdAt: Date
   pointCorrection: {
     id: number
     createdAt: Date

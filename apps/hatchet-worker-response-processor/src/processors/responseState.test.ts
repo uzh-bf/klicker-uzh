@@ -11,7 +11,6 @@ function correction(
 ): PointCorrectionInstruction {
   return {
     appliedCorrectionId: 1,
-    createdAt: new Date('2026-08-21T10:00:00Z'),
     pointCorrection: {
       id: 1,
       createdAt: new Date('2026-08-21T10:00:00Z'),
