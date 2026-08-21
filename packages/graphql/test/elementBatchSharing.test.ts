@@ -13,11 +13,7 @@ import type { GraphQLObjectType } from 'graphql'
 import { createYoga } from 'graphql-yoga'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
-import {
-  ELEMENT_BATCH_SHARING_MAX_ELEMENTS,
-  shareElementsBatch,
-  shareObject,
-} from '../src/services/sharing.js'
+import { shareElementsBatch, shareObject } from '../src/services/sharing.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userOne, userThree, userTwo } from './userData.js'
 
@@ -104,10 +100,7 @@ describe('Integration tests for batch sharing elements', () => {
     await expect(
       shareElementsBatch(
         {
-          elementIds: Array.from(
-            { length: ELEMENT_BATCH_SHARING_MAX_ELEMENTS + 1 },
-            () => 1
-          ),
+          elementIds: Array.from({ length: 51 }, () => 1),
           permissionLevel: PermissionLevel.READ,
           shortnameOrEmail: 'unknown-user',
         },
@@ -672,19 +665,10 @@ describe('Integration tests for batch sharing elements', () => {
   it('isolates an unexpected transaction failure to one eligible element', async () => {
     const firstElement = await seedElement()
     const secondElement = await seedElement()
-    const transaction = prisma.$transaction.bind(prisma)
     const emitSpy = vi.spyOn(emitter, 'emit')
-    const transactionMock = vi
-      .fn()
+    const transactionSpy = vi
+      .spyOn(prisma, '$transaction')
       .mockRejectedValueOnce(new Error('synthetic transaction failure'))
-      .mockImplementation(transaction as typeof prisma.$transaction)
-    const isolatedPrisma = new Proxy(prisma, {
-      get(target, property, receiver) {
-        return property === '$transaction'
-          ? transactionMock
-          : Reflect.get(target, property, receiver)
-      },
-    })
 
     const result = await shareElementsBatch(
       {
@@ -692,7 +676,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      { ...userOneCtx, prisma: isolatedPrisma }
+      userOneCtx
     )
 
     expect(result.outcomes).toEqual([
@@ -717,23 +701,14 @@ describe('Integration tests for batch sharing elements', () => {
       typename: 'Permission',
       id: committedPermission!.id,
     })
-    expect(prisma.$transaction).toBeTypeOf('function')
+    expect(transactionSpy).toHaveBeenCalledTimes(2)
   })
 
   it('retries serializable transaction conflicts before sharing', async () => {
     const element = await seedElement()
-    const transaction = prisma.$transaction.bind(prisma)
-    const transactionMock = vi
-      .fn()
+    const transactionSpy = vi
+      .spyOn(prisma, '$transaction')
       .mockRejectedValueOnce({ code: 'P2034' })
-      .mockImplementation(transaction as typeof prisma.$transaction)
-    const isolatedPrisma = new Proxy(prisma, {
-      get(target, property, receiver) {
-        return property === '$transaction'
-          ? transactionMock
-          : Reflect.get(target, property, receiver)
-      },
-    })
 
     const result = await shareElementsBatch(
       {
@@ -741,13 +716,13 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      { ...userOneCtx, prisma: isolatedPrisma }
+      userOneCtx
     )
 
     expect(result.outcomes).toEqual([
       { elementId: element.id, status: 'SHARED', reason: null },
     ])
-    expect(transactionMock).toHaveBeenCalledTimes(2)
+    expect(transactionSpy).toHaveBeenCalledTimes(2)
     expect(
       await prisma.permission.findUnique({
         where: {
@@ -762,9 +737,8 @@ describe('Integration tests for batch sharing elements', () => {
       ownerId: userThree.id,
       callerPermissionLevel: PermissionLevel.ADMIN,
     })
-    const transaction = prisma.$transaction.bind(prisma)
-    const transactionMock = vi
-      .fn()
+    const transactionSpy = vi
+      .spyOn(prisma, '$transaction')
       .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
         await prisma.permission.deleteMany({
           where: { elementId: element.id, userId: userOne.id },
@@ -772,13 +746,6 @@ describe('Integration tests for batch sharing elements', () => {
         await recomputeDerivedPermissions({ elementId: element.id }, prisma)
         return callback(prisma)
       })
-    const isolatedPrisma = new Proxy(prisma, {
-      get(target, property, receiver) {
-        return property === '$transaction'
-          ? transactionMock
-          : Reflect.get(target, property, receiver)
-      },
-    })
 
     const result = await shareElementsBatch(
       {
@@ -786,7 +753,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      { ...userOneCtx, prisma: isolatedPrisma }
+      userOneCtx
     )
 
     expect(result.outcomes).toEqual([
@@ -803,17 +770,15 @@ describe('Integration tests for batch sharing elements', () => {
         },
       })
     ).toBeNull()
-    expect(transactionMock).toHaveBeenCalledTimes(1)
-    expect(transaction).toBeTypeOf('function')
+    expect(transactionSpy).toHaveBeenCalledTimes(1)
   })
 
   it('rechecks deletion inside the element transaction', async () => {
     const element = await seedElement({
       callerPermissionLevel: PermissionLevel.ADMIN,
     })
-    const transaction = prisma.$transaction.bind(prisma)
-    const transactionMock = vi
-      .fn()
+    const transactionSpy = vi
+      .spyOn(prisma, '$transaction')
       .mockImplementation(async (callback: (tx: PrismaClient) => unknown) => {
         await prisma.element.update({
           where: { id: element.id },
@@ -821,13 +786,6 @@ describe('Integration tests for batch sharing elements', () => {
         })
         return callback(prisma)
       })
-    const isolatedPrisma = new Proxy(prisma, {
-      get(target, property, receiver) {
-        return property === '$transaction'
-          ? transactionMock
-          : Reflect.get(target, property, receiver)
-      },
-    })
 
     const result = await shareElementsBatch(
       {
@@ -835,7 +793,7 @@ describe('Integration tests for batch sharing elements', () => {
         permissionLevel: PermissionLevel.READ,
         shortnameOrEmail: userTwo.shortname,
       },
-      { ...userOneCtx, prisma: isolatedPrisma }
+      userOneCtx
     )
 
     expect(result.outcomes).toEqual([
@@ -852,7 +810,6 @@ describe('Integration tests for batch sharing elements', () => {
         },
       })
     ).toBeNull()
-    expect(transactionMock).toHaveBeenCalledTimes(1)
-    expect(transaction).toBeTypeOf('function')
+    expect(transactionSpy).toHaveBeenCalledTimes(1)
   })
 })

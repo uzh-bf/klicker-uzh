@@ -4033,17 +4033,11 @@ export const ELEMENT_BATCH_SHARING_TARGET_ERRORS = [
 export type ElementBatchSharingTargetError =
   (typeof ELEMENT_BATCH_SHARING_TARGET_ERRORS)[number]
 
-export const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
 const ELEMENT_BATCH_SHARING_DEADLINE_MS = 60_000
 const ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS = 15_000
 const ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS = 5_000
 const ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT = 3
-
-const ELEMENT_BATCH_SHARING_PERMISSION_LEVELS = [
-  DB.PermissionLevel.READ,
-  DB.PermissionLevel.WRITE,
-  DB.PermissionLevel.ADMIN,
-] as const
 
 export interface ElementBatchSharingOutcome {
   elementId: number
@@ -4075,14 +4069,6 @@ function isPrismaSerializationConflict(error: unknown) {
     error !== null &&
     'code' in error &&
     error.code === 'P2034'
-  )
-}
-
-function isElementBatchPermissionLevel(
-  permissionLevel: DB.PermissionLevel
-): permissionLevel is (typeof ELEMENT_BATCH_SHARING_PERMISSION_LEVELS)[number] {
-  return ELEMENT_BATCH_SHARING_PERMISSION_LEVELS.some(
-    (level) => level === permissionLevel
   )
 }
 
@@ -4307,7 +4293,11 @@ export async function shareElementsBatch(
       `A maximum of ${ELEMENT_BATCH_SHARING_MAX_ELEMENTS} elements can be shared at once.`
     )
   }
-  if (!isElementBatchPermissionLevel(permissionLevel)) {
+  if (
+    permissionLevel !== DB.PermissionLevel.READ &&
+    permissionLevel !== DB.PermissionLevel.WRITE &&
+    permissionLevel !== DB.PermissionLevel.ADMIN
+  ) {
     throw elementBatchSharingError(
       'ELEMENT_BATCH_PERMISSION_INVALID',
       'Element batch sharing supports READ, WRITE, and ADMIN permissions only.'
@@ -4379,13 +4369,21 @@ async function shareElementForBatch(
     attempt++
   ) {
     const remainingMs = deadlineAt - Date.now()
-    if (remainingMs <= 0) {
+    if (remainingMs < 2) {
       return {
         elementId,
         status: 'FAILED',
         reason: 'SHARING_FAILED',
       }
     }
+    const transactionMaxWaitMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS,
+      Math.floor(remainingMs / 2)
+    )
+    const transactionTimeoutMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS,
+      remainingMs - transactionMaxWaitMs
+    )
 
     try {
       const result = await ctx.prisma.$transaction(
@@ -4437,14 +4435,8 @@ async function shareElementForBatch(
         },
         {
           isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
-          maxWait: Math.min(
-            ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS,
-            remainingMs
-          ),
-          timeout: Math.min(
-            ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS,
-            remainingMs
-          ),
+          maxWait: transactionMaxWaitMs,
+          timeout: transactionTimeoutMs,
         }
       )
 

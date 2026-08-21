@@ -207,8 +207,8 @@ made while push is withheld.
 | Planning challenge | Native planner | Complete; corrections incorporated |
 | API implementation and integration | Main session | Complete locally; focused Vitest is blocked by missing `HATCHET_CLIENT_TOKEN` |
 | UI simplification | Main session | Complete locally; native specialist executor route unavailable |
-| Simplifier and risk review | Native specialists | Requested after slices; fallback will be recorded if route remains unavailable |
-| Final package review | Native final reviewer | Requested after integration; no completion claim without evidence |
+| Simplifier and risk review | Native specialists with fallback reviewers | Native specialist routes failed with provider errors; fallback reviews completed and their accepted corrections are being integrated |
+| Final package review | Native final reviewer with fallback | Run after the final commit; no completion claim without evidence |
 
 ## Progress
 
@@ -221,4 +221,5 @@ made while push is withheld.
 - [x] S1 API correctness and tests (`5b21e8c46`, `84944f64e`); focused Vitest remains blocked by missing `HATCHET_CLIENT_TOKEN`.
 - [x] S2 UI simplification (`5e357e6c8`); Manage typecheck passes after building existing workspace dependencies.
 - [x] S3 Playwright and project-plan migration; Playwright typecheck and Prettier pass, browser execution remains pending runtime availability.
+- [x] Fallback simplifier and risk-review corrections: removed dead recipient-alert state, made recipient updates atomic, passed only update IDs to the execution hook, simplified transaction test doubles, kept the batch-size constant private, and budgeted transaction wait plus timeout within the remaining deadline.
 - [ ] S4 integrated checks and final review.
