@@ -22,6 +22,7 @@ const CANDIDATE_SERVICE_URL =
 const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
 const REQUEST_TIMEOUT_MS = 15_000
 const DB_TIMEOUT_MS = 30_000
+const MCP_PROTOCOL_VERSION = '2025-11-25'
 
 const EXPECTED_TOOLS = [
   'banking_expert',
@@ -581,6 +582,7 @@ async function fixedRouteStatus(
   const headers: Record<string, string> = {
     accept: 'application/json, text/event-stream',
     'content-type': 'application/json',
+    'mcp-protocol-version': MCP_PROTOCOL_VERSION,
   }
   if (bearer) headers.authorization = `Bearer ${bearer}`
   if (chatbotId) headers['Chatbot-ID'] = chatbotId
@@ -594,7 +596,7 @@ async function fixedRouteStatus(
       id: 1,
       method: 'initialize',
       params: {
-        protocolVersion: '2025-03-26',
+      protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: {},
         clientInfo: { name: 'w5e', version: '1' },
       },
