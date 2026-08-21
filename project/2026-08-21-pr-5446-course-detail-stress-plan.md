@@ -120,8 +120,8 @@ large, deterministic activity set for manual stress testing.
 - 2026-08-21: The final review also required the Hatchet task timeout to exceed
   the ten-minute duplication transaction and a recovery path after both event
   publication attempts fail. The task now allows 15 minutes, and a later
-  mutation retry republishes the same pending job id. Focused checks and a new
-  final review remain before the normal push to
+  mutation retry republishes the same pending job id. Focused checks and the
+  final review passed; the next step is the normal push to
   `origin/fix/course-duplication-timeout`. No full `check:all` or build claim is
   made for the repository hook.
 - 2026-08-21: The final review also required lease-aware retry spacing, pending
@@ -129,3 +129,7 @@ large, deterministic activity set for manual stress testing.
   opt-in. Hatchet now backs off 60 seconds before the first retry, both
   pending-job paths republish the stable id, and the seed defaults to dry-run
   until `COURSE_DUPLICATION_STRESS_WRITE=true` is provided.
+- 2026-08-21: Final committed review passed at `e5bec3ad1`. The retained
+  `fix-course-duplication-timeout` DevPod is running with four registered
+  routes; Manage, assessment results, and Auth return HTTP 200, and both
+  Hatchet workers are running without the prior watch-mode crash signature.
