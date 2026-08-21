@@ -2571,6 +2571,9 @@ export async function getStudentCourseLeaderboard(
 }
 
 interface CreateCourseArgs {
+  // Async course duplication uses the job id as a stable course id so a retry
+  // can detect a transaction that committed before Redis status publication.
+  courseId?: string
   name: string
   displayName: string
   description?: string | null
@@ -2594,6 +2597,7 @@ interface CreateCourseArgs {
 
 export async function createCourse(
   {
+    courseId,
     name,
     displayName,
     description,
@@ -2628,6 +2632,7 @@ export async function createCourse(
   const persistCourse = async (prisma: PrismaTransactionClient) => {
     const newCourse = await prisma.course.create({
       data: {
+        id: courseId,
         name: name.trim(),
         displayName: displayName.trim(),
         description,
@@ -3111,7 +3116,12 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       return false
     }
 
-    if (isTerminalCourseDuplicationStatus(pendingJob.status)) return true
+    if (isTerminalCourseDuplicationStatus(pendingJob.status)) {
+      if (pendingJob.status === 'COMPLETED') {
+        await releaseCourseDuplicationSourceLock(redis, pendingJob)
+      }
+      return true
+    }
 
     const processLockKey = getCourseDuplicationProcessLockKey(pendingJob.id)
     const processLockAcquired = await redis.set(
@@ -3125,28 +3135,46 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     if (processLockAcquired !== 'OK') return true
 
     let job = pendingJob
+    let committedCourseId: string | null = null
 
     try {
+      const existingCourse = await globalCtx.prisma.course.findUnique({
+        where: { id: job.id },
+        select: { id: true },
+      })
+
+      if (existingCourse) {
+        committedCourseId = existingCourse.id
+        await updateCourseDuplicationJob(redis, job, {
+          status: 'COMPLETED',
+          createdCourseId: existingCourse.id,
+        })
+        return true
+      }
+
       job = await updateCourseDuplicationJob(redis, job, { status: 'RUNNING' })
 
-      const duplicatedCourse = await duplicateCourse(job.args, {
-        prisma: globalCtx.prisma,
-        redisExec: globalCtx.redisExec,
-        redisAssessmentExec: globalCtx.redisAssessmentExec,
-        pubSub: globalCtx.pubSub,
-        emitter: globalCtx.emitter,
-        hatchet: globalCtx.hatchet,
-        tasks: globalCtx.tasks,
-        req: undefined as never,
-        res: undefined as never,
-        user: {
-          sub: job.userId,
-          role: job.userRole,
-          scope: job.userScope,
-          catalystInstitutional: job.catalystInstitutional,
-          catalystIndividual: job.catalystIndividual,
-        },
-      })
+      const duplicatedCourse = await duplicateCourse(
+        { ...job.args, courseId: job.id },
+        {
+          prisma: globalCtx.prisma,
+          redisExec: globalCtx.redisExec,
+          redisAssessmentExec: globalCtx.redisAssessmentExec,
+          pubSub: globalCtx.pubSub,
+          emitter: globalCtx.emitter,
+          hatchet: globalCtx.hatchet,
+          tasks: globalCtx.tasks,
+          req: undefined as never,
+          res: undefined as never,
+          user: {
+            sub: job.userId,
+            role: job.userRole,
+            scope: job.userScope,
+            catalystInstitutional: job.catalystInstitutional,
+            catalystIndividual: job.catalystIndividual,
+          },
+        }
+      )
 
       if (!duplicatedCourse) {
         throw new GraphQLError('Course duplication access denied', {
@@ -3154,6 +3182,7 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
         })
       }
 
+      committedCourseId = duplicatedCourse.id
       await updateCourseDuplicationJob(redis, job, {
         status: 'COMPLETED',
         createdCourseId: duplicatedCourse.id,
@@ -3164,6 +3193,14 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       executionCtx.logger.error(
         `Course duplication job ${jobId} failed: ${getErrorMessage(error)}`
       )
+
+      if (committedCourseId) {
+        executionCtx.logger.error(
+          `Course duplication job ${jobId} committed course ${committedCourseId}; leaving the job retryable.`
+        )
+        throw error
+      }
+
       await updateCourseDuplicationJob(redis, job, {
         status: 'FAILED',
         errorType: getCourseDuplicationJobErrorType(error),
@@ -3929,6 +3966,7 @@ async function assertCourseDuplicationInstanceAccess({
 
 export async function duplicateCourse(
   {
+    courseId,
     name,
     displayName,
     description,
@@ -4003,6 +4041,7 @@ export async function duplicateCourse(
     async (prisma) => {
       const newCourse = await createCourse(
         {
+          courseId,
           name,
           displayName,
           description,

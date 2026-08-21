@@ -83,5 +83,21 @@ large, deterministic activity set for manual stress testing.
   clearing the generated Manage cache, the browser delegated-login flow opens
   the stress course, renders all 200 activities, and opens the duplication
   dialog without submitting a job.
-- Next: run the final review, commit this local-dev fallback, and push normally
-  to `origin/fix/course-duplication-timeout`.
+- 2026-08-21: The first integrated final review found that direct Hatchet audit
+  events could be misread as `{ message }` envelopes. The callback now accepts
+  both direct event payloads and the existing nested task envelope; the Hatchet
+  package check and a two-shape payload smoke passed.
+- 2026-08-21: The async completion boundary now uses the job UUID as the
+  duplicated course UUID, detects an already-committed course on retry, keeps
+  committed jobs retryable when Redis publication fails, and retries the
+  Hatchet task three times. Rebuilt GraphQL and worker bundles were used for
+  two local runs: Hatchet received both events and both steps succeeded. The
+  rebuilt run completed job `51c4cd2c-c5e8-4ffc-8d0f-336583112676` with the
+  same created-course ID and exactly 200 live quizzes with OWNER permissions.
+- 2026-08-21: A controlled retry of that completed job found the existing
+  course, returned the job to `COMPLETED`, preserved the stable ID, and did not
+  create another copy.
+- Next: complete the post-fix final review, record its disposition, and push
+  normally to `origin/fix/course-duplication-timeout`. The repository hook still
+  reports an unrelated existing Chat route-type failure; no full `check:all` or
+  build claim is made.

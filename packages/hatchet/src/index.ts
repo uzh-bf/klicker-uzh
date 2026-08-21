@@ -299,7 +299,7 @@ export function prepareHatchetTasks({
 
   const processCourseDuplication = hatchet.task({
     name: 'process-course-duplication',
-    retries: 0,
+    retries: 3,
     defaultPriority: Priority.LOW,
     onEvents: ['process-course-duplication'],
     fn: async ({ jobId }: { jobId: string }, executionContext) => {
