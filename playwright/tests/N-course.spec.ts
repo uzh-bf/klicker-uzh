@@ -2210,10 +2210,20 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId('course-deletion-participations-confirm')
     ).not.toBeVisible()
 
-    // Confirm LQ, PQ, ML deletions
+    // Changing the draft-deletion option invalidates the previous LQ confirmation
     await expect(
       page.getByTestId('course-deletion-live-quiz-confirm')
     ).toBeVisible()
+    await page.getByTestId('course-deletion-live-quiz-confirm').click()
+    await expect(
+      page.getByTestId('course-deletion-delete-draft-activities')
+    ).toBeVisible()
+    await page.getByTestId('course-deletion-delete-draft-activities').click()
+    await expect(
+      page.getByTestId('course-deletion-live-quiz-confirm')
+    ).toBeVisible()
+
+    // Confirm LQ, PQ, and ML deletion after opting into draft cleanup
     await page.getByTestId('course-deletion-live-quiz-confirm').click()
     await expect(
       page.getByTestId('course-deletion-modal-confirm')
@@ -2249,24 +2259,20 @@ test.describe('Part 4: Course deletion', () => {
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).not.toBeVisible()
 
-    // Verify live quiz still exists (unassigned)
+    // Verify the linked draft live quiz was deleted instead of disconnected
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible({ timeout: 30_000 })
+    ).not.toBeVisible({ timeout: 30_000 })
   })
 
-  test('Cleanup: Delete the live quiz that is not assigned to the course anymore', async ({
+  test('Verify the draft live quiz was deleted with the course', async ({
     page,
   }) => {
     await page.getByTestId('activities').click()
     await expect(
       page.getByTestId(`activity-LIVE_QUIZ-${DELETION.lqName}`)
-    ).toBeVisible({ timeout: 30_000 })
-    await page.getByTestId(`actions-LIVE_QUIZ-${DELETION.lqName}`).click()
-    await page.getByTestId(`delete-live-quiz-${DELETION.lqName}`).click()
-    await page.getByTestId('confirmation-modal-confirm').click()
-    await expect(page.getByText(DELETION.lqName)).not.toBeVisible()
+    ).not.toBeVisible({ timeout: 30_000 })
   })
 
   test('Cleanup: Delete all created courses and created questions', async ({

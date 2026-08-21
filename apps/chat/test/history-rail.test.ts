@@ -4,6 +4,7 @@ import {
   getHistoryRailEntries,
   getHistoryRailMessageAnchor,
   getHistoryRailTickRanges,
+  toHistoryRailPlainText,
 } from '../src/lib/history-rail'
 import type { ExtendedThreadMessageLike } from '../src/stores/chatStore'
 
@@ -227,7 +228,7 @@ describe('history rail projection', () => {
     ])
   })
 
-  test('preserves complete text separately from the compact preview', () => {
+  test('preserves complete text on the entry while labels truncate', () => {
     const userTextParts = [
       `${'user detail '.repeat(6)}first tail`,
       `${'user detail '.repeat(6)}second tail`,
@@ -257,10 +258,94 @@ describe('history rail projection', () => {
     expect(entry).toEqual(
       expect.objectContaining({
         assistantText,
-        preview: expect.stringMatching(/…$/),
         userText,
       })
     )
-    expect(entry?.preview?.length).toBeLessThan(userText.length)
+    const label = toHistoryRailPlainText(entry?.userText)
+    expect(label).toMatch(/…$/)
+    expect(label?.length).toBeLessThan(userText.length)
+  })
+})
+
+describe('history rail plain-text projection', () => {
+  test('strips heading markers', () => {
+    expect(toHistoryRailPlainText('# Heading\n\nBody text')).toBe(
+      'Heading Body text'
+    )
+  })
+
+  test('strips bold and italic markers, including underscore variants', () => {
+    expect(
+      toHistoryRailPlainText(
+        'A **bold** and *italic* claim, plus __also bold__ and _also italic_ word'
+      )
+    ).toBe('A bold and italic claim, plus also bold and also italic word')
+  })
+
+  test('preserves underscores inside identifiers', () => {
+    expect(toHistoryRailPlainText('Rename foo_bar_baz in the config')).toBe(
+      'Rename foo_bar_baz in the config'
+    )
+  })
+
+  test('strips inline code backticks', () => {
+    expect(toHistoryRailPlainText('Use `inline code` here')).toBe(
+      'Use inline code here'
+    )
+  })
+
+  test('strips fenced code block delimiters while keeping the code text', () => {
+    const fenced = [
+      'Before',
+      '```ts',
+      'const answer = 42',
+      '```',
+      'After',
+    ].join('\n')
+
+    expect(toHistoryRailPlainText(fenced)).toBe(
+      'Before const answer = 42 After'
+    )
+  })
+
+  test('reduces links and images to their text content', () => {
+    expect(
+      toHistoryRailPlainText(
+        'See [the docs](https://example.com/docs) for more'
+      )
+    ).toBe('See the docs for more')
+    expect(
+      toHistoryRailPlainText(
+        'Look at ![a chart](https://example.com/chart.png) now'
+      )
+    ).toBe('Look at a chart now')
+  })
+
+  test('strips unordered and ordered list markers', () => {
+    expect(
+      toHistoryRailPlainText(['- First point', '- Second point'].join('\n'))
+    ).toBe('First point Second point')
+    expect(
+      toHistoryRailPlainText(['1. Ordered one', '2. Ordered two'].join('\n'))
+    ).toBe('Ordered one Ordered two')
+  })
+
+  test('collapses whitespace runs from line breaks, tabs, and indentation', () => {
+    expect(
+      toHistoryRailPlainText('Line one\n\n\n   Line two\t\tLine three')
+    ).toBe('Line one Line two Line three')
+  })
+
+  test('truncates text past the shared cap with an ellipsis', () => {
+    const long = `${'word '.repeat(40)}tail`
+    const result = toHistoryRailPlainText(long)
+
+    expect(result).toMatch(/…$/)
+    expect(result?.length).toBe(100)
+    expect(long.length).toBeGreaterThan(100)
+  })
+
+  test('returns undefined for text that is only whitespace', () => {
+    expect(toHistoryRailPlainText('   \n\n   ')).toBeUndefined()
   })
 })

@@ -1,7 +1,12 @@
 type RatingRequest<T> = {
   applyRating: (rating: T) => void
   key: string
-  onError: (error: unknown) => void
+  /**
+   * `isLatestRequest` is false for a failure that a newer request already
+   * superseded — the same condition that suppresses the rollback, so callers
+   * can log every failure but only surface the one the student can see.
+   */
+  onError: (error: unknown, isLatestRequest: boolean) => void
   rating: T
   readRating: () => T
   send: () => Promise<void>
@@ -46,8 +51,9 @@ export function createRatingRequestCoordinator<T>() {
     try {
       await request
     } catch (error) {
-      onError(error)
-      if (state.tail === request) {
+      const isLatestRequest = state.tail === request
+      onError(error, isLatestRequest)
+      if (isLatestRequest) {
         applyRating(state.confirmedRating)
       }
     } finally {

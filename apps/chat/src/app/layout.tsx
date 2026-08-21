@@ -7,7 +7,7 @@ import {
 import 'katex/dist/katex.min.css'
 import type { Metadata, Viewport } from 'next'
 import { hasLocale } from 'next-intl'
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { cookies } from 'next/headers'
 import { RootIntlProvider } from './RootIntlProvider'
 import './globals.css'
@@ -44,6 +44,7 @@ export default async function RootLayout({
   // Same static map as `types/i18n.ts` — the dynamic bare-package-subpath
   // import it replaces does not resolve under Turbopack.
   const messages = messagesByLocale[locale]
+  const t = await getTranslations()
 
   return (
     <html lang={locale}>
@@ -59,6 +60,15 @@ export default async function RootLayout({
       <body
         className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
       >
+        {/* First focusable element on every page: jumps keyboard/screen-reader
+            users past the sidebar/header chrome straight to the `<main
+            id="main-content">` each rendered chat state provides. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-base focus:font-semibold focus:text-white focus:shadow-lg"
+        >
+          {t('chat.a11y.skipToContent')}
+        </a>
         <RootIntlProvider locale={locale} messages={messages}>
           {children}
         </RootIntlProvider>
