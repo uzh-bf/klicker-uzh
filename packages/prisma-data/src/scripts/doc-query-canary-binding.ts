@@ -734,6 +734,23 @@ function assertSafeConfigSnapshot(
   }
 }
 
+function assertRestoredConfig(
+  current: CanaryConfigRecord,
+  expected: SafeConfigSnapshot
+): void {
+  if (
+    current.id !== expected.id ||
+    current.chatbotId !== expected.chatbotId ||
+    current.mcpServerId !== expected.mcpServerId ||
+    current.chatMode !== expected.chatMode ||
+    !jsonEqual(current.allowedTools, expected.allowedTools) ||
+    current.priority !== expected.priority ||
+    !current.isEnabled
+  ) {
+    fail('SNAPSHOT_MISMATCH', 'legacy binding was not restored')
+  }
+}
+
 export async function switchCanaryBinding(
   store: CanaryBindingStore,
   settings: CanaryBindingSettings
@@ -876,9 +893,14 @@ export async function cleanupCanaryBinding(
   }
   const server = await store.findServerById(receipt.candidate.server.id)
   const config = await store.findConfigById(receipt.candidate.config.id)
+  const legacy = await store.findConfigById(receipt.identity.legacyConfigId)
   if (server || config) {
     fail('CLEANUP_INCOMPLETE', 'synthetic candidate rows still exist')
   }
+  if (!legacy) {
+    fail('CLEANUP_INCOMPLETE', 'legacy binding is missing after rollback')
+  }
+  assertRestoredConfig(legacy, receipt.prior.legacyConfig)
   const cleanedReceipt = makeReceipt({
     ...receipt,
     state: 'cleaned',

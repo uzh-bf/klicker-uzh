@@ -47,6 +47,29 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       expect(updatedReceipt(receipt, { state: 'prepared' }).state).toBe(
         'prepared'
       )
+      expect(
+        updatedReceipt(
+          updatedReceipt(receipt, { state: 'prepared' }),
+          { state: 'switching' }
+        ).state
+      ).toBe('switching')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('rejects a stale receipt writer with a durable compare-and-set failure', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-cas-'))
+    const path = join(directory, 'receipt.json')
+    try {
+      const first = createReceiptStore(path)
+      const second = createReceiptStore(path)
+      const receipt = initialReceipt('run-cas', { ...ids }, { ...provenance })
+      await first.write(receipt)
+      await second.read()
+      const prepared = updatedReceipt(receipt, { state: 'prepared' })
+      await first.write(prepared)
+      await expect(second.write(prepared)).rejects.toThrow('RECEIPT_CAS_FAILED')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

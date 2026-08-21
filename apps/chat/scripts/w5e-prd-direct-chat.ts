@@ -2,7 +2,14 @@ import { encrypt } from '@klicker-uzh/util'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  rmdir,
+  writeFile,
+} from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { getAggregatedMCPTools } from '../src/services/mcpClients.js'
 
@@ -10,6 +17,10 @@ const SERVER_NAME = 'Klicker-compat' as const
 const CHAT_MODE = 'tutor' as const
 const RECEIPT_VERSION = 2 as const
 const LEGACY_SERVER_NAME = process.env.LEGACY_SERVER_NAME?.trim() || 'KB'
+const CANDIDATE_SERVICE_URL =
+  'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
+const REQUEST_TIMEOUT_MS = 15_000
 
 const EXPECTED_TOOLS = [
   'banking_expert',
@@ -51,6 +62,7 @@ const EXPECTED_TOOLS = [
 type State =
   | 'planned'
   | 'prepared'
+  | 'switching'
   | 'switched'
   | 'proved'
   | 'rolled_back'
@@ -63,12 +75,13 @@ type Status = 'planned' | 'passed' | 'failed' | 'not_run'
 const STATE_RANK: Record<State, number> = {
   planned: 0,
   prepared: 1,
-  switched: 2,
-  proved: 3,
-  rolled_back: 4,
-  cleaned: 5,
-  proof_blocked_but_cleaned: 5,
-  recovery_required: 5,
+  switching: 2,
+  switched: 3,
+  proved: 4,
+  rolled_back: 5,
+  cleaned: 6,
+  proof_blocked_but_cleaned: 6,
+  recovery_required: 6,
 }
 
 type SafeConfigSnapshot = {
@@ -199,6 +212,17 @@ function safeUrl(value: string): string {
   return url.toString()
 }
 
+function assertFixedEndpoint(
+  value: string,
+  expected: string,
+  label: string
+): string {
+  const normalized = safeUrl(value)
+  if (normalized !== safeUrl(expected))
+    fail('INVALID_URL', `${label} must use the fixed approved endpoint`)
+  return normalized
+}
+
 function cloneJson(value: unknown): unknown {
   return value === null || value === undefined
     ? value
@@ -313,7 +337,10 @@ function isAllowedTransition(from: State, to: State): boolean {
   if (to === 'recovery_required') return STATE_RANK[to] >= STATE_RANK[from]
   return (
     (from === 'planned' && to === 'prepared') ||
-    (from === 'prepared' && (to === 'switched' || to === 'rolled_back')) ||
+    (from === 'prepared' &&
+      (to === 'switching' || to === 'rolled_back')) ||
+    (from === 'switching' &&
+      (to === 'switched' || to === 'rolled_back')) ||
     (from === 'switched' && (to === 'proved' || to === 'rolled_back')) ||
     (from === 'proved' && to === 'rolled_back') ||
     (from === 'rolled_back' &&
@@ -323,35 +350,87 @@ function isAllowedTransition(from: State, to: State): boolean {
 
 export function createReceiptStore(path: string): ReceiptStore {
   const absolutePath = resolve(path)
+  const lockPath = `${absolutePath}.lock`
+  let lastDigest: string | null | undefined
+
+  async function readCurrent(): Promise<W5eReceipt | null> {
+    try {
+      const parsed = JSON.parse(
+        await readFile(absolutePath, 'utf8')
+      ) as W5eReceipt
+      assertReceipt(parsed)
+      return parsed
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      )
+        return null
+      if (error instanceof Error && error.message.startsWith('RECEIPT_'))
+        throw error
+      fail('RECEIPT_READ_FAILED', 'receipt could not be read')
+    }
+  }
+
+  function assertImmutableReceipt(
+    current: W5eReceipt,
+    next: W5eReceipt
+  ): void {
+    const immutable = (receipt: W5eReceipt) => ({
+      receiptVersion: receipt.receiptVersion,
+      wItem: receipt.wItem,
+      environment: receipt.environment,
+      runId: receipt.runId,
+      createdAt: receipt.createdAt,
+      identity: receipt.identity,
+      provenance: receipt.provenance,
+    })
+    if (JSON.stringify(immutable(current)) !== JSON.stringify(immutable(next)))
+      fail('RECEIPT_IMMUTABLE', 'receipt identity or provenance changed')
+  }
+
   return {
     async read() {
-      try {
-        const parsed = JSON.parse(
-          await readFile(absolutePath, 'utf8')
-        ) as W5eReceipt
-        assertReceipt(parsed)
-        return parsed
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          'code' in error &&
-          error.code === 'ENOENT'
-        )
-          return null
-        if (error instanceof Error && error.message.startsWith('RECEIPT_'))
-          throw error
-        fail('RECEIPT_READ_FAILED', 'receipt could not be read')
-      }
+      const current = await readCurrent()
+      lastDigest = current?.payloadDigest ?? null
+      return current
     },
     async write(receipt) {
       assertReceipt(receipt)
       await mkdir(dirname(absolutePath), { recursive: true })
+      try {
+        await mkdir(lockPath)
+      } catch {
+        fail('RECEIPT_LOCKED', 'receipt is already being updated')
+      }
       const temp = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`
-      await writeFile(temp, `${JSON.stringify(receipt, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-      })
-      await rename(temp, absolutePath)
+      try {
+        const current = await readCurrent()
+        if (lastDigest === undefined) {
+          if (current) fail('RECEIPT_CAS_REQUIRED', 'receipt must be read first')
+        } else if (lastDigest === null) {
+          if (current) fail('RECEIPT_EXISTS', 'receipt already exists')
+        } else {
+          if (!current || current.payloadDigest !== lastDigest)
+            fail('RECEIPT_CAS_FAILED', 'receipt changed concurrently')
+          assertImmutableReceipt(current, receipt)
+          if (!isAllowedTransition(current.state, receipt.state))
+            fail(
+              'RECEIPT_STATE',
+              `invalid durable transition from ${current.state} to ${receipt.state}`
+            )
+        }
+        await writeFile(temp, `${JSON.stringify(receipt, null, 2)}\n`, {
+          encoding: 'utf8',
+          flag: 'wx',
+        })
+        await rename(temp, absolutePath)
+        lastDigest = receipt.payloadDigest
+      } finally {
+        await rm(temp, { force: true }).catch(() => undefined)
+        await rmdir(lockPath).catch(() => undefined)
+      }
     },
   }
 }
@@ -447,6 +526,18 @@ function sameServer(record: any, expected: SafeServerSnapshot): boolean {
   )
 }
 
+function sameServerContent(record: any, expected: SafeServerSnapshot): boolean {
+  return Boolean(
+    record &&
+      record.id === expected.id &&
+      record.name === expected.name &&
+      safeUrl(record.url) === expected.url &&
+      record.authType === expected.authType &&
+      record.passChatbotId === expected.passChatbotId &&
+      record.chatbotIdHeader === expected.chatbotIdHeader
+  )
+}
+
 export function suppressOutput<T>(fn: () => Promise<T>): Promise<T> {
   const log = console.log
   const error = console.error
@@ -468,6 +559,8 @@ async function fixedRouteStatus(
   if (chatbotId) headers['Chatbot-ID'] = chatbotId
   const response = await fetch(url, {
     method: 'POST',
+    redirect: 'error',
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers,
     body: JSON.stringify({
       jsonrpc: '2.0',
@@ -488,7 +581,7 @@ async function assertCandidateReachable(
   chatbotId: string
 ): Promise<void> {
   const status = await fixedRouteStatus(
-    options.candidateUrl,
+    options.proofUrl,
     options.bearer,
     chatbotId
   )
@@ -496,11 +589,11 @@ async function assertCandidateReachable(
     fail('BEARER_REJECTED', 'stored bearer did not reach the candidate route')
 }
 
-function candidateServerInput(record: any) {
+function candidateServerInput(record: any, proofUrl: string) {
   return {
     id: record.id,
     name: record.name,
-    url: record.url,
+    url: proofUrl,
     authType: record.authType,
     authSecret: record.authSecret ?? undefined,
     parameters: record.parameters ?? undefined,
@@ -521,13 +614,13 @@ function isSuccessfulToolResult(value: unknown): boolean {
 }
 
 async function runProof(
-  candidateUrl: string,
+  proofUrl: string,
   candidateServer: any,
   chatbotId: string,
   bearer: string
 ): Promise<W5eReceipt['proof']> {
   const config = { allowedTools: [...EXPECTED_TOOLS], priority: 0 }
-  const direct = { server: candidateServerInput(candidateServer), config }
+  const direct = { server: candidateServerInput(candidateServer, proofUrl), config }
   const result: W5eReceipt['proof'] = {
     status: 'failed',
     toolCount: null,
@@ -542,7 +635,9 @@ async function runProof(
 
   try {
     const tools = await suppressOutput(() =>
-      getAggregatedMCPTools([direct], chatbotId)
+      getAggregatedMCPTools([direct], chatbotId, {
+        requestTimeoutMs: REQUEST_TIMEOUT_MS,
+      })
     )
     const names = Object.keys(tools).sort()
     result.toolCount = names.length
@@ -581,7 +676,8 @@ async function runProof(
             },
           },
         ],
-        chatbotId
+        chatbotId,
+        { requestTimeoutMs: REQUEST_TIMEOUT_MS }
       )
     )
     result.wrongBearer = Object.keys(wrong).length === 0 ? 'passed' : 'failed'
@@ -589,19 +685,22 @@ async function runProof(
     const missing = await suppressOutput(() =>
       getAggregatedMCPTools(
         [{ ...direct, server: { ...direct.server, authSecret: undefined } }],
-        chatbotId
+        chatbotId,
+        { requestTimeoutMs: REQUEST_TIMEOUT_MS }
       )
     )
     result.missingBearer =
       Object.keys(missing).length === 0 ? 'passed' : 'failed'
 
     const wrongTenant = await suppressOutput(() =>
-      getAggregatedMCPTools([direct], randomUUID())
+      getAggregatedMCPTools([direct], randomUUID(), {
+        requestTimeoutMs: REQUEST_TIMEOUT_MS,
+      })
     )
     result.wrongTenant =
       Object.keys(wrongTenant).length === 0 ? 'passed' : 'failed'
 
-    const eduaiUrl = candidateUrl.replace(/\/mcp\/klicker\/?$/, '/mcp/eduai')
+    const eduaiUrl = proofUrl.replace(/\/mcp\/klicker\/?$/, '/mcp/eduai')
     const eduaiStatus = await fixedRouteStatus(eduaiUrl, bearer)
     result.eduaiRoute = eduaiStatus >= 400 ? 'passed' : 'failed'
     result.status =
@@ -627,6 +726,7 @@ type RunOptions = {
   store: ReceiptStore
   receipt: W5eReceipt
   candidateUrl: string
+  proofUrl: string
   bearer: string
 }
 
@@ -779,6 +879,8 @@ async function switchFixture(
   fixture: FixtureState
 ): Promise<void> {
   const { client, receipt } = options
+  options.receipt = updatedReceipt(receipt, { state: 'switching' })
+  await options.store.write(options.receipt)
   await client.$transaction(
     async (tx) => {
       const legacy = await tx.chatbotMCPConfig.findUnique({
@@ -852,7 +954,7 @@ async function switchFixture(
   }
   fixture.activeCandidateServer = safeServerSnapshot(activeCandidateServer)
   fixture.activeCandidateConfig = safeConfigSnapshot(activeCandidateConfig)
-  options.receipt = updatedReceipt(receipt, {
+  options.receipt = updatedReceipt(options.receipt, {
     state: 'switched',
     candidate: {
       server: fixture.activeCandidateServer,
@@ -890,7 +992,7 @@ async function runLiveProof(
   options.receipt = updatedReceipt(options.receipt, {
     state: 'switched',
     proof: await runProof(
-      options.candidateUrl,
+      options.proofUrl,
       candidate,
       fixture.ids.chatbotId,
       options.bearer
@@ -1019,6 +1121,45 @@ async function deletePreparedBinding(
   })
 }
 
+async function reconcileSwitching(
+  options: RunOptions,
+  fixture: FixtureState
+): Promise<'prepared' | 'switched'> {
+  const [legacy, candidateServer, candidateConfig] = await Promise.all([
+    options.client.chatbotMCPConfig.findUnique({
+      where: { id: fixture.ids.legacyConfigId },
+    }),
+    options.client.chatbotMCPServer.findUnique({
+      where: { id: fixture.ids.candidateServerId },
+    }),
+    options.client.chatbotMCPConfig.findUnique({
+      where: { id: fixture.ids.candidateConfigId },
+    }),
+  ])
+  if (!legacy || !candidateServer || !candidateConfig)
+    fail('SWITCH_STATE_UNKNOWN', 'switching receipt has incomplete rows')
+
+  const prepared =
+    sameConfig(legacy, fixture.legacyConfig) &&
+    sameServer(candidateServer, fixture.preparedCandidateServer) &&
+    sameConfig(candidateConfig, fixture.preparedCandidateConfig)
+  if (prepared) return 'prepared'
+
+  const switched =
+    sameConfigContent(legacy, fixture.legacyConfig) &&
+    !legacy.isEnabled &&
+    sameServerContent(candidateServer, fixture.preparedCandidateServer) &&
+    candidateServer.isActive &&
+    sameConfigContent(candidateConfig, fixture.preparedCandidateConfig) &&
+    candidateConfig.isEnabled
+  if (!switched)
+    fail('SWITCH_STATE_UNKNOWN', 'switching receipt does not match a known state')
+
+  fixture.activeCandidateServer = safeServerSnapshot(candidateServer)
+  fixture.activeCandidateConfig = safeConfigSnapshot(candidateConfig)
+  return 'switched'
+}
+
 async function deleteFixture(
   options: RunOptions,
   fixture: FixtureState
@@ -1026,6 +1167,30 @@ async function deleteFixture(
   const { client } = options
   await client.$transaction(
     async (tx) => {
+      const [configs, threads, credits] = await Promise.all([
+        tx.chatbotMCPConfig.findMany({
+          where: { chatbotId: fixture.ids.chatbotId },
+          select: { id: true },
+        }),
+        tx.chatThread.findMany({
+          where: { chatbotId: fixture.ids.chatbotId },
+          select: { id: true },
+        }),
+        tx.chatUsageCredits.findMany({
+          where: { chatbotId: fixture.ids.chatbotId },
+          select: { chatbotId: true, participantId: true },
+        }),
+      ])
+      if (
+        configs.length !== 0 ||
+        threads.length !== 0 ||
+        credits.length !== 0
+      ) {
+        fail(
+          'FIXTURE_DEPENDENTS_PRESENT',
+          'synthetic chatbot has unexpected dependent rows'
+        )
+      }
       const chatbot = await tx.chatbot.deleteMany({
         where: {
           id: fixture.ids.chatbotId,
@@ -1138,7 +1303,11 @@ async function attemptCleanup(
   options: RunOptions,
   fixture: FixtureState
 ): Promise<void> {
-  const state = options.receipt.state
+  let state = options.receipt.state
+  if (state === 'switching') {
+    const reconciled = await reconcileSwitching(options, fixture)
+    state = reconciled
+  }
   if (state === 'switched' || state === 'proved') {
     await restoreAndDeleteBinding(options, fixture)
     options.receipt = updatedReceipt(options.receipt, { state: 'rolled_back' })
@@ -1184,9 +1353,16 @@ export function safeResult(
 }
 
 export async function runW5eTransaction(): Promise<Record<string, unknown>> {
-  const candidateUrl = safeUrl(requiredEnv('CANDIDATE_URL'))
-  if (!candidateUrl.endsWith('/mcp/klicker'))
-    fail('INVALID_URL', 'candidate URL must end in /mcp/klicker')
+  const candidateUrl = assertFixedEndpoint(
+    requiredEnv('CANDIDATE_URL'),
+    CANDIDATE_SERVICE_URL,
+    'candidate URL'
+  )
+  const proofUrl = assertFixedEndpoint(
+    requiredEnv('CANDIDATE_PROOF_URL'),
+    CANDIDATE_PROOF_URL,
+    'candidate proof URL'
+  )
   const receiptPath = requiredEnv('RECEIPT_PATH')
   const bearer = requiredEnv('DOC_QUERY_JWT_TOKEN_KLICKER')
   const provenance: W5eReceipt['provenance'] = {
@@ -1216,6 +1392,7 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
     store,
     receipt,
     candidateUrl,
+    proofUrl,
     bearer,
   }
   let fixtureState: FixtureState | undefined
