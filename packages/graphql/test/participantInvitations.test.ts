@@ -546,19 +546,42 @@ describe('Assessment participant invitation management', () => {
       },
     })
 
-    const clientA = prisma.$extends({}) as unknown as PrismaClient
-    const clientB = prisma.$extends({}) as unknown as PrismaClient
+    let reachedCreateCount = 0
+    let releaseCreateBarrier!: () => void
+    const createBarrier = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error('Concurrent create barrier timed out')),
+        5000
+      )
+      releaseCreateBarrier = () => {
+        clearTimeout(timeout)
+        resolve()
+      }
+    })
+    const concurrentPrisma = prisma.$extends({
+      query: {
+        participantInvitation: {
+          async create({ args, query }) {
+            reachedCreateCount += 1
+            if (reachedCreateCount === 2) releaseCreateBarrier()
+            await createBarrier
+            return query(args)
+          },
+        },
+      },
+    }) as unknown as PrismaClient
     const [firstResult, secondResult] = await Promise.all([
       createAssessmentParticipantInvitations(
         { courseId: course.id, invitations: [{ email }] },
-        { ...lecturerCtx, prisma: clientA }
+        { ...lecturerCtx, prisma: concurrentPrisma }
       ),
       createAssessmentParticipantInvitations(
         { courseId: course.id, invitations: [{ email }] },
-        { ...lecturerCtx, prisma: clientB }
+        { ...lecturerCtx, prisma: concurrentPrisma }
       ),
     ])
 
+    expect(reachedCreateCount).toBe(2)
     expect([firstResult, secondResult]).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
