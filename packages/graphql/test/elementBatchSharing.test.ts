@@ -298,6 +298,7 @@ describe('Integration tests for batch sharing elements', () => {
       ownerId: userThree.id,
       callerPermissionLevel: PermissionLevel.READ,
     })
+    const inaccessibleElement = await seedElement({ ownerId: userThree.id })
     const deletedElement = await seedElement({ isDeleted: true })
     const missingId = deletedElement.id + 10_000
 
@@ -308,6 +309,7 @@ describe('Integration tests for batch sharing elements', () => {
           ownerElement.id,
           adminElement.id,
           readElement.id,
+          inaccessibleElement.id,
           deletedElement.id,
           missingId,
         ],
@@ -326,6 +328,11 @@ describe('Integration tests for batch sharing elements', () => {
           elementId: readElement.id,
           status: 'SKIPPED',
           reason: 'INSUFFICIENT_PERMISSION',
+        },
+        {
+          elementId: inaccessibleElement.id,
+          status: 'SKIPPED',
+          reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
         },
         {
           elementId: deletedElement.id,

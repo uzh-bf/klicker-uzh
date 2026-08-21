@@ -4478,6 +4478,12 @@ async function shareElementForBatch(
           }
 
           const callerPermission = element.permissions[0]?.permissionLevel
+          if (typeof callerPermission === 'undefined') {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+            }
+          }
           if (
             callerPermission !== DB.PermissionLevel.ADMIN &&
             callerPermission !== DB.PermissionLevel.OWNER
