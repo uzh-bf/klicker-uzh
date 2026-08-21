@@ -36,8 +36,8 @@ Governing ADRs: [0019](../docs/adr/0019-chatbot-config-postgresql-authoritative.
 | Mode toggles (min 1 active) | Edit freely | — |
 | Few-shot examples (capped, fixed tags) | Edit freely | — |
 | Knowledge sources (upload / re-ingest / delete) | Edit freely (phase 4) | — |
-| Credit configuration | Propose | Approved with publication request |
-| Model allowlist / reasoning efforts | Edit freely (as today) | Cost-class changes on a live bot re-enter review |
+| Participant usage-credit configuration | Propose | Approved with publication request; separate from account-wide usage budgets |
+| Model allowlist / reasoning efforts | Edit freely within the shared account AI authorization and monthly budgets | — |
 | Custom mode (name, description, persona text) | Author freely pre-publication | Reviewed at publication; edits on a live bot re-enter review |
 | Publication (students can reach the bot) | Request | Per-bot approval + account AI capability flag |
 | Raw compiled prompt | Not shown | — |
@@ -52,19 +52,42 @@ Everything else hangs off this; it is backend-only and shippable without UI.
 - `Chatbot` gains a status machine (`DRAFT`, `PENDING_APPROVAL`, `PUBLISHED`,
   `PAUSED`, `REJECTED` with reviewer comment), owning-lecturer semantics, and
   publication-request fields (use case, expected student count, proposed
-  credit config).
+  participant usage-credit configuration).
 - Account-level AI capability flag (separate from Catalyst; Catalyst reveals
-  the features, the AI flag permits publication requests). Cost center is
-  recorded per account at approval.
+  the features, the AI flag permits publication requests). One approved cost
+  center authorizes both base and advanced usage. Account-wide budget counters
+  and usage lanes are an implementation follow-up, not part of this Phase 0
+  PR.
 - Mutations: `createChatbot`, `updateChatbot` (free knobs),
   `requestChatbotPublication`, admin `approveChatbotPublication` /
   `rejectChatbotPublication`.
-- Prompt **compile step** replacing today's replace-semantics: scaffolding +
-  standard-mode template + persona fields (+ later: examples, custom-mode
-  persona text). This is the ADR 0021/0019 contract; implement it once in the
-  current chat route with tests that assert scaffolding survival.
-- Approval operations v1 is ops-shaped: status flips via script/Prisma Studio,
-  email notification to the team. (Admin queue UI is phase 6.)
+- Prompt **compile seam** preserving today's replacement behavior in Phase 0;
+  later phases add scaffolding, standard-mode fields, examples, and
+  custom-mode persona text according to ADR 0021. Characterization tests keep
+  this first extraction behavior-preserving.
+- Approval operations v1 is ops-shaped: status flips via script/Prisma Studio;
+  ops watches `PENDING_APPROVAL` manually. Team notification and the admin
+  queue UI are deferred to later phases.
+
+### Approved usage-funding MVP (implementation follow-up)
+
+- The shared account AI authorization requires an approved cost center for both
+  model classes; lecturers choose models without a new approval per model.
+- Registry entries carry explicit `BASE` or `ADVANCED` metadata. `Auto` is
+  `ADVANCED` until routed usage is attributable, and fallback never crosses
+  classes.
+- Lecturers define one monthly base budget and one monthly advanced budget for
+  the account. Both reset monthly. The UI has exactly two usage lanes — base
+  model usage and advanced model usage — each showing budget, used, remaining,
+  and reset date.
+- The teaching center's limited base contribution is internal and hidden. It
+  is not a third lane, is not shown as an allowance, and does not reclassify
+  base usage. Advanced usage receives no teaching-center contribution.
+- The pragmatic first implementation pre-checks availability and charges
+  reliable provider usage after generation with atomic counters. It accepts
+  bounded final/concurrent overruns and defers strict reservations, immutable
+  ledgers, automated refunds, invoice generation, per-chatbot allocations,
+  tariff versioning, Auto attribution, and participant-credit migration.
 
 ## Phase 1 — creation flow and standard-mode fields in manage
 
@@ -148,7 +171,9 @@ verify first; if not, the API work joins this phase.
   v1).
 - Confidence / resolution-rate metrics — require an evaluator; do not fake.
 
-## Glossary (merge into CONTEXT.md when the stashed glossary lands)
+## Configuration glossary
+
+Usage and funding terms are defined in the repository [CONTEXT.md](../CONTEXT.md).
 
 - **Account AI capability**: The per-account approval (cost center recorded,
   feature flag enabled) that permits publication requests. Distinct from
@@ -156,8 +181,9 @@ verify first; if not, the API work joins this phase.
 - **Publication**: The per-chatbot approved transition that makes a bot
   reachable by students. _Avoid_: go-live, activation.
 - **Publication request**: The in-app form on a bot (use case, expected
-  students, proposed credits) that puts it into review. _Avoid_: access form
-  (that is the account-level external form).
+  students, proposed participant usage-credit configuration) that puts it into
+  review. This legacy allowance is separate from account-wide usage budgets.
+  _Avoid_: access form (that is the account-level external form).
 - **Standard mode**: A platform-maintained mode (`tutor`, `explainer`) aimed
   via constrained persona fields. _Avoid_: default mode.
 - **Custom mode**: A lecturer-authored mode whose persona text is reviewed at
