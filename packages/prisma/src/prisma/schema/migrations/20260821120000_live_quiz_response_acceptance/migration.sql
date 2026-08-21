@@ -3,10 +3,6 @@ ALTER TABLE "LiveQuizResponse"
 ADD COLUMN "acceptedAt" TIMESTAMP(3),
 ADD COLUMN "correlationId" TEXT;
 
--- CreateIndex
-CREATE INDEX "LiveQuizResponse_correlationId_idx"
-ON "LiveQuizResponse"("correlationId");
-
 -- CreateTable
 CREATE TABLE "AssessmentResponseEffect" (
     "responseId" INTEGER NOT NULL,

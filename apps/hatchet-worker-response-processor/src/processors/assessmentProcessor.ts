@@ -160,8 +160,19 @@ export async function persistAssessmentResponse({
 }): Promise<PersistedAssessmentResponse> {
   const persist = (): Promise<PersistedAssessmentResponse> =>
     prisma.$transaction(async (tx) => {
-      // Serialize response processing with point corrections for this identity,
-      // including the period before a response row exists.
+      // Serialize validated acceptance with quiz-audience snapshots first,
+      // then point corrections for this response identity.
+      await tx.$executeRaw(
+        Prisma.sql`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(
+              ${`assessment-audience:${effectPayload.liveQuizId}`},
+              0
+            )
+          )
+        `
+      )
+
       await tx.$executeRaw(
         Prisma.sql`
           SELECT pg_advisory_xact_lock(

@@ -69,21 +69,23 @@ response for that instance. The shared audience selection is implemented by
 `packages/graphql/src/services/courses.ts:getLiveQuizParticipantIds`
 and applied by
 `packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
-The query runs under the quiz audience lock and uses a cutoff: genuine rows
-submitted by the cutoff and durable acceptance markers (`acceptedAt`) at or
-before it are eligible, while stale executions, non-participants, and
-correction-only rows are excluded. The response API preserves the first
-non-null acceptance timestamp on retries, and the signed block execution is
-carried into the worker so a response cannot drift into a later attempt.
+The query runs under the quiz audience lock and uses a cutoff: validated
+genuine rows with `acceptedAt` at or before it are eligible. Pre-migration
+genuine rows without an acceptance timestamp fall back to `submittedAt` for
+compatibility; pending correction-only markers remain excluded. Stale
+executions, non-participants, and correction-only rows are excluded. The
+signed block execution is carried into the worker so a response cannot drift
+into a later attempt.
 
-Assessment submissions create the acceptance marker before the worker runs so a
-queued response cannot disappear from a later quiz-participant snapshot. The
-worker materializes that marker into the genuine response and records the
-pending Redis work in `AssessmentResponseEffect`; the effect is removed only
-after idempotent result and leaderboard updates succeed. Terminally rejected or
-late submissions clear their pending marker so they cannot become phantom quiz
-participants. Whole-quiz corrections intentionally retain the four original
-audiences and reject `PARTICIPATING_QUIZ`.
+Assessment submissions create a pending retry marker before the worker runs.
+The worker validates the cached execution, closure, response shape, and course
+participation, then sets `acceptedAt`, materializes the genuine response, and
+records the pending Redis work in `AssessmentResponseEffect` in one transaction.
+The effect is removed only after idempotent result and leaderboard updates
+succeed. Terminally rejected or late submissions clear their pending marker so
+they cannot become phantom quiz participants. Whole-quiz corrections
+intentionally retain the four original audiences and reject
+`PARTICIPATING_QUIZ`.
 
 ## Course duplication
 

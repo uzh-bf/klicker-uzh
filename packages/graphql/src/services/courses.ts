@@ -1149,12 +1149,13 @@ async function getLiveQuizParticipantIds(
       WHERE block."liveQuizId" = ${liveQuizId}
         AND quiz."courseId" IS NOT NULL
         AND response."elementBlockExecution" = block.execution
+        AND response."correctionOnly" = false
         AND (
-          (
-            response."correctionOnly" = false
+          response."acceptedAt" <= ${cutoff}
+          OR (
+            response."acceptedAt" IS NULL
             AND response."submittedAt" <= ${cutoff}
           )
-          OR response."acceptedAt" <= ${cutoff}
         )
       ORDER BY response."participantId"
     `

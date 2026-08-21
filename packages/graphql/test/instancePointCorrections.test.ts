@@ -380,6 +380,104 @@ describe('Unit tests covering point corrections for instances', () => {
     expect(participantThreeResponse?.correctnessPoints).toBe(50)
   })
 
+  it('[Instance Point Updates] Uses validated acceptance for queued response audiences', async () => {
+    const { instanceId2, participant3 } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
+
+    const submittedAt = new Date('2020-01-01T00:00:00.000Z')
+    const queuedResponse = await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt,
+        acceptedAt: null,
+        correlationId: 'pending-response',
+        timeSpent: -1,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 0,
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        correctionOnly: true,
+        elementBlockExecution: 0,
+        instance: { connect: { id: instanceId2 } },
+        participant: { connect: { id: participant3.id } },
+      },
+    })
+
+    const pendingCorrection = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Pending response correction',
+        studentReason: 'Pending response correction',
+        awardCorrectnessPoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    const pendingResponse = await prisma.liveQuizResponse.findUnique({
+      where: { id: queuedResponse.id },
+      include: { appliedCorrections: true },
+    })
+    expect(pendingCorrection).not.toBeNull()
+    expect(pendingResponse?.correctionOnly).toBe(true)
+    expect(pendingResponse?.acceptedAt).toBeNull()
+    expect(pendingResponse?.appliedCorrections).toHaveLength(0)
+
+    await prisma.liveQuizResponse.update({
+      where: { id: queuedResponse.id },
+      data: {
+        correctionOnly: false,
+        acceptedAt: new Date(Date.now() + 60_000),
+        response: { choices: [] },
+      },
+    })
+
+    const postAcceptanceCorrection = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Post-acceptance response correction',
+        studentReason: 'Post-acceptance response correction',
+        awardCorrectnessPoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    const postAcceptanceResponse = await prisma.liveQuizResponse.findUnique({
+      where: { id: queuedResponse.id },
+      include: { appliedCorrections: true },
+    })
+    expect(postAcceptanceCorrection).not.toBeNull()
+    expect(postAcceptanceResponse?.appliedCorrections).toHaveLength(0)
+
+    await prisma.liveQuizResponse.update({
+      where: { id: queuedResponse.id },
+      data: { acceptedAt: null },
+    })
+
+    const legacyCorrection = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Legacy response correction',
+        studentReason: 'Legacy response correction',
+        awardCorrectnessPoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    const legacyResponse = await prisma.liveQuizResponse.findUnique({
+      where: { id: queuedResponse.id },
+      include: { appliedCorrections: true },
+    })
+    expect(legacyCorrection).not.toBeNull()
+    expect(legacyResponse?.appliedCorrections).toHaveLength(1)
+    expect(legacyResponse?.correctnessPoints).toBe(50)
+  })
+
   it('[Instance Point Updates] Verify that only course admins can modify points', async () => {
     const { instanceId1, participant2 } = await seedLiveQuizWithResponses({
       userOneCtx,

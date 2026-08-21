@@ -410,7 +410,6 @@ async function handleAddAssessmentResponse(
             id: true,
             correctionOnly: true,
             correlationId: true,
-            acceptedAt: true,
             assessmentResponseEffect: { select: { responseId: true } },
           },
         })
@@ -432,10 +431,7 @@ async function handleAddAssessmentResponse(
         if (existingResponse) {
           await tx.liveQuizResponse.update({
             where: { id: existingResponse.id },
-            data: {
-              acceptedAt: existingResponse.acceptedAt ?? new Date(),
-              correlationId,
-            },
+            data: { correlationId },
           })
           return { status: 'retry' as const }
         }
@@ -443,7 +439,9 @@ async function handleAddAssessmentResponse(
         await tx.liveQuizResponse.create({
           data: {
             submittedAt: new Date(responseTimestamp),
-            acceptedAt: new Date(),
+            // Keep the durable retry marker out of correction audiences until
+            // the worker has validated and materialized the response.
+            acceptedAt: null,
             correlationId,
             timeSpent: -1,
             correctness: ResponseCorrectness.CORRECT,
@@ -589,6 +587,17 @@ async function initializeService() {
     `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
   )
   console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    console.log('Testing PostgreSQL connection for assessment responses...')
+    try {
+      await prisma.$queryRaw(Prisma.sql`SELECT 1`)
+      console.log('PostgreSQL connection established')
+    } catch (error) {
+      console.error('Failed to connect to PostgreSQL:', error)
+      throw error
+    }
+  }
 
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')

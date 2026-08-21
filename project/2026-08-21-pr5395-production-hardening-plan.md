@@ -27,7 +27,7 @@ Merge, deployment, and production data actions remain outside this plan.
 | --- | --- | --- |
 | `LiveQuizResponse` lifecycle | Extend it with an acceptance timestamp and correlation identity. Correction-only rows can therefore represent an accepted but not-yet-materialized response without creating a second response identity. | The compound response identity remains `(instanceId, elementBlockExecution, participantId)`. |
 | Assessment response processing | Add one `AssessmentResponseEffect` row per persisted response. The row carries the exact aggregation input until Redis confirms the effect. | Legacy genuine rows without an effect remain terminally complete; new rows always create the effect atomically. |
-| Quiz-participant correction audience | Compose genuine responses and accepted markers at one cutoff under a quiz-level advisory lock. | Accepted before the cutoff is included; accepted after it is excluded. |
+| Quiz-participant correction audience | Compose validated genuine responses and legacy-compatible rows at one cutoff under a quiz-level advisory lock. | Validated `acceptedAt` before the cutoff is included; pending markers are excluded. Pre-migration genuine rows without `acceptedAt` use `submittedAt`. |
 
 ## Implementation slices
 
@@ -43,8 +43,8 @@ primary checkout and earlier readiness worktree remain untouched.
 
 ### S1 — durable response completion
 
-Add acceptance fields and the effect migration. The response API writes an
-accepted marker under the shared quiz lock, runs the named Hatchet workflow with
+Add acceptance fields and the effect migration. The response API writes a
+pending marker under the shared quiz lock, runs the named Hatchet workflow with
 `runAndWait`, returns success only after persistence and Redis effects complete,
 and returns a retryable 503 when workflow execution fails or an incompatible
 worker returns a terminal duplicate. It validates course participation, binds
@@ -81,7 +81,7 @@ on the immutable integrated range.
 | Behavior | Evidence |
 | --- | --- |
 | Response state and legacy cache fallback | Worker unit tests. |
-| Accepted queued response in the correction audience | PostgreSQL GraphQL correction test with an accepted marker and a later materialization. |
+| Correction audience boundary | PostgreSQL GraphQL correction tests with a validated marker, a pending marker, and legacy genuine-row fallback. |
 | Response/correction identity race | Shared advisory-lock implementation plus focused PostgreSQL correction tests; production-sized concurrent race remains an external gate. |
 | Redis replay | Watched transaction and per-response marker in the aggregation path; production Redis replay evidence remains an external gate. |
 | Schema compatibility | Prisma generate, migration validation, analytics schema sync, package checks. |

@@ -16,7 +16,7 @@ tags:
 
 ```
 student answer → apps/response-api (HTTP)
-                 ↓ durable acceptance marker + Hatchet workflow
+                 ↓ durable pending marker + Hatchet workflow
         apps/hatchet-worker-response-processor
                  ↓ PostgreSQL response + effect outbox
         atomic Redis result, vote, leaderboard, and XP effects
@@ -34,7 +34,7 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
 Non-assessment responses (`handleAddResponse`) emit
 `response-received:authenticated|anonymous`. The assessment path
 (`handleAddAssessmentResponse`) verifies a JWT correlation key, writes a
-`LiveQuizResponse` acceptance marker under the quiz and response-identity locks,
+`LiveQuizResponse` pending marker under the quiz and response-identity locks,
 checks course participation, and waits for
 `process-assessment-response-workflow`. The signed block execution is copied
 into the workflow input and must still match the cache before persistence. It
@@ -56,7 +56,8 @@ assessment behavior switches on the `ASSESSMENT_MODE` env var.
   queued aggregation events and uses the same per-response marker as the
   synchronous workflow
 
-Assessment response persistence creates an `AssessmentResponseEffect` row in
+After cache and response validation, assessment response persistence sets the
+durable acceptance timestamp and creates an `AssessmentResponseEffect` row in
 the same transaction as the genuine response or correction-only materialization.
 The worker removes that row only after a watched Redis transaction has applied
 the vote, result counters, response hashes, leaderboards, XP, and completion
