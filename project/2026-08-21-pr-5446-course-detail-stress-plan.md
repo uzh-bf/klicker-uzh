@@ -141,3 +141,8 @@ large, deterministic activity set for manual stress testing.
   solution pointer to match the runner behavior. Prettier, Auth, and both
   worker package checks passed; the wiki validator still reports unrelated
   pre-existing ADR and solution frontmatter errors.
+- 2026-08-21: The first post-push check caught only syncpack ordering in the
+  new Auth script; commit `61505327d` moved `dev:webpack` after `dev:test`,
+  and the follow-up push build completed all 23 tasks. The latest PR checks
+  report syncpack passed; remaining checks are still running, while SonarCloud
+  reports 5.7% duplicated new code against its 3% quality-gate limit.
