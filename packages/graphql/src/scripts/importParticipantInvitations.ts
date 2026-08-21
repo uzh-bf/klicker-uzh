@@ -218,30 +218,32 @@ async function run() {
           )
         }
 
-        const filteredInvitations = invitations.filter(
+        const uniqueInvitations =
+          deduplicateParticipantInvitationInputs(invitations)
+        const filteredInvitations = uniqueInvitations.filter(
           (invitation) => !existingEmailSet.has(invitation.email.toLowerCase())
         )
-        const uniqueFilteredInvitations =
-          deduplicateParticipantInvitationInputs(filteredInvitations)
         const existingInvitationCount =
-          invitations.length - filteredInvitations.length
+          uniqueInvitations.length - filteredInvitations.length
         const duplicateInputCount =
-          filteredInvitations.length - uniqueFilteredInvitations.length
+          invitations.length - uniqueInvitations.length
         const skippedDuplicateCount =
-          existingInvitationCount + duplicateInputCount
+          (DRY_RUN ? existingInvitationCount : 0) + duplicateInputCount
 
         if (skippedDuplicateCount > 0) {
           console.log(
-            `Found ${skippedDuplicateCount} existing or duplicate invitation row(s).`
+            `Found ${skippedDuplicateCount} duplicate invitation input row(s).`
           )
         }
 
         const manualResults: InvitationResult[] = []
-        let remainingInvitations = uniqueFilteredInvitations
+        let remainingInvitations = DRY_RUN
+          ? filteredInvitations
+          : uniqueInvitations
 
         if (DRY_RUN) {
           remainingInvitations = []
-          for (const invitation of uniqueFilteredInvitations) {
+          for (const invitation of filteredInvitations) {
             const previewResult = await previewParticipantWithoutInvitation(
               invitation,
               emailMode

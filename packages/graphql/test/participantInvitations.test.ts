@@ -432,37 +432,121 @@ describe('Assessment participant invitation management', () => {
         matriculationNumber: 'old-number',
       },
     })
-    const updateInvitation = vi
-      .spyOn(prisma.participantInvitation, 'updateMany')
-      .mockResolvedValueOnce({ count: 0 })
-
-    try {
-      const result = await createAssessmentParticipantInvitations(
-        {
-          courseId: course.id,
-          invitations: [
-            {
-              email: invitation.email,
-              matriculationNumber: 'new-number',
-            },
-          ],
-        },
-        lecturerCtx
-      )
-
-      expect(result).toMatchObject({
-        created: 0,
-        duplicates: 1,
-        results: [{ status: 'duplicate' }],
-      })
-      await expect(
-        prisma.participantInvitation.findUnique({
-          where: { id: invitation.id },
-        })
-      ).resolves.toMatchObject({ matriculationNumber: 'old-number' })
-    } finally {
-      updateInvitation.mockRestore()
+    const transactionParticipantInvitation = {
+      findUnique: vi.fn().mockResolvedValue(invitation),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     }
+    const transactionClient = {
+      participantInvitation: transactionParticipantInvitation,
+    }
+    const testPrisma = {
+      course: {
+        findUnique: prisma.course.findUnique.bind(prisma.course),
+      },
+      participantAccount: {
+        findMany: prisma.participantAccount.findMany.bind(
+          prisma.participantAccount
+        ),
+      },
+      participantInvitation: transactionParticipantInvitation,
+      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
+        operation(transactionClient),
+    } as unknown as PrismaClient
+
+    const result = await createAssessmentParticipantInvitations(
+      {
+        courseId: course.id,
+        invitations: [
+          {
+            email: invitation.email,
+            matriculationNumber: 'new-number',
+          },
+        ],
+      },
+      { ...lecturerCtx, prisma: testPrisma }
+    )
+
+    expect(result).toMatchObject({
+      created: 0,
+      duplicates: 1,
+      results: [{ status: 'duplicate' }],
+    })
+    await expect(
+      prisma.participantInvitation.findUnique({
+        where: { id: invitation.id },
+      })
+    ).resolves.toMatchObject({ matriculationNumber: 'old-number' })
+  })
+
+  it('recreates an invitation when a concurrent delete wins', async () => {
+    const course = await createAssessmentCourse()
+    const invitation = await prisma.participantInvitation.create({
+      data: {
+        courseId: course.id,
+        email: 'concurrent-delete@example.org',
+        matriculationNumber: 'old-number',
+      },
+    })
+    const findInvitation = vi
+      .fn()
+      .mockResolvedValueOnce(invitation)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+    const deleteInvitation = vi.fn(async () => {
+      await prisma.participantInvitation.delete({
+        where: { id: invitation.id },
+      })
+      return { count: 0 }
+    })
+    const transactionParticipantInvitation = {
+      findUnique: findInvitation,
+      updateMany: deleteInvitation,
+      create: prisma.participantInvitation.create.bind(
+        prisma.participantInvitation
+      ),
+    }
+    const transactionClient = {
+      participantInvitation: transactionParticipantInvitation,
+    }
+    const testPrisma = {
+      course: {
+        findUnique: prisma.course.findUnique.bind(prisma.course),
+      },
+      participantAccount: {
+        findMany: prisma.participantAccount.findMany.bind(
+          prisma.participantAccount
+        ),
+      },
+      participantInvitation: transactionParticipantInvitation,
+      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
+        operation(transactionClient),
+    } as unknown as PrismaClient
+
+    const result = await createAssessmentParticipantInvitations(
+      {
+        courseId: course.id,
+        invitations: [
+          {
+            email: invitation.email,
+            matriculationNumber: 'new-number',
+          },
+        ],
+      },
+      { ...lecturerCtx, prisma: testPrisma }
+    )
+
+    expect(result).toMatchObject({
+      created: 1,
+      duplicates: 0,
+      results: [{ status: 'created' }],
+    })
+    await expect(
+      prisma.participantInvitation.findUnique({
+        where: {
+          email_courseId: { email: invitation.email, courseId: course.id },
+        },
+      })
+    ).resolves.toMatchObject({ matriculationNumber: 'new-number' })
   })
 
   it('keeps ambiguous verified identities pending', async () => {
@@ -507,6 +591,15 @@ describe('Assessment participant invitation management', () => {
 
   it('does not turn unexpected database errors into row results', async () => {
     const course = await createAssessmentCourse()
+    const transactionParticipantInvitation = {
+      findUnique: prisma.participantInvitation.findUnique.bind(
+        prisma.participantInvitation
+      ),
+      create: vi.fn().mockRejectedValue(new Error('database detail')),
+    }
+    const transactionClient = {
+      participantInvitation: transactionParticipantInvitation,
+    }
     const failingPrisma = {
       course: {
         findUnique: prisma.course.findUnique.bind(prisma.course),
@@ -516,12 +609,9 @@ describe('Assessment participant invitation management', () => {
           prisma.participantAccount
         ),
       },
-      participantInvitation: {
-        findUnique: prisma.participantInvitation.findUnique.bind(
-          prisma.participantInvitation
-        ),
-        create: vi.fn().mockRejectedValue(new Error('database detail')),
-      },
+      participantInvitation: transactionParticipantInvitation,
+      $transaction: (operation: (client: unknown) => Promise<unknown>) =>
+        operation(transactionClient),
     } as unknown as PrismaClient
 
     await expect(

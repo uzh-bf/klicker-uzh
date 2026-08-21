@@ -158,37 +158,26 @@ export async function createParticipantInvitations(
       continue
     }
 
-    try {
-      // Check for existing invitation
-      const existingInvitation =
-        await prismaClient.participantInvitation.findUnique({
-          where: {
-            email_courseId: {
-              email: normalizedEmail,
-              courseId,
-            },
-          },
-        })
+    const existingResult = await recordExistingInvitationIfPresent(
+      normalizedEmail,
+      courseId,
+      normalizedMatriculationNumber,
+      prismaClient
+    )
 
-      if (existingInvitation) {
-        results.push(
-          await recordDuplicateInvitation(
-            existingInvitation,
-            normalizedEmail,
-            normalizedMatriculationNumber,
-            prismaClient
-          )
-        )
-        continue
-      }
+    if (existingResult) {
+      results.push(existingResult)
+      continue
+    }
 
-      const participantId = await findEligibleParticipantId(
-        normalizedEmail,
-        emailMode,
-        prismaClient
-      )
+    const participantId = await findEligibleParticipantId(
+      normalizedEmail,
+      emailMode,
+      prismaClient
+    )
 
-      if (participantId) {
+    if (participantId) {
+      try {
         // Auto-accept invitation for existing verified user
         const invitationId = await autoAcceptInvitation(
           normalizedEmail,
@@ -208,47 +197,19 @@ export async function createParticipantInvitations(
           })
           continue
         }
+      } catch (error: unknown) {
+        if (!isPrismaError(error, 'P2002')) throw error
       }
-
-      // Create pending invitation
-      const invitation = await prismaClient.participantInvitation.create({
-        data: {
-          email: normalizedEmail,
-          courseId,
-          status: InvitationStatus.PENDING,
-          matriculationNumber: normalizedMatriculationNumber,
-        },
-      })
-
-      results.push({
-        email: normalizedEmail,
-        status: 'created',
-        invitationId: invitation.id,
-      })
-    } catch (error: unknown) {
-      if (!isPrismaError(error, 'P2002')) throw error
-
-      const existingInvitation =
-        await prismaClient.participantInvitation.findUnique({
-          where: {
-            email_courseId: {
-              email: normalizedEmail,
-              courseId,
-            },
-          },
-        })
-
-      if (!existingInvitation) throw error
-
-      results.push(
-        await recordDuplicateInvitation(
-          existingInvitation,
-          normalizedEmail,
-          normalizedMatriculationNumber,
-          prismaClient
-        )
-      )
     }
+
+    results.push(
+      await createOrRecordPendingInvitation(
+        normalizedEmail,
+        courseId,
+        normalizedMatriculationNumber,
+        prismaClient
+      )
+    )
   }
 
   // Count results by status using Remeda
@@ -269,12 +230,99 @@ export async function createParticipantInvitations(
   }
 }
 
+async function recordExistingInvitationIfPresent(
+  normalizedEmail: string,
+  courseId: string,
+  matriculationNumber: string | null,
+  prismaClient: PrismaClient
+): Promise<InvitationResult | null> {
+  return withSerializableInvitationTransaction(prismaClient, async (tx) => {
+    const existingInvitation = await tx.participantInvitation.findUnique({
+      where: {
+        email_courseId: {
+          email: normalizedEmail,
+          courseId,
+        },
+      },
+    })
+
+    if (!existingInvitation) return null
+
+    return recordDuplicateInvitation(
+      existingInvitation,
+      normalizedEmail,
+      matriculationNumber,
+      tx
+    )
+  })
+}
+
+async function createOrRecordPendingInvitation(
+  normalizedEmail: string,
+  courseId: string,
+  matriculationNumber: string | null,
+  prismaClient: PrismaClient
+): Promise<InvitationResult> {
+  for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
+    try {
+      return await withSerializableInvitationTransaction(
+        prismaClient,
+        async (tx) => {
+          const existingInvitation = await tx.participantInvitation.findUnique({
+            where: {
+              email_courseId: {
+                email: normalizedEmail,
+                courseId,
+              },
+            },
+          })
+
+          if (existingInvitation) {
+            const duplicateResult = await recordDuplicateInvitation(
+              existingInvitation,
+              normalizedEmail,
+              matriculationNumber,
+              tx
+            )
+
+            if (duplicateResult) return duplicateResult
+          }
+
+          const invitation = await tx.participantInvitation.create({
+            data: {
+              email: normalizedEmail,
+              courseId,
+              status: InvitationStatus.PENDING,
+              matriculationNumber,
+            },
+          })
+
+          return {
+            email: normalizedEmail,
+            status: 'created',
+            invitationId: invitation.id,
+          }
+        }
+      )
+    } catch (error) {
+      if (
+        !isPrismaError(error, 'P2002') ||
+        attempt === invitationTransactionRetryLimit - 1
+      ) {
+        throw error
+      }
+    }
+  }
+
+  throw new Error('Invitation transaction retry limit exceeded')
+}
+
 async function recordDuplicateInvitation(
   existingInvitation: ParticipantInvitation,
   normalizedEmail: string,
   normalizedMatriculationNumber: string | null,
-  prismaClient: PrismaClient
-): Promise<InvitationResult> {
+  prismaClient: Pick<PrismaClient, 'participantInvitation'>
+): Promise<InvitationResult | null> {
   const matriculationUpdated =
     existingInvitation.status === InvitationStatus.PENDING &&
     normalizedMatriculationNumber != null &&
@@ -291,6 +339,13 @@ async function recordDuplicateInvitation(
     })
 
     if (updateResult.count === 0) {
+      const currentInvitation =
+        await prismaClient.participantInvitation.findUnique({
+          where: { id: existingInvitation.id },
+        })
+
+      if (!currentInvitation) return null
+
       return {
         email: normalizedEmail,
         status: 'duplicate',
