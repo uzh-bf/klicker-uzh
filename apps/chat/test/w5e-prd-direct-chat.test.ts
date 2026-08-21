@@ -108,7 +108,35 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       ).rejects.toThrow('RECEIPT_IMMUTABLE')
       await expect(
         store.write(
-          updatedReceipt(receipt, {
+          updatedReceipt(prepared, {
+            prior: {
+              legacyConfig: {
+                id: ids.legacyConfigId,
+                chatbotId: ids.chatbotId,
+                mcpServerId: ids.candidateServerId,
+                chatMode: 'tutor',
+                allowedTools: [],
+                priority: 0,
+                isEnabled: true,
+                parameters: null,
+                updatedAt: '2026-08-21T00:00:00.000Z',
+              },
+              legacyServer: null,
+            },
+          })
+        )
+      ).rejects.toThrow('RECEIPT_IMMUTABLE')
+
+      const bootstrapStore = createReceiptStore(join(directory, 'bootstrap.json'))
+      const bootstrap = initialReceipt(
+        'run-bootstrap',
+        { ...ids },
+        { ...provenance }
+      )
+      await bootstrapStore.write(bootstrap)
+      await expect(
+        bootstrapStore.write(
+          updatedReceipt(bootstrap, {
             state: 'prepared',
             fixture: { ...ids, ownerId: '00000000-0000-4000-8000-000000000099' },
           })
