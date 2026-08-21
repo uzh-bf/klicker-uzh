@@ -3,6 +3,7 @@ import builder from '../builder.js'
 import type {
   CreateInvitationsResponse,
   InvitationResult,
+  ParticipantInvitationPage,
 } from '../services/participantInvitations.js'
 
 export const AssessmentParticipantInvitationStatus = builder.enumType(
@@ -48,6 +49,20 @@ export const AssessmentParticipantInvitation =
       }),
       invitedAt: t.expose('invitedAt', { type: 'Date' }),
       acceptedAt: t.expose('acceptedAt', { type: 'Date', nullable: true }),
+    }),
+  })
+
+export const AssessmentParticipantInvitationPageRef =
+  builder.objectRef<ParticipantInvitationPage>(
+    'AssessmentParticipantInvitationPage'
+  )
+export const AssessmentParticipantInvitationPage =
+  AssessmentParticipantInvitationPageRef.implement({
+    fields: (t) => ({
+      invitations: t.expose('invitations', {
+        type: [AssessmentParticipantInvitation],
+      }),
+      totalCount: t.exposeInt('totalCount'),
     }),
   })
 

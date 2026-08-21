@@ -1692,6 +1692,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
       invitationCsvParseError:
         'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',
+      invitationCsvTooLarge:
+        'Die CSV-Datei ist zu gross. Wählen Sie eine Datei mit höchstens 1 MB.',
+      invitationCsvTooManyRows:
+        'Die CSV-Datei enthält mehr als {count} Teilnehmendenzeilen. Teilen Sie sie in kleinere Dateien auf.',
       invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
       invitationImportFailed:
         'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',

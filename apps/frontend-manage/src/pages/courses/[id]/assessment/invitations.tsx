@@ -1,28 +1,80 @@
 import { useQuery } from '@apollo/client'
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'
-import { GetAssessmentParticipantInvitationsDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetAssessmentParticipantInvitationPageDocument,
+  type GetAssessmentParticipantInvitationPageQueryVariables,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '../../../../components/common/Pagination'
 import ParticipantInvitationCsvUpload from '../../../../components/courses/participantInvitations/ParticipantInvitationCsvUpload'
 import ParticipantInvitationsTable from '../../../../components/courses/participantInvitations/ParticipantInvitationsTable'
 import Layout from '../../../../components/Layout'
 
+type InvitationPageSize = Exclude<PaginationPageSize, 'all'>
+
 function AssessmentParticipantInvitations() {
   const t = useTranslations()
   const router = useRouter()
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState<InvitationPageSize>(() => {
+    if (typeof window !== 'undefined') {
+      const storedPageSize = window.localStorage.getItem(
+        'assessment-invitation-page-size'
+      )
+      if (storedPageSize) {
+        try {
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (
+            isPaginationPageSize(parsedPageSize) &&
+            parsedPageSize !== 'all'
+          ) {
+            return parsedPageSize
+          }
+        } catch (error) {
+          console.error(
+            'Error parsing stored assessment-invitation-page-size',
+            error
+          )
+        }
+      }
+    }
+    return 50
+  })
   const courseId =
     typeof router.query.id === 'string' ? router.query.id : undefined
+  const queryVariables: GetAssessmentParticipantInvitationPageQueryVariables = {
+    courseId: courseId ?? '',
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
   const { data, loading, error } = useQuery(
-    GetAssessmentParticipantInvitationsDocument,
+    GetAssessmentParticipantInvitationPageDocument,
     {
-      variables: { courseId: courseId ?? '' },
+      variables: queryVariables,
       skip: !courseId,
       fetchPolicy: 'network-only',
     }
   )
+
+  const totalCount = data?.assessmentParticipantInvitationPage?.totalCount ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  useEffect(() => {
+    if (!loading && currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, loading, totalPages])
+  useEffect(() => {
+    window.localStorage.setItem(
+      'assessment-invitation-page-size',
+      JSON.stringify(pageSize)
+    )
+  }, [pageSize])
 
   if (loading || !courseId) {
     return (
@@ -32,8 +84,8 @@ function AssessmentParticipantInvitations() {
     )
   }
 
-  const invitations = data?.assessmentParticipantInvitations
-  if (error || !invitations) {
+  const invitationPage = data?.assessmentParticipantInvitationPage
+  if (error || !invitationPage) {
     return (
       <Layout>
         <UserNotification
@@ -43,6 +95,8 @@ function AssessmentParticipantInvitations() {
       </Layout>
     )
   }
+
+  const invitations = invitationPage.invitations
 
   return (
     <Layout>
@@ -68,7 +122,11 @@ function AssessmentParticipantInvitations() {
       </div>
 
       <div className="flex flex-col gap-6">
-        <ParticipantInvitationCsvUpload courseId={courseId} />
+        <ParticipantInvitationCsvUpload
+          courseId={courseId}
+          queryVariables={queryVariables}
+          onImportCompleted={() => setCurrentPage(1)}
+        />
 
         <section aria-labelledby="invitation-list-title">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
@@ -82,14 +140,28 @@ function AssessmentParticipantInvitations() {
             </div>
             <span className="text-sm font-medium text-slate-700">
               {t('manage.assessment.invitationCount', {
-                count: invitations.length,
+                count: totalCount,
               })}
             </span>
           </div>
           <ParticipantInvitationsTable
             courseId={courseId}
             invitations={invitations}
+            queryVariables={queryVariables}
+            onInvitationDeleted={() => setCurrentPage(1)}
           />
+          {totalCount > 0 ? (
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              numOfObjects={totalCount}
+              pageSize={pageSize}
+              setPageSize={(value) => {
+                if (value !== 'all') setPageSize(value)
+              }}
+            />
+          ) : null}
         </section>
       </div>
     </Layout>

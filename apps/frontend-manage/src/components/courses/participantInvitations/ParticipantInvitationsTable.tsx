@@ -3,8 +3,9 @@ import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   AssessmentParticipantInvitationStatus,
   DeletePendingAssessmentParticipantInvitationDocument,
-  GetAssessmentParticipantInvitationsDocument,
-  type GetAssessmentParticipantInvitationsQuery,
+  GetAssessmentParticipantInvitationPageDocument,
+  type GetAssessmentParticipantInvitationPageQuery,
+  type GetAssessmentParticipantInvitationPageQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -23,15 +24,19 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 type Invitation = NonNullable<
-  GetAssessmentParticipantInvitationsQuery['assessmentParticipantInvitations']
->[number]
+  GetAssessmentParticipantInvitationPageQuery['assessmentParticipantInvitationPage']
+>['invitations'][number]
 
 function ParticipantInvitationsTable({
   courseId,
   invitations,
+  queryVariables,
+  onInvitationDeleted,
 }: {
   courseId: string
   invitations: Invitation[]
+  queryVariables: GetAssessmentParticipantInvitationPageQueryVariables
+  onInvitationDeleted: () => void
 }) {
   const t = useTranslations()
   const [selectedInvitation, setSelectedInvitation] = useState<Invitation>()
@@ -40,8 +45,8 @@ function ParticipantInvitationsTable({
     {
       refetchQueries: [
         {
-          query: GetAssessmentParticipantInvitationsDocument,
-          variables: { courseId },
+          query: GetAssessmentParticipantInvitationPageDocument,
+          variables: queryVariables,
         },
       ],
       awaitRefetchQueries: true,
@@ -67,6 +72,7 @@ function ParticipantInvitationsTable({
         message: t('manage.assessment.invitationDeleteSuccess'),
       })
       setSelectedInvitation(undefined)
+      onInvitationDeleted()
     } catch (error) {
       console.error(error)
       toast({

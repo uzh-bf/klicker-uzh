@@ -20,6 +20,10 @@ const invitationEmailSchema = z.string().email()
 const invitationTransactionRetryLimit = 3
 type InvitationTransactionErrorCode = 'P2002' | 'P2034'
 
+export const MAX_PARTICIPANT_INVITATION_IMPORT_SIZE = 200
+export const DEFAULT_PARTICIPANT_INVITATION_PAGE_SIZE = 50
+export const MAX_PARTICIPANT_INVITATION_PAGE_SIZE = 50
+
 export interface InvitationResult {
   email: string
   status:
@@ -113,6 +117,11 @@ export async function withSerializableInvitationTransaction<T>(
  */
 export interface CreateInvitationsOptions {
   emailMode?: InvitationEmailMode
+}
+
+export interface ParticipantInvitationPage {
+  invitations: ParticipantInvitation[]
+  totalCount: number
 }
 
 export async function createParticipantInvitations(
@@ -480,6 +489,39 @@ export async function getAssessmentParticipantInvitations(
   })
 }
 
+export async function getAssessmentParticipantInvitationPage(
+  {
+    courseId,
+    numEntries,
+    offset,
+  }: {
+    courseId: string
+    numEntries?: number | null
+    offset?: number | null
+  },
+  ctx: ContextWithUser
+): Promise<ParticipantInvitationPage> {
+  await requireAssessmentCourse(courseId, ctx.prisma)
+
+  const take = Math.min(
+    Math.max(numEntries ?? DEFAULT_PARTICIPANT_INVITATION_PAGE_SIZE, 1),
+    MAX_PARTICIPANT_INVITATION_PAGE_SIZE
+  )
+  const skip = Math.max(offset ?? 0, 0)
+  const where = { courseId }
+  const [invitations, totalCount] = await Promise.all([
+    ctx.prisma.participantInvitation.findMany({
+      where,
+      orderBy: [{ invitedAt: 'desc' }, { id: 'desc' }],
+      take,
+      skip,
+    }),
+    ctx.prisma.participantInvitation.count({ where }),
+  ])
+
+  return { invitations, totalCount }
+}
+
 export async function createAssessmentParticipantInvitations(
   {
     courseId,
@@ -491,6 +533,13 @@ export async function createAssessmentParticipantInvitations(
   ctx: ContextWithUser
 ): Promise<CreateInvitationsResponse> {
   await requireAssessmentCourse(courseId, ctx.prisma)
+
+  if (invitations.length > MAX_PARTICIPANT_INVITATION_IMPORT_SIZE) {
+    throw new GraphQLError(
+      `Invitation imports are limited to ${MAX_PARTICIPANT_INVITATION_IMPORT_SIZE} rows.`,
+      { extensions: { code: 'INVITATION_IMPORT_LIMIT_EXCEEDED' } }
+    )
+  }
 
   return createParticipantInvitations(courseId, invitations, {}, ctx.prisma)
 }

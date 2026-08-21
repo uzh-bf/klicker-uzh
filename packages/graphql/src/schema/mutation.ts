@@ -1492,7 +1492,11 @@ export const Mutation = builder.mutationType({
             invitations: t.arg({
               type: [AssessmentParticipantInvitationInput],
               required: true,
-              validate: { minLength: 1 },
+              validate: {
+                minLength: 1,
+                maxLength:
+                  ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
+              },
             }),
           },
           resolve: withPermission(

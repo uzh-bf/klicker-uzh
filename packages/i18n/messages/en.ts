@@ -1685,6 +1685,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationCsvEmpty: 'The CSV does not contain any participant rows.',
       invitationCsvParseError:
         'The CSV could not be read. Check its format and try again.',
+      invitationCsvTooLarge:
+        'The CSV file is too large. Choose a file no larger than 1 MB.',
+      invitationCsvTooManyRows:
+        'The CSV contains more than {count} participant rows. Split it into smaller files.',
       invitationImportCompleted: 'The invitation import has completed.',
       invitationImportFailed:
         'The invitations could not be imported. Please try again.',

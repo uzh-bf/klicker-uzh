@@ -78,6 +78,13 @@ records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
 `apps/frontend-manage/src/pages/index.tsx:Index`,
 `apps/frontend-manage/src/pages/activities.tsx:Activities`).
 
+Assessment participant invitations use the same control with finite `10`, `20`,
+and `50` page sizes and no `All` option. The page requests the additive
+`assessmentParticipantInvitationPage` operation with `numEntries` and `offset`,
+shows the server-provided total, and resets to page 1 after an import or delete.
+CSV selection rejects files above 1 MiB and imports above 200 data rows before
+submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
+
 ## i18n (next-intl)
 
 Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `control`). Usage: `useTranslations()` without a namespace argument and full-path keys — `t('manage.settings.userSettings')`, `t('shared.generic.cancel')`; `t.rich` for markup. Messages load per page via `getStaticProps`; the plugin is wired in each `next.config.mjs` (`createNextIntlPlugin`).

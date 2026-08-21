@@ -10,7 +10,8 @@ import {
   type AssessmentParticipantInvitationInput,
   CreateAssessmentParticipantInvitationsDocument,
   type CreateAssessmentParticipantInvitationsMutation,
-  GetAssessmentParticipantInvitationsDocument,
+  GetAssessmentParticipantInvitationPageDocument,
+  type GetAssessmentParticipantInvitationPageQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -30,6 +31,8 @@ const MATRICULATION_NUMBER_HEADERS = new Set([
 ])
 const CSV_TEMPLATE_FILENAME = 'assessment-participant-invitations-template.csv'
 const CSV_TEMPLATE_CONTENT = 'email,matriculationNumber\r\n'
+const MAX_INVITATION_ROWS = 200
+const MAX_CSV_FILE_SIZE_BYTES = 1024 * 1024
 
 function normalizeHeader(header: string) {
   return header
@@ -114,7 +117,15 @@ function parseCsvRows(csvText: string) {
   return rows
 }
 
-function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
+function ParticipantInvitationCsvUpload({
+  courseId,
+  queryVariables,
+  onImportCompleted,
+}: {
+  courseId: string
+  queryVariables: GetAssessmentParticipantInvitationPageQueryVariables
+  onImportCompleted: () => void
+}) {
   const t = useTranslations()
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string>()
@@ -129,8 +140,8 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
     {
       refetchQueries: [
         {
-          query: GetAssessmentParticipantInvitationsDocument,
-          variables: { courseId },
+          query: GetAssessmentParticipantInvitationPageDocument,
+          variables: queryVariables,
         },
       ],
       awaitRefetchQueries: true,
@@ -160,9 +171,22 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
     setInvitations([])
     setFileName(file.name)
 
+    if (file.size > MAX_CSV_FILE_SIZE_BYTES) {
+      setParseError(t('manage.assessment.invitationCsvTooLarge'))
+      return
+    }
+
     try {
       const csvText = await file.text()
       const [sourceHeaders = [], ...recordRows] = parseCsvRows(csvText)
+      if (recordRows.length > MAX_INVITATION_ROWS) {
+        setParseError(
+          t('manage.assessment.invitationCsvTooManyRows', {
+            count: MAX_INVITATION_ROWS,
+          })
+        )
+        return
+      }
       const headers = sourceHeaders.map(normalizeHeader)
 
       const emailIndices = headers.flatMap((header, index) =>
@@ -209,6 +233,15 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
   }
 
   async function handleImport() {
+    if (invitations.length > MAX_INVITATION_ROWS) {
+      setParseError(
+        t('manage.assessment.invitationCsvTooManyRows', {
+          count: MAX_INVITATION_ROWS,
+        })
+      )
+      return
+    }
+
     try {
       const result = await createInvitations({
         variables: { courseId, invitations },
@@ -219,6 +252,7 @@ function ParticipantInvitationCsvUpload({ courseId }: { courseId: string }) {
       setImportResult(payload)
       setInvitations([])
       setFileName(undefined)
+      onImportCompleted()
       toast({
         type: payload.errors > 0 ? 'warning' : 'success',
         message: t('manage.assessment.invitationImportCompleted'),

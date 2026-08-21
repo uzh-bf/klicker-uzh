@@ -10,7 +10,9 @@ import {
   createParticipantInvitations,
   deduplicateParticipantInvitationInputs,
   deletePendingAssessmentParticipantInvitation,
+  getAssessmentParticipantInvitationPage,
   getAssessmentParticipantInvitations,
+  MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
 } from '../src/services/participantInvitations.js'
 import {
   initializePrisma,
@@ -93,6 +95,75 @@ describe('Assessment participant invitation management', () => {
       expect.objectContaining({ id: newest.id }),
       expect.objectContaining({ id: oldest.id }),
     ])
+  })
+
+  it('returns finite invitation pages with a stable total', async () => {
+    const course = await createAssessmentCourse()
+    const invitedAt = new Date('2026-01-02T10:00:00Z')
+    const invitations = await Promise.all(
+      ['first', 'second', 'third'].map((label) =>
+        prisma.participantInvitation.create({
+          data: {
+            courseId: course.id,
+            email: `${label}@example.org`,
+            invitedAt,
+          },
+        })
+      )
+    )
+
+    await expect(
+      getAssessmentParticipantInvitationPage(
+        { courseId: course.id, numEntries: 2, offset: 0 },
+        lecturerCtx
+      )
+    ).resolves.toMatchObject({
+      totalCount: 3,
+      invitations: [{ id: invitations[2]?.id }, { id: invitations[1]?.id }],
+    })
+    await expect(
+      getAssessmentParticipantInvitationPage(
+        { courseId: course.id, numEntries: 2, offset: 2 },
+        lecturerCtx
+      )
+    ).resolves.toMatchObject({
+      totalCount: 3,
+      invitations: [{ id: invitations[0]?.id }],
+    })
+
+    await expect(
+      getAssessmentParticipantInvitationPage(
+        { courseId: course.id },
+        lecturerCtx
+      )
+    ).resolves.toMatchObject({
+      totalCount: 3,
+      invitations: expect.arrayContaining([
+        { id: invitations[0]?.id },
+        { id: invitations[1]?.id },
+        { id: invitations[2]?.id },
+      ]),
+    })
+  })
+
+  it('rejects an oversized assessment import before creating rows', async () => {
+    const course = await createAssessmentCourse()
+    const invitations = Array.from(
+      { length: MAX_PARTICIPANT_INVITATION_IMPORT_SIZE + 1 },
+      (_, index) => ({ email: `oversized-${index}@example.org` })
+    )
+
+    await expect(
+      createAssessmentParticipantInvitations(
+        { courseId: course.id, invitations },
+        lecturerCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'INVITATION_IMPORT_LIMIT_EXCEEDED' },
+    })
+    await expect(
+      prisma.participantInvitation.count({ where: { courseId: course.id } })
+    ).resolves.toBe(0)
   })
 
   it('creates valid pending invitations and reports invalid rows', async () => {
