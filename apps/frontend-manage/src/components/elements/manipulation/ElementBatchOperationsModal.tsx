@@ -376,7 +376,9 @@ function ElementBatchOperationsModal({
                       className={{ root: 'h-9' }}
                       data={{ cy: 'apply-batch-operations' }}
                     >
-                      {t('shared.generic.apply')}
+                      {isSubmitting
+                        ? t('manage.questionPool.batchOperationsApplying')
+                        : t('shared.generic.apply')}
                     </Button>
                   </div>
                 </fieldset>
