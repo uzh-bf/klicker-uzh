@@ -55,6 +55,14 @@ add a newly named operation for the updated client and leave the original
 operation document unchanged. Removing its old hash from `server.json` breaks
 already-open clients because arbitrary GraphQL operations are disabled outside
 development and test.
+The `userElements` and `userActivities` list fields accept optional
+`numEntries` and `offset` arguments. Finite page sizes pass both values;
+omitting both returns the current filtered result without a pagination limit.
+This unbounded behavior is intentional for the manage-list `All` option and
+does not change endpoint-specific caps such as verification records. The
+Elements operation, schema field, service signature, and generated artifacts
+must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
+`packages/graphql/src/services/elements.ts:getUserElements`).
 
 ## Subscriptions
 

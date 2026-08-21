@@ -16,7 +16,9 @@ import {
 } from '@uzh-bf/design-system'
 import { useLocale, useTranslations } from 'next-intl'
 import { useDeferredValue, useEffect, useState } from 'react'
-import Pagination from '../common/Pagination'
+import Pagination, {
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import CourseVerifiableCredentialsList, {
   type AssessmentReportRecord,
 } from './CourseVerifiableCredentialsList'
@@ -36,7 +38,8 @@ export default function CourseVerifiableCredentialsModal({
   const deferredSearchString = useDeferredValue(searchString)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] =
+    useState<Exclude<PaginationPageSize, 'all'>>(20)
   const [pendingRevocation, setPendingRevocation] =
     useState<AssessmentReportRecord | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
@@ -67,7 +70,8 @@ export default function CourseVerifiableCredentialsModal({
     if (!loading && currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, loading, totalPages])
 
-  function setPageSizeAndReset(value: number | ((previous: number) => number)) {
+  function setPageSizeAndReset(value: PaginationPageSize) {
+    if (value === 'all') return
     setPageSize(value)
     setCurrentPage(1)
   }
