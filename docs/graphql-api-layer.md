@@ -53,7 +53,9 @@ then rechecks every non-deleted Element and shares only those on which the
 caller has `ADMIN` or `OWNER`. Exactly one of `shortnameOrEmail` and
 `userGroupId` must be supplied. Sharing does not propagate access to activities;
 linked answer collections receive the derived READ access required by the
-permission model.
+permission model. Before resolving a target, the caller must control at least
+one supplied non-deleted Element; otherwise the service returns uniform
+unavailable outcomes without revealing target or element existence.
 
 The service resolves the target once, deduplicates Element IDs in first-seen
 order, and returns one outcome per unique ID. Missing/deleted Elements and

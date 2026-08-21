@@ -115,6 +115,10 @@ meaningful task-owned change.
 - Accept only `READ`, `WRITE`, and `ADMIN`; reject `OWNER` and `EXECUTE` before
   target resolution and before any permission, derived-permission, or audit
   write.
+- Require at least one supplied non-deleted element on which the caller has
+  current `ADMIN` or `OWNER` access before resolving a user or group target;
+  otherwise return uniform unavailable outcomes without exposing target or
+  element existence.
 - Move `isDeleted` and caller `ADMIN`/`OWNER` checks into each per-element
   transaction. Use serializable isolation plus bounded `P2034` retry handling
   (or an equivalent lock strategy) so deletion or permission revocation cannot
