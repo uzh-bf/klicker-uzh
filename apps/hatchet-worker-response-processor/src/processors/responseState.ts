@@ -7,8 +7,6 @@ export type ResponsePoints = {
 export type PointCorrectionInstruction = {
   appliedCorrectionId: number
   pointCorrection: {
-    id: number
-    createdAt: Date
     basePoints: boolean | null
     correctnessPoints: boolean | null
     bonusPoints: boolean | null
@@ -23,6 +21,30 @@ export type ReplayedPointCorrection = {
   deductedBasePoints: number
   deductedCorrectnessPoints: number
   deductedBonusPoints: number
+}
+
+export function getSampleSolutionAvailability({
+  type,
+  cachedFlag,
+  solutions,
+}: {
+  type?: string
+  cachedFlag?: string
+  solutions?: string
+}) {
+  if (typeof cachedFlag !== 'undefined') return cachedFlag === 'true'
+  if (!solutions) return false
+
+  if (type === 'SELECTION') {
+    try {
+      const parsedSolutions = JSON.parse(solutions)
+      return Array.isArray(parsedSolutions) && parsedSolutions.length > 0
+    } catch {
+      return false
+    }
+  }
+
+  return true
 }
 
 export function getResponseState(
@@ -59,13 +81,11 @@ export function replayPointCorrections({
   availablePoints: ResponsePoints
   corrections: readonly PointCorrectionInstruction[]
 }) {
-  const orderedCorrections = [...corrections].sort((left, right) => {
-    const createdAtDelta =
-      left.pointCorrection.createdAt.getTime() -
-      right.pointCorrection.createdAt.getTime()
-
-    return createdAtDelta || left.pointCorrection.id - right.pointCorrection.id
-  })
+  // Applied-correction IDs reflect the order in which each response acquired
+  // its lock and was updated, which is the only stable order under overlap.
+  const orderedCorrections = [...corrections].sort(
+    (left, right) => left.appliedCorrectionId - right.appliedCorrectionId
+  )
 
   let currentPoints = { ...rawPoints }
   const appliedCorrections: ReplayedPointCorrection[] = []

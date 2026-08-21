@@ -35,6 +35,7 @@ import {
   validateStudentResponse,
 } from './helpers.js'
 import {
+  getSampleSolutionAvailability,
   getResponseState,
   type ResponsePoints,
   replayPointCorrections,
@@ -106,8 +107,6 @@ async function persistAssessmentResponse({
               id: true,
               pointCorrection: {
                 select: {
-                  id: true,
-                  createdAt: true,
                   basePoints: true,
                   correctnessPoints: true,
                   bonusPoints: true,
@@ -504,7 +503,11 @@ export async function processAssessmentResponse(
     bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
   }
   const parsedPointsMultiplier = parsePointValue(pointsMultiplier, 1)
-  const sampleSolutionAvailable = hasSampleSolution === 'true'
+  const sampleSolutionAvailable = getSampleSolutionAvailability({
+    type,
+    cachedFlag: hasSampleSolution,
+    solutions,
+  })
   const availablePoints: ResponsePoints = {
     basePoints:
       basePoints === 'true'

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  getSampleSolutionAvailability,
   getResponseState,
   type PointCorrectionInstruction,
   replayPointCorrections,
@@ -12,8 +13,6 @@ function correction(
   return {
     appliedCorrectionId: 1,
     pointCorrection: {
-      id: 1,
-      createdAt: new Date('2026-08-21T10:00:00Z'),
       basePoints: null,
       correctnessPoints: null,
       bonusPoints: null,
@@ -23,18 +22,48 @@ function correction(
 }
 
 describe('assessment response state', () => {
+  it('keeps sample-solution availability compatible with legacy cache entries', () => {
+    assert.equal(
+      getSampleSolutionAvailability({
+        type: 'SC',
+        solutions: '[]',
+      }),
+      true
+    )
+    assert.equal(
+      getSampleSolutionAvailability({
+        type: 'SELECTION',
+        solutions: '[]',
+      }),
+      false
+    )
+    assert.equal(
+      getSampleSolutionAvailability({
+        type: 'SELECTION',
+        solutions: '[1]',
+      }),
+      true
+    )
+    assert.equal(
+      getSampleSolutionAvailability({
+        type: 'SC',
+        cachedFlag: 'false',
+        solutions: '[1]',
+      }),
+      false
+    )
+  })
+
   it('distinguishes new, genuine, and correction-only responses', () => {
     assert.equal(getResponseState(null), 'create')
     assert.equal(getResponseState({ correctionOnly: false }), 'duplicate')
     assert.equal(getResponseState({ correctionOnly: true }), 'materialize')
   })
 
-  it('replays corrections in action order and preserves untouched categories', () => {
+  it('replays corrections in application order and preserves untouched categories', () => {
     const earlier = correction({
       appliedCorrectionId: 10,
       pointCorrection: {
-        id: 10,
-        createdAt: new Date('2026-08-21T10:00:00Z'),
         basePoints: true,
         correctnessPoints: null,
         bonusPoints: null,
@@ -43,8 +72,6 @@ describe('assessment response state', () => {
     const later = correction({
       appliedCorrectionId: 11,
       pointCorrection: {
-        id: 11,
-        createdAt: new Date('2026-08-21T11:00:00Z'),
         basePoints: false,
         correctnessPoints: true,
         bonusPoints: null,
@@ -93,8 +120,6 @@ describe('assessment response state', () => {
       correction({
         appliedCorrectionId: 1,
         pointCorrection: {
-          id: 1,
-          createdAt: new Date('2026-08-21T10:00:00Z'),
           basePoints: true,
           correctnessPoints: null,
           bonusPoints: null,
@@ -103,8 +128,6 @@ describe('assessment response state', () => {
       correction({
         appliedCorrectionId: 2,
         pointCorrection: {
-          id: 2,
-          createdAt: new Date('2026-08-21T11:00:00Z'),
           basePoints: false,
           correctnessPoints: null,
           bonusPoints: null,
@@ -113,8 +136,6 @@ describe('assessment response state', () => {
       correction({
         appliedCorrectionId: 3,
         pointCorrection: {
-          id: 3,
-          createdAt: new Date('2026-08-21T12:00:00Z'),
           basePoints: true,
           correctnessPoints: null,
           bonusPoints: null,

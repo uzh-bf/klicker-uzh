@@ -66,7 +66,7 @@ A response created solely by an earlier correction (`correctionOnly = true`)
 does not establish quiz participation. Participants who qualify through another
 question but did not answer the selected instance receive a correction-only
 response for that instance. The shared audience selection is implemented by
-`packages/graphql/src/services/courses.ts:getLiveQuizParticipantResponseMap`
+`packages/graphql/src/services/courses.ts:getLiveQuizParticipantIds`
 and applied by
 `packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
 Whole-quiz corrections intentionally retain the four original audiences and

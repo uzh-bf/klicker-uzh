@@ -1360,7 +1360,8 @@ export async function correctAssessmentPointsInstance(
     return createdCorrection
   }
 
-  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  // if the points of all participating students should be modified, update
+  // every genuine response for the selected instance
   if (scope === PointCorrectionType.PARTICIPATING) {
     // find all live quiz responses for the given instance (excluding the ones generated through corrections with null as a response)
     const responses = await ctx.prisma.liveQuizResponse.findMany({
@@ -1369,6 +1370,8 @@ export async function correctAssessmentPointsInstance(
         elementBlockExecution: instance.elementBlock.execution,
         correctionOnly: false,
       },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1454,6 +1457,7 @@ export async function correctAssessmentPointsInstance(
 
     if (!participantIds?.length) return null
 
+    let committedLogEntries: { message: { info: string } }[] = []
     const createdCorrection = await ctx.prisma.$transaction(
       async (tx) => {
         const correction = await tx.pointCorrection.create({
@@ -1482,7 +1486,7 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, instance: true },
         })
 
-        const logEntries = await Promise.all(
+        committedLogEntries = await Promise.all(
           participantIds.map((participantId) =>
             upsertResponseAppliedCorrection(
               {
@@ -1507,17 +1511,18 @@ export async function correctAssessmentPointsInstance(
           )
         )
 
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
-
         return correction
       },
       { timeout: 300000 }
     )
 
+    await ctx.tasks.createAuditLogEntry.runNoWait(committedLogEntries)
+
     return createdCorrection
   }
 
-  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  // if the points of multiple students / all students in the course should be
+  // modified, update each participant in a stable order
   if (
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
@@ -1531,9 +1536,8 @@ export async function correctAssessmentPointsInstance(
             ? { in: participantIds! }
             : undefined,
       },
-      include: {
-        participant: true,
-      },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1942,7 +1946,7 @@ export async function correctAssessmentPointsLiveQuiz(
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // get all participations of the course, including the linked participants
+    // get all participant IDs of the course in a stable lock order
     const participations = await ctx.prisma.participation.findMany({
       where: {
         courseId: liveQuiz.courseId,
@@ -1951,7 +1955,8 @@ export async function correctAssessmentPointsLiveQuiz(
             ? { in: participantIds! }
             : undefined,
       },
-      include: { participant: true },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     // update the responses of all participants in the course
