@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-16'
+timestamp: '2026-08-21'
 tags:
   - frontend
   - chat
@@ -143,7 +143,7 @@ Three properties matter when debugging it:
 
 - The lookup runs **only in `tutor` mode** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`); other modes never register `start_student_practice_quiz`.
 - A failed lookup degrades silently: the route logs `Student practice lookup failed; continuing without quiz candidates` and answers without the tool. A missing practice quiz is therefore an infrastructure symptom, not necessarily a model one.
-- `getStudentPracticeMcpUrl` falls back to `http://localhost:7080` **only** when `NODE_ENV=development`; in production an unset `MCP_STUDENT_URL`/`MCP_STUDENT_HOST` yields `null` and the feature is simply off. The devcontainer does not start this server (`package.json:dev:container` filters in `mcp-lecturer` only), so tutor-mode practice quizzes are unavailable in the default dev stack.
+- `getStudentPracticeMcpUrl` falls back to `http://localhost:7080` **only** when `NODE_ENV=development`; in production an unset `MCP_STUDENT_URL`/`MCP_STUDENT_HOST` yields `null` and the feature is simply off. The devcontainer starts both `mcp-student` and `mcp-lecturer` through `package.json:dev:container`, so tutor-mode practice tools and lecturer tools are available without a separate MCP process.
 
 ## Model registry and credits
 

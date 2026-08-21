@@ -98,9 +98,10 @@ for attempt in $(seq 1 20); do
   sleep 1
 done
 
-# Run every routed app plus both Hatchet workers without Infisical. Devrouter
-# owns generic locking, process-group identity, and bounded replacement; this
-# repository owns only the application command and environment above.
+# Run every routed app, both Hatchet workers, and both internal MCP services
+# without Infisical. Devrouter owns generic locking, process-group identity,
+# and bounded replacement; this repository owns only the application command
+# and environment above.
 "$DEVROUTER_PROCESS_HELPER" ensure \
   --name klicker-dev \
   --match 'turbo run dev' \
@@ -122,6 +123,7 @@ if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
 [post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
+[post-start]   Student MCP  -> http://localhost:7080/mcp (no route; chat reaches it in-container)
 [post-start] Lifecycle -> on the host: devrouter ensure <this-checkout>
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
@@ -140,6 +142,7 @@ else
 [post-start]   MCP fixture  -> http://localhost:1417/mcp (Benibot Tutor/Explainer)
 [post-start]   Workers      -> hatchet-worker-general + -response-processor (no URL; consume hatchet queue)
 [post-start]   Lecturer MCP -> http://localhost:7081/mcp (no route; chat reaches it in-container)
+[post-start]   Student MCP  -> http://localhost:7080/mcp (no route; chat reaches it in-container)
 [post-start] Logs    -> devrouter exec <this-checkout> -- tail -f /tmp/dev.log
 EOF
 fi

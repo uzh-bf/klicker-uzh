@@ -241,6 +241,26 @@ test.describe('Manage Assistant — Messaging', () => {
     )
   })
 
+  test('Closing and reopening preserves the loaded assistant runtime', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    const assistant = await openManageAssistantWidget(page)
+    const input = assistant.getByTestId('chat-composer-input')
+
+    await assistant.getByText('Draft a question', { exact: true }).click()
+    const draftPrompt = await input.inputValue()
+    expect(draftPrompt).not.toBe('')
+
+    const dialog = page.getByTestId('manage-assistant-drawer')
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toBeHidden()
+
+    await page.getByTestId('manage-assistant-open').click()
+    await expect(dialog).toBeVisible()
+    await expect(input).toHaveValue(draftPrompt)
+  })
+
   test('Dialog exposes modal semantics and isolates the Manage page', async ({
     page,
   }) => {
@@ -272,7 +292,12 @@ test.describe('Manage Assistant — Messaging', () => {
 
     await dialog.getByRole('button', { name: 'Close' }).click()
 
-    await expect(dialog).toHaveCount(0)
+    await expect(dialog).toBeHidden()
+    await expect(dialog).toHaveAttribute('aria-hidden', 'true')
+    await expect(dialog).not.toHaveAttribute('aria-modal', 'true')
+    expect(
+      await dialog.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
     await expect(appRoot).not.toHaveAttribute('aria-hidden', 'true')
     expect(
       await appRoot.evaluate((element) => (element as HTMLElement).inert)

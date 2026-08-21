@@ -42,6 +42,7 @@ export function ManageAssistantWidget() {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
   const [open, setOpen] = useState(false)
+  const [hasOpened, setHasOpened] = useState(false)
   const [frameLoaded, setFrameLoaded] = useState(false)
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
@@ -105,7 +106,6 @@ export function ManageAssistantWidget() {
   const closeWidget = useCallback(() => {
     shouldRestoreFocusRef.current = true
     setOpen(false)
-    setFrameLoaded(false)
   }, [])
 
   useEffect(() => {
@@ -257,7 +257,7 @@ export function ManageAssistantWidget() {
           aria-haspopup="dialog"
           aria-label={t('manage.assistant.open')}
           onClick={() => {
-            setFrameLoaded(false)
+            setHasOpened(true)
             setOpen(true)
           }}
           className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6 md:px-4"
@@ -270,17 +270,22 @@ export function ManageAssistantWidget() {
         </button>
       )}
 
-      {open &&
+      {(open || hasOpened) &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
             id={MANAGE_ASSISTANT_DIALOG_ID}
             ref={panelRef}
             role="dialog"
-            aria-modal="true"
+            aria-modal={open ? 'true' : undefined}
+            aria-hidden={!open}
             aria-label={t('manage.assistant.title')}
+            inert={!open}
             tabIndex={-1}
-            className="fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl focus:outline-none md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border"
+            className={twMerge(
+              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl focus:outline-none md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border',
+              !open && 'hidden'
+            )}
             data-cy="manage-assistant-drawer"
           >
             <div className="flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3">
