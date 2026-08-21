@@ -25,23 +25,12 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
   const permissionLevelSelectItems = usePermissionLevelSelection({
     type: ObjectType.Element,
   })
-  const {
-    values,
-    errors,
-    touched,
-    submitCount,
-    setFieldTouched,
-    setFieldValue,
-  } = useFormikContext<ElementBatchSharingFormValues>()
+  const { values, errors, touched, setFieldTouched, setFieldValue, setValues } =
+    useFormikContext<ElementBatchSharingFormValues>()
   const { data, loading } = useQuery(GetUserGroupsUserDocument, {
     fetchPolicy: 'cache-and-network',
     skip: !values.enabled,
   })
-  const showRecipientError =
-    values.enabled &&
-    submitCount > 0 &&
-    Boolean(errors.shortnameOrEmail ?? errors.userGroupId)
-
   return (
     <Card
       className={twMerge(
@@ -60,7 +49,12 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
             id="element-batch-sharing-enabled"
             checked={values.enabled}
             onCheck={() => {
-              void setFieldValue('enabled', !values.enabled)
+              const enabled = !values.enabled
+              void setFieldValue('enabled', enabled)
+              if (enabled) {
+                void setFieldTouched('shortnameOrEmail', true, false)
+                void setFieldTouched('userGroupId', true, false)
+              }
             }}
             disabled={disabled}
             data={{ cy: 'element-batch-sharing-checkbox' }}
@@ -86,8 +80,10 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   error={errors.shortnameOrEmail}
                   isTouched={touched.shortnameOrEmail}
                   onChange={(shortnameOrEmail) => {
-                    void setFieldValue('shortnameOrEmail', shortnameOrEmail)
-                    void setFieldValue('userGroupId', undefined)
+                    void setValues(
+                      { ...values, shortnameOrEmail, userGroupId: undefined },
+                      false
+                    )
                     void setFieldTouched('shortnameOrEmail', true, false)
                   }}
                   placeholder={`${t('shared.generic.shortname')} / ${t('shared.generic.email')}`}
@@ -120,8 +116,10 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }
                   value={values.userGroupId}
                   onChange={(userGroupId) => {
-                    void setFieldValue('shortnameOrEmail', '')
-                    void setFieldValue('userGroupId', userGroupId)
+                    void setValues(
+                      { ...values, shortnameOrEmail: '', userGroupId },
+                      false
+                    )
                     void setFieldTouched('userGroupId', true, false)
                   }}
                   items={
@@ -181,11 +179,6 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }}
                 />
               </div>
-              {showRecipientError ? (
-                <p role="alert" className="text-sm text-red-700 xl:col-span-2">
-                  {errors.shortnameOrEmail ?? errors.userGroupId}
-                </p>
-              ) : null}
             </div>
           </div>
         </div>

@@ -167,10 +167,14 @@ function ElementBatchOperationsModal({
     [selectionSnapshot, selectedActions, t]
   )
 
-  const numOfUpdatedElements = useMemo(
-    () => affectedElements.filter((element) => element.actionsApplied).length,
+  const updateElementIds = useMemo(
+    () =>
+      affectedElements
+        .filter((element) => element.actionsApplied)
+        .map((element) => element.id),
     [affectedElements]
   )
+  const numOfUpdatedElements = updateElementIds.length
   const numOfSharedElements = useMemo(
     () => affectedElements.filter((element) => element.sharingApplied).length,
     [affectedElements]
@@ -225,10 +229,9 @@ function ElementBatchOperationsModal({
 
   const applyConfiguredOperations = useElementBatchExecution({
     selectionSnapshot,
-    affectedElements,
+    updateElementIds,
     selectedActions,
     updatesConfigured,
-    numOfUpdatedElements,
     refetchElements,
     resetSelectedElements,
     onClose,

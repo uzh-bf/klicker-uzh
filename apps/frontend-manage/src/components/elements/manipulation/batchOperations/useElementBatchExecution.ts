@@ -16,8 +16,6 @@ import type {
   ElementBatchUpdateExecutionResult,
 } from './types'
 
-type AffectedElement = Pick<Element, 'id'> & { actionsApplied: boolean }
-
 function getMultiplierValue(multiplier?: string) {
   return multiplier && multiplier !== '' ? parseInt(multiplier, 10) : null
 }
@@ -44,20 +42,18 @@ function isSuccessful(
 
 function useElementBatchExecution({
   selectionSnapshot,
-  affectedElements,
+  updateElementIds,
   selectedActions,
   updatesConfigured,
-  numOfUpdatedElements,
   refetchElements,
   resetSelectedElements,
   onClose,
   setExecutionResult,
 }: {
   selectionSnapshot: Element[]
-  affectedElements: AffectedElement[]
+  updateElementIds: Element['id'][]
   selectedActions: ElementBatchOperationActions
   updatesConfigured: boolean
-  numOfUpdatedElements: number
   refetchElements: () => Promise<void>
   resetSelectedElements: () => void
   onClose: () => void
@@ -73,14 +69,12 @@ function useElementBatchExecution({
 
   async function runUpdate(): Promise<ElementBatchUpdateExecutionResult> {
     if (!updatesConfigured) return { status: 'NOT_REQUESTED' }
-    if (numOfUpdatedElements === 0) return { status: 'SKIPPED' }
+    if (updateElementIds.length === 0) return { status: 'SKIPPED' }
 
     try {
       const { data } = await applyElementBatchOperations({
         variables: {
-          elementIds: affectedElements
-            .filter((element) => element.actionsApplied)
-            .map((element) => element.id),
+          elementIds: updateElementIds,
           archive: selectedActions.archive,
           unarchive: selectedActions.unarchive,
           status: selectedActions.status ?? undefined,
@@ -94,8 +88,10 @@ function useElementBatchExecution({
       return typeof updatedCount === 'number'
         ? {
             status:
-              updatedCount === numOfUpdatedElements ? 'SUCCEEDED' : 'PARTIAL',
-            expectedCount: numOfUpdatedElements,
+              updatedCount === updateElementIds.length
+                ? 'SUCCEEDED'
+                : 'PARTIAL',
+            expectedCount: updateElementIds.length,
             updatedCount,
           }
         : { status: 'FAILED' }
