@@ -238,8 +238,8 @@ async function recordExistingInvitationIfPresent(
   matriculationNumber: string | null,
   prismaClient: PrismaClient
 ): Promise<InvitationResult | null> {
-  return withSerializableInvitationTransaction(prismaClient, async (tx) => {
-    const existingInvitation = await tx.participantInvitation.findUnique({
+  const existingInvitation =
+    await prismaClient.participantInvitation.findUnique({
       where: {
         email_courseId: {
           email: normalizedEmail,
@@ -248,10 +248,22 @@ async function recordExistingInvitationIfPresent(
       },
     })
 
-    if (!existingInvitation) return null
+  if (!existingInvitation) return null
+
+  return withSerializableInvitationTransaction(prismaClient, async (tx) => {
+    const currentInvitation = await tx.participantInvitation.findUnique({
+      where: {
+        email_courseId: {
+          email: normalizedEmail,
+          courseId,
+        },
+      },
+    })
+
+    if (!currentInvitation) return null
 
     return recordDuplicateInvitation(
-      existingInvitation,
+      currentInvitation,
       normalizedEmail,
       matriculationNumber,
       tx

@@ -497,6 +497,7 @@ describe('Assessment participant invitation management', () => {
     const findInvitation = vi
       .fn()
       .mockResolvedValueOnce(invitation)
+      .mockResolvedValueOnce(invitation)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
     const deleteInvitation = vi.fn(async () => {
