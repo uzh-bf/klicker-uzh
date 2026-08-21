@@ -3205,6 +3205,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
         '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Aktivitätenliste aufgerufen werden.',
+      deleteDraftActivitiesOption:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus ebenfalls unwiderruflich löschen.',
+      deleteDraftActivities:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus werden unwiderruflich gelöscht. Alle übrigen Live-Quizzes werden vom Kurs getrennt und bleiben über die Aktivitätenliste zugänglich.',
       noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
       deletePracticeQuizzes:
         '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',

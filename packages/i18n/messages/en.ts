@@ -3152,6 +3152,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
+      deleteDraftActivitiesOption:
+        'Also irreversibly delete all linked draft activities.',
+      deleteDraftActivities:
+        'All linked draft activities will be irreversibly deleted. Any remaining live quizzes will be disconnected from the course and remain accessible through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',

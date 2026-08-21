@@ -51,6 +51,21 @@ Lifecycle enums:
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
+## Course deletion
+
+**Deleting a non-assessment course does not normally delete its live quizzes.**
+The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
+hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
+`SetNull`, so linked live quizzes are disconnected and remain in the activity
+list. The optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` additionally
+hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
+every other status are still disconnected. The lecturer UI keeps this option
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
+(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
 ## Course duplication
 
 **Copies share Elements with the source — only the instances are new.** The manage frontend starts duplication through `startCourseDuplication`, which stores a Redis-backed job status, emits the `process-course-duplication` Hatchet event, and returns the job id immediately. The frontend persists that id in `localStorage`, polls `courseDuplicationStatuses`, and opens the copied course when the job reaches `COMPLETED`; failed, missing, or stale jobs are removed from the active notification UI. The worker still calls `packages/graphql/src/services/courses.ts:duplicateCourse`, which runs the actual copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. The legacy `createCourse(sourceCourseId: …)` path still routes directly to `duplicateCourse` for compatibility. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:getCourseDuplicationErrorMessage`).

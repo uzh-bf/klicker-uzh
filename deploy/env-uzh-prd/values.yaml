@@ -20,7 +20,7 @@ podAnnotations:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'http://app-klicker-uzh-hatchet-api.prd-hatchet.svc.cluster.local:8080'
+    apiUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
   workers:
     general:
       replicaCount: 2

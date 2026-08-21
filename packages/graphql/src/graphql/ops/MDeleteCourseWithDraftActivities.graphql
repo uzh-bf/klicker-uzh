@@ -1,0 +1,8 @@
+mutation DeleteCourseWithDraftActivities(
+  $id: String!
+  $deleteDraftActivities: Boolean!
+) {
+  deleteCourse(id: $id, deleteDraftActivities: $deleteDraftActivities) {
+    id
+  }
+}

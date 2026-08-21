@@ -644,7 +644,10 @@ export const Mutation = builder.mutationType({
       deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: { id: t.arg.string({ required: true }) },
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,

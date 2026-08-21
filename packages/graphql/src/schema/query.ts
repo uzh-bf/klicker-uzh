@@ -275,8 +275,8 @@ export const Query = builder.queryType({
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
-          numEntries: t.arg.int({ required: true }),
-          offset: t.arg.int({ required: true }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.getUserElements(args, ctx)
