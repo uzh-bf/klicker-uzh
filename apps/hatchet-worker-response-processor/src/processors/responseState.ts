@@ -48,10 +48,17 @@ export function getSampleSolutionAvailability({
 }
 
 export function getResponseState(
-  response: { correctionOnly: boolean } | null
-): 'create' | 'duplicate' | 'materialize' {
+  response: { correctionOnly: boolean; correlationId: string | null } | null,
+  correlationId: string
+): 'create' | 'duplicate' | 'materialize' | 'retry' {
   if (!response) return 'create'
-  return response.correctionOnly ? 'materialize' : 'duplicate'
+  if (response.correctionOnly) {
+    return response.correlationId === null ||
+      response.correlationId === correlationId
+      ? 'materialize'
+      : 'duplicate'
+  }
+  return response.correlationId === correlationId ? 'retry' : 'duplicate'
 }
 
 function applyCorrection(

@@ -1,5 +1,10 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  Prisma,
+  ResponseCorrectness,
+  UserLoginScope,
+} from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -282,21 +287,92 @@ async function handleAddAssessmentResponse(
     )}`,
   })
 
-  // check if there already exists an entry in the votes table with the given correlationId
-  const votes = await assessmentRedis.hget(
-    `lq:${liveQuizId}:i:${instanceId}:votes`,
-    correlationId
-  )
-  if (votes) {
-    console.log(
-      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
+  const instance = await prisma.elementInstance.findUnique({
+    where: {
+      id: Number(instanceId),
+      elementBlock: { liveQuizId: String(liveQuizId) },
+    },
+    select: {
+      id: true,
+      elementBlock: { select: { execution: true, liveQuizId: true } },
+    },
+  })
+
+  const elementBlock = instance?.elementBlock
+  if (!elementBlock) {
+    return badRequest(req, res, 'invalid_submission')
+  }
+
+  // Serialize acceptance with correction-audience snapshots. The snapshot
+  // acquires the same quiz-level lock before reading acceptedAt markers.
+  const acceptance = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(
+      Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${`assessment-audience:${liveQuizId}`}, 0)
+        )
+      `
     )
+
+    const existingResponse = await tx.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instance.id,
+          elementBlockExecution: elementBlock.execution,
+          participantId: user.sub,
+        },
+      },
+      select: { id: true, correctionOnly: true, correlationId: true },
+    })
+
+    if (existingResponse && !existingResponse.correctionOnly) {
+      return { status: 'duplicate' as const }
+    }
+
+    if (
+      existingResponse?.correlationId &&
+      existingResponse.correlationId !== correlationId
+    ) {
+      return { status: 'duplicate' as const }
+    }
+
+    if (existingResponse) {
+      await tx.liveQuizResponse.update({
+        where: { id: existingResponse.id },
+        data: {
+          acceptedAt: { set: new Date() },
+          correlationId,
+        },
+      })
+      return { status: 'retry' as const }
+    }
+
+    await tx.liveQuizResponse.create({
+      data: {
+        submittedAt: new Date(responseTimestamp),
+        acceptedAt: new Date(),
+        correlationId,
+        timeSpent: -1,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 0,
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        correctionOnly: true,
+        elementBlockExecution: elementBlock.execution,
+        instance: { connect: { id: instance.id } },
+        participant: { connect: { id: user.sub } },
+      },
+    })
+
+    return { status: 'accepted' as const }
+  })
+
+  if (acceptance.status === 'duplicate') {
     hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
       info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
     })
 
-    // show success message that response was already recorded before and that first response counts
     return sendJson(req, res, 208, {
       status: 'response_recorded_before',
       responseTimestamp,
@@ -312,19 +388,21 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
-  // start the processing of an assessment response
-  console.log(
-    `Pushing event ${'response-received:assessment'} with payload`,
-    message
-  )
+  // Start the processing workflow and wait for persistence plus the pending
+  // Redis effect. A failed workflow is retryable; it must never be reported as
+  // a successful submission.
+  console.log('Starting assessment response workflow with payload', message)
 
   try {
-    await hatchetClient.events.push('response-received:assessment', message)
+    await hatchetClient.runAndWait(
+      'process-assessment-response-workflow',
+      message
+    )
   } catch (error) {
     try {
       await hatchetClient.events.push('create-audit-log-entry', {
         correlationId,
-        info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
+        info: `[ERROR] [AddResponse Assessment] Failed to complete response processing workflow for correlationId ${correlationId}: ${error}`,
       })
     } catch (loggingError) {
       // TODO: send error directly to audit-logging service through network request
@@ -333,6 +411,11 @@ async function handleAddAssessmentResponse(
         loggingError,
       })
     }
+
+    return sendJson(req, res, 503, {
+      error: 'response_processing_unavailable',
+      responseTimestamp,
+    })
   }
 
   return sendJson(req, res, 200, {

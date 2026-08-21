@@ -54,10 +54,43 @@ describe('assessment response state', () => {
     )
   })
 
-  it('distinguishes new, genuine, and correction-only responses', () => {
-    assert.equal(getResponseState(null), 'create')
-    assert.equal(getResponseState({ correctionOnly: false }), 'duplicate')
-    assert.equal(getResponseState({ correctionOnly: true }), 'materialize')
+  it('distinguishes new, genuine, correction-only, and retried responses', () => {
+    assert.equal(getResponseState(null, 'correlation-id'), 'create')
+    assert.equal(
+      getResponseState(
+        { correctionOnly: false, correlationId: 'other' },
+        'correlation-id'
+      ),
+      'duplicate'
+    )
+    assert.equal(
+      getResponseState(
+        { correctionOnly: true, correlationId: null },
+        'correlation-id'
+      ),
+      'materialize'
+    )
+    assert.equal(
+      getResponseState(
+        { correctionOnly: true, correlationId: 'other' },
+        'correlation-id'
+      ),
+      'duplicate'
+    )
+    assert.equal(
+      getResponseState(
+        { correctionOnly: true, correlationId: 'correlation-id' },
+        'correlation-id'
+      ),
+      'materialize'
+    )
+    assert.equal(
+      getResponseState(
+        { correctionOnly: false, correlationId: 'correlation-id' },
+        'correlation-id'
+      ),
+      'retry'
+    )
   })
 
   it('replays corrections in application order and preserves untouched categories', () => {

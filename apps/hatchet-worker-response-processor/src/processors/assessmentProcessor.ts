@@ -57,10 +57,32 @@ function isUniqueConstraintError(error: unknown) {
   )
 }
 
-async function persistAssessmentResponse({
+type AssessmentResponseEffectPayload = {
+  responseId: number
+  correlationId: string
+  participantId: string
+  liveQuizId: string
+  blockId: string
+  instanceId: string
+  elementType: ElementType
+  isGamificationEnabled: boolean
+  pointsAwarded: number
+  xpAwarded: number
+  response: LiveQuizResponseInput
+}
+
+type PersistedAssessmentResponse = {
+  status: 'created' | 'duplicate' | 'materialized' | 'retry'
+  responseId: number
+  effect: AssessmentResponseEffectPayload | null
+}
+
+export async function persistAssessmentResponse({
   instanceId,
   participantId,
   elementBlockExecution,
+  correlationId,
+  effectPayload,
   responseTimestamp,
   response,
   correctness,
@@ -70,13 +92,15 @@ async function persistAssessmentResponse({
   instanceId: number
   participantId: string
   elementBlockExecution: number
+  correlationId: string
+  effectPayload: Omit<AssessmentResponseEffectPayload, 'responseId'>
   responseTimestamp: number
   response: LiveQuizResponseInput
   correctness: ResponseCorrectness
   responsePoints: ResponsePoints
   availablePoints: ResponsePoints
-}): Promise<'created' | 'duplicate' | 'materialized'> {
-  const persist = () =>
+}): Promise<PersistedAssessmentResponse> {
+  const persist = (): Promise<PersistedAssessmentResponse> =>
     prisma.$transaction(async (tx) => {
       // Serialize response processing with point corrections for this identity,
       // including the period before a response row exists.
@@ -102,6 +126,8 @@ async function persistAssessmentResponse({
         select: {
           id: true,
           correctionOnly: true,
+          correlationId: true,
+          acceptedAt: true,
           appliedCorrections: {
             select: {
               id: true,
@@ -117,8 +143,25 @@ async function persistAssessmentResponse({
         },
       })
 
-      const state = getResponseState(existingResponse)
-      if (state === 'duplicate') return 'duplicate'
+      const state = getResponseState(existingResponse, correlationId)
+      if (state === 'duplicate' && existingResponse) {
+        return {
+          status: 'duplicate' as const,
+          responseId: existingResponse.id,
+          effect: null,
+        }
+      }
+      if (state === 'retry' && existingResponse) {
+        const effect = await tx.assessmentResponseEffect.findUnique({
+          where: { responseId: existingResponse.id },
+          select: { payload: true },
+        })
+        return {
+          status: 'retry' as const,
+          responseId: existingResponse.id,
+          effect: (effect?.payload as AssessmentResponseEffectPayload) ?? null,
+        }
+      }
 
       const responseData = {
         submittedAt: new Date(responseTimestamp),
@@ -128,9 +171,11 @@ async function persistAssessmentResponse({
       }
 
       if (state === 'create') {
-        await tx.liveQuizResponse.create({
+        const createdResponse = await tx.liveQuizResponse.create({
           data: {
             ...responseData,
+            acceptedAt: new Date(responseTimestamp),
+            correlationId,
             basePoints: responsePoints.basePoints,
             correctnessPoints: responsePoints.correctnessPoints,
             bonusPoints: responsePoints.bonusPoints,
@@ -140,7 +185,23 @@ async function persistAssessmentResponse({
           },
         })
 
-        return 'created'
+        const effect = {
+          ...effectPayload,
+          responseId: createdResponse.id,
+        }
+        await tx.assessmentResponseEffect.create({
+          data: {
+            responseId: createdResponse.id,
+            correlationId,
+            payload: effect as unknown as Prisma.InputJsonValue,
+          },
+        })
+
+        return {
+          status: 'created' as const,
+          responseId: createdResponse.id,
+          effect,
+        }
       }
 
       if (!existingResponse) {
@@ -166,6 +227,9 @@ async function persistAssessmentResponse({
           correctnessPoints: replayedCorrections.points.correctnessPoints,
           bonusPoints: replayedCorrections.points.bonusPoints,
           correctionOnly: false,
+          acceptedAt:
+            existingResponse.acceptedAt ?? new Date(responseTimestamp),
+          correlationId: existingResponse.correlationId ?? correlationId,
         },
       })
 
@@ -177,7 +241,28 @@ async function persistAssessmentResponse({
         })
       }
 
-      return 'materialized'
+      const effect = {
+        ...effectPayload,
+        responseId: existingResponse.id,
+      }
+      await tx.assessmentResponseEffect.upsert({
+        where: { responseId: existingResponse.id },
+        create: {
+          responseId: existingResponse.id,
+          correlationId,
+          payload: effect as unknown as Prisma.InputJsonValue,
+        },
+        update: {
+          correlationId,
+          payload: effect as unknown as Prisma.InputJsonValue,
+        },
+      })
+
+      return {
+        status: 'materialized' as const,
+        responseId: existingResponse.id,
+        effect,
+      }
     })
 
   try {
@@ -189,6 +274,29 @@ async function persistAssessmentResponse({
     // key. The winning insert determines which state should be persisted.
     return persist()
   }
+}
+
+export async function clearPendingAssessmentResponseAcceptance({
+  instanceId,
+  participantId,
+  correlationId,
+}: {
+  instanceId: number
+  participantId: string
+  correlationId: string
+}) {
+  await prisma.liveQuizResponse.updateMany({
+    where: {
+      instanceId,
+      participantId,
+      correlationId,
+      correctionOnly: true,
+    },
+    data: {
+      acceptedAt: null,
+      correlationId: null,
+    },
+  })
 }
 
 export async function processAssessmentResponse(
@@ -290,6 +398,11 @@ export async function processAssessmentResponse(
     ctx.logger.error(
       `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
+    await clearPendingAssessmentResponseAcceptance({
+      instanceId: Number(message.instanceId),
+      participantId: message.participantId,
+      correlationId: message.correlationId,
+    })
     ctx.cancel()
     return { status: 200 }
   }
@@ -568,13 +681,33 @@ export async function processAssessmentResponse(
     )
   }
 
-  // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
-  let persistenceResult: 'created' | 'duplicate' | 'materialized'
+  // The effect payload is persisted together with the response. This makes a
+  // worker retry resumable after the database commit, even if Redis or the
+  // downstream aggregation task was unavailable at that point.
+  const effectPayload = {
+    correlationId: message.correlationId,
+    participantId: message.participantId,
+    liveQuizId: message.liveQuizId,
+    blockId: sessionBlockId,
+    instanceId: message.instanceId,
+    elementType: type as ElementType,
+    isGamificationEnabled: instanceInfo.isGamificationEnabled === 'true',
+    pointsAwarded: Number.isFinite(responsePoints.basePoints)
+      ? responsePoints.basePoints
+      : 0,
+    xpAwarded: Number.isFinite(awardedXp) ? awardedXp : 0,
+    response: response ?? {},
+  }
+
+  // ! Step 4: Store the submitted response and its pending Redis effect atomically.
+  let persistence: PersistedAssessmentResponse
   try {
-    persistenceResult = await persistAssessmentResponse({
+    persistence = await persistAssessmentResponse({
       instanceId: Number(message.instanceId),
       participantId: message.participantId,
       elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+      correlationId: message.correlationId,
+      effectPayload,
       responseTimestamp,
       response,
       correctness: responseCorrectness,
@@ -587,7 +720,7 @@ export async function processAssessmentResponse(
     )
   }
 
-  if (persistenceResult === 'duplicate') {
+  if (persistence.status === 'duplicate') {
     ctx.logger.error(
       `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
     )
@@ -595,27 +728,15 @@ export async function processAssessmentResponse(
     return { status: 208 }
   }
 
-  // add the participant to the list of participants that have answered this question instance
-  redisExec.hset(
-    `lq:${message.liveQuizId}:i:${message.instanceId}:votes`,
-    message.correlationId,
-    'true'
-  )
-
-  // ! Step 5: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
-  const quizInfo = await redisExec.hgetall(`${instanceKey}:info`)
-  ctx.v1.events.push('response-processed:aggregation', {
-    correlationId: message.correlationId,
-    participantId: message.participantId,
-    liveQuizId: message.liveQuizId,
-    blockId: sessionBlockId,
-    instanceId: message.instanceId,
-    elementType: type,
-    isGamificationEnabled: quizInfo?.isGamificationEnabled === 'true',
-    pointsAwarded: awardedBasePoints,
-    xpAwarded: awardedXp,
-    response,
-  })
+  // ! Step 5: Apply the pending effect before acknowledging the workflow.
+  // The Redis transaction is idempotent, so an older queued aggregation event
+  // can safely race this direct completion path.
+  if (persistence.effect) {
+    await aggregateAssessmentResponses(
+      persistence.effect,
+      ctx as unknown as DurableContext<JsonObject, {}>
+    )
+  }
 
   return {
     status: 200,
@@ -628,6 +749,7 @@ export async function processAssessmentResponse(
 
 export async function aggregateAssessmentResponses(
   message: {
+    responseId?: number
     correlationId: string
     participantId: string
     liveQuizId: string
@@ -641,155 +763,185 @@ export async function aggregateAssessmentResponses(
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
-  // destructure message into components required for results aggregation
-  const {
-    participantId,
-    liveQuizId,
-    blockId,
-    instanceId,
-    elementType,
-    isGamificationEnabled,
-    pointsAwarded,
-    xpAwarded,
-    response,
-  } = message
+  // Older queued aggregation events do not carry responseId. The correlation
+  // ID therefore remains the shared idempotency key for both delivery paths.
+  const effectKey = message.correlationId
+  const processedResponseKey = `lq:${message.liveQuizId}:processedResponse:${effectKey}`
+  const redis = redisExec.duplicate()
 
-  // set up redis pipeline for batched execution
-  const redis = redisExec.pipeline()
-
-  // compose cache keys
-  const liveQuizKey = `lq:${liveQuizId}`
-  const instanceKey = `${liveQuizKey}:i:${instanceId}`
-
-  // for gamified live quizzes, update the leaderboard and the participant xp
-  if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
-    updateLeaderboards({
-      redisMulti: redis,
-      participantId,
-      participantRole: UserRole.PARTICIPANT,
-      liveQuizKey,
-      sessionBlockId: blockId,
-      pointsAwarded,
-      xpAwarded,
-    })
-  }
-
-  // step through the different element types, responses do not need to be verified anymore, since this was done by preceding task
-  // aggregate the passed student response into the responses stored in the redis cache (for evaluation during quiz execution)
-  switch (elementType) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM: {
-      response
-        .choices!.filter((choice) => choice.selected)
-        .forEach((choice) => {
-          redis.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
-        })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.NUMERICAL: {
-      const MD5 = createHash('md5')
-      MD5.update(response.value!)
-      const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(`${instanceKey}:responseHashes`, responseHash, response.value!)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.FREE_TEXT: {
-      const cleanResponseValue = response.value!.trim()
-      const MD5 = createHash('md5')
-      MD5.update(cleanResponseValue)
-      const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(
-        `${instanceKey}:responseHashes`,
-        responseHash,
-        cleanResponseValue
-      )
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.SELECTION: {
-      response.selection!.forEach((answerId: number) => {
-        if (
-          answerId === -1 ||
-          typeof answerId === 'undefined' ||
-          answerId === null
-        ) {
-          return // skipped input fields should not be considered
-        }
-
-        redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
+  const finish = async () => {
+    if (message.responseId) {
+      await prisma.assessmentResponseEffect.deleteMany({
+        where: { responseId: message.responseId },
       })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
     }
 
-    case ElementType.CASE_STUDY: {
-      Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
-        Object.entries(caseData).forEach(([itemId, itemData]) => {
-          Object.entries(itemData).forEach(
-            ([criterionId, criterionResponse]) => {
-              if (
-                criterionResponse === null ||
-                typeof criterionResponse !== 'number'
-              ) {
-                return
-              }
-
-              // compute the hash of the response
-              const MD5 = createHash('md5')
-              MD5.update(String(criterionResponse))
-              const responseHash = MD5.digest('hex')
-              const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
-
-              // add the response hash / valid combination and/or increment the corresponding count
-              redis.hincrby(`${instanceKey}:results`, combinedHash, 1)
-              redis.hset(
-                `${instanceKey}:responseHashes`,
-                combinedHash,
-                String(criterionResponse)
-              )
-            }
-          )
-        })
-      })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-
-    case ElementType.CONTENT: {
-      // increase number of participants on element (do not award points / ... for content elements)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
-      break
-    }
-  }
-
-  try {
-    await redis.exec()
     ctx.logger.info("Successfully aggregated a participant's results", {
       correlationId: message.correlationId,
       liveQuizId: message.liveQuizId,
       instanceId: message.instanceId,
     })
     return { status: 200 }
+  }
+
+  try {
+    // WATCH/MULTI keeps all cache effects and the completion marker atomic.
+    // Use a dedicated connection because WATCH state is connection-scoped.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await redis.watch(processedResponseKey)
+      if (await redis.exists(processedResponseKey)) {
+        await redis.unwatch()
+        return finish()
+      }
+
+      const transaction = redis.multi()
+      const {
+        participantId,
+        liveQuizId,
+        blockId,
+        instanceId,
+        elementType,
+        isGamificationEnabled,
+        pointsAwarded,
+        xpAwarded,
+        response,
+      } = message
+
+      const liveQuizKey = `lq:${liveQuizId}`
+      const instanceKey = `${liveQuizKey}:i:${instanceId}`
+
+      transaction.hset(`${instanceKey}:votes`, message.correlationId, 'true')
+
+      if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
+        updateLeaderboards({
+          redisMulti: transaction,
+          participantId,
+          participantRole: UserRole.PARTICIPANT,
+          liveQuizKey,
+          sessionBlockId: blockId,
+          pointsAwarded,
+          xpAwarded,
+        })
+      }
+
+      switch (elementType) {
+        case ElementType.SC:
+        case ElementType.MC:
+        case ElementType.KPRIM: {
+          response
+            .choices!.filter((choice) => choice.selected)
+            .forEach((choice) => {
+              transaction.hincrby(
+                `${instanceKey}:results`,
+                String(choice.ix),
+                1
+              )
+            })
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+
+        case ElementType.NUMERICAL: {
+          const MD5 = createHash('md5')
+          MD5.update(response.value!)
+          const responseHash = MD5.digest('hex')
+          transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+          transaction.hset(
+            `${instanceKey}:responseHashes`,
+            responseHash,
+            response.value!
+          )
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+
+        case ElementType.FREE_TEXT: {
+          const cleanResponseValue = response.value!.trim()
+          const MD5 = createHash('md5')
+          MD5.update(cleanResponseValue)
+          const responseHash = MD5.digest('hex')
+          transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+          transaction.hset(
+            `${instanceKey}:responseHashes`,
+            responseHash,
+            cleanResponseValue
+          )
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+
+        case ElementType.SELECTION: {
+          response.selection!.forEach((answerId: number) => {
+            if (
+              answerId === -1 ||
+              typeof answerId === 'undefined' ||
+              answerId === null
+            ) {
+              return
+            }
+
+            transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
+          })
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+
+        case ElementType.CASE_STUDY: {
+          Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
+            Object.entries(caseData).forEach(([itemId, itemData]) => {
+              Object.entries(itemData).forEach(
+                ([criterionId, criterionResponse]) => {
+                  if (
+                    criterionResponse === null ||
+                    typeof criterionResponse !== 'number'
+                  ) {
+                    return
+                  }
+
+                  const MD5 = createHash('md5')
+                  MD5.update(String(criterionResponse))
+                  const responseHash = MD5.digest('hex')
+                  const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
+
+                  transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
+                  transaction.hset(
+                    `${instanceKey}:responseHashes`,
+                    combinedHash,
+                    String(criterionResponse)
+                  )
+                }
+              )
+            })
+          })
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+
+        case ElementType.CONTENT: {
+          transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
+          break
+        }
+      }
+
+      transaction.set(processedResponseKey, 'true')
+      const result = await transaction.exec()
+      if (result !== null) return finish()
+    }
+
+    throw new Error('Redis aggregation transaction conflicted repeatedly')
   } catch (e) {
     ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${String(e)}` +
+      `Redis transaction for results aggregation failed: ${String(e)}` +
         JSON.stringify({
           correlationId: message.correlationId,
           liveQuizId: message.liveQuizId,
           instanceId: message.instanceId,
         })
     )
-    redis.discard()
     throw new Error(
-      `Redis pipeline for results aggregation failed ${String(e)}`
+      `Redis transaction for results aggregation failed ${String(e)}`
     )
+  } finally {
+    await redis.quit().catch(() => undefined)
   }
 }

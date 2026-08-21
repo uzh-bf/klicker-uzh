@@ -111,6 +111,12 @@ model QuestionResponseDetail {
 model LiveQuizResponse {
   id          Int      @id @default(autoincrement())
   submittedAt DateTime
+  /// Timestamp at which the response API durably accepted the submission.
+  /// This is set before the asynchronous response worker is scheduled and is
+  /// used when taking a correction-audience snapshot.
+  acceptedAt DateTime?
+  /// Correlates retries of the accepted submission with the persisted row.
+  correlationId String?
 
   /// [PrismaSingleQuestionResponseLiveQuiz]
   response Json?
@@ -135,6 +141,7 @@ model LiveQuizResponse {
 
   // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
   appliedCorrections AppliedPointCorrection[]
+  assessmentResponseEffect AssessmentResponseEffect?
   correctionOnly     Boolean                  @default(false) // if true, response was created as part of point correction and not by participant
 
   createdAt DateTime @default(now())
@@ -142,6 +149,25 @@ model LiveQuizResponse {
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+  @@index([correlationId])
+}
+
+/// Pending Redis/result-cache effects for a persisted assessment response.
+/// The row is created with the response and removed only after the effect is
+/// applied, so a worker retry can resume after a post-commit failure.
+model AssessmentResponseEffect {
+  id Int @id @default(autoincrement())
+
+  response   LiveQuizResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  responseId Int              @unique
+
+  correlationId String
+  payload       Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([correlationId])
 }
 
 enum PointCorrectionType {
