@@ -29,6 +29,15 @@ metadata blocks without changing the on-screen report. QR rendering and popup
 navigation have bounded failure paths so export cannot remain stuck on a
 spinner.
 
+Assessment comparison charts treat privacy-preserving score ranges as
+categorical groups. Render equal-width bars in the export and verification
+surfaces, highlight the group containing the student's score, and retain the
+exact range/count table for accessible detail. Show percentile as a 0–100
+ruler with a marker at the student's inclusive percentile rank; do not imply
+that the score groups form a normal or continuous distribution. The comparison
+remains omitted below the existing cohort threshold, and the stored V1 report
+contract is unchanged.
+
 ## Next.js tooling
 
 - All five Next.js 16 apps use Turbopack for development and `build:test`. Auth and chat also use Turbopack for production. Control, manage, and PWA keep Webpack only for production while `@ducanh2912/next-pwa` generates their service workers. Each script selects exactly one bundler; never combine `--webpack` with `--turbopack`.
