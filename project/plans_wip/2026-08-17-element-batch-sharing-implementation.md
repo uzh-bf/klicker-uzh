@@ -55,9 +55,9 @@ Use the repository's native stack workflow once `$stacked-change` and
 2. **Layer 2 — `feat/element-batch-sharing-ui`:** Manage UI, i18n, Playwright,
    user documentation, screenshots, and final verification.
 
-The topology owner is the current workspace at
-`/Users/paldov/.codex/worktrees/f8ad/klicker-uzh`. Do not create the child layer
-or publish PRs until the user approves this topology. The named stack skills are
+The topology owner is the task worktree selected for this implementation. Do not
+create the child layer or publish PRs until the user approves this topology. The
+named stack skills are
 not available in the current session; do not improvise stack commands. If the
 user explicitly authorizes a normal single PR instead, execute every task on
 `feat/element-batch-sharing` and retain the work-package commit boundaries.
@@ -112,8 +112,8 @@ user explicitly authorizes a normal single PR instead, execute every task on
   status-and-sharing browser flow.
 - Modify `apps/docs/docs/tutorials/element_batch_operations.mdx`: explain
   sharing and independent eligibility.
-- Create `docs/log/2026-08-17-element-batch-sharing.md`: durable change record
-  linked to the API and tutorial documentation.
+- Record durable decisions in the affected wiki pages and the dated project
+  readiness report; no feature-specific `docs/log` entry is retained.
 
 ---
 
@@ -538,7 +538,7 @@ Inspect `git diff`, `git diff --check`, generated artifacts, staged content,
 and all data-bearing files for secrets or personal data. Commit:
 
 ```bash
-git add packages/graphql/src packages/graphql/test/elementBatchSharing.test.ts docs/graphql-api-layer.md docs/superpowers
+git add packages/graphql/src packages/graphql/test/elementBatchSharing.test.ts docs/graphql-api-layer.md project/plans_wip
 git commit -m "feat(graphql): add element batch sharing"
 ```
 
@@ -832,8 +832,7 @@ Expected: all matched scenarios PASS and existing update test IDs remain valid.
 **Files:**
 
 - Modify: `apps/docs/docs/tutorials/element_batch_operations.mdx`
-- Create: `docs/log/2026-08-17-element-batch-sharing.md`
-- Modify: `project/plans_wip/PLAN-element-batch-sharing.md`
+- Update: `project/plans_wip/2026-08-17-element-batch-sharing-implementation.md`
 
 **Interfaces:**
 
@@ -925,8 +924,7 @@ git add \
   packages/i18n/messages/en.ts \
   packages/i18n/messages/de.ts \
   playwright/tests/X-review.spec.ts \
-  docs/log/2026-08-17-element-batch-sharing.md \
-  project/plans_wip/PLAN-element-batch-sharing.md
+  project/plans_wip/2026-08-17-element-batch-sharing-implementation.md
 git commit -m "feat(manage): batch-share selected elements"
 ```
 
@@ -947,7 +945,7 @@ until reviewed; never merge, reorder, or unstack without user approval.
 - Modify:
   `apps/frontend-manage/src/components/elements/manipulation/batchOperations/ElementBatchSharingCard.tsx`
 - Modify:
-  `docs/superpowers/specs/2026-08-17-element-batch-sharing-design.md`
+  `project/plans_wip/2026-08-17-element-batch-sharing-design.md`
 
 - [x] **Step 1: Implement the approved layout**
 
