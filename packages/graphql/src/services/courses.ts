@@ -2873,6 +2873,26 @@ async function deleteCourseDuplicationJob(redis: Redis, jobId: string) {
   await redis.del(getCourseDuplicationStatusKey(jobId))
 }
 
+async function publishCourseDuplicationEvent(
+  hatchet: ContextWithUser['hatchet'],
+  jobId: string
+) {
+  try {
+    await hatchet.events.push('process-course-duplication', { jobId })
+  } catch {
+    // Hatchet may have accepted the event before the client observed an
+    // acknowledgement. Retry the same job id so a lost acknowledgement cannot
+    // create a second course.
+    try {
+      await hatchet.events.push('process-course-duplication', { jobId })
+    } catch {
+      throw new GraphQLError('Course duplication could not be started', {
+        extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+      })
+    }
+  }
+}
+
 async function releaseCourseDuplicationSourceLock(
   redis: Redis,
   job: CourseDuplicationJob
@@ -3014,6 +3034,13 @@ export async function startCourseDuplication(
     )
 
     if (!isTerminalCourseDuplicationStatus(normalizedExistingJob.status)) {
+      if (normalizedExistingJob.status === 'PENDING') {
+        await publishCourseDuplicationEvent(
+          ctx.hatchet,
+          normalizedExistingJob.id
+        )
+      }
+
       return getPublicCourseDuplicationStatus(normalizedExistingJob)
     }
   }
@@ -3081,24 +3108,7 @@ export async function startCourseDuplication(
     }
   }
 
-  try {
-    await ctx.hatchet.events.push('process-course-duplication', {
-      jobId: job.id,
-    })
-  } catch {
-    // Hatchet may have accepted the event before the client observed an
-    // acknowledgement. Retry the same job id and keep the source lock when
-    // both attempts fail so a caller cannot create a second copy concurrently.
-    try {
-      await ctx.hatchet.events.push('process-course-duplication', {
-        jobId: job.id,
-      })
-    } catch {
-      throw new GraphQLError('Course duplication could not be started', {
-        extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
-      })
-    }
-  }
+  await publishCourseDuplicationEvent(ctx.hatchet, job.id)
 
   return getPublicCourseDuplicationStatus(job)
 }

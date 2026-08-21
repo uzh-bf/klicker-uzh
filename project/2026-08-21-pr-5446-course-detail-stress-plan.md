@@ -114,6 +114,10 @@ large, deterministic activity set for manual stress testing.
   checks, and worker liveness checks passed after the fix; generated
   newline-only outputs were restored. The repository hook still reports an
   unrelated existing Chat route-type failure.
-- Next: run the final post-fix review, record its disposition, and push normally
-  to `origin/fix/course-duplication-timeout`. No full `check:all` or build claim
-  is made for the repository hook.
+- 2026-08-21: The final review also required the Hatchet task timeout to exceed
+  the ten-minute duplication transaction and a recovery path after both event
+  publication attempts fail. The task now allows 15 minutes, and a later
+  mutation retry republishes the same pending job id. Focused checks and a new
+  final review remain before the normal push to
+  `origin/fix/course-duplication-timeout`. No full `check:all` or build claim is
+  made for the repository hook.
