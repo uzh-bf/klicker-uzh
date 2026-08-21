@@ -347,6 +347,7 @@ export function createAssessmentReport({
       .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
       .privacy h3 { font-size: 10px; }
       .chart, .verification, .pdf-avoid { break-inside: avoid; }
+      .histogram-table { display: none; }
     }
 
   </style>
