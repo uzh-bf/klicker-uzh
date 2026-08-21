@@ -1,7 +1,7 @@
 # Phase 0 — chatbot lecturer HITL foundations (implementation plan)
 
 Roadmap: [`project/2026-08-20-chatbot-hitl-lecturer-configuration-roadmap.md`](2026-08-20-chatbot-hitl-lecturer-configuration-roadmap.md)
-(docs PR #5453). ADRs
+(roadmap source; implementation PR #5460). ADRs
 [0019](../docs/adr/0019-chatbot-config-postgresql-authoritative.md),
 [0020](../docs/adr/0020-two-tier-chatbot-approval.md),
 [0021](../docs/adr/0021-templated-standard-modes-reviewed-custom-modes.md),
@@ -25,6 +25,10 @@ that later phases layer persona fields onto.
   service-seam tests + typecheck + a single participant browser smoke.
 - No persona-field editing, examples, knowledge self-service, custom modes,
   admin queue UI (Phases 1–6).
+- No account-wide base/advanced usage counters, usage lanes, or class-aware
+  charging in this Phase 0 PR. The approved pragmatic usage-funding MVP is
+  recorded in ADR 0020 and the roadmap for its implementation follow-up;
+  existing participant usage credits remain a separate legacy allowance.
 - No behavior change to existing chatbots' prompts — the compile seam is
   extracted behavior-preserving; persona layering lands in Phase 1.
 - **No team email on publication request in Phase 0 code** (F6 ruling, veto-able):
@@ -40,8 +44,8 @@ that later phases layer persona fields onto.
 - **Authority granted**: worktree (done), local commits on
   `feat/chatbot-lecturer-config-phase0`, bring up the worktree devcontainer
   stack for verification, author the migration incl. backfill. **Withheld**:
-  push/PR until slices are green (then draft PR), merge, deploy, deletion.
-- **Terminal**: all slices committed and verified in-container; draft PR against
+  merge, deploy, deletion.
+- **Terminal**: all slices committed and verified in-container; PR #5460 against
   `v3` with the plan as first commit; runtime stopped per
   `$rs-local-runtime-lifecycle`.
 - **Pause** (needs user): a GraphQL-contract change beyond this plan; the
@@ -50,9 +54,9 @@ that later phases layer persona fields onto.
 
 ## Plan identity
 
-- Plan: `project/2026-08-20-chatbot-hitl-phase0-plan.md`
+- Plan: `project/2026-08-20-chatbot-hitl-phase0-pr-5460-plan.md`
 - Branch: `feat/chatbot-lecturer-config-phase0`, target `v3`, worktree
-  `trees/feat-chatbot-lecturer-config-phase0`. PR: none yet.
+  `trees/feat-chatbot-lecturer-config-phase0`. PR: [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460).
 
 ## Grounding facts (verified 2026-08-20)
 
@@ -211,15 +215,46 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 ## Progress
 
+- Active follow-up slice: make publication approval and rejection conditional
+  lifecycle transitions, with a deterministic concurrent-approval regression
+  test. The implementation, correction review, and local commit are complete;
+  the remaining work is the final package review and delivery-boundary check.
 - Status: S1–S5 code-complete. S4 slice-reviewer PASS + real-route browser
   smoke DONE (F7 confirmed at HTTP layer). S5 compile-seam extraction and its
   simplifier/slice-review gates are DONE. The GraphQL selection fix, migration
   backfill guard, and synthetic-fixture cleanup are committed and pushed in
-  [PR #5460](https://github.com/uzh-bf/klicker-uzh/pull/5460). Current-head CI
-  is terminal with 44 successful checks and one historical GitGuardian failure;
-  the integrated final-reviewer pass is DONE_WITH_CONCERNS with two medium
-  approval-boundary findings and two low documentation findings. No merge,
-  readiness change, issue closure, or history rewrite was performed.
+  [PR #5460](https://github.com/uzh-bf/klicker-uzh/pull/5460). At the reviewed
+  head `ab8d1424d`, CI is terminal with 42 successful checks, 3 failures, and
+  1 skipped check: historical GitGuardian content plus the unrelated
+  `P-pagination-show-all.spec.ts:47` Playwright shard and aggregate status.
+  The integrated final-reviewer pass was DONE_WITH_CONCERNS with one medium
+  approval-boundary finding: the approval transition was not an atomic
+  conditional write. That finding is addressed in commits `3640a3abe` and
+  `7154564f2`; the former model-cost re-review finding is superseded by the
+  approved shared-authorization policy. No merge, readiness change, issue
+  closure, or history rewrite was performed.
+- Follow-up code correction: approval and rejection now use conditional
+  `updateMany` transitions keyed by the expected lifecycle state; approval
+  also rechecks the account publishing capability in the same write. The
+  concurrency regression test now gates both initial reads before releasing
+  the writes, so exactly one caller must win the conditional transition. The
+  focused publication file passed **12/12** tests before the barrier-only test
+  correction, and the GraphQL package typecheck passes after it
+  (`CHECK_RC:0`). The repository pre-commit hook passed for the correction,
+  including secret scan, staged formatting, all 25 package checks, lint,
+  syncpack, agent checks, and Prisma sync. The full GraphQL suite passed
+  **562/564** tests across 33 files; the two failures are the existing
+  `activitySharing` audit-message ID collisions, in an untouched file. The
+  runtime's internal Redis services were reached through a temporary local
+  verification proxy because the repository test helpers intentionally use
+  loopback ports; the proxy was removed after the run.
+- Correction review: the configured native simplifier and slice-reviewer
+  routes were unavailable because their `combo/gemini-3.7-flash` dispatch
+  rejected the inherited reasoning configuration. A planner-role fallback
+  reviewed the immutable two-file correction range and found one medium test
+  determinism gap; the read barrier above fixed it. The fallback found no
+  implementation defect. This route limitation remains an evidence caveat
+  for the final package review.
 - S1 (schema + capability + backfill): DONE + slice-reviewer PASS (no findings;
   backfill guarantee confirmed — report in `_local/reviews/`). Benibot=PUBLISHED.
 - S2 (create/update mutations + owner-type exposure): DONE.
@@ -374,21 +409,21 @@ No separate tasks; nothing crosses a boundary warranting one.
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
 - Base reconciliation (2026-08-21): the latest authoritative `git ls-remote`
-  refs show `origin/v3` at `df10f524e` and this branch at `029dd921d`, 2 behind /
-  22 ahead. The target-only commits since the earlier snapshot are #5449
-  (draft-activity course deletion) and #5461 (staging promotion); the current
-  three-dot PR diff remains 33 paths and the new target files do not overlap the
-  chatbot implementation. GitHub reports the PR mergeable but behind. No rebase
-  was performed. The common Git `FETCH_HEAD` file is not writable in this linked
-  worktree, so freshness was verified with `git ls-remote` rather than inferred
-  from fetch state.
-- Remaining: resolve or explicitly disposition the two medium final-review
-  findings, handle GitGuardian incident 36437584, reconcile the branch with the
-  current `v3` head before merge, and correct the roadmap/plan documentation.
-  Marking the PR ready, merging it, and closing #5453 remain outside this task's
-  authority.
-- Runtime: worktree devcontainer stack running. NOTE: graphql tests wipe the
-  dev DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
+  refs show `origin/v3` at `4e5f1d368e` and this branch at `ab8d1424d`, 4 behind /
+  23 ahead. The target-only commits still do not overlap the chatbot
+  implementation. GitHub previously reported the open, non-draft PR mergeable
+  but behind; re-read mergeability before any merge decision because the target
+  can move again. No rebase was performed. The common Git `FETCH_HEAD` file is
+  not writable in this linked worktree, so freshness was verified with
+  `git ls-remote` rather than inferred from fetch state.
+- Remaining: complete the native final package review, handle GitGuardian
+  incident 36437584, and reconcile the branch with the current `v3` head
+  before merge. The approved usage-funding policy is documented for its
+  implementation follow-up. The PR is already non-draft; merging it and
+  closing #5453 remain outside this task's authority.
+- Runtime: worktree devcontainer stack stopped after verification. Start it
+  again only for an authorized runtime check. NOTE: graphql tests wipe the dev
+  DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
 ## MR/PR evidence expected
 
