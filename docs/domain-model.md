@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-14'
+timestamp: '2026-08-21'
 tags:
   - backend
   - prisma
@@ -69,8 +69,19 @@ response for that instance. The shared audience selection is implemented by
 `packages/graphql/src/services/courses.ts:getLiveQuizParticipantIds`
 and applied by
 `packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
-Whole-quiz corrections intentionally retain the four original audiences and
-reject `PARTICIPATING_QUIZ`.
+The query runs under the quiz audience lock and uses a cutoff: genuine rows
+submitted by the cutoff and durable acceptance markers (`acceptedAt`) at or
+before it are eligible, while stale executions and correction-only rows are
+excluded.
+
+Assessment submissions create the acceptance marker before the worker runs so a
+queued response cannot disappear from a later quiz-participant snapshot. The
+worker materializes that marker into the genuine response and records the
+pending Redis work in `AssessmentResponseEffect`; the effect is removed only
+after idempotent result and leaderboard updates succeed. Terminally rejected or
+late submissions clear their pending marker so they cannot become phantom quiz
+participants. Whole-quiz corrections intentionally retain the four original
+audiences and reject `PARTICIPATING_QUIZ`.
 
 ## Course duplication
 

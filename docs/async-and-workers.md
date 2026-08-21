@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-07-07'
+timestamp: '2026-08-21'
 tags:
   - backend
   - hatchet
@@ -15,18 +15,31 @@ tags:
 ## Topology
 
 ```
-student answer → apps/response-api (HTTP) → Hatchet event
-                                              ↓
-        apps/hatchet-worker-response-processor (consume + re-emit)
-                                              ↓
-        apps/hatchet-worker-general (aggregation + scheduled jobs)
+student answer → apps/response-api (HTTP)
+                 ↓ durable acceptance marker + Hatchet workflow
+        apps/hatchet-worker-response-processor
+                 ↓ PostgreSQL response + effect outbox
+        atomic Redis result, vote, leaderboard, and XP effects
+
+Legacy `response-received:assessment` events still enter the same durable
+workflow during rollout. The separate aggregation task remains for older
+queued events and shares the response correlation ID as its idempotency key.
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
+Non-assessment responses (`handleAddResponse`) emit
+`response-received:authenticated|anonymous`. The assessment path
+(`handleAddAssessmentResponse`) verifies a JWT correlation key, writes a
+`LiveQuizResponse` acceptance marker under the quiz audience lock, and waits
+for `process-assessment-response-workflow`. It returns success only after the
+worker has persisted the response and applied its Redis effects; workflow
+failure returns a retryable `503`. Audit-log events (`create-audit-log-entry`)
+remain best effort. Live-quiz versus assessment behavior switches on the
+`ASSESSMENT_MODE` env var.
 
 ## Worker task catalog
 
@@ -35,7 +48,17 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
-- `aggregateAssessmentResponsesTask` — keyed by `instanceId`
+- `aggregateAssessmentResponsesTask` — keyed by `instanceId`; consumes older
+  queued aggregation events and uses the same per-response marker as the
+  synchronous workflow
+
+Assessment response persistence creates an `AssessmentResponseEffect` row in
+the same transaction as the genuine response or correction-only materialization.
+The worker removes that row only after a watched Redis transaction has applied
+the vote, result counters, response hashes, leaderboards, XP, and completion
+marker. A retry with the same correlation ID resumes the row; terminally
+rejected or late submissions clear their pending marker. Pre-migration
+responses without an effect row remain compatible as already-complete data.
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
