@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  GROWTHBOOK_ENV: {{ .Values.global.deploymentEnvironment | quote }}
+
   # Canonical app origins (single source of truth)
   APP_ORIGIN_API: {{ .Values.global.appOrigins.api | quote }}
   APP_ORIGIN_AUTH: {{ .Values.global.appOrigins.auth | quote }}

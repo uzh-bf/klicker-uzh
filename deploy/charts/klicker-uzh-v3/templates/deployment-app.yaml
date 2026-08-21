@@ -375,6 +375,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-backend-graphql
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend-graphql
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           livenessProbe:
             httpGet:
               path: /healthz
@@ -455,6 +458,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-global
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-olat-api
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           livenessProbe:
             httpGet:
               path: /health
@@ -538,6 +544,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-lti
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-lti
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:
