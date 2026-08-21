@@ -3,6 +3,7 @@ import {
   CourseAuthType,
   InvitationStatus,
   type ParticipantInvitation,
+  Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -16,6 +17,7 @@ import * as z from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 
 const invitationEmailSchema = z.string().email()
+const invitationTransactionRetryLimit = 3
 
 export interface InvitationResult {
   email: string
@@ -65,7 +67,7 @@ export function deduplicateParticipantInvitationInputs(
   return [...uniqueInvitations.values()]
 }
 
-function isPrismaError(error: unknown, code: 'P2002') {
+function isPrismaError(error: unknown, code: 'P2002' | 'P2034') {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -316,50 +318,65 @@ async function autoAcceptInvitation(
   emailMode: InvitationEmailMode,
   prismaClient: PrismaClient
 ): Promise<number | null> {
-  // Use transaction to ensure data consistency
-  return prismaClient.$transaction(async (tx) => {
-    const eligibleParticipantIds = await findEligibleParticipantIds(
-      email,
-      emailMode,
-      tx
-    )
+  for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
+    try {
+      return await prismaClient.$transaction(
+        async (tx) => {
+          const eligibleParticipantIds = await findEligibleParticipantIds(
+            email,
+            emailMode,
+            tx
+          )
 
-    if (
-      eligibleParticipantIds.length !== 1 ||
-      eligibleParticipantIds[0] !== participantId
-    ) {
-      return null
-    }
+          if (
+            eligibleParticipantIds.length !== 1 ||
+            eligibleParticipantIds[0] !== participantId
+          ) {
+            return null
+          }
 
-    // Create the invitation as ACCEPTED
-    const invitation = await tx.participantInvitation.create({
-      data: {
-        email,
-        courseId,
-        status: InvitationStatus.ACCEPTED,
-        participantId,
-        acceptedAt: new Date(),
-        matriculationNumber,
-      },
-    })
+          // Create the invitation as ACCEPTED
+          const invitation = await tx.participantInvitation.create({
+            data: {
+              email,
+              courseId,
+              status: InvitationStatus.ACCEPTED,
+              participantId,
+              acceptedAt: new Date(),
+              matriculationNumber,
+            },
+          })
 
-    // Create or update participation
-    await tx.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId,
+          // Create or update participation
+          await tx.participation.upsert({
+            where: {
+              courseId_participantId: {
+                courseId,
+                participantId,
+              },
+            },
+            create: {
+              courseId,
+              participantId,
+            },
+            update: {},
+          })
+
+          return invitation.id
         },
-      },
-      create: {
-        courseId,
-        participantId,
-      },
-      update: {},
-    })
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      )
+    } catch (error) {
+      if (
+        !isPrismaError(error, 'P2034') ||
+        attempt === invitationTransactionRetryLimit - 1
+      ) {
+        throw error
+      }
+    }
+  }
 
-    return invitation.id
-  })
+  throw new Error('Invitation transaction retry limit exceeded')
 }
 
 async function requireAssessmentCourse(

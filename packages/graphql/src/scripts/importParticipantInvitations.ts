@@ -568,15 +568,35 @@ async function resolveBrokenAcceptedInvitation(
     return
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.participantInvitation.update({
-      where: { id: invitation.id },
+  const repaired = await prisma.$transaction(async (tx) => {
+    const currentParticipantIds = await findEligibleParticipantIds(
+      normalizedEmail,
+      emailMode,
+      tx
+    )
+
+    if (
+      currentParticipantIds.length !== 1 ||
+      currentParticipantIds[0] !== participantId
+    ) {
+      return false
+    }
+
+    const updateResult = await tx.participantInvitation.updateMany({
+      where: {
+        id: invitation.id,
+        status: InvitationStatus.ACCEPTED,
+        participantId: null,
+      },
       data: {
         participantId,
-        status: InvitationStatus.ACCEPTED,
         acceptedAt: invitation.acceptedAt ?? new Date(),
       },
     })
+
+    if (updateResult.count !== 1) {
+      return false
+    }
 
     await tx.participation.upsert({
       where: {
@@ -591,7 +611,16 @@ async function resolveBrokenAcceptedInvitation(
       },
       update: {},
     })
+
+    return true
   })
+
+  if (!repaired) {
+    console.warn(
+      `  Skipped repair for invitation ${invitation.id}: the invitation or eligible participant changed during the transaction.`
+    )
+    return
+  }
 
   console.log(
     `  Fixed: linked invitation ${invitation.id} to participant ${participantId} and preserved course participation.`
