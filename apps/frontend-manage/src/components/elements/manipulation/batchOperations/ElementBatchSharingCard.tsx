@@ -80,10 +80,11 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   error={errors.shortnameOrEmail}
                   isTouched={touched.shortnameOrEmail}
                   onChange={(shortnameOrEmail) => {
-                    void setValues(
-                      { ...values, shortnameOrEmail, userGroupId: undefined },
-                      false
-                    )
+                    void setValues({
+                      ...values,
+                      shortnameOrEmail,
+                      userGroupId: undefined,
+                    })
                     void setFieldTouched('shortnameOrEmail', true, false)
                   }}
                   placeholder={`${t('shared.generic.shortname')} / ${t('shared.generic.email')}`}
@@ -116,10 +117,11 @@ function ElementBatchSharingCard({ disabled }: { disabled: boolean }) {
                   }
                   value={values.userGroupId}
                   onChange={(userGroupId) => {
-                    void setValues(
-                      { ...values, shortnameOrEmail: '', userGroupId },
-                      false
-                    )
+                    void setValues({
+                      ...values,
+                      shortnameOrEmail: '',
+                      userGroupId,
+                    })
                     void setFieldTouched('userGroupId', true, false)
                   }}
                   items={
