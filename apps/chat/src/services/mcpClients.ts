@@ -199,6 +199,7 @@ export async function createMCPClient(
       {
         requestInit: {
           headers,
+          redirect: 'error',
           ...(options.requestTimeoutMs
             ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
             : {}),

@@ -386,8 +386,14 @@ export function createReceiptStore(path: string): ReceiptStore {
       createdAt: receipt.createdAt,
       identity: receipt.identity,
       provenance: receipt.provenance,
+      fixture: { ...receipt.fixture, participationId: null },
+      prior: receipt.prior,
     })
-    if (JSON.stringify(immutable(current)) !== JSON.stringify(immutable(next)))
+    const bootstrap = current.state === 'planned' && next.state === 'prepared'
+    if (
+      !bootstrap &&
+      JSON.stringify(immutable(current)) !== JSON.stringify(immutable(next))
+    )
       fail('RECEIPT_IMMUTABLE', 'receipt identity or provenance changed')
   }
 
@@ -702,7 +708,7 @@ async function runProof(
       Object.keys(wrongTenant).length === 0 ? 'passed' : 'failed'
 
     const eduaiUrl = proofUrl.replace(/\/mcp\/klicker\/?$/, '/mcp/eduai')
-    const eduaiStatus = await fixedRouteStatus(eduaiUrl, bearer)
+    const eduaiStatus = await fixedRouteStatus(eduaiUrl)
     result.eduaiRoute = eduaiStatus >= 400 ? 'passed' : 'failed'
     result.status =
       result.toolCount === EXPECTED_TOOLS.length &&
@@ -950,14 +956,19 @@ async function switchFixture(
     },
     { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
-  const [activeCandidateServer, activeCandidateConfig] = await Promise.all([
-    client.chatbotMCPServer.findUnique({
-      where: { id: fixture.ids.candidateServerId },
-    }),
-    client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.candidateConfigId },
-    }),
-  ])
+  const [activeCandidateServer, activeCandidateConfig] =
+    await client.$transaction(
+      async (tx) =>
+        Promise.all([
+          tx.chatbotMCPServer.findUnique({
+            where: { id: fixture.ids.candidateServerId },
+          }),
+          tx.chatbotMCPConfig.findUnique({
+            where: { id: fixture.ids.candidateConfigId },
+          }),
+        ]),
+      { timeout: DB_TIMEOUT_MS }
+    )
   if (!activeCandidateServer || !activeCandidateConfig) {
     fail('CANDIDATE_STATE_MISSING', 'active candidate disappeared after switch')
   }
@@ -978,14 +989,18 @@ async function runLiveProof(
   fixture: FixtureState
 ): Promise<void> {
   assertNotInterrupted(options)
-  const [candidate, candidateConfig] = await Promise.all([
-    options.client.chatbotMCPServer.findUnique({
-      where: { id: fixture.ids.candidateServerId },
-    }),
-    options.client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.candidateConfigId },
-    }),
-  ])
+  const [candidate, candidateConfig] = await options.client.$transaction(
+    async (tx) =>
+      Promise.all([
+        tx.chatbotMCPServer.findUnique({
+          where: { id: fixture.ids.candidateServerId },
+        }),
+        tx.chatbotMCPConfig.findUnique({
+          where: { id: fixture.ids.candidateConfigId },
+        }),
+      ]),
+    { timeout: DB_TIMEOUT_MS }
+  )
   if (
     !candidate ||
     !candidateConfig ||
@@ -999,6 +1014,7 @@ async function runLiveProof(
   ) {
     fail('CANDIDATE_STATE_INVALID', 'active candidate was not read back')
   }
+  assertNotInterrupted(options)
   options.receipt = updatedReceipt(options.receipt, {
     state: 'switched',
     proof: await runProof(
@@ -1135,17 +1151,22 @@ async function reconcileSwitching(
   options: RunOptions,
   fixture: FixtureState
 ): Promise<'prepared' | 'switched'> {
-  const [legacy, candidateServer, candidateConfig] = await Promise.all([
-    options.client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.legacyConfigId },
-    }),
-    options.client.chatbotMCPServer.findUnique({
-      where: { id: fixture.ids.candidateServerId },
-    }),
-    options.client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.candidateConfigId },
-    }),
-  ])
+  const [legacy, candidateServer, candidateConfig] =
+    await options.client.$transaction(
+      async (tx) =>
+        Promise.all([
+          tx.chatbotMCPConfig.findUnique({
+            where: { id: fixture.ids.legacyConfigId },
+          }),
+          tx.chatbotMCPServer.findUnique({
+            where: { id: fixture.ids.candidateServerId },
+          }),
+          tx.chatbotMCPConfig.findUnique({
+            where: { id: fixture.ids.candidateConfigId },
+          }),
+        ]),
+      { timeout: DB_TIMEOUT_MS }
+    )
   if (!legacy || !candidateServer || !candidateConfig)
     fail('SWITCH_STATE_UNKNOWN', 'switching receipt has incomplete rows')
 
@@ -1192,7 +1213,8 @@ async function deleteFixture(
         }),
       ])
       if (
-        configs.length !== 0 ||
+        configs.length !== 1 ||
+        configs[0]?.id !== fixture.ids.legacyConfigId ||
         threads.length !== 0 ||
         credits.length !== 0
       ) {
@@ -1262,29 +1284,33 @@ async function verifyPostconditions(
     participation,
     legacy,
     legacyServer,
-  ] = await Promise.all([
-    client.chatbotMCPServer.findUnique({
-      where: { id: fixture.ids.candidateServerId },
-    }),
-    client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.candidateConfigId },
-    }),
-    client.chatbot.findUnique({ where: { id: fixture.ids.chatbotId } }),
-    client.participant.findUnique({ where: { id: fixture.ids.participantId } }),
-    client.course.findUnique({ where: { id: fixture.ids.courseId } }),
-    client.user.findUnique({ where: { id: fixture.ids.ownerId } }),
-    fixture.ids.participationId === null
-      ? Promise.resolve(null)
-      : client.participation.findUnique({
-          where: { id: fixture.ids.participationId },
+  ] = await client.$transaction(
+    async (tx) =>
+      Promise.all([
+        tx.chatbotMCPServer.findUnique({
+          where: { id: fixture.ids.candidateServerId },
         }),
-    client.chatbotMCPConfig.findUnique({
-      where: { id: fixture.ids.legacyConfigId },
-    }),
-    client.chatbotMCPServer.findUnique({
-      where: { id: fixture.legacyServer.id },
-    }),
-  ])
+        tx.chatbotMCPConfig.findUnique({
+          where: { id: fixture.ids.candidateConfigId },
+        }),
+        tx.chatbot.findUnique({ where: { id: fixture.ids.chatbotId } }),
+        tx.participant.findUnique({ where: { id: fixture.ids.participantId } }),
+        tx.course.findUnique({ where: { id: fixture.ids.courseId } }),
+        tx.user.findUnique({ where: { id: fixture.ids.ownerId } }),
+        fixture.ids.participationId === null
+          ? Promise.resolve(null)
+          : tx.participation.findUnique({
+              where: { id: fixture.ids.participationId },
+            }),
+        tx.chatbotMCPConfig.findUnique({
+          where: { id: fixture.ids.legacyConfigId },
+        }),
+        tx.chatbotMCPServer.findUnique({
+          where: { id: fixture.legacyServer.id },
+        }),
+      ]),
+    { timeout: DB_TIMEOUT_MS }
+  )
   const restoredLegacy = receipt.cleanup.restoredLegacy
   const ordinaryServerUnchanged = sameServer(legacyServer, fixture.legacyServer)
   const candidateAbsent = candidateServer === null && candidateConfig === null

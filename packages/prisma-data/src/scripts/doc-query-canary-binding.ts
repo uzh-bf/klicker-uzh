@@ -142,6 +142,7 @@ type SafeConfigSnapshot = {
   chatMode: string
   allowedTools: JsonState
   priority: number
+  parameters: JsonState
   isEnabled: boolean
   updatedAt: string
 }
@@ -439,6 +440,7 @@ function toSafeConfigSnapshot(config: CanaryConfigRecord): SafeConfigSnapshot {
     chatMode: config.chatMode,
     allowedTools: cloneJson(config.allowedTools),
     priority: config.priority,
+    parameters: cloneJson(config.parameters),
     isEnabled: config.isEnabled,
     updatedAt: config.updatedAt.toISOString(),
   }
@@ -727,6 +729,7 @@ function assertSafeConfigSnapshot(
     current.chatMode !== expected.chatMode ||
     !jsonEqual(current.allowedTools, expected.allowedTools) ||
     current.priority !== expected.priority ||
+    !jsonEqual(current.parameters, expected.parameters) ||
     current.isEnabled !== expected.isEnabled ||
     current.updatedAt.toISOString() !== expected.updatedAt
   ) {
@@ -745,6 +748,7 @@ function assertRestoredConfig(
     current.chatMode !== expected.chatMode ||
     !jsonEqual(current.allowedTools, expected.allowedTools) ||
     current.priority !== expected.priority ||
+    !jsonEqual(current.parameters, expected.parameters) ||
     !current.isEnabled
   ) {
     fail('SNAPSHOT_MISMATCH', 'legacy binding was not restored')
