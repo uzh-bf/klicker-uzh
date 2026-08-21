@@ -16,9 +16,9 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- |
 | Branch | `rs/pr5423-element-batch-simplification` |
 | Base | Fresh `origin/v3` at `df10f524ecf453fe2f43a3b08797a590f962c191` |
-| Integrated head | `bddde399d` |
+| Integrated head | `7f42dc5a6` |
 | Source PR | [#5423](https://github.com/uzh-bf/klicker-uzh/pull/5423), unchanged remotely |
-| Scope | `df10f524..bddde399d`, 24 tracked paths |
+| Scope | `df10f524..7f42dc5a6`, 29 tracked paths |
 | Runtime boundary | No local stack, browser, database, staging, cluster, or production access |
 
 ## Gate status
@@ -27,7 +27,7 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- | --- |
 | Planning review | complete | Approved project plan and corrections are committed |
 | API/UI slice reviews | complete with fallbacks | Native specialist routes failed with provider errors; bounded read-only fallback reviews completed |
-| Final package review | pending at report drafting | Must complete before this package is called complete |
+| Final package review | rerun pending | The review of `bddde399d` completed with findings; the current correction commits need the final pass |
 | GraphQL typecheck/build/codegen | passed | Build has existing Rollup TypeScript and circular-dependency warnings |
 | Manage typecheck/lint | passed | Lint has 26 pre-existing React-hook warnings and no errors |
 | Playwright typecheck/listing | passed | 72 Chromium tests listed in the existing element-operations spec |
@@ -39,9 +39,11 @@ evidence was available because the approved plan withheld those actions.
 | Area | Resolution | Verification |
 | --- | --- | --- |
 | Authorization | Raw IDs are capped at 50, only READ/WRITE/ADMIN are accepted, and every element transaction rechecks non-deleted state plus caller ADMIN/OWNER permission. Group owner/admin/member access is also rechecked in the transaction. | GraphQL typecheck/build; focused tests are collection-blocked |
+| Enumeration boundary | Target lookup now occurs only after a supplied non-deleted element with current caller ADMIN/OWNER access is found. Without one, the service returns uniform unavailable outcomes and does not reveal target or element existence. | GraphQL typecheck; focused tests are collection-blocked |
 | Concurrency | Serializable per-element transactions retain bounded `P2034` retries and budget transaction wait plus timeout within the operation deadline. | Static inspection and typecheck; real PostgreSQL interleaving remains unproved |
 | Direct sharing compatibility | Direct sharing keeps its prior post-commit invalidation error behavior; batch sharing uses the guarded invalidation path. | Regression test added; runtime collection blocked |
 | Manage form | Recipient fields are marked touched when enabled, user/group updates are atomic, and the 50-element server limit is surfaced before Apply. | Manage typecheck/lint |
+| Manage feedback and accessibility | Apply changes to a visible localized in-progress label while the modal is locked, and the sharing result table now has semantic Element and Sharing result headers. | Manage typecheck/lint; browser proof remains pending |
 | Documentation | Tutorial and API wiki distinguish activity access from derived READ access on linked answer collections. Feature plans moved to `project/plans_wip/`; only the feature-specific `docs/log` entry was removed. | Prettier and `rg` path audit |
 | Playwright | The journey is folded into `MA-elements-operations.spec.ts`, uses existing fixtures/helpers/cleanup, and keeps repository `.js` imports and naming. | Playwright typecheck and 72-test listing |
 
@@ -52,9 +54,8 @@ evidence was available because the approved plan withheld those actions.
 | High | Group targets recompute object-wide derived permissions for every element, with no group-size or fan-out work ceiling. | Measure the largest supported group and 50-element batch against production-like PostgreSQL/pod limits; add a cost ceiling or queue/chunk path before enablement if it exceeds the budget. |
 | High | Deadline exhaustion and post-commit invalidation failures have no structured counter, durable retry, or reconciliation path. | Add low-cardinality completion/failure telemetry and a bounded reconciliation procedure, then prove alerting and recovery. |
 | Medium | Target resolution is an ordinary Prisma query outside the 60-second processing budget, and request disconnect is not propagated as cancellation. | Add supported query/request cancellation or document a lower-layer timeout; verify stalled lookup and disconnect behavior. |
-| Medium | A failed or ambiguous response leaves only a read-only result with Close; there is no sharing-only retry, visible progress state, or result focus handoff. | Decide whether the preview can ship with this recovery UX; otherwise preserve form state and add retry/progress/accessibility behavior. |
+| Medium | A failed or ambiguous response leaves only a read-only result with Close; there is no sharing-only retry or result focus handoff. | Decide whether the preview can ship with this recovery UX; otherwise preserve form state and add retry/focus behavior. |
 | Medium | Enabling sharing still uses the existing full user-group roster query although the card only needs ID, name, and member count. | Add a slim group-options operation or accept the cost with representative account-size evidence. |
-| Low | Outcomes distinguish inaccessible existing IDs from missing/deleted IDs. | Consider collapsing those reasons if cross-lecturer object-existence disclosure is outside the accepted contract. |
 | Advisory | `privatePreview` remains a Manage-only gate; the persisted GraphQL mutation is callable for an authorized caller. | Confirm that the flag is advisory. If it is a kill switch, enforce it server-side before rollout. |
 | Release | Backend-first rollout, exact persisted-operation hash smoke, reverse rollback order, and fresh CI are not proven. | Run the required remote pipeline and staging smoke on the exact published commit before merge/deploy. |
 
