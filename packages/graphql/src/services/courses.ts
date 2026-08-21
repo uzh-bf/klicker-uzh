@@ -1130,47 +1130,31 @@ async function upsertResponseAppliedCorrection(
 
 async function getLiveQuizParticipantIds(
   liveQuizId: string,
-  prisma: DB.PrismaClient
+  prisma: PrismaTransactionClient,
+  cutoff: Date
 ): Promise<string[] | null> {
-  const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: { id: liveQuizId },
-    select: {
-      blocks: {
-        select: {
-          execution: true,
-          elements: {
-            select: {
-              liveQuizResponses: {
-                select: {
-                  participantId: true,
-                  elementBlockExecution: true,
-                  correctionOnly: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
-  if (!liveQuiz) return null
-
-  const participantIds = new Set<string>()
-  liveQuiz.blocks.forEach((block) =>
-    block.elements.forEach((instance) =>
-      instance.liveQuizResponses.forEach((response) => {
-        if (
-          response.elementBlockExecution === block.execution &&
-          !response.correctionOnly
-        ) {
-          participantIds.add(response.participantId)
-        }
-      })
-    )
+  const participants = await prisma.$queryRaw<Array<{ participantId: string }>>(
+    DB.Prisma.sql`
+      SELECT DISTINCT response."participantId" AS "participantId"
+      FROM "LiveQuizResponse" AS response
+      INNER JOIN "ElementInstance" AS instance
+        ON instance.id = response."instanceId"
+      INNER JOIN "ElementBlock" AS block
+        ON block.id = instance."elementBlockId"
+      WHERE block."liveQuizId" = ${liveQuizId}
+        AND response."elementBlockExecution" = block.execution
+        AND (
+          (
+            response."correctionOnly" = false
+            AND response."submittedAt" <= ${cutoff}
+          )
+          OR response."acceptedAt" <= ${cutoff}
+        )
+      ORDER BY response."participantId"
+    `
   )
 
-  return [...participantIds].sort()
+  return participants.map(({ participantId }) => participantId)
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1279,6 +1263,8 @@ export async function correctAssessmentPointsInstance(
     !instance.elementBlock.liveQuiz.courseId
   )
     return null
+
+  const liveQuizId = instance.elementBlock.liveQuiz.id
 
   // compute the achievable points for this instance
   const {
@@ -1407,33 +1393,31 @@ export async function correctAssessmentPointsInstance(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all responses and update them with the corrected points
-        await Promise.all(
-          responses.map(async (response) => {
-            const logObject = await upsertResponseAppliedCorrection(
-              {
-                correctionId: correction.id,
-                instance: instance as DB.ElementInstance & {
-                  elementBlock: DB.ElementBlock
-                },
-                participantId: response.participantId,
-                awardBasePoints,
-                awardCorrectnessPoints,
-                awardBonusPoints,
-                deductBasePoints,
-                deductCorrectnessPoints,
-                deductBonusPoints,
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
+        for (const response of responses) {
+          const logObject = await upsertResponseAppliedCorrection(
+            {
+              correctionId: correction.id,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
               },
-              tx,
-              ctx
-            )
+              participantId: response.participantId,
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            },
+            tx,
+            ctx
+          )
 
-            // add the log object to the list of log entries
-            logEntries.push(logObject)
-          })
-        )
+          // add the log object to the list of log entries
+          logEntries.push(logObject)
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1448,12 +1432,23 @@ export async function correctAssessmentPointsInstance(
   }
 
   // if the points of all quiz participants should be modified, update the
-  // selected instance for everyone with at least one genuine quiz response
+  // selected instance for everyone accepted before the correction snapshot
   if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
-    const participantIds = await getLiveQuizParticipantIds(
-      instance.elementBlock.liveQuiz.id,
-      ctx.prisma
-    )
+    const cutoff = new Date()
+    const participantIds = await ctx.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        DB.Prisma.sql`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(
+              ${`assessment-audience:${liveQuizId}`},
+              0
+            )
+          )
+        `
+      )
+
+      return getLiveQuizParticipantIds(liveQuizId, tx, cutoff)
+    })
 
     if (!participantIds?.length) return null
 
@@ -1486,9 +1481,10 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, instance: true },
         })
 
-        committedLogEntries = await Promise.all(
-          participantIds.map((participantId) =>
-            upsertResponseAppliedCorrection(
+        committedLogEntries = []
+        for (const participantId of participantIds) {
+          committedLogEntries.push(
+            await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1509,7 +1505,7 @@ export async function correctAssessmentPointsInstance(
               ctx
             )
           )
-        )
+        }
 
         return correction
       },
@@ -1583,33 +1579,31 @@ export async function correctAssessmentPointsInstance(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all responses and update them with the corrected points
-        await Promise.all(
-          participations.map(async (participation) => {
-            const logEntry = await upsertResponseAppliedCorrection(
-              {
-                correctionId: correction.id,
-                instance: instance as DB.ElementInstance & {
-                  elementBlock: DB.ElementBlock
-                },
-                participantId: participation.participantId,
-                awardBasePoints,
-                awardCorrectnessPoints,
-                awardBonusPoints,
-                deductBasePoints,
-                deductCorrectnessPoints,
-                deductBonusPoints,
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
+        for (const participation of participations) {
+          const logEntry = await upsertResponseAppliedCorrection(
+            {
+              correctionId: correction.id,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
               },
-              tx,
-              ctx
-            )
+              participantId: participation.participantId,
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            },
+            tx,
+            ctx
+          )
 
-            // push the log object to the list of log entries
-            logEntries.push(logEntry)
-          })
-        )
+          // push the log object to the list of log entries
+          logEntries.push(logEntry)
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1805,41 +1799,37 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and update the corresponding responses with the corrected points
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
-                  availableBasePoints,
-                  availableCorrectnessPoints,
-                  availableBonusPoints,
-                } = availablePoints[instance.id]!
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
 
-                const logEntry = await upsertResponseAppliedCorrection(
-                  {
-                    correctionId: correction.id,
-                    instance: { ...instance, elementBlock: block },
-                    participantId,
-                    awardBasePoints,
-                    awardCorrectnessPoints,
-                    awardBonusPoints,
-                    deductBasePoints,
-                    deductCorrectnessPoints,
-                    deductBonusPoints,
-                    availableBasePoints,
-                    availableCorrectnessPoints,
-                    availableBonusPoints,
-                  },
-                  tx,
-                  ctx
-                )
-
-                // push the log object to the list of log entries
-                logEntries.push(logEntry)
-              })
+            const logEntry = await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: { ...instance, elementBlock: block },
+                participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
             )
-          })
-        )
+
+            // push the log object to the list of log entries
+            logEntries.push(logEntry)
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1855,10 +1845,18 @@ export async function correctAssessmentPointsLiveQuiz(
   // if the points of all participating students should be modified, update
   // every instance for participants with a genuine response in the quiz
   if (scope === PointCorrectionType.PARTICIPATING) {
-    const participantIds = await getLiveQuizParticipantIds(
-      liveQuiz.id,
-      ctx.prisma
-    )
+    const cutoff = new Date()
+    const participantIds = await ctx.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw(
+        DB.Prisma.sql`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${`assessment-audience:${liveQuiz.id}`}, 0)
+          )
+        `
+      )
+
+      return getLiveQuizParticipantIds(liveQuiz.id, tx, cutoff)
+    })
 
     if (!participantIds?.length) return null
 
@@ -1896,45 +1894,39 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and participants to upsert all relevant responses
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
+
+            for (const participantId of participantIds) {
+              const logEntry = await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: { ...instance, elementBlock: block },
+                  participantId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
                   availableBasePoints,
                   availableCorrectnessPoints,
                   availableBonusPoints,
-                } = availablePoints[instance.id]!
+                },
+                tx,
+                ctx
+              )
 
-                await Promise.all(
-                  participantIds.map(async (participantId) => {
-                    const logEntry = await upsertResponseAppliedCorrection(
-                      {
-                        correctionId: correction.id,
-                        instance: { ...instance, elementBlock: block },
-                        participantId,
-                        awardBasePoints,
-                        awardCorrectnessPoints,
-                        awardBonusPoints,
-                        deductBasePoints,
-                        deductCorrectnessPoints,
-                        deductBonusPoints,
-                        availableBasePoints,
-                        availableCorrectnessPoints,
-                        availableBonusPoints,
-                      },
-                      tx,
-                      ctx
-                    )
-
-                    // push the log object to the list of log entries
-                    logEntries.push(logEntry)
-                  })
-                )
-              })
-            )
-          })
-        )
+              // push the log object to the list of log entries
+              logEntries.push(logEntry)
+            }
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -2003,46 +1995,39 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and participants to upsert all relevant responses
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
+
+            for (const participation of participations) {
+              const logEntry = await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: { ...instance, elementBlock: block },
+                  participantId: participation.participantId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
                   availableBasePoints,
                   availableCorrectnessPoints,
                   availableBonusPoints,
-                } = availablePoints[instance.id]!
+                },
+                tx,
+                ctx
+              )
 
-                await Promise.all(
-                  participations.map(async (participation) => {
-                    const pId = participation.participantId
-                    const logEntry = await upsertResponseAppliedCorrection(
-                      {
-                        correctionId: correction.id,
-                        instance: { ...instance, elementBlock: block },
-                        participantId: pId,
-                        awardBasePoints,
-                        awardCorrectnessPoints,
-                        awardBonusPoints,
-                        deductBasePoints,
-                        deductCorrectnessPoints,
-                        deductBonusPoints,
-                        availableBasePoints,
-                        availableCorrectnessPoints,
-                        availableBonusPoints,
-                      },
-                      tx,
-                      ctx
-                    )
-
-                    // push the log object to the list of log entries
-                    logEntries.push(logEntry)
-                  })
-                )
-              })
-            )
-          })
-        )
+              // push the log object to the list of log entries
+              logEntries.push(logEntry)
+            }
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)

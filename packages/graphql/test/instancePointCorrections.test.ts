@@ -3,6 +3,7 @@ import {
   Participant,
   PointCorrectionType,
   PrismaClient,
+  ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { ContextWithUser } from '../src/lib/context.js'
@@ -325,6 +326,58 @@ describe('Unit tests covering point corrections for instances', () => {
     expect(
       correctedParticipantIds.map(({ participantId }) => participantId)
     ).toEqual([participant1.id, participant2.id].sort())
+  })
+
+  it('[Instance Point Updates] Includes accepted queued quiz responses in the correction audience', async () => {
+    const { instanceId1, instanceId2, participant3 } =
+      await seedLiveQuizWithResponses({
+        userOneCtx,
+        userTwoCtx,
+        userThreeCtx,
+        userFourCtx,
+      })
+
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: new Date(),
+        acceptedAt: new Date(),
+        correlationId: 'queued-response',
+        timeSpent: -1,
+        correctness: ResponseCorrectness.CORRECT,
+        basePoints: 0,
+        correctnessPoints: 0,
+        bonusPoints: 0,
+        correctionOnly: true,
+        elementBlockExecution: 0,
+        instance: { connect: { id: instanceId2 } },
+        participant: { connect: { id: participant3.id } },
+      },
+    })
+
+    const correction = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Queued response correction',
+        studentReason: 'Queued response correction',
+        awardCorrectnessPoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    expect(correction).not.toBeNull()
+    const participantThreeResponse = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+
+    expect(participantThreeResponse?.correctionOnly).toBe(true)
+    expect(participantThreeResponse?.correctnessPoints).toBe(50)
   })
 
   it('[Instance Point Updates] Verify that only course admins can modify points', async () => {
