@@ -549,20 +549,14 @@ describe('Assessment participant invitation management', () => {
     let reachedCreateCount = 0
     let releaseCreateBarrier!: () => void
     const createBarrier = new Promise<void>((resolve, reject) => {
-      let settled = false
-      let timeout: ReturnType<typeof setTimeout>
-      const settle = (error?: Error) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timeout)
-        if (error) reject(error)
-        else resolve()
-      }
-      timeout = setTimeout(
-        () => settle(new Error('Concurrent create barrier timed out')),
+      const timeout = setTimeout(
+        () => reject(new Error('Concurrent create barrier timed out')),
         5000
       )
-      releaseCreateBarrier = () => settle()
+      releaseCreateBarrier = () => {
+        clearTimeout(timeout)
+        resolve()
+      }
     })
     const concurrentPrisma = prisma.$extends({
       query: {
@@ -576,17 +570,18 @@ describe('Assessment participant invitation management', () => {
         },
       },
     }) as unknown as PrismaClient
+    const operations = [
+      createAssessmentParticipantInvitations(
+        { courseId: course.id, invitations: [{ email }] },
+        { ...lecturerCtx, prisma: concurrentPrisma }
+      ),
+      createAssessmentParticipantInvitations(
+        { courseId: course.id, invitations: [{ email }] },
+        { ...lecturerCtx, prisma: concurrentPrisma }
+      ),
+    ]
     try {
-      const [firstResult, secondResult] = await Promise.all([
-        createAssessmentParticipantInvitations(
-          { courseId: course.id, invitations: [{ email }] },
-          { ...lecturerCtx, prisma: concurrentPrisma }
-        ),
-        createAssessmentParticipantInvitations(
-          { courseId: course.id, invitations: [{ email }] },
-          { ...lecturerCtx, prisma: concurrentPrisma }
-        ),
-      ])
+      const [firstResult, secondResult] = await Promise.all(operations)
 
       expect(reachedCreateCount).toBe(2)
       expect([firstResult, secondResult]).toEqual(
@@ -622,6 +617,7 @@ describe('Assessment participant invitation management', () => {
       ).resolves.toMatchObject({ isActive: false })
     } finally {
       releaseCreateBarrier()
+      await Promise.allSettled(operations)
     }
   })
 
