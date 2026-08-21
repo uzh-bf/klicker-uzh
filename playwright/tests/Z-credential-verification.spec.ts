@@ -93,6 +93,10 @@ async function exportAssessmentReport(page: Page) {
   const histogramRowCount = await reportPage
     .locator('.histogram-table tbody tr')
     .count()
+  if (histogramRowCount > 0) {
+    await reportPage.emulateMedia({ media: 'print' })
+    await expect(reportPage.locator('.histogram-table')).toBeVisible()
+  }
   await reportPage.close()
   const match = content.match(/\/verify#([a-f0-9]{64})/)
   if (!match?.[1]) throw new Error('ASSESSMENT_REPORT_TOKEN_MISSING')
@@ -204,7 +208,11 @@ test.describe('Assessment report credential lifecycle', () => {
       content.matchAll(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/g),
       (match) => Number(match[1])
     )
-    expect(histogramBarWidths[0]).toBeGreaterThan(histogramBarWidths[1]!)
+    expect(histogramBarWidths[0]).toBeCloseTo(histogramBarWidths[1]!, 5)
+    expect(content).toContain('stroke="#0028a5" stroke-width="2"')
+    expect(content).toContain('>0</text>')
+    expect(content).toContain('>100</text>')
+    expect(content).toContain('Comparison cohort: 10 active participants')
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.token).toBe(token)
