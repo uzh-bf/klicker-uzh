@@ -32,6 +32,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
    Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that.
 
+   Multi-object batch fields are the deliberate exception: `withPermission`
+   accepts one object selector and can only return one nullable field. Protect
+   the batch with the appropriate `t.withAuth(...)` scope, then have the service
+   load a bounded set of unique objects, check every object's permission, and
+   return explicit per-object outcomes. Never infer permission for the whole
+   batch from one selected object.
+
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
 6. **Codegen — never skip, always commit:**

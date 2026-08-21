@@ -21,6 +21,7 @@ import {
 } from '../util/fixtures/activities.js'
 import {
   createAnswerCollection,
+  createQuestionMC,
   createQuestionSC,
   createQuestionSE,
   deleteElement,
@@ -29,7 +30,10 @@ import {
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
-import { acceptGamifiedLiveQuizAccountPrompt } from '../util/workflow.js'
+import {
+  acceptGamifiedLiveQuizAccountPrompt,
+  createQuestionNR,
+} from '../util/workflow.js'
 
 type Choice = {
   value: string
@@ -1949,6 +1953,133 @@ test.describe('Create different types of elements (with and without sample solut
   })
 
   test.describe('Part 6: Direct sharing / enabled functionalities', () => {
+    test('Batch sharing applies updates first and reports elements without ADMIN access', async ({
+      page,
+      loginLecturer,
+      loginInstitutionalCatalyst,
+      loginIndividualCatalyst,
+      logoutUser,
+    }) => {
+      await loginLecturer()
+      await createQuestionMC({
+        name: data.MCML.title,
+        content: data.MCML.content,
+        choices: data.MCML.choices,
+        userId: LECTURER_ID,
+      })
+      await createQuestionNR(page, {
+        name: data.NRML.title,
+        content: data.NRML.content,
+        ...data.NRML.options,
+        multiplier: 3,
+        userId: LECTURER_ID,
+      })
+
+      await page.reload()
+      await openShareModalForElement(page, data.MCML.title)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsADMIN,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await openShareModalForElement(page, data.NRML.title)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsWRITE,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').press('Enter')
+
+      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId('element-batch-operations').click()
+      await page.getByTestId('status-checkbox').check()
+      await selectOption(
+        page,
+        '[data-cy="element-status-select"]',
+        messages.shared.READY.statusLabel
+      )
+      await page.getByTestId('element-batch-sharing-checkbox').check()
+      await page
+        .getByTestId('element-batch-sharing-username-or-email')
+        .fill(LECTURER_IND_SHORTNAME)
+      await expect(
+        page.getByTestId(`element-batch-sharing-x-${data.NRML.title}`)
+      ).toBeVisible()
+      await expect(page.getByTestId('apply-batch-operations')).toBeEnabled()
+      await page.getByTestId('close-batch-operations-modal').click()
+      await page.getByTestId(`element-checkbox-${data.NRML.title}`).uncheck()
+
+      await page.getByTestId(`element-checkbox-${data.MCML.title}`).check()
+      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId('element-batch-operations').click()
+      await page.getByTestId('status-checkbox').check()
+      await selectOption(
+        page,
+        '[data-cy="element-status-select"]',
+        messages.shared.READY.statusLabel
+      )
+      await page.getByTestId('element-batch-sharing-checkbox').check()
+      await page
+        .getByTestId('element-batch-sharing-username-or-email')
+        .fill(LECTURER_IND_SHORTNAME)
+      await selectOption(
+        page,
+        '[data-cy="element-batch-sharing-permission-level"]',
+        messages.manage.sharing.permissionsREAD
+      )
+
+      await expect(
+        page.getByTestId(`element-batch-sharing-check-${data.MCML.title}`)
+      ).toBeVisible()
+      const writeOnlyElement = page.getByTestId(
+        `element-batch-sharing-x-${data.NRML.title}`
+      )
+      await expect(writeOnlyElement).toBeVisible()
+      await writeOnlyElement.hover()
+      await expect(
+        page.locator('li:visible').filter({
+          hasText:
+            messages.manage.questionPool.batchSharingInsufficientPermission,
+        })
+      ).toHaveText(
+        messages.manage.questionPool.batchSharingInsufficientPermission
+      )
+
+      await page.getByTestId('apply-batch-operations').click()
+      await expect(page.getByTestId('element-batch-result')).toBeVisible()
+      await expect(
+        page.getByTestId('element-batch-update-result')
+      ).toContainText(messages.manage.questionPool.batchUpdateResultSuccess)
+      await expect(
+        page.getByTestId(`element-batch-sharing-result-${data.MCML.title}`)
+      ).toContainText(messages.manage.questionPool.batchSharingResultShared)
+      await expect(
+        page.getByTestId(`element-batch-sharing-result-${data.NRML.title}`)
+      ).toContainText(
+        messages.manage.questionPool
+          .batchSharingResultSkippedInsufficientPermission
+      )
+      await page.getByTestId('close-batch-operations-result').click()
+
+      await validateElement(page, data.NRML.title, [
+        messages.shared.READY.statusLabel,
+      ])
+
+      await logoutUser()
+      await loginIndividualCatalyst()
+      await validateElement(page, data.MCML.title)
+      await page.getByTestId('elements-search-input').fill(data.NRML.title)
+      await page.getByTestId('elements-search-input').press('Enter')
+      await expect(
+        page.getByTestId(`element-item-${data.NRML.title}`)
+      ).toBeHidden()
+    })
+
     test('Create a single choice question and share it with different permission levels', async ({
       page,
       loginLecturer,

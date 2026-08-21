@@ -1144,6 +1144,34 @@ type DerivedPermissionOriginInformation {
 
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
+type ElementBatchSharingOutcome {
+  elementId: Int!
+  reason: ElementBatchSharingReason
+  status: ElementBatchSharingStatus!
+}
+
+enum ElementBatchSharingReason {
+  ELEMENT_NOT_FOUND_OR_DELETED
+  INSUFFICIENT_PERMISSION
+  SHARING_FAILED
+}
+
+type ElementBatchSharingResult {
+  outcomes: [ElementBatchSharingOutcome!]!
+  targetError: ElementBatchSharingTargetError
+}
+
+enum ElementBatchSharingStatus {
+  FAILED
+  SHARED
+  SKIPPED
+}
+
+enum ElementBatchSharingTargetError {
+  INVALID_OR_SELF_TARGET
+  USER_GROUP_UNAVAILABLE
+}
+
 type ElementBlock {
   elements: [ElementInstance!]
   execution: Int
@@ -2000,6 +2028,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails

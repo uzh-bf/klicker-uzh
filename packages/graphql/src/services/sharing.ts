@@ -11,6 +11,7 @@ import {
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
@@ -4009,11 +4010,551 @@ export async function getDerivedPermissionOrigin(
   }
 }
 
+export const ELEMENT_BATCH_SHARING_STATUSES = [
+  'SHARED',
+  'SKIPPED',
+  'FAILED',
+] as const
+export type ElementBatchSharingStatus =
+  (typeof ELEMENT_BATCH_SHARING_STATUSES)[number]
+
+export const ELEMENT_BATCH_SHARING_REASONS = [
+  'INSUFFICIENT_PERMISSION',
+  'ELEMENT_NOT_FOUND_OR_DELETED',
+  'SHARING_FAILED',
+] as const
+export type ElementBatchSharingReason =
+  (typeof ELEMENT_BATCH_SHARING_REASONS)[number]
+
+export const ELEMENT_BATCH_SHARING_TARGET_ERRORS = [
+  'INVALID_OR_SELF_TARGET',
+  'USER_GROUP_UNAVAILABLE',
+] as const
+export type ElementBatchSharingTargetError =
+  (typeof ELEMENT_BATCH_SHARING_TARGET_ERRORS)[number]
+
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+const ELEMENT_BATCH_SHARING_DEADLINE_MS = 60_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS = 15_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS = 5_000
+const ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT = 3
+
+export interface ElementBatchSharingOutcome {
+  elementId: number
+  status: ElementBatchSharingStatus
+  reason?: ElementBatchSharingReason | null
+}
+
+export interface ElementBatchSharingResult {
+  targetError?: ElementBatchSharingTargetError | null
+  outcomes: ElementBatchSharingOutcome[]
+}
+
+type ResolvedSharingTarget =
+  | {
+      kind: 'USER'
+      id: string
+      shortname: string
+      email: string
+    }
+  | {
+      kind: 'USER_GROUP'
+      id: number
+      name: string
+    }
+
+function isPrismaSerializationConflict(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2034'
+  )
+}
+
+function elementBatchSharingError(code: string, message: string) {
+  return new GraphQLError(message, { extensions: { code } })
+}
+
+async function resolveSharingTarget(
+  {
+    shortnameOrEmail,
+    userGroupId,
+  }: {
+    shortnameOrEmail?: string | null
+    userGroupId?: number | null
+  },
+  ctx: ContextWithUser,
+  mode: 'DIRECT' | 'EXACTLY_ONE'
+): Promise<
+  | { target: ResolvedSharingTarget; error: null }
+  | { target: null; error: ElementBatchSharingTargetError | null }
+> {
+  const hasIndividualTarget =
+    typeof shortnameOrEmail === 'string' && shortnameOrEmail.length > 0
+  const hasGroupTarget = typeof userGroupId === 'number'
+
+  if (mode === 'EXACTLY_ONE' && hasIndividualTarget === hasGroupTarget) {
+    return { target: null, error: 'INVALID_OR_SELF_TARGET' }
+  }
+
+  if (hasIndividualTarget) {
+    const user = await ctx.prisma.user.findFirst({
+      where: {
+        OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
+      },
+      select: { id: true, shortname: true, email: true },
+    })
+
+    if (!user || user.id === ctx.user.sub) {
+      return {
+        target: null,
+        error: mode === 'EXACTLY_ONE' ? 'INVALID_OR_SELF_TARGET' : null,
+      }
+    }
+
+    return {
+      target: {
+        kind: 'USER',
+        id: user.id,
+        shortname: user.shortname,
+        email: user.email,
+      },
+      error: null,
+    }
+  }
+
+  if (hasGroupTarget) {
+    const userGroup = await ctx.prisma.userGroup.findUnique({
+      where: {
+        id: userGroupId!,
+        OR: [
+          { ownerId: ctx.user.sub },
+          { admins: { some: { id: ctx.user.sub } } },
+          { members: { some: { id: ctx.user.sub } } },
+        ],
+      },
+      select: { id: true, name: true },
+    })
+
+    if (!userGroup) {
+      return {
+        target: null,
+        error: mode === 'EXACTLY_ONE' ? 'USER_GROUP_UNAVAILABLE' : null,
+      }
+    }
+
+    return {
+      target: { kind: 'USER_GROUP', id: userGroup.id, name: userGroup.name },
+      error: null,
+    }
+  }
+
+  return {
+    target: null,
+    error: mode === 'EXACTLY_ONE' ? 'INVALID_OR_SELF_TARGET' : null,
+  }
+}
+
+async function grantElementPermission(
+  {
+    elementId,
+    permissionLevel,
+    propagation,
+    target,
+    sourceUserId,
+  }: {
+    elementId: number
+    permissionLevel: DB.PermissionLevel
+    propagation: boolean
+    target: ResolvedSharingTarget
+    sourceUserId: string
+  },
+  prisma: PrismaTransactionClient
+) {
+  const permission =
+    target.kind === 'USER'
+      ? await prisma.permission.upsert({
+          where: {
+            elementId_userId: { elementId, userId: target.id },
+          },
+          create: {
+            elementId,
+            userId: target.id,
+            permissionLevel,
+            propagation,
+          },
+          update: { permissionLevel, propagation },
+        })
+      : await prisma.permission.upsert({
+          where: {
+            elementId_userGroupId: { elementId, userGroupId: target.id },
+          },
+          create: {
+            elementId,
+            userGroupId: target.id,
+            permissionLevel,
+            propagation,
+          },
+          update: { permissionLevel, propagation },
+        })
+
+  if (target.kind === 'USER') {
+    await prisma.accessRequest.deleteMany({
+      where: { elementId, userId: target.id },
+    })
+  }
+
+  const updateAccessRequests = permissionLevel === DB.PermissionLevel.ADMIN
+  await recomputeDerivedPermissions(
+    target.kind === 'USER'
+      ? { elementId, userId: target.id, updateAccessRequests }
+      : { elementId, updateAccessRequests },
+    prisma
+  )
+
+  await prisma.auditLogEntry.create({
+    data: {
+      type: DB.AuditLogType.PERMISSION_GRANTED,
+      objectType: DB.ObjectType.ELEMENT,
+      objectId: String(elementId),
+      sourceUserId,
+      targetUserId: target.kind === 'USER' ? target.id : undefined,
+      targetUserGroupId: target.kind === 'USER_GROUP' ? target.id : undefined,
+      message:
+        target.kind === 'USER'
+          ? `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.ELEMENT} (ID ${elementId}) by owner / admin ${sourceUserId} to user ${target.id}.`
+          : `Direct permission with level ${permissionLevel} granted for ${DB.ObjectType.ELEMENT} (ID ${elementId}) by owner / admin ${sourceUserId} to user group ${target.id}.`,
+    },
+  })
+
+  return permission
+}
+
+async function shareElementWithResolvedTarget(
+  args: {
+    elementId: number
+    permissionLevel: DB.PermissionLevel
+    propagation: boolean
+    target: ResolvedSharingTarget
+  },
+  ctx: ContextWithUser
+) {
+  const permission = await ctx.prisma.$transaction(
+    (prisma) =>
+      grantElementPermission({ ...args, sourceUserId: ctx.user.sub }, prisma),
+    { timeout: 60000 }
+  )
+
+  emitElementPermissionInvalidation({ permissionId: permission.id }, ctx)
+
+  return permission
+}
+
+function emitElementPermissionInvalidation(
+  { permissionId }: { permissionId: number },
+  ctx: ContextWithUser
+) {
+  ctx.emitter.emit('invalidate', {
+    typename: 'Permission',
+    id: permissionId,
+  })
+}
+
+function invalidateElementPermission(
+  { elementId, permissionId }: { elementId: number; permissionId: number },
+  ctx: ContextWithUser
+) {
+  try {
+    emitElementPermissionInvalidation({ permissionId }, ctx)
+  } catch (error) {
+    console.error(
+      'Failed to invalidate permission %s after sharing element %s',
+      permissionId,
+      elementId,
+      error
+    )
+  }
+}
+
+export async function shareElementsBatch(
+  {
+    elementIds,
+    permissionLevel,
+    shortnameOrEmail,
+    userGroupId,
+  }: {
+    elementIds: number[]
+    permissionLevel: DB.PermissionLevel
+    shortnameOrEmail?: string | null
+    userGroupId?: number | null
+  },
+  ctx: ContextWithUser
+): Promise<ElementBatchSharingResult> {
+  if (elementIds.length > ELEMENT_BATCH_SHARING_MAX_ELEMENTS) {
+    throw elementBatchSharingError(
+      'ELEMENT_BATCH_TOO_LARGE',
+      `A maximum of ${ELEMENT_BATCH_SHARING_MAX_ELEMENTS} elements can be shared at once.`
+    )
+  }
+  if (
+    permissionLevel !== DB.PermissionLevel.READ &&
+    permissionLevel !== DB.PermissionLevel.WRITE &&
+    permissionLevel !== DB.PermissionLevel.ADMIN
+  ) {
+    throw elementBatchSharingError(
+      'ELEMENT_BATCH_PERMISSION_INVALID',
+      'Element batch sharing supports READ, WRITE, and ADMIN permissions only.'
+    )
+  }
+
+  const uniqueElementIds = [...new Set(elementIds)]
+  if (uniqueElementIds.length === 0) {
+    return { targetError: 'INVALID_OR_SELF_TARGET', outcomes: [] }
+  }
+
+  const deadlineAt = Date.now() + ELEMENT_BATCH_SHARING_DEADLINE_MS
+  if (Date.now() >= deadlineAt) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'FAILED' as const,
+        reason: 'SHARING_FAILED' as const,
+      })),
+    }
+  }
+
+  const authorizedElement = await ctx.prisma.element.findFirst({
+    where: {
+      id: { in: uniqueElementIds },
+      isDeleted: false,
+      OR: [
+        { ownerId: ctx.user.sub },
+        {
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  })
+
+  if (!authorizedElement) {
+    return {
+      targetError: null,
+      outcomes: uniqueElementIds.map((elementId) => ({
+        elementId,
+        status: 'SKIPPED' as const,
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+      })),
+    }
+  }
+
+  const resolvedTarget = await resolveSharingTarget(
+    { shortnameOrEmail, userGroupId },
+    ctx,
+    'EXACTLY_ONE'
+  )
+
+  if (!resolvedTarget.target) {
+    return {
+      targetError: resolvedTarget.error ?? 'INVALID_OR_SELF_TARGET',
+      outcomes: [],
+    }
+  }
+
+  const outcomes: ElementBatchSharingOutcome[] = []
+
+  for (let index = 0; index < uniqueElementIds.length; index++) {
+    if (Date.now() >= deadlineAt) {
+      outcomes.push(
+        ...uniqueElementIds.slice(index).map((elementId) => ({
+          elementId,
+          status: 'FAILED' as const,
+          reason: 'SHARING_FAILED' as const,
+        }))
+      )
+      break
+    }
+
+    outcomes.push(
+      await shareElementForBatch(
+        {
+          elementId: uniqueElementIds[index]!,
+          permissionLevel,
+          target: resolvedTarget.target,
+          deadlineAt,
+        },
+        ctx
+      )
+    )
+  }
+
+  return { targetError: null, outcomes }
+}
+
+async function shareElementForBatch(
+  {
+    elementId,
+    permissionLevel,
+    target,
+    deadlineAt,
+  }: {
+    elementId: number
+    permissionLevel: DB.PermissionLevel
+    target: ResolvedSharingTarget
+    deadlineAt: number
+  },
+  ctx: ContextWithUser
+): Promise<ElementBatchSharingOutcome> {
+  for (
+    let attempt = 0;
+    attempt < ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT;
+    attempt++
+  ) {
+    const remainingMs = deadlineAt - Date.now()
+    if (remainingMs < 2) {
+      return {
+        elementId,
+        status: 'FAILED',
+        reason: 'SHARING_FAILED',
+      }
+    }
+    const transactionMaxWaitMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_MAX_WAIT_MS,
+      Math.floor(remainingMs / 2)
+    )
+    const transactionTimeoutMs = Math.min(
+      ELEMENT_BATCH_SHARING_TRANSACTION_TIMEOUT_MS,
+      remainingMs - transactionMaxWaitMs
+    )
+
+    try {
+      const result = await ctx.prisma.$transaction(
+        async (prisma) => {
+          if (
+            target.kind === 'USER_GROUP' &&
+            !(await prisma.userGroup.findFirst({
+              where: {
+                id: target.id,
+                OR: [
+                  { ownerId: ctx.user.sub },
+                  { admins: { some: { id: ctx.user.sub } } },
+                  { members: { some: { id: ctx.user.sub } } },
+                ],
+              },
+              select: { id: true },
+            }))
+          ) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'INSUFFICIENT_PERMISSION' as const,
+            }
+          }
+
+          const element = await prisma.element.findUnique({
+            where: { id: elementId },
+            select: {
+              isDeleted: true,
+              permissions: {
+                where: { userId: ctx.user.sub },
+                select: { permissionLevel: true },
+              },
+            },
+          })
+
+          if (!element || element.isDeleted) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+            }
+          }
+
+          const callerPermission = element.permissions[0]?.permissionLevel
+          if (typeof callerPermission === 'undefined') {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'ELEMENT_NOT_FOUND_OR_DELETED' as const,
+            }
+          }
+          if (
+            callerPermission !== DB.PermissionLevel.ADMIN &&
+            callerPermission !== DB.PermissionLevel.OWNER
+          ) {
+            return {
+              status: 'SKIPPED' as const,
+              reason: 'INSUFFICIENT_PERMISSION' as const,
+            }
+          }
+
+          const permission = await grantElementPermission(
+            {
+              elementId,
+              permissionLevel,
+              propagation: false,
+              target,
+              sourceUserId: ctx.user.sub,
+            },
+            prisma
+          )
+          return {
+            status: 'SHARED' as const,
+            reason: null,
+            permissionId: permission.id,
+          }
+        },
+        {
+          isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+          maxWait: transactionMaxWaitMs,
+          timeout: transactionTimeoutMs,
+        }
+      )
+
+      if (result.status === 'SHARED') {
+        invalidateElementPermission(
+          { elementId, permissionId: result.permissionId },
+          ctx
+        )
+      }
+
+      return { elementId, status: result.status, reason: result.reason }
+    } catch (error) {
+      if (
+        isPrismaSerializationConflict(error) &&
+        attempt < ELEMENT_BATCH_SHARING_TRANSACTION_RETRY_LIMIT - 1 &&
+        Date.now() < deadlineAt
+      ) {
+        continue
+      }
+
+      console.error('Failed to share element %s', elementId, error)
+      return {
+        elementId,
+        status: 'FAILED',
+        reason: 'SHARING_FAILED',
+      }
+    }
+  }
+
+  return {
+    elementId,
+    status: 'FAILED',
+    reason: 'SHARING_FAILED',
+  }
+}
+
 export async function shareObject(
   {
     permissionLevel,
     shortnameOrEmail,
-    userGroupId,
+    userGroupId: requestedUserGroupId,
     propagation,
     catalogCollectionId,
     answerCollectionId,
@@ -4039,23 +4580,42 @@ export async function shareObject(
   },
   ctx: ContextWithUser
 ) {
-  // create new permission with the defined access level
-  if (shortnameOrEmail && shortnameOrEmail.length > 0) {
-    // check if a user with the provided username or email exists and is not the owner of the collection
-    const user = await ctx.prisma.user.findFirst({
-      where: {
-        OR: [{ shortname: shortnameOrEmail }, { email: shortnameOrEmail }],
-      },
-      select: {
-        id: true,
-        shortname: true,
-        email: true,
-      },
-    })
+  const resolvedTarget = await resolveSharingTarget(
+    { shortnameOrEmail, userGroupId: requestedUserGroupId },
+    ctx,
+    'DIRECT'
+  )
+  if (!resolvedTarget.target) {
+    return null
+  }
 
-    const userId = user?.id
-    if (!userId || userId === ctx.user.sub) {
-      return null
+  // create new permission with the defined access level
+  if (resolvedTarget.target.kind === 'USER') {
+    const user = resolvedTarget.target
+    const userId = user.id
+
+    if (typeof elementId !== 'undefined') {
+      const permission = await shareElementWithResolvedTarget(
+        {
+          elementId,
+          permissionLevel,
+          propagation,
+          target: resolvedTarget.target,
+        },
+        ctx
+      )
+
+      return {
+        permissionId: permission.id,
+        userId: user.id,
+        username: user.shortname,
+        userEmail: user.email,
+        userGroupId: undefined,
+        userGroupName: undefined,
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        isOwn: false,
+      }
     }
 
     const permission = await ctx.prisma.$transaction(
@@ -4074,13 +4634,6 @@ export async function shareObject(
               typeof answerCollectionId !== 'undefined'
                 ? {
                     answerCollectionId,
-                    userId,
-                  }
-                : undefined,
-            elementId_userId:
-              typeof elementId !== 'undefined'
-                ? {
-                    elementId,
                     userId,
                   }
                 : undefined,
@@ -4144,14 +4697,6 @@ export async function shareObject(
                     },
                   }
                 : undefined,
-            element:
-              typeof elementId !== 'undefined'
-                ? {
-                    connect: {
-                      id: elementId,
-                    },
-                  }
-                : undefined,
             course:
               typeof courseId !== 'undefined'
                 ? {
@@ -4205,7 +4750,6 @@ export async function shareObject(
             userId,
             catalogCollectionId,
             answerCollectionId,
-            elementId,
             courseId,
             liveQuizId,
             practiceQuizId,
@@ -4225,11 +4769,6 @@ export async function shareObject(
         } else if (typeof answerCollectionId !== 'undefined') {
           await recomputeDerivedPermissions(
             { answerCollectionId, userId, updateAccessRequests },
-            prisma
-          )
-        } else if (typeof elementId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { elementId, userId, updateAccessRequests },
             prisma
           )
         } else if (typeof courseId !== 'undefined') {
@@ -4263,7 +4802,6 @@ export async function shareObject(
         const { objectType, objectId } = getAuditLogObjectType({
           catalogCollectionId,
           answerCollectionId,
-          elementId,
           courseId,
           liveQuizId,
           practiceQuizId,
@@ -4287,7 +4825,6 @@ export async function shareObject(
               {
                 catalogCollectionId,
                 answerCollectionId,
-                elementId,
                 courseId,
                 liveQuizId,
                 practiceQuizId,
@@ -4320,22 +4857,32 @@ export async function shareObject(
       propagation: permission.propagation,
       isOwn: false,
     }
-  } else if (typeof userGroupId !== 'undefined' && userGroupId !== null) {
-    // check if the user group exists and if the triggering user is a member, admin or owner of it
-    const userGroup = await ctx.prisma.userGroup.findUnique({
-      where: {
-        id: userGroupId,
-        OR: [
-          { ownerId: ctx.user.sub },
-          { admins: { some: { id: ctx.user.sub } } },
-          { members: { some: { id: ctx.user.sub } } },
-        ],
-      },
-      select: { id: true, name: true },
-    })
+  } else {
+    const userGroup = resolvedTarget.target
+    const userGroupId = userGroup.id
 
-    if (!userGroup) {
-      return null
+    if (typeof elementId !== 'undefined') {
+      const permission = await shareElementWithResolvedTarget(
+        {
+          elementId,
+          permissionLevel,
+          propagation,
+          target: resolvedTarget.target,
+        },
+        ctx
+      )
+
+      return {
+        permissionId: permission.id,
+        userId: undefined,
+        username: undefined,
+        userEmail: undefined,
+        userGroupId: userGroup.id,
+        userGroupName: userGroup.name,
+        permissionLevel: permission.permissionLevel,
+        propagation: permission.propagation,
+        isOwn: false,
+      }
     }
 
     const permission = await ctx.prisma.$transaction(
@@ -4354,13 +4901,6 @@ export async function shareObject(
               typeof answerCollectionId !== 'undefined'
                 ? {
                     answerCollectionId,
-                    userGroupId,
-                  }
-                : undefined,
-            elementId_userGroupId:
-              typeof elementId !== 'undefined'
-                ? {
-                    elementId,
                     userGroupId,
                   }
                 : undefined,
@@ -4421,14 +4961,6 @@ export async function shareObject(
                 ? {
                     connect: {
                       id: answerCollectionId,
-                    },
-                  }
-                : undefined,
-            element:
-              typeof elementId !== 'undefined'
-                ? {
-                    connect: {
-                      id: elementId,
                     },
                   }
                 : undefined,
@@ -4494,11 +5026,6 @@ export async function shareObject(
             { answerCollectionId, updateAccessRequests },
             prisma
           )
-        } else if (typeof elementId !== 'undefined') {
-          await recomputeDerivedPermissions(
-            { elementId, updateAccessRequests },
-            prisma
-          )
         } else if (typeof courseId !== 'undefined') {
           await recomputeDerivedPermissions(
             { courseId, updateAccessRequests },
@@ -4530,7 +5057,6 @@ export async function shareObject(
         const { objectType, objectId } = getAuditLogObjectType({
           catalogCollectionId,
           answerCollectionId,
-          elementId,
           courseId,
           liveQuizId,
           practiceQuizId,
@@ -4554,7 +5080,6 @@ export async function shareObject(
               {
                 catalogCollectionId,
                 answerCollectionId,
-                elementId,
                 courseId,
                 liveQuizId,
                 practiceQuizId,
@@ -4587,8 +5112,6 @@ export async function shareObject(
       propagation: permission.propagation,
       isOwn: false,
     }
-  } else {
-    return null
   }
 }
 // #endregion
