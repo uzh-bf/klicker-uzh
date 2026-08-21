@@ -15,6 +15,8 @@ import {
   ShadcnTable,
   ShadcnTableBody,
   ShadcnTableCell,
+  ShadcnTableHead,
+  ShadcnTableHeader,
   ShadcnTableRow,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -156,6 +158,16 @@ function ElementBatchOperationsResult({
           ) : null}
           {sharingOutcomes.length > 0 ? (
             <ShadcnTable>
+              <ShadcnTableHeader>
+                <ShadcnTableRow>
+                  <ShadcnTableHead>
+                    {t('manage.questionPool.batchElementName')}
+                  </ShadcnTableHead>
+                  <ShadcnTableHead>
+                    {t('manage.questionPool.batchSharingResult')}
+                  </ShadcnTableHead>
+                </ShadcnTableRow>
+              </ShadcnTableHeader>
               <ShadcnTableBody>
                 {sharingOutcomes.map((outcome) => {
                   const element = selectedElements.get(outcome.elementId)

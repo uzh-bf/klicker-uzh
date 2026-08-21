@@ -1904,6 +1904,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Elements - Batch Operations',
+      batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
         'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
       batchElementName: 'Element',
