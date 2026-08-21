@@ -16,9 +16,9 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- |
 | Branch | `rs/pr5423-element-batch-simplification` |
 | Base | Fresh `origin/v3` at `df10f524ecf453fe2f43a3b08797a590f962c191` |
-| Integrated head | `4a3201718` |
+| Integrated head | `c6d7c85ca` |
 | Source PR | [#5423](https://github.com/uzh-bf/klicker-uzh/pull/5423), unchanged remotely |
-| Scope | `df10f524..4a3201718`, 29 tracked paths |
+| Scope | `df10f524..c6d7c85ca`, 29 tracked paths |
 | Runtime boundary | No local stack, browser, database, staging, cluster, or production access |
 
 ## Gate status
@@ -27,7 +27,7 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- | --- |
 | Planning review | complete | Approved project plan and corrections are committed |
 | API/UI slice reviews | complete with fallbacks | Native specialist routes failed with provider errors; bounded read-only fallback reviews completed |
-| Final package review | rerun pending | The review of `64a48a0de` identified a mixed-batch existence oracle; `4a3201718` closes it and needs the final pass |
+| Final package review | complete | The integrated review of `c6d7c85ca` found no local blocker; bounded lookup/cancellation and real PostgreSQL interleaving remain production conditions |
 | GraphQL typecheck/build/codegen | passed | Build has existing Rollup TypeScript and circular-dependency warnings |
 | Manage typecheck/lint | passed | Lint has 26 pre-existing React-hook warnings and no errors |
 | Playwright typecheck/listing | passed | 72 Chromium tests listed in the existing element-operations spec |
@@ -74,6 +74,6 @@ evidence was available because the approved plan withheld those actions.
 ## Handoff
 
 Treat this branch as a locally verified implementation handoff, not a production
-approval. The next authorized owner should run the final package review, then
+approval. The final package review is complete. The next authorized owner must
 obtain the capacity, cancellation, telemetry/reconciliation, browser, staging,
 and fresh-CI evidence listed above before requesting merge or deployment.
