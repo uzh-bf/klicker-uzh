@@ -1,11 +1,13 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import {
   createReceiptStore,
   initialReceipt,
   probeFixedRoute,
+  runW5eTransaction,
   safeResult,
   suppressOutput,
   updatedReceipt,
@@ -169,7 +171,95 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       proof: 'not_run',
       cleanup: 'incomplete',
       error: 'transaction_failed',
+      failure: 'unknown',
     })
+  })
+
+  test('records fixture creation failure without exposing nested transaction errors', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-fixture-failure-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const env = {
+      CANDIDATE_URL:
+        'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker',
+      CANDIDATE_PROOF_URL: 'http://127.0.0.1:1417/mcp/klicker',
+      RECEIPT_PATH: receiptPath,
+      DOC_QUERY_JWT_TOKEN_KLICKER: 'synthetic-bearer-token',
+      KLICKER_SOURCE_SHA: 'source-sha',
+      CHAT_IMAGE_DIGEST: 'chat-image',
+      DOC_QUERY_IMAGE_DIGEST: 'doc-query-image',
+      ARGO_REVISION: 'argo-revision',
+      NETWORK_POLICY_SOURCE_COMMIT: 'network-policy',
+    }
+    const previousEnv = new Map<string, string | undefined>()
+    for (const [name, value] of Object.entries(env)) {
+      previousEnv.set(name, process.env[name])
+      process.env[name] = value
+    }
+    const previousExitCode = process.exitCode
+    const legacyServer = {
+      id: 'legacy-server-id',
+      name: 'KB',
+      url: 'http://legacy.invalid/mcp',
+      authType: 'none',
+      passChatbotId: false,
+      chatbotIdHeader: null,
+      isActive: true,
+      updatedAt: new Date('2026-08-21T00:00:00.000Z'),
+    }
+    type FakeTx = {
+      chatbotMCPServer: {
+        findUnique: (args: { where: { name: string } }) => Promise<unknown>
+      }
+      user: { create: () => Promise<never> }
+    }
+    const tx: FakeTx = {
+      chatbotMCPServer: {
+        findUnique: vi.fn(async ({ where }) =>
+          where.name === 'KB' ? legacyServer : null
+        ),
+      },
+      user: {
+        create: vi.fn(async () => {
+          throw new Error('synthetic nested transaction error')
+        }),
+      },
+    }
+    const transaction = vi.fn(
+      async (callback: (tx: FakeTx) => Promise<unknown>) => callback(tx)
+    )
+    const client = { $transaction: transaction } as unknown as PrismaClient
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }))
+
+    try {
+      const result = await runW5eTransaction({ client, fetchImpl })
+      const receipt = await createReceiptStore(receiptPath).read()
+
+      expect(result).toMatchObject({
+        status: 'planned',
+        reachability: 'accepted',
+        proof: 'not_run',
+        cleanup: 'incomplete',
+        error: 'transaction_failed',
+        failure: 'fixture_create_failed',
+      })
+      expect(receipt).toMatchObject({
+        state: 'planned',
+        reachability: { outcome: 'accepted' },
+        failure: { category: 'fixture_create_failed' },
+      })
+      expect(await readFile(receiptPath, 'utf8')).not.toContain(
+        'synthetic nested transaction error'
+      )
+      expect(transaction).toHaveBeenCalledTimes(1)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+    } finally {
+      for (const [name, value] of previousEnv) {
+        if (value === undefined) delete process.env[name]
+        else process.env[name] = value
+      }
+      process.exitCode = previousExitCode
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   test('classifies source-matched transport outcomes without retaining request data', async () => {

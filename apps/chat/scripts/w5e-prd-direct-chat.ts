@@ -75,6 +75,14 @@ type State =
 
 type Status = 'planned' | 'passed' | 'failed' | 'not_run'
 
+export type W5eFailureCategory =
+  | 'reachability_failed'
+  | 'fixture_create_failed'
+  | 'switch_failed'
+  | 'proof_failed'
+  | 'cleanup_failed'
+  | 'unknown'
+
 export type TransportPath = 'local-forward' | 'chat-pod'
 export type TransportStatusClass = 'none' | '2xx' | '3xx' | '4xx' | '5xx'
 export type TransportOutcome =
@@ -171,6 +179,7 @@ export type W5eReceipt = {
     argoRevision: string
     networkPolicySourceCommit: string
   }
+  failure?: { category: W5eFailureCategory } | null
   reachability: TransportDiagnostic
   proof: {
     status: Status
@@ -305,6 +314,7 @@ export function initialReceipt(
       config: null,
     },
     provenance,
+    failure: null,
     reachability: {
       path: 'local-forward',
       outcome: 'not_run',
@@ -715,7 +725,8 @@ async function assertCandidateReachable(
     options.proofUrl,
     options.bearer,
     chatbotId,
-    'local-forward'
+    'local-forward',
+    options.fetchImpl
   )
   options.receipt = updatedReceipt(options.receipt, { reachability })
   await options.store.write(options.receipt)
@@ -862,6 +873,7 @@ type RunOptions = {
   candidateUrl: string
   proofUrl: string
   bearer: string
+  fetchImpl: typeof fetch
   isInterrupted: () => boolean
 }
 
@@ -1503,8 +1515,12 @@ async function attemptCleanup(
 
 export function safeResult(
   receipt: W5eReceipt,
-  error?: unknown
+  error?: unknown,
+  failureCategory?: W5eFailureCategory
 ): Record<string, unknown> {
+  const failure = error
+    ? (failureCategory ?? receipt.failure?.category ?? 'unknown')
+    : (receipt.failure?.category ?? null)
   return {
     status: receipt.state,
     phase: receipt.state,
@@ -1513,10 +1529,20 @@ export function safeResult(
     proof: receipt.proof.status,
     cleanup: receipt.cleanup.exactZeroReadback ? 'exact-zero' : 'incomplete',
     ...(error ? { error: 'transaction_failed' } : {}),
+    failure,
   }
 }
 
-export async function runW5eTransaction(): Promise<Record<string, unknown>> {
+export type W5eTransactionDependencies = {
+  client?: PrismaClient
+  fetchImpl?: typeof fetch
+}
+
+export async function runW5eTransaction(
+  dependencies: W5eTransactionDependencies = {}
+): Promise<Record<string, unknown>> {
+  const client = dependencies.client ?? prisma
+  const fetchImpl = dependencies.fetchImpl ?? fetch
   const candidateUrl = assertFixedEndpoint(
     requiredEnv('CANDIDATE_URL'),
     CANDIDATE_SERVICE_URL,
@@ -1553,12 +1579,13 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
   await store.write(receipt)
   let interrupted = false
   const options: RunOptions = {
-    client: prisma,
+    client,
     store,
     receipt,
     candidateUrl,
     proofUrl,
     bearer,
+    fetchImpl,
     isInterrupted: () => interrupted,
   }
   const signalHandler = () => {
@@ -1569,38 +1596,59 @@ export async function runW5eTransaction(): Promise<Record<string, unknown>> {
   try {
     let fixtureState: FixtureState | undefined
     let failure: unknown
+    let failureCategory: W5eFailureCategory | undefined
+    let currentPhase: W5eFailureCategory = 'reachability_failed'
     try {
+      currentPhase = 'reachability_failed'
       assertNotInterrupted(options)
       await assertCandidateReachable(options, fixture.chatbotId)
+      currentPhase = 'fixture_create_failed'
       fixtureState = await createFixture(options)
       if (!fixtureState.receiptPersisted) {
         fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
       }
+      currentPhase = 'switch_failed'
       await switchFixture(options, fixtureState)
+      currentPhase = 'proof_failed'
       await runLiveProof(options, fixtureState)
     } catch (error) {
       failure = error
+      failureCategory = currentPhase
     } finally {
       if (fixtureState) {
         try {
           await attemptCleanup(options, fixtureState)
         } catch (cleanupError) {
           failure = cleanupError
+          failureCategory = 'cleanup_failed'
           options.receipt = updatedReceipt(options.receipt, {
             state: 'recovery_required',
           })
           await store.write(options.receipt)
         }
       }
+      if (failureCategory) {
+        const diagnostic = updatedReceipt(options.receipt, {
+          failure: { category: failureCategory },
+        })
+        try {
+          await store.write(diagnostic)
+          options.receipt = diagnostic
+        } catch {
+          // Keep the safe output category even when its durable update fails.
+        }
+      }
       receipt = options.receipt
     }
     if (failure) {
-      process.stdout.write(`${JSON.stringify(safeResult(receipt, failure))}\n`)
+      process.stdout.write(
+        `${JSON.stringify(safeResult(receipt, failure, failureCategory))}\n`
+      )
       process.exitCode = 1
     } else {
       process.stdout.write(`${JSON.stringify(safeResult(receipt))}\n`)
     }
-    return safeResult(receipt, failure)
+    return safeResult(receipt, failure, failureCategory)
   } finally {
     process.removeListener('SIGINT', signalHandler)
     process.removeListener('SIGTERM', signalHandler)
