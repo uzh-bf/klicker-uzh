@@ -1,3 +1,5 @@
+BEGIN;
+
 -- CreateEnum
 CREATE TYPE "ChatbotStatus" AS ENUM ('DRAFT', 'PENDING_APPROVAL', 'PUBLISHED', 'PAUSED', 'REJECTED');
 
@@ -16,3 +18,5 @@ UPDATE "Chatbot" SET "status" = 'PUBLISHED' WHERE "status" = 'DRAFT';
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "aiChatbotCostCenter" TEXT,
 ADD COLUMN     "aiChatbotPublishingEnabled" BOOLEAN NOT NULL DEFAULT false;
+
+COMMIT;
