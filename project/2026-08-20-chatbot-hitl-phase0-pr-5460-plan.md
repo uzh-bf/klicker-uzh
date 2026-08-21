@@ -229,10 +229,11 @@ No separate tasks; nothing crosses a boundary warranting one.
   `P-pagination-show-all.spec.ts:47` Playwright shard and aggregate status.
   The integrated final-reviewer pass was DONE_WITH_CONCERNS with one medium
   approval-boundary finding: the approval transition was not an atomic
-  conditional write. That finding is addressed in commits `3640a3abe` and
-  `7154564f2`; the former model-cost re-review finding is superseded by the
-  approved shared-authorization policy. No merge, readiness change, issue
-  closure, or history rewrite was performed.
+  conditional write. That finding is addressed in commits `3640a3abe`,
+  `7154564f2`, and the follow-up barrier simplification `45e3281ff`; the
+  former model-cost re-review finding is superseded by the approved
+  shared-authorization policy. No merge, readiness change, issue closure, or
+  history rewrite was performed.
 - Follow-up code correction: approval and rejection now use conditional
   `updateMany` transitions keyed by the expected lifecycle state; approval
   also rechecks the account publishing capability in the same write. The
@@ -408,14 +409,15 @@ No separate tasks; nothing crosses a boundary warranting one.
   (`origin/HEAD`): 4 behind, 13 ahead, and none of v3's 4 new commits touch my
   changed files (overlap empty excl. codegen) — a rebase would be a clean
   codegen-only re-run.
-- Base reconciliation (2026-08-21): the latest authoritative `git ls-remote`
-  refs show `origin/v3` at `4e5f1d368e` and this branch at `ab8d1424d`, 4 behind /
-  23 ahead. The target-only commits still do not overlap the chatbot
-  implementation. GitHub previously reported the open, non-draft PR mergeable
-  but behind; re-read mergeability before any merge decision because the target
-  can move again. No rebase was performed. The common Git `FETCH_HEAD` file is
-  not writable in this linked worktree, so freshness was verified with
-  `git ls-remote` rather than inferred from fetch state.
+- Forge snapshot (2026-08-21, read-only `gh`): `v3` is at
+  `3f3af82953ab91c6c51a38dfef44f6bc8e72bc85`, the remote PR head remains
+  `ab8d1424d`, and PR #5460 is open, non-draft, mergeable, but **BEHIND**. Its
+  current checks are 42 successful, 3 failed (GitGuardian and the Playwright
+  shard/status pair), and 1 skipped. The local commits through `ec71b5222`
+  are not on the remote PR yet. The SSH `git ls-remote` freshness path was
+  unavailable during this readback (connection closed), so the GitHub API is
+  the authoritative ref source for this snapshot. No rebase or push was
+  performed.
 - Remaining: complete the native final package review, handle GitGuardian
   incident 36437584, and reconcile the branch with the current `v3` head
   before merge. The approved usage-funding policy is documented for its
