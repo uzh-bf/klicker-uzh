@@ -16,9 +16,9 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- |
 | Branch | `rs/pr5423-element-batch-simplification` |
 | Base | Fresh `origin/v3` at `df10f524ecf453fe2f43a3b08797a590f962c191` |
-| Integrated head | `7f42dc5a6` |
+| Integrated head | `4a3201718` |
 | Source PR | [#5423](https://github.com/uzh-bf/klicker-uzh/pull/5423), unchanged remotely |
-| Scope | `df10f524..7f42dc5a6`, 29 tracked paths |
+| Scope | `df10f524..4a3201718`, 29 tracked paths |
 | Runtime boundary | No local stack, browser, database, staging, cluster, or production access |
 
 ## Gate status
@@ -27,7 +27,7 @@ evidence was available because the approved plan withheld those actions.
 | --- | --- | --- |
 | Planning review | complete | Approved project plan and corrections are committed |
 | API/UI slice reviews | complete with fallbacks | Native specialist routes failed with provider errors; bounded read-only fallback reviews completed |
-| Final package review | rerun pending | The review of `bddde399d` completed with findings; the current correction commits need the final pass |
+| Final package review | rerun pending | The review of `64a48a0de` identified a mixed-batch existence oracle; `4a3201718` closes it and needs the final pass |
 | GraphQL typecheck/build/codegen | passed | Build has existing Rollup TypeScript and circular-dependency warnings |
 | Manage typecheck/lint | passed | Lint has 26 pre-existing React-hook warnings and no errors |
 | Playwright typecheck/listing | passed | 72 Chromium tests listed in the existing element-operations spec |
@@ -39,7 +39,7 @@ evidence was available because the approved plan withheld those actions.
 | Area | Resolution | Verification |
 | --- | --- | --- |
 | Authorization | Raw IDs are capped at 50, only READ/WRITE/ADMIN are accepted, and every element transaction rechecks non-deleted state plus caller ADMIN/OWNER permission. Group owner/admin/member access is also rechecked in the transaction. | GraphQL typecheck/build; focused tests are collection-blocked |
-| Enumeration boundary | Target lookup now occurs only after a supplied non-deleted element with current caller ADMIN/OWNER access is found. Without one, the service returns uniform unavailable outcomes and does not reveal target or element existence. | GraphQL typecheck; focused tests are collection-blocked |
+| Enumeration boundary | Target lookup now occurs only after a supplied non-deleted element with current caller ADMIN/OWNER access is found. Without one, the service returns uniform unavailable outcomes. Mixed batches also collapse inaccessible existing IDs to the same unavailable reason as missing/deleted IDs. | GraphQL typecheck; focused tests are collection-blocked |
 | Concurrency | Serializable per-element transactions retain bounded `P2034` retries and budget transaction wait plus timeout within the operation deadline. | Static inspection and typecheck; real PostgreSQL interleaving remains unproved |
 | Direct sharing compatibility | Direct sharing keeps its prior post-commit invalidation error behavior; batch sharing uses the guarded invalidation path. | Regression test added; runtime collection blocked |
 | Manage form | Recipient fields are marked touched when enabled, user/group updates are atomic, and the 50-element server limit is surfaced before Apply. | Manage typecheck/lint |
