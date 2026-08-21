@@ -19,6 +19,8 @@ import {
   createParticipantInvitations,
   deduplicateParticipantInvitationInputs,
   findEligibleParticipantIds,
+  isSoleEligibleParticipant,
+  withSerializableInvitationTransaction,
 } from '../services/participantInvitations.js'
 
 // Configuration - adjust these values as needed
@@ -568,52 +570,52 @@ async function resolveBrokenAcceptedInvitation(
     return
   }
 
-  const repaired = await prisma.$transaction(async (tx) => {
-    const currentParticipantIds = await findEligibleParticipantIds(
-      normalizedEmail,
-      emailMode,
-      tx
-    )
+  const repaired = await withSerializableInvitationTransaction(
+    prisma,
+    async (tx) => {
+      const currentParticipantIds = await findEligibleParticipantIds(
+        normalizedEmail,
+        emailMode,
+        tx
+      )
 
-    if (
-      currentParticipantIds.length !== 1 ||
-      currentParticipantIds[0] !== participantId
-    ) {
-      return false
-    }
+      if (!isSoleEligibleParticipant(currentParticipantIds, participantId)) {
+        return false
+      }
 
-    const updateResult = await tx.participantInvitation.updateMany({
-      where: {
-        id: invitation.id,
-        status: InvitationStatus.ACCEPTED,
-        participantId: null,
-      },
-      data: {
-        participantId,
-        acceptedAt: invitation.acceptedAt ?? new Date(),
-      },
-    })
+      const updateResult = await tx.participantInvitation.updateMany({
+        where: {
+          id: invitation.id,
+          status: InvitationStatus.ACCEPTED,
+          participantId: null,
+        },
+        data: {
+          participantId,
+          acceptedAt: invitation.acceptedAt ?? new Date(),
+        },
+      })
 
-    if (updateResult.count !== 1) {
-      return false
-    }
+      if (updateResult.count !== 1) {
+        return false
+      }
 
-    await tx.participation.upsert({
-      where: {
-        courseId_participantId: {
+      await tx.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: invitation.courseId,
+            participantId,
+          },
+        },
+        create: {
           courseId: invitation.courseId,
           participantId,
         },
-      },
-      create: {
-        courseId: invitation.courseId,
-        participantId,
-      },
-      update: {},
-    })
+        update: {},
+      })
 
-    return true
-  })
+      return true
+    }
+  )
 
   if (!repaired) {
     console.warn(

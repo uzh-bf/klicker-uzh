@@ -76,6 +76,35 @@ function isPrismaError(error: unknown, code: 'P2002' | 'P2034') {
   )
 }
 
+export function isSoleEligibleParticipant(
+  participantIds: string[],
+  participantId: string
+) {
+  return participantIds.length === 1 && participantIds[0] === participantId
+}
+
+export async function withSerializableInvitationTransaction<T>(
+  prismaClient: PrismaClient,
+  operation: (tx: Prisma.TransactionClient) => Promise<T>
+): Promise<T> {
+  for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
+    try {
+      return await prismaClient.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      })
+    } catch (error) {
+      if (
+        !isPrismaError(error, 'P2034') ||
+        attempt === invitationTransactionRetryLimit - 1
+      ) {
+        throw error
+      }
+    }
+  }
+
+  throw new Error('Invitation transaction retry limit exceeded')
+}
+
 /**
  * Creates participant invitations and automatically accepts them for existing verified users
  * Only uses ParticipantAccount SSO IDs for matching (not participant.email which is unvalidated)
@@ -318,65 +347,46 @@ async function autoAcceptInvitation(
   emailMode: InvitationEmailMode,
   prismaClient: PrismaClient
 ): Promise<number | null> {
-  for (let attempt = 0; attempt < invitationTransactionRetryLimit; attempt++) {
-    try {
-      return await prismaClient.$transaction(
-        async (tx) => {
-          const eligibleParticipantIds = await findEligibleParticipantIds(
-            email,
-            emailMode,
-            tx
-          )
+  return withSerializableInvitationTransaction(prismaClient, async (tx) => {
+    const eligibleParticipantIds = await findEligibleParticipantIds(
+      email,
+      emailMode,
+      tx
+    )
 
-          if (
-            eligibleParticipantIds.length !== 1 ||
-            eligibleParticipantIds[0] !== participantId
-          ) {
-            return null
-          }
-
-          // Create the invitation as ACCEPTED
-          const invitation = await tx.participantInvitation.create({
-            data: {
-              email,
-              courseId,
-              status: InvitationStatus.ACCEPTED,
-              participantId,
-              acceptedAt: new Date(),
-              matriculationNumber,
-            },
-          })
-
-          // Create or update participation
-          await tx.participation.upsert({
-            where: {
-              courseId_participantId: {
-                courseId,
-                participantId,
-              },
-            },
-            create: {
-              courseId,
-              participantId,
-            },
-            update: {},
-          })
-
-          return invitation.id
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-      )
-    } catch (error) {
-      if (
-        !isPrismaError(error, 'P2034') ||
-        attempt === invitationTransactionRetryLimit - 1
-      ) {
-        throw error
-      }
+    if (!isSoleEligibleParticipant(eligibleParticipantIds, participantId)) {
+      return null
     }
-  }
 
-  throw new Error('Invitation transaction retry limit exceeded')
+    // Create the invitation as ACCEPTED
+    const invitation = await tx.participantInvitation.create({
+      data: {
+        email,
+        courseId,
+        status: InvitationStatus.ACCEPTED,
+        participantId,
+        acceptedAt: new Date(),
+        matriculationNumber,
+      },
+    })
+
+    // Create or update participation
+    await tx.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId,
+        },
+      },
+      create: {
+        courseId,
+        participantId,
+      },
+      update: {},
+    })
+
+    return invitation.id
+  })
 }
 
 async function requireAssessmentCourse(
