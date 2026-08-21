@@ -790,7 +790,7 @@ describe('Integration tests for batch sharing elements', () => {
       {
         elementId: element.id,
         status: 'SKIPPED',
-        reason: 'INSUFFICIENT_PERMISSION',
+        reason: 'ELEMENT_NOT_FOUND_OR_DELETED',
       },
     ])
     expect(
