@@ -1,8 +1,8 @@
 import {
-  NonRetryableError,
   type Context,
   type DurableContext,
   type JsonObject,
+  NonRetryableError,
   type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
@@ -18,7 +18,11 @@ import type {
 } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
-import { DEFAULT_POINTS } from '../constants.js'
+import {
+  DEFAULT_CORRECT_POINTS,
+  DEFAULT_POINTS,
+  MAX_BONUS_POINTS,
+} from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPointsDetails,
@@ -29,8 +33,164 @@ import {
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
+import {
+  getResponseState,
+  type ResponsePoints,
+  replayPointCorrections,
+} from './responseState.js'
 
 const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
+
+function parsePointValue(value: string | undefined, fallback: number) {
+  const parsed = Number(value ?? fallback)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2002'
+  )
+}
+
+async function persistAssessmentResponse({
+  instanceId,
+  participantId,
+  elementBlockExecution,
+  responseTimestamp,
+  response,
+  correctness,
+  responsePoints,
+  availablePoints,
+}: {
+  instanceId: number
+  participantId: string
+  elementBlockExecution: number
+  responseTimestamp: number
+  response: LiveQuizResponseInput
+  correctness: ResponseCorrectness
+  responsePoints: ResponsePoints
+  availablePoints: ResponsePoints
+}): Promise<'created' | 'duplicate' | 'materialized'> {
+  const persist = () =>
+    prisma.$transaction(async (tx) => {
+      const existingResponse = await tx.liveQuizResponse.findUnique({
+        where: {
+          instanceId_elementBlockExecution_participantId: {
+            instanceId,
+            elementBlockExecution,
+            participantId,
+          },
+        },
+        include: {
+          appliedCorrections: {
+            include: {
+              pointCorrection: {
+                select: {
+                  id: true,
+                  createdAt: true,
+                  basePoints: true,
+                  correctnessPoints: true,
+                  bonusPoints: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      const state = getResponseState(existingResponse)
+      if (state === 'duplicate') return 'duplicate'
+
+      if (state === 'create') {
+        await tx.liveQuizResponse.create({
+          data: {
+            submittedAt: new Date(responseTimestamp),
+            response,
+            timeSpent: -1, // TODO: set this in future improvements
+            correctness,
+            basePoints: responsePoints.basePoints,
+            correctnessPoints: responsePoints.correctnessPoints,
+            bonusPoints: responsePoints.bonusPoints,
+            elementBlockExecution,
+            instance: { connect: { id: instanceId } },
+            participant: { connect: { id: participantId } },
+          },
+        })
+
+        return 'created'
+      }
+
+      if (!existingResponse) {
+        throw new Error('Cannot materialize a missing live quiz response')
+      }
+
+      const replayedCorrections = replayPointCorrections({
+        rawPoints: responsePoints,
+        availablePoints,
+        corrections: existingResponse.appliedCorrections.map(
+          ({ id, createdAt, pointCorrection }) => ({
+            appliedCorrectionId: id,
+            createdAt,
+            pointCorrection,
+          })
+        ),
+      })
+
+      await tx.liveQuizResponse.update({
+        where: { id: existingResponse.id },
+        data: {
+          submittedAt: new Date(responseTimestamp),
+          response,
+          timeSpent: -1, // TODO: set this in future improvements
+          correctness,
+          basePoints: replayedCorrections.points.basePoints,
+          correctnessPoints: replayedCorrections.points.correctnessPoints,
+          bonusPoints: replayedCorrections.points.bonusPoints,
+          correctionOnly: false,
+        },
+      })
+
+      await Promise.all(
+        replayedCorrections.appliedCorrections.map(
+          ({
+            appliedCorrectionId,
+            awardedBasePoints,
+            awardedCorrectnessPoints,
+            awardedBonusPoints,
+            deductedBasePoints,
+            deductedCorrectnessPoints,
+            deductedBonusPoints,
+          }) =>
+            tx.appliedPointCorrection.update({
+              where: { id: appliedCorrectionId },
+              data: {
+                awardedBasePoints,
+                awardedCorrectnessPoints,
+                awardedBonusPoints,
+                deductedBasePoints,
+                deductedCorrectnessPoints,
+                deductedBonusPoints,
+              },
+            })
+        )
+      )
+
+      return 'materialized'
+    })
+
+  try {
+    return await persist()
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error
+
+    // A response and a correction-only placeholder can race on the compound
+    // key. The winning insert determines which state should be persisted.
+    return persist()
+  }
+}
 
 export async function processAssessmentResponse(
   message: {
@@ -112,6 +272,8 @@ export async function processAssessmentResponse(
     choiceCount,
     basePoints,
     defaultPoints,
+    defaultCorrectPoints,
+    maxBonusPoints,
     pointsMultiplier,
     blockExecution,
     blockClosedAt,
@@ -164,7 +326,7 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions = undefined
+  let parsedSolutions: unknown
   try {
     if (solutions) {
       parsedSolutions = JSON.parse(solutions)
@@ -333,6 +495,35 @@ export async function processAssessmentResponse(
     }
   }
 
+  const responsePoints: ResponsePoints = {
+    basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
+    correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
+      ? 0
+      : awardedCorrectnessPoints,
+    bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
+  }
+  const parsedPointsMultiplier = parsePointValue(pointsMultiplier, 1)
+  const availablePoints: ResponsePoints = {
+    basePoints:
+      basePoints === 'true'
+        ? parsePointValue(defaultPoints, DEFAULT_POINTS)
+        : 0,
+    correctnessPoints: parsedSolutions
+      ? parsedPointsMultiplier *
+        parsePointValue(defaultCorrectPoints, DEFAULT_CORRECT_POINTS)
+      : 0,
+    bonusPoints: parsedSolutions
+      ? parsedPointsMultiplier *
+        parsePointValue(maxBonusPoints, MAX_BONUS_POINTS)
+      : 0,
+  }
+  const responseCorrectness =
+    computedCorrectness === null || computedCorrectness === 1
+      ? ResponseCorrectness.CORRECT
+      : computedCorrectness === 0
+        ? ResponseCorrectness.WRONG
+        : ResponseCorrectness.PARTIAL
+
   // if the response was correct, set the corresponding timestamp on the instance
   if (
     computedCorrectness !== null &&
@@ -373,51 +564,30 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
-  // verify that the participant has not votes on the same question before
-  const existingVote = await prisma.liveQuizResponse.findUnique({
-    where: {
-      instanceId_elementBlockExecution_participantId: {
-        instanceId: Number(message.instanceId),
-        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
-        participantId: message.participantId,
-      },
-    },
-  })
+  let persistenceResult: 'created' | 'duplicate' | 'materialized'
+  try {
+    persistenceResult = await persistAssessmentResponse({
+      instanceId: Number(message.instanceId),
+      participantId: message.participantId,
+      elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+      responseTimestamp,
+      response,
+      correctness: responseCorrectness,
+      responsePoints,
+      availablePoints,
+    })
+  } catch (e) {
+    throw new Error(
+      `Failed to persist live quiz response for instance ${message.instanceId} and participant ${message.participantId}: ${String(e)}`
+    )
+  }
 
-  if (existingVote) {
+  if (persistenceResult === 'duplicate') {
     ctx.logger.error(
       `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
     )
     ctx.cancel()
     return { status: 208 }
-  }
-
-  try {
-    await prisma.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(responseTimestamp),
-        response,
-        timeSpent: -1, // TODO: set this in future improvements
-        correctness:
-          computedCorrectness === null || computedCorrectness === 1
-            ? ResponseCorrectness.CORRECT
-            : computedCorrectness === 0
-              ? ResponseCorrectness.WRONG
-              : ResponseCorrectness.PARTIAL,
-        basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
-        correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
-          ? 0
-          : awardedCorrectnessPoints,
-        bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
-        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
-        instance: { connect: { id: Number(message.instanceId) } },
-        participant: { connect: { id: message.participantId } },
-      },
-    })
-  } catch (e) {
-    throw new Error(
-      `Failed to create live quiz response for instance ${message.instanceId} and participant ${message.participantId}.`
-    )
   }
 
   // add the participant to the list of participants that have answered this question instance
