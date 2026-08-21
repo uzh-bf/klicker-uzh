@@ -117,7 +117,7 @@ cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
-Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
 ## Model registry and credits
 
@@ -294,7 +294,11 @@ button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
 design-system `Button`, the same pattern as the sibling home button), so
 middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
 courses are deliberately limited to a single chatbot for now, which is also why
-`Chatbot` carries no ordering or visibility field. Lifting that limit means
+`Chatbot` carries no ordering field. It does carry a publication `status`
+(`DRAFT`/`PENDING_APPROVAL`/`PUBLISHED`/`PAUSED`/`REJECTED`, see
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md)) that gates participant
+visibility — only `PUBLISHED` bots are reachable — but that is a visibility
+gate, not a way to order or select among multiple bots. Lifting that limit means
 deciding the multi-chatbot affordance first — the header row does not wrap and
 the design-system button is `shrink-0`, so several buttons would squeeze the
 course title on a narrow viewport.
