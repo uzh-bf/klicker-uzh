@@ -8,6 +8,36 @@ import { prepareCourse } from './helpers.js'
 const STRESS_ACTIVITY_COUNT = 200
 const STRESS_PIN_CODE_START = 987650000
 
+function assertLocalDatabase() {
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) {
+    throw new Error(
+      'DATABASE_URL is required to seed the course duplication stress fixture.'
+    )
+  }
+
+  let hostname: string
+  try {
+    hostname = new URL(databaseUrl).hostname
+  } catch {
+    throw new Error('DATABASE_URL is not a valid development database URL.')
+  }
+
+  const isLocalHost =
+    hostname === 'postgres' ||
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '[::1]' ||
+    hostname.endsWith('.localhost')
+
+  if (!isLocalHost) {
+    throw new Error(
+      'The course duplication stress fixture refuses non-local database hosts.'
+    )
+  }
+}
+
 function activityId(index: number) {
   return uuidv5(
     `course-duplication-stress-live-quiz-${index}`,
@@ -21,6 +51,8 @@ async function seedCourseDuplicationStress() {
       'The course duplication stress fixture is available only in development.'
     )
   }
+
+  assertLocalDatabase()
 
   const owner = await prisma.user.findUnique({
     where: { id: USER_ID_TEST },
@@ -73,27 +105,19 @@ async function seedCourseDuplicationStress() {
 
   for (const [index, id] of expectedActivityIds.entries()) {
     const name = `Duplication stress activity ${index + 1}`
+    const data = {
+      name,
+      displayName: name,
+      description: 'Empty development stress-test activity.',
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_DUPLICATION_STRESS,
+      status: Prisma.PublicationStatus.DRAFT,
+      isDeleted: false,
+    }
     await prisma.liveQuiz.upsert({
       where: { id },
-      create: {
-        id,
-        name,
-        displayName: name,
-        description: 'Empty development stress-test activity.',
-        ownerId: USER_ID_TEST,
-        courseId: COURSE_ID_DUPLICATION_STRESS,
-        status: Prisma.PublicationStatus.DRAFT,
-        isDeleted: false,
-      },
-      update: {
-        name,
-        displayName: name,
-        description: 'Empty development stress-test activity.',
-        ownerId: USER_ID_TEST,
-        courseId: COURSE_ID_DUPLICATION_STRESS,
-        status: Prisma.PublicationStatus.DRAFT,
-        isDeleted: false,
-      },
+      create: { id, ...data },
+      update: data,
     })
   }
 
@@ -102,34 +126,42 @@ async function seedCourseDuplicationStress() {
     prisma
   )
 
-  const [course, activities, permission] = await Promise.all([
-    prisma.course.findUnique({
-      where: { id: COURSE_ID_DUPLICATION_STRESS },
-      select: {
-        ownerId: true,
-        _count: { select: { liveQuizzes: true } },
-      },
-    }),
-    prisma.liveQuiz.findMany({
-      where: { courseId: COURSE_ID_DUPLICATION_STRESS },
-      select: {
-        id: true,
-        ownerId: true,
-        status: true,
-        isDeleted: true,
-        blocks: { select: { id: true } },
-      },
-    }),
-    prisma.derivedPermission.findUnique({
-      where: {
-        courseId_userId: {
-          courseId: COURSE_ID_DUPLICATION_STRESS,
+  const [course, activities, coursePermission, activityPermissions] =
+    await Promise.all([
+      prisma.course.findUnique({
+        where: { id: COURSE_ID_DUPLICATION_STRESS },
+        select: {
+          ownerId: true,
+          _count: { select: { liveQuizzes: true } },
+        },
+      }),
+      prisma.liveQuiz.findMany({
+        where: { courseId: COURSE_ID_DUPLICATION_STRESS },
+        select: {
+          id: true,
+          ownerId: true,
+          status: true,
+          isDeleted: true,
+          blocks: { select: { id: true } },
+        },
+      }),
+      prisma.derivedPermission.findUnique({
+        where: {
+          courseId_userId: {
+            courseId: COURSE_ID_DUPLICATION_STRESS,
+            userId: USER_ID_TEST,
+          },
+        },
+        select: { permissionLevel: true },
+      }),
+      prisma.derivedPermission.findMany({
+        where: {
+          liveQuizId: { in: expectedActivityIds },
           userId: USER_ID_TEST,
         },
-      },
-      select: { permissionLevel: true },
-    }),
-  ])
+        select: { liveQuizId: true, permissionLevel: true },
+      }),
+    ])
 
   const expectedIds = new Set(expectedActivityIds)
   const invalidActivity = activities.find(
@@ -147,7 +179,13 @@ async function seedCourseDuplicationStress() {
     course._count.liveQuizzes !== STRESS_ACTIVITY_COUNT ||
     activities.length !== STRESS_ACTIVITY_COUNT ||
     invalidActivity ||
-    !permission
+    !coursePermission ||
+    coursePermission.permissionLevel !== Prisma.PermissionLevel.OWNER ||
+    activityPermissions.length !== STRESS_ACTIVITY_COUNT ||
+    activityPermissions.some(
+      (permission) =>
+        permission.permissionLevel !== Prisma.PermissionLevel.OWNER
+    )
   ) {
     throw new Error(
       'The course duplication stress fixture failed verification.'
