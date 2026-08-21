@@ -85,6 +85,7 @@ import {
   ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
+  ElementBatchSharingResult,
   ObjectAccess,
   ObjectType,
   PermissionInfo,
@@ -1277,6 +1278,19 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.applyElementBatchOperations(args, ctx)
+        },
+      }),
+
+      shareElementsBatch: t.withAuth(asUserFullAccess).field({
+        type: ElementBatchSharingResult,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          shortnameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.shareElementsBatch(args, ctx)
         },
       }),
 

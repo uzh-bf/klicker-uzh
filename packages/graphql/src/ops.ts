@@ -1285,6 +1285,36 @@ export type DerivedPermissionOriginInformation = {
 
 export type Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement;
 
+export type ElementBatchSharingOutcome = {
+  __typename?: 'ElementBatchSharingOutcome';
+  elementId: Scalars['Int']['output'];
+  reason?: Maybe<ElementBatchSharingReason>;
+  status: ElementBatchSharingStatus;
+};
+
+export enum ElementBatchSharingReason {
+  ElementNotFoundOrDeleted = 'ELEMENT_NOT_FOUND_OR_DELETED',
+  InsufficientPermission = 'INSUFFICIENT_PERMISSION',
+  SharingFailed = 'SHARING_FAILED'
+}
+
+export type ElementBatchSharingResult = {
+  __typename?: 'ElementBatchSharingResult';
+  outcomes: Array<ElementBatchSharingOutcome>;
+  targetError?: Maybe<ElementBatchSharingTargetError>;
+};
+
+export enum ElementBatchSharingStatus {
+  Failed = 'FAILED',
+  Shared = 'SHARED',
+  Skipped = 'SKIPPED'
+}
+
+export enum ElementBatchSharingTargetError {
+  InvalidOrSelfTarget = 'INVALID_OR_SELF_TARGET',
+  UserGroupUnavailable = 'USER_GROUP_UNAVAILABLE'
+}
+
 export type ElementBlock = {
   __typename?: 'ElementBlock';
   elements?: Maybe<Array<ElementInstance>>;
@@ -2199,6 +2229,7 @@ export type Mutation = {
   sendMagicLink?: Maybe<Scalars['Boolean']['output']>;
   setActivityReviewStatus?: Maybe<ReviewStatus>;
   setLiveQuizPin: Scalars['Boolean']['output'];
+  shareElementsBatch: ElementBatchSharingResult;
   shareObject?: Maybe<PermissionInfo>;
   startGroupActivity?: Maybe<GroupActivityDetails>;
   startLiveQuiz?: Maybe<LiveQuizMeta>;
@@ -3211,6 +3242,14 @@ export type MutationSetActivityReviewStatusArgs = {
 export type MutationSetLiveQuizPinArgs = {
   liveQuizId: Scalars['String']['input'];
   pin: Scalars['String']['input'];
+};
+
+
+export type MutationShareElementsBatchArgs = {
+  elementIds: Array<Scalars['Int']['input']>;
+  permissionLevel: PermissionLevel;
+  shortnameOrEmail?: InputMaybe<Scalars['String']['input']>;
+  userGroupId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -6385,6 +6424,16 @@ export type SetLiveQuizPinMutationVariables = Exact<{
 
 export type SetLiveQuizPinMutation = { __typename?: 'Mutation', setLiveQuizPin: boolean };
 
+export type ShareElementsBatchMutationVariables = Exact<{
+  elementIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  permissionLevel: PermissionLevel;
+  shortnameOrEmail?: InputMaybe<Scalars['String']['input']>;
+  userGroupId?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type ShareElementsBatchMutation = { __typename?: 'Mutation', shareElementsBatch: { __typename?: 'ElementBatchSharingResult', targetError?: ElementBatchSharingTargetError | null, outcomes: Array<{ __typename?: 'ElementBatchSharingOutcome', elementId: number, status: ElementBatchSharingStatus, reason?: ElementBatchSharingReason | null }> } };
+
 export type ShareObjectMutationVariables = Exact<{
   objectId: Scalars['String']['input'];
   objectType: ObjectType;
@@ -7706,6 +7755,7 @@ export const ScheduleLiveQuizDocument = {"kind":"Document","definitions":[{"kind
 export const SendMagicLinkDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SendMagicLink"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"usernameOrEmail"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"sendMagicLink"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"usernameOrEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"usernameOrEmail"}}}]}]}}]} as unknown as DocumentNode<SendMagicLinkMutation, SendMagicLinkMutationVariables>;
 export const SetActivityReviewStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SetActivityReviewStatus"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ActivityType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"isReviewed"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"setActivityReviewStatus"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"activityId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}}},{"kind":"Argument","name":{"kind":"Name","value":"activityType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityType"}}},{"kind":"Argument","name":{"kind":"Name","value":"isReviewed"},"value":{"kind":"Variable","name":{"kind":"Name","value":"isReviewed"}}}]}]}}]} as unknown as DocumentNode<SetActivityReviewStatusMutation, SetActivityReviewStatusMutationVariables>;
 export const SetLiveQuizPinDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"SetLiveQuizPin"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"liveQuizId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pin"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"setLiveQuizPin"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"liveQuizId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"liveQuizId"}}},{"kind":"Argument","name":{"kind":"Name","value":"pin"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pin"}}}]}]}}]} as unknown as DocumentNode<SetLiveQuizPinMutation, SetLiveQuizPinMutationVariables>;
+export const ShareElementsBatchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ShareElementsBatch"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"elementIds"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortnameOrEmail"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userGroupId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"shareElementsBatch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"elementIds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"elementIds"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}}},{"kind":"Argument","name":{"kind":"Name","value":"shortnameOrEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortnameOrEmail"}}},{"kind":"Argument","name":{"kind":"Name","value":"userGroupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userGroupId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"targetError"}},{"kind":"Field","name":{"kind":"Name","value":"outcomes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"reason"}}]}}]}}]}}]} as unknown as DocumentNode<ShareElementsBatchMutation, ShareElementsBatchMutationVariables>;
 export const ShareObjectDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ShareObject"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ObjectType"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionLevel"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"shortnameOrEmail"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userGroupId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"propagation"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"shareObject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"objectId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectId"}}},{"kind":"Argument","name":{"kind":"Name","value":"objectType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"objectType"}}},{"kind":"Argument","name":{"kind":"Name","value":"permissionLevel"},"value":{"kind":"Variable","name":{"kind":"Name","value":"permissionLevel"}}},{"kind":"Argument","name":{"kind":"Name","value":"shortnameOrEmail"},"value":{"kind":"Variable","name":{"kind":"Name","value":"shortnameOrEmail"}}},{"kind":"Argument","name":{"kind":"Name","value":"userGroupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userGroupId"}}},{"kind":"Argument","name":{"kind":"Name","value":"propagation"},"value":{"kind":"Variable","name":{"kind":"Name","value":"propagation"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"PermissionInfoData"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"PermissionInfoData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"PermissionInfo"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"permissionId"}},{"kind":"Field","name":{"kind":"Name","value":"userId"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}},{"kind":"Field","name":{"kind":"Name","value":"userGroupName"}},{"kind":"Field","name":{"kind":"Name","value":"permissionLevel"}},{"kind":"Field","name":{"kind":"Name","value":"propagation"}},{"kind":"Field","name":{"kind":"Name","value":"isOwn"}}]}}]} as unknown as DocumentNode<ShareObjectMutation, ShareObjectMutationVariables>;
 export const StartGroupActivityDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"StartGroupActivity"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"startGroupActivity"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"activityId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}}},{"kind":"Argument","name":{"kind":"Name","value":"groupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]} as unknown as DocumentNode<StartGroupActivityMutation, StartGroupActivityMutationVariables>;
 export const StartLiveQuizDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"StartLiveQuiz"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"startLiveQuiz"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]} as unknown as DocumentNode<StartLiveQuizMutation, StartLiveQuizMutationVariables>;
