@@ -31,6 +31,13 @@ Existing credential snapshots remain immutable. Identity-bearing snapshots move
 to a new version rather than changing the meaning of previously issued
 credentials.
 
+Version-one credentials retain the normalized accepted invitation email and
+its invitation provenance. A private version-two credential instead uses the
+participant's current normalized edu-ID email together with the course-scoped
+edu-ID claims; it never relabels an invitation email as edu-ID-sourced. If that
+email is unavailable or invalid, version-two issuance fails closed rather than
+falling back across identity sources.
+
 The feature does not persist the approved affiliation claims in the
 assessment-participation identity because no assessment consumer needs them;
 the existing account and affiliation flows continue to own those values.

@@ -256,6 +256,11 @@ describe('assessment report credential services', () => {
 
   it('stores assessment edu-ID identity in the private report and exposes only the name publicly', async () => {
     const fixture = await createFixture()
+    const eduIdEmail = `${TEST_PREFIX}-eduid-${fixture.participant.id}@example.net`
+    await prisma.participant.update({
+      where: { id: fixture.participant.id },
+      data: { email: eduIdEmail },
+    })
     await prisma.participation.update({
       where: {
         courseId_participantId: {
@@ -277,13 +282,14 @@ describe('assessment report credential services', () => {
     expect(issued.snapshot).toMatchObject({
       version: 2,
       subject: {
-        email: fixture.invitationEmail,
+        email: eduIdEmail,
         givenName: 'Ada',
         surname: 'Lovelace',
         matriculationNumber: '00-123-456',
         source: 'SWITCH_EDUID',
       },
     })
+    expect(issued.snapshot.subject.email).not.toBe(fixture.invitationEmail)
 
     const publicRecord = await getPublicAssessmentReport(
       { token: issued.token },
@@ -297,6 +303,32 @@ describe('assessment report credential services', () => {
     expect(publicRecord?.snapshot?.subject).not.toHaveProperty(
       'matriculationNumber'
     )
+  })
+
+  it('does not relabel the invitation email when edu-ID identity has no participant email', async () => {
+    const fixture = await createFixture()
+    await prisma.participant.update({
+      where: { id: fixture.participant.id },
+      data: { email: null },
+    })
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+      },
+      data: { assessmentGivenName: 'Ada' },
+    })
+
+    await expect(
+      issueAssessmentReport(
+        { courseId: fixture.course.id },
+        fixture.participantCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'ASSESSMENT_REPORT_IDENTITY_UNVERIFIED' },
+    })
   })
 
   it('uses the earliest accepted valid invitation deterministically', async () => {

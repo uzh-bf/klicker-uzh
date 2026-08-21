@@ -84,7 +84,8 @@ function getParticipantConfig({
                   swissEduIDLinkedAffiliationUniqueID: { essential: false },
                 },
               },
-              scope: 'openid email https://login.eduid.ch/authz/User.Read',
+              scope:
+                'openid email profile https://login.eduid.ch/authz/User.Read',
             },
           },
           idToken: true,

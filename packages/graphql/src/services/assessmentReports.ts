@@ -4,7 +4,11 @@ import type {
   AssessmentReportSnapshot,
   AssessmentReportSnapshotV1,
 } from '@klicker-uzh/types'
-import { normalizeEmail, type PrismaTransactionClient } from '@klicker-uzh/util'
+import {
+  normalizeEmail,
+  normalizeIdentityValue,
+  type PrismaTransactionClient,
+} from '@klicker-uzh/util'
 import { createHash, randomBytes } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
@@ -472,13 +476,10 @@ export async function buildAssessmentReportSnapshot({
       assessmentGivenName: true,
       assessmentSurname: true,
       assessmentMatriculationNumber: true,
+      participant: { select: { email: true } },
     },
   })
 
-  const normalizeIdentityValue = (value: string | null) => {
-    const normalized = value?.trim() ?? ''
-    return normalized.length > 0 ? normalized : null
-  }
   const givenName = normalizeIdentityValue(
     participation?.assessmentGivenName ?? null
   )
@@ -493,10 +494,17 @@ export async function buildAssessmentReportSnapshot({
     return snapshotV1
   }
 
+  const subjectEmail = normalizeEmail(
+    participation?.participant.email ?? undefined
+  )
+  if (!subjectEmail) {
+    throw assessmentReportError('ASSESSMENT_REPORT_IDENTITY_UNVERIFIED')
+  }
+
   const parsed = assessmentReportSnapshotV2Schema.safeParse({
     version: 2,
     subject: {
-      email: snapshotV1.subject.email,
+      email: subjectEmail,
       givenName,
       surname,
       matriculationNumber,
