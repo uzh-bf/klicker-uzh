@@ -426,3 +426,11 @@ Gate 3 ruling and names every still-withheld action.
   the existing explicit-target read/write test. The broader helper split and a
   second-class concurrency variant were declined as unnecessary; the shared
   guard and column-scoped update already have direct evidence.
+- 2026-08-22: S2 adds the owner-gated lecturer settings section with exactly
+  two responsive usage lanes, localized metrics and status text, and one
+  authorized two-budget editor backed only by the generated GraphQL documents.
+  The manage package typecheck passes in the Node 24 DevPod. Its production
+  build also passes when invoked with Next.js's expected production
+  environment; the first attempt inherited the running development environment
+  and stopped at duplicate generated `.next` type declarations before
+  compilation.

@@ -1909,6 +1909,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
+      advancedBudgetLabel: 'Budget für das fortgeschrittene Modell',
+      advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
+      baseBudgetLabel: 'Budget für das Basismodell',
+      baseModelUsage: 'Nutzung des Basismodells',
+      chatAccountUsageDescription:
+        'Prüfen Sie die Nutzung des aktuellen Monats und legen Sie für jede Nutzungsklasse ein Credit-Budget fest.',
+      chatAccountUsageTitle: 'Chatbot-Nutzung',
+      chatAccountUsageUnauthorized:
+        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet. Budgets können nicht geändert werden.',
+      saveUsageBudgets: 'Budgets speichern',
+      usageBudget: 'Budget',
+      usageBudgetEditor: 'Monatliche Budgets',
+      usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
+      usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
+      usageBudgetInvalid: 'Geben Sie eine gültige Zahl ein.',
+      usageBudgetNonNegative: 'Das Budget darf nicht negativ sein.',
+      usageBudgetPrecision: 'Verwenden Sie höchstens sechs Dezimalstellen.',
+      usageBudgetRequired: 'Geben Sie ein Budget ein.',
+      usageBudgetTooLarge:
+        'Das Budget muss kleiner als 1 Billion Credits sein.',
+      usageBudgetsSaved: 'Die Budgets wurden gespeichert.',
+      usageBudgetsSaveError:
+        'Die Budgets konnten nicht gespeichert werden. Versuchen Sie es erneut.',
+      usageCredits: 'Credits',
+      usageRemaining: 'Verbleibend',
+      usageResetDate: 'Zurücksetzung',
+      usageUsed: 'Verwendet',
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
       storedEmail: 'E-Mail (Edu-ID)',

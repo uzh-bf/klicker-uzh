@@ -157,6 +157,14 @@ concurrent `usedCredits`; a disabled account cannot write. The API deliberately
 has no cost-center, contribution, provider, settlement, participant-credit, or
 per-model fields.
 
+The lecturer settings page requests this overview only after confirming an
+`ACCOUNT_OWNER` login scope. It shows two responsive lanes labelled “Base model
+usage” and “Advanced model usage” in English, with fixed German equivalents.
+Each lane names its budget, used and remaining credits, reset date, and empty or
+exhausted status. Authorized owners can update both monthly budgets together;
+disabled accounts see the live authorization state without an editor. The
+surface does not expose internal funding or provider details.
+
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
 `deploy/env-uzh-{stg,prd}/values.yaml`: SIMPLE = `gpt-5.6-luna-medium`, MEDIUM
