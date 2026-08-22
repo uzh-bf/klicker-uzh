@@ -223,3 +223,25 @@ Unauthenticated and bad-token calls to either MCP service are refused, but by th
 The local LTI service fails to register its platform because no platform URL or client identifier is configured, so the guest launch path is not exercisable locally. This no longer blocks anything, since the guest security question was answered by reading the code path.
 
 Both MCP packages warn about Node 20 on every start, which A4 closes.
+
+## Progress
+
+### A5, first half — flags registered, surfaces gated (2026-08-23)
+
+Two flags, not one. The plan left the collapse question open; keeping both costs nothing, because a single targeting rule can serve two keys, and it buys a real operational split: `manage-assistant` covers the surface (the launcher in Manage, the `/manage` page in chat, `POST /api/manage/chat`), while `manage-assistant-mcp-tools` covers only whether that assistant receives the lecturer MCP tools and whether a proposal token is still redeemable. The tools can be withdrawn without taking the assistant down with them, which matters because the tools are the half that talks to a separate service.
+
+Both API gates evaluate server side, per request. A hidden launcher was never an authorization boundary, and chat's `/manage` page is directly reachable by URL whatever Manage renders.
+
+`NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED` is gone. It was never set in the staging or production image builds, so folding it in takes nothing dark that is visible today; the only environments that had it on were local development and the end-to-end suite.
+
+One addition the plan did not anticipate. Removing that variable would have broken `Y-manage-assistant.spec.ts`, which relied on it to compile the widget into the CI bundle, and would have left the enabled path unverifiable until GrowthBook exists. Both are answered by `FEATURE_FLAGS_FORCED_ON` and its public twin: they name registered flag keys to force on, and are honored only when the flag environment resolves to `development` or `test` **and** no SDK connection is configured. A value set on a staging or production build turns nothing on, which is asserted directly in the package tests.
+
+Publishing Catalyst as a targeting attribute needed two edits, not one — the attribute type and `sanitizeFeatureFlagAttributes`, which drops anything it does not explicitly whitelist. Missing the sanitizer would have failed silently in the dark direction: every A5 and A6 check would still pass and the rule would first fail at A7 enablement. There is now a test asserting `catalyst` survives sanitization and that a non-boolean value does not. Chat reads it from the session token's own claims, which already carry `catalystInstitutional` and `catalystIndividual`; Manage reads it from the `UserProfile` query it already issues.
+
+Verified locally in the browser as a signed-in lecturer, both directions. Flags off: no launcher in Manage, and chat's `/manage` answers with the application's not-found page. Flags forced on: the launcher appears and its panel renders the embedded assistant. The independent case — assistant up, tools withdrawn — is covered by unit tests but not exercised in a conversation, because local chat has no model key without the Infisical path; A6 staging inherits that check.
+
+Repository checks green: typecheck 27/27, Biome and Prettier clean, JavaScript lint 6/6, `syncpack` valid. The `@klicker-uzh/analytics` lint task fails in the container on a pandas build unrelated to this work.
+
+### Still open
+
+The four `NEXT_PUBLIC_GROWTHBOOK_*` repository variables do not exist yet — `gh variable list` returns none. Everything else in A0 needs the GrowthBook interface over Tailscale. The ordering constraint stands: the variables must be set before the release images are built, or the images carry no SDK connection and the flags cannot be turned on without a rebuild.
