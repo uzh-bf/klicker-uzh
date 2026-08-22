@@ -43,19 +43,46 @@ export const options = {
 }
 
 const rawBaseUrl = (__ENV.KLICKER_BASE_URL || '').trim()
-if (!rawBaseUrl || !/^https?:\/\//.test(rawBaseUrl)) {
+const baseUrlMatch = rawBaseUrl.match(/^(https?):\/\/([^/?#]+)\/?$/i)
+if (!baseUrlMatch) {
   throw new Error('KLICKER_BASE_URL must be an explicit http(s) URL')
 }
-const baseUrl = rawBaseUrl.replace(/\/+$/, '')
+const protocol = baseUrlMatch[1].toLowerCase()
+const authority = baseUrlMatch[2]
+if (authority.includes('@')) {
+  throw new Error(
+    'KLICKER_BASE_URL must be an origin without path or credentials'
+  )
+}
+const hostPortMatch = authority.startsWith('[')
+  ? authority.match(/^(\[[0-9a-f:.]+\])(?::([0-9]+))?$/i)
+  : authority.match(/^([^:]+)(?::([0-9]+))?$/)
+if (!hostPortMatch) {
+  throw new Error(
+    'KLICKER_BASE_URL must be an origin without path or credentials'
+  )
+}
+const normalizedHostname = hostPortMatch[1].toLowerCase().replace(/\.$/, '')
+const port = hostPortMatch[2] || ''
+const defaultPort = protocol === 'https' ? '443' : '80'
+const normalizedPort = port || defaultPort
+const baseUrl = `${protocol}://${normalizedHostname}${
+  port && port !== defaultPort ? `:${port}` : ''
+}`
 if (
-  baseUrl === 'https://chat.klicker.uzh.ch' &&
+  protocol === 'https' &&
+  normalizedHostname === 'chat.klicker.uzh.ch' &&
+  normalizedPort === '443' &&
   __ENV.KLICKER_ALLOW_PRODUCTION !== 'true'
 ) {
   throw new Error(
     'Set KLICKER_ALLOW_PRODUCTION=true for the production chat target'
   )
 }
-const chatbotIds = (__ENV.KLICKER_CHATBOT_IDS || '').split(',').filter(Boolean)
+const chatbotIds = (__ENV.KLICKER_CHATBOT_IDS || '')
+  .split(',')
+  .map((id) => id.trim())
+  .filter(Boolean)
 if (chatbotIds.length === 0) {
   throw new Error('Set KLICKER_CHATBOT_IDS as comma-separated UUIDs')
 }

@@ -15,20 +15,45 @@
 
 import { check } from 'k6'
 import { randomUUID } from 'k6/crypto'
+import exec from 'k6/execution'
 import http from 'k6/http'
 
-const token = __ENV.KLICKER_PARTICIPANT_TOKEN
+const token = (__ENV.KLICKER_PARTICIPANT_TOKEN || '').trim()
 if (!token || token.trim().length === 0) {
   throw new Error('KLICKER_PARTICIPANT_TOKEN is required for real chat turns')
 }
 
 const rawBaseUrl = (__ENV.KLICKER_BASE_URL || '').trim()
-if (!rawBaseUrl || !/^https?:\/\//.test(rawBaseUrl)) {
+const baseUrlMatch = rawBaseUrl.match(/^(https?):\/\/([^/?#]+)\/?$/i)
+if (!baseUrlMatch) {
   throw new Error('KLICKER_BASE_URL must be an explicit http(s) URL')
 }
-const baseUrl = rawBaseUrl.replace(/\/+$/, '')
+const protocol = baseUrlMatch[1].toLowerCase()
+const authority = baseUrlMatch[2]
+if (authority.includes('@')) {
+  throw new Error(
+    'KLICKER_BASE_URL must be an origin without path or credentials'
+  )
+}
+const hostPortMatch = authority.startsWith('[')
+  ? authority.match(/^(\[[0-9a-f:.]+\])(?::([0-9]+))?$/i)
+  : authority.match(/^([^:]+)(?::([0-9]+))?$/)
+if (!hostPortMatch) {
+  throw new Error(
+    'KLICKER_BASE_URL must be an origin without path or credentials'
+  )
+}
+const normalizedHostname = hostPortMatch[1].toLowerCase().replace(/\.$/, '')
+const port = hostPortMatch[2] || ''
+const defaultPort = protocol === 'https' ? '443' : '80'
+const normalizedPort = port || defaultPort
+const baseUrl = `${protocol}://${normalizedHostname}${
+  port && port !== defaultPort ? `:${port}` : ''
+}`
 if (
-  baseUrl === 'https://chat.klicker.uzh.ch' &&
+  protocol === 'https' &&
+  normalizedHostname === 'chat.klicker.uzh.ch' &&
+  normalizedPort === '443' &&
   __ENV.KLICKER_ALLOW_PRODUCTION !== 'true'
 ) {
   throw new Error(
@@ -40,12 +65,12 @@ if (__ENV.KLICKER_ALLOW_SIDE_EFFECTS !== 'true') {
     'Set KLICKER_ALLOW_SIDE_EFFECTS=true to acknowledge chat-turn writes and provider cost'
   )
 }
-const chatbotId = __ENV.KLICKER_CHATBOT_ID
+const chatbotId = (__ENV.KLICKER_CHATBOT_ID || '').trim()
 if (!chatbotId) {
   throw new Error('KLICKER_CHATBOT_ID is required')
 }
 
-const selectedModel = __ENV.KLICKER_SELECTED_MODEL
+const selectedModel = (__ENV.KLICKER_SELECTED_MODEL || '').trim()
 if (!selectedModel) {
   throw new Error(
     'KLICKER_SELECTED_MODEL is required (e.g. gpt-4o-mini or the model ID from credits)'
@@ -76,6 +101,13 @@ export const options = {
 }
 
 export default function () {
+  if (
+    !Number.isInteger(exec.scenario.iterationInTest) ||
+    exec.scenario.iterationInTest >= maxTurns
+  ) {
+    return
+  }
+
   const assistantMessageId = randomUUID()
   const payload = JSON.stringify({
     messages: [{ id: randomUUID(), role: 'user', content: question }],
