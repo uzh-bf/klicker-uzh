@@ -64,6 +64,7 @@ vapid:
   privateKey: ''
 
 global:
+  deploymentEnvironment: development
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''

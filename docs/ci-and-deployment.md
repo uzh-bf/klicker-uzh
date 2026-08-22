@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-04'
+timestamp: '2026-08-22'
 tags:
   - ci
   - deployment
@@ -37,6 +37,16 @@ Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile
 
 The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require both AMD and ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
 
+The same five images receive browser GrowthBook configuration at build time.
+Staging workflows use the repository variables
+`NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG` and
+`NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG`; production workflows use the matching
+`_PRD` names. These values are deliberately GitHub Actions variables rather than
+secrets because every `NEXT_PUBLIC_*` value is embedded in public browser
+assets. The Dockerfiles declare and export matching build arguments before the
+Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
+operator contract.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
@@ -47,7 +57,8 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 - **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating `v3` tag, so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
-- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names.
+- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY` for a future authenticated control-plane integration. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
+- **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 

@@ -314,7 +314,6 @@ export async function buildAssessmentReportSnapshotV1({
       participations: {
         some: {
           participantId,
-          isActive: true,
           participant: { isActive: true },
         },
       },
@@ -346,7 +345,7 @@ export async function buildAssessmentReportSnapshotV1({
   }
 
   const courseResults = await calculateAssessmentCourseScores(
-    { courseId, participantScope: 'ACTIVE' },
+    { courseId },
     { prisma }
   )
   const studentResults = courseResults?.studentResults.find(

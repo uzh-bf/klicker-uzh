@@ -1080,6 +1080,7 @@ type CourseStudentTimelineEntry {
 }
 
 type CourseSummary {
+  numOfDraftLiveQuizzes: Int!
   numOfGroupActivities: Int!
   numOfLeaderboardEntries: Int!
   numOfLiveQuizzes: Int!
@@ -1122,6 +1123,34 @@ type DerivedPermissionOriginInformation {
 }
 
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
+
+type ElementBatchSharingOutcome {
+  elementId: Int!
+  reason: ElementBatchSharingReason
+  status: ElementBatchSharingStatus!
+}
+
+enum ElementBatchSharingReason {
+  ELEMENT_NOT_FOUND_OR_DELETED
+  INSUFFICIENT_PERMISSION
+  SHARING_FAILED
+}
+
+type ElementBatchSharingResult {
+  outcomes: [ElementBatchSharingOutcome!]!
+  targetError: ElementBatchSharingTargetError
+}
+
+enum ElementBatchSharingStatus {
+  FAILED
+  SHARED
+  SKIPPED
+}
+
+enum ElementBatchSharingTargetError {
+  INVALID_OR_SELF_TARGET
+  USER_GROUP_UNAVAILABLE
+}
 
 type ElementBlock {
   elements: [ElementInstance!]
@@ -1893,7 +1922,7 @@ type Mutation {
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
-  deleteCourse(id: String!): Course
+  deleteCourse(deleteDraftActivities: Boolean, id: String!): Course
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
@@ -1979,6 +2008,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2539,7 +2569,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
+  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int, offset: Int, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User

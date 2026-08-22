@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-03'
+timestamp: '2026-08-06'
 tags:
   - architecture
 ---
@@ -33,7 +33,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `feature-flags` (typed GrowthBook contracts and browser/Node adapters), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
