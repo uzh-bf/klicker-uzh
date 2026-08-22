@@ -1657,7 +1657,9 @@ export async function runW5eTransaction(
 }
 
 if (process.argv[1]?.endsWith('w5e-prd-direct-chat.ts')) {
-  await runW5eTransaction().finally(async () => {
-    await prisma.$disconnect()
-  })
+  void runW5eTransaction()
+    .finally(() => prisma.$disconnect())
+    .catch(() => {
+      process.exitCode = 1
+    })
 }
