@@ -347,7 +347,7 @@ describe('Unit tests covering point corrections for instances', () => {
         basePoints: 0,
         correctnessPoints: 0,
         bonusPoints: 0,
-        correctionOnly: true,
+        response: { choices: [] },
         elementBlockExecution: 0,
         instance: { connect: { id: instanceId2 } },
         participant: { connect: { id: participant3.id } },
@@ -475,7 +475,7 @@ describe('Unit tests covering point corrections for instances', () => {
     })
     expect(legacyCorrection).not.toBeNull()
     expect(legacyResponse?.appliedCorrections).toHaveLength(1)
-    expect(legacyResponse?.correctnessPoints).toBe(50)
+    expect(legacyResponse?.correctnessPoints).toBe(100)
   })
 
   it('[Instance Point Updates] Verify that only course admins can modify points', async () => {
