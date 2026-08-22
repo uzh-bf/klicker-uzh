@@ -80,7 +80,7 @@ export function DictationSheet() {
             <Button
               data-cy="chat-dictation-download"
               onClick={() => {
-                if (isInstallError) {
+                if (isInstallError || status === 'needs-install') {
                   void installDictation()
                 } else {
                   void refreshCapability()
