@@ -31,6 +31,15 @@ Existing credential snapshots remain immutable. Identity-bearing snapshots move
 to a new version rather than changing the meaning of previously issued
 credentials.
 
+Both credential versions carry the normalized accepted course-invitation email
+as the subject address. That address is trustworthy for this purpose because an
+invitation is only ever auto-accepted against a verified SWITCH edu-ID linked
+affiliation address; the participant's own profile email is freely editable and
+is deliberately excluded from invitation matching, so it never reaches a
+credential. Version two adds the course-scoped edu-ID name and matriculation
+claims on top of that address. Issuance already fails closed when no accepted
+invitation email exists.
+
 The feature does not persist the approved affiliation claims in the
 assessment-participation identity because no assessment consumer needs them;
 the existing account and affiliation flows continue to own those values.

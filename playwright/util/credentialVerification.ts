@@ -19,7 +19,11 @@ import { getPrisma } from '../global-setup.js'
 import {
   ASSESSMENT_REPORT_COURSE_NAME,
   ASSESSMENT_REPORT_COURSE_REFERENCE,
+  ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
+  ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
+  ASSESSMENT_REPORT_EDUID_SURNAME,
   ASSESSMENT_REPORT_PARTICIPANT_IDS,
+  ASSESSMENT_REPORT_PROFILE_EMAIL,
   ASSESSMENT_REPORT_SUBJECT_EMAIL,
   ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS,
   COURSE_ID_ASSESSMENT_REPORT,
@@ -63,7 +67,10 @@ export async function seedAssessmentReportFixture() {
       return {
         participantId,
         username,
-        email: `${username}@example.org`,
+        email:
+          index === 0
+            ? ASSESSMENT_REPORT_PROFILE_EMAIL
+            : `${username}@example.org`,
         invitationEmail:
           index === 0
             ? ASSESSMENT_REPORT_SUBJECT_EMAIL
@@ -327,6 +334,41 @@ export async function resetAssessmentReportFixture() {
   await prisma.course.update({
     where: { id: COURSE_ID_ASSESSMENT_REPORT },
     data: { displayName: ASSESSMENT_REPORT_COURSE_NAME },
+  })
+  await prisma.participant.update({
+    where: { id: ASSESSMENT_REPORT_PARTICIPANT_IDS[0] },
+    data: { email: ASSESSMENT_REPORT_PROFILE_EMAIL },
+  })
+  await prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId: COURSE_ID_ASSESSMENT_REPORT,
+        participantId: ASSESSMENT_REPORT_PARTICIPANT_IDS[0]!,
+      },
+    },
+    data: {
+      assessmentGivenName: null,
+      assessmentSurname: null,
+      assessmentMatriculationNumber: null,
+    },
+  })
+}
+
+export async function enableAssessmentReportEduIdIdentity() {
+  const prisma = await getPrisma()
+  await prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId: COURSE_ID_ASSESSMENT_REPORT,
+        participantId: ASSESSMENT_REPORT_PARTICIPANT_IDS[0]!,
+      },
+    },
+    data: {
+      assessmentGivenName: ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
+      assessmentSurname: ASSESSMENT_REPORT_EDUID_SURNAME,
+      assessmentMatriculationNumber:
+        ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
+    },
   })
 }
 

@@ -256,6 +256,13 @@ describe('assessment report credential services', () => {
 
   it('stores assessment edu-ID identity in the private report and exposes only the name publicly', async () => {
     const fixture = await createFixture()
+    // A self-chosen profile email must never surface on the credential, so make it
+    // differ from the invitation address the report is expected to carry.
+    const profileEmail = `${TEST_PREFIX}-profile-${fixture.participant.id}@example.net`
+    await prisma.participant.update({
+      where: { id: fixture.participant.id },
+      data: { email: profileEmail },
+    })
     await prisma.participation.update({
       where: {
         courseId_participantId: {
@@ -284,6 +291,7 @@ describe('assessment report credential services', () => {
         source: 'SWITCH_EDUID',
       },
     })
+    expect(issued.snapshot.subject.email).not.toBe(profileEmail)
 
     const publicRecord = await getPublicAssessmentReport(
       { token: issued.token },

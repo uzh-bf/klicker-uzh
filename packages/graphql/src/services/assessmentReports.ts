@@ -4,7 +4,11 @@ import type {
   AssessmentReportSnapshot,
   AssessmentReportSnapshotV1,
 } from '@klicker-uzh/types'
-import { normalizeEmail, type PrismaTransactionClient } from '@klicker-uzh/util'
+import {
+  normalizeEmail,
+  normalizeIdentityValue,
+  type PrismaTransactionClient,
+} from '@klicker-uzh/util'
 import { createHash, randomBytes } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
@@ -475,10 +479,6 @@ export async function buildAssessmentReportSnapshot({
     },
   })
 
-  const normalizeIdentityValue = (value: string | null) => {
-    const normalized = value?.trim() ?? ''
-    return normalized.length > 0 ? normalized : null
-  }
   const givenName = normalizeIdentityValue(
     participation?.assessmentGivenName ?? null
   )
@@ -493,6 +493,10 @@ export async function buildAssessmentReportSnapshot({
     return snapshotV1
   }
 
+  // The subject email stays the accepted course-invitation address rather than
+  // Participant.email: invitations are only ever auto-accepted against a verified
+  // edu-ID linked affiliation address, while Participant.email is freely editable
+  // by the participant and therefore carries no edu-ID provenance.
   const parsed = assessmentReportSnapshotV2Schema.safeParse({
     version: 2,
     subject: {

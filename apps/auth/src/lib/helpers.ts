@@ -19,6 +19,7 @@ import type { Profile } from 'next-auth'
 import { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import { sendTeamsNotifications } from '@/lib/util'
+import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
 import {
   DEFAULT_LECTURER_HOSTS,
   DEFAULT_STUDENT_HOSTS,
@@ -366,39 +367,6 @@ async function createParticipantAffiliations(
     }
   }
   return [...processedAffiliations]
-}
-
-function normalizeEduIdClaim(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const normalized = value.trim()
-    return normalized.length > 0 ? normalized : null
-  }
-
-  if (Array.isArray(value) && value.length === 1) {
-    return normalizeEduIdClaim(value[0])
-  }
-
-  return null
-}
-
-async function updateAssessmentParticipantIdentity(
-  tx: PrismaTransactionClient,
-  participantId: string,
-  profile: ExtendedProfile
-) {
-  await tx.participation.updateMany({
-    where: {
-      participantId,
-      course: { isAssessmentEnabled: true },
-    },
-    data: {
-      assessmentGivenName: normalizeEduIdClaim(profile.given_name),
-      assessmentSurname: normalizeEduIdClaim(profile.family_name),
-      assessmentMatriculationNumber: normalizeEduIdClaim(
-        profile.swissEduPersonMatriculationNumber
-      ),
-    },
-  })
 }
 
 // Enhanced participant authentication helper function
