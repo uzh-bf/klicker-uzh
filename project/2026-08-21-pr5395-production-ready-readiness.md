@@ -4,8 +4,8 @@
 
 - Target: `rs/pr5395-production-ready`, dependent on PR #5395.
 - Parent head: `66f91ad4950421f411bf666d0f35b2ff09e000ea`.
-- Reviewed child head: `b6409723d5a2fb77e5d0a0fb1f897532b0d8c92f`.
-- Immutable review range: `feat/assessment-element-quiz-participants..b6409723d5a2fb77e5d0a0fb1f897532b0d8c92f`.
+- Reviewed child head: `936f00aa5e181718de9590bb99ce41552d005c66`.
+- Immutable review range: `feat/assessment-element-quiz-participants..936f00aa5e181718de9590bb99ce41552d005c66`.
 
 ## Verdict
 
@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | Production-readiness brief | `project/_local/reviews/2026-08-21-pr5395-production-ready-readiness-brief.md` | current-head brief updated |
 | Eight-dimension readiness wave | Config, data, deployment, resilience, observability, docs, performance, and UX reviews | completed; findings dispositioned below |
-| Simplifier | Configured simplifier provider could not read the encrypted task; native fallback requested | pending |
+| Simplifier | Exact-head native fallback simplifier review | completed; two safe reductions applied, one broader refactor deferred |
 | Integrated final review | Configured Sol final-reviewer gate | pending |
 | Security checks | Gitleaks, CodeQL, and CI security analysis on the pushed branch | CI rerun pending at this head |
 
@@ -29,6 +29,8 @@
 | Acceptance was backdated to HTTP receipt | Set `acceptedAt` inside the worker persistence transaction and keep `submittedAt` as receipt time. | `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:211-300`. |
 | Terminal validation errors looked like outages | Clear the pending marker and return stable `422 invalid_response`; reserve `503` for retryable processing failures. | `apps/hatchet-worker-response-processor/src/index.ts:54-68`; `apps/response-api/src/index.ts:505-523`. |
 | Deleted correction evidence remained referenced | Archive plan now records removal of the transient log and screenshots after durable conclusions were retained. | `project/plans_archive/PLAN-assessment-element-quiz-participants.md:242-292,378-382`. |
+| Correction transaction loaded unnecessary response JSON | Select only the response id and point fields used by the correction upsert. | `packages/graphql/src/services/courses.ts:1039-1055`. |
+| Redis aggregation type was checked twice for the vote marker | Let `addSet` own the hash-type check. | `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:909-915`. |
 
 ## Findings
 
@@ -48,7 +50,8 @@
 - The parent branch was refreshed from `origin/v3`; both parent and child conflict resolutions are pushed.
 - `pnpm run check:all` passed in the commit hooks for the two fix commits, and the repository build passed in the pre-push hooks.
 - Response API and response-processor type checks passed; response-state tests passed 6/6.
-- The pushed head is `b6409723d5a2fb77e5d0a0fb1f897532b0d8c92f`; GitHub CI has been requested for this exact head.
+- The pushed head is `936f00aa5e181718de9590bb99ce41552d005c66`; GitHub CI has been requested for this exact head.
+- The exact-head simplifier pass found no further correctness or readiness issues. It deferred only a larger typed-closure refactor for repeated correction arguments because it would widen stable transaction plumbing.
 - The correction logic and response workflow were reviewed across the eight readiness dimensions. No secrets, raw data, runtime credentials, staging, or production systems were accessed.
 
 ## Not checked
@@ -57,10 +60,10 @@
 - No migration target, backup/restore, mixed-version rollout, rollback, worker crash, Redis interruption, or autonomous replay was executed.
 - No load, latency, queue-drain, or capacity run was executed.
 - No browser run was needed for changed frontend code; the inherited assessment client still needs a current-head response-contract check.
-- CI, the fallback simplifier, and the configured Sol final-reviewer were not terminal at the time this report was written.
+- The final-head GitHub CI and configured Sol final-reviewer remain pending at the time this report was last updated.
 
 ## Handoffs
 
 - Migration parity, deployment ordering, schema readiness, backup/restore, live health, and rollback remain release-owner gates.
 - Recovery backlog and replay ownership remain open until an automatic drainer or runnable operator procedure exists.
-- The final Sol review must cover the immutable range above after CI reaches a terminal state; the configured simplifier provider needs a native fallback because its encrypted task could not be read.
+- The final Sol review must cover the immutable range above after CI reaches a terminal state. The configured simplifier provider could not read its encrypted task, so the native fallback result is recorded here.
