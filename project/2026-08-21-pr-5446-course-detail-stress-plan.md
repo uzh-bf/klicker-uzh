@@ -146,3 +146,86 @@ large, deterministic activity set for manual stress testing.
   and the follow-up push build completed all 23 tasks. The latest PR checks
   report syncpack passed; remaining checks are still running, while SonarCloud
   reports 5.7% duplicated new code against its 3% quality-gate limit.
+
+## Follow-up phase: extract the course duplication module
+
+### Research
+
+- The current branch is clean at `ff7321a5bccd2f3fc523d5705ddbe785625e0cba`,
+  35 commits ahead of and 0 behind `origin/v3` at `f58986faa8cfa4ff78d20a1ebeb1666473343d38`.
+- Duplication occupies `packages/graphql/src/services/courses.ts:2694-4218`
+  across Redis/Hatchet orchestration, permission checks, date shifting, and
+  transactional activity copying.
+- Its external callers are the mutation and query resolvers, the Hatchet
+  handler registration, and the date-shifting unit test. Existing duplication
+  browser coverage protects the copy, rollback, assessment, group-selection,
+  and permission behavior.
+- The activity manipulators do not import `courses.ts`, so a new module can
+  import `createCourse` one way without a cycle.
+
+### Problem
+
+`courses.ts` owns ordinary course operations and roughly 1,500 lines of
+duplication-specific orchestration and copying. That makes the duplication
+workflow harder to locate and review without creating a second deployable
+service.
+
+### Decision
+
+- Add the internal module
+  `packages/graphql/src/services/courseDuplication.ts`.
+- Move all duplication constants, types, Redis/Hatchet lifecycle, permission
+  checks, date helpers, activity-copy helpers, and `duplicateCourse` into it.
+- Keep `createCourse` and its standalone transaction in `courses.ts`; export
+  only the narrowed internal creation-argument type needed by the new module.
+- Rewire the GraphQL mutation/query resolvers, handler registry, and date test
+  to the new module. Keep the public GraphQL contract, generated files, task
+  types, context, manipulators, and transaction semantics unchanged.
+- Do not split orchestration from copying, add a generic activity adapter, add
+  a deployable service, add an ADR, or add a `docs/log` entry.
+
+### Risk
+
+- A partial move could change transaction scope, permission checks, date
+  shifting, error classification, lease handling, retry/idempotency behavior,
+  or stable job IDs.
+- Moving a large block may not reduce Sonar's duplicated-new-code metric;
+  that is a separate scope decision and does not justify a generic adapter.
+
+### Test portfolio
+
+| Consequential behavior | Obligation | Primary evidence |
+| --- | --- | --- |
+| Zurich calendar-day shifting | Extend existing | Focused `courseDuplicationDates.test.ts` after its import moves |
+| Resolver and worker wiring | No new test | GraphQL check/build and unchanged generated schema/operations |
+| Atomic copy and rollback | No new test | Existing Chromium duplication cases |
+| Assessment, groups, and permissions | No new test | Existing focused duplication cases |
+| Async retry/idempotency | No new test | Move-only diff inspection and existing completed-job verification |
+
+### Delegation map and slices
+
+- **S0 — plan amendment:** `main`; record this phase in this file, commit
+  `docs(project): plan course duplication module extraction`.
+- **S1 — module extraction and wiring:** `main` owns the cross-module seam;
+  mechanical edits may use one native executor only after S0. Acceptance is a
+  focused date test, GraphQL check/build, no generated-schema delta, and an
+  acyclic one-way import.
+- **S2 — source references and progress:** `main`; update only the exact
+  `docs/domain-model.md` and `docs/async-and-workers.md` ownership references,
+  with no runtime log. Acceptance is Markdown formatting and path readback.
+- **S3 — integrated gate:** `main`; run the existing Chromium duplication
+  cases, inspect the full diff, obtain simplifier and risk-selected slice
+  review for S1, then an integrated final review before publication.
+
+### Authority, terminal, and pause
+
+- The user authorized planning and execution against PR #5446. Local edits,
+  commits, normal push to `origin/fix/course-duplication-timeout`, and remote
+  SHA readback are in scope. Merge, deploy, production data changes, runtime
+  deletion, and force-push remain withheld.
+- Terminal state is the reviewed, verified extraction committed and pushed to
+  the named PR branch, with the retained DevPod left running for manual use.
+- Pause before publication if the move requires a public contract, context,
+  Hatchet task/type, manipulator, sharing, deployment, import-cycle, or
+  behavior change; if focused duplication verification cannot run, record the
+  delivery gap instead of claiming readiness.
