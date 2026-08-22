@@ -317,8 +317,7 @@ export function CourseDuplicationProvider({
   >({})
   const [storageInitialized, setStorageInitialized] = useState(false)
   const handledTerminalJobIdsRef = useRef(new Set<string>())
-  const isMountedRef = useRef(false)
-  const pollInFlightRef = useRef(false)
+  const jobIdsRef = useRef<string[]>([])
 
   useEffect(() => {
     setJobIds(readStoredCourseDuplicationJobIds())
@@ -330,6 +329,10 @@ export function CourseDuplicationProvider({
 
     writeStoredCourseDuplicationJobIds(jobIds)
   }, [jobIds, storageInitialized])
+
+  useEffect(() => {
+    jobIdsRef.current = jobIds
+  }, [jobIds])
 
   const addJobId = useCallback((jobId: string) => {
     setJobIds((currentIds) =>
@@ -419,51 +422,47 @@ export function CourseDuplicationProvider({
   )
 
   useEffect(() => {
-    isMountedRef.current = true
+    if (!storageInitialized) return
 
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!storageInitialized || jobIds.length === 0) return
+    let cancelled = false
+    let timeoutId: number | undefined
 
     const poll = async () => {
-      if (!isMountedRef.current || pollInFlightRef.current) return
+      if (cancelled) return
 
-      const requestedJobIds = [...jobIds]
-      pollInFlightRef.current = true
+      const requestedJobIds = [...jobIdsRef.current]
 
       try {
-        const result = await fetchStatuses({
-          variables: { ids: requestedJobIds },
-        })
+        if (requestedJobIds.length > 0) {
+          const result = await fetchStatuses({
+            variables: { ids: requestedJobIds },
+          })
+          const statuses = result.data?.courseDuplicationStatuses
 
-        if (isMountedRef.current) {
-          handleStatusResponse(
-            result.data?.courseDuplicationStatuses ?? [],
-            requestedJobIds
-          )
+          if (!cancelled && statuses) {
+            handleStatusResponse(statuses, requestedJobIds)
+          }
         }
       } catch (error) {
-        if (isMountedRef.current) {
+        if (!cancelled) {
           console.error('Failed to poll course duplication status', error)
         }
       } finally {
-        pollInFlightRef.current = false
+        if (!cancelled) {
+          timeoutId = window.setTimeout(() => {
+            void poll()
+          }, COURSE_DUPLICATION_POLL_INTERVAL)
+        }
       }
     }
 
     void poll()
-    const intervalId = window.setInterval(() => {
-      void poll()
-    }, COURSE_DUPLICATION_POLL_INTERVAL)
 
     return () => {
-      window.clearInterval(intervalId)
+      cancelled = true
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
     }
-  }, [fetchStatuses, handleStatusResponse, jobIds, storageInitialized])
+  }, [fetchStatuses, handleStatusResponse, storageInitialized])
 
   const activeJobs = useMemo(
     () =>
