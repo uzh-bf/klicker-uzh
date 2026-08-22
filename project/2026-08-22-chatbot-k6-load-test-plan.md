@@ -107,5 +107,6 @@ lecturer-demo work.
   request was made.
 - S3: complete — final-reviewer approved exact range
   `f58986faa8cfa4ff78d20a1ebeb1666473343d38..3196907e3` with no findings.
-- S4: in progress — push and open the reviewed draft PR; merge remains
-  withheld.
+- S4: complete — branch head `86f51239b` is pushed as draft PR #5478 against
+  `v3`; host read-back confirms the four expected paths and 15 branch commits.
+  Required CI checks are pending; merge remains withheld.
