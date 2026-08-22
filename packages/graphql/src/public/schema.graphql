@@ -303,8 +303,6 @@ type AssessmentParticipantInvitationImportResult {
   email: String!
   error: String
   errorCode: String
-  invitationId: Int
-  participantId: String
   status: AssessmentParticipantInvitationImportStatus!
 }
 

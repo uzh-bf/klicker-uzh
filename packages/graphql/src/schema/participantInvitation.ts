@@ -77,8 +77,6 @@ export const AssessmentParticipantInvitationImportResult =
       status: t.expose('status', {
         type: AssessmentParticipantInvitationImportStatus,
       }),
-      invitationId: t.exposeInt('invitationId', { nullable: true }),
-      participantId: t.exposeString('participantId', { nullable: true }),
       errorCode: t.exposeString('errorCode', { nullable: true }),
       error: t.exposeString('error', { nullable: true }),
     }),

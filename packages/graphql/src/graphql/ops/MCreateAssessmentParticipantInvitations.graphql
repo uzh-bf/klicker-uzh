@@ -14,8 +14,6 @@ mutation CreateAssessmentParticipantInvitations(
     results {
       email
       status
-      invitationId
-      participantId
       errorCode
       error
     }
