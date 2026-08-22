@@ -287,6 +287,15 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   `local_committed` terminal condition with the E2E hydration limitation
   recorded above. Push, CI, PR, merge, deployment, and positive real-device
   proof remain withheld.
+- 2026-08-22 — After the user asked for a ready PR, the branch was pushed and
+  PR #5477 opened. Two CI rounds failed on Playwright shard 5 only. Trace and
+  video analysis showed every authenticated chat-page test hanging on the
+  `chat-loading` skeleton because the navigation helper only waited for
+  domcontentloaded, plus one real interaction bug: a successful install left
+  the sheet open over the composer, blocking input. The sheet now auto-closes
+  when status becomes ready, and `visitChat` waits for the loading skeleton to
+  clear (commit 563aa44f9). Chat typecheck passes locally; exact-head CI run
+  32592267409 is pending at time of writing. Merge remains withheld.
 
 ## Pause and finish boundary
 
