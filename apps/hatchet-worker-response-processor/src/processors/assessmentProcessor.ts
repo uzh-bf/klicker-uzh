@@ -211,6 +211,7 @@ export async function persistAssessmentResponse({
           },
         },
       })
+      const acceptanceTimestamp = new Date()
 
       const state = getResponseState(existingResponse, correlationId)
       if (state === 'duplicate' && existingResponse) {
@@ -243,7 +244,7 @@ export async function persistAssessmentResponse({
         const createdResponse = await tx.liveQuizResponse.create({
           data: {
             ...responseData,
-            acceptedAt: new Date(responseTimestamp),
+            acceptedAt: acceptanceTimestamp,
             correlationId,
             basePoints: responsePoints.basePoints,
             correctnessPoints: responsePoints.correctnessPoints,
@@ -295,8 +296,7 @@ export async function persistAssessmentResponse({
           correctnessPoints: replayedCorrections.points.correctnessPoints,
           bonusPoints: replayedCorrections.points.bonusPoints,
           correctionOnly: false,
-          acceptedAt:
-            existingResponse.acceptedAt ?? new Date(responseTimestamp),
+          acceptedAt: existingResponse.acceptedAt ?? acceptanceTimestamp,
           correlationId: existingResponse.correlationId ?? correlationId,
         },
       })

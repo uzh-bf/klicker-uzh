@@ -495,10 +495,12 @@ async function handleAddAssessmentResponse(
   console.log('Starting assessment response workflow with payload', message)
 
   try {
-    const workflowResult = (await hatchetClient.runAndWait(
+    const workflowOutput = (await hatchetClient.runAndWait(
       'process-assessment-response-workflow',
       message
-    )) as { status?: number; error?: string }
+    )) as Record<string, unknown>
+    const workflowResult = (workflowOutput['process-assessment-response'] ??
+      workflowOutput) as { status?: number; error?: string }
 
     if (workflowResult?.status === 409) {
       return sendJson(req, res, 409, {
