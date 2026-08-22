@@ -1712,7 +1712,9 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
-  test('Zero credits shows "used up all credits" message', async ({ page }) => {
+  test('Zero credits preserves the selected class and shows availability', async ({
+    page,
+  }) => {
     await setCredits(participantId, 0, 100)
     await visitChat(page)
 
@@ -1725,9 +1727,9 @@ test.describe('Chatbot Settings Panel', () => {
     )
 
     await openSettings(page)
-    await expect(page.getByTestId('chat-model-selection')).toContainText(
-      'GPT-4.1 Mini'
-    )
+    const modelSection = page.getByTestId('chat-model-selection')
+    await expect(modelSection).toContainText('GPT-4.1')
+    await expect(modelSection).not.toContainText('GPT-4.1 Mini')
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
