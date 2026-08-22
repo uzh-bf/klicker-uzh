@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
+import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
@@ -32,6 +33,33 @@ if (!process.env.APP_ORIGIN_AUTH) {
   console.error('APP_ORIGIN_AUTH is required but not defined')
   process.exit(1)
 }
+
+// SWITCH edu-ID decides per attribute whether a claim is released in the ID token
+// or only from the UserInfo endpoint, and that choice lives in the AAI Resource
+// Registry rather than in this repository. NextAuth builds the profile purely from
+// the ID token whenever a provider sets `idToken`, so any attribute that edu-ID
+// only exposes through UserInfo would silently arrive as undefined.
+//
+// Setting EDUID_FETCH_USERINFO=true additionally calls the UserInfo endpoint and
+// merges its claims over the ID token ones, which makes the Resource Registry's
+// ID-token settings irrelevant. The ID token is still validated either way. The
+// flag defaults to off so the deployed behaviour only changes when it is set.
+const eduIdUserinfo: UserinfoEndpointHandler | undefined =
+  process.env.EDUID_FETCH_USERINFO === 'true'
+    ? {
+        async request({ tokens, client }) {
+          // NextAuth types `tokens` with its own loose TokenSet, but what arrives
+          // here is the openid-client TokenSet holding the validated ID token.
+          const oidcTokens = tokens as unknown as Parameters<
+            typeof client.userinfo
+          >[0] & { claims: () => Record<string, unknown> }
+          return {
+            ...oidcTokens.claims(),
+            ...(await client.userinfo(oidcTokens)),
+          }
+        },
+      }
+    : undefined
 
 const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   secret: process.env.APP_SECRET,
@@ -96,6 +124,7 @@ function getParticipantConfig({
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
@@ -288,6 +317,7 @@ function getLecturerConfig({
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
