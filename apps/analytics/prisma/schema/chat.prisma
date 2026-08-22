@@ -28,6 +28,15 @@ enum ChatbotStatus {
   REJECTED
 }
 
+// Usage class of a serving model: BASE for the platform's standard models,
+// ADVANCED for reasoning/large-tier models. Auto is always ADVANCED (see
+// CONTEXT.md and docs/adr/0020-two-tier-chatbot-approval.md); the class is
+// server-derived, never user-selected text.
+enum ChatUsageClass {
+  BASE
+  ADVANCED
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -52,6 +61,28 @@ model ChatUsageCredits {
   updatedAt DateTime @updatedAt
 
   @@id([participantId, chatbotId])
+}
+
+// Account-scoped monthly usage budget and used-credit counter for one usage
+// class. One row per owner account + class + Europe/Zurich calendar month;
+// monthStart is the first calendar day of the month (DATE). Rows are created
+// on demand; a missing row projects to budget 0 / used 0. Counters start at
+// zero at migration cutover and reset at the start of each month. See
+// CONTEXT.md and docs/adr/0020-two-tier-chatbot-approval.md.
+model ChatAccountUsage {
+  monthStart DateTime @db.Date // first calendar day of the month (Europe/Zurich)
+
+  budgetCredits Decimal @default(0) @db.Decimal(18, 6)
+  usedCredits   Decimal @default(0) @db.Decimal(18, 6)
+
+  owner   User          @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String        @db.Uuid
+  usageClass ChatUsageClass
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([ownerId, usageClass, monthStart])
 }
 
 model ChatThread {

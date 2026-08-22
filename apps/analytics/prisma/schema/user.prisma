@@ -133,6 +133,7 @@ model User {
   competencyTrees            CompetencyTree[]
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]
+  chatAccountUsage           ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
