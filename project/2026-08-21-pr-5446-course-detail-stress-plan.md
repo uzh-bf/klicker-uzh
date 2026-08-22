@@ -243,3 +243,15 @@ service.
   reviews. S2 is the exact documentation-reference update in the working
   tree; S3 remains the integrated duplication verification, final review,
   and normal push to the named PR branch.
+- The S1 fallback Sol reviews completed with no correctness, authorization,
+  transaction, retry, or idempotency findings. They requested only restoration
+  of the stable-job-ID comment and removal of unused Day.js plugin setup;
+  correction commit `deb1bc736` contains both. The configured Gemini review
+  routes were unavailable because their effort configuration was rejected, so
+  the trusted Sol fallback was used and recorded.
+- The focused GraphQL check and six date tests passed after `deb1bc736`.
+  A second host build emitted the bundle but did not terminate cleanly and was
+  stopped; the earlier full GraphQL build at `78d8d92d7` exited 0. Generated
+  newline-only changes were restored. The canonical Chromium duplication run
+  is delivery-pending because `devrouter exec` still cannot acquire the
+  workspace lifecycle lock.
