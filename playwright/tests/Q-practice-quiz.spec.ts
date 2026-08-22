@@ -49,10 +49,7 @@ import {
 
 function readFixture(name: string) {
   return JSON.parse(
-    fs.readFileSync(
-      new URL(`../../cypress/cypress/fixtures/${name}`, import.meta.url),
-      'utf8'
-    )
+    fs.readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')
   )
 }
 

@@ -1,3 +1,5 @@
+import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+import { type ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
@@ -5,30 +7,48 @@ import {
   getChatModelRegistry,
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
+import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import {
+  getParentSpanContext,
+  getTraceIdForMessage,
+  isAiTelemetryEnabled,
+} from '@/src/lib/server/langfuseTracing'
+import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
+import {
+  REQUIRED_MCP_UNAVAILABLE_CODE,
+  RequiredMCPUnavailableError,
+} from '@/src/lib/server/mcpRuntimePolicy'
+import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import {
+  buildAbortedAssistantContent,
+  mapAssistantStepContent,
+} from '@/src/lib/server/persistedAssistantContent'
+import { CreditsService } from '@/src/services/credits'
+import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { ThreadService } from '@/src/services/threads'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
 import {
+  consumeStream,
   generateText,
-  stepCountIs,
+  isStepCount,
   streamText,
   type ModelMessage,
   type StepResult,
+  type ToolSet,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
-import { type ReasoningEffort } from 'src/lib/config/reasoning'
-import { CreditsService } from 'src/services/credits'
-import { DisclaimersService } from 'src/services/disclaimers'
-import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'
@@ -59,43 +79,8 @@ if (!process.env.OPENAI_API_KEY) {
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
-const isAiTelemetryEnabled = process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
-
-/**
- * Custom fetch that patches Responses API request body to add
- * `status: "completed"` and `type: "message"` on assistant messages.
- * AI SDK omits these fields but some strict Responses API providers require them.
- *
- * Workaround for: https://github.com/vercel/ai/issues/12754
- */
-const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
-  if (init?.body && typeof init.body === 'string') {
-    try {
-      const body = JSON.parse(init.body)
-      if (Array.isArray(body.input)) {
-        body.input = body.input.map((item: Record<string, unknown>) =>
-          item.role === 'assistant'
-            ? { ...item, type: 'message', status: 'completed' }
-            : item
-        )
-        init = { ...init, body: JSON.stringify(body) }
-      }
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        // not JSON, pass through
-      } else {
-        console.error(
-          '[responsesApiFetch] Unexpected error patching body:',
-          error
-        )
-        throw error
-      }
-    }
-  }
-  return globalThis.fetch(input, init)
-}
 
 type ModelRouting = {
   source: 'custom' | 'default'
@@ -107,7 +92,7 @@ function getOpenAIModel(
   provider: ReturnType<typeof createOpenAI>,
   modelConfig: ChatModelConfig
 ) {
-  return modelConfig.supportsReasoning
+  return modelConfig.usesResponsesApi
     ? provider.responses(modelConfig.deploymentId)
     : provider.chat(modelConfig.deploymentId)
 }
@@ -151,7 +136,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
         createOpenAI({
           baseURL: baseUrl,
           apiKey: apiKey || 'no-key',
-          fetch: responsesApiFetch,
+          fetch: createOpenAIFetch('custom'),
         }),
         modelConfig
       ),
@@ -171,7 +156,7 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
       createOpenAI({
         baseURL: process.env.OPENAI_BASE_URL,
         apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: responsesApiFetch,
+        fetch: createOpenAIFetch('default'),
       }),
       modelConfig
     ),
@@ -182,6 +167,12 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
+}
+
+function getSupportedChatModes(systemPrompts: unknown): Set<string> {
+  const configuredModes = asObject(systemPrompts)
+  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
+  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -565,94 +556,6 @@ const joinReasoningFromSteps = (
     )
     .join('\n\n')
 
-type PersistedAssistantContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'reasoning'; text: string }
-  | {
-      type: 'tool-call'
-      toolCallId: string
-      toolName: string
-      args?: unknown
-      result?: unknown
-    }
-
-const mapAssistantStepContent = (
-  steps: Array<{ content?: unknown[] }> | undefined
-): PersistedAssistantContentPart[] => {
-  const content: PersistedAssistantContentPart[] = []
-  const toolCallIndexById = new Map<string, number>()
-
-  for (const step of steps ?? []) {
-    if (!Array.isArray(step.content)) continue
-
-    for (const rawPart of step.content) {
-      if (!rawPart || typeof rawPart !== 'object') continue
-
-      const part = rawPart as {
-        type?: unknown
-        text?: unknown
-        toolCallId?: unknown
-        toolName?: unknown
-        input?: unknown
-        output?: unknown
-      }
-
-      if (part.type === 'text' && typeof part.text === 'string') {
-        content.push({ type: 'text', text: part.text })
-        continue
-      }
-
-      if (part.type === 'reasoning' && typeof part.text === 'string') {
-        content.push({ type: 'reasoning', text: part.text })
-        continue
-      }
-
-      if (
-        part.type === 'tool-call' &&
-        typeof part.toolCallId === 'string' &&
-        typeof part.toolName === 'string'
-      ) {
-        const nextToolCall = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: part.input,
-        }
-        content.push(nextToolCall)
-        toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
-        continue
-      }
-
-      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
-        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
-        if (toolCallIndex !== undefined) {
-          const existingToolCall = content[toolCallIndex]
-          if (existingToolCall?.type === 'tool-call') {
-            existingToolCall.result = part.output
-          }
-          continue
-        }
-
-        if (typeof part.toolName !== 'string') {
-          continue
-        }
-
-        const toolCallWithResult = {
-          type: 'tool-call' as const,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          args: {},
-          result: part.output,
-        }
-        content.push(toolCallWithResult)
-        toolCallIndexById.set(part.toolCallId, content.length - 1)
-      }
-    }
-  }
-
-  return content
-}
-
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
@@ -794,7 +697,6 @@ export async function POST(
       include: {
         mcpConfigurations: {
           where: {
-            chatMode: selectedMode,
             isEnabled: true,
           },
           include: {
@@ -819,28 +721,6 @@ export async function POST(
       } else {
         systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
       }
-
-      // Prepare MCP server configurations
-      mcpServersWithConfigs =
-        chatbot.mcpConfigurations
-          ?.filter((config) => config.mcpServer?.isActive === true)
-          ?.map((config) => ({
-            server: {
-              id: config.mcpServer.id,
-              name: config.mcpServer.name,
-              url: config.mcpServer.url,
-              authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret ?? '',
-              parameters: config.mcpServer.parameters,
-              passChatbotId: config.mcpServer.passChatbotId,
-              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
-            },
-            config: {
-              allowedTools: config.allowedTools as string[] | undefined,
-              parameters: config.parameters,
-              priority: config.priority,
-            },
-          })) || []
     }
   } catch (error) {
     console.error('Failed to fetch chatbot configuration:', {
@@ -848,6 +728,87 @@ export async function POST(
       error,
     })
   }
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+    return NextResponse.json(
+      { error: `Unsupported chat mode: ${selectedMode}` },
+      { status: 400 }
+    )
+  }
+
+  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
+  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
+    (config) => config.chatMode === selectedMode
+  )
+  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
+    (config) => asObject(config.parameters)?.required === true
+  )
+  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
+    return NextResponse.json(
+      {
+        error: 'Required MCP tool unavailable',
+        code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      },
+      { status: 503 }
+    )
+  }
+
+  mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
+    server: {
+      id: config.mcpServer.id,
+      name: config.mcpServer.name,
+      url: config.mcpServer.url,
+      authType: config.mcpServer.authType,
+      authSecret: config.mcpServer.authSecret ?? '',
+      parameters: config.mcpServer.parameters,
+      isActive: config.mcpServer.isActive,
+      passChatbotId: config.mcpServer.passChatbotId,
+      chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
+    },
+    config: {
+      allowedTools: config.allowedTools as string[] | undefined,
+      parameters: config.parameters,
+      priority: config.priority,
+    },
+  }))
+
+  // MCP availability is checked before creating a thread or doing any model,
+  // credit, image-generation, or message-persistence work.
+  let mcpTools: ToolSet
+  try {
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
+
+  const toolNames = Object.keys(mcpTools || {})
+
+  // Append the citation contract only when a doc_query-style RAG tool is
+  // actually available; mutating `systemPrompt` here (rather than deriving a
+  // separate `instructions` variable) keeps the `systemPromptLength` /
+  // `systemPromptHash` telemetry below truthful to what is actually sent to
+  // the model. The language-style contract applies unconditionally: stored
+  // lecturer prompts replace DEFAULT_PROMPT entirely, so Swiss High German
+  // orthography must be enforced here, not in the default prompt text.
+  systemPrompt = withLanguageStyleContract(
+    withCitationContract(systemPrompt, toolNames)
+  )
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -871,20 +832,15 @@ export async function POST(
   // track partial content for cancelled streams
   let partialContent = ''
   let partialReasoningContent = ''
+  let currentStepContent: Array<
+    { type: 'text'; text: string } | { type: 'reasoning'; text: string }
+  > = []
   let assistantReasoningContent: string | null = null
 
   const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
   }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-  const toolNames = Object.keys(mcpTools || {})
-
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
-  }
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -963,6 +919,17 @@ export async function POST(
       : undefined
 
   const { model, routing } = getModel(chatbot, selectedModelConfig)
+  const promptCacheRequest =
+    routing.source === 'default'
+      ? await buildPromptCacheRequest({
+          deploymentId: selectedModelConfig.deploymentId,
+          transport: selectedModelConfig.usesResponsesApi
+            ? 'responses'
+            : 'chat',
+          instructions: systemPrompt,
+          tools: mcpTools,
+        })
+      : null
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1266,228 +1233,217 @@ export async function POST(
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
-  const result = streamText({
-    model,
-    maxOutputTokens,
-    experimental_telemetry: { isEnabled: isAiTelemetryEnabled },
-    providerOptions: {
-      openai: {
-        ...(selectedModelConfig.supportsReasoning && {
-          store: getOpenAIResponsesStore(),
-        }),
-        ...(providerReasoningEffort && {
-          reasoningEffort: providerReasoningEffort,
-          reasoningSummary: 'auto',
-        }),
+  // Langfuse v4 addresses traces by OTel trace id, so the id is derived from the
+  // assistant message id here and re-derived when a rating comes in later.
+  const traceId = isAiTelemetryEnabled
+    ? await getTraceIdForMessage(assistantMessageId)
+    : null
+
+  const startStream = () =>
+    streamText({
+      model,
+      maxOutputTokens,
+      telemetry: { isEnabled: isAiTelemetryEnabled },
+      providerOptions: {
+        openai: {
+          ...(promptCacheRequest
+            ? { promptCacheKey: promptCacheRequest.promptCacheKey }
+            : {}),
+          ...(selectedModelConfig.usesResponsesApi && {
+            store: getOpenAIResponsesStore(),
+          }),
+          ...(providerReasoningEffort && {
+            reasoningEffort: providerReasoningEffort,
+            reasoningSummary: 'auto',
+          }),
+        },
       },
-    },
-    messages: modelMessages as ModelMessage[],
-    tools: mcpTools,
-    toolChoice: 'auto',
-    stopWhen: stepCountIs(5),
-    system: systemPrompt,
+      messages: modelMessages as ModelMessage[],
+      tools: promptCacheRequest?.tools ?? mcpTools,
+      toolOrder: promptCacheRequest?.toolOrder,
+      toolChoice: 'auto',
+      stopWhen: isStepCount(5),
+      instructions: systemPrompt,
 
-    abortSignal: req.signal,
+      abortSignal: req.signal,
 
-    onChunk: ({ chunk }) => {
-      if (!hasLoggedFirstChunk) {
-        hasLoggedFirstChunk = true
-        logEvent('stream.chunk.first', {
-          firstChunkType: chunk.type,
-          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        })
-      }
-
-      if (chunk.type === 'text-delta' && chunk.text) {
-        partialContent += chunk.text
-      }
-      if (chunk.type === 'reasoning-delta' && chunk.text) {
-        partialReasoningContent += chunk.text
-      }
-    },
-
-    onFinish: async (result) => {
-      sawFinish = true
-      const creditsUsed = result.totalUsage
-        ? calcCost(
-            selectedModelConfig.cost,
-            result.totalUsage.inputTokens || 0,
-            result.totalUsage.outputTokens || 0
-          ) + imageDescriptionCost
-        : null
-      const finishedReasoningContent =
-        normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
-        normalizeReasoningContent(
-          result.reasoningText ||
-            result.steps
-              .map((step) => step.reasoningText || '')
-              .filter((value) => value.length > 0)
-              .join('\n\n')
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = finishedReasoningContent
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(result)?.providerMetadata
-      )
-      const finishOutputTokens = result.totalUsage?.outputTokens || 0
-
-      logEvent('stream.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        usage: result.totalUsage
-          ? {
-              inputTokens: result.totalUsage.inputTokens || 0,
-              outputTokens: result.totalUsage.outputTokens || 0,
-              totalTokens: result.totalUsage.totalTokens || 0,
-            }
-          : null,
-        creditsUsed,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? finishOutputTokens >= providerReasoningTokens
-            : null,
-        stepsCount: result.steps?.length ?? 0,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-        hadPriorError: Boolean(firstError),
-        hadAbort: sawAbort,
-      })
-
-      // save assistant response to database
-      if (
-        currentThreadId &&
-        owningThread &&
-        result.steps &&
-        result.steps.length > 0
-      ) {
-        try {
-          const content = mapAssistantStepContent(result.steps)
-          // save assistant message to db
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: finishedReasoningContent,
-            creditsUsed,
-          }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content,
-              ...metadata,
-            },
+      onChunk: ({ chunk }) => {
+        if (!hasLoggedFirstChunk) {
+          hasLoggedFirstChunk = true
+          logEvent('stream.chunk.first', {
+            firstChunkType: chunk.type,
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
           })
+        }
 
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
+        if (chunk.type === 'text-delta' && chunk.text) {
+          partialContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'text') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({ type: 'text', text: chunk.text })
+          }
+        }
+        if (chunk.type === 'reasoning-delta' && chunk.text) {
+          partialReasoningContent += chunk.text
+          const previous = currentStepContent.at(-1)
+          if (previous?.type === 'reasoning') {
+            previous.text += chunk.text
+          } else {
+            currentStepContent.push({
+              type: 'reasoning',
+              text: chunk.text,
             })
-
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.assistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
-                }
-              )
-            } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: content,
-                  ...metadata,
-                },
-              })
-            }
           }
-
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
-          })
-        } catch (error) {
-          console.error('Failed to save assistant message:', {
-            requestId,
-            phase: 'persist.assistantMessage',
-            error,
-          })
         }
-      } else if (currentThreadId && !owningThread) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
-            requestId,
-            phase: 'persist.assistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
-          }
+      },
+
+      onEnd: async (result) => {
+        sawFinish = true
+        // ai@7 still flushes onEnd after an abort once at least one step
+        // completed. onAbort already persisted the partial answer and charged
+        // the per-step cost, so continuing here would overwrite it with
+        // completed-steps-only content and re-run the credit deduction.
+        if (sawAbort) {
+          logEvent('stream.finish', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            stepsCount: result.steps?.length ?? 0,
+            hadPriorError: Boolean(firstError),
+            hadAbort: true,
+            skippedAfterAbort: true,
+            // Keep the log shape stable for operators filtering on this
+            // field; null means not-applicable on a cancelled turn.
+            reasoningTokensIncludedInOutput: null,
+          })
+          return
+        }
+        const creditsUsed = result.usage
+          ? calcCost(
+              selectedModelConfig.cost,
+              result.usage.inputTokens || 0,
+              result.usage.outputTokens || 0
+            ) + imageDescriptionCost
+          : null
+        const finishedReasoningContent =
+          normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
+          normalizeReasoningContent(
+            result.reasoningText ||
+              result.steps
+                .map((step) => step.reasoningText || '')
+                .filter((value) => value.length > 0)
+                .join('\n\n')
+          ) ??
+          normalizeReasoningContent(partialReasoningContent)
+        assistantReasoningContent = finishedReasoningContent
+        const providerReasoningTokens = extractReasoningTokens(
+          asObject(result)?.providerMetadata
         )
-      }
+        const finishOutputTokens = result.usage?.outputTokens || 0
 
-      // deduct credits
-      if (creditsUsed !== null) {
-        try {
-          await CreditsService.decrementCredits(
-            participantId,
-            chatbotId,
-            creditsUsed
-          )
-        } catch (error) {
-          console.error('Failed to deduct credits:', {
-            requestId,
-            phase: 'credits.decrement',
-            error,
-          })
-        }
-      }
-
-      if (!firstError && !sawAbort) {
-        emitFinalOnce('success', {
+        logEvent('stream.finish', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          usage: result.totalUsage
+          usage: result.usage
             ? {
-                inputTokens: result.totalUsage.inputTokens || 0,
-                outputTokens: result.totalUsage.outputTokens || 0,
-                totalTokens: result.totalUsage.totalTokens || 0,
+                inputTokens: result.usage.inputTokens || 0,
+                outputTokens: result.usage.outputTokens || 0,
+                totalTokens: result.usage.totalTokens || 0,
               }
             : null,
+          creditsUsed,
+          reasoningTokens: providerReasoningTokens,
+          reasoningTokensIncludedInOutput:
+            providerReasoningTokens !== null
+              ? finishOutputTokens >= providerReasoningTokens
+              : null,
           stepsCount: result.steps?.length ?? 0,
+          partialTextLength: partialContent.length,
+          partialReasoningLength: partialReasoningContent.length,
+          hadPriorError: Boolean(firstError),
+          hadAbort: sawAbort,
         })
-      }
-    },
 
-    onAbort: async (steps) => {
-      sawAbort = true
-      let creditsUsed: number | null = null
-      if (steps && Array.isArray(steps.steps)) {
-        let totalCost = 0
-        let hasUsage = false
-        const costBase = selectedModelConfig.cost
+        // save assistant response to database
+        if (
+          currentThreadId &&
+          owningThread &&
+          result.steps &&
+          result.steps.length > 0
+        ) {
+          try {
+            const content = mapAssistantStepContent(result.steps)
+            // save assistant message to db
+            const metadata = {
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              reasoningEffort: appliedReasoningEffort,
+              reasoningContent: finishedReasoningContent,
+              creditsUsed,
+            }
+            const updated = await prisma.chatMessage.updateMany({
+              where: { id: assistantMessageId, threadId: currentThreadId },
+              data: {
+                content,
+                ...metadata,
+              },
+            })
 
-        for (const step of steps.steps) {
-          if (step.usage) {
-            hasUsage = true
-            totalCost += calcCost(
-              costBase,
-              step.usage.inputTokens || 0,
-              step.usage.outputTokens || 0
-            )
+            if (updated.count === 0) {
+              const existingMessage = await prisma.chatMessage.findUnique({
+                where: { id: assistantMessageId },
+                select: { id: true },
+              })
+
+              if (existingMessage) {
+                console.warn(
+                  'Skipping assistant message update: message exists outside current thread',
+                  {
+                    requestId,
+                    phase: 'persist.assistantMessage',
+                    messageId: assistantMessageId,
+                    threadId: currentThreadId,
+                  }
+                )
+              } else {
+                await prisma.chatMessage.create({
+                  data: {
+                    id: assistantMessageId,
+                    threadId: currentThreadId,
+                    parentId: userMessageId,
+                    role: 'assistant',
+                    content: content,
+                    ...metadata,
+                  },
+                })
+              }
+            }
+
+            // update thread's timestamp
+            await prisma.chatThread.update({
+              where: { id: currentThreadId },
+              data: { updatedAt: new Date() },
+            })
+          } catch (error) {
+            console.error('Failed to save assistant message:', {
+              requestId,
+              phase: 'persist.assistantMessage',
+              error,
+            })
           }
+        } else if (currentThreadId && !owningThread) {
+          console.warn(
+            'Skipping assistant message save: thread ownership mismatch',
+            {
+              requestId,
+              phase: 'persist.assistantMessage',
+              messageId: assistantMessageId,
+              threadId: currentThreadId,
+            }
+          )
         }
 
-        if (hasUsage) {
-          creditsUsed = totalCost + imageDescriptionCost
-        }
-
-        if (creditsUsed !== null && creditsUsed > 0) {
+        // deduct credits
+        if (creditsUsed !== null) {
           try {
             await CreditsService.decrementCredits(
               participantId,
@@ -1502,188 +1458,230 @@ export async function POST(
             })
           }
         }
-      }
 
-      const abortedReasoningContent =
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps) ? joinReasoningFromSteps(steps.steps) : ''
-        ) ??
-        normalizeReasoningContent(
-          Array.isArray(steps?.steps)
-            ? steps.steps
-                .map((step) => step.reasoningText || '')
-                .filter((value) => value.length > 0)
-                .join('\n\n')
-            : ''
-        ) ??
-        normalizeReasoningContent(partialReasoningContent)
-      assistantReasoningContent = abortedReasoningContent
-
-      logEvent('stream.abort', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
-        creditsUsed,
-        partialTextLength: partialContent.length,
-        partialReasoningLength: partialReasoningContent.length,
-      })
-
-      // save partial message
-      if (
-        currentThreadId &&
-        owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        try {
-          const partialAssistantContent: PersistedAssistantContentPart[] = []
-          if (partialContent.trim()) {
-            partialAssistantContent.push({ type: 'text', text: partialContent })
-          }
-          if (abortedReasoningContent) {
-            partialAssistantContent.push({
-              type: 'reasoning',
-              text: abortedReasoningContent,
-            })
-          }
-
-          const metadata = {
-            chatMode: selectedMode,
-            modelId: selectedModelConfig.id,
-            reasoningEffort: appliedReasoningEffort,
-            reasoningContent: abortedReasoningContent,
-            creditsUsed,
-          }
-          const updated = await prisma.chatMessage.updateMany({
-            where: { id: assistantMessageId, threadId: currentThreadId },
-            data: {
-              content: partialAssistantContent,
-              ...metadata,
-            },
-          })
-
-          if (updated.count === 0) {
-            const existingMessage = await prisma.chatMessage.findUnique({
-              where: { id: assistantMessageId },
-              select: { id: true },
-            })
-
-            if (existingMessage) {
-              console.warn(
-                'Skipping assistant message update: message exists outside current thread',
-                {
-                  requestId,
-                  phase: 'persist.partialAssistantMessage',
-                  messageId: assistantMessageId,
-                  threadId: currentThreadId,
+        if (!firstError) {
+          emitFinalOnce('success', {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            usage: result.usage
+              ? {
+                  inputTokens: result.usage.inputTokens || 0,
+                  outputTokens: result.usage.outputTokens || 0,
+                  totalTokens: result.usage.totalTokens || 0,
                 }
+              : null,
+            stepsCount: result.steps?.length ?? 0,
+          })
+        }
+      },
+
+      onAbort: async (steps) => {
+        sawAbort = true
+        let creditsUsed: number | null = null
+        if (steps && Array.isArray(steps.steps)) {
+          let totalCost = 0
+          let hasUsage = false
+          const costBase = selectedModelConfig.cost
+
+          for (const step of steps.steps) {
+            if (step.usage) {
+              hasUsage = true
+              totalCost += calcCost(
+                costBase,
+                step.usage.inputTokens || 0,
+                step.usage.outputTokens || 0
               )
-            } else {
-              await prisma.chatMessage.create({
-                data: {
-                  id: assistantMessageId,
-                  threadId: currentThreadId,
-                  parentId: userMessageId,
-                  role: 'assistant',
-                  content: partialAssistantContent,
-                  ...metadata,
-                },
+            }
+          }
+
+          if (hasUsage) {
+            creditsUsed = totalCost + imageDescriptionCost
+          }
+
+          if (creditsUsed !== null && creditsUsed > 0) {
+            try {
+              await CreditsService.decrementCredits(
+                participantId,
+                chatbotId,
+                creditsUsed
+              )
+            } catch (error) {
+              console.error('Failed to deduct credits:', {
+                requestId,
+                phase: 'credits.decrement',
+                error,
               })
             }
           }
-
-          // update thread's timestamp
-          await prisma.chatThread.update({
-            where: { id: currentThreadId },
-            data: { updatedAt: new Date() },
-          })
-        } catch (error) {
-          console.error('Failed to save partial message:', {
-            requestId,
-            phase: 'persist.partialAssistantMessage',
-            error,
-          })
         }
-      } else if (
-        currentThreadId &&
-        !owningThread &&
-        (partialContent.trim() || abortedReasoningContent)
-      ) {
-        console.warn(
-          'Skipping assistant message save: thread ownership mismatch',
-          {
-            requestId,
-            phase: 'persist.partialAssistantMessage',
-            messageId: assistantMessageId,
-            threadId: currentThreadId,
-          }
+
+        const abortedAssistantContent = buildAbortedAssistantContent(
+          Array.isArray(steps?.steps) ? steps.steps : undefined,
+          currentStepContent
         )
-      }
+        const abortedReasoningContent = normalizeReasoningContent(
+          abortedAssistantContent
+            .flatMap((part) => (part.type === 'reasoning' ? [part.text] : []))
+            .join('\n\n')
+        )
+        assistantReasoningContent = abortedReasoningContent
 
-      emitFinalOnce('aborted', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
-      })
-    },
-
-    onStepFinish: async (step) => {
-      const diagnostics = collectStepToolDiagnostics(step)
-      const toolCallNames = Array.from(
-        new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-      )
-      const toolCallsCount = diagnostics.length
-      const providerReasoningTokens = extractReasoningTokens(
-        asObject(step)?.providerMetadata
-      )
-      const stepOutputTokens = step.usage?.outputTokens || 0
-      logEvent('stream.step.finish', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        finishReason: step.finishReason,
-        warningsCount: step.warnings?.length ?? 0,
-        usage: step.usage
-          ? {
-              inputTokens: step.usage.inputTokens || 0,
-              outputTokens: step.usage.outputTokens || 0,
-              totalTokens: step.usage.totalTokens || 0,
-            }
-          : null,
-        reasoningTokens: providerReasoningTokens,
-        reasoningTokensIncludedInOutput:
-          providerReasoningTokens !== null
-            ? stepOutputTokens >= providerReasoningTokens
-            : null,
-        toolCallsCount,
-        toolCallNames,
-        toolDiagnostics: diagnostics,
-      })
-    },
-
-    onError: async (error) => {
-      const serializedError = serializeStreamError(error)
-      firstError = firstError ?? serializedError
-      const classification = classifyStreamError(serializedError)
-
-      logEvent(
-        'stream.error',
-        {
+        logEvent('stream.abort', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-          ...serializedError,
+          stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+          creditsUsed,
+          partialTextLength: partialContent.length,
+          partialReasoningLength: partialReasoningContent.length,
+        })
+
+        // save partial message (always non-empty: `buildAbortedAssistantContent`
+        // closes every aborted turn with the `chat-stopped` marker part)
+        if (currentThreadId && owningThread) {
+          try {
+            const metadata = {
+              chatMode: selectedMode,
+              modelId: selectedModelConfig.id,
+              reasoningEffort: appliedReasoningEffort,
+              reasoningContent: abortedReasoningContent,
+              creditsUsed,
+            }
+            const updated = await prisma.chatMessage.updateMany({
+              where: { id: assistantMessageId, threadId: currentThreadId },
+              data: {
+                content: abortedAssistantContent,
+                ...metadata,
+              },
+            })
+
+            if (updated.count === 0) {
+              const existingMessage = await prisma.chatMessage.findUnique({
+                where: { id: assistantMessageId },
+                select: { id: true },
+              })
+
+              if (existingMessage) {
+                console.warn(
+                  'Skipping assistant message update: message exists outside current thread',
+                  {
+                    requestId,
+                    phase: 'persist.partialAssistantMessage',
+                    messageId: assistantMessageId,
+                    threadId: currentThreadId,
+                  }
+                )
+              } else {
+                await prisma.chatMessage.create({
+                  data: {
+                    id: assistantMessageId,
+                    threadId: currentThreadId,
+                    parentId: userMessageId,
+                    role: 'assistant',
+                    content: abortedAssistantContent,
+                    ...metadata,
+                  },
+                })
+              }
+            }
+
+            // update thread's timestamp
+            await prisma.chatThread.update({
+              where: { id: currentThreadId },
+              data: { updatedAt: new Date() },
+            })
+          } catch (error) {
+            console.error('Failed to save partial message:', {
+              requestId,
+              phase: 'persist.partialAssistantMessage',
+              error,
+            })
+          }
+        } else if (currentThreadId && !owningThread) {
+          console.warn(
+            'Skipping assistant message save: thread ownership mismatch',
+            {
+              requestId,
+              phase: 'persist.partialAssistantMessage',
+              messageId: assistantMessageId,
+              threadId: currentThreadId,
+            }
+          )
+        }
+
+        emitFinalOnce('aborted', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+        })
+      },
+
+      onStepEnd: async (step) => {
+        currentStepContent = []
+        const diagnostics = collectStepToolDiagnostics(step)
+        const toolCallNames = Array.from(
+          new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
+        )
+        const toolCallsCount = diagnostics.length
+        const providerReasoningTokens = extractReasoningTokens(
+          asObject(step)?.providerMetadata
+        )
+        const stepOutputTokens = step.usage?.outputTokens || 0
+        logEvent('stream.step.finish', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          finishReason: step.finishReason,
+          warningsCount: step.warnings?.length ?? 0,
+          usage: step.usage
+            ? {
+                inputTokens: step.usage.inputTokens || 0,
+                outputTokens: step.usage.outputTokens || 0,
+                totalTokens: step.usage.totalTokens || 0,
+              }
+            : null,
+          reasoningTokens: providerReasoningTokens,
+          reasoningTokensIncludedInOutput:
+            providerReasoningTokens !== null
+              ? stepOutputTokens >= providerReasoningTokens
+              : null,
+          toolCallsCount,
+          toolCallNames,
+          toolDiagnostics: diagnostics,
+        })
+      },
+
+      onError: async (error) => {
+        const serializedError = serializeStreamError(error)
+        firstError = firstError ?? serializedError
+        const classification = classifyStreamError(serializedError)
+
+        logEvent(
+          'stream.error',
+          {
+            elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+            ...serializedError,
+            classification: classification.classification,
+            retryable: classification.retryable,
+            suggestedAction: classification.suggestedAction,
+          },
+          'error'
+        )
+
+        console.error('Error during streaming response:', {
+          requestId,
+          error: serializedError,
+        })
+
+        emitFinalOnce('error', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
           classification: classification.classification,
-          retryable: classification.retryable,
-          suggestedAction: classification.suggestedAction,
-        },
-        'error'
-      )
+        })
+      },
+    })
 
-      console.error('Error during streaming response:', {
-        requestId,
-        error: serializedError,
+  // The wrapper span only exists to put the derived trace id on the context the
+  // AI SDK reads when it opens its own spans; it is created and closed around
+  // the synchronous streamText call, while the spans it parents keep streaming.
+  const result = traceId
+    ? startActiveObservation('chat.stream', startStream, {
+        parentSpanContext: getParentSpanContext(traceId),
       })
-
-      emitFinalOnce('error', {
-        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
-        classification: classification.classification,
-      })
-    },
-  })
+    : startStream()
 
   logEvent('response.stream.created', {
     stage: 'response-object-created',
@@ -1692,6 +1690,7 @@ export async function POST(
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
+    consumeSseStream: consumeStream,
     onError: (error) => {
       const serializedError = serializeStreamError(error)
       const classification = classifyStreamError(serializedError)

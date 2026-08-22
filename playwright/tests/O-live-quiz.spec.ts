@@ -53,10 +53,7 @@ import {
 
 function readFixture(name: string) {
   return JSON.parse(
-    fs.readFileSync(
-      new URL(`../../cypress/cypress/fixtures/${name}`, import.meta.url),
-      'utf8'
-    )
+    fs.readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')
   )
 }
 
@@ -174,7 +171,9 @@ async function openNextBlockFromCockpit(page: Page) {
   await expect(nextBlock).toBeVisible({ timeout: 30000 })
   await expect(nextBlock).toBeEnabled()
   await nextBlock.click()
-  await expect(nextBlock).toBeVisible({ timeout: 30000 })
+  await expect(page.getByTestId('evaluation-results-cockpit')).toBeVisible({
+    timeout: 30000,
+  })
 }
 
 async function visitEvaluationFromCockpit(page: Page) {
@@ -1554,6 +1553,9 @@ test.describe.serial('Different live-quiz workflows', () => {
     await expectByAssertion(
       page.getByTestId('abort-live-quiz-cockpit'),
       'exist'
+    )
+    await expect(page.getByTestId('live-quiz-display-name')).toContainText(
+      data.protected.gamifiedCourse.liveQuiz
     )
     await page.getByTestId('next-block-timeline').click()
     await page.waitForTimeout(500)
@@ -6608,7 +6610,6 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page
       .getByTestId(`live-quiz-cockpit-${data.liveQuizWordCloud.name}`)
       .click()
-    await openNextBlockFromCockpit(page)
     await visitEvaluationFromCockpit(page)
     await selectWordCloudChart(page)
 

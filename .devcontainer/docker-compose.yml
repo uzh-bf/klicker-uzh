@@ -1,0 +1,150 @@
+# Self-contained dev stack for every routed app plus the two Hatchet workers.
+# Intentionally does NOT extend the root docker-compose.yml (which carries
+# the legacy per-repo Traefik + the `full`-profile prebuilt images). A single compose
+# project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
+#
+# The primary checkout adds the localhost overlay through `devrouter ensure`:
+# - postgres on db.klicker.localhost -> host port 5432
+# - mailhog UI -> host port 8025
+# - hatchet dashboard -> host port 8888
+# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+#
+# Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
+# routes, and the same-path Git common-directory mount.
+services:
+  # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: klicker-prod
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U klicker-prod -d klicker-prod']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      default: {}
+      devnet: {}
+    volumes:
+      # init.sql creates shadow + lti + qa + hatchet DBs and roles.
+      - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+
+  # --- redis: live-quiz exec, assessment exec, page cache + pub/sub ---
+  # All three listen on the in-network port 6379; the app reaches them by the
+  # distinct compose DNS names (redis_exec / redis_assessment / redis_cache).
+  redis_exec:
+    image: redis:7
+    networks: [default]
+  redis_assessment:
+    image: redis:7
+    networks: [default]
+  redis_cache:
+    image: redis:7
+    networks: [default]
+
+  # --- fake SMTP for dev email ---
+  mailhog:
+    image: mailhog/mailhog:latest
+    networks: [default]
+
+  # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
+  # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose
+  # name so the issued client token advertises a container-reachable endpoint. ---
+  hatchet:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+    environment:
+      DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
+      SERVER_AUTH_COOKIE_DOMAIN: localhost
+      SERVER_AUTH_COOKIE_INSECURE: 't'
+      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+      SERVER_GRPC_INSECURE: 't'
+      SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+      SERVER_GRPC_PORT: '7077'
+      SERVER_URL: http://hatchet:8888
+      SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+      SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+    volumes:
+      - hatchet_lite_config:/config
+    networks: [default]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true # tini PID1 reaps the dev servers' zombie children (GOTCHAS #10)
+    env_file:
+      - devcontainer.env
+    environment:
+      - WORKSPACE=${WORKSPACE:-}
+    extra_hosts:
+      - 'api.klicker.localhost:host-gateway'
+      - 'auth.klicker.localhost:host-gateway'
+      - 'pwa.klicker.localhost:host-gateway'
+      - 'manage.klicker.localhost:host-gateway'
+      - 'control.klicker.localhost:host-gateway'
+      - 'olat-api.klicker.localhost:host-gateway'
+      - 'response-api.klicker.localhost:host-gateway'
+      - 'lti.klicker.localhost:host-gateway'
+      - 'chat.klicker.localhost:host-gateway'
+    networks:
+      default: {}
+      devnet: {}
+    volumes:
+      - ..:/workspaces/klicker-uzh:cached
+      # Named volume shadows host node_modules so Linux-native binaries (Prisma
+      # engines, esbuild, sharp) aren't clobbered. pnpm hoists natives into the
+      # ROOT node_modules/.pnpm, so the single root volume covers the monorepo.
+      # (GOTCHAS #6)
+      - node_modules_root:/workspaces/klicker-uzh/node_modules
+      # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
+      - hatchet_lite_config:/config:ro
+      # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
+      - '${DEVROUTER_MKCERT_CAROOT:-./certs}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
+    command: sleep infinity
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- LiteLLM for Chat (Tier 3) ---
+  litellm:
+    image: ghcr.io/berriai/litellm-database:v1.96.2@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
+    volumes:
+      - ../util/litellm/config.yaml:/app/config.yaml:ro
+    command:
+      - --config=/app/config.yaml
+      - --port=4000
+    networks:
+      default: {}
+    environment:
+      # Supplied by the user in their local env or .devcontainer.env to enable chat
+      - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
+      - UPSTREAM_OPENAI_BASE_URL=${UPSTREAM_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LITELLM_LOG=INFO
+      # Responses API callers opt into a visible reasoning summary while each
+      # routed alias keeps its own fixed reasoning effort.
+      - LITELLM_REASONING_AUTO_SUMMARY=true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pgdata:
+  node_modules_root:
+  hatchet_lite_config:
+
+networks:
+  devnet:
+    external: true

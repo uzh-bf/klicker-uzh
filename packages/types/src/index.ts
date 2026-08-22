@@ -13,6 +13,7 @@ import type {
 } from '@klicker-uzh/prisma/client'
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './assessmentReport.js'
 export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----
@@ -62,6 +63,7 @@ export enum SharingType {
 export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
+  randomSelection?: number | null
   elements: ElementInstanceInput[]
 }
 

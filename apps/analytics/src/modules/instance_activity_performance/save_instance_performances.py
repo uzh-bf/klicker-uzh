@@ -1,6 +1,4 @@
-def save_instance_performances(
-    db, df_instance_performance, course_id, total_only=False
-):
+def save_instance_performances(db, df_instance_performance, course_id, total_only=False):
     for _, row in df_instance_performance.iterrows():
         # extract values from dataframe
         values = {

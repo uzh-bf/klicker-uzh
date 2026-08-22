@@ -10,6 +10,10 @@ src/data/exported_questions.json
 .env
 
 mockExam.ts
+*.xlsx
+*.csv
+*_data.json
+*dump*.json
 
 src/data/data/*.xml
 

@@ -44,6 +44,7 @@ The KlickerUZH project is publicly managed and documented in this repository. A 
 The following resources might be of special interest to you:
 
 - [User Documentation](https://www.klicker.uzh.ch/getting_started/welcome)
+- [Engineering Wiki](docs/) (agent-facing, for working on this codebase)
 - [Frequently Asked Questions](https://www.klicker.uzh.ch/faq)
 - [Community and Discussions](https://community.klicker.uzh.ch/)
 - [Roadmap](https://klicker-uzh.feedbear.com)
@@ -60,5 +61,4 @@ We welcome any contributions to the KlickerUZH project. Before considering any c
 
 The KlickerUZH and all of its subprojects are licensed under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.de.html).
 
-[![klicker-uzh](https://img.shields.io/endpoint?url=https://cloud.cypress.io/badge/simple/y436dx/v3&style=for-the-badge&logo=cypress)](https://cloud.cypress.io/projects/y436dx/runs)
 [![Coverage Status](https://coveralls.io/repos/github/uzh-bf/klicker-uzh/badge.svg?branch=v3)](https://coveralls.io/github/uzh-bf/klicker-uzh?branch=v3)

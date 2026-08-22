@@ -1,6 +1,5 @@
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import DynamicMarkdown from './DynamicMarkdown'
 
 interface QuestionExplanationProps {

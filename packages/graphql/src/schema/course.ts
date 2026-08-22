@@ -252,6 +252,7 @@ export const CourseLeaderboard = CourseLeaderboardRef.implement({
 export interface ICourseSummary {
   numOfParticipations: number
   numOfLiveQuizzes: number
+  numOfDraftLiveQuizzes: number
   numOfPracticeQuizzes: number
   numOfMicroLearnings: number
   numOfGroupActivities: number
@@ -264,6 +265,7 @@ export const CourseSummary = CourseSummaryRef.implement({
   fields: (t) => ({
     numOfParticipations: t.exposeInt('numOfParticipations'),
     numOfLiveQuizzes: t.exposeInt('numOfLiveQuizzes'),
+    numOfDraftLiveQuizzes: t.exposeInt('numOfDraftLiveQuizzes'),
     numOfPracticeQuizzes: t.exposeInt('numOfPracticeQuizzes'),
     numOfMicroLearnings: t.exposeInt('numOfMicroLearnings'),
     numOfGroupActivities: t.exposeInt('numOfGroupActivities'),

@@ -594,9 +594,9 @@ export const SingleQuestionResponseCaseStudyItem = builder
   })
 
 export const SingleQuestionResponseCaseStudyCase = builder
-  .objectRef<
-    SingleQuestionResponseCaseStudyType['assessment'][0]
-  >('SingleQuestionResponseCaseStudyCase')
+  .objectRef<SingleQuestionResponseCaseStudyType['assessment'][0]>(
+    'SingleQuestionResponseCaseStudyCase'
+  )
   .implement({
     fields: (t) => ({
       caseId: t.exposeString('caseId'),
@@ -953,7 +953,9 @@ export const ElementInstance = ElementInstanceRef.implement({
 })
 
 export interface IInstanceUpdateActivityInfo {
+  activityId: string
   activityName: string
+  courseName?: string | null
   activityType: ActivityTypeEnum
   status: DB.PublicationStatus
 }
@@ -962,7 +964,9 @@ export const InstanceUpdateActivityInfoRef =
 export const InstanceUpdateActivityInfo =
   InstanceUpdateActivityInfoRef.implement({
     fields: (t) => ({
+      activityId: t.exposeString('activityId'),
       activityName: t.exposeString('activityName'),
+      courseName: t.exposeString('courseName', { nullable: true }),
       activityType: t.expose('activityType', { type: ActivityType }),
       status: t.expose('status', { type: PublicationStatus }),
     }),

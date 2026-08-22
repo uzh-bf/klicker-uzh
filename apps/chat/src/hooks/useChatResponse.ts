@@ -1,11 +1,14 @@
+import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
+  type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -30,8 +33,9 @@ export function useChatResponse(
   selectedReasoningEffort: ReasoningEffort
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const t = useTranslations()
 
-  const { loadCredits } = useSettingsStore()
+  const loadCredits = useSettingsStore((state) => state.loadCredits)
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -73,7 +77,21 @@ export function useChatResponse(
         }))
       }
 
+      // Records how the run ended so the thread can announce a stopped run
+      // distinctly: cancelling clears `isRunning` before this hook reaches its
+      // abort branch, so the running flag alone reads a stop as a completion.
+      const updateThreadRunOutcome = (outcome: ThreadRunOutcome | null) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId
+              ? { ...thread, lastRunOutcome: outcome }
+              : thread
+          ),
+        }))
+      }
+
       updateThreadRunning(true)
+      updateThreadRunOutcome(null)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
@@ -82,6 +100,11 @@ export function useChatResponse(
 
       // generate assistant message ID; also sent to backend for consistency
       const assistantMessageId = generateId()
+
+      // Declared outside the try so the network-failure catch can preserve
+      // whatever already streamed instead of replacing it with the error
+      // bubble alone.
+      const orderedContentParts: any[] = []
 
       try {
         const serializeMessageContent = (
@@ -165,11 +188,21 @@ export function useChatResponse(
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
           body: JSON.stringify({
-            messages: resolvedMessagesToSend.map((m) => ({
-              id: m.id,
-              role: m.role,
-              content: serializeMessageContent(m),
-            })),
+            // Assistant turns that carry no text — stopped-before-output or
+            // error-only turns hold just a data marker part — would serialize
+            // to empty assistant messages, which some upstream models reject
+            // and none benefit from.
+            messages: resolvedMessagesToSend
+              .filter(
+                (m) =>
+                  m.role !== 'assistant' ||
+                  serializeMessageContent(m).trim() !== ''
+              )
+              .map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: serializeMessageContent(m),
+              })),
             threadId,
             selectedModel,
             selectedMode,
@@ -190,38 +223,47 @@ export function useChatResponse(
         })
 
         if (!response.ok) {
-          let errorMessage = `HTTP error! status: ${response.status}`
+          // raw server-provided error detail is console-only; the student sees a
+          // localized generic message instead (server text may be unlocalized or
+          // leak implementation detail)
+          let errorDetail = `HTTP error! status: ${response.status}`
           try {
             const errorPayload = await response.json()
             if (errorPayload?.error) {
-              errorMessage = `${errorPayload.error}`
+              errorDetail = `${errorPayload.error}`
             } else if (errorPayload?.message) {
-              errorMessage = `${errorPayload.message}`
+              errorDetail = `${errorPayload.message}`
             }
           } catch {
             try {
               const errorText = await response.text()
               if (errorText) {
-                errorMessage = errorText
+                errorDetail = errorText
               }
             } catch {
               // ignore parsing errors and fall back to status message
             }
           }
+          console.error('Chat request failed:', errorDetail)
 
           const assistantMessage: ExtendedThreadMessageLike = {
             id: assistantMessageId,
             role: 'assistant',
             content: [
               {
-                type: 'text',
-                text: `\n\n**Error**: ${errorMessage}`,
+                type: 'data',
+                name: 'chat-error',
+                data: {
+                  errorLabel: t('chat.response.errorLabel'),
+                  message: t('chat.response.genericError'),
+                },
               },
             ],
             createdAt: new Date(),
             parentId: triggerMessage?.id || null,
           }
           updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
           return
         }
 
@@ -231,7 +273,6 @@ export function useChatResponse(
         let buffer = ''
 
         // state management for streaming content assembly
-        const orderedContentParts: any[] = []
         let currentTextContent = ''
         let currentReasoningContent = ''
         const toolCallsMap: Map<string, any> = new Map()
@@ -244,6 +285,7 @@ export function useChatResponse(
           creditsUsed?: number | null
         } | null = null
         let hasFinishEvent = false
+        let hasStreamError = false
 
         const buildAssistantMessage = (): ExtendedThreadMessageLike => ({
           id: assistantMessageId,
@@ -418,7 +460,9 @@ export function useChatResponse(
                   // TOOL-CALL RESULT READY
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
-                    existingToolCall.result = jsonData.output
+                    const output = normalizeLiveToolOutput(jsonData.output)
+                    existingToolCall.result = output.result
+                    existingToolCall.isError = output.isError
 
                     updateThreadMessages([
                       ...resolvedMessagesToSend,
@@ -429,7 +473,9 @@ export function useChatResponse(
                   // TOOL-CALL FAILURE
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
                   if (existingToolCall) {
-                    existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
+                    const output = normalizeLiveToolOutput(undefined, true)
+                    existingToolCall.result = output.result
+                    existingToolCall.isError = output.isError
 
                     updateThreadMessages([
                       ...resolvedMessagesToSend,
@@ -444,9 +490,15 @@ export function useChatResponse(
                     jsonData
                   )
 
+                  hasStreamError = true
+
                   const errorContent = {
-                    type: 'text',
-                    text: `\n\n**Error**: I'm sorry, something went wrong while processing your request. Please try again.`,
+                    type: 'data',
+                    name: 'chat-error',
+                    data: {
+                      errorLabel: t('chat.response.errorLabel'),
+                      message: t('chat.response.genericError'),
+                    },
                   }
 
                   orderedContentParts.push(errorContent)
@@ -456,7 +508,9 @@ export function useChatResponse(
                     buildAssistantMessage(),
                   ])
 
-                  // stop processing the stream on error
+                  // stop processing this chunk's remaining lines on error; the
+                  // outer read loop is also stopped below so the
+                  // connection-interrupted suffix doesn't stack on top of this
                   break
                 } else if (jsonData.type === 'finish') {
                   finishReason = jsonData.messageMetadata?.finishReason ?? null
@@ -523,10 +577,20 @@ export function useChatResponse(
                 console.warn('Failed to parse stream line:', line, error)
               }
             }
+
+            // a stream 'error' part already surfaced its own error bubble;
+            // stop reading further chunks so the interrupted-connection
+            // suffix below doesn't also stack onto the same message
+            if (hasStreamError) break
           }
 
-          // finalize any remaining text content
+          // finalize any remaining text content; skipped on a stream error
+          // since the error part pushed above is now the last entry (its
+          // type isn't 'text'), and the accumulated text is already synced
+          // into its own part from the last text-delta — re-pushing it here
+          // would duplicate it after the error block
           if (
+            !hasStreamError &&
             currentTextContent.trim() &&
             (orderedContentParts.length === 0 ||
               orderedContentParts[orderedContentParts.length - 1].type !==
@@ -548,12 +612,18 @@ export function useChatResponse(
           if (finishReason === 'length') {
             orderedContentParts.push({
               type: 'text',
-              text: '\n\n_(Response truncated — ask “continue” or request a shorter answer.)_',
+              text: `\n\n_(${t('chat.response.truncated')})_`,
             })
-          } else if (!hasFinishEvent) {
+          } else if (!hasFinishEvent && !hasStreamError) {
+            // Treat a silent stream cutoff like an explicit stream error so
+            // the incomplete answer keeps the same retry-only presentation.
             orderedContentParts.push({
-              type: 'text',
-              text: '\n\n_(Connection interrupted — response may be incomplete.)_',
+              type: 'data',
+              name: 'chat-error',
+              data: {
+                errorLabel: t('chat.response.errorLabel'),
+                message: t('chat.response.connectionInterrupted'),
+              },
             })
           }
 
@@ -632,11 +702,103 @@ export function useChatResponse(
             }))
           }
         }
+
+        // A stream error and a silent cutoff both pushed a `chat-error` part
+        // above, and a missing reader means no answer arrived at all — none of
+        // those may announce as a completed answer.
+        updateThreadRunOutcome(
+          hasStreamError || !hasFinishEvent ? 'error' : 'completed'
+        )
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-          // request was cancelled by user
+          // request was cancelled by user — keep the turn: whatever streamed
+          // plus a `chat-stopped` marker (mirrors what the server persists in
+          // its own onAbort path, so a reload shows the same stopped turn)
+          const stoppedAssistantMessage: ExtendedThreadMessageLike = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: [
+              ...orderedContentParts,
+              { type: 'data', name: 'chat-stopped', data: {} },
+            ],
+            createdAt: new Date(),
+            parentId: triggerMessage?.id || null,
+          }
+
+          // assistant-ui's `cancelRun` synchronously removes the trailing
+          // user turn, restores it as the composer draft, and re-syncs its
+          // view of the store in a `setTimeout(0)` scheduled before this
+          // catch runs — a synchronous write here would be overwritten by
+          // that resync. Defer one macrotask (FIFO puts this after the
+          // resync) and rebuild both the current path and the full history.
+          setTimeout(() => {
+            const { threads } = useChatStore.getState()
+            const activeThread = threads.find(
+              (thread) => thread.id === threadId
+            )
+            if (!activeThread) return
+
+            const newCurrentPath = [
+              ...resolvedMessagesToSend,
+              stoppedAssistantMessage,
+            ]
+
+            const withUserMessage =
+              resolvedTriggerMessage &&
+              !activeThread.allMessages.some(
+                (message) => message.id === resolvedTriggerMessage.id
+              )
+                ? [...activeThread.allMessages, resolvedTriggerMessage]
+                : activeThread.allMessages
+
+            // The stopped turn's id is generated fresh for this run and no
+            // other writer touches `allMessages` before this deferred
+            // callback, so a plain append cannot duplicate it.
+            const updatedAllMessages = [
+              ...withUserMessage,
+              stoppedAssistantMessage,
+            ]
+
+            useChatStore.setState((state) => ({
+              threads: state.threads.map((thread) =>
+                thread.id === threadId
+                  ? {
+                      ...thread,
+                      messages: newCurrentPath,
+                      allMessages: updatedAllMessages,
+                    }
+                  : thread
+              ),
+            }))
+          }, 0)
+
+          updateThreadRunOutcome('stopped')
         } else {
           console.error('Chat error:', error)
+
+          // network-level send failure (fetch itself rejected, e.g. offline
+          // or DNS/connection error) — show the same localized error bubble
+          // as the !response.ok path instead of failing silently; any parts
+          // that already streamed before a mid-stream drop are kept.
+          const assistantMessage: ExtendedThreadMessageLike = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: [
+              ...orderedContentParts,
+              {
+                type: 'data',
+                name: 'chat-error',
+                data: {
+                  errorLabel: t('chat.response.errorLabel'),
+                  message: t('chat.response.networkError'),
+                },
+              },
+            ],
+            createdAt: new Date(),
+            parentId: triggerMessage?.id || null,
+          }
+          updateThreadMessages([...resolvedMessagesToSend, assistantMessage])
+          updateThreadRunOutcome('error')
         }
       } finally {
         updateThreadRunning(false)
@@ -658,6 +820,7 @@ export function useChatResponse(
       selectedReasoningEffort,
       chatbotId,
       loadCredits,
+      t,
     ]
   )
 

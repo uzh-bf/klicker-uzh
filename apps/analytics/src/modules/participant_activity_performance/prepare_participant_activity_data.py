@@ -10,19 +10,11 @@ def prepare_participant_activity_data(db, course_id: str):
         include={
             "practiceQuizzes": {
                 "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {
-                    "stacks": {
-                        "include": {"elements": {"include": {"responses": True}}}
-                    }
-                },
+                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
             },
             "microLearnings": {
                 "where": {"status": {"in": ["PUBLISHED", "ENDED", "GRADED"]}},
-                "include": {
-                    "stacks": {
-                        "include": {"elements": {"include": {"responses": True}}}
-                    }
-                },
+                "include": {"stacks": {"include": {"elements": {"include": {"responses": True}}}}},
             },
             "participations": {"include": {"participant": True}},
         },
@@ -39,9 +31,7 @@ def prepare_participant_activity_data(db, course_id: str):
                     {
                         "id": activity["id"],
                         "type": activity_type,
-                        "instanceCount": sum(
-                            len(stack["elements"]) for stack in activity["stacks"]
-                        ),
+                        "instanceCount": sum(len(stack["elements"]) for stack in activity["stacks"]),
                     }
                     for activity in course_dict[activity_type]
                 ]

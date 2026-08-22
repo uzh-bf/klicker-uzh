@@ -6,6 +6,7 @@
 import type { ElementType } from '@klicker-uzh/prisma/client'
 import { expect, Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
+import { openCourseActionMenu } from '../actions.js'
 import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
 
 export type ValidateFeatureAvailabilityOptions = {
@@ -46,6 +47,10 @@ export async function validateFeatureAvailabilityFixture(
   // course learning analytics link
   await page.getByTestId('courses').click()
   await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
+  await openCourseActionMenu(
+    page,
+    options.publicPreview ? 'course-learning-analytics-link' : undefined
+  )
   if (options.publicPreview) {
     await expect(
       page.getByTestId('course-learning-analytics-link')
@@ -55,6 +60,7 @@ export async function validateFeatureAvailabilityFixture(
       page.getByTestId('course-learning-analytics-link')
     ).not.toBeAttached()
   }
+  await page.keyboard.press('Escape')
 
   // sharing buttons per activity type (private preview only)
   await page.getByTestId('courses').click()
@@ -175,12 +181,14 @@ export async function createLiveQuizFixture(
 export async function createLiveQuiz({
   name,
   displayName,
+  description,
   courseId,
   ownerId,
   elementNames,
 }: {
   name: string
   displayName: string
+  description?: string
   courseId?: string
   ownerId: string
   elementNames: string[]
@@ -219,6 +227,7 @@ export async function createLiveQuiz({
       data: {
         name,
         displayName,
+        description,
         courseId: courseId ?? null,
         ownerId,
         blocks: {
@@ -272,6 +281,19 @@ export async function createLiveQuiz({
   } catch (error) {
     throw error
   }
+}
+
+export async function publishLiveQuiz(id: string) {
+  const prisma = await getPrisma()
+  await prisma.liveQuiz.update({
+    where: { id },
+    data: { status: 'PUBLISHED' },
+  })
+}
+
+export async function deleteLiveQuiz(id: string) {
+  const prisma = await getPrisma()
+  await prisma.liveQuiz.delete({ where: { id } })
 }
 
 export async function removeSoftDeletedLiveQuiz({

@@ -1,0 +1,34 @@
+{
+  "name": "klicker-uzh",
+  "dockerComposeFile": [
+    "docker-compose.yml",
+    "${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.localhost.yml}"
+  ],
+  "initializeCommand": "mkdir -p .devcontainer/certs && touch .devcontainer/certs/rootCA.pem && cp \"$(mkcert -CAROOT 2>/dev/null)/rootCA.pem\" .devcontainer/certs/rootCA.pem 2>/dev/null || true",
+  "forwardPorts": [
+    3000, 3001, 3002, 3003, 3004, 3010, 3030, 4000, 7078, 8025, 8888, 5432
+  ],
+  "service": "app",
+  "workspaceFolder": "/workspaces/klicker-uzh",
+  "overrideCommand": false,
+  "runServices": [
+    "app",
+    "postgres",
+    "redis_exec",
+    "redis_assessment",
+    "redis_cache",
+    "mailhog",
+    "hatchet",
+    "litellm"
+  ],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma"
+      ]
+    }
+  }
+}

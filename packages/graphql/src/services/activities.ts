@@ -1,3 +1,4 @@
+import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
@@ -5,7 +6,6 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
-import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -82,6 +82,57 @@ export function getPermissionBooleans({
         : derived
           ? SharingType.DEPENDENCY
           : SharingType.SHARED,
+  }
+}
+
+// persist an activity manipulation in its own transaction (or reuse the
+// provided transaction client, e.g. during course duplication), invalidate
+// the cached activity, and derive the caller's permission view on the result
+export async function persistActivityWithPermissions<
+  TActivity extends {
+    permissions: (DB.DerivedPermission & {
+      directPermission: DB.Permission | null
+    })[]
+  },
+>({
+  persist,
+  invalidateTypename,
+  invalidateId,
+  ctx,
+  transactionPrisma,
+}: {
+  persist: (prisma: PrismaTransactionClient) => Promise<TActivity>
+  invalidateTypename?: string
+  invalidateId?: string
+  ctx: ContextWithUser
+  transactionPrisma?: PrismaTransactionClient
+}) {
+  const activity = transactionPrisma
+    ? await persist(transactionPrisma)
+    : await ctx.prisma.$transaction(persist, { timeout: 60000 })
+
+  if (invalidateTypename) {
+    ctx.emitter.emit('invalidate', {
+      typename: invalidateTypename,
+      id: invalidateId,
+    })
+  }
+
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+
+  return {
+    activity,
+    permissionLevel,
+    derived,
+    ...getPermissionBooleans({
+      permissionLevel,
+      derived,
+      directGroupPermission:
+        activity.permissions[0]?.directPermission &&
+        activity.permissions[0].directPermission.userGroupId !== null,
+    }),
   }
 }
 

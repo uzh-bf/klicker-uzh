@@ -1,6 +1,6 @@
+import { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
-import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
@@ -98,6 +98,7 @@ import {
   AnswerCollectionPreviewEntry,
   ChatModelCapability,
   Chatbot,
+  ChatbotPublic,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -273,8 +274,8 @@ export const Query = builder.queryType({
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
-          numEntries: t.arg.int({ required: true }),
-          offset: t.arg.int({ required: true }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.getUserElements(args, ctx)
@@ -1421,6 +1422,18 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      // public field like the sibling course overview queries: the resolver
+      // returns an empty list for anonymous visitors and non-participants
+      courseChatbots: t.field({
+        type: [ChatbotPublic],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.getParticipantCourseChatbots(args, ctx)
         },
       }),
 

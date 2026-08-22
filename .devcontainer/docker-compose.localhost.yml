@@ -1,0 +1,41 @@
+# Primary-checkout overlay selected by `devrouter ensure`.
+# Fixed host ports remain bound to 127.0.0.1, while stable devnet aliases let
+# devrouter prove and route the same container. Only one primary checkout can
+# run per machine; linked worktrees use docker-compose.devrouter.yml instead.
+
+services:
+  postgres:
+    ports:
+      - '127.0.0.1:5432:5432'
+    networks:
+      devnet:
+        aliases:
+          - klicker-uzh-db
+
+  mailhog:
+    ports:
+      - '127.0.0.1:8025:8025'
+
+  hatchet:
+    ports:
+      - '127.0.0.1:8888:8888'
+      - '127.0.0.1:7077:7077'
+
+  app:
+    networks:
+      devnet:
+        aliases:
+          - klicker-uzh-app
+    ports:
+      - '127.0.0.1:3000:3000' # api / assessment-api
+      - '127.0.0.1:3001:3001' # pwa / assessment-pwa
+      - '127.0.0.1:3002:3002' # manage
+      - '127.0.0.1:3003:3003' # control
+      - '127.0.0.1:3004:3004' # chat
+      - '127.0.0.1:3010:3010' # auth
+      - '127.0.0.1:3030:3030' # olat-api
+      - '127.0.0.1:7078:7078' # response-api
+
+  litellm:
+    ports:
+      - '127.0.0.1:4001:4000' # relocate litellm host port from 4000 to 4001 to resolve LTI port collision (M3 blocker fix)
