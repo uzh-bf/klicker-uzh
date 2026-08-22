@@ -11,6 +11,14 @@ export type PersistedAssistantContentPart =
       result?: unknown
       isError?: boolean
     }
+  // Marks a turn the participant stopped mid-stream. Deliberately carries no
+  // user-facing strings — the server has no reliable locale, so the client
+  // renders the stopped notice from its own translations keyed on `name`.
+  | { type: 'data'; name: 'chat-stopped'; data: Record<string, never> }
+
+type UnfinishedAssistantContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
 
 export function mapAssistantStepContent(
   steps: Array<{ content?: unknown[] }> | undefined
@@ -96,6 +104,26 @@ export function mapAssistantStepContent(
       }
     }
   }
+
+  return content
+}
+
+export function buildAbortedAssistantContent(
+  steps: Array<{ content?: unknown[] }> | undefined,
+  unfinishedContent: readonly UnfinishedAssistantContentPart[]
+): PersistedAssistantContentPart[] {
+  const content = mapAssistantStepContent(steps)
+
+  for (const part of unfinishedContent) {
+    if (part.text.trim()) {
+      content.push(part)
+    }
+  }
+
+  // Always close an aborted turn with the stopped marker, even when nothing
+  // streamed: persisting the (then marker-only) row is what lets a reload
+  // still show that the participant stopped this answer.
+  content.push({ type: 'data', name: 'chat-stopped', data: {} })
 
   return content
 }

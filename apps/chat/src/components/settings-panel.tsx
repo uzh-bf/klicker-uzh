@@ -10,7 +10,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 
 /**
  * Ids that tie each visible label to the control it names. The design system
@@ -23,7 +23,6 @@ const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
-  const locale = useLocale()
   const {
     selectedModel,
     selectedReasoningEffort,
@@ -51,6 +50,15 @@ export function SettingsPanel() {
       ? selectedModelOption.allowedReasoningEfforts
       : []
   const showReasoningEffortSelector = availableReasoningEfforts.length > 1
+  const selectedModelDescription = selectedModelOption
+    ? selectedModelOption.id === 'auto'
+      ? t('chat.settingsPanel.autoModelDescription')
+      : selectedModelOption.fallback
+        ? t('chat.settingsPanel.fallbackModelDescription')
+        : selectedModelOption.supportsReasoning
+          ? t('chat.settingsPanel.reasoningModelDescription')
+          : t('chat.settingsPanel.standardModelDescription')
+    : null
 
   return (
     <div>
@@ -115,21 +123,11 @@ export function SettingsPanel() {
                     }}
                     value={selectedModel}
                   />
-                  {/* D3: registry model descriptions are English-only text
-                      from the deployment model registry, not translated
-                      copy — showing them in a DE UI leaks raw English.
-                      Hide until the registry supports per-locale
-                      descriptions rather than mistranslate or drop them
-                      for `en` users. */}
-                  {locale === 'en' && (
+                  {selectedModelDescription ? (
                     <p className="text-muted-foreground text-sm">
-                      {
-                        modelOptions.find(
-                          (option) => option.id === selectedModel
-                        )?.description
-                      }
+                      {selectedModelDescription}
                     </p>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <>

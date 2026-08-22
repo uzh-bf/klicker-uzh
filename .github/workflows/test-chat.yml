@@ -24,7 +24,7 @@ jobs:
         id: filter
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/chat/|packages/(i18n|prisma|graphql|util|shared-components|markdown|next-config)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-chat\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(apps/chat/|packages/(i18n|prisma|graphql|types|grading|util|shared-components|markdown|next-config)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-chat\.yml|\.github/actions/changed-paths/)'
 
       - name: Define node version
         if: steps.filter.outputs.should_run == 'true'
@@ -38,14 +38,19 @@ jobs:
           version: 11.5.0
           run_install: true
 
-      # The chat tests import the prisma client (directly and through the
-      # graphql model registry used by the parity test), so the generated
-      # client has to exist before vitest runs.
-      - name: Build prisma package
+      # The chat tests import workspace packages whose package entries point
+      # at generated dist files, so their dependency chain must be built first.
+      - name: Build chat dependencies
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
           cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../util
           pnpm run build
 
       - name: Test chat app

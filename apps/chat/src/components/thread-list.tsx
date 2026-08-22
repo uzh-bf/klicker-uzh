@@ -101,23 +101,25 @@ const ThreadListItems: FC = () => {
           <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
             {t(`chat.threadList.${key}`)}
           </p>
-          {items.map((thread) => (
-            <ThreadListItem
-              key={thread.id}
-              thread={thread}
-              isActive={thread.id === threadId}
-              onSelect={() => {
-                router.push(`/${chatbotId}/threads/${thread.id}`)
-                setOpenMobile(false)
-              }}
-              onDelete={async () => {
-                const deleted = await deleteThread(chatbotId, thread.id)
-                if (deleted && thread.id === threadId) {
-                  router.replace(`/${chatbotId}`)
-                }
-              }}
-            />
-          ))}
+          <ol className="list-none flex flex-col gap-0.5">
+            {items.map((thread) => (
+              <ThreadListItem
+                key={thread.id}
+                thread={thread}
+                isActive={thread.id === threadId}
+                onSelect={() => {
+                  router.push(`/${chatbotId}/threads/${thread.id}`)
+                  setOpenMobile(false)
+                }}
+                onDelete={async () => {
+                  const deleted = await deleteThread(chatbotId, thread.id)
+                  if (deleted && thread.id === threadId) {
+                    router.replace(`/${chatbotId}`)
+                  }
+                }}
+              />
+            ))}
+          </ol>
         </div>
       ))}
     </div>
@@ -270,7 +272,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     }
   }
 
-  const handleRowBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+  const handleRowBlur = (e: React.FocusEvent<HTMLLIElement>) => {
     if (
       deletePhase === 'confirming' &&
       !e.currentTarget.contains(e.relatedTarget)
@@ -326,7 +328,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   }
 
   return (
-    <div
+    <li
       data-cy="chat-thread-item"
       // The row itself is never focused (its buttons/input are), so
       // focus-visible: here would be dead CSS. focus-within: highlights the
@@ -452,6 +454,16 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           </button>
         </>
       )}
-    </div>
+      {/* Row-local live region for the armed delete. The button's swapped
+          aria-label is the only other carrier of that state, and a label
+          change while focus already sits on the button is announced
+          unreliably. Rendered empty rather than conditionally so the region
+          exists before the state flips. */}
+      <span role="status" className="sr-only">
+        {deletePhase === 'confirming'
+          ? t('chat.threadList.deleteArmedStatus')
+          : ''}
+      </span>
+    </li>
   )
 }

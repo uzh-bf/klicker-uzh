@@ -22,6 +22,7 @@ export function EmbeddedSettings() {
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
+        aria-label={t('chat.modes.switcherLabel')}
         className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
         {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`

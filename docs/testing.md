@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-10'
+timestamp: '2026-08-20'
 tags:
   - testing
   - ci
@@ -14,13 +14,22 @@ tags:
 
 ## Which level for which change
 
-| Change                                                               | Test level                                                                                 | Command                                                                                                             |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                      | Playwright e2e                                                                             | see routing below                                                                                                   |
-| Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+
+For server-paginated manage lists, browser coverage must exercise finite page
+sizes, the opt-in `All` transition, the reset back to 50, and explicit
+selection after `All`. When the fixture contains 200 eligible records, the
+focused batch flow must verify that all 200 records remain usable and that the
+mutation's returned count is reported without silent truncation. Runtime
+failures after earlier per-record commits are not an atomicity guarantee of
+the existing batch contract.
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
@@ -30,6 +39,19 @@ OpenAI-compatible SSE response whose first tool call uses a sparse provider
 index, so it proves provider conversion without a database, MCP server, or
 model key. It is a local regression gate, not evidence that a real upstream
 first turn works in staging.
+
+For OpenAI-compatible request-policy or prompt-cache changes, also run
+`apps/chat/test/openai-cache-policy.test.ts` and
+`apps/chat/test/prompt-cache-identity.test.ts`. These fixtures capture the
+final synthetic Chat Completions and Responses JSON bodies, verify the default
+exact-response bypass and custom-provider boundary, and assert public
+`usage.inputTokenDetails` values for uncached input, cache reads, and cache
+writes. They use no database, credentials, gateway, Redis, or paid model.
+A passing fixture proves local AI SDK serialization and response conversion;
+it does not prove a LiteLLM/provider cache hit, router resolution, production
+behavior, latency, or cost impact. This is server-side request policy, so it
+does not require browser evidence; add the normal browser path if the change
+also affects UI, auth, redirect, cookie, or user-visible chat behavior.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
@@ -62,10 +84,11 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 - The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
-  LiteLLM liveness endpoint and the chat credits response before browser
-  testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
-  `UPSTREAM_OPENAI_API_KEY` is required for a streamed answer; service health
-  alone is not model-call evidence.
+  LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
+  routing decisions in LiteLLM logs, and the chat credits response before
+  browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
+  `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
+  not classification or answer-stream evidence.
 - Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
 - **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.

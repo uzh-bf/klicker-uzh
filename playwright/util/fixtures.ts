@@ -44,6 +44,7 @@ async function setSessionCookie(
   cookieName: string = 'next-auth.session-token',
   redirectUrl?: string
 ) {
+  await page.goto('about:blank')
   await context.clearCookies()
 
   const target = redirectUrl ?? process.env.URL_MANAGE ?? URL_MANAGE

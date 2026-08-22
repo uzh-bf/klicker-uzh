@@ -41,7 +41,9 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
     : `${loginBaseUrl}/login`
 
   return (
-    <div
+    <main
+      id="main-content"
+      tabIndex={-1}
       data-cy="chat-no-login"
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4"
     >
@@ -57,10 +59,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
         </p>
         {redirectUrl && (
           <p className="text-muted-foreground mt-2 text-sm">
-            {t.rich('chat.noLogin.redirectNotice', {
-              redirectUrl,
-              url: (chunks) => <span className="font-medium">{chunks}</span>,
-            })}
+            {t('chat.noLogin.redirectNotice')}
           </p>
         )}
         <Link
@@ -72,6 +71,6 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           {t('chat.noLogin.loginButton')}
         </Link>
       </div>
-    </div>
+    </main>
   )
 }

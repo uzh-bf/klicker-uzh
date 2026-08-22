@@ -9,6 +9,8 @@ export interface ChatSource {
   title: string
   page?: number
   labeledPage?: string
+  startSec?: number
+  endSec?: number
   url?: string
   excerpt?: string
 }

@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-14'
+timestamp: '2026-08-22'
 tags:
   - backend
   - prisma
@@ -24,6 +24,8 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 | Role enum | `USER` / `ADMIN`          | `PARTICIPANT` / `TEMPORARY_PARTICIPANT`            |
 
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
+
+`Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
 
 ## Content hierarchy
 
@@ -49,6 +51,21 @@ Lifecycle enums:
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
 
+## Course deletion
+
+**Deleting a non-assessment course does not normally delete its live quizzes.**
+The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
+hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
+`SetNull`, so linked live quizzes are disconnected and remain in the activity
+list. The optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` additionally
+hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
+every other status are still disconnected. The lecturer UI keeps this option
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
+(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
 ## Assessment point corrections
 
 Assessment point corrections persist their audience as
@@ -59,8 +76,8 @@ instance correction distinguishes two participation audiences:
 - `PARTICIPATING` targets participants with a genuine response to the selected
   `ElementInstance`.
 - `PARTICIPATING_QUIZ` targets participants with at least one genuine response
-  anywhere in the parent `LiveQuiz`, while applying the correction only to the
-  selected `ElementInstance`.
+  in a current block execution of the parent `LiveQuiz`, while applying the
+  correction only to the selected `ElementInstance`.
 
 A response created solely by an earlier correction (`correctionOnly = true`)
 does not establish quiz participation. Participants who qualify through another

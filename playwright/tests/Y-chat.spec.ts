@@ -20,6 +20,9 @@ import {
 } from '../util/chat.js'
 import { selectOption } from '../util/workflow.js'
 
+const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
+const MALFORMED_CHATBOT_ID = 'not-a-chatbot-id'
+
 /**
  * Chatbot (apps/chat) E2E
  *
@@ -74,6 +77,47 @@ test.describe('Chatbot Authentication & Access Control', () => {
     await expect(page.getByTestId('chat-no-login-link')).toContainText(
       'Go to KlickerUZH Login'
     )
+    await expect(page.getByTestId('chat-no-login')).not.toContainText(
+      CHATBOT_ID
+    )
+    await expect(page.getByTestId('chat-no-login')).toContainText(
+      'After logging in, you will return to this chatbot.'
+    )
+  })
+
+  test('Unknown chatbot link shows branded not-found recovery', async ({
+    page,
+  }) => {
+    await setParticipantToken(page, await getEnrolledParticipantId())
+
+    const response = await page.goto(`${chatUrl()}/${UNKNOWN_CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    expect(response?.status()).toBe(404)
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
+      'Chatbot not found'
+    )
+    await expect(page.locator('[data-cy="chat-not-found-home"]')).toContainText(
+      'Open KlickerUZH'
+    )
+  })
+
+  test('Malformed chatbot link shows branded not-found recovery', async ({
+    page,
+  }) => {
+    await setParticipantToken(page, await getEnrolledParticipantId())
+
+    const response = await page.goto(`${chatUrl()}/${MALFORMED_CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    expect(response?.status()).toBe(404)
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
+      'Chatbot not found'
+    )
   })
 
   test('Authenticated user with valid participation can access chatbot', async ({
@@ -124,6 +168,30 @@ test.describe('Chatbot Disclaimer Flow', () => {
     await expect(content).toContainText('Student Responsibility')
     await expect(content).toContainText('Data Protection')
     await expect(content).toContainText('What happens after your choice')
+  })
+
+  test('Disclaimer explains consequences before the explicit actions', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    const consequences = page.getByTestId('chat-disclaimer-consequences')
+    const actions = page.getByTestId('chat-disclaimer-actions')
+    const dialog = page.getByRole('dialog')
+
+    await expect(consequences).toBeVisible()
+    await expect(actions).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /^close$/i })).toHaveCount(
+      0
+    )
+    await expect(
+      consequences.locator(
+        'xpath=following-sibling::*[@data-cy="chat-disclaimer-actions"]'
+      )
+    ).toHaveCount(1)
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeVisible()
   })
 
   test('Accepting disclaimer closes modal and enables chat', async ({
@@ -380,8 +448,35 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-message')).toContainText(
-      'How can I help you'
+    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
+      'You are chatting with E2E Chatbot.'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Tutor mode.'
+    )
+    await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
+  })
+
+  test('Starter prompt is editable and contains no raw placeholder', async ({
+    page,
+  }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-welcome-suggestion').first().click()
+
+    const input = page.getByTestId('chat-composer-input')
+    await expect(input).toHaveValue(/.+/)
+    const starter = await input.inputValue()
+    expect(starter.length).toBeGreaterThan(0)
+    expect(starter).not.toMatch(/\[[^\]]+\]/)
+    await expect(page.getByTestId('chat-user-message')).toHaveCount(0)
+    await input.fill('My own question about a specific topic')
+    await expect(input).toHaveValue('My own question about a specific topic')
+    await expect(page.getByTestId('chat-send-button')).toBeEnabled()
+
+    await page.getByTestId('chat-send-button').click()
+    await expect(page.getByTestId('chat-user-message-content')).toContainText(
+      'My own question about a specific topic'
     )
   })
 
@@ -483,6 +578,178 @@ test.describe('Chatbot Messaging Interface', () => {
     expect(stayedMounted).toBe(true)
   })
 
+  test('Streaming hides incomplete LaTeX until the formula closes', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '\\[x^2 + 1',
+        '\\]',
+        '\n\nThe answer is complete. See [Reference](https://example.com/reference).',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a formula without flicker')
+
+    const assistant = page.getByTestId('chat-assistant-message')
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('x^2')
+    await expect(assistantContent.locator('.katex')).toHaveCount(0)
+
+    await assistant.evaluate((node) => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeMathRelease?: Element
+        __mathStreamSnapshots?: Array<{
+          hasRawDelimiter: boolean
+          hasUnrenderedFormula: boolean
+          hasKatexError: boolean
+        }>
+        __mathStreamObserver?: MutationObserver
+      }
+      state.__assistantMessageBeforeMathRelease = node
+      state.__mathStreamSnapshots = []
+      state.__mathStreamObserver = new MutationObserver(() => {
+        const text = node.textContent ?? ''
+        state.__mathStreamSnapshots?.push({
+          hasRawDelimiter: text.includes('\\[') || text.includes('\\]'),
+          hasUnrenderedFormula:
+            text.includes('x^2 + 1') && !node.querySelector('.katex'),
+          hasKatexError: Boolean(node.querySelector('.katex-error')),
+        })
+      })
+      state.__mathStreamObserver.observe(node, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      })
+    })
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex-display')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The answer is complete.')
+    await expect(
+      assistantContent.getByRole('link', { name: 'Reference' })
+    ).toBeVisible()
+
+    const streamSnapshots = await page.evaluate(() => {
+      const state = window as typeof window & {
+        __assistantMessageBeforeMathRelease?: Element
+        __mathStreamSnapshots?: Array<{
+          hasRawDelimiter: boolean
+          hasUnrenderedFormula: boolean
+          hasKatexError: boolean
+        }>
+        __mathStreamObserver?: MutationObserver
+      }
+      state.__mathStreamObserver?.disconnect()
+      return {
+        stayedMounted:
+          state.__assistantMessageBeforeMathRelease ===
+          document.querySelector('[data-cy="chat-assistant-message"]'),
+        snapshots: state.__mathStreamSnapshots ?? [],
+      }
+    })
+
+    expect(streamSnapshots.stayedMounted).toBe(true)
+    expect(
+      streamSnapshots.snapshots.filter(
+        ({ hasRawDelimiter, hasUnrenderedFormula, hasKatexError }) =>
+          hasRawDelimiter || hasUnrenderedFormula || hasKatexError
+      )
+    ).toEqual([])
+  })
+
+  test('Streaming hides a dollar delimiter split across chunks', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '$',
+        'x^2 + 1',
+        '$',
+        '\n\nThe formula is complete.',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a dollar-delimited formula')
+
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('$')
+    await expect(assistantContent).not.toContainText('x^2')
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
+  test('Streaming hides a backslash delimiter split across chunks', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: [
+        'The answer is ',
+        '\\',
+        '[x^2 + 1',
+        '\\]',
+        '\n\nThe formula is complete.',
+      ],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Stream a backslash-delimited formula')
+
+    const assistantContent = page.getByTestId('chat-assistant-message-content')
+    await expect(assistantContent).toContainText('The answer is', {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).not.toContainText('\\')
+    await expect(assistantContent).not.toContainText('x^2')
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(assistantContent.locator('.katex')).toHaveCount(1, {
+      timeout: 15_000,
+    })
+    await expect(assistantContent).toContainText('The formula is complete.')
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {
@@ -527,6 +794,59 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Photosynthesis is the process')
+  })
+
+  test('Separate LaTeX display blocks do not absorb the prose between them', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Display math boundaries',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain perpendicular slopes.' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: [
+                'First formula:',
+                '',
+                '\\[',
+                'm_g \\cdot m_n',
+                '=',
+                '\\frac{\\Delta y}{\\Delta x}',
+                '\\cdot',
+                '\\left(-\\frac{\\Delta x}{\\Delta y}\\right)',
+                '=-1',
+                '\\]',
+                '',
+                'The prose between the formulas must remain ordinary text.',
+                '',
+                '[/math]',
+                '\\boxed{m_g \\cdot m_n = -1}',
+                '[/math]',
+                '',
+                'The source remains readable: [Course script](https://example.com/course-script.pdf)',
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('.katex-display')).toHaveCount(2)
+    await expect(content).toContainText(
+      'The prose between the formulas must remain ordinary text.'
+    )
+    await expect(
+      content.getByRole('link', { name: 'Course script' })
+    ).toBeVisible()
   })
 
   test('Reasoning and adjacent tool calls use predictable disclosures', async ({
@@ -908,6 +1228,12 @@ test.describe('Chatbot Message Actions & Branching', () => {
     await expect(
       page.getByTestId('chat-branch-indicator').first()
     ).toContainText('/ 2')
+    await expect(
+      page.getByTestId('chat-branch-previous').first()
+    ).toHaveAccessibleName('Previous version')
+    await expect(
+      page.getByTestId('chat-branch-next').first()
+    ).toHaveAccessibleName('Next version')
   })
 
   test('Message tree: branches keep independent continuations and navigation restores them', async ({
@@ -1253,6 +1579,20 @@ test.describe('Chatbot Settings Panel', () => {
     )
   })
 
+  test('Mode switcher explains what each mode is for', async ({ page }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-mode-option-tutor').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
+    ).toContainText('patient')
+
+    await page.getByTestId('chat-mode-option-explainer').hover()
+    await expect(
+      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
+    ).toContainText('difficult concepts')
+  })
+
   test('AI model section displays current model (automatic mode)', async ({
     page,
   }) => {
@@ -1288,6 +1628,27 @@ test.describe('Chatbot Settings Panel', () => {
     )
     await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
       'You have used up all your credits'
+    )
+
+    await openSettings(page)
+    await expect(page.getByTestId('chat-model-selection')).toContainText(
+      'GPT-4.1 Mini'
+    )
+  })
+
+  test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
+    page,
+  }) => {
+    await setCredits(participantId, 0, 100)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await visitChat(page)
+
+    await expect(page.getByTestId('chat-mobile-credits-bar')).toBeVisible()
+    await expect(page.getByTestId('chat-mobile-credits-display')).toContainText(
+      '0 / 100'
+    )
+    await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
+      'New messages use the smaller model'
     )
   })
 
@@ -1331,6 +1692,23 @@ test.describe('Chatbot Settings Panel', () => {
       'assistant reply #1',
       { timeout: 15_000 }
     )
+  })
+
+  test('Model descriptions explain capabilities without provider jargon', async ({
+    page,
+  }) => {
+    await setModelSelection(participantId, true)
+    await visitChat(page)
+    await openSettings(page)
+
+    const modelSection = page.getByTestId('chat-model-selection')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
+
+    await expect(modelSection).toContainText(
+      'Built for difficult, multi-step questions'
+    )
+    await expect(modelSection).not.toContainText('LiteLLM')
+    await expect(modelSection).not.toContainText('OpenAI reasoning model')
   })
 
   // The selector only appears for a model that supports reasoning with more
@@ -1435,6 +1813,153 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(
       page.getByTestId('chat-mode-option-explainer')
     ).toHaveAttribute('aria-pressed', 'false')
+  })
+})
+
+// ===========================================================================
+// History Rail
+// ===========================================================================
+test.describe('Chatbot History Rail', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('pairs turns, keeps tool calls out of the rail, and navigates on desktop and mobile', async ({
+    page,
+  }) => {
+    const firstUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c50'
+    const firstAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c51'
+    const secondUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c52'
+    const secondAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c53'
+
+    await seedThread(participantId, {
+      title: 'History rail test',
+      messages: [
+        {
+          id: firstUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'First rail question' }],
+        },
+        {
+          id: firstAssistantId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'First rail answer' }],
+        },
+        {
+          id: secondUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'Second rail question' }],
+        },
+        {
+          id: secondAssistantId,
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Second rail answer' },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-1',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'First result' }] },
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-2',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'Second result' }] },
+            },
+          ],
+        },
+      ],
+    })
+
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const rail = page.locator('[data-cy="chat-history-rail"]')
+    await expect(rail).toBeVisible()
+    const ticks = rail.locator('[data-history-rail-tick]')
+    await expect(ticks).toHaveCount(2)
+    const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
+    await expect(toolGroupToggle).toHaveCount(1)
+    await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'false')
+
+    await ticks.first().hover()
+    const popover = page.getByTestId('chat-history-rail-turn-popover')
+    await expect(popover).toContainText('First rail question')
+    await expect(popover).toContainText('First rail answer')
+    // Radix's hoverable tooltip closes on the pointermove that follows the
+    // leave event: one synthetic move only fires the leave, so nudge the
+    // pointer again to let the grace-area listener dismiss the popover.
+    await page.mouse.move(0, 0)
+    await page.mouse.move(1, 1)
+    await expect(popover).toHaveCount(0)
+
+    const currentTick = rail.locator('[aria-current="step"]')
+    await expect(currentTick).toHaveCount(1)
+    await currentTick.click()
+    // Both the desktop and the mobile dialog mount while the history is open;
+    // CSS hides the one outside the current breakpoint, so scope every dialog
+    // locator to its rail container to keep strict mode unambiguous.
+    const dialog = rail.locator('[data-history-rail-dialog]')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.locator('[data-history-dialog-entry]')).toHaveCount(2)
+    await dialog.locator('[data-history-dialog-entry]').first().click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${firstUserId}"]`)
+    ).toBeFocused()
+
+    // A second navigation issued right after the first jump must leave the
+    // last-selected tick current; a stale scroll-spy callback must not win.
+    // Navigating closes the dialog, so reopen it before picking the next row.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await dialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+    await expect(page.locator('[aria-current="step"]')).toHaveCount(1)
+
+    // Close the desktop dialog with Escape; focus returns to the invoking tick.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(currentTick).toBeFocused()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(rail).toBeHidden()
+    const mobileTrigger = page.getByTestId('chat-history-rail-mobile-trigger')
+    await expect(mobileTrigger).toBeVisible()
+    await expect(mobileTrigger).toContainText('/2')
+    await mobileTrigger.click()
+    const mobileDialog = page
+      .getByTestId('chat-history-rail-mobile')
+      .locator('[data-history-rail-dialog]')
+    await expect(mobileDialog).toBeVisible()
+    await expect(
+      mobileDialog.locator('[data-history-dialog-entry]')
+    ).toHaveCount(2)
+    await mobileDialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+    // Close the mobile dialog with the 44px close button; focus returns to the
+    // mobile trigger.
+    await mobileTrigger.click()
+    await expect(mobileDialog).toBeVisible()
+    await mobileDialog
+      .getByRole('button', { name: /close full history/i })
+      .click()
+    await expect(mobileDialog).toHaveCount(0)
+    await expect(mobileTrigger).toBeFocused()
   })
 })
 
@@ -1608,6 +2133,46 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.locator(`#src-${messageId}-3`)).toContainText(
       'Gamma Notes.pdf'
     )
+  })
+
+  // Regression guard: a terminal assistant turn whose only content is a
+  // completed source-bearing tool call (no answer text) must still surface
+  // its source cards once the persisted thread is loaded.
+  test('Completed tool-only turn shows source cards after thread selection', async ({
+    page,
+  }) => {
+    await seedThread(participantId, {
+      title: 'Tool-only sources',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Summarize the sources' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-tool-only',
+              sources: [
+                {
+                  file_name: 'Terminal Only.pdf',
+                  source_url: 'https://example.com/docs/terminal-only.pdf',
+                  source_type: 'document',
+                  page_number: 3,
+                },
+              ],
+            }),
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(1)
+    await expect(section).toContainText('Terminal Only.pdf')
   })
 
   test('Two doc_query calls with an overlapping source dedupe into contiguous 1..N numbering', async ({
@@ -1831,6 +2396,8 @@ test.describe('Chatbot Source Citations', () => {
   }) => {
     await mockChatStream(page, {
       text: 'Live answer citing [1] and also [2].',
+      chunkDelayMs: 20,
+      pauseAfterToolOutput: true,
       toolCalls: [
         {
           toolCallId: 'live-call-1',
@@ -1858,6 +2425,20 @@ test.describe('Chatbot Source Citations', () => {
     await sendMessage(page, 'Search the course materials')
 
     const section = page.getByTestId('chat-sources-section')
+    await expect(page.getByTestId('chat-tool-call-toggle')).toHaveText(
+      'Searched course materials',
+      { timeout: 15_000 }
+    )
+    await expect(section).toHaveCount(0)
+    await expect(page.getByText('Live answer citing')).toHaveCount(0)
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
     await expect(section).toBeVisible({ timeout: 15_000 })
     await expect(section).toContainText('Sources · 2')
     await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
@@ -1972,6 +2553,52 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await setDisclaimerState(participantId, 'accepted')
   })
 
+  test('Heading-rich answers keep hierarchy and conversation scale', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: '# Main heading\n\n## Supporting heading\n\n### Detail heading\n\n#### Fourth heading\n\n##### Fifth heading\n\n###### Sixth heading',
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Show me a structured answer')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content.locator('h2')).toContainText('Main heading', {
+      timeout: 15_000,
+    })
+    await expect(content.locator('h3')).toContainText('Supporting heading')
+    await expect(content.locator('h4')).toContainText('Detail heading')
+    await expect(content.locator('h5')).toContainText('Fourth heading')
+    await expect(content.locator('h6')).toContainText('Fifth heading')
+    await expect(
+      content.locator('[role="heading"][aria-level="7"]')
+    ).toContainText('Sixth heading')
+
+    const headingSelector =
+      'h2, h3, h4, h5, h6, [role="heading"][aria-level="7"]'
+    const readHeadingSizes = () =>
+      content
+        .locator(headingSelector)
+        .evaluateAll((headings) =>
+          headings.map((heading) =>
+            Number.parseFloat(getComputedStyle(heading).fontSize)
+          )
+        )
+    const assertHeadingScale = (headingSizes: number[]) => {
+      expect(headingSizes).toHaveLength(6)
+      for (let index = 1; index < headingSizes.length; index += 1) {
+        expect(headingSizes[index - 1]).toBeGreaterThan(headingSizes[index])
+      }
+      expect(Math.max(...headingSizes)).toBeLessThan(36)
+    }
+
+    assertHeadingScale(await readHeadingSizes())
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    assertHeadingScale(await readHeadingSizes())
+  })
+
   test('Caption under a streamed answer shows the mode and credit cost', async ({
     page,
   }) => {
@@ -2033,6 +2660,39 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await expect(
       page.getByTestId('chat-assistant-message-content')
     ).toContainText('Partial answer before the failure.')
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
+  })
+
+  test('A silent stream interruption keeps failed-turn actions suppressed', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      text: 'Partial answer before the connection closed.',
+      omitFinish: true,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Trigger a silent interruption')
+
+    const callout = page.getByTestId('chat-message-error')
+    await expect(callout).toBeVisible({ timeout: 15_000 })
+    await expect(callout).toContainText('Connection interrupted')
+    await expect(callout.getByTestId('chat-retry-message-button')).toBeVisible()
+
+    const assistant = page.getByTestId('chat-assistant-message').last()
+    await expect(
+      assistant.getByTestId('chat-reload-message-button')
+    ).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-up-button')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-rate-down-button')).toHaveCount(0)
+    await expect(assistant.locator('time')).toHaveCount(0)
   })
 
   test('A length-truncated answer appends the truncation notice', async ({
