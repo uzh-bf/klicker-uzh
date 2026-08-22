@@ -7,11 +7,7 @@ def map_details(detail, participantId):
         # Personal elements have their own response fields and must never enter
         # the lecturer-owned question-response analytics boundary.
         return None
-    courseId = (
-        detail["practiceQuiz"]["courseId"]
-        if detail["practiceQuiz"]
-        else detail["microLearning"]["courseId"]
-    )
+    courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
     return {**detail, "participantId": participantId, "courseId": courseId}
 
 
