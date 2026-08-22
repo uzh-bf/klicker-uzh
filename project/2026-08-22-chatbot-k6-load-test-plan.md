@@ -79,5 +79,15 @@ lecturer-demo work.
   port, and plaintext-authenticated-target guards; the archive hard-cap check,
   focused Biome, diff checks, gitleaks, and the normal repository pre-commit
   hook passed.
-- S3: pending — repeat integrated final review after the correction commit.
+- Review correction: the third review found redirect following and Unicode
+  production-host aliases. Commit `40d883e20` sets `redirects: 0` for
+  authenticated requests and rejects non-ASCII DNS hostnames in all three
+  scripts.
+- Verification after the third correction: four positive and twenty negative
+  k6 inspections passed, including Unicode-dot production aliases in all three
+  scripts; the archive hard-cap check, focused Biome, diff checks, gitleaks,
+  and the normal repository pre-commit hook passed. The hook reported only the
+  existing Node 26 versus Node 24 engine warning and unrelated deprecation
+  warnings.
+- S3: in progress — repeat integrated final review after the latest correction.
 - S4: pending — push and open draft PR; merge remains withheld.
