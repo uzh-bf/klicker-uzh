@@ -20,7 +20,7 @@
 | Eight-dimension readiness wave | Config, data, deployment, resilience, observability, docs, performance, and UX reviews | completed; findings dispositioned below |
 | Simplifier | Configured simplifier could not read its encrypted task; native fallback review recorded in the execution evidence | fallback completed; safe reductions applied, broader refactor deferred |
 | Integrated final review | Native Sol final-reviewer review of `66f..7adee1787` | completed; not-ready findings remain |
-| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | terminal for current head `01ff09c15`: 45 checks green, one flaky Playwright shard failed (see findings) |
+| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | terminal for current head `fa0218429`: 20 of 21 workflows green; the Playwright workflow failed in shard 1 only (see findings) |
 
 ## Resolved before this head
 
@@ -48,7 +48,7 @@
 | major | Observability | No current-head runtime evidence proves alerts for workflow failure, pending-marker age, effect backlog, replay latency, Redis conflicts, or correction-audience anomalies. | `apps/response-api/src/index.ts:675-697`; worker logging and effect paths | Add or verify values-free metrics and alerts for the listed queues, ages, failures, and response latency. Validate the alert path during a controlled dependency failure. | unverified; no runtime or monitoring target |
 | major | Operability | The wiki explains the acceptance contract but does not provide a runnable release procedure with target inventory, worker registration/drain signals, rollback abort criteria, replay steps, and owners. | `docs/async-and-workers.md`; `docs/domain-model.md`; `project/2026-08-21-pr5395-production-hardening-plan.md` | Add or link the executable deployment and recovery runbook before release approval. | unverified; documentation action remains open |
 | medium | Configuration | Static inspection found no new secret or production environment variable, but API/worker database, Redis, Hatchet, tenant, and `ASSESSMENT_MODE` parity were not proven in a deployed environment. | `apps/response-api/src/index.ts:755-779`; `apps/hatchet-worker-response-processor/src/index.ts:101-112` | Run a values-free preflight that compares target identities and required-key presence, proves workflow registration, and performs one synthetic handshake after migration. | unverified; no environment was started |
-| minor | CI | Exact-head Playwright shard 1 failed once in the public-evaluation-link flow (`O-live-quiz.spec.ts`, 10-second attachment timeout), and the dependent status check failed with it. The branch changes no Playwright files, and the identical suite passed all eight shards on `v3` (`d9e9b46a`) about thirty minutes later. | [failed job](https://github.com/uzh-bf/klicker-uzh/actions/runs/32598170617/job/97095186906); [green v3 run](https://github.com/uzh-bf/klicker-uzh/actions/runs/32599386679) | Treat as environment flake based on the recorded cross-run comparison; rerun the affected workflow before release only if the release owner requires a fully green exact-head record. | confirmed via cross-run comparison |
+| minor | CI | The exact-head Playwright suite failed twice in the same shard-1 test (`O-live-quiz.spec.ts:3545`, public evaluation link): after clearing cookies and reloading, navigation lands on `127.0.0.1:3010/?redirectTo=http%3A%2F%2F127.0.0.1%3A3002%2F404` and `SC Question Content 2` never attaches within 10 seconds. All other seven shards pass both runs; the identical suite passed all eight shards on `v3` (`d9e9b46a`) between the two failures. | [first failure](https://github.com/uzh-bf/klicker-uzh/actions/runs/32598170617/job/97095186906); [second failure](https://github.com/uzh-bf/klicker-uzh/actions/runs/32601928986/job/97101800610); [green v3 run](https://github.com/uzh-bf/klicker-uzh/actions/runs/32599386679) | Reproduce once with the recorded auth-state sequence to decide whether this is a shared-runner environment flake or a real redirect bug; do not treat the red status as a code blocker while the same flow is green on `v3`. | confirmed reproducible on head; environment-vs-code cause still open |
 
 ## Evidence established
 
@@ -66,7 +66,7 @@
 - No migration target, backup/restore, mixed-version rollout, rollback, worker crash, Redis interruption, or autonomous replay was executed.
 - No load, latency, queue-drain, or capacity run was executed.
 - No browser run was needed for changed frontend code; the inherited assessment client still needs a current-head response-contract check.
-- Exact-head GitHub CI for current child head `01ff09c15` is terminal: 45 checks green and two failures caused by one flaky Playwright shard plus its dependent status check; the native Sol review of code head `7adee1787` remains complete and returns not-ready on the open operational blockers above.
+- Exact-head GitHub CI for current child head `fa0218429` is terminal across two consecutive runs: 20 of 21 workflows are green and only the Playwright workflow fails, always in the same shard-1 embedding-link test while the identical suite passes all eight shards on `v3`; the native Sol review of code head `7adee1787` remains complete and returns not-ready on the open operational blockers above.
 
 ## Handoffs
 
