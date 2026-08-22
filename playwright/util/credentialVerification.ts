@@ -19,11 +19,11 @@ import { getPrisma } from '../global-setup.js'
 import {
   ASSESSMENT_REPORT_COURSE_NAME,
   ASSESSMENT_REPORT_COURSE_REFERENCE,
-  ASSESSMENT_REPORT_EDUID_EMAIL,
   ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
   ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
   ASSESSMENT_REPORT_EDUID_SURNAME,
   ASSESSMENT_REPORT_PARTICIPANT_IDS,
+  ASSESSMENT_REPORT_PROFILE_EMAIL,
   ASSESSMENT_REPORT_SUBJECT_EMAIL,
   ASSESSMENT_REPORT_TEN_BIN_PARTICIPANT_IDS,
   COURSE_ID_ASSESSMENT_REPORT,
@@ -69,7 +69,7 @@ export async function seedAssessmentReportFixture() {
         username,
         email:
           index === 0
-            ? ASSESSMENT_REPORT_EDUID_EMAIL
+            ? ASSESSMENT_REPORT_PROFILE_EMAIL
             : `${username}@example.org`,
         invitationEmail:
           index === 0
@@ -337,7 +337,7 @@ export async function resetAssessmentReportFixture() {
   })
   await prisma.participant.update({
     where: { id: ASSESSMENT_REPORT_PARTICIPANT_IDS[0] },
-    data: { email: ASSESSMENT_REPORT_EDUID_EMAIL },
+    data: { email: ASSESSMENT_REPORT_PROFILE_EMAIL },
   })
   await prisma.participation.update({
     where: {

@@ -3,11 +3,11 @@ import { cleanupTest } from '../util/cleanup.js'
 import {
   ASSESSMENT_REPORT_COURSE_NAME,
   ASSESSMENT_REPORT_COURSE_REFERENCE,
-  ASSESSMENT_REPORT_EDUID_EMAIL,
   ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
   ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
   ASSESSMENT_REPORT_EDUID_SURNAME,
   ASSESSMENT_REPORT_PARTICIPANT_IDS,
+  ASSESSMENT_REPORT_PROFILE_EMAIL,
   ASSESSMENT_REPORT_SUBJECT_EMAIL,
   COURSE_ID_ASSESSMENT_REPORT,
   URL_MANAGE,
@@ -250,19 +250,20 @@ test.describe('Assessment report credential lifecycle', () => {
     expect(content).toContain(
       `${ASSESSMENT_REPORT_EDUID_GIVEN_NAME} ${ASSESSMENT_REPORT_EDUID_SURNAME}`
     )
-    expect(content).toContain(ASSESSMENT_REPORT_EDUID_EMAIL)
     expect(content).toContain(ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER)
     expect(content).toContain('SWITCH edu-ID')
-    expect(content).not.toContain(ASSESSMENT_REPORT_SUBJECT_EMAIL)
-    expect(content).not.toContain('Accepted assessment-course invitation email')
+    // The credential carries the accepted invitation address, which is only ever
+    // matched against a verified edu-ID affiliation, never the profile address.
+    expect(content).toContain(ASSESSMENT_REPORT_SUBJECT_EMAIL)
+    expect(content).not.toContain(ASSESSMENT_REPORT_PROFILE_EMAIL)
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.snapshotVersion).toBe(2)
-    expect(record.subjectEmail).toBe(ASSESSMENT_REPORT_EDUID_EMAIL)
+    expect(record.subjectEmail).toBe(ASSESSMENT_REPORT_SUBJECT_EMAIL)
     expect(record.snapshot).toMatchObject({
       version: 2,
       subject: {
-        email: ASSESSMENT_REPORT_EDUID_EMAIL,
+        email: ASSESSMENT_REPORT_SUBJECT_EMAIL,
         givenName: ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
         surname: ASSESSMENT_REPORT_EDUID_SURNAME,
         matriculationNumber: ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
@@ -281,13 +282,13 @@ test.describe('Assessment report credential lifecycle', () => {
     ).toBeVisible()
     await expect(page.getByText('SWITCH edu-ID')).toBeVisible()
     await expect(page.locator('body')).not.toContainText(
-      ASSESSMENT_REPORT_EDUID_EMAIL
-    )
-    await expect(page.locator('body')).not.toContainText(
       ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER
     )
     await expect(page.locator('body')).not.toContainText(
       ASSESSMENT_REPORT_SUBJECT_EMAIL
+    )
+    await expect(page.locator('body')).not.toContainText(
+      ASSESSMENT_REPORT_PROFILE_EMAIL
     )
   })
 

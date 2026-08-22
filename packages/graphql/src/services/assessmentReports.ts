@@ -476,7 +476,6 @@ export async function buildAssessmentReportSnapshot({
       assessmentGivenName: true,
       assessmentSurname: true,
       assessmentMatriculationNumber: true,
-      participant: { select: { email: true } },
     },
   })
 
@@ -494,17 +493,14 @@ export async function buildAssessmentReportSnapshot({
     return snapshotV1
   }
 
-  const subjectEmail = normalizeEmail(
-    participation?.participant.email ?? undefined
-  )
-  if (!subjectEmail) {
-    throw assessmentReportError('ASSESSMENT_REPORT_IDENTITY_UNVERIFIED')
-  }
-
+  // The subject email stays the accepted course-invitation address rather than
+  // Participant.email: invitations are only ever auto-accepted against a verified
+  // edu-ID linked affiliation address, while Participant.email is freely editable
+  // by the participant and therefore carries no edu-ID provenance.
   const parsed = assessmentReportSnapshotV2Schema.safeParse({
     version: 2,
     subject: {
-      email: subjectEmail,
+      email: snapshotV1.subject.email,
       givenName,
       surname,
       matriculationNumber,

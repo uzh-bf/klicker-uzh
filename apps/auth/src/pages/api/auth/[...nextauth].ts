@@ -71,6 +71,13 @@ function getParticipantConfig({
           type: 'oauth',
           authorization: {
             params: {
+              // SWITCH edu-ID does not advertise claims_parameter_supported in its
+              // discovery document, so this claims request is not honoured: claim
+              // release is driven purely by the requested scopes plus the attribute
+              // settings registered in the AAI Resource Registry. It is kept as a
+              // record of which claims the client depends on. The scope list follows
+              // the SWITCH integration guide; `profile` is what releases given_name
+              // and family_name, and `User.Read` the swissEduPerson* claims.
               claims: {
                 id_token: {
                   sub: { essential: true },
