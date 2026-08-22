@@ -5,8 +5,8 @@
 - Date: 2026-08-21
 - Revised: 2026-08-22
 - Ceremony: full path
-- Status: K1 delivery candidate is published, green, and reviewed; Phase 5
-  reconciliation is pending
+- Status: K1 delivery is accepted at the reviewed boundary; K2 is the next
+  dependency-clear slice
 - Plan: `project/2026-08-21-chatbot-response-examples-implementation-plan.md`
 - Current repository: `uzh-bf/klicker-uzh`
 - Current branch: `feat/response-examples-foundation`
@@ -511,8 +511,8 @@ because those belong to the deferred integration milestone.
 
 ## Progress
 
-- Status: K1 implementation is committed, reviewed, and published as draft PR
-  #5474; Phase 5 reconciliation is the remaining boundary step
+- Status: K1 implementation is committed, reviewed, published as draft PR
+  #5474, and accepted through Phase 5; K2 is ready to start
 - Completed: repository mapping, product grill, design, ADRs 0028-0036,
   independent-scope correction, current source refresh, stack-capability check,
   two native Sol planning passes, refreshed `v3-ai` adoption, the design
@@ -522,8 +522,8 @@ because those belong to the deferred integration milestone.
   generated artifacts, synthetic test-only fixtures, focused tests, and the
   matching wiki update
 - Active slice: none; K1 has reached `BOUNDARY_CANDIDATE`
-- Remaining: Phase 5 reconciliation for K1; K2, K3, K4, and E1 remain blocked
-  pending K1 acceptance through Phase 5
+- Remaining: K2 review workflow; K3, K4, and E1 remain blocked pending their
+  listed dependencies being accepted through Phase 5
 - Latest public evidence: `feat/response-examples-foundation` is based directly
   on `origin/v3-ai` at
   `198747502a81149c2f61bb3dcd097716bbe32244`; PR #5424 remains separate and
@@ -551,22 +551,24 @@ because those belong to the deferred integration milestone.
   accepted advisory hardening is commit `d46658b2f`, followed by green focused
   GraphQL checks and 4/4 database tests.
 - CI evidence: draft PR #5474 targets `v3-ai` at head
-  `80921561724e5bb91fdd9fa2f1a1b6a336c05f6d`; after
-  two branch-specific fixes (missing util auth subpath Rollup entries in
-  `d20ef52a7` and a stale manage-assistant Playwright locator in
-  `7146335bc6`, both outside the response-example diff), the full check suite
-  is green, including build-and-compile with all eight Playwright shards,
-  GraphQL, MCP lecturer, types, lint, format, knip, syncpack, and gitleaks.
+  `59915d2bee2cb0d154b6f36a88f29098261e816e`; after two branch-specific fixes
+  (missing util auth subpath Rollup entries in `d20ef52a7` and a stale
+  manage-assistant Playwright locator in `7146335bc6`, both outside the
+  response-example diff), the full check suite is green, including
+  build-and-compile with all eight Playwright shards, GraphQL, MCP lecturer,
+  types, lint, format, knip, syncpack, and gitleaks. The docs-only head first
+  hit a transient Prisma `EEXIST` in `check-types`; the failed job retry passed
+  without a source change.
 - Unresolved required gates: none for K1. The draft stays draft; ready,
   merge, deployment, and live use remain withheld by decision.
 - Required delivery layer: one independently green, reviewed draft PR for K1;
-  the four-layer milestone delivery remains pending
+  K1 meets that layer and the four-layer milestone delivery remains pending
 - Achieved delivery layer: one independently green, reviewed draft PR #5474,
   with the committed design, ADRs, approved plan, K1 foundation, and advisory
   hardening included
-- Next action: run Phase 5 reconciliation against the exact K1 boundary
-  evidence; keep the draft and all withheld actions unchanged, and do not
-  start K2 until K1 is accepted through Phase 5.
+- Next action: create `feat/response-examples-review` from the accepted K1
+  head, record the privacy check, and start K2. Keep the draft and all
+  withheld actions unchanged.
 
 ## Next steps after terminal
 
