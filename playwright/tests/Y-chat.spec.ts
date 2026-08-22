@@ -191,10 +191,16 @@ async function visitChat(page: Page) {
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })
-  // The disclaimer gate resolves after hydration; on a loaded CI runner this
-  // can trail domcontentloaded by seconds. Wait until the loading skeleton is
-  // gone so assertions measure the chat UI, not the loader.
-  await expect(page.getByTestId('chat-loading')).toHaveCount(0)
+  // The loading skeleton clears once hydration completes; on a heavily
+  // loaded CI runner that can stall, so one reload recovers it instead of
+  // failing every assertion that follows.
+  const skeleton = page.getByTestId('chat-loading')
+  try {
+    await expect(skeleton).toHaveCount(0)
+  } catch {
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(skeleton).toHaveCount(0)
+  }
 }
 
 async function typeMessage(page: Page, text: string) {

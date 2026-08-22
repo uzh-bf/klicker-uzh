@@ -1,18 +1,18 @@
 'use client'
 
+import { useAui, useAuiState } from '@assistant-ui/react'
+import { useParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { projectDictationDraft } from '../lib/speech/dictation-draft'
 import {
   appendTranscript,
   createInitialDictationState,
-  dictationReducer,
   type DictationErrorCode,
   type DictationState,
   type DictationStatus,
+  dictationReducer,
 } from '../lib/speech/dictation-state'
-import { projectDictationDraft } from '../lib/speech/dictation-draft'
-import { useAui, useAuiState } from '@assistant-ui/react'
-import { useLocale } from 'next-intl'
-import { useParams } from 'next/navigation'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 export type LocalSpeechAvailability =
   | 'available'
@@ -372,9 +372,12 @@ export function useDictation(): DictationValue {
     capturedDraftRef.current = null
     transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
     recognition?.abort()
+    // The composer text survives a runtime thread switch, so an in-flight
+    // dictation would otherwise leak the old draft into the new thread.
+    void aui.composer.reset()
     dispatch({ type: 'reset' })
     void refreshCapability()
-  }, [refreshCapability, threadId])
+  }, [aui, refreshCapability, threadId])
 
   useEffect(() => {
     if (state.status !== 'installing') return

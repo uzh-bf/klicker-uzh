@@ -35,7 +35,7 @@ export function DictationSheet() {
 
   return (
     <Modal
-      data-cy="chat-dictation-sheet"
+      data={{ cy: 'chat-dictation-sheet' }}
       title={t('chat.composer.dictationSheetTitle')}
       open
       onClose={closeInstallSheet}

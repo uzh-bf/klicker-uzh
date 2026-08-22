@@ -296,6 +296,17 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   when status becomes ready, and `visitChat` waits for the loading skeleton to
   clear (commit 563aa44f9). Chat typecheck passes locally; exact-head CI run
   32592267409 is pending at time of writing. Merge remains withheld.
+- 2026-08-23 — Run 3 (32592545633) artifact analysis split the remaining
+  failures into two real bugs plus one environmental stall: the install sheet
+  rendered with no test id at all because the design-system Modal only
+  applies its `data={{ cy }}` prop (a bare `data-cy` is dropped), so the
+  sheet locator could never match; aborting dictation on thread switch
+  cleared hook refs but left the old draft in the composer, which now resets
+  the composer via `aui.composer.reset()`; and the loading skeleton stall is
+  a hydration race where the disclaimer API answers in ~20 ms while React
+  never finishes hydrating under CI load, so `visitChat` falls back to one
+  reload when the skeleton has not cleared. Chat typecheck, unit tests, lint,
+  and formatting pass locally. Merge remains withheld.
 
 ## Pause and finish boundary
 
