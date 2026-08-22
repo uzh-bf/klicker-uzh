@@ -10,8 +10,8 @@ import {
   type AssessmentParticipantInvitationInput,
   CreateAssessmentParticipantInvitationsDocument,
   type CreateAssessmentParticipantInvitationsMutation,
-  GetAssessmentParticipantInvitationPageDocument,
-  type GetAssessmentParticipantInvitationPageQueryVariables,
+  GetAssessmentParticipantInvitationsDocument,
+  type GetAssessmentParticipantInvitationsQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -123,7 +123,7 @@ function ParticipantInvitationCsvUpload({
   onImportCompleted,
 }: {
   courseId: string
-  queryVariables: GetAssessmentParticipantInvitationPageQueryVariables
+  queryVariables: GetAssessmentParticipantInvitationsQueryVariables
   onImportCompleted: () => void
 }) {
   const t = useTranslations()
@@ -140,7 +140,7 @@ function ParticipantInvitationCsvUpload({
     {
       refetchQueries: [
         {
-          query: GetAssessmentParticipantInvitationPageDocument,
+          query: GetAssessmentParticipantInvitationsDocument,
           variables: queryVariables,
         },
       ],

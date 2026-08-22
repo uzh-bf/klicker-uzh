@@ -36305,7 +36305,7 @@
             "deprecationReason": null
           },
           {
-            "name": "assessmentParticipantInvitationPage",
+            "name": "assessmentParticipantInvitations",
             "description": null,
             "args": [
               {

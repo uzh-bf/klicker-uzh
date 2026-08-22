@@ -177,7 +177,7 @@
    "GetAnswerCollectionsInfo": "8b6886e068cfa83bb4fb7cc1f00ce7b04dd92ae9f55faf6d5b77653c3da24623",
    "GetArtificialInstance": "89d6ac92566a3e58b1ded67069879270c412a70254acf111cb1458fa88bd832f",
    "GetAssessmentCourseParticipants": "6946b4c14b120277016f994fae31ba6bc81d0fb6957917d3d6fa75635be0738c",
-   "GetAssessmentParticipantInvitationPage": "53eb7636dd2dcb9ae5db55f6c53778840e20f35a8da1102275c0c54dd49907de",
+   "GetAssessmentParticipantInvitations": "14597de2aa3a65d6eb0976d8c529fb7efeb8ed34cdf29384d95ad8d6844827fb",
    "GetAssessmentResultsCourse": "ff3508355bff9ee970dbf4db39b29d7703d5ad87cbfffbe754cfc60f50451e2d",
    "GetAssessmentResultsLiveQuiz": "05e541ea1d4bc44ef44f7a3ab4a7ee13af937c887508cdc7649e2b7de38c300b",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",

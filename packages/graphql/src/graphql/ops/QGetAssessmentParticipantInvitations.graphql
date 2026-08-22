@@ -1,9 +1,9 @@
-query GetAssessmentParticipantInvitationPage(
+query GetAssessmentParticipantInvitations(
   $courseId: String!
   $numEntries: Int
   $offset: Int
 ) {
-  assessmentParticipantInvitationPage(
+  assessmentParticipantInvitations(
     courseId: $courseId
     numEntries: $numEntries
     offset: $offset

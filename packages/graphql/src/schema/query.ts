@@ -962,7 +962,7 @@ export const Query = builder.queryType({
         ),
       }),
 
-      assessmentParticipantInvitationPage: t.withAuth(asUser).field({
+      assessmentParticipantInvitations: t.withAuth(asUser).field({
         nullable: true,
         type: AssessmentParticipantInvitationPage,
         args: {

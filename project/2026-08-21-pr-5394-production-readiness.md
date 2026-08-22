@@ -76,6 +76,7 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 | Build and exact-head CI | the final build passed with 23 successful tasks and exit code 0, and the exact-head Playwright rerun passed all eight shards and its status gate |
 | Simplification head `a07def5b5` | consumer audit found no caller of the unbounded list field; field, service function, operation document, and persisted hashes removed; codegen, graphql check, frontend-manage check, format check, and the database-backed invitation suite (21/21) pass; exact-head CI reruns green on GitHub |
 | Final review at `a07def5b5` | native Sol xhigh final review of e2e885bdd..a07def5b5 passed with one evidence-drift finding; the plan-compliance correction is this snapshot update; simplifier xhigh reported no further behavior-preserving simplifications |
+| Field rename at final head | query field renamed to `assessmentParticipantInvitations` to match the shipped `userActivities`/`courseAssessmentReportRecords` convention while keeping the `AssessmentParticipantInvitationPage` payload type; codegen, checks, and focused tests rerun green |
 
 ## Not checked
 

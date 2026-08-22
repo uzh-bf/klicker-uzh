@@ -3,9 +3,9 @@ import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
   AssessmentParticipantInvitationStatus,
   DeletePendingAssessmentParticipantInvitationDocument,
-  GetAssessmentParticipantInvitationPageDocument,
-  type GetAssessmentParticipantInvitationPageQuery,
-  type GetAssessmentParticipantInvitationPageQueryVariables,
+  GetAssessmentParticipantInvitationsDocument,
+  type GetAssessmentParticipantInvitationsQuery,
+  type GetAssessmentParticipantInvitationsQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -23,7 +23,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 type Invitation = NonNullable<
-  GetAssessmentParticipantInvitationPageQuery['assessmentParticipantInvitationPage']
+  GetAssessmentParticipantInvitationsQuery['assessmentParticipantInvitations']
 >['invitations'][number]
 
 function ParticipantInvitationsTable({
@@ -34,7 +34,7 @@ function ParticipantInvitationsTable({
 }: {
   courseId: string
   invitations: Invitation[]
-  queryVariables: GetAssessmentParticipantInvitationPageQueryVariables
+  queryVariables: GetAssessmentParticipantInvitationsQueryVariables
   onInvitationDeleted: () => void
 }) {
   const t = useTranslations()
@@ -45,7 +45,7 @@ function ParticipantInvitationsTable({
     {
       refetchQueries: [
         {
-          query: GetAssessmentParticipantInvitationPageDocument,
+          query: GetAssessmentParticipantInvitationsDocument,
           variables: queryVariables,
         },
       ],

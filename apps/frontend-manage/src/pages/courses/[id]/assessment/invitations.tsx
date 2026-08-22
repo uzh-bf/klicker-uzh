@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client'
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons'
 import {
-  GetAssessmentParticipantInvitationPageDocument,
-  type GetAssessmentParticipantInvitationPageQueryVariables,
+  GetAssessmentParticipantInvitationsDocument,
+  type GetAssessmentParticipantInvitationsQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
@@ -50,13 +50,13 @@ function AssessmentParticipantInvitations() {
   })
   const courseId =
     typeof router.query.id === 'string' ? router.query.id : undefined
-  const queryVariables: GetAssessmentParticipantInvitationPageQueryVariables = {
+  const queryVariables: GetAssessmentParticipantInvitationsQueryVariables = {
     courseId: courseId ?? '',
     numEntries: pageSize,
     offset: (currentPage - 1) * pageSize,
   }
   const { data, loading, error } = useQuery(
-    GetAssessmentParticipantInvitationPageDocument,
+    GetAssessmentParticipantInvitationsDocument,
     {
       variables: queryVariables,
       skip: !courseId,
@@ -64,7 +64,7 @@ function AssessmentParticipantInvitations() {
     }
   )
 
-  const totalCount = data?.assessmentParticipantInvitationPage?.totalCount ?? 0
+  const totalCount = data?.assessmentParticipantInvitations?.totalCount ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
   useEffect(() => {
     if (!loading && currentPage > totalPages) setCurrentPage(totalPages)
@@ -84,7 +84,7 @@ function AssessmentParticipantInvitations() {
     )
   }
 
-  const invitationPage = data?.assessmentParticipantInvitationPage
+  const invitationPage = data?.assessmentParticipantInvitations
   if (error || !invitationPage) {
     return (
       <Layout>
