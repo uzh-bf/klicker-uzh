@@ -1019,12 +1019,10 @@ export async function getCockpitQuiz(
         ][]
       | null
 
-    const activeBlockParticipantCounts = cacheContent?.flatMap(
-      ([_, result]) => {
-        const participants = Number.parseInt(result?.participants ?? '0', 10)
-        return Number.isFinite(participants) ? [participants] : []
-      }
-    )
+    const activeBlockParticipantCounts = cacheContent?.map(([_, result]) => {
+      const participants = Number.parseInt(result?.participants ?? '0', 10)
+      return Number.isFinite(participants) ? participants : 0
+    })
     const activeBlockParticipants = activeBlockParticipantCounts?.length
       ? activeBlockParticipantCounts.reduce((acc, val) => min(acc, val))
       : 0
