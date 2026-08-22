@@ -412,3 +412,10 @@ Gate 3 ruling and names every still-withheld action.
   is 46 commits ahead and 2 commits behind current `origin/v3` through its
   approved stack ancestry. The plan now requires the concrete PostgreSQL
   concurrent-charge proof and records the accepted reviewer clarifications.
+- 2026-08-22: S1 implements the owner/admin GraphQL projection and atomic
+  two-budget update with additive persisted operations, generated artifacts,
+  and the matching platform-wiki contract. The focused PostgreSQL/GraphQL file
+  passes all 11 tests, including the authorization matrix, rollback, rollover,
+  disabled capability, and deterministic concurrent-charge proof. GraphQL
+  generation, package typecheck, and package build pass in the Node 24 DevPod;
+  the build retains its known repository-wide Rollup TypeScript warnings.

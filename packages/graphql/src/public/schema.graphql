@@ -706,6 +706,20 @@ type CatalogSelectionObject {
   name: String!
 }
 
+type ChatAccountUsageLane {
+  budgetCredits: Float!
+  remainingCredits: Float!
+  resetAt: Date!
+  usageClass: ChatUsageClass!
+  usedCredits: Float!
+}
+
+type ChatAccountUsageOverview {
+  advancedModelUsage: ChatAccountUsageLane!
+  authorized: Boolean!
+  baseModelUsage: ChatAccountUsageLane!
+}
+
 type ChatModelCapability {
   description: String!
   fallback: Boolean!
@@ -713,6 +727,11 @@ type ChatModelCapability {
   name: String!
   supportedReasoningEfforts: [String!]!
   supportsReasoning: Boolean!
+}
+
+enum ChatUsageClass {
+  ADVANCED
+  BASE
 }
 
 type Chatbot {
@@ -2099,6 +2118,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String): ChatAccountUsageOverview
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
@@ -2598,6 +2618,7 @@ type Query {
   getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
+  getChatAccountUsage(ownerId: String): ChatAccountUsageOverview
   getChatModelRegistry: [ChatModelCapability!]!
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course

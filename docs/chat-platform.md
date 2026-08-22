@@ -138,7 +138,23 @@ primary key prevents duplicate account/class/month rows. Counters start at
 zero at migration cutover; a missing row projects to budget 0 / used 0. The
 Zurich month boundary (including DST) is derived deterministically in
 `packages/util/src/chatUsage.ts`. The participant chat route enforces these
-counters at runtime; the lecturer-facing lanes remain a separate follow-up.
+counters at runtime.
+
+The lecturer-facing GraphQL API projects the current account month through
+`getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
+Each lane returns its fixed usage class, budget, used credits, non-negative
+remaining credits, and the exact next Zurich reset instant. Missing rows become
+zero-valued lanes, while the outer `authorized` field always reflects the live
+account capability. An `ACCOUNT_OWNER` can access only its own account; an
+`ADMIN` can supply a target owner ID. Other lecturer login scopes and all
+participant roles are denied at both the schema and service boundaries.
+
+`setChatAccountUsageBudgets` validates both values against the shared
+`Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows
+in one transaction. It changes only `budgetCredits`, preserving existing or
+concurrent `usedCredits`; a disabled account cannot write. The API deliberately
+has no cost-center, contribution, provider, settlement, participant-credit, or
+per-model fields.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
