@@ -63,5 +63,13 @@ lecturer-demo work.
   check attempt failed because generated package outputs were absent; local
   package builds generated those ignored outputs, after which the normal
   pre-commit hook passed.
-- S3: pending — integrated final review after verification.
+- Review correction: final review found three safety defects. Commit
+  `00b396166` enforces the request-path turn cap against CLI iteration
+  overrides, normalizes origin-only production target forms, and rejects
+  whitespace-only identifiers/models.
+- Verification after correction: four positive and eleven negative k6
+  inspections passed; `k6 archive -u 1 -i 100` showed the CLI override and
+  preserved the hard-cap guard in the archive; focused Biome, diff checks,
+  gitleaks, and the normal repository pre-commit hook passed.
+- S3: pending — repeat integrated final review after the correction commit.
 - S4: pending — push and open draft PR; merge remains withheld.
