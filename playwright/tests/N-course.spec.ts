@@ -2446,11 +2446,7 @@ test.describe('Part 4b: Assessment participant invitations', () => {
           `\uFEFFemail;matriculationNumber;note\n"${pendingEmail}";12-345-678;"quoted ""note"""\nnot-an-email;98-765-432;invalid`
         ),
       })
-      await expect(
-        page.getByText(
-          messages.manage.assessment.invitationCsvReady.replace('{count}', '2')
-        )
-      ).toBeVisible()
+      await expect(page.getByText('2 rows ready to import')).toBeVisible()
       await page.getByTestId('assessment-invitations-import').click()
 
       const importResult = page.getByTestId(
