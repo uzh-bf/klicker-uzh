@@ -30,7 +30,7 @@ import {
   toolDefinition,
   type LecturerMcpToolName,
 } from './toolPolicy.js'
-import { runLecturerDraftTool, runLecturerReadTool } from './toolRunner.js'
+import { runLecturerTool } from './toolRunner.js'
 
 export {
   getLecturerCapabilities,
@@ -102,7 +102,7 @@ export function createLecturerMcpServer(
     description:
       'Return the current lecturer MCP service capabilities. This scaffold tool does not access Klicker data.',
     execute: (_args, context) =>
-      runLecturerReadTool({
+      runLecturerTool({
         execute: () => getLecturerCapabilities(settings),
         session: context.session,
         toolName: 'klicker_lecturer_capabilities',
@@ -116,7 +116,7 @@ export function createLecturerMcpServer(
     description:
       'List courses readable by the authenticated lecturer. Returns compact metadata only and never includes PIN codes.',
     execute: (args, context) =>
-      runLecturerReadTool({
+      runLecturerTool({
         execute: (session) => service.listCourses(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_course_list',
@@ -130,7 +130,7 @@ export function createLecturerMcpServer(
     description:
       'Get compact metadata and activity counts for a course readable by the authenticated lecturer.',
     execute: (args, context) =>
-      runLecturerReadTool({
+      runLecturerTool({
         execute: (session) => service.getCourse(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_course_get',
@@ -147,7 +147,7 @@ export function createLecturerMcpServer(
     description:
       'Search question elements readable by the authenticated lecturer. Results are capped and include plain-text snippets only.',
     execute: (args, context) =>
-      runLecturerReadTool({
+      runLecturerTool({
         execute: (session) => service.searchElements(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_element_search',
@@ -161,7 +161,7 @@ export function createLecturerMcpServer(
     description:
       'Get one question element readable by the authenticated lecturer. Text fields and options are capped.',
     execute: (args, context) =>
-      runLecturerReadTool({
+      runLecturerTool({
         execute: (session) => service.getElement(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_element_get',
@@ -178,7 +178,7 @@ export function createLecturerMcpServer(
     description:
       'Create a validated draft-only question payload for SC, MC, or FREE_TEXT questions. This never persists data. If courseId is provided, the course must be readable by the authenticated lecturer.',
     execute: (args, context) =>
-      runLecturerDraftTool({
+      runLecturerTool({
         execute: (session) => service.createQuestionDraft(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_question_draft',
@@ -195,7 +195,7 @@ export function createLecturerMcpServer(
     description:
       'Create validated draft-only choice scaffolding for a question. This never persists data.',
     execute: (args, context) =>
-      runLecturerDraftTool({
+      runLecturerTool({
         execute: (session) => service.createChoicesDraft(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_choices_draft',
@@ -212,7 +212,7 @@ export function createLecturerMcpServer(
     description:
       'Create validated draft-only answer feedback scaffolding for a question and its choices. This never persists data.',
     execute: (args, context) =>
-      runLecturerDraftTool({
+      runLecturerTool({
         execute: (session) => service.createFeedbackDraft(args, session),
         session: context.session,
         toolName: 'klicker_lecturer_feedback_draft',
@@ -229,7 +229,7 @@ export function createLecturerMcpServer(
     description:
       'Create a signed proposal for a DRAFT SC, MC, or FREE_TEXT question. This does not persist data; the lecturer must explicitly confirm the proposal in the Manage assistant UI.',
     execute: (args, context) =>
-      runLecturerDraftTool({
+      runLecturerTool({
         execute: async (session) => {
           const proposal = service.createElementDraftProposal(args, session)
           return {

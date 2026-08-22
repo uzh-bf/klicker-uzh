@@ -1,4 +1,5 @@
 import { signJWT } from '@klicker-uzh/util'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
 
 // JWT lives 5 min; cache evicts one minute earlier so a cached token
 // can't expire mid-request.
@@ -7,6 +8,17 @@ const CACHE_TTL_MS = 4 * 60 * 1000
 
 export const LECTURER_MCP_SCOPE_FULL = 'manage:read manage:draft'
 export const LECTURER_MCP_SCOPE_READ_ONLY = 'manage:read'
+
+// Purpose claims separate a chatbot-minted MCP token from every other token
+// signed for the same subject; the MCP services reject a token without them.
+const STUDENT_MCP_PURPOSE = 'student-mcp'
+const LECTURER_MCP_PURPOSE = 'lecturer-mcp'
+
+// Both participant kinds get the same practice access today. The scopes are
+// minted separately so a future policy can withhold submitting without
+// changing the token shape.
+export const STUDENT_MCP_SCOPE_FULL =
+  'student:practice:read student:practice:submit'
 
 // Lecturer session UserLoginScope values (packages/prisma schema/user.prisma)
 // that map to full read+draft MCP access. ACCOUNT_OWNER is the scope a real
@@ -61,21 +73,25 @@ export class McpAuthMintError extends Error {
 
 /**
  * Mints a short-lived HS256 JWT identifying `participantId` for the
- * Klicker MCP server. Tokens are cached per participant for under the
- * JWT TTL so a streaming turn with N tool calls mints once.
+ * Klicker MCP server. `authMode` is the caller's verified participant kind
+ * (`anonymous` is an LTI guest persona) and is carried into the token so
+ * tool policy can distinguish the two. Tokens are cached per participant
+ * and actor kind for under the JWT TTL so a streaming turn with N tool
+ * calls mints once.
  *
  * Throws `McpAuthMintError` if required env is missing so misconfigured
  * environments fail loud at mint time, not at the MCP verifier.
  */
 export async function mintParticipantMcpJwt(
-  participantId: string
+  participantId: string,
+  authMode: AuthMode
 ): Promise<string> {
-  const secret = process.env.APP_SECRET
+  const secret = process.env.MCP_STUDENT_JWT_SECRET ?? process.env.APP_SECRET
   const issuer = process.env.APP_ORIGIN_AUTH
 
   if (!secret) {
     throw new McpAuthMintError(
-      'APP_SECRET is not set; cannot mint participant MCP JWT'
+      'APP_SECRET or MCP_STUDENT_JWT_SECRET is not set; cannot mint participant MCP JWT'
     )
   }
   if (!issuer) {
@@ -84,19 +100,27 @@ export async function mintParticipantMcpJwt(
     )
   }
 
+  const cacheKey = `${participantId}:${authMode}`
+
   const now = Date.now()
   pruneExpiredCacheEntries(cache, now)
 
-  const cached = cache.get(participantId)
+  const cached = cache.get(cacheKey)
   if (cached && now - cached.mintedAtMs <= CACHE_TTL_MS) {
     return cached.jwt
   }
   if (cached) {
-    cache.delete(participantId)
+    cache.delete(cacheKey)
   }
 
   const jwt = await signJWT(
-    { sub: participantId, role: 'PARTICIPANT' },
+    {
+      sub: participantId,
+      role: 'PARTICIPANT',
+      purpose: STUDENT_MCP_PURPOSE,
+      scope: STUDENT_MCP_SCOPE_FULL,
+      actor: authMode,
+    },
     secret,
     {
       algorithm: 'HS256',
@@ -105,7 +129,7 @@ export async function mintParticipantMcpJwt(
     }
   )
 
-  cache.set(participantId, { jwt, mintedAtMs: now })
+  cache.set(cacheKey, { jwt, mintedAtMs: now })
   return jwt
 }
 
@@ -175,7 +199,7 @@ export async function mintLecturerMcpJwt(
     {
       sub: userId,
       role: 'USER',
-      purpose: 'lecturer-mcp',
+      purpose: LECTURER_MCP_PURPOSE,
       scope: mcpScope,
     },
     secret,

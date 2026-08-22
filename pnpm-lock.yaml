@@ -1437,6 +1437,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       fastmcp:
         specifier: 4.13.1
         version: 4.13.1(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(effect@3.20.0)(jose@5.9.4)

@@ -1,3 +1,6 @@
+import { requireScopes } from 'fastmcp/auth'
+import type { LecturerMcpSession } from './auth.js'
+
 export const LECTURER_MCP_TOOL_NAMES = [
   'klicker_lecturer_capabilities',
   'klicker_lecturer_course_list',
@@ -137,15 +140,29 @@ export const LECTURER_MCP_TOOL_POLICIES: Record<
   },
 }
 
+/**
+ * Builds the fastmcp registration fields a tool shares with its policy entry,
+ * so `rbacScope` is the single place a tool's scope requirement is declared.
+ * fastmcp evaluates `canAccess` when the session is created and only puts the
+ * tools that pass into that session's dispatch table, so a read-only lecturer
+ * token cannot call a drafting tool by name either.
+ */
 export function toolDefinition(
   name: LecturerMcpToolName,
   title: string
-): { annotations: McpToolAnnotations; name: LecturerMcpToolName } {
+): {
+  annotations: McpToolAnnotations
+  canAccess: (auth: LecturerMcpSession) => boolean
+  name: LecturerMcpToolName
+} {
   return {
     annotations: {
       ...LECTURER_MCP_TOOL_POLICIES[name].annotations,
       title,
     },
+    canAccess: requireScopes<LecturerMcpSession>(
+      ...LECTURER_MCP_TOOL_POLICIES[name].rbacScope
+    ),
     name,
   }
 }

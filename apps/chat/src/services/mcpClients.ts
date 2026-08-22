@@ -12,6 +12,7 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
 import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 
 // Type definitions for MCP server configuration
@@ -108,7 +109,8 @@ function toSafeToolName(
 async function createAuthHeaders(
   server: MCPServerConfig,
   chatbotId: string,
-  participantId = ''
+  participantId = '',
+  authMode: AuthMode
 ): Promise<Record<string, string>> {
   const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -130,7 +132,7 @@ async function createAuthHeaders(
         'Participant identity is required for participant MCP auth'
       )
     }
-    const token = await mintParticipantMcpJwt(participantId)
+    const token = await mintParticipantMcpJwt(participantId, authMode)
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
   }
@@ -196,14 +198,20 @@ async function createAuthHeaders(
 export async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
-  participantId = ''
+  participantId = '',
+  authMode: AuthMode
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
   try {
-    const headers = await createAuthHeaders(server, chatbotId, participantId)
+    const headers = await createAuthHeaders(
+      server,
+      chatbotId,
+      participantId,
+      authMode
+    )
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -253,7 +261,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
   chatbotId: string,
-  participantId: string
+  participantId: string,
+  authMode: AuthMode
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -281,7 +290,12 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(server, chatbotId, participantId)
+    const client = await createMCPClient(
+      server,
+      chatbotId,
+      participantId,
+      authMode
+    )
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -344,7 +358,8 @@ async function loadServerTools(
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
   chatbotId: string,
-  participantId = ''
+  participantId = '',
+  authMode: AuthMode
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -367,7 +382,8 @@ export async function getAggregatedMCPTools(
       const serverTools = await loadServerTools(
         serverWithConfig,
         chatbotId,
-        participantId
+        participantId,
+        authMode
       )
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
@@ -399,7 +415,11 @@ export async function getAggregatedMCPTools(
  * Legacy function for backward compatibility with environment variables
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
-export async function getMCPTools(chatbotId: string, participantId: string) {
+export async function getMCPTools(
+  chatbotId: string,
+  participantId: string,
+  authMode: AuthMode
+) {
   console.log(' Using legacy MCP configuration from environment variables')
 
   const mcpKey = process.env.MCP_KEY
@@ -428,7 +448,8 @@ export async function getMCPTools(chatbotId: string, participantId: string) {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
       chatbotId,
-      participantId
+      participantId,
+      authMode
     )
     return serverTools
   } catch (error) {

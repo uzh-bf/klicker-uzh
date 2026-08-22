@@ -138,7 +138,16 @@ baseline is recorded in `evaluation/manage-assistant/README.md`.
 
 ## Student practice MCP (`apps/mcp-student`)
 
-Participant practice questions reach the chat through a second FastMCP server, not through the chat's own Prisma access. `apps/mcp-student` (default port 7080, `/mcp`) authenticates a **participant** JWT minted by `mintParticipantMcpJwt` (`src/lib/server/mcpAuthMint.ts`), rejecting any token whose role is not `PARTICIPANT` (`apps/mcp-student/src/auth.ts:verifyParticipantSession`), and reads element data through the persisted GraphQL client rather than Prisma (`apps/mcp-student/src/graphqlClient.ts`). Answers are addressed by short-lived signed `questionRef` values (`MCP_STUDENT_QUESTION_REF_TTL_SECONDS`, default 20 min), so the chat never handles raw element ids or answer keys.
+Participant practice questions reach the chat through a second FastMCP server, not through the chat's own Prisma access. `apps/mcp-student` (default port 7080, `/mcp`) authenticates a **participant** JWT minted by `mintParticipantMcpJwt` (`src/lib/server/mcpAuthMint.ts`) and reads element data through the persisted GraphQL client rather than Prisma (`apps/mcp-student/src/graphqlClient.ts`).
+
+`verifyParticipantSession` (`apps/mcp-student/src/auth.ts`) requires four things of the token, not just a participant subject:
+
+- `purpose: student-mcp`. Without it, an ordinary participant session cookie would open the MCP service directly: it is signed with the same secret, for the same subject, with the same `PARTICIPANT` role, and only the issuer value differed. The purpose claim is what makes "minted by the chatbot" an explicit assertion rather than an environment-variable coincidence.
+- `role: PARTICIPANT`, so a lecturer token cannot cross over.
+- `actor`, either `account` or `anonymous`, carrying which participant kind the chatbot is acting for (the same `AuthMode` distinction as `src/lib/server/ltiGuest.ts`, so an LTI guest stays visible to tool policy). Both kinds mint the same scopes today.
+- at least one recognized scope (`student:practice:read`, `student:practice:submit`). Which tools a scope actually reaches is decided per tool: `toolDefinition` (`apps/mcp-student/src/toolPolicy.ts`) derives each tool's `canAccess` predicate from its own `rbacScope` entry, and fastmcp only puts a tool into a session's dispatch table when the session satisfies it — so a read-only token neither sees `submit_practice_stack_answer` in `tools/list` nor can call it by name.
+
+`pnpm --filter @klicker-uzh/mcp-student smoke:negative` exercises those rejections against a running service (the lecturer service has a matching `smoke:negative`). Answers are addressed by short-lived signed `questionRef` values (`MCP_STUDENT_QUESTION_REF_TTL_SECONDS`, default 20 min), so the chat never handles raw element ids or answer keys.
 
 Three properties matter when debugging it:
 

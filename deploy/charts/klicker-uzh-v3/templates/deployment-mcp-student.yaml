@@ -58,6 +58,16 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mcpStudent.secret.name | default (printf "%s-secret-chat" $fullName) }}
                   key: {{ .Values.mcpStudent.secret.appSecretKey }}
+            {{- with .Values.mcpStudent.secret.jwtSecretKey }}
+            {{- /* Dedicated MCP signing secret. Only referenced once the key
+                   exists in the cluster secret; the chart creates no secrets,
+                   so an unconditional ref would keep the pod from starting. */}}
+            - name: MCP_STUDENT_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.mcpStudent.secret.name | default (printf "%s-secret-chat" $fullName) }}
+                  key: {{ . }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ $fullName }}-config-global

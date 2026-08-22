@@ -1,4 +1,4 @@
-import type { LecturerMcpScope, LecturerMcpSession } from './auth.js'
+import type { LecturerMcpSession } from './auth.js'
 import {
   toLecturerToolError,
   type LecturerToolErrorOutput,
@@ -20,12 +20,6 @@ function requireSession(session: LecturerMcpSession | undefined) {
     throw new Error('Authentication failed: missing lecturer session')
   }
   return session
-}
-
-function requireScope(session: LecturerMcpSession, scope: LecturerMcpScope) {
-  if (!session.scopes.includes(scope)) {
-    throw new Error(`Authentication failed: missing scope ${scope}`)
-  }
 }
 
 function logToolCall(
@@ -53,7 +47,7 @@ function logToolCall(
   }
 }
 
-export async function runLecturerReadTool({
+export async function runLecturerTool({
   execute,
   session,
   toolName,
@@ -62,26 +56,6 @@ export async function runLecturerReadTool({
 
   try {
     const output = json(await execute(requireSession(session)))
-    logToolCall(session, toolName, startedAt, 'ok')
-    return output
-  } catch (error) {
-    const safeError = toLecturerToolError(error)
-    logToolCall(session, toolName, startedAt, 'error', safeError)
-    return json(safeError)
-  }
-}
-
-export async function runLecturerDraftTool({
-  execute,
-  session,
-  toolName,
-}: RunLecturerToolOptions) {
-  const startedAt = Date.now()
-
-  try {
-    const validSession = requireSession(session)
-    requireScope(validSession, 'manage:draft')
-    const output = json(await execute(validSession))
     logToolCall(session, toolName, startedAt, 'ok')
     return output
   } catch (error) {

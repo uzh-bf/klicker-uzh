@@ -65,7 +65,7 @@ function help() {
 Prerequisites:
   - backend GraphQL is running and seeded
   - apps/mcp-student is running on the configured URL
-  - APP_SECRET and APP_ORIGIN_AUTH match the running services
+  - APP_SECRET or MCP_STUDENT_JWT_SECRET and APP_ORIGIN_AUTH match the running services
 
 Usage:
   pnpm --filter @klicker-uzh/mcp-student smoke:local
@@ -78,6 +78,7 @@ Environment:
   MCP_STUDENT_SMOKE_CHATBOT_ID      default seeded Benibot
   MCP_STUDENT_SMOKE_SUBMIT=1        also submit a derived placeholder answer
   APP_SECRET                        default abcd
+  MCP_STUDENT_JWT_SECRET            default APP_SECRET
   APP_ORIGIN_AUTH                   default http://localhost:3010
 
 Options:
@@ -132,7 +133,8 @@ async function main() {
   const chatbotId =
     process.env.MCP_STUDENT_SMOKE_CHATBOT_ID ?? DEFAULT_CHATBOT_ID
   const issuer = process.env.APP_ORIGIN_AUTH ?? 'http://localhost:3010'
-  const secret = process.env.APP_SECRET ?? 'abcd'
+  const secret =
+    process.env.MCP_STUDENT_JWT_SECRET ?? process.env.APP_SECRET ?? 'abcd'
   const submit = envFlag('MCP_STUDENT_SMOKE_SUBMIT')
 
   if (process.argv.includes('--dry-run')) {
@@ -164,7 +166,13 @@ async function main() {
   const report = new SmokeReport()
   const { signJWT } = (await import(JWT_MODULE)) as { signJWT: SignJwt }
   const token = await signJWT(
-    { role: 'PARTICIPANT', sub: participantId },
+    {
+      actor: 'account',
+      purpose: 'student-mcp',
+      role: 'PARTICIPANT',
+      scope: 'student:practice:read student:practice:submit',
+      sub: participantId,
+    },
     secret,
     {
       algorithm: 'HS256',

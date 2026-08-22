@@ -1,13 +1,9 @@
+import type { StudentMcpSession } from './auth.js'
 import {
   toStudentToolError,
   type StudentMcpToolErrorOutput,
 } from './toolErrors.js'
 import type { StudentMcpToolName } from './toolPolicy.js'
-
-type StudentMcpSession = {
-  bearerToken: string
-  participantId: string
-}
 
 type RunStudentToolOptions = {
   execute: (session: StudentMcpSession) => Promise<unknown>
@@ -37,7 +33,7 @@ function logToolCall(
     latencyMs: Date.now() - startedAt,
     outcome,
     role: 'student',
-    scopes: [],
+    scopes: session?.scopes ?? [],
     service: 'mcp-student',
     subjectId: session?.participantId ?? null,
     tool: toolName,

@@ -29,6 +29,7 @@
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:raw": "pnpm run dev",
     "smoke:local": "tsx scripts/smoke.ts",
+    "smoke:negative": "tsx scripts/smoke-negative.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest"

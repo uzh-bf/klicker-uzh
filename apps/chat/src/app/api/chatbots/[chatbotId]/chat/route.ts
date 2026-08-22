@@ -818,7 +818,8 @@ export async function POST(
     mcpTools = await getAggregatedMCPTools(
       mcpServersWithConfigs,
       chatbotId,
-      participantId
+      participantId,
+      authMode
     )
   } catch (error) {
     if (error instanceof RequiredMCPUnavailableError) {
@@ -875,6 +876,7 @@ export async function POST(
   if (selectedMode === 'tutor') {
     try {
       const lookupResult = await lookupRelevantPracticeStacks({
+        authMode,
         chatbotId,
         courseId: authChatbot.courseId,
         messages,
@@ -926,6 +928,7 @@ export async function POST(
         }
 
         const payload = await getPracticeStackForQuiz({
+          authMode,
           chatbotId,
           participantId,
           questionRef,

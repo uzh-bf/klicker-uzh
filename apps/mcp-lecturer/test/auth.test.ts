@@ -47,10 +47,7 @@ describe('lecturer MCP auth', () => {
   it('verifies lecturer MCP token claims and scopes', async () => {
     const token = await signLecturerToken()
 
-    const session = await verifyLecturerSession(token, settings, [
-      'manage:read',
-      'manage:draft',
-    ])
+    const session = await verifyLecturerSession(token, settings)
 
     expect(session).toEqual({
       bearerToken: token,
@@ -70,11 +67,31 @@ describe('lecturer MCP auth', () => {
     ).rejects.toBeInstanceOf(LecturerMcpAuthError)
   })
 
-  it('rejects lecturer tokens without required scopes', async () => {
+  it('keeps a read-only token authenticated with only its own scope', async () => {
     const token = await signLecturerToken({ scope: 'manage:read' })
 
-    await expect(
-      verifyLecturerSession(token, settings, ['manage:draft'])
-    ).rejects.toBeInstanceOf(LecturerMcpAuthError)
+    const session = await verifyLecturerSession(token, settings)
+
+    expect(session.scopes).toEqual(['manage:read'])
+  })
+
+  it('rejects a token that carries no lecturer scope', async () => {
+    const token = await signLecturerToken({ scope: 'practice:read' })
+
+    await expect(verifyLecturerSession(token, settings)).rejects.toBeInstanceOf(
+      LecturerMcpAuthError
+    )
+  })
+
+  it('rejects a student MCP token', async () => {
+    const token = await signLecturerToken({
+      purpose: 'student-mcp',
+      role: 'PARTICIPANT',
+      scope: 'student:practice:read student:practice:submit',
+    })
+
+    await expect(verifyLecturerSession(token, settings)).rejects.toBeInstanceOf(
+      LecturerMcpAuthError
+    )
   })
 })

@@ -17,9 +17,10 @@ type LecturerMcpClient = Awaited<ReturnType<typeof createSDKMCPClient>>
 export type LecturerMcpToolBundle = {
   close: () => Promise<void>
   // Whether the minted MCP scope includes `manage:draft`, i.e. whether
-  // `tools` still contains the draft/proposal tools. Callers use this to
-  // keep the assistant's system prompt honest about what it can actually
-  // call (see buildManageAssistantSystemPrompt).
+  // `tools` contains the draft/proposal tools — the service registers a
+  // tool for a session only when the token carries the scope its policy
+  // declares. Callers use this to keep the assistant's system prompt honest
+  // about what it can actually call (see buildManageAssistantSystemPrompt).
   hasDraftScope: boolean
   // Per-request sentinel used to fence tool-result content in `tools`
   // (see toolOutputFencing.ts). Callers thread this into
@@ -27,32 +28,6 @@ export type LecturerMcpToolBundle = {
   // markers mean for this exact request.
   sentinel: FenceSentinel
   tools: ToolSet
-}
-
-// Tool names in apps/mcp-lecturer/src/toolPolicy.ts whose `rbacScope`
-// includes 'manage:draft'. The MCP `tools/list` response only carries
-// name/description/inputSchema/annotations (no rbacScope), so there is no
-// protocol-level seam to derive this from the server at request time — this
-// list is intentionally duplicated here. Keep it in sync with
-// `LECTURER_MCP_TOOL_POLICIES` in apps/mcp-lecturer/src/toolPolicy.ts.
-const DRAFT_SCOPED_TOOL_NAMES = new Set([
-  'klicker_lecturer_question_draft',
-  'klicker_lecturer_choices_draft',
-  'klicker_lecturer_feedback_draft',
-  'klicker_lecturer_element_create_draft_proposal',
-])
-
-export function filterToolsByDraftScope(
-  tools: ToolSet,
-  hasDraftScope: boolean
-): ToolSet {
-  if (hasDraftScope) return tools
-
-  return Object.fromEntries(
-    Object.entries(tools).filter(
-      ([toolName]) => !DRAFT_SCOPED_TOOL_NAMES.has(toolName)
-    )
-  ) as ToolSet
 }
 
 export function getLecturerMcpUrl(
@@ -140,10 +115,7 @@ export async function loadLecturerMcpTools(
       close,
       hasDraftScope,
       sentinel: toolOutputFenceSentinel,
-      tools: fenceToolSetResults(
-        filterToolsByDraftScope(tools, hasDraftScope),
-        toolOutputFenceSentinel
-      ),
+      tools: fenceToolSetResults(tools, toolOutputFenceSentinel),
     }
   } catch (error) {
     await close()

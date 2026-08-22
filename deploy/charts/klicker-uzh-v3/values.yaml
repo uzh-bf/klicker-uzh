@@ -250,6 +250,10 @@ mcpStudent:
   secret:
     name: ''
     appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the same secret.
+    # Empty means the service falls back to APP_SECRET; set it only once the
+    # cluster secret actually carries the key.
+    jwtSecretKey: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student
@@ -295,6 +299,10 @@ mcpLecturer:
   secret:
     appSecretName: ''
     appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the app secret.
+    # Empty means the service falls back to APP_SECRET; set it only once the
+    # cluster secret actually carries the key.
+    jwtSecretKey: ''
     databaseName: ''
     databaseUrlKey: DATABASE_URL
 

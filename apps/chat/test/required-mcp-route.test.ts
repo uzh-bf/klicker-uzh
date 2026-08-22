@@ -61,7 +61,10 @@ function createRequest(selectedMode?: string) {
 describe('required MCP chat preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.withChatbotAuth.mockResolvedValue({
+      authMode: 'account',
+      participantId: 'participant-1',
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -111,7 +114,8 @@ describe('required MCP chat preflight', () => {
         }),
       ],
       'chatbot-1',
-      'participant-1'
+      'participant-1',
+      'account'
     )
     expect(mocks.createThread).not.toHaveBeenCalled()
   })

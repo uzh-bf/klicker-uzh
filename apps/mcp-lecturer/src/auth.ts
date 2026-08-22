@@ -1,6 +1,9 @@
+import { extractBearerToken } from '@klicker-uzh/util'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { RuntimeSettings } from './config.js'
 import { verifyLecturerJwt } from './jwt.js'
+
+export const LECTURER_MCP_TOKEN_PURPOSE = 'lecturer-mcp'
 
 export type LecturerMcpScope = 'manage:read' | 'manage:draft'
 
@@ -22,13 +25,7 @@ export function bearerTokenFromHeaders(
 ): string | null {
   const header = headers.authorization
   const raw = Array.isArray(header) ? header[0] : header
-  if (!raw) return null
-
-  const [scheme, token] = raw.split(/\s+/, 2)
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    return null
-  }
-  return token.trim() || null
+  return extractBearerToken(raw ?? null)
 }
 
 function parseScopes(value: unknown): LecturerMcpScope[] {
@@ -43,8 +40,7 @@ function parseScopes(value: unknown): LecturerMcpScope[] {
 
 export async function verifyLecturerSession(
   token: string,
-  settings: Pick<RuntimeSettings, 'jwtIssuer' | 'jwtSecret'>,
-  requiredScopes: LecturerMcpScope[] = ['manage:read']
+  settings: Pick<RuntimeSettings, 'jwtIssuer' | 'jwtSecret'>
 ): Promise<LecturerMcpSession> {
   const payload = await verifyLecturerJwt(token, settings.jwtSecret, {
     issuer: settings.jwtIssuer,
@@ -57,18 +53,19 @@ export async function verifyLecturerSession(
   if (
     !payload.sub ||
     payload.role !== 'USER' ||
-    payload.purpose !== 'lecturer-mcp'
+    payload.purpose !== LECTURER_MCP_TOKEN_PURPOSE
   ) {
     throw new LecturerMcpAuthError(
       'Authentication failed: MCP token must identify a lecturer'
     )
   }
 
+  // Per-tool scope requirements are enforced by fastmcp (see toolPolicy),
+  // which never sees a session that carries no usable scope at all.
   const scopes = parseScopes(payload.scope)
-  const missingScope = requiredScopes.find((scope) => !scopes.includes(scope))
-  if (missingScope) {
+  if (scopes.length === 0) {
     throw new LecturerMcpAuthError(
-      `Authentication failed: MCP token is missing scope ${missingScope}`
+      'Authentication failed: MCP token carries no lecturer scope'
     )
   }
 
