@@ -1,4 +1,12 @@
 import { useQuery } from '@apollo/client'
+import CourseCalendarView from '@components/courses/CourseCalendarView'
+import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
+import CourseOverviewHeader from '@components/courses/CourseOverviewHeader'
+import GroupActivityList from '@components/courses/GroupActivityList'
+import LiveQuizList from '@components/courses/LiveQuizList'
+import MicroLearningList from '@components/courses/MicroLearningList'
+import PracticeQuizList from '@components/courses/PracticeQuizList'
+import Layout from '@components/Layout'
 import {
   faCrown,
   faList,
@@ -20,19 +28,11 @@ import {
   Tabs,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../components/Layout'
-import CourseCalendarView from '../../components/courses/CourseCalendarView'
-import CourseGamificationInfos from '../../components/courses/CourseGamificationInfos'
-import CourseOverviewHeader from '../../components/courses/CourseOverviewHeader'
-import GroupActivityList from '../../components/courses/GroupActivityList'
-import LiveQuizList from '../../components/courses/LiveQuizList'
-import MicroLearningList from '../../components/courses/MicroLearningList'
-import PracticeQuizList from '../../components/courses/PracticeQuizList'
 
 function CourseOverviewPage() {
   const t = useTranslations()

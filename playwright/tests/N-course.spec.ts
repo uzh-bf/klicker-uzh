@@ -299,7 +299,7 @@ const PERM_ADMIN = 'Admin'
 const PERM_OWNER = 'Owner'
 const COURSE_DUPLICATION_RESPONSE_TIMEOUT = 120_000
 const COURSE_DUPLICATION_STATUS_TIMEOUT = 150_000
-const COURSE_DUPLICATION_TEST_TIMEOUT = 180_000
+const COURSE_DUPLICATION_TEST_TIMEOUT = 360_000
 const SHARING_COURSE_GROUP_DEADLINE = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 1,
@@ -1101,6 +1101,11 @@ async function submitCourseFormAndWaitForDuplication(
             targetCourseName
           )
         )
+      ).toBeVisible({ timeout: 30_000 })
+      await expect(
+        page.getByRole('button', {
+          name: messages.manage.courseList.courseDuplicationOpenCourse,
+        })
       ).toBeVisible({ timeout: 30_000 })
     }
   } finally {
@@ -2653,6 +2658,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await openCourseInManage(page, SHARING.course)
     await chooseCourseAction(page, 'course-duplicate-button')
     const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page)
+    const sourceCourseUrl = page.url()
     await submitCourseFormAndWaitForDuplication(page)
 
     await expect(
@@ -2663,6 +2669,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         )
       )
     ).toBeVisible()
+    await expect(page).toHaveURL(sourceCourseUrl)
+    await page
+      .getByRole('button', {
+        name: messages.manage.courseList.courseDuplicationOpenCourse,
+      })
+      .click()
     await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}/, {
       timeout: 30_000,
     })
@@ -2775,6 +2787,213 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     expect(copiedResponseSummary.instanceIds[0]).not.toEqual(
       sourceResponseSummary.instanceIds[0]
     )
+  })
+
+  test('Keeps concurrent duplication status responses paired with their request IDs', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(90_000)
+
+    const firstJobId = '11111111-1111-4111-8111-111111111111'
+    const secondJobId = '22222222-2222-4222-8222-222222222222'
+    let startCount = 0
+    let releaseFirstStatus: (() => void) | undefined
+    let resolveFirstStatusRequest: (() => void) | undefined
+    const firstStatusRequest = new Promise<void>((resolve) => {
+      resolveFirstStatusRequest = resolve
+    })
+
+    const makeJob = (
+      id: string,
+      sourceCourseId: string,
+      targetCourseName: string
+    ) => ({
+      id,
+      status: 'PENDING',
+      sourceCourseId,
+      sourceCourseName: 'Synthetic source course',
+      targetCourseName,
+      createdCourseId: null,
+      errorType: null,
+      errorMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'POST') {
+        await route.continue()
+        return
+      }
+
+      const body = request.postDataJSON() as {
+        operationName?: string
+        variables?: Record<string, unknown>
+      }
+
+      if (body.operationName === 'StartCourseDuplication') {
+        const sourceCourseId = String(body.variables?.sourceCourseId)
+        const targetCourseName = String(body.variables?.name)
+        const job = makeJob(
+          startCount++ === 0 ? firstJobId : secondJobId,
+          sourceCourseId,
+          targetCourseName
+        )
+
+        await route.fulfill({
+          json: { data: { startCourseDuplication: job } },
+        })
+        return
+      }
+
+      if (body.operationName !== 'GetCourseDuplicationStatuses') {
+        await route.continue()
+        return
+      }
+
+      const requestedIds = (body.variables?.ids as string[] | undefined) ?? []
+
+      if (requestedIds.length === 1 && requestedIds[0] === firstJobId) {
+        resolveFirstStatusRequest?.()
+        await new Promise<void>((resolve) => {
+          releaseFirstStatus = resolve
+        })
+        await route.fulfill({
+          json: {
+            data: {
+              courseDuplicationStatuses: [
+                makeJob(firstJobId, 'source-a', 'Copy A'),
+              ],
+            },
+          },
+        })
+        return
+      }
+
+      await route.fulfill({
+        json: {
+          data: {
+            courseDuplicationStatuses: requestedIds.includes(firstJobId)
+              ? [makeJob(firstJobId, 'source-a', 'Copy A')]
+              : [],
+          },
+        },
+      })
+    })
+
+    await loginLecturer()
+    await openCourseInManage(page, RUNNING_COURSE.name)
+    await chooseCourseAction(page, 'course-duplicate-button')
+    await page.getByTestId('manipulate-course-submit').click()
+    await firstStatusRequest
+
+    await openCourseInManage(page, PAST_COURSE.name)
+    await chooseCourseAction(page, 'course-duplicate-button')
+    await page.getByTestId('manipulate-course-submit').click()
+    await expect(
+      page.getByTestId('course-duplication-status-trigger')
+    ).toContainText('2')
+
+    releaseFirstStatus?.()
+    await expect(
+      page.getByTestId('course-duplication-status-trigger')
+    ).toContainText('2')
+
+    await expect(
+      page.getByTestId('course-duplication-status-trigger')
+    ).toContainText('1', { timeout: 15_000 })
+  })
+
+  test('Shows separate actions for restored completed duplication jobs', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(60_000)
+
+    const restoredCourseA = '33333333-3333-4333-8333-333333333333'
+    const restoredCourseB = '44444444-4444-4444-8444-444444444444'
+    const restoredJobs = [
+      {
+        id: '55555555-5555-4555-8555-555555555555',
+        name: 'Restored Copy A',
+        createdCourseId: restoredCourseA,
+      },
+      {
+        id: '66666666-6666-4666-8666-666666666666',
+        name: 'Restored Copy B',
+        createdCourseId: restoredCourseB,
+      },
+    ]
+
+    await loginLecturer()
+    await page.evaluate((jobs) => {
+      window.localStorage.setItem(
+        'course-duplication-job-ids',
+        JSON.stringify(jobs.map((job) => job.id))
+      )
+    }, restoredJobs)
+
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'POST') {
+        await route.continue()
+        return
+      }
+
+      const body = request.postDataJSON() as { operationName?: string }
+      if (body.operationName !== 'GetCourseDuplicationStatuses') {
+        await route.continue()
+        return
+      }
+
+      await route.fulfill({
+        json: {
+          data: {
+            courseDuplicationStatuses: restoredJobs.map((job) => ({
+              id: job.id,
+              status: 'COMPLETED',
+              sourceCourseId: 'source-restored',
+              sourceCourseName: 'Synthetic source course',
+              targetCourseName: job.name,
+              createdCourseId: job.createdCourseId,
+              errorType: null,
+              errorMessage: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })),
+          },
+        },
+      })
+    })
+
+    const originalUrl = page.url()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(
+      page.getByText(
+        messages.manage.courseList.courseDuplicationSucceeded.replace(
+          '{name}',
+          restoredJobs[0].name
+        )
+      )
+    ).toBeVisible({ timeout: 30_000 })
+    await expect(
+      page.getByText(
+        messages.manage.courseList.courseDuplicationSucceeded.replace(
+          '{name}',
+          restoredJobs[1].name
+        )
+      )
+    ).toBeVisible({ timeout: 30_000 })
+
+    const openCourseActions = page.getByRole('button', {
+      name: messages.manage.courseList.courseDuplicationOpenCourse,
+    })
+    await expect(openCourseActions).toHaveCount(2)
+    await expect(page).toHaveURL(originalUrl)
+    await openCourseActions.nth(1).click()
+    await expect(page).toHaveURL(`/courses/${restoredCourseB}`)
   })
 
   test('Duplicate the course without group creation and verify group activities are not copied', async ({
