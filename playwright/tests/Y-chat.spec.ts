@@ -1996,7 +1996,7 @@ test.describe('Chatbot Dictation', () => {
     )
   })
 
-  test('keeps mobile and embedded dictation hidden', async ({ page }) => {
+  test('keeps mobile dictation hidden', async ({ page }) => {
     await installDictationFake(page, {
       availability: 'available',
       mobile: true,
@@ -2004,11 +2004,10 @@ test.describe('Chatbot Dictation', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-dictation')).toHaveCount(0)
+  })
 
-    await installDictationFake(page, {
-      availability: 'available',
-      mobile: false,
-    })
+  test('keeps embedded dictation hidden on desktop', async ({ page }) => {
+    await installDictationFake(page, { availability: 'available' })
     await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
       waitUntil: 'domcontentloaded',
     })

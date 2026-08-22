@@ -749,6 +749,7 @@ const Composer: FC = () => {
             ref={inputRef}
             rows={1}
             autoFocus={!disclaimerGateOpen}
+            readOnly={dictationState.status === 'listening'}
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',

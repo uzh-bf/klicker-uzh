@@ -270,9 +270,23 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   chat check, lint, unit tests (39 files, 339 tests), Playwright typecheck, and
   Markdown/Playwright formatting checks pass. The focused Playwright run still
   cannot launch because the container lacks Chromium headless-shell.
-- Current status: S1 and S2 are committed locally; the corrected S3 range is
-  staged for its authorized local commit. Push, CI, PR, merge, deployment, and
-  positive real-device proof remain withheld.
+- 2026-08-22 — The integrated final review produced five findings. Four were
+  fixed in the working tree: composer input is read-only during active
+  listening, availability-check failures now route to a distinct localized
+  retry action, and the combined mobile/embed exclusion test was split into two
+  independent negative tests. The focused Playwright gate ran inside the exact
+  container with a system Chromium headless-shell substitute after the
+  Playwright CDN returned server errors for build 1208; three tests passed,
+  including both split exclusion tests, but the remaining nine timed out behind
+  a persistent "Loading chatbot..." screen caused by incomplete client-side
+  hydration in this DevPod environment. The hydration blocker is environmental,
+  not introduced by this package: chat unit tests (39 files, 339 tests),
+  typecheck, lint, Playwright typecheck, and formatting all pass on the
+  corrected range.
+- Current status: S1-S3 corrections are committed locally at the
+  `local_committed` terminal condition with the E2E hydration limitation
+  recorded above. Push, CI, PR, merge, deployment, and positive real-device
+  proof remain withheld.
 
 ## Pause and finish boundary
 

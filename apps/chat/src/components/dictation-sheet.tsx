@@ -11,7 +11,9 @@ export function DictationSheet() {
     closeInstallSheet,
     installDictation,
     installSheetOpen,
+    refreshCapability,
     startDictation,
+    state: dictationState,
     status,
   } = useDictationContext()
 
@@ -19,7 +21,10 @@ export function DictationSheet() {
 
   const isInstalling = status === 'installing'
   const isReady = status === 'ready'
-  const isInstallError = status === 'error'
+  const isError = status === 'error'
+  const isInstallError = isError && dictationState.error === 'install-failed'
+  const isAvailabilityError =
+    isError && dictationState.error === 'availability-check-failed'
 
   return (
     <Modal
@@ -43,13 +48,15 @@ export function DictationSheet() {
           </div>
         ) : null}
 
-        {isInstallError ? (
+        {isError ? (
           <p
             className="text-destructive text-sm"
             role="alert"
             data-cy="chat-dictation-install-error"
           >
-            {t('chat.composer.dictationSheetFailed')}
+            {isAvailabilityError
+              ? t('chat.composer.dictationErrorAvailabilityCheck')
+              : t('chat.composer.dictationSheetFailed')}
           </p>
         ) : null}
 
@@ -72,12 +79,20 @@ export function DictationSheet() {
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               data-cy="chat-dictation-download"
-              onClick={() => void installDictation()}
+              onClick={() => {
+                if (isInstallError) {
+                  void installDictation()
+                } else {
+                  void refreshCapability()
+                }
+              }}
               disabled={isInstalling}
             >
               {isInstallError
                 ? t('chat.composer.dictationSheetRetry')
-                : t('chat.composer.dictationSheetDownload')}
+                : isAvailabilityError
+                  ? t('chat.composer.dictationSheetCheckAgain')
+                  : t('chat.composer.dictationSheetDownload')}
             </Button>
             <Button
               data-cy="chat-dictation-not-now"

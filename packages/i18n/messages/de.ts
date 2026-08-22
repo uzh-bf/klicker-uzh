@@ -246,6 +246,7 @@ export default {
       dictationSheetFailed:
         'Das Sprachpaket konnte nicht installiert werden. Versuche es erneut oder schreibe weiter.',
       dictationSheetRetry: 'Erneut herunterladen',
+      dictationSheetCheckAgain: 'Verfügbarkeit erneut prüfen',
       dictationSheetReady: 'Das Sprachpaket ist auf diesem Gerät bereit.',
       dictationSheetStart: 'Diktieren starten',
       dictationErrorAborted: 'Das Diktieren wurde abgebrochen.',

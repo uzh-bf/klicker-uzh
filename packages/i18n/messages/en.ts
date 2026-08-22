@@ -243,6 +243,7 @@ export default {
       dictationSheetFailed:
         'The language pack could not be installed. Try again or continue typing.',
       dictationSheetRetry: 'Try download again',
+      dictationSheetCheckAgain: 'Check availability again',
       dictationSheetReady: 'The language pack is ready on this device.',
       dictationSheetStart: 'Start dictation',
       dictationErrorAborted: 'Dictation was cancelled.',
