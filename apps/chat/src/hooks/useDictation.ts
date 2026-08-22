@@ -1,6 +1,6 @@
 'use client'
 
-import { useAui, useAuiState } from '@assistant-ui/react'
+import { useAui, useAuiEvent, useAuiState } from '@assistant-ui/react'
 import { useParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
@@ -158,6 +158,10 @@ export function useDictation(): DictationValue {
   const stateRef = useRef(state)
   const recognitionRef = useRef<LocalSpeechRecognition | null>(null)
   const capturedDraftRef = useRef<string | null>(null)
+  // Set when the user sends while a recognition session is still active:
+  // assistant-ui has already cleared the composer, so any later projection
+  // of this session's transcript would resurrect text the user sent.
+  const discardProjectionRef = useRef(false)
   const activeThreadRef = useRef(threadId)
   const transcriptRef = useRef({ finalTranscript: '', interimTranscript: '' })
 
@@ -233,6 +237,7 @@ export function useDictation(): DictationValue {
   }, [language, refreshCapability])
 
   const restoreCapturedDraft = useCallback(() => {
+    discardProjectionRef.current = false
     const capturedDraft = capturedDraftRef.current
     if (capturedDraft === null) return
     aui.composer.setText(capturedDraft)
@@ -241,6 +246,10 @@ export function useDictation(): DictationValue {
 
   const startDictation = useCallback(() => {
     if (stateRef.current.status !== 'ready') return false
+
+    // A fresh session owns the composer again; without this reset a send
+    // from an earlier session would suppress its final projection forever.
+    discardProjectionRef.current = false
 
     const constructor = getSpeechRecognitionConstructor()
     if (!constructor) {
@@ -302,7 +311,9 @@ export function useDictation(): DictationValue {
     recognition.onend = () => {
       if (recognitionRef.current !== recognition) return
       const capturedDraft = capturedDraftRef.current
-      if (capturedDraft !== null) {
+      // A send that raced this end event already cleared the composer via
+      // the runtime; projecting now would resurrect text the user sent.
+      if (capturedDraft !== null && !discardProjectionRef.current) {
         aui.composer.setText(
           projectDictationDraft(
             capturedDraft,
@@ -338,6 +349,15 @@ export function useDictation(): DictationValue {
     recognitionRef.current?.stop()
   }, [])
 
+  // A send while listening clears the composer via the runtime; drop this
+  // session's projection so its end event cannot resurrect sent text.
+  useAuiEvent('composer.send', () => {
+    if (recognitionRef.current === null) return
+    discardProjectionRef.current = true
+    capturedDraftRef.current = null
+    transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
+  })
+
   const cancelDictation = useCallback(() => {
     recognitionRef.current?.abort()
     recognitionRef.current = null
@@ -350,6 +370,7 @@ export function useDictation(): DictationValue {
     if (state.status !== 'listening') return
     const capturedDraft = capturedDraftRef.current
     if (capturedDraft === null) return
+    if (discardProjectionRef.current) return
     aui.composer.setText(
       projectDictationDraft(
         capturedDraft,
@@ -367,6 +388,7 @@ export function useDictation(): DictationValue {
     if (activeThreadRef.current === threadId) return
 
     activeThreadRef.current = threadId
+    discardProjectionRef.current = false
     const recognition = recognitionRef.current
     recognitionRef.current = null
     capturedDraftRef.current = null
@@ -391,6 +413,7 @@ export function useDictation(): DictationValue {
     return () => {
       const recognition = recognitionRef.current
       recognitionRef.current = null
+      discardProjectionRef.current = false
       capturedDraftRef.current = null
       transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
       recognition?.abort()

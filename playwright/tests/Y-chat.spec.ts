@@ -2098,7 +2098,9 @@ test.describe('Chatbot Dictation', () => {
 
     const input = page.getByTestId('chat-composer-input')
     await input.fill('Existing draft')
-    await page.getByTestId('chat-dictation-start').click()
+    // The sheet auto-closed after a successful install, so dictation starts
+    // from the persistent composer control, not from the unmounted sheet.
+    await button.click()
     await expect(button).toHaveAttribute('aria-pressed', 'true')
     await expect(button).toHaveAccessibleName('Listening...')
 

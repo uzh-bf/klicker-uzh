@@ -3,7 +3,7 @@
 import { Button, Modal } from '@uzh-bf/design-system'
 import { LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useDictationContext } from './dictation-context'
 
 export function DictationSheet() {
@@ -18,11 +18,21 @@ export function DictationSheet() {
     status,
   } = useDictationContext()
 
+  // The design-system `Modal` hardcodes `onOpenAutoFocus` prevention (see
+  // `DisclaimerModal`), so focus must be moved into the dialog here or it
+  // stays on the obscured composer control behind the overlay.
+  const primaryActionRef = useRef<HTMLButtonElement>(null)
+
   // A successful install returns the composer to the user immediately; the
   // sheet must not stay open over an input it would otherwise block.
   useEffect(() => {
     if (status === 'ready') closeInstallSheet()
   }, [closeInstallSheet, status])
+
+  useEffect(() => {
+    if (!installSheetOpen) return
+    primaryActionRef.current?.focus()
+  }, [installSheetOpen])
 
   if (!installSheetOpen) return null
 
@@ -73,6 +83,7 @@ export function DictationSheet() {
             <div className="flex justify-end">
               <Button
                 primary
+                ref={primaryActionRef}
                 data-cy="chat-dictation-start"
                 onClick={() => {
                   if (startDictation()) closeInstallSheet()
@@ -85,6 +96,7 @@ export function DictationSheet() {
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
+              ref={primaryActionRef}
               data-cy="chat-dictation-download"
               onClick={() => {
                 if (isInstallError || status === 'needs-install') {

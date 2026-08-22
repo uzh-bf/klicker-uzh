@@ -283,10 +283,11 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   not introduced by this package: chat unit tests (39 files, 339 tests),
   typecheck, lint, Playwright typecheck, and formatting all pass on the
   corrected range.
-- Current status: S1-S3 corrections are committed locally at the
-  `local_committed` terminal condition with the E2E hydration limitation
-  recorded above. Push, CI, PR, merge, deployment, and positive real-device
-  proof remain withheld.
+- Historical checkpoint (superseded): S1-S3 corrections were committed
+  locally at the `local_committed` terminal condition with the E2E hydration
+  limitation recorded above; push and PR have since been authorized by the
+  user (see the 2026-08-22 entry below). Merge, deployment, and positive
+  real-device proof remain withheld.
 - 2026-08-22 — After the user asked for a ready PR, the branch was pushed and
   PR #5477 opened. Two CI rounds failed on Playwright shard 5 only. Trace and
   video analysis showed every authenticated chat-page test hanging on the
