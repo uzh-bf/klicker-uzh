@@ -37,6 +37,12 @@ if (!hostPortMatch) {
     'KLICKER_BASE_URL must be an origin without path or credentials'
   )
 }
+const hasNonAsciiHostnameCharacter = hostPortMatch[1]
+  .split('')
+  .some((character) => character.charCodeAt(0) > 127)
+if (!hostPortMatch[1].startsWith('[') && hasNonAsciiHostnameCharacter) {
+  throw new Error('KLICKER_BASE_URL must use an ASCII hostname')
+}
 const normalizedHostname = hostPortMatch[1].toLowerCase().replace(/\.$/, '')
 const port = hostPortMatch[2] || ''
 const defaultPort = protocol === 'https' ? '443' : '80'
@@ -95,6 +101,7 @@ export const options = {
 
 const params = {
   cookies: { participant_token: token },
+  redirects: 0,
 }
 
 const endpoints = chatbotIds.flatMap((id) => [
