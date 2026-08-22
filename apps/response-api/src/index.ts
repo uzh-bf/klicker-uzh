@@ -304,10 +304,65 @@ async function verifyAssessmentParticipant(
   return user
 }
 
+type AssessmentWorkflowMessage = JsonObject & {
+  correlationId: string
+  participantId: string
+  instanceId: string
+  elementBlockExecution?: number
+}
+
+async function hasCompletedAssessmentResponse(
+  message: AssessmentWorkflowMessage
+) {
+  const instanceId = Number(message.instanceId)
+  const elementBlockExecution = Number(message.elementBlockExecution)
+  if (
+    !Number.isInteger(instanceId) ||
+    !Number.isInteger(elementBlockExecution)
+  ) {
+    return false
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(
+      Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${`${instanceId}:${elementBlockExecution}:${message.participantId}`},
+            0
+          )
+        )
+      `
+    )
+
+    const response = await tx.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId,
+          elementBlockExecution,
+          participantId: message.participantId,
+        },
+      },
+      select: {
+        correctionOnly: true,
+        correlationId: true,
+        assessmentResponseEffect: { select: { responseId: true } },
+      },
+    })
+
+    return (
+      !!response &&
+      !response.correctionOnly &&
+      response.correlationId === message.correlationId &&
+      !response.assessmentResponseEffect
+    )
+  })
+}
+
 async function processAssessmentWorkflow(
   req: IncomingMessage,
   res: ServerResponse,
-  message: JsonObject,
+  message: AssessmentWorkflowMessage,
   responseTimestamp: number
 ) {
   const workflowOutput = (await hatchetClient.runAndWait(
@@ -334,6 +389,14 @@ async function processAssessmentWorkflow(
   }
 
   if (workflowResult.status === 208) {
+    if (!(await hasCompletedAssessmentResponse(message))) {
+      sendJson(req, res, 503, {
+        error: 'response_processing_unavailable',
+        responseTimestamp,
+      })
+      return true
+    }
+
     sendJson(req, res, 208, {
       status: 'response_recorded_before',
       responseTimestamp,

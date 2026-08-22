@@ -1038,6 +1038,14 @@ export async function processAssessmentResponse(
     return { status: 208 }
   }
 
+  if (persistence.status === 'retry' && !persistence.effect) {
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
+    )
+    ctx.cancel()
+    return { status: 208 }
+  }
+
   // ! Step 5: Apply the pending effect before acknowledging the workflow.
   // The Redis transaction is idempotent, so an older queued aggregation event
   // can safely race this direct completion path.
