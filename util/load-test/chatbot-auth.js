@@ -11,6 +11,9 @@
 import { check, sleep } from 'k6'
 import http from 'k6/http'
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const token = (__ENV.KLICKER_PARTICIPANT_TOKEN || '').trim()
 if (!token || token.trim().length === 0) {
   throw new Error(
@@ -66,6 +69,9 @@ const chatbotIds = (__ENV.KLICKER_CHATBOT_IDS || '')
   .filter(Boolean)
 if (chatbotIds.length === 0) {
   throw new Error('Set KLICKER_CHATBOT_IDS as comma-separated UUIDs')
+}
+if (chatbotIds.some((id) => !uuidPattern.test(id))) {
+  throw new Error('KLICKER_CHATBOT_IDS must contain UUIDs')
 }
 
 const profile = __ENV.PROFILE || 'smoke'

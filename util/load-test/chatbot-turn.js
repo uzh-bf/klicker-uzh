@@ -18,6 +18,9 @@ import { randomUUID } from 'k6/crypto'
 import exec from 'k6/execution'
 import http from 'k6/http'
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const token = (__ENV.KLICKER_PARTICIPANT_TOKEN || '').trim()
 if (!token || token.trim().length === 0) {
   throw new Error('KLICKER_PARTICIPANT_TOKEN is required for real chat turns')
@@ -72,8 +75,8 @@ if (__ENV.KLICKER_ALLOW_SIDE_EFFECTS !== 'true') {
   )
 }
 const chatbotId = (__ENV.KLICKER_CHATBOT_ID || '').trim()
-if (!chatbotId) {
-  throw new Error('KLICKER_CHATBOT_ID is required')
+if (!uuidPattern.test(chatbotId)) {
+  throw new Error('KLICKER_CHATBOT_ID must be a UUID')
 }
 
 const selectedModel = (__ENV.KLICKER_SELECTED_MODEL || '').trim()
