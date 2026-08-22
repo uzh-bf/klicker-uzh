@@ -942,7 +942,7 @@ test.describe
         'exist'
       )
       await expectByAssertion(
-        page.getByTestId(`element-batch-check-${title}`),
+        page.getByTestId(`element-batch-update-inactive-${title}`),
         'exist'
       )
       await expectByAssertion(
@@ -983,7 +983,7 @@ test.describe
         'exist'
       )
       await expectByAssertion(
-        page.getByTestId(`element-batch-check-${title}`),
+        page.getByTestId(`element-batch-update-inactive-${title}`),
         'exist'
       )
       await expectByAssertion(

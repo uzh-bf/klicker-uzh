@@ -14,7 +14,10 @@ import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import Pagination from '../components/common/Pagination'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -40,13 +43,16 @@ function Index() {
   const [currentPage, setCurrentPage] = useState(1)
 
   // initialize page size from local storage (if available)
-  const [pageSize, setPageSize] = useState(() => {
+  const [pageSize, setPageSize] = useState<PaginationPageSize>(() => {
     // only try to access localStorage when on the client
     if (typeof window !== 'undefined') {
       try {
         const storedPageSize = localStorage.getItem('elements-page-size')
         if (storedPageSize) {
-          return JSON.parse(storedPageSize)
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (isPaginationPageSize(parsedPageSize)) {
+            return parsedPageSize
+          }
         }
       } catch (error) {
         console.error(
@@ -137,8 +143,8 @@ function Index() {
       sortByType: sort.by,
       sortByAsc: sort.asc,
       showArchived: filters.archive,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
+      numEntries: pageSize === 'all' ? undefined : pageSize,
+      offset: pageSize === 'all' ? undefined : (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
@@ -156,7 +162,8 @@ function Index() {
   useEffect(() => {
     if (loadingElements) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfElements / pageSize))
+    const maxPage =
+      pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
@@ -168,7 +175,8 @@ function Index() {
   }, [filters, sort, searchString])
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfElements / pageSize))
+  const totalPages =
+    pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -440,6 +448,7 @@ function Index() {
                       numOfObjects={numOfElements}
                       pageSize={pageSize}
                       setPageSize={setPageSize}
+                      showAll
                       className="mb-3"
                     />
                   )}

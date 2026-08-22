@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-11'
+timestamp: '2026-08-20'
 tags:
   - backend
   - prisma
@@ -50,6 +50,21 @@ Lifecycle enums:
 | `AccessMode`         | PUBLIC, RESTRICTED                                   | LiveQuiz             |
 
 Scheduled publication/ending is executed by the Hatchet general worker — without it, SCHEDULED activities never go live (see [Async & Workers](./async-and-workers.md)).
+
+## Course deletion
+
+**Deleting a non-assessment course does not normally delete its live quizzes.**
+The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
+hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
+`SetNull`, so linked live quizzes are disconnected and remain in the activity
+list. The optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` additionally
+hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
+every other status are still disconnected. The lecturer UI keeps this option
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
+(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
 
 ## Course duplication
 

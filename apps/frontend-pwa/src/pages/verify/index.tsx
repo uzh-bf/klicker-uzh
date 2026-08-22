@@ -183,6 +183,22 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
         </p>
       </div>
 
+      <div className="mt-5" aria-hidden="true">
+        <div className="relative h-3 rounded-full bg-slate-200">
+          <div
+            className="absolute -top-1 h-5 w-1 rounded-full bg-uzh-blue"
+            style={{
+              left: `clamp(2px, ${Math.min(Math.max(comparison.percentile, 0), 100)}%, calc(100% - 2px))`,
+              transform: 'translateX(-50%)',
+            }}
+          />
+        </div>
+        <div className="mt-1 flex justify-between text-xs text-slate-600">
+          <span>0</span>
+          <span>100</span>
+        </div>
+      </div>
+
       <div
         className="mt-5 flex h-56 items-end gap-1 border-b border-l border-slate-400 px-2 pt-6"
         role="img"
@@ -209,10 +225,7 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
             <div
               key={`${bin.binStart}-${bin.binEnd}`}
               className="flex h-full min-w-0 flex-col justify-end text-center"
-              style={{
-                flexGrow: widthRatio,
-                flexBasis: 0,
-              }}
+              style={{ flexGrow: widthRatio, flexBasis: 0 }}
             >
               <span className="mb-1 text-xs font-semibold tabular-nums">
                 {bin.count}
