@@ -105,5 +105,7 @@ lecturer-demo work.
   inspections and three percent-encoded production-host negative inspections
   passed; the archive hard-cap check and focused Biome check passed. No live
   request was made.
-- S3: in progress — repeat integrated final review after the latest correction.
-- S4: pending — push and open draft PR; merge remains withheld.
+- S3: complete — final-reviewer approved exact range
+  `f58986faa8cfa4ff78d20a1ebeb1666473343d38..3196907e3` with no findings.
+- S4: in progress — push and open the reviewed draft PR; merge remains
+  withheld.
