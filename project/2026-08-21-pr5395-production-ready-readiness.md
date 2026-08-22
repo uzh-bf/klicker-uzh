@@ -4,7 +4,8 @@
 
 - Target: `rs/pr5395-production-ready`, dependent on PR #5395.
 - Parent head: `66f91ad4950421f411bf666d0f35b2ff09e000ea`.
-- Reviewed child head: `7adee1787ad39c96f9e8e615a6d152305dbe1792`.
+- Reviewed child code head: `7adee1787ad39c96f9e8e615a6d152305dbe1792`.
+- Evidence-only report commit on the pushed branch: `16faf59cf9651970a707f90d2e6a31e5148041f9`.
 - Immutable review range: `66f91ad4950421f411bf666d0f35b2ff09e000ea..7adee1787ad39c96f9e8e615a6d152305dbe1792`.
 
 ## Verdict
@@ -19,7 +20,7 @@
 | Eight-dimension readiness wave | Config, data, deployment, resilience, observability, docs, performance, and UX reviews | completed; findings dispositioned below |
 | Simplifier | Configured simplifier could not read its encrypted task; native fallback review recorded in the execution evidence | fallback completed; safe reductions applied, broader refactor deferred |
 | Integrated final review | Native Sol final-reviewer review of `66f..7adee1787` | completed; not-ready findings remain |
-| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | latest exact-head CI still running |
+| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | exact-head CI for `16faf59cf` still running |
 
 ## Resolved before this head
 
@@ -53,7 +54,7 @@
 - The parent branch was refreshed from `origin/v3`; both parent and child conflict resolutions are pushed.
 - `pnpm run check:all` passed in the commit hooks for the two fix commits, and the repository build passed in the pre-push hooks.
 - Response API and response-processor type checks passed; response-state tests passed 6/6.
-- The pushed head is `7adee1787ad39c96f9e8e615a6d152305dbe1792`; the latest exact-head CI is still running.
+- The pushed branch head is `16faf59cf9651970a707f90d2e6a31e5148041f9`; the immutable backend review covers code head `7adee1787ad39c96f9e8e615a6d152305dbe1792`, and exact-head CI for the evidence-only report commit is still running.
 - The simplifier pass used the native fallback because the configured simplifier task was unreadable. It found and the branch applied the reducer initialization, local decomposition, status mapping, and correction-helper simplifications; it deferred only a larger typed-closure refactor for repeated correction arguments because it would widen stable transaction plumbing.
 - Native Sol reviewed `66f91ad..7adee1787` and verified the workflow-`208`, concurrent-retry, correction locking, and deleted docs/log fixes. The Redis contribution/reconciliation, autonomous replay, timeout, migration, rollback, contention, and runtime gates remain open. Sol rejected the separate marker-TTL concern because existing live-quiz cleanup expires the quiz keyspace, and found no added-test bloat.
 - The correction logic and response workflow were reviewed across the eight readiness dimensions. No secrets, raw data, runtime credentials, staging, or production systems were accessed.
@@ -64,7 +65,7 @@
 - No migration target, backup/restore, mixed-version rollout, rollback, worker crash, Redis interruption, or autonomous replay was executed.
 - No load, latency, queue-drain, or capacity run was executed.
 - No browser run was needed for changed frontend code; the inherited assessment client still needs a current-head response-contract check.
-- The final-head GitHub CI remains pending at the time this report was last updated; the native Sol review of `7adee1787` is complete and returns not-ready on the open operational blockers above.
+- GitHub CI for current child head `16faf59cf` remains pending at the time this report was last updated; the native Sol review of code head `7adee1787` is complete and returns not-ready on the open operational blockers above.
 
 ## Handoffs
 
