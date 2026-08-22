@@ -932,6 +932,8 @@ function buildRedisAggregationPlan(
 
   const resultsKey = `${instanceKey}:results`
   const responseHashesKey = `${instanceKey}:responseHashes`
+  // These hashes are stable Redis bucket identifiers, not security tokens.
+  // Keep the existing algorithm so correction and result reads remain compatible.
   switch (message.elementType) {
     case ElementType.SC:
     case ElementType.MC:
@@ -944,7 +946,9 @@ function buildRedisAggregationPlan(
 
     case ElementType.NUMERICAL: {
       const value = String(message.response.value!)
-      const responseHash = createHash('md5').update(value).digest('hex')
+      const responseHash = createHash('md5') // NOSONAR - compatibility bucket key, not a security token
+        .update(value)
+        .digest('hex')
       addIncrement(resultsKey, responseHash, 1)
       addSet(responseHashesKey, responseHash, value)
       addIncrement(resultsKey, 'participants', 1)
@@ -953,7 +957,9 @@ function buildRedisAggregationPlan(
 
     case ElementType.FREE_TEXT: {
       const value = message.response.value!.trim()
-      const responseHash = createHash('md5').update(value).digest('hex')
+      const responseHash = createHash('md5') // NOSONAR - compatibility bucket key, not a security token
+        .update(value)
+        .digest('hex')
       addIncrement(resultsKey, responseHash, 1)
       addSet(responseHashesKey, responseHash, value)
       addIncrement(resultsKey, 'participants', 1)
@@ -982,7 +988,7 @@ function buildRedisAggregationPlan(
                   return
                 }
 
-                const responseHash = createHash('md5')
+                const responseHash = createHash('md5') // NOSONAR - compatibility bucket key, not a security token
                   .update(String(criterionResponse))
                   .digest('hex')
                 const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
