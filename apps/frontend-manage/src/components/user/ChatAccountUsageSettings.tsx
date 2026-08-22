@@ -81,7 +81,10 @@ function ChatAccountUsageSettingsContent() {
             onSubmit={async (values) => {
               try {
                 const result = await setBudgets({
-                  variables: values,
+                  variables: {
+                    baseBudgetCredits: Number(values.baseBudgetCredits),
+                    advancedBudgetCredits: Number(values.advancedBudgetCredits),
+                  },
                   refetchQueries: [{ query: GetChatAccountUsageDocument }],
                   awaitRefetchQueries: true,
                 })
