@@ -57,7 +57,7 @@ export function createInitialDictationState(
   }
 }
 
-function appendTranscript(current: string, next: string) {
+export function appendTranscript(current: string, next: string) {
   const trimmed = next.trim()
   if (!trimmed) return current
   return current ? `${current} ${trimmed}` : trimmed

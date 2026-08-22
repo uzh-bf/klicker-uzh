@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-16'
+timestamp: '2026-08-21'
 tags:
   - frontend
   - chat
@@ -43,6 +43,44 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot.
+
+## Voice input and local dictation
+
+Chat dictation is a session-local, desktop-only enhancement of the ordinary
+composer. `DictationProvider` is nested inside `AssistantRuntimeProvider` in
+`src/app/RuntimeProvider.tsx` so `src/hooks/useDictation.ts` can project interim
+and final transcript text through assistant-ui's composer API. The captured
+draft stays at the front of that projection; a normal recognition end leaves
+the combined text in the composer, while abort and recognition errors restore
+the captured draft.
+
+The capability state machine is pure and lives in
+`src/lib/speech/dictation-state.ts`. Its states are:
+
+| State           | Meaning                                                                                                                                     | User action                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `unsupported`   | The browser is mobile or exposes no recognition constructor.                                                                                | Keep the mic control hidden.                                    |
+| `unavailable`   | Recognition exists, but local dictation is not available.                                                                                   | Keep the mic control disabled.                                  |
+| `needs-install` | The browser can download the requested local language pack.                                                                                 | Open the explicit install sheet.                                |
+| `installing`    | The browser is downloading the language pack, either after the user starts it or while the browser-managed download is already in progress. | Show indeterminate progress; never start automatically.         |
+| `ready`         | The availability re-check succeeded.                                                                                                        | Let the user explicitly start dictation.                        |
+| `listening`     | A non-continuous local recognition session is active.                                                                                       | Show the pressed listening control and allow stop.              |
+| `error`         | Installation or recognition failed.                                                                                                         | Show a localized composer error and restore the captured draft. |
+
+Recognition calls use the browser's local-processing contract only: the
+availability check passes `{ langs, processLocally: true, quality: 'dictation' }`,
+installation passes `{ langs, quality: 'dictation' }`, and every recognition
+instance sets `processLocally = true` before `start()`. No audio, capability
+state, transcript provenance, or language-pack progress is persisted. Mobile
+and embedded chat never expose or start this control. German chat selects
+`de-DE` and tells users that dictation uses Standard German; other locales use
+`en-US`.
+
+The browser support matrix remains evidence-bound. The W0 probe observed the
+negative Chrome 151 availability/install path but no successful pack download
+or transcript, so it does not establish a supported real-device browser. Fake
+browser coverage proves the positive state transitions and draft invariants;
+real-device positive support remains a separate manual gate.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this

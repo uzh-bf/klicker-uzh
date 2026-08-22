@@ -215,8 +215,64 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   separate from the sibling roadmap worktree; record W0 as negative/flow-only
   evidence; use a single provider under the assistant-ui runtime; and keep
   positive real-device support withheld.
-- Current status: plan draft awaiting user approval. No implementation files,
-  commits, publication, or runtime changes exist on this branch.
+- 2026-08-21 — The clean branch fast-forwarded from `df10f524e` to the fresh
+  `origin/v3` tip `f58986faa` and the plan was committed as `27a2d5d76`.
+- 2026-08-22 — Two exact-worktree `devrouter ensure` attempts reached
+  `devpod up` but hung in the DevPod SSH helper without routes or a usable
+  container. The exact runtime was stopped through `devrouter stop` with
+  `stopped: true` and zero freed routes; repository-native checks remain
+  pending. A host-side `pnpm --filter @klicker-uzh/chat test:run` attempt then
+  auto-created ignored dependencies under Node 26 and failed before collection
+  for 34 suites because the built `@klicker-uzh/util` entry was absent; that
+  result is not accepted as repository verification.
+- 2026-08-22 — A bounded retry found the exact DevPod workspace `NotFound`, but
+  `devrouter ensure` stopped before startup because its lifecycle lock could
+  not identify the process owner; the suggested workspace garbage collection
+  was not run because it is outside this package's approved cleanup scope.
+- 2026-08-22 — Read-only inspection found two stale-looking DevRouter candidate
+  lock files for dead process IDs `16591` and `35298`. The files were not
+  edited or removed; DevRouter's own lifecycle command remains the only
+  permitted cleanup path.
+- 2026-08-22 — Static contract review extended capability handling for the
+  browser's `downloading` result, added the settings-panel install entry
+  point, added explicit microphone-permission copy, and made listening state
+  changes announce through the composer control. A second pass now ignores
+  stale recognition events after cancellation or a replacement session and
+  keeps the first-use explanation to two sentences. These edits remain
+  unverified and uncommitted. Fake coverage now exercises the settings-panel
+  install link, a browser-managed download, failed installation, local-service
+  rejection, final text after end, and desktop embed exclusion independently
+  of mobile exclusion.
+- 2026-08-22 — The exact DevPod ran chat typecheck, lint, unit tests, and
+  Playwright typecheck after implementation. Chat unit tests passed with 39
+  files and 339 tests. The root `check:all` run remained non-green because the
+  analytics lint environment could not build its pinned pandas dependency
+  without a compiler; an earlier attempt also caught a dictation-hook lint
+  issue, which was fixed and passed in the focused rerun.
+- 2026-08-22 — A trusted fallback review found and the implementation fixed
+  thread-switch session leakage, final-result/end ordering, browser-managed
+  download polling, draft-whitespace loss, and missing visible/error
+  announcements. The findings and resolutions are recorded in
+  `project/_local/reviews/2026-08-22-dictation-fallback-review.md`.
+- 2026-08-22 — Fake-backed `agent-browser` verification covered the English
+  install sheet, explicit no-auto-start, listening, draft projection,
+  permission error, and German unavailable state. The focused Playwright run
+  remains blocked by the exact runtime's missing Chromium headless-shell
+  binary, so no positive real-device support claim is made.
+- 2026-08-22 — The approved exact workspace GC found no eligible cleanup
+  candidates. The exact runtime stop returned a DevPod zombie-container error,
+  but readback reports `Stopped` with zero routes; no worktree or branch was
+  deleted.
+- 2026-08-22 — Follow-up review found one remaining thread-switch defect:
+  resetting dictation could leave capability at `unsupported` until reload.
+  The thread-change effect now rechecks capability, and the regression test
+  asserts that the desktop control returns on the target thread. Exact-container
+  chat check, lint, unit tests (39 files, 339 tests), Playwright typecheck, and
+  Markdown/Playwright formatting checks pass. The focused Playwright run still
+  cannot launch because the container lacks Chromium headless-shell.
+- Current status: S1 and S2 are committed locally; the corrected S3 range is
+  staged for its authorized local commit. Push, CI, PR, merge, deployment, and
+  positive real-device proof remain withheld.
 
 ## Pause and finish boundary
 

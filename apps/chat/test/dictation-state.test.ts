@@ -99,5 +99,8 @@ describe('dictation state reducer', () => {
     expect(projectDictationDraft('Existing draft', '', '')).toBe(
       'Existing draft'
     )
+    expect(
+      projectDictationDraft('  Existing draft  ', 'final phrase', '')
+    ).toBe('  Existing draft  final phrase')
   })
 })

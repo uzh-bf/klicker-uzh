@@ -15,6 +15,7 @@ import {
   CopyIcon,
   ImageIcon,
   ImagePlusIcon,
+  MicIcon,
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
@@ -74,6 +75,8 @@ import {
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { useDictationContext } from './dictation-context'
+import { DictationSheet } from './dictation-sheet'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -334,6 +337,7 @@ export const Thread: FC<ThreadProps> = ({
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
+        <DictationSheet />
         {/* S6: standalone-only, same as ThreadScrollToBottom above — an
             embedded widget has little vertical room and the embedding page
             already carries the disclaimer context. */}
@@ -648,7 +652,7 @@ const AttachmentErrorBanner: FC<{
   const t = useTranslations()
   if (!error) return null
   return (
-    <div className={className}>
+    <div className={className} role="alert">
       <div className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs">
         <span>{error}</span>
         <button
@@ -667,6 +671,8 @@ const AttachmentErrorBanner: FC<{
 const Composer: FC = () => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  const { clearError: clearDictationError, state: dictationState } =
+    useDictationContext()
   const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -674,6 +680,27 @@ const Composer: FC = () => {
   // transition hands focus back — the ordinary, no-disclaimer mount is
   // already covered by `autoFocus` below and must not be duplicated here.
   const gateWasOpenRef = useRef(false)
+  const dictationError =
+    dictationState.status === 'error'
+      ? {
+          aborted: t('chat.composer.dictationErrorAborted'),
+          'audio-capture': t('chat.composer.dictationErrorAudioCapture'),
+          'availability-check-failed': t(
+            'chat.composer.dictationErrorAvailabilityCheck'
+          ),
+          'install-failed': t('chat.composer.dictationErrorInstall'),
+          'language-not-supported': t(
+            'chat.composer.dictationErrorLanguageNotSupported'
+          ),
+          network: t('chat.composer.dictationErrorNetwork'),
+          'no-speech': t('chat.composer.dictationErrorNoSpeech'),
+          'not-allowed': t('chat.composer.dictationErrorNotAllowed'),
+          'service-not-allowed': t(
+            'chat.composer.dictationErrorServiceNotAllowed'
+          ),
+          unknown: t('chat.composer.dictationErrorUnknown'),
+        }[dictationState.error ?? 'unknown']
+      : null
 
   // `autoFocus` only ever fires once, on mount, so it cannot react to the
   // disclaimer gate closing later — hand focus back to the input explicitly
@@ -703,8 +730,11 @@ const Composer: FC = () => {
         <ComposerAttachments />
 
         <AttachmentErrorBanner
-          error={attachmentError}
-          onDismiss={() => setAttachmentError(null)}
+          error={attachmentError ?? dictationError}
+          onDismiss={() => {
+            setAttachmentError(null)
+            if (dictationError) clearDictationError()
+          }}
           className="px-2 pt-2"
         />
 
@@ -713,6 +743,7 @@ const Composer: FC = () => {
             setError={setAttachmentError}
             dataCy="chat-composer"
           />
+          <DictationButton />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
             ref={inputRef}
@@ -728,6 +759,76 @@ const Composer: FC = () => {
         </div>
       </ComposerPrimitive.Root>
     </ComposerDropzone>
+  )
+}
+
+const DictationButton: FC = () => {
+  const t = useTranslations()
+  const { embedded } = useChatUi()
+  const { mobile, openInstallSheet, startDictation, status, stopDictation } =
+    useDictationContext()
+
+  if (embedded || mobile || status === 'unsupported') return null
+
+  const disabled =
+    status === 'unavailable' || status === 'installing' || status === 'error'
+  const statusLabel = {
+    unavailable: t('chat.settingsPanel.dictationStatusUnavailable'),
+    'needs-install': t('chat.settingsPanel.dictationStatusNeedsInstall'),
+    installing: t('chat.settingsPanel.dictationStatusInstalling'),
+    ready: t('chat.settingsPanel.dictationStatusReady'),
+    listening: t('chat.settingsPanel.dictationStatusListening'),
+    error: t('chat.settingsPanel.dictationStatusError'),
+    unsupported: t('chat.settingsPanel.dictationStatusUnsupported'),
+  }[status]
+  const listening = status === 'listening'
+  const buttonLabel = listening ? statusLabel : t('chat.composer.dictation')
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <button
+              type="button"
+              data-cy="chat-dictation"
+              className={twMerge(
+                'text-muted-foreground hover:text-foreground inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md px-2 touch-manipulation fine-pointer:min-h-9 fine-pointer:min-w-9',
+                listening &&
+                  'text-primary bg-primary/10 animate-pulse motion-reduce:animate-none'
+              )}
+              aria-label={buttonLabel}
+              aria-disabled={disabled}
+              aria-pressed={listening}
+              disabled={disabled}
+              title={buttonLabel}
+              onClick={() => {
+                if (status === 'needs-install') {
+                  openInstallSheet()
+                } else if (listening) {
+                  stopDictation()
+                } else if (status === 'ready') {
+                  startDictation()
+                }
+              }}
+            >
+              {listening ? (
+                <>
+                  <SquareIcon className="size-4" />
+                  <span>{statusLabel}</span>
+                </>
+              ) : (
+                <MicIcon className="size-5" />
+              )}
+            </button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{buttonLabel}</TooltipContent>
+      </Tooltip>
+      <span className="sr-only" aria-live="polite">
+        {listening ? statusLabel : ''}
+      </span>
+    </>
   )
 }
 

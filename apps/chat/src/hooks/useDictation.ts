@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  appendTranscript,
   createInitialDictationState,
   dictationReducer,
   type DictationErrorCode,
@@ -10,6 +11,7 @@ import {
 import { projectDictationDraft } from '../lib/speech/dictation-draft'
 import { useAui, useAuiState } from '@assistant-ui/react'
 import { useLocale } from 'next-intl'
+import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
 export type LocalSpeechAvailability =
@@ -143,6 +145,7 @@ function statusForAvailability(
 
 export function useDictation(): DictationValue {
   const locale = useLocale()
+  const { threadId } = useParams<{ threadId?: string }>()
   const language = locale.toLowerCase().startsWith('de') ? 'de-DE' : 'en-US'
   const aui = useAui()
   const composerText = useAuiState((state) => state.composer.text)
@@ -155,6 +158,8 @@ export function useDictation(): DictationValue {
   const stateRef = useRef(state)
   const recognitionRef = useRef<LocalSpeechRecognition | null>(null)
   const capturedDraftRef = useRef<string | null>(null)
+  const activeThreadRef = useRef(threadId)
+  const transcriptRef = useRef({ finalTranscript: '', interimTranscript: '' })
 
   useEffect(() => {
     stateRef.current = state
@@ -245,6 +250,7 @@ export function useDictation(): DictationValue {
 
     const recognition = new constructor()
     capturedDraftRef.current = composerText
+    transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
     recognition.lang = language
     recognition.continuous = false
     recognition.interimResults = true
@@ -269,6 +275,18 @@ export function useDictation(): DictationValue {
             (_, alternativeIndex) => result[alternativeIndex]?.transcript ?? ''
           )
           .join(' ')
+        transcriptRef.current = result.isFinal
+          ? {
+              finalTranscript: appendTranscript(
+                transcriptRef.current.finalTranscript,
+                transcript
+              ),
+              interimTranscript: '',
+            }
+          : {
+              ...transcriptRef.current,
+              interimTranscript: transcript,
+            }
         dispatch({
           type: result.isFinal ? 'final' : 'interim',
           text: transcript,
@@ -278,12 +296,24 @@ export function useDictation(): DictationValue {
     recognition.onerror = (event) => {
       if (recognitionRef.current !== recognition) return
       restoreCapturedDraft()
+      transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
       dispatch({ type: 'error', error: mapRecognitionError(event.error) })
     }
     recognition.onend = () => {
       if (recognitionRef.current !== recognition) return
+      const capturedDraft = capturedDraftRef.current
+      if (capturedDraft !== null) {
+        aui.composer.setText(
+          projectDictationDraft(
+            capturedDraft,
+            transcriptRef.current.finalTranscript,
+            transcriptRef.current.interimTranscript
+          )
+        )
+      }
       recognitionRef.current = null
       capturedDraftRef.current = null
+      transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
       dispatch({ type: 'end' })
     }
 
@@ -298,10 +328,11 @@ export function useDictation(): DictationValue {
     } catch {
       recognitionRef.current = null
       restoreCapturedDraft()
+      transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
       dispatch({ type: 'error', error: 'unknown' })
       return false
     }
-  }, [composerText, language, restoreCapturedDraft])
+  }, [aui, composerText, language, restoreCapturedDraft])
 
   const stopDictation = useCallback(() => {
     recognitionRef.current?.stop()
@@ -311,6 +342,7 @@ export function useDictation(): DictationValue {
     recognitionRef.current?.abort()
     recognitionRef.current = null
     restoreCapturedDraft()
+    transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
     dispatch({ type: 'error', error: 'aborted' })
   }, [restoreCapturedDraft])
 
@@ -332,10 +364,32 @@ export function useDictation(): DictationValue {
   }, [refreshCapability])
 
   useEffect(() => {
+    if (activeThreadRef.current === threadId) return
+
+    activeThreadRef.current = threadId
+    const recognition = recognitionRef.current
+    recognitionRef.current = null
+    capturedDraftRef.current = null
+    transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
+    recognition?.abort()
+    dispatch({ type: 'reset' })
+    void refreshCapability()
+  }, [refreshCapability, threadId])
+
+  useEffect(() => {
+    if (state.status !== 'installing') return
+    const interval = window.setInterval(() => {
+      void refreshCapability()
+    }, 1000)
+    return () => window.clearInterval(interval)
+  }, [refreshCapability, state.status])
+
+  useEffect(() => {
     return () => {
       const recognition = recognitionRef.current
       recognitionRef.current = null
       capturedDraftRef.current = null
+      transcriptRef.current = { finalTranscript: '', interimTranscript: '' }
       recognition?.abort()
     }
   }, [])
