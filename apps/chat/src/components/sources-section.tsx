@@ -7,7 +7,7 @@ import {
   PlayIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type ComponentType, type SVGProps } from 'react'
+import type { ComponentType, SVGProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import {
@@ -16,6 +16,8 @@ import {
 } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
 import { useMessageSourcesContext } from './message-sources-context'
+import { SourcePreviewContent } from './source-preview-content'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Module-scope map (not a function returning a component per call) so
 // `<Icon />` below resolves to a stable, already-existing component
@@ -71,24 +73,16 @@ function SourceCard({
       <span className="min-w-0 flex-1">
         {/* Two lines, not `truncate`: these are file names like
             `kapitel-4-erwartungswert-und-varianz.pdf`, which a single
-            ellipsized line cuts before the part that identifies it. `title`
-            keeps the untruncated name reachable on hover. No `block` here —
+            ellipsized line cuts before the part that identifies it. No
+            `block` here —
             it would override the `display: -webkit-box` that `line-clamp-2`
             needs, silently disabling the clamp. */}
-        <span
-          title={source.title}
-          className="text-foreground line-clamp-2 break-words text-sm font-medium"
-        >
+        <span className="text-foreground line-clamp-2 break-words text-sm font-medium">
           {source.title}
         </span>
         {secondaryLine && (
           <span className="text-muted-foreground block truncate text-xs">
             {secondaryLine}
-          </span>
-        )}
-        {source.excerpt && (
-          <span className="text-muted-foreground mt-1 line-clamp-2 block text-xs italic">
-            {source.excerpt}
           </span>
         )}
       </span>
@@ -106,41 +100,42 @@ function SourceCard({
     'data-cy': 'chat-source-card',
     className: twMerge(
       // `focus-visible` applies to both branches: a citation chip can send
-      // programmatic focus to a non-url card too (see `tabIndex={-1}`
-      // below), and that focus needs to stay visible even though the card
-      // itself isn't a link. The hover treatment stays url-only — hovering
-      // a card that does nothing would be a misleading affordance.
+      // programmatic focus to a non-url card too, and that focus needs to
+      // stay visible even though the card itself isn't a link. All cards use
+      // the same passive tooltip for their source details.
       'border-border bg-background focus-visible:ring-ring flex min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
       isMedia && 'w-auto max-w-[16rem]',
       source.url && 'hover:bg-accent hover:text-accent-foreground'
     ),
   }
 
-  // Only sources with a url are interactive for Tab navigation — everything
-  // else stays role-less and out of the tab order. `tabIndex={-1}` on the
-  // non-url card below only enables the programmatic focus a citation chip
-  // sends here (see citation-chip.tsx); Tab still skips straight past it.
-  if (source.url) {
-    return (
-      <a
-        {...sharedProps}
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {inner}
-        {/* `target="_blank"` is otherwise only signalled visually (the
+  const card = source.url ? (
+    <a
+      {...sharedProps}
+      href={source.url}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {inner}
+      {/* `target="_blank"` is otherwise only signalled visually (the
             external-link icon above is aria-hidden), so the accessible name
             has to carry the new-tab hint itself. */}
-        <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
-      </a>
-    )
-  }
-
-  return (
-    <div {...sharedProps} tabIndex={-1}>
+      <span className="sr-only">{t('chat.common.opensInNewTab')}</span>
+    </a>
+  ) : (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: The passive source card must be keyboard-focusable so its hover-equivalent preview is available without presenting a fake action.
+    <div {...sharedProps} tabIndex={0}>
       {inner}
     </div>
+  )
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{card}</TooltipTrigger>
+      <TooltipContent className="max-w-64 text-left">
+        <SourcePreviewContent source={source} />
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
