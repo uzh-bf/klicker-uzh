@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -19,9 +19,11 @@ const ids = {
   participantId: '00000000-0000-4000-8000-000000000003',
   participationId: null,
   chatbotId: '00000000-0000-4000-8000-000000000004',
-  legacyConfigId: '00000000-0000-4000-8000-000000000005',
-  candidateServerId: '00000000-0000-4000-8000-000000000006',
-  candidateConfigId: '00000000-0000-4000-8000-000000000007',
+  legacyServerId: '00000000-0000-4000-8000-000000000005',
+  legacyServerName: 'W5e-legacy-run-fixture',
+  legacyConfigId: '00000000-0000-4000-8000-000000000006',
+  candidateServerId: '00000000-0000-4000-8000-000000000007',
+  candidateConfigId: '00000000-0000-4000-8000-000000000008',
 } as const
 
 const provenance = {
@@ -31,6 +33,192 @@ const provenance = {
   argoRevision: 'argo-revision',
   networkPolicySourceCommit: 'network-policy',
 } as const
+
+const passedProof = {
+  status: 'passed',
+  toolCount: 34,
+  pairCount: 17,
+  teachingToolsPresent: false,
+  retrieval: 'passed',
+  wrongBearer: 'passed',
+  missingBearer: 'passed',
+  wrongTenant: 'passed',
+  eduaiRoute: 'passed',
+} as const
+
+type FakeRow = Record<string, any>
+
+function matchesWhere(row: FakeRow, where: Record<string, any>): boolean {
+  return Object.entries(where).every(([key, expected]) => {
+    const actual = row[key]
+    if (expected instanceof Date) {
+      return actual instanceof Date && actual.getTime() === expected.getTime()
+    }
+    if (expected && typeof expected === 'object' && 'startsWith' in expected) {
+      return (
+        typeof actual === 'string' &&
+        actual.startsWith(String(expected.startsWith))
+      )
+    }
+    return actual === expected
+  })
+}
+
+function fakeW5eClient(options: { ordinaryServer?: FakeRow } = {}) {
+  let sequence = 0
+  let participationId = 0
+  let ordinarySelected = false
+  let ordinaryChanged = false
+  const nextDate = () => new Date(Date.UTC(2026, 7, 22, 0, 0, sequence++))
+  const maps = {
+    servers: new Map<string, FakeRow>(),
+    configs: new Map<string, FakeRow>(),
+    users: new Map<string, FakeRow>(),
+    courses: new Map<string, FakeRow>(),
+    participants: new Map<string, FakeRow>(),
+    participations: new Map<number, FakeRow>(),
+    chatbots: new Map<string, FakeRow>(),
+  }
+  const serverCreates: FakeRow[] = []
+  if (options.ordinaryServer) {
+    maps.servers.set(options.ordinaryServer.id, options.ordinaryServer)
+  }
+  const ordinaryId = options.ordinaryServer?.id
+
+  function model(map: Map<string | number, FakeRow>) {
+    return {
+      create: vi.fn(async ({ data }: { data: FakeRow }) => {
+        const id = data.id ?? ++participationId
+        const row = {
+          ...data,
+          id,
+          createdAt: nextDate(),
+          updatedAt: nextDate(),
+        }
+        map.set(id, row)
+        return row
+      }),
+      findUnique: vi.fn(async ({ where }: { where: Record<string, any> }) => {
+        const row = [...map.values()].find((entry) =>
+          matchesWhere(entry, where)
+        )
+        if (row?.id === ordinaryId) ordinarySelected = true
+        return row ?? null
+      }),
+      findMany: vi.fn(
+        async ({
+          where,
+          select,
+        }: {
+          where: Record<string, any>
+          select?: FakeRow
+        }) =>
+          [...map.values()]
+            .filter((entry) => matchesWhere(entry, where))
+            .map((entry) =>
+              select
+                ? Object.fromEntries(
+                    Object.keys(select).map((key) => [key, entry[key]])
+                  )
+                : entry
+            )
+      ),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: Record<string, any>
+          data: FakeRow
+        }) => {
+          let count = 0
+          for (const row of map.values()) {
+            if (!matchesWhere(row, where)) continue
+            if (row.id === ordinaryId) ordinaryChanged = true
+            Object.assign(row, data, { updatedAt: nextDate() })
+            count++
+          }
+          return { count }
+        }
+      ),
+      deleteMany: vi.fn(async ({ where }: { where: Record<string, any> }) => {
+        let count = 0
+        for (const [id, row] of [...map.entries()]) {
+          if (!matchesWhere(row, where)) continue
+          if (row.id === ordinaryId) ordinaryChanged = true
+          map.delete(id)
+          count++
+        }
+        return { count }
+      }),
+    }
+  }
+
+  const serverModel = model(maps.servers)
+  const serverCreate = serverModel.create
+  serverModel.create = vi.fn(async (args: { data: FakeRow }) => {
+    serverCreates.push({ ...args.data })
+    return serverCreate(args)
+  })
+  const tx = {
+    chatbotMCPServer: serverModel,
+    chatbotMCPConfig: model(maps.configs),
+    user: model(maps.users),
+    course: model(maps.courses),
+    participant: model(maps.participants),
+    participation: model(maps.participations),
+    chatbot: model(maps.chatbots),
+    chatThread: { findMany: vi.fn(async () => []) },
+    chatUsageCredits: { findMany: vi.fn(async () => []) },
+  }
+  const client = {
+    $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) =>
+      callback(tx)
+    ),
+  } as unknown as PrismaClient
+
+  return {
+    client,
+    maps,
+    serverCreates,
+    ordinaryWasSelected: () => ordinarySelected,
+    ordinaryWasChanged: () => ordinaryChanged,
+  }
+}
+
+async function withW5eEnvironment<T>(
+  receiptPath: string,
+  action: () => Promise<T>
+): Promise<T> {
+  const env = {
+    CANDIDATE_URL:
+      'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker',
+    CANDIDATE_PROOF_URL: 'http://127.0.0.1:1417/mcp/klicker',
+    RECEIPT_PATH: receiptPath,
+    DOC_QUERY_JWT_TOKEN_KLICKER: 'synthetic-bearer-token',
+    APP_SECRET: 'synthetic-app-secret',
+    KLICKER_SOURCE_SHA: 'source-sha',
+    CHAT_IMAGE_DIGEST: 'chat-image',
+    DOC_QUERY_IMAGE_DIGEST: 'doc-query-image',
+    ARGO_REVISION: 'argo-revision',
+    NETWORK_POLICY_SOURCE_COMMIT: 'network-policy',
+  }
+  const previousEnv = new Map<string, string | undefined>()
+  for (const [name, value] of Object.entries(env)) {
+    previousEnv.set(name, process.env[name])
+    process.env[name] = value
+  }
+  const previousExitCode = process.exitCode
+  try {
+    return await action()
+  } finally {
+    for (const [name, value] of previousEnv) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
+    process.exitCode = previousExitCode
+  }
+}
 
 describe('W5e direct-Chat receipt and output boundaries', () => {
   test('journals a digest-checked values-free receipt and rejects backward state', async () => {
@@ -51,10 +239,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         'prepared'
       )
       expect(
-        updatedReceipt(
-          updatedReceipt(receipt, { state: 'prepared' }),
-          { state: 'switching' }
-        ).state
+        updatedReceipt(updatedReceipt(receipt, { state: 'prepared' }), {
+          state: 'switching',
+        }).state
       ).toBe('switching')
     } finally {
       await rm(directory, { recursive: true, force: true })
@@ -105,6 +292,16 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       await expect(
         store.write(
           updatedReceipt(prepared, {
+            identity: {
+              ...prepared.identity,
+              legacyServerName: 'W5e-legacy-other-run',
+            },
+          })
+        )
+      ).rejects.toThrow('RECEIPT_INVALID')
+      await expect(
+        store.write(
+          updatedReceipt(prepared, {
             fixture: { ...prepared.fixture, participationId: 43 },
           })
         )
@@ -116,7 +313,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
               legacyConfig: {
                 id: ids.legacyConfigId,
                 chatbotId: ids.chatbotId,
-                mcpServerId: ids.candidateServerId,
+                mcpServerId: ids.legacyServerId,
                 chatMode: 'tutor',
                 allowedTools: [],
                 priority: 0,
@@ -130,7 +327,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         )
       ).rejects.toThrow('RECEIPT_IMMUTABLE')
 
-      const bootstrapStore = createReceiptStore(join(directory, 'bootstrap.json'))
+      const bootstrapStore = createReceiptStore(
+        join(directory, 'bootstrap.json')
+      )
       const bootstrap = initialReceipt(
         'run-bootstrap',
         { ...ids },
@@ -141,10 +340,35 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         bootstrapStore.write(
           updatedReceipt(bootstrap, {
             state: 'prepared',
-            fixture: { ...ids, ownerId: '00000000-0000-4000-8000-000000000099' },
+            fixture: {
+              ...ids,
+              ownerId: '00000000-0000-4000-8000-000000000099',
+            },
           })
         )
       ).rejects.toThrow('RECEIPT_IMMUTABLE')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('rejects historical version 2 receipts as non-executable', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-v2-'))
+    const path = join(directory, 'receipt.json')
+    try {
+      const receipt = initialReceipt(
+        'run-historical',
+        { ...ids },
+        { ...provenance }
+      )
+      await writeFile(
+        path,
+        `${JSON.stringify({ ...receipt, receiptVersion: 2 })}\n`,
+        'utf8'
+      )
+      await expect(createReceiptStore(path).read()).rejects.toThrow(
+        'only receipt version 3 is executable'
+      )
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
@@ -170,6 +394,8 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       reachability: 'not_run',
       proof: 'not_run',
       cleanup: 'incomplete',
+      fixtureOperation: 'not_run',
+      fixtureStatus: 'not_run',
       error: 'transaction_failed',
       failure: 'unknown',
     })
@@ -197,16 +423,6 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       process.env[name] = value
     }
     const previousExitCode = process.exitCode
-    const legacyServer = {
-      id: 'legacy-server-id',
-      name: 'KB',
-      url: 'http://legacy.invalid/mcp',
-      authType: 'none',
-      passChatbotId: false,
-      chatbotIdHeader: null,
-      isActive: true,
-      updatedAt: new Date('2026-08-21T00:00:00.000Z'),
-    }
     let courseData: Record<string, unknown> | undefined
     type FakeTx = {
       chatbotMCPServer: {
@@ -219,9 +435,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     }
     const tx: FakeTx = {
       chatbotMCPServer: {
-        findUnique: vi.fn(async ({ where }) =>
-          where.name === 'KB' ? legacyServer : null
-        ),
+        findUnique: vi.fn(async () => null),
       },
       user: {
         create: vi.fn(async () => ({ id: ids.ownerId })),
@@ -268,6 +482,188 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         else process.env[name] = value
       }
       process.exitCode = previousExitCode
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('runs successfully when the MCP server store starts empty', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-empty-store-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const fake = fakeW5eClient()
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }))
+    const runProofImpl = vi.fn(async () => passedProof)
+
+    try {
+      const result = await withW5eEnvironment(receiptPath, () =>
+        runW5eTransaction({
+          client: fake.client,
+          fetchImpl,
+          runProofImpl,
+        })
+      )
+      const receipt = await createReceiptStore(receiptPath).read()
+      const legacyCreate = fake.serverCreates.find((server) =>
+        server.name.startsWith('W5e-legacy-')
+      )
+
+      expect(result).toMatchObject({
+        status: 'cleaned',
+        proof: 'passed',
+        cleanup: 'exact-zero',
+        fixtureOperation: 'cleanup',
+        fixtureStatus: 'passed',
+        failure: null,
+      })
+      expect(receipt).toMatchObject({
+        receiptVersion: 3,
+        state: 'cleaned',
+        identity: {
+          legacyServerId: receipt?.fixture.legacyServerId,
+          legacyServerName: receipt?.fixture.legacyServerName,
+        },
+        cleanup: {
+          restoredLegacy: true,
+          candidateAbsent: true,
+          legacyAbsent: true,
+          fixtureAbsent: true,
+          unrelatedRowsUntouched: true,
+          exactZeroReadback: true,
+        },
+      })
+      expect(legacyCreate).toMatchObject({
+        id: receipt?.fixture.legacyServerId,
+        name: receipt?.fixture.legacyServerName,
+        url: 'http://127.0.0.1:9/mcp',
+        authType: 'none',
+        authSecret: null,
+        passChatbotId: false,
+        chatbotIdHeader: null,
+        isActive: true,
+      })
+      expect(fake.serverCreates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'Klicker-compat' }),
+        ])
+      )
+      expect(runProofImpl).toHaveBeenCalledTimes(1)
+      for (const map of Object.values(fake.maps)) expect(map.size).toBe(0)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('cleans a switched failure without selecting or changing an ordinary server', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-failed-proof-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const ordinaryServer = {
+      id: '00000000-0000-4000-8000-000000000099',
+      name: 'ordinary-server',
+      description: 'Unrelated ordinary server',
+      url: 'http://ordinary.invalid/mcp',
+      authType: 'none',
+      authSecret: null,
+      passChatbotId: false,
+      chatbotIdHeader: null,
+      parameters: {},
+      isActive: true,
+      createdAt: new Date('2026-08-20T00:00:00.000Z'),
+      updatedAt: new Date('2026-08-20T00:00:00.000Z'),
+    }
+    const ordinarySnapshot = { ...ordinaryServer }
+    const fake = fakeW5eClient({ ordinaryServer })
+    const failedProof = {
+      ...passedProof,
+      status: 'failed',
+      retrieval: 'failed',
+    } as const
+
+    try {
+      const result = await withW5eEnvironment(receiptPath, () =>
+        runW5eTransaction({
+          client: fake.client,
+          fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
+          runProofImpl: vi.fn(async () => failedProof),
+        })
+      )
+      const receipt = await createReceiptStore(receiptPath).read()
+
+      expect(result).toMatchObject({
+        status: 'proof_blocked_but_cleaned',
+        proof: 'failed',
+        cleanup: 'exact-zero',
+        fixtureOperation: 'cleanup',
+        fixtureStatus: 'passed',
+        error: 'transaction_failed',
+        failure: 'proof_failed',
+      })
+      expect(receipt?.cleanup).toMatchObject({
+        unrelatedRowsUntouched: true,
+        exactZeroReadback: true,
+      })
+      expect(fake.ordinaryWasSelected()).toBe(false)
+      expect(fake.ordinaryWasChanged()).toBe(false)
+      expect(fake.maps.servers.get(ordinaryServer.id)).toEqual(ordinarySnapshot)
+      expect(fake.maps.servers.size).toBe(1)
+      expect(fake.maps.configs.size).toBe(0)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('cleans the prepared fixture when its receipt write fails', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-write-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const fake = fakeW5eClient()
+    const runProofImpl = vi.fn(async () => passedProof)
+
+    try {
+      const result = await withW5eEnvironment(receiptPath, () =>
+        runW5eTransaction({
+          client: fake.client,
+          fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
+          runProofImpl,
+          receiptStoreFactory: (path) => {
+            const store = createReceiptStore(path)
+            let writes = 0
+            return {
+              read: () => store.read(),
+              write: async (receipt) => {
+                writes++
+                if (writes === 4) throw new Error('synthetic receipt failure')
+                await store.write(receipt)
+              },
+            }
+          },
+        })
+      )
+      const receipt = await createReceiptStore(receiptPath).read()
+
+      expect(result).toMatchObject({
+        status: 'planned',
+        cleanup: 'exact-zero',
+        fixtureOperation: 'cleanup',
+        fixtureStatus: 'passed',
+        error: 'transaction_failed',
+        failure: 'fixture_create_failed',
+      })
+      expect(receipt).toMatchObject({
+        state: 'planned',
+        failure: { category: 'fixture_create_failed' },
+        cleanup: {
+          restoredLegacy: true,
+          candidateAbsent: true,
+          legacyAbsent: true,
+          fixtureAbsent: true,
+          unrelatedRowsUntouched: true,
+          exactZeroReadback: true,
+        },
+      })
+      expect(runProofImpl).not.toHaveBeenCalled()
+      for (const map of Object.values(fake.maps)) expect(map.size).toBe(0)
+      expect(await readFile(receiptPath, 'utf8')).not.toContain(
+        'synthetic receipt failure'
+      )
+    } finally {
       await rm(directory, { recursive: true, force: true })
     }
   })

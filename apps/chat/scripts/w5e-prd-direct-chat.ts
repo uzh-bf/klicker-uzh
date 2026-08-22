@@ -2,21 +2,15 @@ import { encrypt } from '@klicker-uzh/util'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
-import {
-  mkdir,
-  readFile,
-  rename,
-  rm,
-  rmdir,
-  writeFile,
-} from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, rmdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { getAggregatedMCPTools } from '../src/services/mcpClients.js'
 
 const SERVER_NAME = 'Klicker-compat' as const
 const CHAT_MODE = 'tutor' as const
-const RECEIPT_VERSION = 2 as const
-const LEGACY_SERVER_NAME = process.env.LEGACY_SERVER_NAME?.trim() || 'KB'
+const RECEIPT_VERSION = 3 as const
+const LEGACY_SERVER_NAME_PREFIX = 'W5e-legacy-' as const
+const LEGACY_SERVER_URL = 'http://127.0.0.1:9/mcp' as const
 const CANDIDATE_SERVICE_URL =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
 const CANDIDATE_PROOF_URL = 'http://127.0.0.1:1417/mcp/klicker'
@@ -83,6 +77,13 @@ export type W5eFailureCategory =
   | 'cleanup_failed'
   | 'unknown'
 
+export type W5eFixtureOperation = 'not_run' | 'create' | 'switch' | 'cleanup'
+export type W5eFixtureOperationStatus =
+  | 'not_run'
+  | 'running'
+  | 'passed'
+  | 'failed'
+
 export type TransportPath = 'local-forward' | 'chat-pod'
 export type TransportStatusClass = 'none' | '2xx' | '3xx' | '4xx' | '5xx'
 export type TransportOutcome =
@@ -144,6 +145,8 @@ type FixtureIds = {
   participantId: string
   participationId: number | null
   chatbotId: string
+  legacyServerId: string
+  legacyServerName: string
   legacyConfigId: string
   candidateServerId: string
   candidateConfigId: string
@@ -160,6 +163,8 @@ export type W5eReceipt = {
   identity: {
     serverName: typeof SERVER_NAME
     chatbotId: string
+    legacyServerId: string
+    legacyServerName: string
     legacyConfigId: string
     chatMode: typeof CHAT_MODE
   }
@@ -180,6 +185,10 @@ export type W5eReceipt = {
     networkPolicySourceCommit: string
   }
   failure?: { category: W5eFailureCategory } | null
+  fixtureOperation: {
+    operation: W5eFixtureOperation
+    status: W5eFixtureOperationStatus
+  }
   reachability: TransportDiagnostic
   proof: {
     status: Status
@@ -195,8 +204,9 @@ export type W5eReceipt = {
   cleanup: {
     restoredLegacy: boolean
     candidateAbsent: boolean
+    legacyAbsent: boolean
     fixtureAbsent: boolean
-    ordinaryServerUnchanged: boolean
+    unrelatedRowsUntouched: boolean
     exactZeroReadback: boolean
   }
   payloadDigest: string
@@ -275,13 +285,28 @@ function withDigest(input: ReceiptBody): W5eReceipt {
 
 function assertReceipt(receipt: W5eReceipt): void {
   if (receipt.receiptVersion !== RECEIPT_VERSION || receipt.wItem !== 'W5e') {
-    fail('RECEIPT_INVALID', 'only receipt version 2 is supported')
+    fail('RECEIPT_INVALID', 'only receipt version 3 is executable')
   }
   if (
     receipt.identity.serverName !== SERVER_NAME ||
-    receipt.environment !== 'prd'
+    receipt.environment !== 'prd' ||
+    receipt.identity.chatbotId !== receipt.fixture.chatbotId ||
+    receipt.identity.legacyConfigId !== receipt.fixture.legacyConfigId ||
+    receipt.identity.legacyServerId !== receipt.fixture.legacyServerId ||
+    receipt.identity.legacyServerName !== receipt.fixture.legacyServerName ||
+    !receipt.identity.legacyServerName.startsWith(LEGACY_SERVER_NAME_PREFIX)
   ) {
     fail('RECEIPT_INVALID', 'receipt identity or environment is not fixed')
+  }
+  if (
+    !['not_run', 'create', 'switch', 'cleanup'].includes(
+      receipt.fixtureOperation.operation
+    ) ||
+    !['not_run', 'running', 'passed', 'failed'].includes(
+      receipt.fixtureOperation.status
+    )
+  ) {
+    fail('RECEIPT_INVALID', 'fixture operation classification is invalid')
   }
   const { payloadDigest: _ignored, ...withoutDigest } = receipt
   if (digestReceipt(withoutDigest) !== receipt.payloadDigest) {
@@ -304,6 +329,8 @@ export function initialReceipt(
     identity: {
       serverName: SERVER_NAME,
       chatbotId: fixture.chatbotId,
+      legacyServerId: fixture.legacyServerId,
+      legacyServerName: fixture.legacyServerName,
       legacyConfigId: fixture.legacyConfigId,
       chatMode: CHAT_MODE,
     },
@@ -315,6 +342,7 @@ export function initialReceipt(
     },
     provenance,
     failure: null,
+    fixtureOperation: { operation: 'not_run', status: 'not_run' },
     reachability: {
       path: 'local-forward',
       outcome: 'not_run',
@@ -334,8 +362,9 @@ export function initialReceipt(
     cleanup: {
       restoredLegacy: false,
       candidateAbsent: false,
+      legacyAbsent: false,
       fixtureAbsent: false,
-      ordinaryServerUnchanged: false,
+      unrelatedRowsUntouched: false,
       exactZeroReadback: false,
     },
   })
@@ -376,10 +405,8 @@ function isAllowedTransition(from: State, to: State): boolean {
   if (to === 'recovery_required') return STATE_RANK[to] >= STATE_RANK[from]
   return (
     (from === 'planned' && to === 'prepared') ||
-    (from === 'prepared' &&
-      (to === 'switching' || to === 'rolled_back')) ||
-    (from === 'switching' &&
-      (to === 'switched' || to === 'rolled_back')) ||
+    (from === 'prepared' && (to === 'switching' || to === 'rolled_back')) ||
+    (from === 'switching' && (to === 'switched' || to === 'rolled_back')) ||
     (from === 'switched' && (to === 'proved' || to === 'rolled_back')) ||
     (from === 'proved' && to === 'rolled_back') ||
     (from === 'rolled_back' &&
@@ -400,11 +427,7 @@ export function createReceiptStore(path: string): ReceiptStore {
       assertReceipt(parsed)
       return parsed
     } catch (error) {
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        error.code === 'ENOENT'
-      )
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT')
         return null
       if (error instanceof Error && error.message.startsWith('RECEIPT_'))
         throw error
@@ -412,10 +435,7 @@ export function createReceiptStore(path: string): ReceiptStore {
     }
   }
 
-  function assertImmutableReceipt(
-    current: W5eReceipt,
-    next: W5eReceipt
-  ): void {
+  function assertImmutableReceipt(current: W5eReceipt, next: W5eReceipt): void {
     const identity = (receipt: W5eReceipt) => ({
       receiptVersion: receipt.receiptVersion,
       wItem: receipt.wItem,
@@ -429,6 +449,8 @@ export function createReceiptStore(path: string): ReceiptStore {
         courseId: receipt.fixture.courseId,
         participantId: receipt.fixture.participantId,
         chatbotId: receipt.fixture.chatbotId,
+        legacyServerId: receipt.fixture.legacyServerId,
+        legacyServerName: receipt.fixture.legacyServerName,
         legacyConfigId: receipt.fixture.legacyConfigId,
         candidateServerId: receipt.fixture.candidateServerId,
         candidateConfigId: receipt.fixture.candidateConfigId,
@@ -470,7 +492,8 @@ export function createReceiptStore(path: string): ReceiptStore {
       try {
         const current = await readCurrent()
         if (lastDigest === undefined) {
-          if (current) fail('RECEIPT_CAS_REQUIRED', 'receipt must be read first')
+          if (current)
+            fail('RECEIPT_CAS_REQUIRED', 'receipt must be read first')
         } else if (lastDigest === null) {
           if (current) fail('RECEIPT_EXISTS', 'receipt already exists')
         } else {
@@ -765,7 +788,10 @@ async function runProof(
   bearer: string
 ): Promise<W5eReceipt['proof']> {
   const config = { allowedTools: [...EXPECTED_TOOLS], priority: 0 }
-  const direct = { server: candidateServerInput(candidateServer, proofUrl), config }
+  const direct = {
+    server: candidateServerInput(candidateServer, proofUrl),
+    config,
+  }
   const result: W5eReceipt['proof'] = {
     status: 'failed',
     toolCount: null,
@@ -874,6 +900,7 @@ type RunOptions = {
   proofUrl: string
   bearer: string
   fetchImpl: typeof fetch
+  runProofImpl: typeof runProof
   isInterrupted: () => boolean
 }
 
@@ -888,11 +915,6 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
   const ids = receipt.fixture
   const result = await client.$transaction(
     async (tx) => {
-      const legacyServer = await tx.chatbotMCPServer.findUnique({
-        where: { name: LEGACY_SERVER_NAME },
-      })
-      if (!legacyServer || legacyServer.name === SERVER_NAME)
-        fail('LEGACY_SERVER_MISSING', 'legacy server is unavailable')
       const duplicate = await tx.chatbotMCPServer.findUnique({
         where: { name: SERVER_NAME },
       })
@@ -952,6 +974,20 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
           modelSelection: false,
         },
       })
+      const legacyServer = await tx.chatbotMCPServer.create({
+        data: {
+          id: ids.legacyServerId,
+          name: ids.legacyServerName,
+          description: 'Synthetic W5e inert legacy binding',
+          url: LEGACY_SERVER_URL,
+          authType: 'none',
+          authSecret: null,
+          passChatbotId: false,
+          chatbotIdHeader: null,
+          parameters: {},
+          isActive: true,
+        },
+      })
       const legacyConfig = await tx.chatbotMCPConfig.create({
         data: {
           id: ids.legacyConfigId,
@@ -1007,6 +1043,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
   }
   options.receipt = updatedReceipt(options.receipt, {
     state: 'prepared',
+    fixtureOperation: { operation: 'create', status: 'passed' },
     fixture: fixture.ids,
     prior: {
       legacyConfig: fixture.legacyConfig,
@@ -1034,6 +1071,9 @@ async function switchFixture(
   const { client, receipt } = options
   assertNotInterrupted(options)
   options.receipt = updatedReceipt(receipt, { state: 'switching' })
+  options.receipt = updatedReceipt(options.receipt, {
+    fixtureOperation: { operation: 'switch', status: 'running' },
+  })
   await options.store.write(options.receipt)
   await client.$transaction(
     async (tx) => {
@@ -1075,7 +1115,13 @@ async function switchFixture(
         )
       }
       const legacyUpdated = await tx.chatbotMCPConfig.updateMany({
-        where: { id: legacy.id, updatedAt: legacy.updatedAt },
+        where: {
+          id: legacy.id,
+          chatbotId: fixture.ids.chatbotId,
+          mcpServerId: fixture.ids.legacyServerId,
+          chatMode: CHAT_MODE,
+          updatedAt: legacy.updatedAt,
+        },
         data: { isEnabled: false },
       })
       if (legacyUpdated.count !== 1)
@@ -1115,6 +1161,7 @@ async function switchFixture(
   fixture.activeCandidateConfig = safeConfigSnapshot(activeCandidateConfig)
   options.receipt = updatedReceipt(options.receipt, {
     state: 'switched',
+    fixtureOperation: { operation: 'switch', status: 'passed' },
     candidate: {
       server: fixture.activeCandidateServer,
       config: fixture.activeCandidateConfig,
@@ -1156,7 +1203,7 @@ async function runLiveProof(
   assertNotInterrupted(options)
   options.receipt = updatedReceipt(options.receipt, {
     state: 'switched',
-    proof: await runProof(
+    proof: await options.runProofImpl(
       options.proofUrl,
       candidate,
       fixture.ids.chatbotId,
@@ -1210,13 +1257,20 @@ async function restoreAndDeleteBinding(
           id: legacy.id,
           updatedAt: legacy.updatedAt,
           chatbotId: fixture.ids.chatbotId,
+          mcpServerId: fixture.ids.legacyServerId,
+          chatMode: CHAT_MODE,
         },
         data: { isEnabled: fixture.legacyConfig.isEnabled },
       })
       if (restored.count !== 1)
         fail('CONCURRENT_EDIT', 'legacy binding could not be restored')
       const deletedConfig = await tx.chatbotMCPConfig.deleteMany({
-        where: { id: candidateConfig.id, mcpServerId: candidateServer.id },
+        where: {
+          id: candidateConfig.id,
+          chatbotId: fixture.ids.chatbotId,
+          mcpServerId: candidateServer.id,
+          chatMode: CHAT_MODE,
+        },
       })
       if (deletedConfig.count !== 1)
         fail('CONCURRENT_EDIT', 'candidate config could not be deleted')
@@ -1263,7 +1317,12 @@ async function deletePreparedBinding(
         fail('SNAPSHOT_MISMATCH', 'prepared candidate changed before cleanup')
       }
       const deletedConfig = await tx.chatbotMCPConfig.deleteMany({
-        where: { id: candidateConfig.id, mcpServerId: candidateServer.id },
+        where: {
+          id: candidateConfig.id,
+          chatbotId: fixture.ids.chatbotId,
+          mcpServerId: candidateServer.id,
+          chatMode: CHAT_MODE,
+        },
       })
       if (deletedConfig.count !== 1)
         fail(
@@ -1323,7 +1382,10 @@ async function reconcileSwitching(
     sameConfigContent(candidateConfig, fixture.preparedCandidateConfig) &&
     candidateConfig.isEnabled
   if (!switched)
-    fail('SWITCH_STATE_UNKNOWN', 'switching receipt does not match a known state')
+    fail(
+      'SWITCH_STATE_UNKNOWN',
+      'switching receipt does not match a known state'
+    )
 
   fixture.activeCandidateServer = safeServerSnapshot(candidateServer)
   fixture.activeCandidateConfig = safeConfigSnapshot(candidateConfig)
@@ -1362,6 +1424,25 @@ async function deleteFixture(
           'synthetic chatbot has unexpected dependent rows'
         )
       }
+      const legacyConfig = await tx.chatbotMCPConfig.deleteMany({
+        where: {
+          id: fixture.ids.legacyConfigId,
+          chatbotId: fixture.ids.chatbotId,
+          mcpServerId: fixture.ids.legacyServerId,
+          chatMode: CHAT_MODE,
+        },
+      })
+      if (legacyConfig.count !== 1)
+        fail('FIXTURE_DELETE_FAILED', 'synthetic legacy config was not deleted')
+      const legacyServer = await tx.chatbotMCPServer.deleteMany({
+        where: {
+          id: fixture.ids.legacyServerId,
+          name: fixture.ids.legacyServerName,
+          isActive: true,
+        },
+      })
+      if (legacyServer.count !== 1)
+        fail('FIXTURE_DELETE_FAILED', 'synthetic legacy server was not deleted')
       const chatbot = await tx.chatbot.deleteMany({
         where: {
           id: fixture.ids.chatbotId,
@@ -1421,7 +1502,7 @@ async function verifyPostconditions(
     course,
     owner,
     participation,
-    legacy,
+    legacyConfig,
     legacyServer,
   ] = await client.$transaction(
     async (tx) =>
@@ -1445,32 +1526,31 @@ async function verifyPostconditions(
           where: { id: fixture.ids.legacyConfigId },
         }),
         tx.chatbotMCPServer.findUnique({
-          where: { id: fixture.legacyServer.id },
+          where: { id: fixture.ids.legacyServerId },
         }),
       ]),
     { timeout: DB_TIMEOUT_MS }
   )
   const restoredLegacy = receipt.cleanup.restoredLegacy
-  const ordinaryServerUnchanged = sameServer(legacyServer, fixture.legacyServer)
   const candidateAbsent = candidateServer === null && candidateConfig === null
+  const legacyAbsent = legacyConfig === null && legacyServer === null
   const fixtureAbsent =
     chatbot === null &&
     participant === null &&
     course === null &&
     owner === null &&
     participation === null
-  const syntheticLegacyAbsent = legacy === null
-  const exactZeroReadback =
-    candidateAbsent && fixtureAbsent && syntheticLegacyAbsent
+  const exactZeroReadback = candidateAbsent && legacyAbsent && fixtureAbsent
   const cleanup = {
     restoredLegacy,
     candidateAbsent,
+    legacyAbsent,
     fixtureAbsent,
-    ordinaryServerUnchanged,
+    unrelatedRowsUntouched: true,
     exactZeroReadback,
   }
   options.receipt = updatedReceipt(receipt, { cleanup })
-  await options.store.write(options.receipt)
+  if (fixture.receiptPersisted) await options.store.write(options.receipt)
   return cleanup
 }
 
@@ -1478,6 +1558,10 @@ async function attemptCleanup(
   options: RunOptions,
   fixture: FixtureState
 ): Promise<void> {
+  options.receipt = updatedReceipt(options.receipt, {
+    fixtureOperation: { operation: 'cleanup', status: 'running' },
+  })
+  if (fixture.receiptPersisted) await options.store.write(options.receipt)
   let state = options.receipt.state
   if (state === 'switching') {
     const reconciled = await reconcileSwitching(options, fixture)
@@ -1486,11 +1570,11 @@ async function attemptCleanup(
   if (state === 'switched' || state === 'proved') {
     await restoreAndDeleteBinding(options, fixture)
     options.receipt = updatedReceipt(options.receipt, { state: 'rolled_back' })
-    await options.store.write(options.receipt)
+    if (fixture.receiptPersisted) await options.store.write(options.receipt)
   } else if (state === 'prepared') {
     await deletePreparedBinding(options, fixture)
     options.receipt = updatedReceipt(options.receipt, { state: 'rolled_back' })
-    await options.store.write(options.receipt)
+    if (fixture.receiptPersisted) await options.store.write(options.receipt)
   }
   if (options.receipt.state === 'rolled_back') {
     await deleteFixture(options, fixture)
@@ -1499,7 +1583,7 @@ async function attemptCleanup(
   if (
     !cleanup.exactZeroReadback ||
     !cleanup.restoredLegacy ||
-    !cleanup.ordinaryServerUnchanged
+    !cleanup.unrelatedRowsUntouched
   ) {
     fail('POSTCONDITION_FAILED', 'protected postconditions are not satisfied')
   }
@@ -1508,9 +1592,10 @@ async function attemptCleanup(
       options.receipt.proof.status === 'passed'
         ? 'cleaned'
         : 'proof_blocked_but_cleaned',
+    fixtureOperation: { operation: 'cleanup', status: 'passed' },
     cleanup: { ...cleanup, exactZeroReadback: true },
   })
-  await options.store.write(options.receipt)
+  if (fixture.receiptPersisted) await options.store.write(options.receipt)
 }
 
 export function safeResult(
@@ -1528,6 +1613,8 @@ export function safeResult(
     reachability: receipt.reachability.outcome,
     proof: receipt.proof.status,
     cleanup: receipt.cleanup.exactZeroReadback ? 'exact-zero' : 'incomplete',
+    fixtureOperation: receipt.fixtureOperation.operation,
+    fixtureStatus: receipt.fixtureOperation.status,
     ...(error ? { error: 'transaction_failed' } : {}),
     failure,
   }
@@ -1536,6 +1623,8 @@ export function safeResult(
 export type W5eTransactionDependencies = {
   client?: PrismaClient
   fetchImpl?: typeof fetch
+  runProofImpl?: typeof runProof
+  receiptStoreFactory?: typeof createReceiptStore
 }
 
 export async function runW5eTransaction(
@@ -1543,6 +1632,7 @@ export async function runW5eTransaction(
 ): Promise<Record<string, unknown>> {
   const client = dependencies.client ?? prisma
   const fetchImpl = dependencies.fetchImpl ?? fetch
+  const runProofImpl = dependencies.runProofImpl ?? runProof
   const candidateUrl = assertFixedEndpoint(
     requiredEnv('CANDIDATE_URL'),
     CANDIDATE_SERVICE_URL,
@@ -1563,20 +1653,26 @@ export async function runW5eTransaction(
     argoRevision: requiredEnv('ARGO_REVISION'),
     networkPolicySourceCommit: requiredEnv('NETWORK_POLICY_SOURCE_COMMIT'),
   }
-  const store = createReceiptStore(receiptPath)
+  const store = (dependencies.receiptStoreFactory ?? createReceiptStore)(
+    receiptPath
+  )
   if (await store.read())
     fail('RECEIPT_EXISTS', 'fresh receipt path already exists')
+  const runId = randomUUID()
+  const legacyServerId = randomUUID()
   const fixture: FixtureIds = {
     ownerId: randomUUID(),
     courseId: randomUUID(),
     participantId: randomUUID(),
     participationId: null,
     chatbotId: randomUUID(),
+    legacyServerId,
+    legacyServerName: `${LEGACY_SERVER_NAME_PREFIX}${runId}`,
     legacyConfigId: randomUUID(),
     candidateServerId: randomUUID(),
     candidateConfigId: randomUUID(),
   }
-  let receipt = initialReceipt(randomUUID(), fixture, provenance)
+  let receipt = initialReceipt(runId, fixture, provenance)
   await store.write(receipt)
   let interrupted = false
   const options: RunOptions = {
@@ -1587,6 +1683,7 @@ export async function runW5eTransaction(
     proofUrl,
     bearer,
     fetchImpl,
+    runProofImpl,
     isInterrupted: () => interrupted,
   }
   const signalHandler = () => {
@@ -1604,6 +1701,10 @@ export async function runW5eTransaction(
       assertNotInterrupted(options)
       await assertCandidateReachable(options, fixture.chatbotId)
       currentPhase = 'fixture_create_failed'
+      options.receipt = updatedReceipt(options.receipt, {
+        fixtureOperation: { operation: 'create', status: 'running' },
+      })
+      await store.write(options.receipt)
       fixtureState = await createFixture(options)
       if (!fixtureState.receiptPersisted) {
         fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
@@ -1615,6 +1716,12 @@ export async function runW5eTransaction(
     } catch (error) {
       failure = error
       failureCategory = currentPhase
+      options.receipt = updatedReceipt(options.receipt, {
+        fixtureOperation: {
+          operation: options.receipt.fixtureOperation.operation,
+          status: 'failed',
+        },
+      })
     } finally {
       if (fixtureState) {
         try {
@@ -1624,12 +1731,32 @@ export async function runW5eTransaction(
           failureCategory = 'cleanup_failed'
           options.receipt = updatedReceipt(options.receipt, {
             state: 'recovery_required',
+            fixtureOperation: { operation: 'cleanup', status: 'failed' },
           })
-          await store.write(options.receipt)
+          try {
+            await store.write(options.receipt)
+          } catch {
+            // The bounded result remains available even if receipt storage is
+            // the cleanup failure.
+          }
         }
       }
       if (failureCategory) {
-        const diagnostic = updatedReceipt(options.receipt, {
+        let diagnosticBase = options.receipt
+        if (fixtureState && !fixtureState.receiptPersisted) {
+          try {
+            const durable = await store.read()
+            if (durable) {
+              diagnosticBase = updatedReceipt(durable, {
+                cleanup: options.receipt.cleanup,
+                fixtureOperation: options.receipt.fixtureOperation,
+              })
+            }
+          } catch {
+            // Keep the in-memory bounded result when the receipt is unreadable.
+          }
+        }
+        const diagnostic = updatedReceipt(diagnosticBase, {
           failure: { category: failureCategory },
         })
         try {
