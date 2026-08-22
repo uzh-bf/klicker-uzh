@@ -17,9 +17,6 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat.js'
-import timezone from 'dayjs/plugin/timezone.js'
-import utc from 'dayjs/plugin/utc.js'
 import { random } from 'mathjs'
 import { prop, sortBy } from 'remeda'
 import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
@@ -32,11 +29,6 @@ import {
 } from './assessmentScores.js'
 import { hardDeleteLiveQuiz } from './liveQuizzes.js'
 import { checkAccess } from './sharing.js'
-
-// custom date parser
-dayjs.extend(customParseFormat)
-dayjs.extend(utc)
-dayjs.extend(timezone)
 
 const CREATE_COURSE_TRANSACTION_TIMEOUT = 60000
 export async function getBasicCourseInformation(
@@ -2548,6 +2540,8 @@ export async function getStudentCourseLeaderboard(
 }
 
 export interface CourseCreationArgs {
+  // Async course duplication uses the job id as a stable course id so a retry
+  // can detect a transaction that committed before Redis status publication.
   courseId?: string
   name: string
   displayName: string

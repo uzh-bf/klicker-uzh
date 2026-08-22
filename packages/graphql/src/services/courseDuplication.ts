@@ -6,7 +6,6 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
@@ -19,8 +18,6 @@ import { manipulateMicroLearning } from './microLearning.js'
 import { manipulatePracticeQuiz } from './practiceQuizzes.js'
 import { checkAccess, type PermissionCheck } from './sharing.js'
 
-// custom date parser
-dayjs.extend(customParseFormat)
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
