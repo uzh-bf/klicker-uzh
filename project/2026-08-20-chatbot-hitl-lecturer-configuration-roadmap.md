@@ -652,6 +652,7 @@ The next session should perform these actions in order:
 | 2026-08-21 | Roadmap | Updated with Sol review, five milestone stacks, W-item contracts, A-item gates, evidence, and orchestrator takeover procedure | Active orchestrator commits the ruling revision and starts M1/U1 only |
 | 2026-08-21 | Stacked PRs | Not created; #5460 is not currently part of a GitHub stack | Create/adopt stack metadata for M1 after the roadmap commit and U1 reservation |
 | 2026-08-21 | M1 orchestration | Active; A1, A2, and Gate 1 resolved by the user; A5 reconciled against #5460 at `d84140434dbfa25ca5e92333a139f7d61063d02c`; worktree switched to `rs/chatbot-u1-usage-foundation`; no item task or reservation exists yet | Commit the roadmap on U1, then reserve and launch U1 exactly once |
+| 2026-08-22 | M1/U1 — account usage foundation | Phase 5 accepted required `reviewed` delivery at `a2d01fad67fba5b780a343e61284a5df28ecb15d`: inert additive schema, registry, tests, and docs published as draft PR #5475 in stack #5476; simplifier and slice gates passed, Ox Alpha final and exact-head re-read passed, and current-head CI finished with 27 passed, 15 intentionally skipped, 0 failed, and 0 pending after unchanged-head retries for two transient failures. U1 remains unmerged with no deployment or live proof | Obtain the Gate 2 user ruling before U2; PR readiness, merge, deployment, live traffic or proof, PR closure, cleanup, and deletion remain withheld |
 
 ## Glossary
 
