@@ -79,6 +79,7 @@
     "lint": "eslint .",
     "start": "next start --port 3004",
     "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:account-usage": "cross-env CHAT_ACCOUNT_USAGE_INTEGRATION=1 vitest run test/account-usage.integration.test.ts",
     "test:run": "vitest run",
     "test:watch": "vitest"
   },

@@ -392,5 +392,9 @@ arms and the slice stops for a scope update before implementation.
   certificate “out of memory” error for every HTTPS route; direct container
   execution remains healthy, and the route proof remains open for the final
   lifecycle gate.
-- Current state: S1 account availability and atomic turn finalizer is active.
-  Commit this approved plan separately, then implement S1 with one writer.
+- 2026-08-22: S1 account availability and atomic turn finalization are
+  implemented with focused Decimal tests and an opt-in real-PostgreSQL seam.
+  Chat type-checking passed, the default suite passed with 357 tests and six
+  expected integration skips, and all six enabled PostgreSQL cases passed.
+- Current state: create the immutable S1 commit, run its Ox Alpha simplifier
+  and risk review, then disposition any verified findings before S2.
