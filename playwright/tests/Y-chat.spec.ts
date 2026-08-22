@@ -191,6 +191,10 @@ async function visitChat(page: Page) {
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })
+  // The disclaimer gate resolves after hydration; on a loaded CI runner this
+  // can trail domcontentloaded by seconds. Wait until the loading skeleton is
+  // gone so assertions measure the chat UI, not the loader.
+  await expect(page.getByTestId('chat-loading')).toHaveCount(0)
 }
 
 async function typeMessage(page: Page, text: string) {
@@ -2056,7 +2060,8 @@ test.describe('Chatbot Dictation', () => {
     await page.getByTestId('chat-dictation-status-install').click()
     await expect(page.getByTestId('chat-dictation-sheet')).toBeVisible()
     await page.getByTestId('chat-dictation-download').click()
-    await expect(page.getByTestId('chat-dictation-start')).toBeVisible()
+    // A successful install closes the sheet so the composer is usable again.
+    await expect(page.getByTestId('chat-dictation-sheet')).toHaveCount(0)
 
     const fakeState = await page.evaluate(() => {
       const state = (
@@ -2221,6 +2226,7 @@ test.describe('Chatbot Dictation', () => {
     await visitChat(page)
 
     await page.getByTestId('chat-dictation').click()
+    await expect(page.getByTestId('chat-dictation-sheet')).toBeVisible()
     await page.getByTestId('chat-dictation-download').click()
 
     await expect(page.getByTestId('chat-dictation-install-error')).toBeVisible()

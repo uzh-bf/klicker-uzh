@@ -3,6 +3,7 @@
 import { Button, Modal } from '@uzh-bf/design-system'
 import { LoaderCircleIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import { useDictationContext } from './dictation-context'
 
 export function DictationSheet() {
@@ -16,6 +17,12 @@ export function DictationSheet() {
     state: dictationState,
     status,
   } = useDictationContext()
+
+  // A successful install returns the composer to the user immediately; the
+  // sheet must not stay open over an input it would otherwise block.
+  useEffect(() => {
+    if (status === 'ready') closeInstallSheet()
+  }, [closeInstallSheet, status])
 
   if (!installSheetOpen) return null
 
