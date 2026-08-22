@@ -169,7 +169,7 @@ lecturer-demo work.
   HEAD, with no findings. Static login setup and cookie acceptance remain the
   only runtime uncertainty; live login and chat execution stay separately
   gated.
-- S9: complete — reviewed branch head `8e0d6f9bc` is pushed to the existing
+- S9: complete — reviewed branch head `d6979b613` is pushed to the existing
   feature branch and draft PR #5478 against `v3` is updated with the whole
   five-path package. PR CI is pending on that head; merge, deployment, and live
   k6 traffic remain withheld.
