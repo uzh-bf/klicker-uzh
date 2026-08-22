@@ -39,21 +39,13 @@ jobs:
           run_install: true
 
       # The chat tests import workspace packages whose package entries point
-      # at generated dist files, so their dependency chain must be built first.
+      # at generated dist files, so the whole dependency closure must be built
+      # first. The filter builds exactly chat's workspace dependencies in
+      # topological order, so a newly added dependency needs no change here.
       - name: Build chat dependencies
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
-        run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
+        run: pnpm --filter "@klicker-uzh/chat^..." run build
 
       - name: Test chat app
         if: steps.filter.outputs.should_run == 'true'

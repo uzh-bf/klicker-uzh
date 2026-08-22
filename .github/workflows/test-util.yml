@@ -42,19 +42,12 @@ jobs:
 
       # The util tests import the package through its public subpath exports,
       # which resolve to generated dist files, so the package and its workspace
-      # dependencies must be built first.
+      # dependencies must be built first. The filter covers util itself plus its
+      # dependencies in topological order.
       - name: Build dependencies
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
-        run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../util
-          pnpm run build
+        run: pnpm --filter "@klicker-uzh/util..." run build
 
       - name: Test util package
         if: steps.filter.outputs.should_run == 'true'
