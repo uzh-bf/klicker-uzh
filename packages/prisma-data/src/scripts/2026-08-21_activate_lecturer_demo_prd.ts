@@ -172,10 +172,20 @@ function parseArgs(): {
 }
 
 function receiptPath(target: Target, desiredState: DesiredState): string {
-  return path.resolve(
-    process.env.LECTURER_DEMO_ACTIVATION_RECEIPT_PATH ??
-      path.join(DEFAULT_RECEIPT_DIR, `${target}.${desiredState}.receipt.json`)
-  )
+  const override = process.env.LECTURER_DEMO_ACTIVATION_RECEIPT_PATH
+  const receiptDirectory = override
+    ? path.resolve(override)
+    : DEFAULT_RECEIPT_DIR
+  if (
+    override &&
+    fs.existsSync(receiptDirectory) &&
+    !fs.statSync(receiptDirectory).isDirectory()
+  ) {
+    throw new Error(
+      'LECTURER_DEMO_ACTIVATION_RECEIPT_PATH must name a receipt directory'
+    )
+  }
+  return path.join(receiptDirectory, `${target}.${desiredState}.receipt.json`)
 }
 
 function readReceipt(filePath: string): Receipt | null {

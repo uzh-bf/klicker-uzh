@@ -172,6 +172,8 @@ type Receipt = {
   payloadHash: string
   beforeStateHash: string
   afterStateHash: string | null
+  beforeStateHashVersion: 1 | 2
+  afterStateHashVersion: 1 | 2
   targetUrl: string
   secretEnvVar: string
   plannedCreates: number
@@ -802,8 +804,21 @@ function readReceipt(receiptPath: string): Receipt | null {
     throw new Error('The lecturer-demo receipt is invalid')
   }
   const value = raw as Record<string, unknown>
+  const version = Number(value.version)
+  const beforeStateHashVersion =
+    value.beforeStateHashVersion === undefined
+      ? version === 1
+        ? 1
+        : 2
+      : Number(value.beforeStateHashVersion)
+  const afterStateHashVersion =
+    value.afterStateHashVersion === undefined
+      ? version === 1
+        ? 1
+        : 2
+      : Number(value.afterStateHashVersion)
   if (
-    ![1, 2].includes(Number(value.version)) ||
+    ![1, 2].includes(version) ||
     value.scope !== 'lecturer-demo-prd-two-courses' ||
     !['before', 'after'].includes(String(value.stage)) ||
     !['dry-run', 'applied'].includes(String(value.status)) ||
@@ -811,18 +826,30 @@ function readReceipt(receiptPath: string): Receipt | null {
     typeof value.beforeStateHash !== 'string' ||
     (value.afterStateHash !== null &&
       typeof value.afterStateHash !== 'string') ||
+    ![1, 2].includes(beforeStateHashVersion) ||
+    ![1, 2].includes(afterStateHashVersion) ||
     value.targetUrl !== TARGET_URL ||
     value.secretEnvVar !== SECRET_ENV_VAR ||
     typeof value.plannedCreates !== 'number'
   ) {
     throw new Error('The lecturer-demo receipt is invalid')
   }
-  return value as Receipt
+  return {
+    ...(value as Receipt),
+    version: version as 1 | 2,
+    beforeStateHashVersion: beforeStateHashVersion as 1 | 2,
+    afterStateHashVersion: afterStateHashVersion as 1 | 2,
+  }
 }
 
 function writeReceipt(receiptPath: string, receipt: Receipt) {
   fs.mkdirSync(path.dirname(receiptPath), { recursive: true })
   fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
+}
+
+function archiveLegacyReceipt(receiptPath: string) {
+  const archivePath = `${receiptPath}.history-v1.json`
+  if (!fs.existsSync(archivePath)) fs.copyFileSync(receiptPath, archivePath)
 }
 
 function randomPin(): number {
@@ -974,10 +1001,20 @@ async function main() {
         ) {
           throw new Error('The applied lecturer-demo state is not exact')
         }
+        archiveLegacyReceipt(receiptPath)
         const upgraded: Receipt = {
-          ...saved,
+          scope: 'lecturer-demo-prd-two-courses',
           version: 2,
+          stage: 'after',
+          status: 'applied',
+          payloadHash: saved.payloadHash,
+          beforeStateHash: saved.beforeStateHash,
           afterStateHash: beforeStateHash,
+          beforeStateHashVersion: 1,
+          afterStateHashVersion: 2,
+          targetUrl: TARGET_URL,
+          secretEnvVar: SECRET_ENV_VAR,
+          plannedCreates: saved.plannedCreates,
         }
         writeReceipt(receiptPath, upgraded)
         saved = upgraded
@@ -988,10 +1025,20 @@ async function main() {
           )
         }
         assertTargetState(before, bundles)
+        archiveLegacyReceipt(receiptPath)
         const upgraded: Receipt = {
-          ...saved,
+          scope: 'lecturer-demo-prd-two-courses',
           version: 2,
+          stage: 'before',
+          status: 'dry-run',
+          payloadHash: saved.payloadHash,
           beforeStateHash,
+          afterStateHash: null,
+          beforeStateHashVersion: 2,
+          afterStateHashVersion: 2,
+          targetUrl: TARGET_URL,
+          secretEnvVar: SECRET_ENV_VAR,
+          plannedCreates: saved.plannedCreates,
         }
         writeReceipt(receiptPath, upgraded)
         saved = upgraded
@@ -1043,6 +1090,8 @@ async function main() {
         payloadHash,
         beforeStateHash,
         afterStateHash: null,
+        beforeStateHashVersion: 2,
+        afterStateHashVersion: 2,
         targetUrl: TARGET_URL,
         secretEnvVar: SECRET_ENV_VAR,
         plannedCreates,
@@ -1123,6 +1172,8 @@ async function main() {
       payloadHash,
       beforeStateHash,
       afterStateHash: hash(after),
+      beforeStateHashVersion: 2,
+      afterStateHashVersion: 2,
       targetUrl: TARGET_URL,
       secretEnvVar: SECRET_ENV_VAR,
       plannedCreates,
