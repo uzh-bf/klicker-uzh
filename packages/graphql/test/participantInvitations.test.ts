@@ -256,16 +256,19 @@ describe('Assessment participant invitation management', () => {
         {
           email: 'missing-domain@',
           status: 'error',
+          errorCode: 'invalid_email',
           error: 'Invalid email format',
         },
         {
           email: 'two@@example.org',
           status: 'error',
+          errorCode: 'invalid_email',
           error: 'Invalid email format',
         },
         {
           email: 'contains space@example.org',
           status: 'error',
+          errorCode: 'invalid_email',
           error: 'Invalid email format',
         },
       ],

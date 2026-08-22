@@ -2454,6 +2454,9 @@ test.describe('Part 4b: Assessment participant invitations', () => {
       )
       await expect(importResult).toContainText('1 pending')
       await expect(importResult).toContainText('1 error')
+      await expect(importResult).toContainText(
+        messages.manage.assessment.invitationImportInvalidEmail
+      )
       await expect(importResult).toContainText('not-an-email')
 
       const pendingRow = page.getByRole('row').filter({ hasText: pendingEmail })

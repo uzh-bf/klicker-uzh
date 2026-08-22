@@ -1701,6 +1701,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
       invitationImportFailed:
         'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
+      invitationImportInvalidEmail: 'Ungültiges E-Mail-Format',
       invitationImportSummary:
         'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
       invitationListTitle: 'Einladungen',

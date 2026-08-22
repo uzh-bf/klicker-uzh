@@ -19,6 +19,7 @@ import type { ContextWithUser } from '../lib/context.js'
 const invitationEmailSchema = z.string().email()
 const invitationTransactionRetryLimit = 3
 type InvitationTransactionErrorCode = 'P2002' | 'P2034'
+type InvitationResultErrorCode = 'invalid_email'
 
 export const MAX_PARTICIPANT_INVITATION_IMPORT_SIZE = 200
 export const DEFAULT_PARTICIPANT_INVITATION_PAGE_SIZE = 50
@@ -34,6 +35,7 @@ export interface InvitationResult {
     | 'error'
   invitationId?: number
   participantId?: string
+  errorCode?: InvitationResultErrorCode
   error?: string
 }
 
@@ -164,6 +166,7 @@ export async function createParticipantInvitations(
       results.push({
         email: rawEmail,
         status: 'error',
+        errorCode: 'invalid_email',
         error: 'Invalid email format',
       })
       continue

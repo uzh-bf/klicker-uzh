@@ -79,6 +79,7 @@ export const AssessmentParticipantInvitationImportResult =
       }),
       invitationId: t.exposeInt('invitationId', { nullable: true }),
       participantId: t.exposeString('participantId', { nullable: true }),
+      errorCode: t.exposeString('errorCode', { nullable: true }),
       error: t.exposeString('error', { nullable: true }),
     }),
   })

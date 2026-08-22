@@ -400,7 +400,10 @@ function ParticipantInvitationCsvUpload({
             <ul className="mt-2 list-disc pl-6 text-sm text-red-700">
               {rowErrorEntries.map(({ key, row }) => (
                 <li key={key}>
-                  {row.email}: {row.error}
+                  {row.email}:{' '}
+                  {row.errorCode === 'invalid_email'
+                    ? t('manage.assessment.invitationImportInvalidEmail')
+                    : row.error}
                 </li>
               ))}
             </ul>

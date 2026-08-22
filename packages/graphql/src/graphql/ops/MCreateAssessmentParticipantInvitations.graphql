@@ -16,6 +16,7 @@ mutation CreateAssessmentParticipantInvitations(
       status
       invitationId
       participantId
+      errorCode
       error
     }
   }

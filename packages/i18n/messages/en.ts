@@ -1694,6 +1694,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationImportCompleted: 'The invitation import has completed.',
       invitationImportFailed:
         'The invitations could not be imported. Please try again.',
+      invitationImportInvalidEmail: 'Invalid email format',
       invitationImportSummary:
         'Processed {total, plural, one {# row} other {# rows}}: {created} pending, {accepted} accepted, {duplicates} already present, {errors, plural, one {# error} other {# errors}}.',
       invitationListTitle: 'Invitations',
