@@ -2457,7 +2457,7 @@ test.describe('Part 4b: Assessment participant invitations', () => {
         'assessment-invitations-import-result'
       )
       await expect(importResult).toContainText('1 pending')
-      await expect(importResult).toContainText('1 errors')
+      await expect(importResult).toContainText('1 error')
       await expect(importResult).toContainText('not-an-email')
 
       const pendingRow = page.getByRole('row').filter({ hasText: pendingEmail })

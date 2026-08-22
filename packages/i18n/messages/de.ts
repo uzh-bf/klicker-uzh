@@ -1680,9 +1680,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
       invitationCsvHeaders:
         'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
-      invitationCsvReady: '{count} Zeilen sind für den Import bereit',
+      invitationCsvReady:
+        '{count, plural, one {# Zeile ist für den Import bereit} other {# Zeilen sind für den Import bereit}}',
       invitationSelectCsv: 'CSV-Datei auswählen',
-      invitationImportButton: '{count} Einladungen importieren',
+      invitationImportButton:
+        '{count, plural, one {# Einladung importieren} other {# Einladungen importieren}}',
       invitationCsvMissingHeaders:
         'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
       invitationCsvInvalidHeaders:
@@ -1700,11 +1702,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationImportFailed:
         'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
       invitationImportSummary:
-        'Verarbeitet: {total}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors, plural, one {# Fehler} other {# Fehler}}.',
       invitationListTitle: 'Einladungen',
       invitationListDescription:
         'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
-      invitationCount: '{count} Einladungen',
+      invitationCount:
+        '{count, plural, one {# Einladung} other {# Einladungen}}',
       invitationEmail: 'E-Mail',
       invitationMatriculationNumber: 'Matrikelnummer',
       invitationStatus: 'Status',

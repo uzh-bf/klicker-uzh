@@ -19,8 +19,7 @@ import {
   ShadcnTableRow,
   toast,
 } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 type Invitation = NonNullable<
@@ -39,6 +38,7 @@ function ParticipantInvitationsTable({
   onInvitationDeleted: () => void
 }) {
   const t = useTranslations()
+  const formatter = useFormatter()
   const [selectedInvitation, setSelectedInvitation] = useState<Invitation>()
   const [deleteInvitation, { loading: deleting }] = useMutation(
     DeletePendingAssessmentParticipantInvitationDocument,
@@ -136,7 +136,10 @@ function ParticipantInvitationsTable({
                     </Badge>
                   </ShadcnTableCell>
                   <ShadcnTableCell>
-                    {dayjs(invitation.invitedAt).format('DD.MM.YYYY HH:mm')}
+                    {formatter.dateTime(new Date(invitation.invitedAt), {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
                   </ShadcnTableCell>
                   <ShadcnTableCell className="text-right">
                     {invitation.status ===
@@ -149,7 +152,7 @@ function ParticipantInvitationsTable({
                         )}
                         onClick={() => setSelectedInvitation(invitation)}
                         className={{
-                          root: 'h-8 w-8 border-red-200 p-0 text-red-700 hover:bg-red-50 hover:text-red-700',
+                          root: 'h-11 w-11 border-red-200 p-0 text-red-700 hover:bg-red-50 hover:text-red-700',
                         }}
                         data={{
                           cy: `assessment-invitation-delete-${invitation.id}`,

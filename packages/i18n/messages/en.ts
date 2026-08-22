@@ -1673,9 +1673,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationCsvPrompt: 'Select a participant CSV file',
       invitationCsvHeaders:
         'Required headers: email and matriculationNumber (comma or semicolon separated).',
-      invitationCsvReady: '{count} rows ready to import',
+      invitationCsvReady:
+        '{count, plural, one {# row ready to import} other {# rows ready to import}}',
       invitationSelectCsv: 'Select CSV file',
-      invitationImportButton: 'Import {count} invitations',
+      invitationImportButton:
+        '{count, plural, one {Import # invitation} other {Import # invitations}}',
       invitationCsvMissingHeaders:
         'The CSV must contain email and matriculationNumber columns.',
       invitationCsvInvalidHeaders:
@@ -1693,11 +1695,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       invitationImportFailed:
         'The invitations could not be imported. Please try again.',
       invitationImportSummary:
-        'Processed {total}: {created} pending, {accepted} accepted, {duplicates} already present, {errors} errors.',
+        'Processed {total, plural, one {# row} other {# rows}}: {created} pending, {accepted} accepted, {duplicates} already present, {errors, plural, one {# error} other {# errors}}.',
       invitationListTitle: 'Invitations',
       invitationListDescription:
         'Accepted invitations remain visible as a record. Pending invitations can be deleted.',
-      invitationCount: '{count} invitations',
+      invitationCount:
+        '{count, plural, one {# invitation} other {# invitations}}',
       invitationEmail: 'Email',
       invitationMatriculationNumber: 'Matriculation number',
       invitationStatus: 'Status',

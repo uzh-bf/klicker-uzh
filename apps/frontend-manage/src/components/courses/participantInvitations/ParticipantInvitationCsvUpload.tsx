@@ -332,6 +332,8 @@ function ParticipantInvitationCsvUpload({
           type="file"
           accept=".csv,text/csv"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={handleFileSelection}
           data-cy="assessment-invitations-csv-input"
         />
@@ -349,12 +351,14 @@ function ParticipantInvitationCsvUpload({
       </div>
 
       {parseError ? (
-        <UserNotification
-          type="error"
-          message={parseError}
-          className={{ root: 'mt-3' }}
-          data={{ cy: 'assessment-invitations-csv-error' }}
-        />
+        <div role="alert">
+          <UserNotification
+            type="error"
+            message={parseError}
+            className={{ root: 'mt-3' }}
+            data={{ cy: 'assessment-invitations-csv-error' }}
+          />
+        </div>
       ) : null}
 
       {invitations.length > 0 ? (
@@ -376,7 +380,12 @@ function ParticipantInvitationCsvUpload({
       ) : null}
 
       {importResult ? (
-        <div className="mt-4" data-cy="assessment-invitations-import-result">
+        <div
+          className="mt-4"
+          data-cy="assessment-invitations-import-result"
+          role="status"
+          aria-live="polite"
+        >
           <UserNotification
             type={importResult.errors > 0 ? 'warning' : 'success'}
             message={t('manage.assessment.invitationImportSummary', {
