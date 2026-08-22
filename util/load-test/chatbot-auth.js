@@ -32,6 +32,11 @@ if (authority.includes('@')) {
     'KLICKER_BASE_URL must be an origin without path or credentials'
   )
 }
+if (authority.includes('%')) {
+  throw new Error(
+    'KLICKER_BASE_URL must not use percent-encoded host characters'
+  )
+}
 const hostPortMatch = authority.startsWith('[')
   ? authority.match(/^(\[[0-9a-f:.]+\])(?::([0-9]+))?$/i)
   : authority.match(/^([^:]+)(?::([0-9]+))?$/)
