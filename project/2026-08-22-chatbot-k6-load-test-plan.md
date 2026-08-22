@@ -53,7 +53,15 @@ lecturer-demo work.
 
 ## Progress
 
-- S1: in progress — isolated branch created from pinned remote `v3`.
-- S2: pending — add the three scripts and fail-closed controls.
+- S1: complete — isolated branch created from pinned remote `v3`; plan commit
+  `d7556715a`.
+- S2: complete — source extraction commit `59941bcec` and safety hardening
+  commit `1fe2afdcc`; only the three k6 scripts changed.
+- Verification: Biome check, repository formatting/lint/sync checks, gitleaks,
+  `git diff --check`, three positive `k6 inspect --execution-requirements`
+  runs, and six negative guard inspections passed. The first clean-worktree
+  check attempt failed because generated package outputs were absent; local
+  package builds generated those ignored outputs, after which the normal
+  pre-commit hook passed.
 - S3: pending — integrated final review after verification.
 - S4: pending — push and open draft PR; merge remains withheld.
