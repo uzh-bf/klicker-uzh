@@ -1,0 +1,76 @@
+// Chatbot authenticated API smoke/load test.
+// Requires a valid participant_token JWT (HS256 signed with APP_SECRET).
+//
+// Usage:
+//   KLICKER_PARTICIPANT_TOKEN=<jwt> KLICKER_CHATBOT_IDS=<uuid>[,...] \
+//     k6 run -e PROFILE=smoke util/load-test/chatbot-auth.js
+//   Optional: KLICKER_BASE_URL (default: https://chat.klicker.uzh.ch)
+
+import http from 'k6/http'
+import { check, sleep } from 'k6'
+
+const token = __ENV.KLICKER_PARTICIPANT_TOKEN
+if (!token || token.trim().length === 0) {
+  throw new Error(
+    'KLICKER_PARTICIPANT_TOKEN must be set (JWT signed with APP_SECRET)'
+  )
+}
+const baseUrl = __ENV.KLICKER_BASE_URL || 'https://chat.klicker.uzh.ch'
+const chatbotIds = (__ENV.KLICKER_CHATBOT_IDS || '').split(',').filter(Boolean)
+if (chatbotIds.length === 0) {
+  throw new Error('Set KLICKER_CHATBOT_IDS as comma-separated UUIDs')
+}
+
+const profile = __ENV.PROFILE || 'smoke'
+const profiles = {
+  smoke: { vus: 1, iterations: 4 },
+  light: { vus: 2, duration: '15s' },
+  steady: { vus: 3, duration: '30s' },
+}
+
+const scenarioConfig = profiles[profile]
+if (!scenarioConfig) {
+  throw new Error(`Unknown PROFILE '${profile}'. Use smoke|light|steady.`)
+}
+
+export const options = {
+  discardResponseBodies: true,
+  scenarios: {
+    auth: Object.assign(
+      {
+        executor: scenarioConfig.duration
+          ? 'constant-vus'
+          : 'shared-iterations',
+      },
+      scenarioConfig
+    ),
+  },
+  thresholds: {
+    checks: ['rate==1'],
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<1000', 'p(99)<2000'],
+  },
+}
+
+const params = {
+  cookies: { participant_token: token },
+}
+
+const endpoints = chatbotIds.flatMap((id) => [
+  {
+    name: id.slice(0, 8),
+    path: `/api/chatbots/${id}/disclaimer`,
+    expected: 200,
+  },
+  { name: id.slice(0, 8), path: `/api/chatbots/${id}/credits`, expected: 200 },
+])
+
+export default function () {
+  const ep = endpoints[__ITER % endpoints.length]
+  const res = http.get(`${baseUrl}${ep.path}`, params)
+  check(res, {
+    [`${ep.name} ${ep.path} authenticated -> ${ep.expected}`]: (r) =>
+      r.status === ep.expected,
+  })
+  if (scenarioConfig.duration) sleep(1)
+}
