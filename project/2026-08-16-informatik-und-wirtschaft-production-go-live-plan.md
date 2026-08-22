@@ -54,21 +54,45 @@ Klicker rows.
 
 | Check | Result | Evidence and boundary |
 | --- | --- | --- |
-| PRD tenant mount | PASS | `prd-doc-query` is healthy on the existing multi-tenant image (`v0.7.2`, digest `sha256:8687d829…`); `/health` reports `klicker:34`, `/ready` returns `200`, and authenticated `/mcp/klicker` lists the I&W tool and its chunk-topic companion. This is runtime evidence for the old image, not proof that the pending v0.8.1 promotion landed. |
+| PRD tenant mount | PASS | `prd-doc-query` is healthy on the promoted multi-tenant image (`v0.8.1`, digest `sha256:6efb013d…`); `/health` reports `klicker:34`, `/ready` returns `200`, and authenticated `/mcp/klicker` lists the I&W tool and its chunk-topic companion. |
 | PRD source pair | PASS | The mounted I&W YAML/Markdown pair has the same canonical content as `origin/main@32d51401` after removing the ConfigMap's trailing blank line. The tool points to `klicker_ai_informatik_und_wirtschaft`. |
 | PRD collection existence/schema | PASS | Direct values-free Milvus read found the named collection with `872` rows, all `resource_active=true`, vector dimension `1536`, and fields `content`, `id`, `vector`, and `sparse_vector`. |
 | PRD collection scope | PASS | All `872/872` sampled rows carry `project_id=klicker-course-materials`, `kb_id=informatik-und-wirtschaft-hs26`, `chatbot_id=informatik-und-wirtschaft-hs26`, `source_id=video-corpus:informatik-und-wirtschaft-hs26`, `external_resource_id` with the same value, `resource_version=1`, and `source_type=video`. |
-| PRD positive retrieval | BLOCKED | The bounded authenticated I&W query reaches the tool but fails in `doc_reranker`: the live PRD LiteLLM response is `403 key_model_access_denied` because the presented key is allowed only for `aibuddy-fleet` while the request uses `klickeruzh/cohere/rerank-v4.0-fast`. No answer or citation proof is claimed. |
+| PRD positive retrieval | PASS | The bounded authenticated I&W query completes through PRD `/mcp/klicker` with `20` sources and `20` nested chunks, including structured video titles and `start_sec`/`end_sec` metadata. |
 | STG comparison | PASS | The same bounded query through STG `/mcp/klicker` returns `20` sources and `20` chunks, including structured `title`/`video_name` and `start_sec`/`end_sec` metadata. This confirms the corpus and prompt shape; it does not substitute for PRD proof. |
 | PRD write acceptance | NOT PROVEN / NOT ATTEMPTED | The PRD collection already contains the active v1 corpus, but no values-safe activation receipt or operation identity ties that write to the current A9 package. Rewriting or introducing a new resource version would be a different production mutation, so it was withheld. |
 
-The concrete P0 blocker is therefore the PRD credential/model-access binding and
-the still-undelivered v0.8.1 deployment, not collection existence or source
-metadata. Thread `019febd4-cc79-7ce2-915a-6511aa7bd1a5` must resolve the shared
-PRD service promotion/credential path (without a duplicate I&W Secret or legacy
-route) before W5a/W5e can accept this evidence. The deployment MR remains draft
-(`!609`, pipeline `645943` green) and its publication is still held by the
-separate `doc-query-eduai` Secret apply failure.
+The remaining P0 item is the PRD write-acceptance receipt and its A9 tie, not
+collection existence, source metadata, credential/model access, or the shared
+Doc Query deployment. The existing v1 corpus remains unchanged; no rewrite or
+new resource version is implied by this readback.
+
+### P0 blocker resolution (2026-08-17)
+
+The PRD credential/model-access and v0.8.1 publication gates are closed under
+explicit user approval of the production release chain:
+
+- df-cloud MR !339 (blob-backup properties) merged to `stg` and promoted via
+  release MR !376 (`stg` -> `prd`). The retried PRD Aibuddy `app-up` created
+  exactly three `doc-query-eduai` resources (machine-identity Secret,
+  SecretStore, ExternalSecret); 403 resources unchanged, no deletes/replaces,
+  and all `prd-doc-query` ExternalSecrets now report `SecretSynced`/`Ready=True`
+  values-free.
+- Deployment MR !609 (v0.8.1 pin) was rebased onto current `main` and merged.
+  Argo `app-doc-query-prd` auto-synced: both stable pods run the exact v0.8.1
+  digest `sha256:6efb013d…` (source `bb2aba79`, tag `v0.8.1`), the Spot tier is
+  pinned and scaled to zero, `/health` reports `aibuddy:90, eduai:2,
+  klicker:34`, and `/ready` returns `200`.
+- The previously blocked authenticated I&W query now completes on PRD through
+  `/mcp/klicker`: 20 sources with 20 nested chunks, real video titles (e.g.
+  `04.2 Digitale Daten - Digitalisierung von Text.mp4`), and `start_sec`/
+  `end_sec` chunk metadata — matching the STG comparison row. The
+  `403 key_model_access_denied` is resolved because the v0.8.1 tenant-prefixed
+  credential resolver presents the Klicker key. The probe minted a short-lived
+  HS256 bearer from `DOC_QUERY_JWT_SECRET_KLICKER` in-process without printing
+  any secret value; no cluster, Milvus, or Klicker-row mutation occurred.
+- Remaining P0 open item: the PRD write-acceptance receipt (A9 tie) is still
+  NOT PROVEN / NOT ATTEMPTED, unchanged from the table above.
 
 ## Authority and non-goals
 
