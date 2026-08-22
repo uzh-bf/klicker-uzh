@@ -548,8 +548,14 @@ because those belong to the deferred integration milestone.
   no blocking findings and the simplification pass returned ship-as-is; the one
   accepted advisory hardening is commit `d46658b2f`, followed by green focused
   GraphQL checks and 4/4 database tests.
-- Unresolved required gates: exact branch publication and one draft PR
-  targeting `v3-ai` remain open; CI readback follows creation.
+- CI evidence: draft PR #5474 targets `v3-ai` at head `7146335bc6`; after
+  two branch-specific fixes (missing util auth subpath Rollup entries in
+  `d20ef52a7` and a stale manage-assistant Playwright locator in
+  `7146335bc6`, both outside the response-example diff), the full check suite
+  is green, including build-and-compile with all eight Playwright shards,
+  GraphQL, MCP lecturer, types, lint, format, knip, syncpack, and gitleaks.
+- Unresolved required gates: none for K1. The draft stays draft; ready,
+  merge, deployment, and live use remain withheld by decision.
 - Required delivery layer: one independently green, reviewed draft PR for K1;
   the four-layer milestone delivery remains pending
 - Achieved delivery layer: committed design, ADRs, approved plan, reviewed K1
