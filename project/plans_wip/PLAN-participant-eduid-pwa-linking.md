@@ -66,7 +66,7 @@ look at different things:
 | By verified affiliation address | Yes, `participantAccount` where `type: 'affiliation'` and matching `ssoEmail` | **No** |
 
 The consequence is order-dependent and is the single most important defect to fix. Affiliation
-addresses are written by `createParticipantAffiliations` (`helpers.ts:335`) as
+addresses are written by `createParticipantAffiliations` (`helpers.ts:316`) as
 `ParticipantAccount` rows with `type: 'affiliation'`, `isVerified: true`, and the institutional
 address in `ssoEmail`. A student who signs in with Edu-ID first, under a private primary email,
 and then launches from OLAT under a `uzh.ch` address is not found by the LTI resolver, even
@@ -140,17 +140,24 @@ intended effect, and it is the reason the ambiguity handling has to be strict.
 
 Three coordinated changes plus translations.
 
-**Host list.** Add the PWA hosts to the participant host list rather than introducing a second
-list. Because `getStudentHosts()` feeds context detection, the `/student` redirect validation,
-and the NextAuth participant `redirect` callback, one change covers all of them. The
-`AUTH_STUDENT_ALLOWED_HOSTS` value in each environment needs the corresponding PWA host added,
-and the committed defaults in `apps/auth/src/lib/constants.ts` need the same. This is as much a
-configuration change per environment as a code change, and a missing value produces the
-`400 Invalid redirect URL` that `docs/auth-model.md` already documents.
+**Host list.** `getStudentHosts()` becomes the union of the assessment hosts and the PWA hosts,
+so that one list keeps driving context detection, the `/student` redirect validation, and the
+NextAuth participant `redirect` callback together. The `AUTH_STUDENT_ALLOWED_HOSTS` value in
+each environment needs the corresponding PWA host added, and the committed defaults in
+`apps/auth/src/lib/constants.ts` need the same. This is as much a configuration change per
+environment as a code change, and a missing value produces the `400 Invalid redirect URL` that
+`docs/auth-model.md` already documents.
+
+The union is for allowlisting only. The assessment and PWA sub-lists must survive as separate
+values, because Step 4 needs to know which participant host class started the flow: assessment
+Edu-ID creation stays ungated, PWA Edu-ID creation is PIN-gated. Collapsing the two into one
+list would make `isAssessmentHost` true for both and destroy exactly that signal, so
+`AUTH_PWA_HOSTS` and `DEFAULT_PWA_HOSTS` are kept and gain a new consumer rather than being
+deleted.
 
 **Middleware.** Remove the PWA-origin bounce at `middleware.ts:125` rather than inverting it, so
 a PWA-origin request becomes an ordinary participant request instead of a differently special
-case. `AUTH_PWA_HOSTS` and `DEFAULT_PWA_HOSTS` lose their only consumer and go with it.
+case.
 
 **Session exchange.** After the Edu-ID round trip the PWA verifies the NextAuth participant
 session server-side and calls a mutation that issues the ordinary `participant_token`, exactly
@@ -172,12 +179,22 @@ students see it.
 
 ## Step 4 — the PIN-or-LTI gate
 
-The gate is enforced at the exchange point introduced in Step 3, because that is the first
-server-side step holding both the verified Edu-ID identity and the request context.
+The gate is enforced in the participant `signIn` callback in the auth app, not at the Step 3
+exchange. `createOrLinkParticipant` runs inside that callback
+(`apps/auth/src/pages/api/auth/[...nextauth].ts:140`), which is where the participant row is
+actually created — well before the PWA ever reaches the exchange. Gating the exchange would
+leave an ungated participant already written to the database, and the short-lived signed PIN
+value is scoped to `/api/auth` on the auth domain, so it is readable in the callback and not at
+the exchange. The exchange therefore stays a pure session-to-token conversion.
+
+Inside the callback the rule is: if the identity already resolves to a participant, this is a
+returning student and sign-in proceeds. If it does not, and the flow started from a PWA host
+rather than an assessment host, a valid PIN context must be present or sign-in is refused
+before any row is written.
 
 | Path | Gate | Mechanism |
 | --- | --- | --- |
-| PWA, from outside, identity not yet known | Course PIN | PIN verified before the round trip starts; the resulting course id is carried across the round trip in a short-lived signed value and re-verified server-side at the exchange |
+| PWA, from outside, identity not yet known | Course PIN | PIN verified before the round trip starts; the resulting course id is carried across the round trip in a short-lived signed value and re-verified in the `signIn` callback before any participant is created |
 | PWA, from outside, identity already linked to a participant | None beyond Edu-ID | Login proceeds; joining any further course still runs the ordinary PIN join |
 | LTI 1.3 launch | The signed launch token | Already enforced in the LTI resolver; the course context comes from the launch |
 
@@ -185,7 +202,7 @@ server-side step holding both the verified Edu-ID identity and the request conte
 after the callback would be trivially bypassable. The workable shape is to validate the PIN
 before redirecting, then carry a short-lived signed value scoped to the auth callback — the same
 technique the auth app already uses for its redirect cookies, which live for ten seconds and are
-scoped to `/api/auth` — and re-verify it server-side at the exchange.
+scoped to `/api/auth` — and re-verify it in the `signIn` callback.
 
 Two details that must not be missed:
 
@@ -201,7 +218,7 @@ flow after Edu-ID login depends on it.
 
 | | |
 | --- | --- |
-| Touches | The Step 3 exchange path, `apps/frontend-pwa/src/pages/login.tsx` and the join entry, the PIN check service |
+| Touches | The participant `signIn` path in `apps/auth` (`[...nextauth].ts`, `lib/helpers.ts`), `apps/frontend-pwa/src/pages/login.tsx` and the join entry, the PIN check service |
 | Acceptance | Edu-ID from the regular PWA without a valid PIN and without an LTI context creates no participant and grants no session; with a valid non-assessment PIN it creates the participant and the course participation together |
 | Risk | This is the security boundary of the feature. It ships with Step 3 or immediately before it; Step 3 must never reach production ungated. |
 
@@ -281,7 +298,7 @@ the login and the linking and are independently valuable without it.
 | 1 | Cross-mode email lookup in the Edu-ID resolver | — |
 | 2 | Verified affiliation lookup in the LTI resolver | Step 0, Step 1 |
 | 3 | PWA Edu-ID entry: host list, middleware, session exchange, button, translations | Step 1 |
-| 4 | The PIN gate on the exchange path | Ships with Step 3 |
+| 4 | The PIN gate in the participant `signIn` callback | Ships with Step 3 |
 | 5 | Linked-logins field, profile section, explicit linking | Steps 1 and 2 |
 | 6 | Merge with per-conflict choice | Step 5 |
 
