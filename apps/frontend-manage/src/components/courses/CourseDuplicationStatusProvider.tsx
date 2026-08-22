@@ -421,8 +421,10 @@ export function CourseDuplicationProvider({
     [client, removeJobId, router, t, upsertJob]
   )
 
+  const hasJobs = jobIds.length > 0
+
   useEffect(() => {
-    if (!storageInitialized) return
+    if (!storageInitialized || !hasJobs) return
 
     let cancelled = false
     let timeoutId: number | undefined
@@ -462,7 +464,7 @@ export function CourseDuplicationProvider({
       cancelled = true
       if (timeoutId !== undefined) window.clearTimeout(timeoutId)
     }
-  }, [fetchStatuses, handleStatusResponse, storageInitialized])
+  }, [fetchStatuses, handleStatusResponse, hasJobs, storageInitialized])
 
   const activeJobs = useMemo(
     () =>
