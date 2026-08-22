@@ -255,3 +255,9 @@ service.
   newline-only changes were restored. The canonical Chromium duplication run
   is delivery-pending because `devrouter exec` still cannot acquire the
   workspace lifecycle lock.
+- The integrated final review passed for
+  `ff7321a5bccd2f3fc523d5705ddbe785625e0cba..fc3ea33aa` with no findings.
+  Its report is retained under `project/_local/reviews/`. The remaining action
+  is the authorized normal push to `origin/fix/course-duplication-timeout`,
+  followed by remote SHA and PR-check readback; merge and deployment remain
+  withheld.
