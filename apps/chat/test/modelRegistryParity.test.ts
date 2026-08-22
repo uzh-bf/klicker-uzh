@@ -1,12 +1,23 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
-import { DEFAULT_CHAT_MODEL_REGISTRY } from '../../../packages/graphql/src/services/chatbots'
-import { DEFAULT_MODEL_REGISTRY } from '../src/lib/server/chatModelRegistry'
+import { parse as parseYaml } from 'yaml'
+import {
+  DEFAULT_CHAT_MODEL_REGISTRY,
+  parseChatModelRegistry as parseBackendRegistry,
+} from '../../../packages/graphql/src/services/chatbots'
+import {
+  DEFAULT_MODEL_REGISTRY,
+  parseChatModelRegistry as parseChatRegistry,
+} from '../src/lib/server/chatModelRegistry'
 
 // The chat app and the GraphQL backend each carry their own built-in chat model
 // registry (both overridable through CHAT_MODEL_REGISTRY_JSON). The backend copy
 // drives the lecturer-facing allow-list in manage, the chat copy drives what
 // students actually get. When they drift, lecturers can allow-list models that
-// never reach students. The chat side is the source of truth.
+// never reach students. The chat side is the source of truth. Deployment
+// registries come from the one .Values.chat.modelRegistry source in
+// deploy/env-uzh-{stg,prd}/values.yaml and are parsed here through BOTH
+// consumers to prove repository-declared parity.
 
 type ParityModel = {
   id: string
@@ -15,6 +26,7 @@ type ParityModel = {
   supportsReasoning: boolean
   usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
+  usageClass: 'BASE' | 'ADVANCED'
 }
 
 function byId(models: readonly ParityModel[]) {
@@ -69,4 +81,58 @@ describe('default chat model registry parity', () => {
     expect(fallbackIds(chatModels)).toHaveLength(1)
     expect(fallbackIds(backendModels)).toEqual(fallbackIds(chatModels))
   })
+
+  test('every model carries the same explicit usage class in both copies', () => {
+    const backendById = byId(backendModels)
+    for (const model of chatModels) {
+      expect(backendById.get(model.id)?.usageClass).toBe(model.usageClass)
+    }
+    expect(chatModels.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
+  })
+})
+
+function loadDeployedRegistries() {
+  const valuesFiles = [
+    new URL('../../../deploy/env-uzh-stg/values.yaml', import.meta.url),
+    new URL('../../../deploy/env-uzh-prd/values.yaml', import.meta.url),
+  ]
+
+  return valuesFiles.map((file) => {
+    const parsed = parseYaml(readFileSync(file, 'utf8')) as {
+      chat?: { modelRegistry?: unknown[] }
+    }
+    const entries = parsed.chat?.modelRegistry ?? []
+    return {
+      name: file.pathname.split('/').at(-1),
+      chat: parseChatRegistry(entries),
+      backend: parseBackendRegistry(entries),
+    }
+  })
+}
+
+describe('deployed chat model registry parity (values.yaml)', () => {
+  const deployed = loadDeployedRegistries()
+
+  test('loads both deployment registries', () => {
+    expect(deployed).toHaveLength(2)
+    for (const { chat, backend } of deployed) {
+      expect(chat.length).toBeGreaterThan(0)
+      expect(backend.length).toBeGreaterThan(0)
+    }
+  })
+
+  for (const { name, chat, backend } of deployed) {
+    test(`${name}: both consumers accept every entry and classify identically`, () => {
+      const backendById = byId(backend)
+      for (const model of chat) {
+        const backendModel = backendById.get(model.id)
+        expect(
+          backendModel,
+          `missing backend entry for ${model.id}`
+        ).toBeDefined()
+        expect(backendModel?.usageClass).toBe(model.usageClass)
+      }
+      expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
+    })
+  }
 })

@@ -16,6 +16,9 @@ const chatModelSchema = z
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().positive().optional(),
     apiVersion: z.string().min(1).optional(),
+    // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
+    // omits the class is conservatively normalized to ADVANCED, never BASE.
+    usageClass: z.enum(['BASE', 'ADVANCED']).default('ADVANCED'),
     cost: z.object({
       input: z.number().nonnegative(),
       output: z.number().nonnegative(),
@@ -34,7 +37,20 @@ const chatModelSchema = z
       })
     }
   })
-const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
+const chatModelRegistrySchema = z
+  .array(chatModelSchema)
+  .min(1)
+  .superRefine((models, ctx) => {
+    for (const [index, model] of models.entries()) {
+      if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'usageClass'],
+          message: 'Model "auto" must be classified as ADVANCED.',
+        })
+      }
+    }
+  })
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
 type ChatModelCapability = Omit<
@@ -49,6 +65,13 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
+/** Parses and normalizes a raw registry value through the backend consumer. */
+export function parseChatModelRegistry(value: unknown): ChatModelCapability[] {
+  return chatModelRegistrySchema
+    .parse(value)
+    .map((model) => normalizeChatModel(model))
+}
+
 export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
   {
     id: 'auto',
@@ -59,6 +82,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: true,
     supportedReasoningEfforts: [],
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
   },
@@ -71,6 +95,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: true,
     usesResponsesApi: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
   },
@@ -83,6 +108,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
+    usageClass: 'BASE',
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -95,6 +121,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
+    usageClass: 'BASE',
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },

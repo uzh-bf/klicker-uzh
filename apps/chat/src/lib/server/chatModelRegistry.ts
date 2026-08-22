@@ -14,6 +14,9 @@ const chatModelSchema = z
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
     maxOutputTokens: z.number().positive().optional(),
     apiVersion: z.string().min(1).optional(),
+    // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
+    // omits the class is conservatively normalized to ADVANCED, never BASE.
+    usageClass: z.enum(['BASE', 'ADVANCED']).default('ADVANCED'),
     cost: z.object({
       input: z.number().nonnegative(),
       output: z.number().nonnegative(),
@@ -52,6 +55,14 @@ const chatModelRegistrySchema = z
 
       if (model.fallback) {
         hasFallback = true
+      }
+
+      if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'usageClass'],
+          message: 'Model "auto" must be classified as ADVANCED.',
+        })
       }
     }
 
@@ -104,6 +115,11 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
     .map((model) => normalizeChatModelConfig(model))
 }
 
+/** Parses and normalizes a raw registry value through the chat consumer. */
+export function parseChatModelRegistry(value: unknown): ChatModelConfig[] {
+  return parseRegistryValue(value)
+}
+
 export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
   {
     id: 'auto',
@@ -115,6 +131,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    usageClass: 'ADVANCED',
     cost: { input: 1.25, output: 10.0 },
   },
   {
@@ -127,6 +144,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    usageClass: 'ADVANCED',
     cost: { input: 1.25, output: 10.0 },
   },
   {
@@ -139,6 +157,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    usageClass: 'BASE',
     cost: { input: 2.0, output: 8.0 },
   },
   {
@@ -151,6 +170,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    usageClass: 'BASE',
     cost: { input: 0.4, output: 1.6 },
   },
 ]
