@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-12'
+timestamp: '2026-08-21'
 tags:
   - environment
   - onboarding
@@ -42,7 +42,7 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app plus the two Hatchet workers and the lecturer MCP server (`apps/mcp-lecturer`, port 7081, no route — `apps/chat` reaches it in-container) through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet). Without it, the manage assistant loads zero tools; it now starts automatically with the rest of the stack (`package.json:dev:container`), so no manual step is required. The **student** MCP server (`apps/mcp-student`, port 7080) is not in that filter, so tutor-mode practice quizzes stay off in the default dev stack ([Chat Platform](./chat-platform.md#student-practice-mcp-appsmcp-student)).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app, the two Hatchet workers, the lecturer MCP server (`apps/mcp-lecturer`, port 7081), and the student MCP server (`apps/mcp-student`, port 7080) through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet). Both MCP servers have no external route; `apps/chat` reaches them in-container. They start automatically with the rest of the stack (`package.json:dev:container`), so the Manage assistant and tutor-mode student practice tools need no separate MCP process ([Chat Platform](./chat-platform.md#student-practice-mcp-appsmcp-student)).
 
 1. **Start and prove the checkout:**
    ```bash

@@ -241,6 +241,26 @@ test.describe('Manage Assistant — Messaging', () => {
     )
   })
 
+  test('Closing and reopening preserves the loaded assistant runtime', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    const assistant = await openManageAssistantWidget(page)
+    const input = assistant.getByTestId('chat-composer-input')
+
+    await assistant.getByText('Draft a question', { exact: true }).click()
+    const draftPrompt = await input.inputValue()
+    expect(draftPrompt).not.toBe('')
+
+    const dialog = page.getByTestId('manage-assistant-drawer')
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toBeHidden()
+
+    await page.getByTestId('manage-assistant-open').click()
+    await expect(dialog).toBeVisible()
+    await expect(input).toHaveValue(draftPrompt)
+  })
+
   test('Dialog exposes modal semantics and isolates the Manage page', async ({
     page,
   }) => {
@@ -272,7 +292,12 @@ test.describe('Manage Assistant — Messaging', () => {
 
     await dialog.getByRole('button', { name: 'Close' }).click()
 
-    await expect(dialog).toHaveCount(0)
+    await expect(dialog).toBeHidden()
+    await expect(dialog).toHaveAttribute('aria-hidden', 'true')
+    await expect(dialog).not.toHaveAttribute('aria-modal', 'true')
+    expect(
+      await dialog.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
     await expect(appRoot).not.toHaveAttribute('aria-hidden', 'true')
     expect(
       await appRoot.evaluate((element) => (element as HTMLElement).inert)
@@ -291,19 +316,19 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   }) => {
     await mockManageChatStream(page)
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    const suggestions = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [
       'Draft a question',
       'Find questions',
       'Improve feedback',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible()
+      await expect(suggestions.getByText(text, { exact: true })).toBeVisible()
     }
 
     // Course-dashboard-only suggestions must not leak into this surface.
     await expect(
-      welcome.getByText('Summarize this course', { exact: true })
+      suggestions.getByText('Summarize this course', { exact: true })
     ).toHaveCount(0)
   })
 
@@ -316,7 +341,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
     )
 
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    const suggestions = assistant.getByTestId('chat-welcome-suggestions')
 
     // The course-dashboard set only replaces the default suggestions once the
     // parent → iframe manage-context handshake completes, which races the
@@ -326,7 +351,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
       'Draft course question',
       'Find course material',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+      await expect(suggestions.getByText(text, { exact: true })).toBeVisible({
         timeout: 15_000,
       })
     }
@@ -334,7 +359,7 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
     // Question-pool-only suggestions must not leak into this surface (retries
     // until the handshake has swapped the default set out).
     await expect(
-      welcome.getByText('Draft a question', { exact: true })
+      suggestions.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
   })
 })
@@ -362,14 +387,14 @@ test.describe('Manage Assistant — Slow hydration', () => {
     await delayChatIframeScripts(page, 1_000)
 
     const assistant = await openManageAssistantWidget(page)
-    const welcome = assistant.getByTestId('chat-welcome-message')
+    const suggestions = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [
       'Summarize this course',
       'Draft course question',
       'Find course material',
     ]) {
-      await expect(welcome.getByText(text, { exact: true })).toBeVisible({
+      await expect(suggestions.getByText(text, { exact: true })).toBeVisible({
         timeout: 20_000,
       })
     }
@@ -377,7 +402,7 @@ test.describe('Manage Assistant — Slow hydration', () => {
     // Question-pool-only suggestions must not leak in: the default set was
     // never the one actually shown, confirming the swap really happened.
     await expect(
-      welcome.getByText('Draft a question', { exact: true })
+      suggestions.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
   })
 })
