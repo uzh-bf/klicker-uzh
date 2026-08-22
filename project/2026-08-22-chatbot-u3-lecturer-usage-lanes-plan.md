@@ -442,3 +442,36 @@ Gate 3 ruling and names every still-withheld action.
   receiving two formatting callbacks from the parent. Broader abstraction or
   validation reductions were declined because they would reduce clarity or
   weaken the fixed contract.
+- 2026-08-23: S3 browser verification covered normal, empty, BASE-exhausted,
+  and unauthorized synthetic account states in English and German at desktop
+  and 390x844 mobile widths. The two cards remained in stable order, saved
+  values updated the visible budget and remaining totals, empty and exhausted
+  states used explicit text, keyboard focus moved through both inputs and the
+  save button, and the final clean reload had no console or GraphQL network
+  errors. The screenshots remain under the ignored
+  `project/_local/screenshots/` evidence path.
+- 2026-08-23: the first browser save exposed that the design-system
+  `FormikNumberField` stores text while the generated mutation requires
+  GraphQL floats. Commit `47359d48a` now converts only the two validated values
+  at the mutation boundary. Repeated browser save passed, and the correction's
+  Ox Alpha simplifier returned `DONE` while its risk review returned `ACCEPT`
+  with no required change.
+- 2026-08-23: the final Node 24 verification passes: the focused PostgreSQL and
+  GraphQL file has 11/11 passing tests; GraphQL generation has no drift;
+  GraphQL and manage checks and production builds pass; `check:all` passes;
+  the Playwright package typecheck passes and discovery lists 870 tests; and
+  the full repository build passes 23/23 tasks. Known Rollup, Next.js,
+  next-intl, and page-size warnings remain pre-existing and non-blocking. The
+  exact DevPod is stopped and no active route references its workspace.
+- 2026-08-23: the integrated Ox Alpha final review accepted exact range
+  `e9bd25e80..47359d48a` with no blocking or required-correction finding. It
+  confirmed the owner/admin isolation, fixed current-month projection, atomic
+  two-budget mutation, concurrent U2 counter preservation, exactly two
+  localized owner lanes, additive persisted operations, hidden-funding
+  boundary, wiki accuracy, and the complete U1 -> U2 -> U3 M1 contract.
+- 2026-08-23: local roadmap Phase 5 classified the immutable implementation
+  boundary at `47359d48a` as required `reviewed` delivery with no blocking or
+  required-correction finding. The accepted next action is S4 draft
+  publication, additive append as the top layer of stack #5476, exact-head CI
+  observation, and a publication-aware Phase 5 re-read. All withheld external
+  actions remain unchanged.
