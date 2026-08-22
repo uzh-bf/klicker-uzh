@@ -1,0 +1,59 @@
+# Chatbot k6 load-test package
+
+## Goal
+
+Publish the reusable Klicker chatbot HTTP/authenticated-turn k6 suite as an
+independent draft PR against `v3`, without carrying the closed provisioner or
+lecturer-demo work.
+
+## Scope and authority
+
+- Include only `util/load-test/chatbot-http.js`, `util/load-test/chatbot-auth.js`,
+  and `util/load-test/chatbot-turn.js`, plus this plan artifact.
+- Exclude provisioner, activation, database, lecturer-demo, runtime, dependency,
+  lockfile, and legacy `util/load-test/k6.js` changes.
+- Authorized: create this worktree and branch, make bounded script/plan edits,
+  run local static and k6 inspection checks, commit, push the feature branch,
+  and open a draft PR against `v3`.
+- Withheld: live k6 runs, credential or secret access, production/staging
+  traffic, database writes, provider calls, deployment, merge, and lecturer
+  communication.
+- Boundary owner: main session. Terminal: reviewed draft PR published.
+- Pause if remote `v3` moves from `f58986faa8cfa4ff78d20a1ebeb1666473343d38`,
+  the isolated patch no longer applies, or safety hardening requires paths
+  outside the three scripts and this plan.
+
+## Evidence and decision
+
+- Closed provisioner PR #5406 contains nineteen source-only commits relative to
+  current `v3`; all non-k6 changes are provisioner, activation, lecturer-demo,
+  or related evidence/planning work.
+- Commit `095fe8bfc` adds exactly the three k6 scripts (242 executable lines).
+- The scripts need fail-closed controls before publication: explicit target
+  selection, explicit production opt-in, explicit chat-turn side-effect
+  acknowledgement, strict turn-count validation, and corrected comments.
+
+## Delegation map
+
+| Slice | Owner | Acceptance |
+| --- | --- | --- |
+| S1 isolated branch and plan | main | Fresh worktree at pinned `v3`; plan committed first |
+| S2 k6 suite extraction and safety hardening | main | Exactly three script paths changed; negative guards fail before network execution |
+| S3 integrated review | final-reviewer | Correctness, security, maintainability, and boundary findings dispositioned |
+| S4 publication | main | Feature branch pushed and draft PR targets `v3`; no merge |
+
+## Test portfolio
+
+| Risk | Obligation | Primary seam | Evidence |
+| --- | --- | --- | --- |
+| Script syntax/options | extend existing | k6 inspection | `k6 inspect --execution-requirements` for all three scripts |
+| Safety guards | add new | preflight validation | missing target/opt-in/token/ack/model/invalid turns fail before network |
+| Formatting/diff hygiene | extend existing | repository checks | formatter check and `git diff --check` |
+| Live behavior | none in this PR | external runtime | intentionally withheld; use separately authorized canary package |
+
+## Progress
+
+- S1: in progress — isolated branch created from pinned remote `v3`.
+- S2: pending — add the three scripts and fail-closed controls.
+- S3: pending — integrated final review after verification.
+- S4: pending — push and open draft PR; merge remains withheld.
