@@ -481,3 +481,12 @@ Gate 3 ruling and names every still-withheld action.
   state, exact branch/base pair, published head `fa7992b35`, whole-branch
   description, and unchanged lower-layer topology. Ready marking, merge,
   deployment, live traffic, closure, cleanup, and deletion remain withheld.
+- 2026-08-23: the publication-aware Ox Alpha Phase 5 re-read classified exact
+  published head `de35a4fe4` as `reviewed`. Native GitHub stack #5476 contains
+  #5460 -> #5475 -> #5480 -> #5490 in the accepted order; #5490 is open,
+  draft, and based on U2 head `e9bd25e80`. The complete registered exact-head
+  check set passed: three dynamic CodeQL language jobs and GitGuardian.
+  Ordinary pull-request workflows did not register for the stack-linked draft
+  and are not represented as passing. The two post-boundary commits are
+  evidence-only additions in the roadmap and plan. M1 has reached its terminal
+  Gate 3 boundary with every withheld action unchanged.
