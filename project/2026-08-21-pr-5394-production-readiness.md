@@ -69,12 +69,11 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 | `pnpm --filter @klicker-uzh/graphql check` | passed on the final head in the native Node 24 DevRouter runtime; repository commit hooks also passed the package check on host Node 26.7.0 with the Node 24 engine warning |
 | GraphQL generation | passed in the final Node 24 DevRouter runtime; generated files remained unchanged across the repair sequence and the working tree stayed clean |
 | Focused database-backed invitation tests | passed in the final Node 24 DevRouter runtime: 21 passed, with only expected Redis connection-refused warnings because the Redis services are not running |
-| Simplification and slice review | trusted Sol fallback passes over f8b48de71..dc506c396 found no simplification or data-integrity findings; the native Gemini route rejected its configured effort |
+| Simplification and slice review | Trusted fallback passes covered f8b48de71..dc506c396 and the correction range 3c0b11398b8ed40be962d78dd9823134b4c831b3; two low-risk simplifications were applied, with no material data-integrity or unnecessary-complexity findings remaining |
 | Final Sol reviewer | native review covered `f58986faa8cfa4ff78d20a1ebeb1666473343d38..3c0b11398b8ed40be962d78dd9823134b4c831b3`; its four change-introduced findings were corrected in `1035a3a2f` |
 | Full `check:all` | failed at `@klicker-uzh/analytics#lint`: uv could not build pandas 2.2.2 because the runtime image has no `cc`, `gcc`, or `clang`; dependent aggregate tasks were cancelled. No analytics files changed afterward, so this remains an environment blocker rather than a PR finding |
 | Browser verification | manual Agent Browser verification passed in English and German, including finite 10/20/50 choices and page two. The focused Playwright test is committed, but the disposable runtime lacked Playwright's headless shell after the install attempt, so that spec remains a CI/runtime follow-up |
 | Build and exact-head CI | the final build passed with 23 successful tasks and exit code 0, and the exact-head Playwright rerun passed all eight shards and its status gate |
-| Native simplifier and slice-reviewer | native Gemini route rejected the configured effort; trusted Luna fallback completed the final read-only passes and found no material simplification or data-integrity concern |
 
 ## Not checked
 

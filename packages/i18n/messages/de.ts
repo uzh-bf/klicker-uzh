@@ -1702,7 +1702,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       invitationImportFailed:
         'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
       invitationImportSummary:
-        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors, plural, one {# Fehler} other {# Fehler}}.',
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
       invitationListTitle: 'Einladungen',
       invitationListDescription:
         'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
