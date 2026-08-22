@@ -41,6 +41,20 @@ Invitation creation normalizes emails and matriculation numbers, reports invalid
 
 `ElementType`: `SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY`. Type-specific behavior is dispatched in `packages/graphql/src/services/stacks.ts` (correctness: `evaluateChoicesAnswerCorrectness`; per-type grading and response-format branches). Pure scoring math is in `packages/grading/src/index.ts`: `gradeQuestionSC`, `gradeQuestionMC` (hamming-distance partial credit), `gradeQuestionKPRIM` (0 wrong → full, 1 wrong → half, else 0), `gradeQuestionNumerical`.
 
+## Chatbot response examples
+
+`Chatbot` has at most one `ResponseExampleSet`. Each set owns current,
+mutable `ResponseExample` rows scoped by exact `chatMode`, plus
+`ResponseExampleEvidenceReference` rows that retain source, chunk, content-hash,
+and citation-anchor lineage without storing source bodies. A response example
+has one of the statuses `CANDIDATE`, `APPROVED`, `NEEDS_REVIEW`, or `REJECTED`.
+
+The set stores a deterministic SHA-256 digest of its canonical content and
+lineage projection. Review edits update the current row and digest; there is no
+revision-history model. Deleting the chatbot cascades through the set, examples,
+and evidence references. Synthetic candidates and evidence-eligible fixtures
+are created only by local and test setup, not by a production caller.
+
 ## Activities
 
 Four activity models in `quiz.prisma`: `LiveQuiz` (formerly "session" — `originalId` and old code names survive), `PracticeQuiz`, `MicroLearning`, `GroupActivity` (plus `GroupActivityInstance`, parameters/clues). The Prisma **view** `UserActivities` unifies all four for listing.

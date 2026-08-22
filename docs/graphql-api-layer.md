@@ -145,6 +145,20 @@ Elements operation, schema field, service signature, and generated artifacts
 must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
 `packages/graphql/src/services/elements.ts:getUserElements`).
 
+## Chatbot response examples
+
+`getChatbotResponseExamples` and the `approveResponseExample`,
+`editAndApproveResponseExample`, and `rejectResponseExample` mutations use
+`t.withAuth(asUser)`. The service scopes every lookup through
+`set.chatbot.ownerId = ctx.user.sub`, so another lecturer receives `null` even
+if they know the chatbot or example UUID. The mutations return the refreshed set
+and digest; they do not create candidates or change evidence eligibility.
+
+The service keeps the lifecycle in one transaction: approve, edit-and-approve,
+or reject the current row, then recompute the set digest. Client operations are
+`QGetChatbotResponseExamples`, `MApproveResponseExample`,
+`MEditAndApproveResponseExample`, and `MRejectResponseExample`.
+
 ## Subscriptions
 
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.

@@ -45,6 +45,21 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot.
 
+## Owner-governed response examples
+
+Klicker stores one canonical `ResponseExampleSet` per chatbot. Each current
+example carries the exact server-resolved `chatMode` and `locale`, a behavior
+tag, an approval status, and optional source/chunk/content-hash/citation-anchor
+lineage. Approved edits replace the current row immediately; there is no
+revision-history model. The set digest changes with canonical example or
+lineage content, not reviewer timestamps.
+
+The owner-only GraphQL surface is the source of truth for lecturer review:
+the owner can inspect the set, approve, edit and approve, or reject an entry.
+Non-owners receive `null`, and no production GraphQL or chat runtime path
+creates candidates or marks evidence eligible. Local/test fixtures may seed
+synthetic candidates and evidence solely to exercise the review lifecycle.
+
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
 explicit when changing the transport: it keeps the UI stream's abort lifecycle

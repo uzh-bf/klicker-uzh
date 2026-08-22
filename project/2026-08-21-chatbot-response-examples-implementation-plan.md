@@ -509,18 +509,22 @@ because those belong to the deferred integration milestone.
 
 ## Progress
 
-- Status: K1 implementation in progress; R0 adoption and design recording are
-  complete
+- Status: K1 implementation and verification in progress; R0 adoption, design,
+  and plan commits are complete
 - Completed: repository mapping, product grill, design, ADRs 0028-0036,
   independent-scope correction, current source refresh, stack-capability check,
-  two native Sol planning passes, refreshed `v3-ai` adoption, and the first
-  local docs commit `1cdf33703`
-- Active slice: K1 canonical owner-governed foundation, including schema,
-  migration, owner API, test fixtures, focused tests, generated artifacts, and
-  the matching wiki update
-- Remaining: the K1 implementation commit, repository-native verification,
-  immutable-range reviews, exact branch publication, and one draft PR targeting
-  `v3-ai`; K2, K3, K4, and E1 remain out of scope for this work item
+  two native Sol planning passes, refreshed `v3-ai` adoption, the design
+  commit `1cdf33703`, and the implementation-plan commit `01508e172`
+- Completed K1 work: response-example schema and migration, Prisma sync,
+  owner-scoped GraphQL query and lifecycle mutations, deterministic digest,
+  generated artifacts, synthetic test-only fixtures, focused tests, and the
+  matching wiki update
+- Active slice: final K1 diff hygiene, host commit, immutable-range reviews,
+  exact branch publication, and one draft PR targeting `v3-ai`
+- Remaining: the K1 implementation commit, final repository-native
+  verification, immutable-range reviews, exact branch publication, and one
+  draft PR targeting `v3-ai`; K2, K3, K4, and E1 remain out of scope for this
+  work item
 - Latest public evidence: `feat/response-examples-foundation` is based directly
   on `origin/v3-ai` at
   `198747502a81149c2f61bb3dcd097716bbe32244`; PR #5424 remains separate and
@@ -528,17 +532,25 @@ because those belong to the deferred integration milestone.
 - Latest target evidence: local `origin/v3-ai` and the adopted branch agree at
   `198747502a81149c2f61bb3dcd097716bbe32244`; runtime checks use Node 24.16.0
   and pnpm 11.5.0
-- Unresolved required gates: K1 migration, owner authorization, fixture
-  confinement, generated-artifact readback, immutable-range reviews, and draft
-  publication remain open. Graph, corpus, lineage, callback, retrieval-token,
-  trigger, embedding, model, and Catalyst obligations are deferred rather than
-  blocking.
+- Latest implementation evidence: migration
+  `20260822090256_response_examples_foundation` applied in the repository
+  runtime; direct focused Vitest passed 4/4 tests; GraphQL and Prisma checks
+  completed with runtime exit marker `0`; GraphQL codegen succeeded after the
+  Prisma client build; Prisma sync updated the mirrored analytics schema.
+- Runtime limitation: the repository `test:local` command cannot start its
+  database because the exact runtime does not expose Docker CLI; the direct
+  focused Vitest path passed against the already-running synthetic database.
+  Graph, corpus, lineage, callback, retrieval-token, trigger, embedding,
+  model, and Catalyst obligations are deferred rather than blocking.
+- Unresolved required gates: K1 implementation commit, final repository-native
+  verification, immutable-range reviews, and draft publication remain open.
 - Required delivery layer: one independently green, reviewed draft PR for K1;
   the four-layer milestone delivery remains pending
-- Achieved delivery layer: committed design and ADRs, with the approved plan
-  staged for its own local commit
-- Next action: commit this execution plan, then implement and verify K1 in the
-  exact worktree without waiting for PR #5424.
+- Achieved delivery layer: committed design and ADRs plus the approved plan;
+  the K1 implementation is ready for its third planned local commit
+- Next action: inspect and commit the exact K1 paths on the host, run the
+  required immutable-range reviews, publish the exact branch, and create one
+  draft PR; keep all withheld actions unchanged.
 
 ## Next steps after terminal
 

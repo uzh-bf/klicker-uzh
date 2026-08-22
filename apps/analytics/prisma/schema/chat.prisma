@@ -43,6 +43,13 @@ enum ChatUsageClass {
   ADVANCED
 }
 
+enum ResponseExampleStatus {
+  CANDIDATE
+  APPROVED
+  NEEDS_REVIEW
+  REJECTED
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -197,6 +204,7 @@ model Chatbot {
   knowledgeBases    KBChatbot[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  responseExampleSet ResponseExampleSet?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -206,6 +214,61 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ResponseExampleSet {
+  id String @id @default(uuid()) @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @unique @db.Uuid
+
+  digest   String @default("")
+  examples ResponseExample[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ResponseExample {
+  id String @id @default(uuid()) @db.Uuid
+
+  set   ResponseExampleSet @relation(fields: [setId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  setId String             @db.Uuid
+
+  chatMode       String
+  locale         String
+  studentTurn    String @db.Text
+  idealResponse  String @db.Text
+  behaviorTag    String
+  status         ResponseExampleStatus @default(CANDIDATE)
+  reviewedById   String? @db.Uuid
+  reviewedAt     DateTime?
+
+  evidenceReferences ResponseExampleEvidenceReference[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([setId, chatMode, locale, studentTurn])
+  @@index([setId, chatMode, locale, status])
+}
+
+model ResponseExampleEvidenceReference {
+  id String @id @default(uuid()) @db.Uuid
+
+  responseExample   ResponseExample @relation(fields: [responseExampleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseExampleId String          @db.Uuid
+
+  sourceId         String
+  chunkId          String
+  contentHash      String
+  citationAnchor   String @db.Text
+  evidenceEligible Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([responseExampleId, sourceId, chunkId, contentHash, citationAnchor])
+  @@index([responseExampleId])
 }
 
 model ChatbotMCPServer {

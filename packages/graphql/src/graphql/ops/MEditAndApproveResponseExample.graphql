@@ -1,0 +1,19 @@
+mutation EditAndApproveResponseExample(
+  $id: String!
+  $chatMode: String!
+  $locale: String!
+  $studentTurn: String!
+  $idealResponse: String!
+  $behaviorTag: String!
+) {
+  editAndApproveResponseExample(
+    id: $id
+    chatMode: $chatMode
+    locale: $locale
+    studentTurn: $studentTurn
+    idealResponse: $idealResponse
+    behaviorTag: $behaviorTag
+  ) {
+    ...ResponseExampleSetData
+  }
+}

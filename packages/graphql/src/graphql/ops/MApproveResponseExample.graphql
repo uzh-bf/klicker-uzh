@@ -1,0 +1,5 @@
+mutation ApproveResponseExample($id: String!) {
+  approveResponseExample(id: $id) {
+    ...ResponseExampleSetData
+  }
+}
