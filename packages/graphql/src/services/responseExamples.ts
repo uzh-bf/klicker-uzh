@@ -137,6 +137,9 @@ export async function getChatbotResponseExamples(
   { chatbotId }: { chatbotId: string },
   ctx: ContextWithUser
 ) {
+  const parsedChatbotId = responseExampleIdSchema.safeParse(chatbotId)
+  if (!parsedChatbotId.success) return null
+
   return await ctx.prisma.responseExampleSet.findFirst({
     where: {
       chatbotId,
