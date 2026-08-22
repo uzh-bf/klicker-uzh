@@ -93,17 +93,24 @@ describe('default chat model registry parity', () => {
 
 function loadDeployedRegistries() {
   const valuesFiles = [
-    new URL('../../../deploy/env-uzh-stg/values.yaml', import.meta.url),
-    new URL('../../../deploy/env-uzh-prd/values.yaml', import.meta.url),
+    {
+      name: 'env-uzh-stg',
+      url: new URL('../../../deploy/env-uzh-stg/values.yaml', import.meta.url),
+    },
+    {
+      name: 'env-uzh-prd',
+      url: new URL('../../../deploy/env-uzh-prd/values.yaml', import.meta.url),
+    },
   ]
 
-  return valuesFiles.map((file) => {
-    const parsed = parseYaml(readFileSync(file, 'utf8')) as {
+  return valuesFiles.map(({ name, url }) => {
+    const parsed = parseYaml(readFileSync(url, 'utf8')) as {
       chat?: { modelRegistry?: unknown[] }
     }
     const entries = parsed.chat?.modelRegistry ?? []
     return {
-      name: file.pathname.split('/').at(-1),
+      name,
+      raw: entries,
       chat: parseChatRegistry(entries),
       backend: parseBackendRegistry(entries),
     }
@@ -121,7 +128,18 @@ describe('deployed chat model registry parity (values.yaml)', () => {
     }
   })
 
-  for (const { name, chat, backend } of deployed) {
+  for (const { name, raw, chat, backend } of deployed) {
+    test(`${name}: every entry declares an explicit usage class`, () => {
+      for (const [index, entry] of raw.entries()) {
+        const usageClass = (entry as { usageClass?: unknown } | null)
+          ?.usageClass
+        expect(
+          usageClass,
+          `${name} modelRegistry[${index}] must declare an explicit usageClass`
+        ).toMatch(/^(BASE|ADVANCED)$/)
+      }
+    })
+
     test(`${name}: both consumers accept every entry and classify identically`, () => {
       const backendById = byId(backend)
       for (const model of chat) {

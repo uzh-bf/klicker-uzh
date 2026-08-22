@@ -1,3 +1,5 @@
+BEGIN;
+
 -- CreateEnum
 CREATE TYPE "ChatUsageClass" AS ENUM ('BASE', 'ADVANCED');
 
@@ -16,3 +18,6 @@ CREATE TABLE "ChatAccountUsage" (
 
 -- AddForeignKey
 ALTER TABLE "ChatAccountUsage" ADD CONSTRAINT "ChatAccountUsage_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+COMMIT;
