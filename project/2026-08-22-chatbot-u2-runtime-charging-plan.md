@@ -452,5 +452,24 @@ contract retains its focused regression test.
   checks, and the Chat production build completed successfully. Its expected
   local warning states that model requests need a key; no model call was part
   of this browser-copy verification.
-- Current state: inspect and commit S3, then run the integrated Ox Alpha final
-  review.
+- 2026-08-22: S3 was committed at `0e0cef7f7`. The complete local portfolio
+  passed, the integrated Ox Alpha review accepted the full U2 range, and the
+  first Phase 5 review accepted that boundary. The resulting roadmap-only
+  reconciliation was committed at `3ab84a050` and published to draft PR #5480.
+- 2026-08-22: current-head CI then exposed one stale Playwright expectation:
+  the participant credits GET and settings store now intentionally preserve
+  the selected `BASE` model at zero participant credits, but the test still
+  expected the legacy Mini replacement. The expectation was narrowed to
+  require GPT-4.1 and exclude GPT-4.1 Mini, with no product-code change, and
+  committed at `367784db6`.
+- 2026-08-22: the correction's narrow Ox Alpha review and the refreshed
+  integrated Ox Alpha final review both passed. Exact-head CI at `367784db6`
+  finished with 27 passed, nine intentionally skipped, zero failed, and zero
+  pending; all eight Playwright shards passed, including the corrected case in
+  shard 5. The refreshed Phase 5 review accepted `367784db6` as the exact U2
+  implementation boundary and authorized a documentation-only reconciliation
+  before proceeding to U3.
+- Current state: reconcile the plan, roadmap, and draft PR to the accepted
+  `367784db6` boundary, publish that documentation-only commit, account for its
+  current-head CI, then continue to U3. Readiness, merge, deployment, live
+  traffic or proof, closure, cleanup, and deletion remain withheld.
