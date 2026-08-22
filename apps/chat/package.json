@@ -21,7 +21,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@langfuse/otel": "4.6.1",
     "@langfuse/tracing": "4.6.1",
-    "@modelcontextprotocol/sdk": "1.17.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.220.0",
     "@opentelemetry/sdk-trace-node": "2.9.0",
     "@radix-ui/react-dialog": "1.1.15",

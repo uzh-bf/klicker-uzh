@@ -10,7 +10,7 @@
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
-    "fastmcp": "3.15.2",
+    "fastmcp": "4.13.1",
     "graphql": "16.11.0",
     "zod": "3.25.76"
   },
