@@ -116,7 +116,7 @@ different boundary).
 
 | Phase | Content | Owner | Gate |
 | --- | --- | --- | --- |
-| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then complete the upstream A9 target/read-write acceptance and prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. The read-only collection and scope checks pass; write acceptance and end-to-end retrieval remain open because the PRD reranker binding fails. | This thread, coordinated with the ingestion lane | Resolve the PRD credential/model-access and v0.8.1 publication gates before any write or activation |
+| P0 PRD data readiness | Confirm the canonical PRD source pair already present in the 17-pair manifest, then complete the upstream A9 target/read-write acceptance and prove PRD collection readiness for `klicker_ai_informatik_und_wirtschaft` (82 videos / 872 ingestion rows) through the proper PRD ingestion path; no STG copy. The read-only collection, scope, and positive retrieval checks pass; only write acceptance and its A9 tie remain open. | This thread, coordinated with the ingestion lane | Record the A9 write-acceptance or no-reingestion disposition before any new corpus write or reingestion; the shared runtime promotion is already verified |
 | P1 Multi-tenant PRD service | W5a dark preparation (single tenant inventory/readback for both course pairs), W5a.1 neutral publication/readback, W5b/W5c canary + Argo profile, W5d grants, W5e publication + operator proof + direct-Chat proof, W6 readiness review. | Thread `019febd4` (deployment repo) | Its own approval gates; I&W contributes P0 evidence only |
 | P2 Klicker PRD runtime promotion | Build and promote the chat image from `v3` at or after `2d9c5d048` (contains `#5405`/`#5411`/`#5414`), production values promotion PR, manual Argo reconciliation of the PRD `app-klicker` application, rollout marker and pod digest readback. | This thread | Separately authorized production promotion |
 | P3 Credential and activation | Read-only preflight of the prepared rows; custody-approved PRD tenant bearer for the Klicker caller; rekey the inactive MCP server row with the running production chat application key (the STG lesson: the Infisical profile `APP_SECRET` is not the live app key); verify both strict bindings; one transactional activation; immediate readback. | This thread | P1 W5e proof + P2 runtime live |
@@ -145,8 +145,8 @@ different boundary).
 
 ## Evidence ledger before activation
 
-- PRD source pair and values-free collection-readiness evidence accepted into
-  W5a; the PRD retrieval and write-acceptance blockers above are still open.
+- PRD source pair and values-free collection-readiness and retrieval evidence
+  accepted into W5a; only the PRD write-acceptance/A9 tie remains open.
 - W5e operator and direct-Chat PRD proof recorded values-free.
 - PRD chat Deployment on a release marker at or after `2ad68d057acf` with one
   ready pod and verified digest.

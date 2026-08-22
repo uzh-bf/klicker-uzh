@@ -140,6 +140,16 @@ type BundleSnapshot = {
     isEnabled: boolean
     parameters: unknown
   }>
+  serverConfigs: Array<{
+    id: string
+    chatbotId: string
+    mcpServerId: string
+    chatMode: string
+    allowedTools: unknown
+    priority: number
+    isEnabled: boolean
+    parameters: unknown
+  }>
   conflicts: {
     courseNameId: string | null
     chatbotNameId: string | null
@@ -421,6 +431,7 @@ async function readBundleSnapshot(
     disclaimer,
     server,
     configs,
+    serverConfigs,
     ownerPermission,
     courseNameConflict,
     chatbotNameConflict,
@@ -497,6 +508,20 @@ async function readBundleSnapshot(
         parameters: true,
       },
       orderBy: { chatMode: 'asc' },
+    }),
+    db.chatbotMCPConfig.findMany({
+      where: { mcpServerId: bundle.server.id },
+      select: {
+        id: true,
+        chatbotId: true,
+        mcpServerId: true,
+        chatMode: true,
+        allowedTools: true,
+        priority: true,
+        isEnabled: true,
+        parameters: true,
+      },
+      orderBy: [{ chatbotId: 'asc' }, { chatMode: 'asc' }],
     }),
     db.derivedPermission.findUnique({
       where: {
@@ -608,6 +633,7 @@ async function readBundleSnapshot(
       chatbotIdHeader: server?.chatbotIdHeader ?? null,
     },
     configs,
+    serverConfigs,
     conflicts: {
       courseNameId: courseNameConflict?.id ?? null,
       chatbotNameId: chatbotNameConflict?.id ?? null,
@@ -717,7 +743,8 @@ function isExact(snapshot: BundleSnapshot, bundle: Bundle): boolean {
     snapshot.server.isActive === false &&
     snapshot.server.passChatbotId === false &&
     snapshot.server.chatbotIdHeader === null &&
-    canonical(snapshot.configs) === canonical(expectedConfigs(bundle))
+    canonical(snapshot.configs) === canonical(expectedConfigs(bundle)) &&
+    canonical(snapshot.serverConfigs) === canonical(expectedConfigs(bundle))
   )
 }
 
@@ -728,6 +755,7 @@ function isAbsent(snapshot: BundleSnapshot): boolean {
     !snapshot.disclaimer.exists &&
     !snapshot.server.exists &&
     snapshot.configs.length === 0 &&
+    snapshot.serverConfigs.length === 0 &&
     snapshot.ownerPermission === null &&
     snapshot.conflicts.courseNameId === null &&
     snapshot.conflicts.chatbotNameId === null &&
@@ -967,6 +995,11 @@ async function main() {
     }
     if (saved && saved.beforeStateHash !== beforeStateHash) {
       throw new Error('The dry-run receipt does not match current PRD state')
+    }
+    if (apply && !saved) {
+      throw new Error(
+        'Apply requires a matching before-state dry-run receipt; rerun after the dry run'
+      )
     }
     if (!saved) {
       writeReceipt(receiptPath, {

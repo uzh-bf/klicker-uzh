@@ -67,6 +67,16 @@ type Snapshot = {
     isEnabled: boolean
     parameters: unknown
   }>
+  serverConfigs: Array<{
+    id: string
+    chatbotId: string
+    mcpServerId: string
+    chatMode: string
+    allowedTools: unknown
+    priority: number
+    isEnabled: boolean
+    parameters: unknown
+  }>
 }
 
 type Receipt = {
@@ -154,9 +164,6 @@ function parseArgs(): {
   if (!UUID.test(TARGETS[target].serverId)) {
     throw new Error(`Invalid ${target} server ID in activation target`)
   }
-  if (args.has('--apply') && args.has('--deactivate')) {
-    throw new Error('Choose either --apply or --deactivate, not both')
-  }
   return {
     target,
     desiredState: args.has('--deactivate') ? 'inactive' : 'active',
@@ -207,60 +214,75 @@ async function readSnapshot(
   spec: TargetSpec,
   secret: string
 ): Promise<Snapshot> {
-  const [owner, course, chatbot, server, configs] = await Promise.all([
-    db.user.findUnique({
-      where: { shortname: 'klick' },
-      select: { id: true, shortname: true, role: true },
-    }),
-    db.course.findUnique({
-      where: { id: spec.courseId },
-      select: {
-        id: true,
-        ownerId: true,
-        name: true,
-        displayName: true,
-        isArchived: true,
-        authType: true,
-      },
-    }),
-    db.chatbot.findUnique({
-      where: { id: spec.chatbotId },
-      select: {
-        id: true,
-        ownerId: true,
-        courseId: true,
-        name: true,
-        disclaimerId: true,
-      },
-    }),
-    db.chatbotMCPServer.findUnique({
-      where: { id: spec.serverId },
-      select: {
-        id: true,
-        name: true,
-        url: true,
-        authType: true,
-        authSecret: true,
-        isActive: true,
-        passChatbotId: true,
-        chatbotIdHeader: true,
-      },
-    }),
-    db.chatbotMCPConfig.findMany({
-      where: { chatbotId: spec.chatbotId },
-      select: {
-        id: true,
-        chatbotId: true,
-        mcpServerId: true,
-        chatMode: true,
-        allowedTools: true,
-        priority: true,
-        isEnabled: true,
-        parameters: true,
-      },
-      orderBy: { chatMode: 'asc' },
-    }),
-  ])
+  const [owner, course, chatbot, server, configs, serverConfigs] =
+    await Promise.all([
+      db.user.findUnique({
+        where: { shortname: 'klick' },
+        select: { id: true, shortname: true, role: true },
+      }),
+      db.course.findUnique({
+        where: { id: spec.courseId },
+        select: {
+          id: true,
+          ownerId: true,
+          name: true,
+          displayName: true,
+          isArchived: true,
+          authType: true,
+        },
+      }),
+      db.chatbot.findUnique({
+        where: { id: spec.chatbotId },
+        select: {
+          id: true,
+          ownerId: true,
+          courseId: true,
+          name: true,
+          disclaimerId: true,
+        },
+      }),
+      db.chatbotMCPServer.findUnique({
+        where: { id: spec.serverId },
+        select: {
+          id: true,
+          name: true,
+          url: true,
+          authType: true,
+          authSecret: true,
+          isActive: true,
+          passChatbotId: true,
+          chatbotIdHeader: true,
+        },
+      }),
+      db.chatbotMCPConfig.findMany({
+        where: { chatbotId: spec.chatbotId },
+        select: {
+          id: true,
+          chatbotId: true,
+          mcpServerId: true,
+          chatMode: true,
+          allowedTools: true,
+          priority: true,
+          isEnabled: true,
+          parameters: true,
+        },
+        orderBy: { chatMode: 'asc' },
+      }),
+      db.chatbotMCPConfig.findMany({
+        where: { mcpServerId: spec.serverId },
+        select: {
+          id: true,
+          chatbotId: true,
+          mcpServerId: true,
+          chatMode: true,
+          allowedTools: true,
+          priority: true,
+          isEnabled: true,
+          parameters: true,
+        },
+        orderBy: [{ chatbotId: 'asc' }, { chatMode: 'asc' }],
+      }),
+    ])
 
   let authSecretMatches = false
   if (server?.authSecret) {
@@ -292,6 +314,7 @@ async function readSnapshot(
         }
       : null,
     configs,
+    serverConfigs,
   }
 }
 
@@ -345,7 +368,10 @@ function assertExact(snapshot: Snapshot, spec: TargetSpec) {
     snapshot.server.passChatbotId ||
     snapshot.server.chatbotIdHeader !== null ||
     canonical(snapshot.configs.map(({ id: _id, ...config }) => config)) !==
-      canonical(expectedConfigs(spec))
+      canonical(expectedConfigs(spec)) ||
+    canonical(
+      snapshot.serverConfigs.map(({ id: _id, ...config }) => config)
+    ) !== canonical(expectedConfigs(spec))
   ) {
     throw new Error(`Refusing ${spec.target}: target rows are not exact`)
   }
@@ -359,6 +385,7 @@ function stateHash(snapshot: Snapshot): string {
     chatbot: snapshot.chatbot,
     server: snapshot.server,
     configs: snapshot.configs,
+    serverConfigs: snapshot.serverConfigs,
   })
 }
 
