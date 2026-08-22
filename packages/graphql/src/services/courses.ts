@@ -993,6 +993,183 @@ export async function getLiveQuizStudentAssessmentResponses(
   return studentResponses
 }
 
+type PointCorrectionFlags = {
+  awardBasePoints?: boolean | null
+  awardCorrectnessPoints?: boolean | null
+  awardBonusPoints?: boolean | null
+  deductBasePoints?: boolean | null
+  deductCorrectnessPoints?: boolean | null
+  deductBonusPoints?: boolean | null
+}
+
+type PointCorrectionValues = {
+  basePoints: boolean | null
+  correctnessPoints: boolean | null
+  bonusPoints: boolean | null
+}
+
+function getPointCorrectionValue(
+  award: boolean | null | undefined,
+  deduct: boolean | null | undefined
+) {
+  if (award === true) return true
+  if (deduct === true) return false
+  return null
+}
+
+function getPointCorrectionValues(
+  flags: PointCorrectionFlags
+): PointCorrectionValues {
+  return {
+    basePoints: getPointCorrectionValue(
+      flags.awardBasePoints,
+      flags.deductBasePoints
+    ),
+    correctnessPoints: getPointCorrectionValue(
+      flags.awardCorrectnessPoints,
+      flags.deductCorrectnessPoints
+    ),
+    bonusPoints: getPointCorrectionValue(
+      flags.awardBonusPoints,
+      flags.deductBonusPoints
+    ),
+  }
+}
+
+function getResponsePointValues(
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  return {
+    basePoints: flags.awardBasePoints === true ? available.basePoints : 0,
+    correctnessPoints:
+      flags.awardCorrectnessPoints === true ? available.correctnessPoints : 0,
+    bonusPoints: flags.awardBonusPoints === true ? available.bonusPoints : 0,
+  }
+}
+
+function getResponsePointUpdates(
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  return {
+    basePoints:
+      flags.awardBasePoints === true
+        ? available.basePoints
+        : flags.deductBasePoints === true
+          ? 0
+          : undefined,
+    correctnessPoints:
+      flags.awardCorrectnessPoints === true
+        ? available.correctnessPoints
+        : flags.deductCorrectnessPoints === true
+          ? 0
+          : undefined,
+    bonusPoints:
+      flags.awardBonusPoints === true
+        ? available.bonusPoints
+        : flags.deductBonusPoints === true
+          ? 0
+          : undefined,
+  }
+}
+
+function hasPointCorrectionChange(flags: PointCorrectionFlags) {
+  return [
+    flags.awardBasePoints,
+    flags.awardCorrectnessPoints,
+    flags.awardBonusPoints,
+    flags.deductBasePoints,
+    flags.deductCorrectnessPoints,
+    flags.deductBonusPoints,
+  ].some((value) => value === true)
+}
+
+function hasConflictingPointCorrection(flags: PointCorrectionFlags) {
+  return (
+    (flags.awardBasePoints === true && flags.deductBasePoints === true) ||
+    (flags.awardCorrectnessPoints === true &&
+      flags.deductCorrectnessPoints === true) ||
+    (flags.awardBonusPoints === true && flags.deductBonusPoints === true)
+  )
+}
+
+function isValidPointCorrectionRequest({
+  scope,
+  participantId,
+  participantIds,
+  allowQuizParticipantScope,
+  ...flags
+}: PointCorrectionFlags & {
+  scope: DB.PointCorrectionType
+  participantId?: string | null
+  participantIds?: string[] | null
+  allowQuizParticipantScope: boolean
+}) {
+  if (
+    !allowQuizParticipantScope &&
+    scope === PointCorrectionType.PARTICIPATING_QUIZ
+  ) {
+    return false
+  }
+  if (scope === PointCorrectionType.SINGLE && !participantId) return false
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
+    return false
+  }
+  return (
+    hasPointCorrectionChange(flags) && !hasConflictingPointCorrection(flags)
+  )
+}
+
+function getAppliedCorrectionAmounts(
+  currentResponse: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  } | null,
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  const currentBasePoints = currentResponse?.basePoints ?? 0
+  const currentCorrectnessPoints = currentResponse?.correctnessPoints ?? 0
+  const currentBonusPoints = currentResponse?.bonusPoints ?? 0
+
+  return {
+    awardedBasePoints:
+      flags.awardBasePoints === true
+        ? available.basePoints - currentBasePoints
+        : 0,
+    awardedCorrectnessPoints:
+      flags.awardCorrectnessPoints === true
+        ? available.correctnessPoints - currentCorrectnessPoints
+        : 0,
+    awardedBonusPoints:
+      flags.awardBonusPoints === true
+        ? available.bonusPoints - currentBonusPoints
+        : 0,
+    deductedBasePoints: flags.deductBasePoints === true ? currentBasePoints : 0,
+    deductedCorrectnessPoints:
+      flags.deductCorrectnessPoints === true ? currentCorrectnessPoints : 0,
+    deductedBonusPoints:
+      flags.deductBonusPoints === true ? currentBonusPoints : 0,
+  }
+}
+
 async function upsertResponseAppliedCorrection(
   {
     correctionId,
@@ -1054,40 +1231,48 @@ async function upsertResponseAppliedCorrection(
 
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
-    where: currentResponse ? { id: currentResponse.id } : { id: -1 },
+    where: { id: currentResponse?.id ?? -1 },
     // response is not set -> defaults to null (setting it to null explicitly does not work, since this would be interpreted as the JSON value being null -> violates DB constraint)
     create: {
       correctionOnly: true,
       submittedAt: new Date(),
       timeSpent: -1,
       correctness: DB.ResponseCorrectness.CORRECT,
-      basePoints: awardBasePoints === true ? availableBasePoints : 0,
-      correctnessPoints:
-        awardCorrectnessPoints === true ? availableCorrectnessPoints : 0,
-      bonusPoints: awardBonusPoints === true ? availableBonusPoints : 0,
+      ...getResponsePointValues(
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
       elementBlockExecution: instance.elementBlock.execution,
       instance: { connect: { id: instance.id } },
       participant: { connect: { id: participantId } },
     },
     update: {
-      basePoints:
-        awardBasePoints === true
-          ? availableBasePoints
-          : deductBasePoints === true
-            ? 0
-            : undefined,
-      correctnessPoints:
-        awardCorrectnessPoints === true
-          ? availableCorrectnessPoints
-          : deductCorrectnessPoints === true
-            ? 0
-            : undefined,
-      bonusPoints:
-        awardBonusPoints === true
-          ? availableBonusPoints
-          : deductBonusPoints === true
-            ? 0
-            : undefined,
+      ...getResponsePointUpdates(
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
     },
   })
 
@@ -1095,27 +1280,22 @@ async function upsertResponseAppliedCorrection(
   const appliedCorrection = await tx.appliedPointCorrection.create({
     data: {
       // awarded and deducted points (true as award, false as deduction, null as no change)
-      awardedBasePoints:
-        awardBasePoints === true
-          ? availableBasePoints - (currentResponse?.basePoints ?? 0)
-          : 0,
-      awardedCorrectnessPoints:
-        awardCorrectnessPoints === true
-          ? availableCorrectnessPoints -
-            (currentResponse?.correctnessPoints ?? 0)
-          : 0,
-      awardedBonusPoints:
-        awardBonusPoints === true
-          ? availableBonusPoints - (currentResponse?.bonusPoints ?? 0)
-          : 0,
-      deductedBasePoints:
-        deductBasePoints === true ? (currentResponse?.basePoints ?? 0) : 0,
-      deductedCorrectnessPoints:
-        deductCorrectnessPoints === true
-          ? (currentResponse?.correctnessPoints ?? 0)
-          : 0,
-      deductedBonusPoints:
-        deductBonusPoints === true ? (currentResponse?.bonusPoints ?? 0) : 0,
+      ...getAppliedCorrectionAmounts(
+        currentResponse,
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
       // link to point correction
       pointCorrection: { connect: { id: correctionId } },
       // upsert live quiz response with corresponding points
@@ -1215,48 +1395,19 @@ export async function correctAssessmentPointsInstance(
   },
   ctx: ContextWithUser
 ) {
-  // if the scope is set to a single participant, but no participant is provided, return early
-  if (scope === PointCorrectionType.SINGLE && !participantId) {
-    return null
-  }
-
-  // if the scope is set to multiple participants, but no participants are provided, return early
   if (
-    scope === PointCorrectionType.MULTIPLE &&
-    (!participantIds || participantIds.length === 0)
-  ) {
-    return null
-  }
-
-  // if no updates should be applied, return early
-  if (
-    (awardBasePoints === null ||
-      typeof awardBasePoints === 'undefined' ||
-      awardBasePoints === false) &&
-    (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined' ||
-      awardCorrectnessPoints === false) &&
-    (awardBonusPoints === null ||
-      typeof awardBonusPoints === 'undefined' ||
-      awardBonusPoints === false) &&
-    (deductBasePoints === null ||
-      typeof deductBasePoints === 'undefined' ||
-      deductBasePoints === false) &&
-    (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined' ||
-      deductCorrectnessPoints === false) &&
-    (deductBonusPoints === null ||
-      typeof deductBonusPoints === 'undefined' ||
-      deductBonusPoints === false)
-  ) {
-    return null
-  }
-
-  // if for one of the point categories both award and deduct is set, return early
-  if (
-    (awardBasePoints === true && deductBasePoints === true) ||
-    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
-    (awardBonusPoints === true && deductBonusPoints === true)
+    !isValidPointCorrectionRequest({
+      scope,
+      participantId,
+      participantIds,
+      allowQuizParticipantScope: true,
+      awardBasePoints,
+      awardCorrectnessPoints,
+      awardBonusPoints,
+      deductBasePoints,
+      deductCorrectnessPoints,
+      deductBonusPoints,
+    })
   ) {
     return null
   }
@@ -1316,21 +1467,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.SINGLE,
@@ -1393,21 +1537,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.PARTICIPATING,
@@ -1474,21 +1611,14 @@ export async function correctAssessmentPointsInstance(
         async (tx) => {
           const correction = await tx.pointCorrection.create({
             data: {
-              basePoints: awardBasePoints
-                ? true
-                : deductBasePoints
-                  ? false
-                  : null,
-              correctnessPoints: awardCorrectnessPoints
-                ? true
-                : deductCorrectnessPoints
-                  ? false
-                  : null,
-              bonusPoints: awardBonusPoints
-                ? true
-                : deductBonusPoints
-                  ? false
-                  : null,
+              ...getPointCorrectionValues({
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+              }),
               reason,
               studentReason,
               type: PointCorrectionType.PARTICIPATING_QUIZ,
@@ -1564,21 +1694,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: scope,
@@ -1668,53 +1791,19 @@ export async function correctAssessmentPointsLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
-  // the quiz-participant audience only applies to a correction on one instance
-  if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
-    return null
-  }
-
-  // if the scope is set to a single participant, but no participant is provided, return early
-  if (scope === PointCorrectionType.SINGLE && !participantId) {
-    return null
-  }
-
-  // if the scope is set to multiple participants, but no participants are provided, return early
   if (
-    scope === PointCorrectionType.MULTIPLE &&
-    (!participantIds || participantIds.length === 0)
-  ) {
-    return null
-  }
-
-  // if no updates should be applied, return early
-  if (
-    (awardBasePoints === null ||
-      typeof awardBasePoints === 'undefined' ||
-      awardBasePoints === false) &&
-    (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined' ||
-      awardCorrectnessPoints === false) &&
-    (awardBonusPoints === null ||
-      typeof awardBonusPoints === 'undefined' ||
-      awardBonusPoints === false) &&
-    (deductBasePoints === null ||
-      typeof deductBasePoints === 'undefined' ||
-      deductBasePoints === false) &&
-    (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined' ||
-      deductCorrectnessPoints === false) &&
-    (deductBonusPoints === null ||
-      typeof deductBonusPoints === 'undefined' ||
-      deductBonusPoints === false)
-  ) {
-    return null
-  }
-
-  // if for one of the point categories both award and deduct is set, return early
-  if (
-    (awardBasePoints === true && deductBasePoints === true) ||
-    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
-    (awardBonusPoints === true && deductBonusPoints === true)
+    !isValidPointCorrectionRequest({
+      scope,
+      participantId,
+      participantIds,
+      allowQuizParticipantScope: false,
+      awardBasePoints,
+      awardCorrectnessPoints,
+      awardBonusPoints,
+      deductBasePoints,
+      deductCorrectnessPoints,
+      deductBonusPoints,
+    })
   ) {
     return null
   }
@@ -1782,21 +1871,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.SINGLE,
@@ -1875,21 +1957,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.PARTICIPATING,
@@ -1972,21 +2047,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: scope,

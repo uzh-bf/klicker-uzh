@@ -1,4 +1,5 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import type { JsonObject } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   Prisma,
@@ -161,13 +162,17 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
-async function handleAddAssessmentResponse(
+type AssessmentRequestPayload = {
+  correlationKey: string
+  response: JsonObject
+  liveQuizId: string
+  instanceId: string | number
+}
+
+async function readAssessmentRequestPayload(
   req: IncomingMessage,
   res: ServerResponse
-) {
-  // track the time where the response was received
-  const responseTimestamp = Date.now()
-
+): Promise<AssessmentRequestPayload | null> {
   let payload: any
   try {
     payload = await readBody(req)
@@ -175,14 +180,16 @@ async function handleAddAssessmentResponse(
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
     })
-    return badRequest(req, res, err.message)
+    badRequest(req, res, err.message)
+    return null
   }
 
   if (!payload || typeof payload !== 'object') {
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'submission_failure')
+    badRequest(req, res, 'submission_failure')
+    return null
   }
 
   const { correlationKey, response, liveQuizId, instanceId } = payload
@@ -197,15 +204,22 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-
-    return badRequest(req, res, 'missing_response')
+    badRequest(req, res, 'missing_response')
+    return null
   }
 
-  // validate correlationKey (execution, quizId and instanceId same as passed arguments)
+  return { correlationKey, response, liveQuizId, instanceId }
+}
+
+async function verifyAssessmentCorrelation(
+  req: IncomingMessage,
+  res: ServerResponse,
+  payload: AssessmentRequestPayload
+): Promise<JWTPayload | null> {
   let correlationData: JWTPayload | null = null
   try {
     correlationData = await verifyJWT(
-      correlationKey,
+      payload.correlationKey,
       process.env.APP_SECRET as string,
       { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
@@ -215,26 +229,30 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return badRequest(req, res, 'invalid_submission')
+    badRequest(req, res, 'invalid_submission')
+    return null
   }
 
   if (
     !correlationData ||
-    correlationData.instanceId !== instanceId ||
-    correlationData.liveQuizId !== liveQuizId
+    correlationData.instanceId !== payload.instanceId ||
+    correlationData.liveQuizId !== payload.liveQuizId
   ) {
     hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
+      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${payload.correlationKey} for response ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'invalid_submission')
+    badRequest(req, res, 'invalid_submission')
+    return null
   }
 
+  return correlationData
+}
+
+function getAssessmentCookies(req: IncomingMessage) {
   const cookies =
     typeof req.headers['cookie'] === 'string'
       ? req.headers['cookie']
       : undefined
-
-  // parse the cookies that are of the format key=value; key2=value2
   const parsedCookies: Record<string, string> = {}
   if (cookies) {
     cookies.split(';').forEach((cookie) => {
@@ -242,8 +260,15 @@ async function handleAddAssessmentResponse(
       if (key && value) parsedCookies[key] = value
     })
   }
+  return { cookies, parsedCookies }
+}
 
-  // check if the assessment cookie is present and valid
+async function verifyAssessmentParticipant(
+  req: IncomingMessage,
+  res: ServerResponse,
+  payload: AssessmentRequestPayload
+): Promise<JWTPayload | null> {
+  const { cookies, parsedCookies } = getAssessmentCookies(req)
   let user: JWTPayload | null = null
   try {
     user = parsedCookies['next-auth.participant-session-token']
@@ -259,7 +284,8 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
+    sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
+    return null
   }
 
   const isAssessmentCookieValid =
@@ -268,10 +294,72 @@ async function handleAddAssessmentResponse(
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
     })
-    return sendJson(req, res, 401, {
+    sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
     })
+    return null
   }
+
+  return user
+}
+
+async function processAssessmentWorkflow(
+  req: IncomingMessage,
+  res: ServerResponse,
+  message: JsonObject,
+  responseTimestamp: number
+) {
+  const workflowOutput = (await hatchetClient.runAndWait(
+    'process-assessment-response-workflow',
+    message
+  )) as Record<string, unknown>
+  const workflowResult = (workflowOutput['process-assessment-response'] ??
+    workflowOutput) as { status?: number; error?: string }
+
+  if (workflowResult.status === 409) {
+    sendJson(req, res, 409, {
+      error: workflowResult.error ?? 'response_after_block_closed',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  if (workflowResult.status === 422) {
+    sendJson(req, res, 422, {
+      error: workflowResult.error ?? 'invalid_response',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  // Fail closed when an old or incompatible worker returns a terminal
+  // duplicate without materializing the acceptance marker.
+  if (workflowResult.status !== 200) {
+    sendJson(req, res, 503, {
+      error: 'response_processing_unavailable',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  return false
+}
+
+async function handleAddAssessmentResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  // track the time where the response was received
+  const responseTimestamp = Date.now()
+
+  const payload = await readAssessmentRequestPayload(req, res)
+  if (!payload) return
+  const correlationData = await verifyAssessmentCorrelation(req, res, payload)
+  if (!correlationData) return
+  const participant = await verifyAssessmentParticipant(req, res, payload)
+  if (!participant) return
+  const user = participant
+  const { correlationKey, response, liveQuizId, instanceId } = payload
 
   // set up correlation id as an MD5 hash of correlationKey and participantId to obtain tracking id
   const combinedCorrelationKey = `${correlationKey}:${user.sub}`
@@ -495,34 +583,8 @@ async function handleAddAssessmentResponse(
   console.log('Starting assessment response workflow with payload', message)
 
   try {
-    const workflowOutput = (await hatchetClient.runAndWait(
-      'process-assessment-response-workflow',
-      message
-    )) as Record<string, unknown>
-    const workflowResult = (workflowOutput['process-assessment-response'] ??
-      workflowOutput) as { status?: number; error?: string }
-
-    if (workflowResult?.status === 409) {
-      return sendJson(req, res, 409, {
-        error: workflowResult.error ?? 'response_after_block_closed',
-        responseTimestamp,
-      })
-    }
-
-    if (workflowResult?.status === 422) {
-      return sendJson(req, res, 422, {
-        error: workflowResult.error ?? 'invalid_response',
-        responseTimestamp,
-      })
-    }
-
-    // Fail closed when an old or incompatible worker returns a terminal
-    // duplicate without materializing the acceptance marker.
-    if (workflowResult?.status !== 200) {
-      return sendJson(req, res, 503, {
-        error: 'response_processing_unavailable',
-        responseTimestamp,
-      })
+    if (await processAssessmentWorkflow(req, res, message, responseTimestamp)) {
+      return
     }
   } catch (error) {
     try {

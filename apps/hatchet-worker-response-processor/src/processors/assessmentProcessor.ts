@@ -236,7 +236,8 @@ export async function persistAssessmentResponse({
       const responseData = {
         submittedAt: new Date(responseTimestamp),
         response,
-        timeSpent: -1, // TODO: set this in future improvements
+        // This endpoint does not receive the client-side time-spent value.
+        timeSpent: -1,
         correctness,
       }
 
@@ -368,6 +369,443 @@ export async function clearPendingAssessmentResponseAcceptance({
   })
 }
 
+type AssessmentGradingResult = {
+  computedCorrectness: number | null
+  awardedCorrectnessPoints: number
+  awardedBonusPoints: number
+  awardedXp: number
+}
+
+function parseAssessmentRestrictions(
+  restrictions:
+    | string
+    | NumericalRestrictions
+    | FreeTextRestrictions
+    | undefined
+) {
+  if (!restrictions) return undefined
+
+  try {
+    return typeof restrictions === 'string'
+      ? JSON.parse(restrictions)
+      : restrictions
+  } catch (error) {
+    throw new NonRetryableError(
+      `Error ${String(error)} occurred when parsing restrictions: ${restrictions}`
+    )
+  }
+}
+
+function parseAssessmentSolutions(solutions: string | undefined) {
+  if (!solutions) return undefined
+
+  try {
+    return JSON.parse(solutions)
+  } catch (error) {
+    throw new Error(`Error parsing solutions: ${String(error)}`)
+  }
+}
+
+function gradeAssessmentResponse({
+  type,
+  response,
+  instanceInfo,
+  choiceCount,
+  firstResponseReceivedAt,
+  responseTimestamp,
+  pointsMultiplier,
+  parsedSolutions,
+  instanceId,
+}: {
+  type: string
+  response: LiveQuizResponseInput
+  instanceInfo: Record<string, string>
+  choiceCount?: string
+  firstResponseReceivedAt?: string
+  responseTimestamp: number
+  pointsMultiplier?: string
+  parsedSolutions: unknown
+  instanceId: string
+}): AssessmentGradingResult {
+  switch (type) {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
+      if (!response.choices) {
+        throw new NonRetryableError(
+          `Response to choices question (instance id ${instanceId}) does not contain choices.`
+        )
+      }
+
+      const result = getChoicesQuestionPointsDetails({
+        type,
+        choiceCount,
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      return {
+        computedCorrectness: result.pointsPercentage,
+        awardedCorrectnessPoints: result.correctnessPoints,
+        awardedBonusPoints: result.bonusPoints,
+        awardedXp: result.xpAwarded,
+      }
+    }
+
+    case ElementType.NUMERICAL: {
+      if (response.value === undefined || response.value === null) {
+        throw new NonRetryableError(
+          `Response to numerical question (instance id ${instanceId}) does not contain value.`
+        )
+      }
+
+      const result = getNumericalQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      return {
+        computedCorrectness: result.pointsPercentage,
+        awardedCorrectnessPoints: result.correctnessPoints,
+        awardedBonusPoints: result.bonusPoints,
+        awardedXp: result.xpAwarded,
+      }
+    }
+
+    case ElementType.FREE_TEXT: {
+      if (typeof response.value !== 'string') {
+        throw new NonRetryableError(
+          `Response to free text question (instance id ${instanceId}) does not contain value.`
+        )
+      }
+
+      const result = getFreeTextQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      return {
+        computedCorrectness: result.pointsPercentage,
+        awardedCorrectnessPoints: result.correctnessPoints,
+        awardedBonusPoints: result.bonusPoints,
+        awardedXp: result.xpAwarded,
+      }
+    }
+
+    case ElementType.SELECTION: {
+      if (!response.selection) {
+        throw new NonRetryableError(
+          `Response to selection question (instance id ${instanceId}) does not contain selection.`
+        )
+      }
+
+      const result = getSelectionQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      return {
+        computedCorrectness: result.pointsPercentage,
+        awardedCorrectnessPoints: result.correctnessPoints,
+        awardedBonusPoints: result.bonusPoints,
+        awardedXp: result.xpAwarded,
+      }
+    }
+
+    case ElementType.CASE_STUDY: {
+      if (!response.assessment) {
+        throw new NonRetryableError(
+          `Response to case study question (instance id ${instanceId}) does not contain assessments.`
+        )
+      }
+
+      const result = getCaseStudyQuestionPointsDetails({
+        response,
+        instanceInfo,
+        firstResponseReceivedAt,
+        responseTimestamp,
+        pointsMultiplier,
+        parsedSolutions,
+      })
+      return {
+        computedCorrectness: result.pointsPercentage,
+        awardedCorrectnessPoints: result.correctnessPoints,
+        awardedBonusPoints: result.bonusPoints,
+        awardedXp: result.xpAwarded,
+      }
+    }
+
+    case ElementType.CONTENT:
+      return {
+        computedCorrectness: null,
+        awardedCorrectnessPoints: 0,
+        awardedBonusPoints: 0,
+        awardedXp: 0,
+      }
+
+    default:
+      throw new NonRetryableError(
+        `Element type ${type} not recognized for instance ${instanceId}.`
+      )
+  }
+}
+
+function getAssessmentResponseCorrectness(
+  computedCorrectness: number | null
+): ResponseCorrectness {
+  if (computedCorrectness === null || computedCorrectness === 1) {
+    return ResponseCorrectness.CORRECT
+  }
+  if (computedCorrectness === 0) return ResponseCorrectness.WRONG
+  return ResponseCorrectness.PARTIAL
+}
+
+async function resumePendingAssessmentEffect(
+  message: {
+    correlationId: string
+    participantId: string
+    liveQuizId: string
+    instanceId: string
+    elementBlockExecution?: number
+  },
+  ctx: DurableContext<UnknownInputType, {}>
+) {
+  if (message.elementBlockExecution === undefined) return null
+
+  const pendingEffect = await getPendingAssessmentResponseEffect({
+    instanceId: Number(message.instanceId),
+    participantId: message.participantId,
+    elementBlockExecution: message.elementBlockExecution,
+    correlationId: message.correlationId,
+  })
+  if (!pendingEffect) return null
+
+  if (
+    pendingEffect.liveQuizId !== message.liveQuizId ||
+    pendingEffect.instanceId !== message.instanceId
+  ) {
+    throw new NonRetryableError(
+      `Pending response effect does not match response ${message.correlationId}.`
+    )
+  }
+
+  await aggregateAssessmentResponses(
+    pendingEffect,
+    ctx as unknown as DurableContext<JsonObject, {}>
+  )
+  return {
+    status: 200,
+    pointsAwarded: pendingEffect.pointsAwarded,
+    xpAwarded: pendingEffect.xpAwarded,
+  }
+}
+
+function assertAssessmentDependencies(
+  ctx: DurableContext<UnknownInputType, {}>
+) {
+  try {
+    assert(!!redisExec)
+  } catch (error) {
+    ctx.logger.error(`Redis connection error: ${JSON.stringify(error)}`)
+    throw new Error(`Redis connection error ${String(error)}`)
+  }
+
+  try {
+    assert(!!prisma)
+  } catch (error) {
+    ctx.logger.error(`Prisma client error: ${JSON.stringify(error)}`)
+    throw new Error(`Prisma client error ${String(error)}`)
+  }
+}
+
+async function handleAssessmentHeartbeat(
+  liveQuizId: string
+): Promise<{ status: 200 } | null> {
+  if (liveQuizId !== 'ping') return null
+  if (process.env.FUNCTION_HEARTBEAT_URL) {
+    await fetch(process.env.FUNCTION_HEARTBEAT_URL)
+  }
+  return { status: 200 }
+}
+
+type AssessmentCache = {
+  type: string
+  courseId: string
+  sessionBlockId: string
+  blockExecution?: string
+  persistedExecution: number
+  solutions?: string
+  restrictions?: string
+  firstResponseReceivedAt?: string
+  choiceCount?: string
+  basePoints?: string
+  defaultPoints?: string
+  defaultCorrectPoints?: string
+  maxBonusPoints?: string
+  hasSampleSolution?: string
+  pointsMultiplier?: string
+  blockClosedAt?: string
+}
+
+function validateAssessmentCache({
+  message,
+  response,
+  instanceInfo,
+  ctx,
+}: {
+  message: {
+    correlationId: string
+    liveQuizId: string
+    instanceId: string
+    elementBlockExecution?: number
+  }
+  response: LiveQuizResponseInput
+  instanceInfo: Record<string, string>
+  ctx: DurableContext<UnknownInputType, {}>
+}): AssessmentCache {
+  if (!response && instanceInfo.type !== ElementType.CONTENT) {
+    ctx.logger.error(
+      'Missing response ' +
+        JSON.stringify({
+          correlationId: message.correlationId,
+          liveQuizId: message.liveQuizId,
+          instanceId: message.instanceId,
+        })
+    )
+    throw new NonRetryableError('Missing response')
+  }
+
+  if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
+    throw new Error(
+      `Instance metadata for instance ${message.instanceId} not found.`
+    )
+  }
+
+  const { type, courseId, sessionBlockId, blockExecution, ...cache } =
+    instanceInfo
+  const persistedExecution =
+    message.elementBlockExecution ?? Number.parseInt(blockExecution ?? '0', 10)
+
+  if (
+    !Number.isFinite(persistedExecution) ||
+    (message.elementBlockExecution !== undefined &&
+      Number(blockExecution) !== message.elementBlockExecution)
+  ) {
+    throw new NonRetryableError(
+      `Response for instance ${message.instanceId} belongs to a different block execution.`
+    )
+  }
+
+  if (!type || !courseId || !sessionBlockId) {
+    throw new NonRetryableError(
+      `Instance ${message.instanceId} does not have a type (${type}) or is not linked to a course (${courseId}) or session block (${sessionBlockId}).`
+    )
+  }
+
+  return {
+    solutions: cache.solutions,
+    restrictions: cache.restrictions,
+    firstResponseReceivedAt: cache.firstResponseReceivedAt,
+    choiceCount: cache.choiceCount,
+    basePoints: cache.basePoints,
+    defaultPoints: cache.defaultPoints,
+    defaultCorrectPoints: cache.defaultCorrectPoints,
+    maxBonusPoints: cache.maxBonusPoints,
+    hasSampleSolution: cache.hasSampleSolution,
+    pointsMultiplier: cache.pointsMultiplier,
+    blockClosedAt: cache.blockClosedAt,
+    type,
+    courseId,
+    sessionBlockId,
+    blockExecution,
+    persistedExecution,
+  }
+}
+
+function validateAssessmentResponseFormat({
+  type,
+  response,
+  restrictions,
+  instanceId,
+}: {
+  type: string
+  response: LiveQuizResponseInput
+  restrictions:
+    | string
+    | NumericalRestrictions
+    | FreeTextRestrictions
+    | undefined
+  instanceId: string
+}) {
+  const parsedRestrictions = parseAssessmentRestrictions(restrictions)
+  const { valid, message } = validateStudentResponse({
+    type: type as any,
+    response,
+    restrictions: parsedRestrictions,
+  })
+  if (!valid) {
+    throw new NonRetryableError(
+      `Response to question instance ${instanceId} is not valid: ${message}`
+    )
+  }
+}
+
+async function setFirstAssessmentResponseTimestamp({
+  instanceKey,
+  computedCorrectness,
+  firstResponseReceivedAt,
+  responseTimestamp,
+}: {
+  instanceKey: string
+  computedCorrectness: number | null
+  firstResponseReceivedAt?: string
+  responseTimestamp: number
+}) {
+  if (
+    computedCorrectness !== null &&
+    computedCorrectness === 1 &&
+    !firstResponseReceivedAt
+  ) {
+    await redisExec.hsetnx(
+      `${instanceKey}:info`,
+      'firstResponseReceivedAt',
+      responseTimestamp
+    )
+  }
+}
+
+async function requireAssessmentParticipation(
+  courseId: string,
+  participantId: string,
+  liveQuizId: string
+) {
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId,
+      },
+    },
+  })
+  if (!participation) {
+    throw new NonRetryableError(
+      `Participant ${participantId} does not have a participation in course ${courseId} linked to assessment live quiz ${liveQuizId}.`
+    )
+  }
+}
+
 export async function processAssessmentResponse(
   message: {
     correlationId: string
@@ -388,58 +826,15 @@ export async function processAssessmentResponse(
     info: receivedMessage,
   })
 
-  try {
-    assert(!!redisExec)
-  } catch (e) {
-    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
-    throw new Error(`Redis connection error ${String(e)}`)
-  }
-
-  try {
-    assert(!!prisma)
-  } catch (e) {
-    ctx.logger.error(`Prisma client error: ${JSON.stringify(e)}`)
-    throw new Error(`Prisma client error ${String(e)}`)
-  }
-
-  if (message.liveQuizId === 'ping') {
-    if (process.env.FUNCTION_HEARTBEAT_URL) {
-      await fetch(process.env.FUNCTION_HEARTBEAT_URL)
-    }
-    return { status: 200 }
-  }
+  assertAssessmentDependencies(ctx)
+  const heartbeat = await handleAssessmentHeartbeat(message.liveQuizId)
+  if (heartbeat) return heartbeat
 
   // A response can be persisted before block closure while its Redis effect
   // is still pending. Resume that durable effect before validating the current
   // cache state, which may already describe a closed or later execution.
-  if (message.elementBlockExecution !== undefined) {
-    const pendingEffect = await getPendingAssessmentResponseEffect({
-      instanceId: Number(message.instanceId),
-      participantId: message.participantId,
-      elementBlockExecution: message.elementBlockExecution,
-      correlationId: message.correlationId,
-    })
-    if (pendingEffect) {
-      if (
-        pendingEffect.liveQuizId !== message.liveQuizId ||
-        pendingEffect.instanceId !== message.instanceId
-      ) {
-        throw new NonRetryableError(
-          `Pending response effect does not match response ${message.correlationId}.`
-        )
-      }
-
-      await aggregateAssessmentResponses(
-        pendingEffect,
-        ctx as unknown as DurableContext<JsonObject, {}>
-      )
-      return {
-        status: 200,
-        pointsAwarded: pendingEffect.pointsAwarded,
-        xpAwarded: pendingEffect.xpAwarded,
-      }
-    }
-  }
+  const resumedEffect = await resumePendingAssessmentEffect(message, ctx)
+  if (resumedEffect) return resumedEffect
 
   // extract the relevant information from the redis cache
   const liveQuizKey = `lq:${message.liveQuizId}`
@@ -450,27 +845,6 @@ export async function processAssessmentResponse(
   // get live quiz and instance information from redis cache
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
 
-  if (!response && instanceInfo.type !== ElementType.CONTENT) {
-    ctx.logger.error(
-      'Missing response ' +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
-    )
-    throw new NonRetryableError('Missing response')
-  }
-
-  // ! Step 1: Validation of answer timestamp (from message before block closure)
-  // if the instance info is not available, return that the corresponding cache data is not available
-  if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-    throw new Error(
-      `Instance metadata for instance ${message.instanceId} not found.`
-    )
-  }
-
-  // verify that the student answer was submitted before the block was closed
   const {
     type,
     solutions,
@@ -487,26 +861,8 @@ export async function processAssessmentResponse(
     pointsMultiplier,
     blockExecution,
     blockClosedAt,
-  } = instanceInfo
-
-  const persistedExecution =
-    message.elementBlockExecution ?? parseInt(blockExecution ?? '0', 10)
-  if (
-    !Number.isFinite(persistedExecution) ||
-    (message.elementBlockExecution !== undefined &&
-      Number(blockExecution) !== message.elementBlockExecution)
-  ) {
-    throw new NonRetryableError(
-      `Response for instance ${message.instanceId} belongs to a different block execution.`
-    )
-  }
-
-  // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
-  if (!type || !courseId || !sessionBlockId) {
-    throw new NonRetryableError(
-      `Instance ${message.instanceId} does not have a type (${type}) or is not linked to a course (${courseId}) or session block (${sessionBlockId}).`
-    )
-  }
+    persistedExecution,
+  } = validateAssessmentCache({ message, response, instanceInfo, ctx })
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
     ctx.logger.error(
@@ -522,205 +878,37 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 1.2 Validation of response format
-  let parsedRestrictions:
-    | NumericalRestrictions
-    | FreeTextRestrictions
-    | undefined
-  try {
-    if (restrictions) {
-      parsedRestrictions = restrictions
-        ? typeof restrictions === 'string'
-          ? JSON.parse(restrictions)
-          : restrictions
-        : undefined
-    }
-  } catch (e) {
-    throw new NonRetryableError(
-      `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
-    )
-  }
-
-  const { valid, message: validationError } = validateStudentResponse({
-    type: type as any,
+  validateAssessmentResponseFormat({
+    type,
     response,
-    restrictions: parsedRestrictions,
+    restrictions,
+    instanceId: message.instanceId,
   })
 
-  if (!valid) {
-    throw new NonRetryableError(
-      `Response to question instance ${message.instanceId} is not valid: ${validationError}`
-    )
-  }
-
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions: unknown
-  try {
-    if (solutions) {
-      parsedSolutions = JSON.parse(solutions)
-    }
-  } catch (e) {
-    throw new Error(`Error parsing solutions: ${String(e)}`)
-  }
+  const parsedSolutions = parseAssessmentSolutions(solutions)
 
   const awardedBasePoints =
     basePoints === 'true'
-      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
+      ? Number.parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
       : 0
-  let computedCorrectness: number | null = null
-  let awardedCorrectnessPoints = 0
-  let awardedBonusPoints = 0
-  let awardedXp = 0
-
-  switch (type) {
-    case ElementType.SC:
-    case ElementType.MC:
-    case ElementType.KPRIM: {
-      // if response choices are not defined, return early
-      if (!response.choices) {
-        throw new NonRetryableError(
-          `Response to choices question (instance id ${message.instanceId}) does not contain choices.`
-        )
-      }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getChoicesQuestionPointsDetails({
-          type,
-          choiceCount,
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.NUMERICAL: {
-      // if response value is not defined, return early
-      if (typeof response.value === 'undefined' || response.value === null) {
-        throw new NonRetryableError(
-          `Response to numerical question (instance id ${message.instanceId}) does not contain value.`
-        )
-      }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getNumericalQuestionPointsDetails({
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.FREE_TEXT: {
-      // if response value is not defined, return early
-      if (typeof response.value !== 'string') {
-        throw new NonRetryableError(
-          `Response to free text question (instance id ${message.instanceId}) does not contain value.`
-        )
-      }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getFreeTextQuestionPointsDetails({
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.SELECTION: {
-      // if response selection is not defined, return early
-      if (!response.selection) {
-        throw new NonRetryableError(
-          `Response to selection question (instance id ${message.instanceId}) does not contain selection.`
-        )
-      }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getSelectionQuestionPointsDetails({
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.CASE_STUDY: {
-      // if response assessment is not defined, return early
-      if (!response.assessment) {
-        throw new NonRetryableError(
-          `Response to case study question (instance id ${message.instanceId}) does not contain assessments.`
-        )
-      }
-
-      // compute the relevant points
-      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
-        getCaseStudyQuestionPointsDetails({
-          response,
-          instanceInfo,
-          firstResponseReceivedAt,
-          responseTimestamp,
-          pointsMultiplier,
-          parsedSolutions,
-        })
-      computedCorrectness = pointsPercentage
-      awardedCorrectnessPoints = correctnessPoints
-      awardedBonusPoints = bonusPoints
-      awardedXp = xpAwarded
-
-      break
-    }
-
-    case ElementType.CONTENT: {
-      // content elements do not have a correct solution, award default points and 0 xp
-      computedCorrectness = null
-      awardedCorrectnessPoints = 0
-      awardedBonusPoints = 0
-      awardedXp = 0
-      break
-    }
-
-    default: {
-      throw new NonRetryableError(
-        `Element type ${type} not recognized for instance ${message.instanceId}.`
-      )
-    }
-  }
+  const grading = gradeAssessmentResponse({
+    type,
+    response,
+    instanceInfo,
+    choiceCount,
+    firstResponseReceivedAt,
+    responseTimestamp,
+    pointsMultiplier,
+    parsedSolutions,
+    instanceId: message.instanceId,
+  })
+  const {
+    computedCorrectness,
+    awardedCorrectnessPoints,
+    awardedBonusPoints,
+    awardedXp,
+  } = grading
 
   const responsePoints: ResponsePoints = {
     basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
@@ -750,26 +938,17 @@ export async function processAssessmentResponse(
       : 0,
   }
   const responseCorrectness =
-    computedCorrectness === null || computedCorrectness === 1
-      ? ResponseCorrectness.CORRECT
-      : computedCorrectness === 0
-        ? ResponseCorrectness.WRONG
-        : ResponseCorrectness.PARTIAL
+    getAssessmentResponseCorrectness(computedCorrectness)
 
   // if the response was correct, set the corresponding timestamp on the instance
-  if (
-    computedCorrectness !== null &&
-    computedCorrectness === 1 &&
-    !firstResponseReceivedAt
-  ) {
-    // if we are processing a first response, set the timestamp on the instance
-    // this will allow us to award points for response timing
-    await redisExec.hsetnx(
-      `${instanceKey}:info`,
-      'firstResponseReceivedAt',
-      responseTimestamp
-    )
-  }
+  // if we are processing a first response, set the timestamp on the instance
+  // this will allow us to award points for response timing
+  await setFirstAssessmentResponseTimestamp({
+    instanceKey,
+    computedCorrectness,
+    firstResponseReceivedAt,
+    responseTimestamp,
+  })
 
   // send audit-log event for computed points and XP
   const gradingLog = `[INFO] [AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`
@@ -780,20 +959,11 @@ export async function processAssessmentResponse(
   })
 
   // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
-  const participation = await prisma.participation.findUnique({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: message.participantId,
-      },
-    },
-  })
-
-  if (!participation) {
-    throw new NonRetryableError(
-      `Participant ${message.participantId} does not have a participation in course ${courseId} linked to assessment live quiz ${message.liveQuizId}.`
-    )
-  }
+  await requireAssessmentParticipation(
+    courseId,
+    message.participantId,
+    message.liveQuizId
+  )
 
   // The effect payload is persisted together with the response. This makes a
   // worker retry resumable after the database commit, even if Redis or the
@@ -899,7 +1069,7 @@ function buildRedisAggregationPlan(
   }
   const addIncrement = (key: string, field: string, amount: number) => {
     if (!Number.isSafeInteger(amount)) {
-      throw new Error(
+      throw new TypeError(
         `Redis aggregation increment for ${key}:${field} is not an integer`
       )
     }
@@ -1015,6 +1185,20 @@ function buildRedisAggregationPlan(
   return { markerKey, expectedTypes, increments, sets }
 }
 
+async function getExistingRedisCounterValues(
+  redis: typeof redisExec,
+  increments: Array<{ key: string; field: string }>
+) {
+  const values = new Map<string, string | null>()
+  for (const { key, field } of increments) {
+    const counterKey = `${key}\u0000${field}`
+    if (!values.has(counterKey)) {
+      values.set(counterKey, await redis.hget(key, field))
+    }
+  }
+  return values
+}
+
 export async function aggregateAssessmentResponses(
   message: AssessmentAggregationInput,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
@@ -1068,13 +1252,10 @@ export async function aggregateAssessmentResponses(
         return finish()
       }
 
-      const existingCounterValues = new Map<string, string | null>()
-      for (const { key, field } of plan.increments) {
-        const counterKey = `${key}\u0000${field}`
-        if (!existingCounterValues.has(counterKey)) {
-          existingCounterValues.set(counterKey, await redis.hget(key, field))
-        }
-      }
+      const existingCounterValues = await getExistingRedisCounterValues(
+        redis,
+        plan.increments
+      )
       const invalidCounter = validateRedisCounterTransitions(
         plan.increments,
         existingCounterValues

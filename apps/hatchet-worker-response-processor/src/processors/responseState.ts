@@ -76,7 +76,7 @@ export function getSampleSolutionAvailability({
   cachedFlag?: string
   solutions?: string
 }) {
-  if (typeof cachedFlag !== 'undefined') return cachedFlag === 'true'
+  if (cachedFlag !== undefined) return cachedFlag === 'true'
   if (!solutions) return false
 
   if (type === 'SELECTION') {
