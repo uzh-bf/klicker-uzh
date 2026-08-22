@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -332,7 +333,10 @@ export const Query = builder.queryType({
           ids: t.arg.stringList({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await CourseService.getCourseDuplicationStatuses(args, ctx)
+          return await CourseDuplicationService.getCourseDuplicationStatuses(
+            args,
+            ctx
+          )
         },
       }),
 

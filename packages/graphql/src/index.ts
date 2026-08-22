@@ -38,7 +38,7 @@ import './schema/subscription.js'
 //   })
 // }
 
-import { handleProcessCourseDuplication } from './services/courses.js'
+import { handleProcessCourseDuplication } from './services/courseDuplication.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,

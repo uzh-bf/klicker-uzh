@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -1370,7 +1371,7 @@ export const Mutation = builder.mutationType({
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
           } else {
-            return await CourseService.duplicateCourse(args, ctx)
+            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
         },
       }),
@@ -1405,7 +1406,10 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.sourceCourseId }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            return await CourseService.startCourseDuplication(args, ctx)
+            return await CourseDuplicationService.startCourseDuplication(
+              args,
+              ctx
+            )
           }
         ),
       }),
