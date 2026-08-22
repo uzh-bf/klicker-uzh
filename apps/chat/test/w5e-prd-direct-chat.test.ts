@@ -632,12 +632,10 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
           runProofImpl: vi.fn(async () => failedProof),
           receiptStoreFactory: (path) => {
             const store = createReceiptStore(path)
-            let writes = 0
             return {
               read: () => store.read(),
               write: async (receipt) => {
-                writes++
-                if (writes === 7 && receipt.state === 'switched') {
+                if (receipt.state === 'switched') {
                   fake.maps.configs.set(ordinaryReference.id, {
                     ...ordinaryReference,
                     mcpServerId: receipt.fixture.candidateServerId,
@@ -684,12 +682,12 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
           runProofImpl,
           receiptStoreFactory: (path) => {
             const store = createReceiptStore(path)
-            let writes = 0
             return {
               read: () => store.read(),
               write: async (receipt) => {
-                writes++
-                if (writes === 4) throw new Error('synthetic receipt failure')
+                if (receipt.state === 'prepared') {
+                  throw new Error('synthetic receipt failure')
+                }
                 await store.write(receipt)
               },
             }
