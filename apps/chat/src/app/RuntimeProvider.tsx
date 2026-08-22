@@ -15,6 +15,7 @@ import {
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
+import { DictationProvider } from '../components/dictation-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
 
@@ -336,7 +337,7 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {children}
+      <DictationProvider>{children}</DictationProvider>
     </AssistantRuntimeProvider>
   )
 }

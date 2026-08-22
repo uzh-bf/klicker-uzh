@@ -6,11 +6,13 @@ import {
   formatReasoningEffort,
   type ReasoningEffort,
 } from '../lib/config/reasoning'
+import type { DictationStatus } from '../lib/speech/dictation-state'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useDictationContext } from './dictation-context'
 
 import { Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 /**
  * Ids that tie each visible label to the control it names. The design system
@@ -23,6 +25,8 @@ const REASONING_EFFORT_SELECT_ID = 'chat-reasoning-effort-select'
 
 export function SettingsPanel() {
   const t = useTranslations()
+  const locale = useLocale()
+  const { openInstallSheet, status: dictationStatus } = useDictationContext()
   const {
     selectedModel,
     selectedReasoningEffort,
@@ -177,9 +181,65 @@ export function SettingsPanel() {
                 </p>
               </div>
             ) : null}
+
+            <DictationStatusLine
+              onOpenInstallSheet={openInstallSheet}
+              status={dictationStatus}
+              locale={locale}
+            />
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function DictationStatusLine({
+  locale,
+  onOpenInstallSheet,
+  status,
+}: {
+  locale: string
+  onOpenInstallSheet: () => void
+  status: DictationStatus
+}) {
+  const t = useTranslations()
+  const statusLabel = {
+    unsupported: t('chat.settingsPanel.dictationStatusUnsupported'),
+    unavailable: t('chat.settingsPanel.dictationStatusUnavailable'),
+    'needs-install': t('chat.settingsPanel.dictationStatusNeedsInstall'),
+    installing: t('chat.settingsPanel.dictationStatusInstalling'),
+    ready: t('chat.settingsPanel.dictationStatusReady'),
+    listening: t('chat.settingsPanel.dictationStatusListening'),
+    error: t('chat.settingsPanel.dictationStatusError'),
+  }[status]
+
+  return (
+    <div
+      data-cy="chat-dictation-status"
+      className="mt-3 space-y-1 border-t pt-3"
+      role="status"
+    >
+      <p className="text-sm font-bold">
+        {t('chat.settingsPanel.dictationLabel')}
+      </p>
+      {status === 'needs-install' ? (
+        <button
+          type="button"
+          data-cy="chat-dictation-status-install"
+          className="text-primary text-start text-sm underline underline-offset-2"
+          onClick={onOpenInstallSheet}
+        >
+          {statusLabel}
+        </button>
+      ) : (
+        <p className="text-muted-foreground text-sm">{statusLabel}</p>
+      )}
+      {locale.toLowerCase().startsWith('de') ? (
+        <p className="text-muted-foreground text-xs">
+          {t('chat.settingsPanel.dictationLanguageHint')}
+        </p>
+      ) : null}
     </div>
   )
 }
