@@ -465,6 +465,11 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
+  # Id of the GrowthBook saved group backing the lecturer beta opt-in. Leave
+  # empty to disable the opt-in switch entirely: the setting hides itself when
+  # the backend cannot resolve a group.
+  betaSavedGroupId: ''
+
   replicaCount: 3
 
   image:

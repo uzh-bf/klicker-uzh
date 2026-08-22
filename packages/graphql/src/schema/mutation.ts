@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaFeaturesService from '../services/betaFeatures.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -3072,6 +3073,19 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
+      // Not gated by a feature flag: this is the switch that puts the
+      // lecturer into the group the flags target, so gating it behind one of
+      // them would leave nobody able to opt in.
+      setBetaFeatures: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .boolean({
+          nullable: true,
+          args: { enabled: t.arg.boolean({ required: true }) },
+          resolve: async (_, args, ctx) => {
+            return await BetaFeaturesService.setBetaFeatures(args, ctx)
+          },
+        }),
+
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

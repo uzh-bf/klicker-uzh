@@ -1847,6 +1847,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdates: 'Projekt-Updates per E-Mail',
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
+      betaFeatures: 'Beta-Funktionen',
+      betaFeaturesTooltip:
+        'Erhalten Sie frühzeitigen Zugriff auf KlickerUZH-Funktionen, die sich noch im Test befinden. Beta-Funktionen können sich kurzfristig ändern oder zurückgezogen werden und eignen sich nicht für benotete Prüfungen. Sie können diese Einstellung jederzeit wieder deaktivieren.',
+      betaFeaturesError:
+        'Die Beta-Einstellung konnte nicht gespeichert werden. Bitte versuchen Sie es in einem Moment erneut.',
       changePassword: 'Passwort ändern',
       changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
       changeDelegatedLoginPasswordMessage:

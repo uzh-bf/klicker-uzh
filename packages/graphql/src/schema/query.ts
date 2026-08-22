@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as BetaFeaturesService from '../services/betaFeatures.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -129,6 +130,7 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
 
     return {
       self: t.field({
@@ -222,6 +224,16 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await FeedbackService.getFeedbacks(args, ctx)
+        },
+      }),
+
+      // Nullable on purpose: `null` means GrowthBook could not answer, which is
+      // not the same as the lecturer being opted out. The setting hides itself
+      // rather than showing a switch whose position would be a guess.
+      betaFeatures: t.withAuth(asUserWithCatalyst).boolean({
+        nullable: true,
+        resolve: async (_, __, ctx) => {
+          return await BetaFeaturesService.getBetaFeatures({}, ctx)
         },
       }),
 

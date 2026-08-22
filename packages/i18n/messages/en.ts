@@ -1838,6 +1838,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
       newPassword: 'New Password',
+      betaFeatures: 'Beta Features',
+      betaFeaturesTooltip:
+        'Enable early access to KlickerUZH features that are still in testing. Beta features can change or be withdrawn at short notice, and are not recommended for use in a graded assessment. You can turn this off again at any time.',
+      betaFeaturesError:
+        'The beta setting could not be saved. Please try again in a moment.',
       changePassword: 'Change Password',
       changeDelegatedLoginPassword: 'Change delegated login password',
       changeDelegatedLoginPasswordMessage:

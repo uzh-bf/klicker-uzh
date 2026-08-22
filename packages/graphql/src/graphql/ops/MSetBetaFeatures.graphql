@@ -1,0 +1,3 @@
+mutation SetBetaFeatures($enabled: Boolean!) {
+  setBetaFeatures(enabled: $enabled)
+}

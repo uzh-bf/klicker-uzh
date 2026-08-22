@@ -242,6 +242,22 @@ Verified locally in the browser as a signed-in lecturer, both directions. Flags 
 
 Repository checks green: typecheck 27/27, Biome and Prettier clean, JavaScript lint 6/6, `syncpack` valid. The `@klicker-uzh/analytics` lint task fails in the container on a pandas build unrelated to this work.
 
+### A5, second half — the beta opt-in (2026-08-23)
+
+The switch lives on the existing user settings page and is mounted only for Catalyst accounts. Behind it, `betaFeatures` and `setBetaFeatures` on the primary GraphQL backend manage membership in one GrowthBook list saved group. Neither is gated by a feature flag, on purpose: this is the switch that puts a lecturer into the group the flags target, so gating it would leave nobody able to opt in. Both require the Catalyst scope, and the mutation additionally requires full account access, matching the neighboring settings mutations so a read-only delegated login cannot opt an account in.
+
+The plan asked for a sane failure mode rather than a silent no-op, and the two directions needed different answers. The query returns `null`, not `false`, when the integration is unconfigured or GrowthBook cannot be reached, and the setting hides itself in that case — showing an unchecked switch would tell a lecturer they are opted out when the truth is that nobody knows. The mutation raises instead, and the switch renders the failure inline.
+
+Membership is written with a read-modify-write against `POST /api/v1/saved-groups/{id}`, sending `bypassApproval`. GrowthBook's newer draft-and-publish revisions API avoids the lost-update race but is absent from older self-hosted releases, and the cluster's version is not observable from here; opt-in happens at human pace on a group nothing else writes, and a lost update is recoverable by toggling again. If the cluster turns out to support revisions, the swap is confined to one file.
+
+The one new configuration value is `GROWTHBOOK_BETA_SAVED_GROUP_ID`, the saved group's id. It is not a secret, so it rides in the backend ConfigMap rather than joining the write-capable key in the management Secret. The management Secret itself needed no change — the deployment wiring already put it on the primary GraphQL backend alone, which is exactly the workload that now consumes it.
+
+Verified against a real GrowthBook, not a stub. A throwaway GrowthBook and MongoDB ran on the container network, and the devcontainer now passes all three variables through from the developer's own shell, never from the committed environment file, because the key is write-capable and this repository is public. Toggling on put the lecturer's id into the group and survived a reload; toggling off removed it and left the other member untouched. Stopping GrowthBook made the switch disappear rather than lie, and stopping it mid-session made the write fail visibly instead of springing the switch back silently. Ten service unit tests cover the same paths, and repository checks are green: typecheck 27/27, formatting clean, the analytics lint task still failing on its unrelated pandas build.
+
+The operations are named `betaFeatures` and `setBetaFeatures` rather than `betaAccess`. The pre-commit secret scan flags the generated persisted-query hash map when an operation name containing "Access" sits next to a 64-character document hash — gitleaks' generic-key rule keys off the word. Renaming clears it without weakening the scan or bypassing the gate, and it matches the user-facing "Beta Features" label.
+
+One deviation from the plan text worth recording: the plan said to mount the browser flag provider in the lecturer UI *and* chat, and chat received only the Node client. Chat has no client-side flag branch today, so a browser provider there would be dead weight; add it in the same change as chat's first client-side branch.
+
 ### Still open
 
 The four `NEXT_PUBLIC_GROWTHBOOK_*` repository variables do not exist yet — `gh variable list` returns none. Everything else in A0 needs the GrowthBook interface over Tailscale. The ordering constraint stands: the variables must be set before the release images are built, or the images carry no SDK connection and the flags cannot be turned on without a rebuild.

@@ -173,33 +173,62 @@ Auth and Chat receive the public browser configuration only. If either hybrid
 Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
 to that Deployment in the same change that initializes the Node adapter.
 
-## Management API readiness
+## Management API and the beta opt-in
 
-SDK evaluation and GrowthBook administration use separate trust boundaries. A
-future Klicker administration surface may use GrowthBook's REST API to create a
-draft feature revision, change a rule, or publish an approved revision. The v3
-chart reserves these server-only variables for that integration:
+SDK evaluation and GrowthBook administration use separate trust boundaries. The
+only Klicker surface that administers GrowthBook is the lecturer beta opt-in,
+which manages membership in one saved group. It uses these server-only
+variables:
 
-- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API base URL, including the
-  `/api` path where applicable;
-- `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Personal Access
-  Token or Secret Access Token sent as a bearer credential.
+- `GROWTHBOOK_MANAGEMENT_API_URL`: origin of the GrowthBook REST API, without a
+  trailing path. The code appends `/api/v1/...` itself, so a value that already
+  ends in `/api` produces a 404 on every call;
+- `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Secret Access Token
+  sent as a bearer credential;
+- `GROWTHBOOK_BETA_SAVED_GROUP_ID`: id of the list saved group holding the
+  opted-in lecturers. Non-secret, so the chart carries it in the backend
+  ConfigMap rather than the management Secret.
 
-The primary backend GraphQL Deployment optionally imports those exact keys from
+The primary backend GraphQL Deployment optionally imports the first two from
 `<rendered-chart-fullname>-secret-growthbook-management`. It is the only
-workload with the management Secret because a future Manage UI should terminate
-at an authenticated GraphQL mutation. Evaluator-only APIs and workers continue
-to receive only the read-only SDK connection. The management variables are
-registered with Turborepo but have no consumer yet; the Secret may remain absent
-until an administration feature is implemented.
+workload with the management Secret because the Manage UI terminates at an
+authenticated GraphQL mutation. Evaluator-only APIs and workers continue to
+receive only the read-only SDK connection.
+
+### How the opt-in behaves
+
+`betaFeatures` and `setBetaFeatures` in the primary GraphQL schema both require the
+Catalyst authorization scope, and the mutation additionally requires full
+account access, so a read-only delegated login cannot opt an account in. Neither
+is gated by a feature flag: this is the switch that puts a lecturer into the
+group the flags target, so gating it would leave nobody able to opt in.
+
+The query returns `null`, not `false`, when the integration is unconfigured or
+GrowthBook cannot be reached, and the setting hides itself in that case rather
+than showing a switch position it cannot vouch for. The mutation raises a
+GraphQL error instead, so a failed write is visible to the lecturer.
+
+Membership is written with a read-modify-write against
+`POST /api/v1/saved-groups/{id}`, sending `bypassApproval` so the change applies
+immediately on organizations that require approvals and is ignored elsewhere.
+GrowthBook's newer draft-and-publish revisions API avoids the lost-update race
+but is absent from older self-hosted releases; opt-in happens at human pace on a
+group nothing else writes, and a lost update is recoverable by toggling again.
 
 Never pass the management key to `NodeFeatureFlagClient`, a frontend image
-build, or a `NEXT_PUBLIC_*` variable. A future consumer must use GrowthBook's
-draft/revision and publish workflow, enforce an explicit Klicker administrative
-authorization scope, record an audit trail, and handle retries without making a
-student-facing domain mutation depend on GrowthBook availability. If another
-workload becomes the control-plane owner, mount the management Secret there in
-the same reviewed change rather than broadening it preemptively.
+build, or a `NEXT_PUBLIC_*` variable. If another workload becomes a
+control-plane owner, mount the management Secret there in the same reviewed
+change rather than broadening it preemptively.
+
+### Exercising the opt-in locally
+
+The devcontainer reads all three variables from the developer's own shell (see
+`.devcontainer/docker-compose.yml`); they are deliberately absent from the
+committed `devcontainer.env` because the key is write-capable and this
+repository is public. Run a throwaway GrowthBook and MongoDB on the `devnet`
+network, create a list saved group whose attribute key is `id`, then start the
+workspace with the three variables exported. With them unset, the switch stays
+hidden and nothing else changes.
 
 ## Failure and rollout behavior
 
