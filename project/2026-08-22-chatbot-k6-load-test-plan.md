@@ -71,5 +71,13 @@ lecturer-demo work.
   inspections passed; `k6 archive -u 1 -i 100` showed the CLI override and
   preserved the hard-cap guard in the archive; focused Biome, diff checks,
   gitleaks, and the normal repository pre-commit hook passed.
+- Review correction: the second review found two transport/target variants.
+  Commit `5efedce23` requires production opt-in for every normalized
+  production-host form and requires HTTPS for authenticated scripts.
+- Verification after the second correction: four positive and fifteen
+  negative k6 inspections passed, including HTTP production-host, noncanonical
+  port, and plaintext-authenticated-target guards; the archive hard-cap check,
+  focused Biome, diff checks, gitleaks, and the normal repository pre-commit
+  hook passed.
 - S3: pending — repeat integrated final review after the correction commit.
 - S4: pending — push and open draft PR; merge remains withheld.
