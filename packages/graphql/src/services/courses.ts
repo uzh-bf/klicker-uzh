@@ -1044,6 +1044,12 @@ async function upsertResponseAppliedCorrection(
         participantId,
       },
     },
+    select: {
+      id: true,
+      basePoints: true,
+      correctnessPoints: true,
+      bonusPoints: true,
+    },
   })
 
   // upsert live quiz response with the corrected points

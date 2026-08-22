@@ -911,7 +911,6 @@ function buildRedisAggregationPlan(
     sets.push({ key, field, value })
   }
 
-  expectType(`${instanceKey}:votes`, 'hash')
   addSet(`${instanceKey}:votes`, message.correlationId, 'true')
 
   if (
