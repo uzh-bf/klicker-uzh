@@ -139,14 +139,17 @@ lecturer-demo work.
   `v3`; host read-back confirms the four expected paths and 15 branch commits.
   Required CI checks are pending; merge remains withheld.
 - Fresh host read-back for this continuation reports remote `v3` at
-  `d4303516a8d4863b45d81c372f5f0023548f8b4a`; it is an ancestor of the current
-  branch head `f7e1fa8c5e73975cf43365156a033d60eb25b7bc`, so the existing branch
-  remains ahead without a rebase or reset.
+  `d4303516a8d4863b45d81c372f5f0023548f8b4a`. At the recorded branch head
+  `f7e1fa8c5e73975cf43365156a033d60eb25b7bc`, the branch was four commits
+  behind and sixteen commits ahead of that ref, with merge-base
+  `f58986faa8cfa4ff78d20a1ebeb1666473343d38`; the current branch adds the
+  normal-login commit without a rebase or reset. A later merge or promotion
+  decision must account for that divergence.
 - S5: complete — the native planner approved a shared `chatbot-login.js`
   design with the persistence concern recorded above. The implementation is
   limited to the shared module plus the two authenticated scripts; the
   anonymous script remains unchanged.
-- S6: in progress — both authenticated entry scripts passed direct-token and
+- S6: complete — both authenticated entry scripts passed direct-token and
   normal-login `k6 inspect --execution-requirements` checks with dummy values;
   PRD login checks passed with the explicit production acknowledgement. Ten
   negative guard inspections failed closed, including mixed/partial auth,
@@ -157,3 +160,7 @@ lecturer-demo work.
   hash checks passed. No live login, chatbot, provider, database, or Infisical
   action is part of this package; runtime proof remains a separate approval
   gate.
+- S7: complete — the configured native simplifier and slice-reviewer routes
+  failed before inspection with the encrypted-task/provider error. A native
+  Sol fallback reviewed both lenses on the exact committed range; it found no
+  code issue and one stale branch-ancestry sentence, which is corrected above.
