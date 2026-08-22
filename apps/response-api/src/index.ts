@@ -509,6 +509,13 @@ async function handleAddAssessmentResponse(
       })
     }
 
+    if (workflowResult?.status === 422) {
+      return sendJson(req, res, 422, {
+        error: workflowResult.error ?? 'invalid_response',
+        responseTimestamp,
+      })
+    }
+
     // Fail closed when an old or incompatible worker returns a terminal
     // duplicate without materializing the acceptance marker.
     if (workflowResult?.status !== 200) {

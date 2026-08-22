@@ -63,6 +63,7 @@ processAssessmentResponseWorkflow.durableTask({
           elementBlockExecution: input.elementBlockExecution,
           correlationId: input.correlationId,
         })
+        return { status: 422, error: 'invalid_response' }
       }
       throw error
     }
