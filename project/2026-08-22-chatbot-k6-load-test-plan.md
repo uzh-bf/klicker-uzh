@@ -89,5 +89,14 @@ lecturer-demo work.
   and the normal repository pre-commit hook passed. The hook reported only the
   existing Node 26 versus Node 24 engine warning and unrelated deprecation
   warnings.
+- Review correction: the fourth review found raw chatbot-ID interpolation in
+  request paths. Commit `1616335d1` requires canonical UUID-shaped IDs in all
+  three scripts before endpoint construction.
+- Verification after the fourth correction: four positive and twenty-three
+  negative k6 inspections passed, including path-bearing IDs for anonymous,
+  authenticated, and chat-turn scripts; the archive hard-cap check, focused
+  Biome, diff checks, gitleaks, and the normal repository pre-commit hook
+  passed. The hook again reported only the existing Node 26 versus Node 24
+  engine warning and unrelated deprecation warnings.
 - S3: in progress — repeat integrated final review after the latest correction.
 - S4: pending — push and open draft PR; merge remains withheld.
