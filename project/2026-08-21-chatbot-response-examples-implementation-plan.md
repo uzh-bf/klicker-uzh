@@ -509,8 +509,8 @@ because those belong to the deferred integration milestone.
 
 ## Progress
 
-- Status: K1 implementation and verification in progress; R0 adoption, design,
-  and plan commits are complete
+- Status: K1 implementation committed and reviewed; draft publication is the
+  remaining authorized boundary step
 - Completed: repository mapping, product grill, design, ADRs 0028-0036,
   independent-scope correction, current source refresh, stack-capability check,
   two native Sol planning passes, refreshed `v3-ai` adoption, the design
@@ -519,12 +519,9 @@ because those belong to the deferred integration milestone.
   owner-scoped GraphQL query and lifecycle mutations, deterministic digest,
   generated artifacts, synthetic test-only fixtures, focused tests, and the
   matching wiki update
-- Active slice: final K1 diff hygiene, host commit, immutable-range reviews,
-  exact branch publication, and one draft PR targeting `v3-ai`
-- Remaining: the K1 implementation commit, final repository-native
-  verification, immutable-range reviews, exact branch publication, and one
-  draft PR targeting `v3-ai`; K2, K3, K4, and E1 remain out of scope for this
-  work item
+- Active slice: exact branch publication and one draft PR targeting `v3-ai`
+- Remaining: exact branch publication and one draft PR targeting `v3-ai`;
+  K2, K3, K4, and E1 remain out of scope for this work item
 - Latest public evidence: `feat/response-examples-foundation` is based directly
   on `origin/v3-ai` at
   `198747502a81149c2f61bb3dcd097716bbe32244`; PR #5424 remains separate and
@@ -547,15 +544,18 @@ because those belong to the deferred integration milestone.
   focused Vitest path passed against the already-running synthetic database.
   Graph, corpus, lineage, callback, retrieval-token, trigger, embedding,
   model, and Catalyst obligations are deferred rather than blocking.
-- Unresolved required gates: K1 implementation commit, final repository-native
-  verification, immutable-range reviews, and draft publication remain open.
+- Review evidence: the immutable range passed the dedicated slice review with
+  no blocking findings and the simplification pass returned ship-as-is; the one
+  accepted advisory hardening is commit `d46658b2f`, followed by green focused
+  GraphQL checks and 4/4 database tests.
+- Unresolved required gates: exact branch publication and one draft PR
+  targeting `v3-ai` remain open; CI readback follows creation.
 - Required delivery layer: one independently green, reviewed draft PR for K1;
   the four-layer milestone delivery remains pending
-- Achieved delivery layer: committed design and ADRs plus the approved plan;
-  the K1 implementation is ready for its third planned local commit
-- Next action: inspect and commit the exact K1 paths on the host, run the
-  required immutable-range reviews, publish the exact branch, and create one
-  draft PR; keep all withheld actions unchanged.
+- Achieved delivery layer: committed design, ADRs, approved plan, reviewed K1
+  foundation, and the advisory-hardening commit; draft PR remains to be opened
+- Next action: publish the exact branch and create one draft PR targeting
+  `v3-ai`; keep all withheld actions unchanged.
 
 ## Next steps after terminal
 
