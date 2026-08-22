@@ -177,9 +177,29 @@ function fakeW5eClient(options: { ordinaryServer?: FakeRow } = {}) {
     chatUsageCredits: { findMany: vi.fn(async () => []) },
   }
   const client = {
-    $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) =>
-      callback(tx)
-    ),
+    $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => {
+      const snapshots = new Map<Map<string | number, FakeRow>, FakeRow[]>()
+      for (const map of Object.values(maps)) {
+        snapshots.set(map, [...map.values()])
+      }
+      try {
+        return await callback(tx)
+      } catch (error) {
+        for (const [map, rows] of snapshots) {
+          map.clear()
+          for (const row of rows) {
+            const currentId = row.id
+            const numericId = typeof currentId === 'number' ? currentId : null
+            if (numericId !== null) {
+              map.set(numericId, row)
+            } else if (typeof currentId === 'string') {
+              map.set(currentId, row)
+            }
+          }
+        }
+        throw error
+      }
+    }),
   } as unknown as PrismaClient
 
   return {
@@ -662,7 +682,17 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         fixtureOperation: { operation: 'cleanup', status: 'failed' },
       })
       expect(fake.maps.servers.size).toBe(2)
-      expect(fake.maps.configs.size).toBe(2)
+      expect(fake.maps.configs.size).toBe(3)
+      const configIds = [...fake.maps.configs.values()]
+        .map((row) => row.id)
+        .sort()
+      expect(configIds).toEqual(
+        [
+          ordinaryReference.id,
+          receipt?.fixture.candidateConfigId,
+          receipt?.fixture.legacyConfigId,
+        ].sort()
+      )
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
