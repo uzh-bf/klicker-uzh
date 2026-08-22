@@ -4,6 +4,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
+  deploymentEnvironment: staging
   appOrigins:
     api: 'https://api.klicker.stg.df-app.ch'
     auth: 'https://auth.klicker.stg.df-app.ch'

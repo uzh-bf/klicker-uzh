@@ -4,6 +4,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
+  deploymentEnvironment: production
   appOrigins:
     api: 'https://backend-sls.klicker.uzh.ch'
     auth: 'https://auth.klicker.uzh.ch'
