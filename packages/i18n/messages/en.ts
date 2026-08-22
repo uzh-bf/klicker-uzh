@@ -3090,16 +3090,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseDuplicationInProgress:
         'Duplicating large courses can take a while.',
       courseDuplicationBackgroundInfo:
-        'You can close this dialog. The duplicated course will open automatically when it is ready.',
+        'You can close this dialog. When the copy is ready, you will get a notification with a link to open it.',
       courseDuplicationStatusTab: 'Course duplications',
       courseDuplicationStatusCount:
-        '{count} active course duplication requests',
+        '{count, plural, one {# active course duplication request} other {# active course duplication requests}}',
       courseDuplicationStatusTitle: 'Active course duplications',
       courseDuplicationStatusDescription:
         'You can continue working while these courses are copied.',
       courseDuplicationStatusSource: 'Copying from "{source}"',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
+      courseDuplicationOpenCourse: 'Open course',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',

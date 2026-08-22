@@ -1,4 +1,4 @@
-import { useApolloClient, useMutation, useQuery } from '@apollo/client'
+import { useApolloClient, useLazyQuery, useMutation } from '@apollo/client'
 import { faCopy } from '@fortawesome/free-regular-svg-icons'
 import { faChevronUp } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -7,6 +7,7 @@ import {
   CourseDuplicationJobStatus,
   type CourseDuplicationStatus as CourseDuplicationStatusData,
   GetCourseDuplicationStatusesDocument,
+  type GetCourseDuplicationStatusesQuery,
   GetUserCoursesDocument,
   StartCourseDuplicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -58,6 +59,9 @@ type CourseDuplicationJob = Pick<
   | 'targetCourseName'
   | 'updatedAt'
 >
+
+type CourseDuplicationStatusResponse =
+  GetCourseDuplicationStatusesQuery['courseDuplicationStatuses']
 
 interface StartCourseDuplicationArgs {
   course: CourseDuplicationSourceCourse
@@ -313,18 +317,8 @@ export function CourseDuplicationProvider({
   >({})
   const [storageInitialized, setStorageInitialized] = useState(false)
   const handledTerminalJobIdsRef = useRef(new Set<string>())
-
-  const { data: statusData } = useQuery(GetCourseDuplicationStatusesDocument, {
-    variables: { ids: jobIds },
-    skip: jobIds.length === 0,
-    pollInterval:
-      jobIds.length > 0 ? COURSE_DUPLICATION_POLL_INTERVAL : undefined,
-    fetchPolicy: 'network-only',
-    notifyOnNetworkStatusChange: true,
-    onError: (error) => {
-      console.error('Failed to poll course duplication status', error)
-    },
-  })
+  const isMountedRef = useRef(false)
+  const pollInFlightRef = useRef(false)
 
   useEffect(() => {
     setJobIds(readStoredCourseDuplicationJobIds())
@@ -358,62 +352,118 @@ export function CourseDuplicationProvider({
     }))
   }, [])
 
+  const [fetchStatuses] = useLazyQuery(GetCourseDuplicationStatusesDocument, {
+    fetchPolicy: 'network-only',
+  })
+
+  const handleStatusResponse = useCallback(
+    (statuses: CourseDuplicationStatusResponse, requestedJobIds: string[]) => {
+      const requestedJobIdSet = new Set(requestedJobIds)
+      const returnedJobIds = new Set(statuses.map((job) => job.id))
+
+      for (const jobId of requestedJobIds) {
+        if (!returnedJobIds.has(jobId)) {
+          removeJobId(jobId)
+        }
+      }
+
+      for (const job of statuses) {
+        if (!requestedJobIdSet.has(job.id)) continue
+
+        if (isActiveCourseDuplicationStatus(job.status)) {
+          upsertJob(job)
+          continue
+        }
+
+        if (!isTerminalCourseDuplicationStatus(job.status)) continue
+        if (handledTerminalJobIdsRef.current.has(job.id)) continue
+
+        handledTerminalJobIdsRef.current.add(job.id)
+        removeJobId(job.id)
+
+        if (
+          job.status === CourseDuplicationJobStatus.Completed &&
+          job.createdCourseId
+        ) {
+          const createdCourseId = job.createdCourseId
+
+          toast({
+            type: 'success',
+            message: t('manage.courseList.courseDuplicationSucceeded', {
+              name: job.targetCourseName,
+            }),
+            options: {
+              duration: 30_000,
+              action: {
+                label: t('manage.courseList.courseDuplicationOpenCourse'),
+                onClick: () => {
+                  void router.push(`/courses/${createdCourseId}`)
+                },
+              },
+            },
+          })
+          void client.refetchQueries({ include: [GetUserCoursesDocument] })
+        } else {
+          toast({
+            type: 'error',
+            message: getCourseDuplicationErrorMessage(
+              t,
+              getStatusErrorType(job.errorType)
+            ),
+            options: { duration: 6000 },
+          })
+        }
+      }
+    },
+    [client, removeJobId, router, t, upsertJob]
+  )
+
   useEffect(() => {
-    const statuses = statusData?.courseDuplicationStatuses
-    if (!statuses) return
+    isMountedRef.current = true
 
-    const returnedJobIds = new Set(statuses.map((job) => job.id))
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
-    for (const jobId of jobIds) {
-      if (!returnedJobIds.has(jobId)) {
-        removeJobId(jobId)
+  useEffect(() => {
+    if (!storageInitialized || jobIds.length === 0) return
+
+    const poll = async () => {
+      if (!isMountedRef.current || pollInFlightRef.current) return
+
+      const requestedJobIds = [...jobIds]
+      pollInFlightRef.current = true
+
+      try {
+        const result = await fetchStatuses({
+          variables: { ids: requestedJobIds },
+        })
+
+        if (isMountedRef.current) {
+          handleStatusResponse(
+            result.data?.courseDuplicationStatuses ?? [],
+            requestedJobIds
+          )
+        }
+      } catch (error) {
+        if (isMountedRef.current) {
+          console.error('Failed to poll course duplication status', error)
+        }
+      } finally {
+        pollInFlightRef.current = false
       }
     }
 
-    for (const job of statuses) {
-      if (isActiveCourseDuplicationStatus(job.status)) {
-        upsertJob(job)
-        continue
-      }
+    void poll()
+    const intervalId = window.setInterval(() => {
+      void poll()
+    }, COURSE_DUPLICATION_POLL_INTERVAL)
 
-      if (!isTerminalCourseDuplicationStatus(job.status)) continue
-      if (handledTerminalJobIdsRef.current.has(job.id)) continue
-
-      handledTerminalJobIdsRef.current.add(job.id)
-      removeJobId(job.id)
-
-      if (
-        job.status === CourseDuplicationJobStatus.Completed &&
-        job.createdCourseId
-      ) {
-        toast({
-          type: 'success',
-          message: t('manage.courseList.courseDuplicationSucceeded', {
-            name: job.targetCourseName,
-          }),
-        })
-        void client.refetchQueries({ include: [GetUserCoursesDocument] })
-        void router.push(`/courses/${job.createdCourseId}`)
-      } else {
-        toast({
-          type: 'error',
-          message: getCourseDuplicationErrorMessage(
-            t,
-            getStatusErrorType(job.errorType)
-          ),
-          options: { duration: 6000 },
-        })
-      }
+    return () => {
+      window.clearInterval(intervalId)
     }
-  }, [
-    client,
-    jobIds,
-    removeJobId,
-    router,
-    statusData?.courseDuplicationStatuses,
-    t,
-    upsertJob,
-  ])
+  }, [fetchStatuses, handleStatusResponse, jobIds, storageInitialized])
 
   const activeJobs = useMemo(
     () =>

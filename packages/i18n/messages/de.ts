@@ -3136,15 +3136,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseDuplicationInProgress:
         'Das Duplizieren grosser Kurse kann einen Moment dauern.',
       courseDuplicationBackgroundInfo:
-        'Sie können diesen Dialog schliessen. Der duplizierte Kurs wird automatisch geöffnet, sobald er bereit ist.',
+        'Sie können diesen Dialog schliessen. Sobald die Kopie bereit ist, erhalten Sie eine Benachrichtigung mit einem Link zum Öffnen.',
       courseDuplicationStatusTab: 'Kursduplizierungen',
       courseDuplicationStatusCount:
-        '{count} laufende Kursduplizierungsaufträge',
+        '{count, plural, one {# laufender Kursduplizierungsauftrag} other {# laufende Kursduplizierungsaufträge}}',
       courseDuplicationStatusTitle: 'Laufende Kursduplizierungen',
       courseDuplicationStatusDescription:
         'Sie können weiterarbeiten, während diese Kurse kopiert werden.',
       courseDuplicationStatusSource: 'Kopie von "{source}"',
       courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
+      courseDuplicationOpenCourse: 'Kurs öffnen',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
