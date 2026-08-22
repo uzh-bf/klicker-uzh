@@ -87,6 +87,15 @@ test('counts the hashed long chunk-topic name as a chunk twin', () => {
     missingToolCount: 0,
     unexpectedToolCount: 0,
   })
+
+  const sameSizeWrongNames = [...names]
+  sameSizeWrongNames[0] = 'Klicker-compat_unexpected_expert'
+  expect(classifyExpectedToolInventory(sameSizeWrongNames)).toEqual({
+    toolCount: 34,
+    pairCount: 17,
+    missingToolCount: 1,
+    unexpectedToolCount: 1,
+  })
 })
 
 type FakeRow = Record<string, any>
