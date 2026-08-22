@@ -89,7 +89,7 @@ records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
 
 Assessment participant invitations use the same control with finite `10`, `20`,
 and `50` page sizes and no `All` option. The page requests the additive
-`assessmentParticipantInvitationPage` operation with `numEntries` and `offset`,
+`assessmentParticipantInvitations` operation with `numEntries` and `offset`,
 shows the server-provided total, and resets to page 1 after an import or delete.
 CSV selection rejects files above 1 MiB and imports above 200 data rows before
 submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
