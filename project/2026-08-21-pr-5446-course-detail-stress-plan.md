@@ -400,3 +400,15 @@ above where it is more specific.
 - The 15-minute Hatchet task configuration remains unchanged. Its review reply
   cites the ten-minute transaction limit and 30-minute stale recovery policy.
 - Merge and deployment remain withheld. The retained DevPod remains running.
+
+### Execution progress
+
+- 2026-08-22: The user approved execution with a goal, local end-to-end
+  verification, and retention of the test environment. The exact linked
+  workspace is `/Users/rschlae/Git/klicker/klicker-uzh/trees/pr5446-readiness`;
+  its owner is present and the DevPod is retained. The first lifecycle probe
+  found a stale reconciliation process, so the canonical `devrouter ensure`
+  command was allowed to finish before implementation continues.
+- 2026-08-22: S6 is now in progress. The provider will use a captured request
+  ID set for each status promise and keep completion navigation inside the
+  localized toast action only.
