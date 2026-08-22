@@ -10,12 +10,15 @@ flag.
 Browser builds receive the public GrowthBook SDK endpoint and client key from
 GitHub Actions repository variables. Backend workloads receive the internal SDK
 endpoint and SDK client key from one externally provisioned, shared Kubernetes
-Secret plus the deployment environment from the Helm ConfigMap.
+Secret plus the deployment environment from the Helm ConfigMap. The primary
+GraphQL backend also accepts a separate, optional management API Secret so a
+future authenticated administration surface can manage GrowthBook without
+sharing its write credential with evaluator-only workloads.
 
 ## Non-goals
 
 - Creating GrowthBook features, SDK connections, or targeting rules.
-- Using a GrowthBook management/admin API key in Klicker applications.
+- Implementing GrowthBook REST API calls or a Klicker administration surface.
 - Mounting `FeatureFlagProvider` or initializing `NodeFeatureFlagClient` before
   an app adopts a flag.
 - Deploying GrowthBook or its proxy, changing CORS, or mutating live GitHub or
@@ -40,6 +43,10 @@ Secret plus the deployment environment from the Helm ConfigMap.
   `GROWTHBOOK_CLIENT_KEY` from the external `<release>-secret-growthbook`
   Secret. The latter is an SDK connection key, not a GrowthBook management API
   key.
+- The primary GraphQL backend additionally imports
+  `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY` from the
+  optional external `<release>-secret-growthbook-management` Secret. No other
+  workload receives this write-capable credential.
 - One SDK connection is shared per deployment environment because Klicker uses
   one GrowthBook project and typed flag registry. Per-app connections can be
   introduced later if payload filtering or independent rotation is required.
@@ -50,6 +57,9 @@ Secret plus the deployment environment from the Helm ConfigMap.
   `frontend-pwa` (including the assessment image build).
 - Node-ready: backend GraphQL (regular and assessment), OLAT API, LTI, response
   API (regular and assessment), and all three Hatchet worker Deployments.
+- Management-ready: only the primary backend GraphQL Deployment, which is the
+  server boundary for a potential future Manage UI integration. Any consumer
+  still requires an explicitly authorized API contract in a separate change.
 - Auth and Chat receive browser configuration through their image builds. A
   future server-side flag in either hybrid app can opt into the shared Node
   Secret explicitly when it adds the Node adapter.
@@ -59,7 +69,8 @@ Secret plus the deployment environment from the Helm ConfigMap.
 The shared adapters remain authoritative: missing configuration performs no SDK
 fetch and evaluates flags as `false`. The shared Secret reference is optional,
 so generic chart defaults and a rollout performed before external provisioning
-do not block pod startup.
+do not block pod startup. The management Secret is independently optional and
+has no effect until an authorized consumer is implemented.
 
 ## Klicker feature-design checklist
 
@@ -68,7 +79,9 @@ do not block pod startup.
 - **Layer footprint:** five app Dockerfiles, twelve image workflows, `turbo.json`,
   the v3 Helm chart and staging/production values, plus feature-flag and
   CI/deployment documentation. No Prisma, GraphQL, i18n, or generated artifacts.
-- **Auth:** unchanged; flags remain rollout controls and never authorization.
+- **Auth:** unchanged. A future management mutation must define its own
+  authenticated administrative scope; merely possessing the pod credential
+  must never make an ordinary resolver authorized to change GrowthBook.
 - **Gamification:** no points, XP, achievement, or leaderboard impact.
 - **Async:** Hatchet behavior is unchanged; worker pods only become
   configuration-ready.
@@ -89,6 +102,8 @@ do not block pod startup.
    rollout order.
 4. Render and validate both deployment environments; inspect every changed
    hunk.
+5. Isolate optional GrowthBook management credentials to the primary GraphQL
+   backend and document the future-consumer boundary.
 
 ## Progress
 
@@ -105,3 +120,6 @@ do not block pod startup.
   build passed. The repository DevPod could not be used because its registered
   identity belongs to the primary checkout, so checks used the repository's
   exact Volta-pinned Node and pnpm versions on the host.
+- 2026-08-22: added a separate optional management API Secret contract to the
+  primary GraphQL backend only. No REST client or management operation is
+  implemented by this configuration-ready slice.
