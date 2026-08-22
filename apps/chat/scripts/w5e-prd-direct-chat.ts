@@ -4,6 +4,10 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, rmdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import {
+  MAX_TOOL_NAME_LENGTH,
+  TOOL_NAME_SUFFIX_LENGTH,
+} from '../src/lib/config/toolNames.js'
 import { getAggregatedMCPTools } from '../src/services/mcpClients.js'
 
 const SERVER_NAME = 'Klicker-compat' as const
@@ -55,6 +59,80 @@ const EXPECTED_TOOLS = [
   'informatik_und_wirtschaft_video_expert_chunk_topics',
   'radiosurfvet_expert_chunk_topics',
 ] as const
+
+type ToolInventory = {
+  toolCount: number
+  pairCount: number
+  missingToolCount: number
+  unexpectedToolCount: number
+}
+
+function normalizeToolName(rawName: string): string {
+  const normalized = rawName
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
+  return normalized.length > 0 ? normalized : 'tool'
+}
+
+function toExpectedToolName(toolName: string, usedNames: Set<string>): string {
+  const rawName = `${SERVER_NAME}_${toolName}`
+  const baseName = normalizeToolName(rawName)
+
+  if (baseName.length <= MAX_TOOL_NAME_LENGTH && !usedNames.has(baseName)) {
+    return baseName
+  }
+
+  const hashFor = (value: string) =>
+    createHash('sha256')
+      .update(value)
+      .digest('hex')
+      .slice(0, TOOL_NAME_SUFFIX_LENGTH)
+  const preservedSuffix = toolName === 'doc_query' ? 'doc_query' : undefined
+  const suffix = (hash: string) =>
+    preservedSuffix ? `_${preservedSuffix}_${hash}` : `_${hash}`
+  const withHash = (hash: string) => {
+    const hashSuffix = suffix(hash)
+    const maxBaseLength = MAX_TOOL_NAME_LENGTH - hashSuffix.length
+    const trimmedBase = baseName.slice(0, maxBaseLength).replace(/_+$/, '')
+    return `${trimmedBase || 'tool'}${hashSuffix}`
+  }
+
+  let candidate = withHash(hashFor(rawName))
+  let attempt = 1
+  while (usedNames.has(candidate)) {
+    candidate = withHash(hashFor(`${rawName}:${attempt}`))
+    attempt += 1
+  }
+  return candidate
+}
+
+export function classifyExpectedToolInventory(names: string[]): ToolInventory {
+  const expectedNames = new Set<string>()
+  const expectedChunkNames = new Set<string>()
+  const usedNames = new Set<string>()
+
+  for (const toolName of EXPECTED_TOOLS) {
+    const expectedName = toExpectedToolName(toolName, usedNames)
+    usedNames.add(expectedName)
+    expectedNames.add(expectedName)
+    if (toolName.endsWith('_chunk_topics')) {
+      expectedChunkNames.add(expectedName)
+    }
+  }
+
+  const actualNames = new Set(names)
+  return {
+    toolCount: names.length,
+    pairCount: names.filter((name) => !expectedChunkNames.has(name)).length,
+    missingToolCount: [...expectedNames].filter(
+      (name) => !actualNames.has(name)
+    ).length,
+    unexpectedToolCount: names.filter((name) => !expectedNames.has(name))
+      .length,
+  }
+}
 
 type State =
   | 'planned'
@@ -807,13 +885,14 @@ async function runProof(
       })
     )
     const names = Object.keys(tools).sort()
-    result.toolCount = names.length
-    result.pairCount = names.filter(
-      (name) => !name.endsWith('_chunk_topics')
-    ).length
+    const inventory = classifyExpectedToolInventory(names)
+    result.toolCount = inventory.toolCount
+    result.pairCount = inventory.pairCount
     result.teachingToolsPresent = names.some((name) => /teaching/i.test(name))
     if (
-      result.toolCount !== EXPECTED_TOOLS.length ||
+      inventory.toolCount !== EXPECTED_TOOLS.length ||
+      inventory.missingToolCount > 0 ||
+      inventory.unexpectedToolCount > 0 ||
       result.pairCount !== 17 ||
       result.teachingToolsPresent
     ) {

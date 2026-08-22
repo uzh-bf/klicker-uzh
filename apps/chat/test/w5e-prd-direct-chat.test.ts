@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import {
+  classifyExpectedToolInventory,
   createReceiptStore,
   initialReceipt,
   probeFixedRoute,
@@ -50,6 +51,43 @@ const failedProof = {
   status: 'failed',
   retrieval: 'failed',
 } as const
+
+test('counts the hashed long chunk-topic name as a chunk twin', () => {
+  const expertNames = [
+    'banking_expert',
+    'bf1_expert',
+    'cf1_expert',
+    'mat141_expert',
+    'mat182_expert',
+    'python_and_r_expert',
+    'fs26_intro_r_expert',
+    'bio144_expert',
+    'df_ap_expert',
+    'df_bf2_expert',
+    'df_cf2_expert',
+    'df_fineco_expert',
+    'df_qf_expert',
+    'mat183_expert',
+    'vorkurs_expert',
+    'informatik_und_wirtschaft_video_expert',
+    'radiosurfvet_expert',
+  ]
+  const longExpertName = 'informatik_und_wirtschaft_video_expert'
+  const names = [
+    ...expertNames.map((name) => `Klicker-compat_${name}`),
+    ...expertNames
+      .filter((name) => name !== longExpertName)
+      .map((name) => `Klicker-compat_${name}_chunk_topics`),
+    'Klicker-compat_informatik_und_wirtschaft_video_expert_c_246cf369',
+  ]
+
+  expect(classifyExpectedToolInventory(names)).toEqual({
+    toolCount: 34,
+    pairCount: 17,
+    missingToolCount: 0,
+    unexpectedToolCount: 0,
+  })
+})
 
 type FakeRow = Record<string, any>
 
