@@ -40,14 +40,14 @@ if (!hostPortMatch) {
 const normalizedHostname = hostPortMatch[1].toLowerCase().replace(/\.$/, '')
 const port = hostPortMatch[2] || ''
 const defaultPort = protocol === 'https' ? '443' : '80'
-const normalizedPort = port || defaultPort
 const baseUrl = `${protocol}://${normalizedHostname}${
   port && port !== defaultPort ? `:${port}` : ''
 }`
+if (protocol !== 'https') {
+  throw new Error('KLICKER_BASE_URL must use https for authenticated requests')
+}
 if (
-  protocol === 'https' &&
   normalizedHostname === 'chat.klicker.uzh.ch' &&
-  normalizedPort === '443' &&
   __ENV.KLICKER_ALLOW_PRODUCTION !== 'true'
 ) {
   throw new Error(
