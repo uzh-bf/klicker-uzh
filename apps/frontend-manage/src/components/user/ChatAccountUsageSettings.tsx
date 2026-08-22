@@ -22,7 +22,6 @@ function ChatAccountUsageSettings() {
 
 function ChatAccountUsageSettingsContent() {
   const t = useTranslations()
-  const formatter = useFormatter()
   const { data } = useSuspenseQuery(GetChatAccountUsageDocument)
   const [setBudgets] = useMutation(SetChatAccountUsageBudgetsDocument)
   const overview = data.getChatAccountUsage
@@ -39,11 +38,6 @@ function ChatAccountUsageSettingsContent() {
       t('manage.settings.usageBudgetPrecision'),
       (value) => typeof value !== 'number' || Number(value.toFixed(6)) === value
     )
-
-  const formatCredits = (value: number) =>
-    formatter.number(value, { maximumFractionDigits: 6 })
-  const formatResetDate = (value: unknown) =>
-    formatter.dateTime(new Date(String(value)), { dateStyle: 'medium' })
 
   return (
     <Setting title={t('manage.settings.chatAccountUsageTitle')}>
@@ -64,15 +58,11 @@ function ChatAccountUsageSettingsContent() {
           <UsageLaneCard
             label={t('manage.settings.baseModelUsage')}
             lane={overview.baseModelUsage}
-            formatCredits={formatCredits}
-            formatResetDate={formatResetDate}
             testId="chat-account-usage-base"
           />
           <UsageLaneCard
             label={t('manage.settings.advancedModelUsage')}
             lane={overview.advancedModelUsage}
-            formatCredits={formatCredits}
-            formatResetDate={formatResetDate}
             testId="chat-account-usage-advanced"
           />
         </div>
@@ -161,19 +151,20 @@ function ChatAccountUsageSettingsContent() {
 function UsageLaneCard({
   label,
   lane,
-  formatCredits,
-  formatResetDate,
   testId,
 }: {
   label: string
   lane: ChatAccountUsageLane
-  formatCredits: (value: number) => string
-  formatResetDate: (value: unknown) => string
   testId: string
 }) {
   const t = useTranslations()
+  const formatter = useFormatter()
   const exhausted = lane.usedCredits > 0 && lane.remainingCredits === 0
   const empty = lane.budgetCredits === 0 && lane.usedCredits === 0
+  const formatCredits = (value: number) =>
+    formatter.number(value, { maximumFractionDigits: 6 })
+  const formatResetDate = (value: unknown) =>
+    formatter.dateTime(new Date(String(value)), { dateStyle: 'medium' })
 
   return (
     <section
