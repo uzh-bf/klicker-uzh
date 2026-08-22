@@ -165,9 +165,10 @@ lecturer-demo work.
   Sol fallback reviewed both lenses on the exact committed range; it found no
   code issue and one stale branch-ancestry sentence, which is corrected above.
 - S8: complete — the native final reviewer approved exact range
-  `f7e1fa8c5e73975cf43365156a033d60eb25b7bc..519ad5a56` at the current HEAD,
-  with no findings. Static login setup and cookie acceptance remain the only
-  runtime uncertainty; live login and chat execution stay separately gated.
+  `f7e1fa8c5e73975cf43365156a033d60eb25b7bc..519ad5a56` when `519ad5a56` was
+  HEAD, with no findings. Static login setup and cookie acceptance remain the
+  only runtime uncertainty; live login and chat execution stay separately
+  gated.
 - S9: in progress — the local package is ready for the existing feature-branch
   push and draft PR update; merge, deployment, and live k6 traffic remain
   withheld.
