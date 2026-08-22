@@ -229,3 +229,17 @@ service.
   Hatchet task/type, manipulator, sharing, deployment, import-cycle, or
   behavior change; if focused duplication verification cannot run, record the
   delivery gap instead of claiming readiness.
+
+### Progress
+
+- S0 is complete in `ebe41b5ab` after the Sol planning pass. S1 is committed
+  in `78d8d92d7`; the new module owns the duplication workflow, callers point
+  to it, and `createCourse` remains in `courses.ts`.
+- Host fallback verification passed the GraphQL package check, the focused
+  date suite (6 tests), and the GraphQL build (exit 0 with existing Rollup
+  warnings). The canonical DevPod check remains blocked by the known
+  devrouter lifecycle-lock error.
+- S1 still requires its simplifier and architecture/data-integrity slice
+  reviews. S2 is the exact documentation-reference update in the working
+  tree; S3 remains the integrated duplication verification, final review,
+  and normal push to the named PR branch.
