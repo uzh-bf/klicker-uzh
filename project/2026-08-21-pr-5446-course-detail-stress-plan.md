@@ -261,3 +261,142 @@ service.
   is the authorized normal push to `origin/fix/course-duplication-timeout`,
   followed by remote SHA and PR-check readback; merge and deployment remain
   withheld.
+
+## Follow-up phase: completion notification UX and merge gate
+
+### Settled decisions
+
+The grilling session on 2026-08-22 settled the following behavior for the
+existing asynchronous **course duplication job**:
+
+- A status response is paired with the exact request ID set that produced it.
+  The frontend prunes only missing IDs from that matching request set, so a
+  newly added concurrent job cannot be removed using an older response.
+- Completion never navigates automatically. Each successful job shows a clear
+  success toast with a separate localized action (`Open course` / `Kurs
+  öffnen`) that routes to that copied course when the user chooses it.
+- A completion discovered after reload uses the same action because navigation
+  is explicit and does not depend on the original route.
+- Multiple completions produce separate toasts, each mapped to its own copied
+  course. No automatic winner is selected.
+- Actionable success toasts remain visible for 30 seconds and retain the normal
+  close control.
+- The Hatchet attempt limit remains 15 minutes. This exceeds the ten-minute
+  duplication transaction limit; the 30-minute stale-job threshold is recovery
+  policy, not the expected attempt duration.
+- The canonical engineering term remains **course duplication job**. Update
+  only the existing domain-model, worker, i18n, and Playwright surfaces. No
+  ADR, `CONTEXT.md`, feature log, or second documentation root is needed.
+
+### Problem
+
+The current provider compares the latest `jobIds` with a response that may
+belong to the previous variable set, and it automatically routes on every
+completion. The behavior is unsafe for concurrent jobs and can interrupt
+unrelated lecturer work. Current review threads and the Sonar quality gate also
+remain open on the pushed PR.
+
+### Execution decision
+
+- Update the Apollo status query handling to retain the request ID set paired
+  with each response and use that set for missing-job reconciliation.
+- Remove automatic `router.push` from completion handling. Supply the design
+  system toast's semantic action with a 30-second duration and route only from
+  that explicit action. Keep one toast per completed course.
+- Retain the existing 15-minute Hatchet execution timeout and reply to that
+  review thread with the transaction and stale-recovery rationale.
+- Update the two existing wiki pages, the English and German success/action
+  copy, and the focused Playwright expectations to describe and verify the
+  explicit toast action.
+- Fix or disposition the remaining current review threads, including the
+  helper-timeout and import-alias findings, before publication. Do not add a
+  generic activity adapter solely to reduce Sonar duplication.
+
+### Test portfolio and acceptance
+
+| Consequential behavior | Acceptance evidence |
+| --- | --- |
+| Concurrent status polling | Focused provider test or existing browser case proves a second job survives the first response and later reaches its own terminal toast |
+| Explicit completion action | Browser verification proves no automatic route change, the success toast exposes an accessible action, and clicking it opens the copied course |
+| Reloaded completion | Browser or focused provider test proves a restored job can show the same action |
+| Multiple completions | Focused test proves separate success toasts retain distinct course targets |
+| 30-second lifetime | Focused assertion or documented design-system option verifies the configured duration |
+| Hatchet timeout disposition | Current task configuration plus review reply; no code change unless new evidence contradicts the settled policy |
+| Existing duplication behavior | Required Playwright suite, GraphQL check/build, and PR CI |
+
+### Delegation and review
+
+- `main` owns the frontend behavior, documentation, test updates, review-thread
+  replies, and integration.
+- A simplifier reviews the changed frontend surface after its implementation
+  commit. A risk-selected slice reviewer covers concurrency, navigation, and
+  data-flow behavior. The integrated final reviewer runs after all changes and
+  verification.
+- The Sonar 3% duplicated-new-code gate is a separate merge decision. Report
+  the measured result and do not introduce speculative abstractions solely for
+  the metric.
+
+### Authority and terminal state
+
+- The user agreed to this design. The next gate is approval of the reviewed
+  execution plan; no implementation or new push occurs before that approval.
+- The existing retained DevPod remains running. Merge, deployment, production
+  data changes, and runtime deletion remain withheld.
+- The terminal state is the corrected, reviewed, verified, and pushed PR with
+  all current review threads dispositioned, required CI green, and the Sonar
+  gate resolved or explicitly accepted by the repository owners.
+
+### Planner-reviewed corrections and bounded slices
+
+The planner review on 2026-08-22 requires the following exact acceptance
+contract and slice boundaries. This section supersedes the broader wording
+above where it is more specific.
+
+- **S5 — plan amendment and baseline:** `main` records this reviewed phase and
+  the current PR/check state. Commit boundary:
+  `docs(project): plan completion notification UX`.
+- **S6 — provider, toast, and copy:** `main` changes
+  `CourseDuplicationStatusProvider.tsx` and the English/German `courseList`
+  messages. The status implementation captures the request ID set at the
+  request/response promise boundary rather than reading current state or
+  current hook variables. The success toast passes
+  `options: { duration: 30_000, action: { label, onClick } }`; `router.push`
+  exists only inside `onClick`. The URL remains unchanged before the click,
+  restored jobs receive the same action, and each completed job gets one
+  distinct action. The existing global close button remains available.
+  Acceptance is a deterministic delayed-response test: response A is delayed,
+  job B is added before A resolves, A cannot prune B, and an ID absent from its
+  own matching response is pruned. Commit boundary:
+  `fix(frontend-manage): make duplication completion actionable`.
+- **S7 — verification, minor findings, and wiki:** `main` updates the focused
+  Playwright behavior, raises or proves the helper budget beyond its full wait
+  path (the current safe bound is 360 seconds), changes the course detail page
+  imports to the configured `@components/*` aliases, and updates
+  `docs/domain-model.md`, `docs/async-and-workers.md`, plus the localized
+  background/action copy. Acceptance includes no automatic navigation,
+  accessible action routing, separate actions for multiple completions, the
+  reload path, and the 30-second duration. Commit boundary:
+  `test(course-duplication): verify actionable completion notifications`.
+- **S8 — review, CI, and publication:** `main` runs the simplifier, the
+  concurrency/navigation slice reviewer, and the integrated final reviewer;
+  replies to and resolves the current review threads only after the fixing
+  head and evidence are pushed; and reads back exact-head CI and Sonar. Named
+  current thread fingerprints are `dd3f8e7e1dfe9180ccae52d0` (stale response
+  pruning), `585458e83154e1b7973b163d` (automatic navigation),
+  `b449727941b1e8a3a6d1393a` (Hatchet timeout),
+  `5f0e053501c96020586dd18f` (Playwright helper budget), and
+  `0bc346c0c11fadb57307e1db` (component import alias). The pluralization
+  thread `2358cce32da38a6e20b9161c` is minor and is handled with the same
+  i18n update. Commit boundary is review/progress documentation only after
+  the implementation checks pass.
+
+### Tightened gates and stop conditions
+
+- The current required Playwright shards and all other required checks must be
+  terminal on the new pushed SHA. Prior shard results do not carry forward.
+- If Sonar remains above its 3% duplicated-new-code gate, stop and report the
+  measured blocker. Do not call the PR merge-ready, waive it, or add a generic
+  activity abstraction without a separate owner decision.
+- The 15-minute Hatchet task configuration remains unchanged. Its review reply
+  cites the ten-minute transaction limit and 30-minute stale recovery policy.
+- Merge and deployment remain withheld. The retained DevPod remains running.
