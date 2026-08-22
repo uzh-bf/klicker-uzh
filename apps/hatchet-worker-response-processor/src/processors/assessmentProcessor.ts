@@ -8,6 +8,7 @@ import {
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementType,
+  InvitationStatus,
   Prisma,
   ResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
@@ -83,7 +84,11 @@ type PersistedAssessmentResponse = {
   effect: AssessmentResponseEffectPayload | null
 }
 
-async function getPendingAssessmentResponseEffect({
+type AssessmentResponseRecoveryState =
+  | { status: 'pending'; effect: AssessmentResponseEffectPayload }
+  | { status: 'completed' }
+
+async function getAssessmentResponseRecoveryState({
   instanceId,
   participantId,
   elementBlockExecution,
@@ -93,7 +98,7 @@ async function getPendingAssessmentResponseEffect({
   participantId: string
   elementBlockExecution: number
   correlationId: string
-}): Promise<AssessmentResponseEffectPayload | null> {
+}): Promise<AssessmentResponseRecoveryState | null> {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw(
       Prisma.sql`
@@ -124,14 +129,20 @@ async function getPendingAssessmentResponseEffect({
     if (
       !existingResponse ||
       existingResponse.correctionOnly ||
-      existingResponse.correlationId !== correlationId ||
-      !existingResponse.assessmentResponseEffect
+      existingResponse.correlationId !== correlationId
     ) {
       return null
     }
 
-    return existingResponse.assessmentResponseEffect
-      .payload as AssessmentResponseEffectPayload
+    if (!existingResponse.assessmentResponseEffect) {
+      return { status: 'completed' }
+    }
+
+    return {
+      status: 'pending',
+      effect: existingResponse.assessmentResponseEffect
+        .payload as AssessmentResponseEffectPayload,
+    }
   })
 }
 
@@ -584,13 +595,19 @@ async function resumePendingAssessmentEffect(
 ) {
   if (message.elementBlockExecution === undefined) return null
 
-  const pendingEffect = await getPendingAssessmentResponseEffect({
+  const recoveryState = await getAssessmentResponseRecoveryState({
     instanceId: Number(message.instanceId),
     participantId: message.participantId,
     elementBlockExecution: message.elementBlockExecution,
     correlationId: message.correlationId,
   })
-  if (!pendingEffect) return null
+  if (!recoveryState) return null
+
+  if (recoveryState.status === 'completed') {
+    return { status: 208 }
+  }
+
+  const pendingEffect = recoveryState.effect
 
   if (
     pendingEffect.liveQuizId !== message.liveQuizId ||
@@ -791,11 +808,20 @@ async function requireAssessmentParticipation(
   participantId: string,
   liveQuizId: string
 ) {
-  const participation = await prisma.participation.findUnique({
+  const participation = await prisma.participation.findFirst({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId,
+      courseId,
+      participantId,
+      participant: { isActive: true },
+      course: {
+        isAssessmentEnabled: true,
+        participantInvitations: {
+          some: {
+            participantId,
+            status: InvitationStatus.ACCEPTED,
+            acceptedAt: { not: null },
+          },
+        },
       },
     },
   })

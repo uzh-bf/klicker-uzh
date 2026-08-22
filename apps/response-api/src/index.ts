@@ -2,6 +2,7 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { JsonObject } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  InvitationStatus,
   Prisma,
   ResponseCorrectness,
   UserLoginScope,
@@ -332,6 +333,14 @@ async function processAssessmentWorkflow(
     return true
   }
 
+  if (workflowResult.status === 208) {
+    sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
+    return true
+  }
+
   // Fail closed when an old or incompatible worker returns a terminal
   // duplicate without materializing the acceptance marker.
   if (workflowResult.status !== 200) {
@@ -400,9 +409,9 @@ async function handleAddAssessmentResponse(
   const requestedExecution = Number(correlationData.execution)
 
   // A response may already be durably persisted while its Redis effect is
-  // pending. Allow that exact retry to resume even after the live quiz has
-  // closed or advanced to a later block execution.
-  const pendingEffectRetry = Number.isInteger(requestedExecution)
+  // pending, or may have completed before the client retried. Allow that
+  // exact retry to resume or return 208 after the live quiz advances.
+  const recoveryRetry = Number.isInteger(requestedExecution)
     ? await prisma.$transaction(async (tx) => {
         await tx.$executeRaw(
           Prisma.sql`
@@ -431,12 +440,14 @@ async function handleAddAssessmentResponse(
         })
       })
     : null
+  const isRecoveryRetry =
+    recoveryRetry?.correlationId === correlationId &&
+    !recoveryRetry.correctionOnly
   const isPendingEffectRetry =
-    pendingEffectRetry?.correlationId === correlationId &&
-    !pendingEffectRetry.correctionOnly &&
-    !!pendingEffectRetry.assessmentResponseEffect
+    isRecoveryRetry && !!recoveryRetry.assessmentResponseEffect
+  const isCompletedRetry = isRecoveryRetry && !isPendingEffectRetry
 
-  if (requestedExecution !== elementBlock.execution && !isPendingEffectRetry) {
+  if (requestedExecution !== elementBlock.execution && !isRecoveryRetry) {
     hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
       info: `[ERROR] [AddResponse Assessment] Invalid block execution in correlationKey for response ${JSON.stringify(
@@ -444,6 +455,13 @@ async function handleAddAssessmentResponse(
       )}`,
     })
     return badRequest(req, res, 'invalid_submission')
+  }
+
+  if (isCompletedRetry) {
+    return sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
   }
 
   // Serialize acceptance with correction-audience snapshots and response
@@ -473,11 +491,20 @@ async function handleAddAssessmentResponse(
       `
         )
 
-        const participation = await tx.participation.findUnique({
+        const participation = await tx.participation.findFirst({
           where: {
-            courseId_participantId: {
-              courseId,
-              participantId: user.sub,
+            courseId,
+            participantId: user.sub,
+            participant: { isActive: true },
+            course: {
+              isAssessmentEnabled: true,
+              participantInvitations: {
+                some: {
+                  participantId: user.sub,
+                  status: InvitationStatus.ACCEPTED,
+                  acceptedAt: { not: null },
+                },
+              },
             },
           },
           select: { participantId: true },
