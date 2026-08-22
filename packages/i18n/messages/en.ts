@@ -1,17 +1,36 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(opens in new tab)',
+    },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
+      tutorDescription: 'Get patient, step-by-step help with your questions.',
       explainer: 'Explainer',
+      explainerDescription: 'Get clear explanations of difficult concepts.',
     },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',
       selectAiModel: 'Select AI Model',
-      autoSelectionInfo: 'Automatic selection based on credit availability.',
-      usingPrimaryModel: 'Using primary model with available credits.',
-      usingFallbackModel: 'Using fallback model (no credits remaining).',
+      autoModelDescription:
+        'Automatically chooses a suitable model for each message.',
+      reasoningModelDescription:
+        'Built for difficult, multi-step questions. It may take longer and use more credits.',
+      standardModelDescription:
+        'A general-purpose model for everyday questions.',
+      fallbackModelDescription:
+        'Uses fewer credits and remains available when your credits run out.',
+      autoSelectionInfo:
+        'KlickerUZH chooses a suitable model for each message.',
+      usingPrimaryModel:
+        'The standard model is used while credits are available.',
+      usingFallbackModel:
+        'No credits remain, so new messages use the smaller model.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -33,6 +52,8 @@ export default {
       resetNone: 'These credits do not refill automatically.',
       exhausted:
         'You have used up all your credits. However, you can still use the smaller model.',
+      fallbackNotice:
+        'Your credits are used up. New messages use the smaller model.',
     },
     sidebar: {
       newChat: 'New Chat',
@@ -41,6 +62,8 @@ export default {
       toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -53,9 +76,35 @@ export default {
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
     },
+    recovery: {
+      notFoundTitle: 'Chatbot not found',
+      notFoundMessage:
+        'This chat link is no longer available. Return to KlickerUZH to choose another course or chatbot.',
+      errorTitle: 'Chatbot unavailable',
+      errorMessage:
+        'We could not load this chatbot. Try again or return to KlickerUZH.',
+      retry: 'Try again',
+      openKlickerUzh: 'Open KlickerUZH',
+    },
     branchPicker: {
-      previous: 'Previous branch',
-      next: 'Next branch',
+      previous: 'Previous version',
+      next: 'Next version',
+    },
+    historyRail: {
+      label: 'Conversation history',
+      mobileLabel: 'History {current}/{total}',
+      item: 'Item {current} of {total}',
+      itemRange: 'Items {start}-{end} of {total}',
+      openHistory: 'Open full history',
+      closeHistory: 'Close full history',
+      turn: 'Conversation turn',
+      you: 'You',
+      assistant: 'Assistant',
+      noText: 'No text',
+      noResponse: 'No response yet',
+      inProgress: 'In progress',
+      partial: 'Partial response',
+      error: 'Error',
     },
     disclaimer: {
       mediaTitle: 'Disclaimer media',
@@ -104,31 +153,42 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
-      welcomeTitle: 'Hello there!',
-      welcomeSubtitle: 'How can I help you?',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
+      welcomeTitle: 'Welcome!',
+      welcomeTo: 'You are chatting with {chatbot}.',
+      welcomeSubtitle: 'Choose a starter or write your own question.',
+      welcomeMode: 'Selected mode: {mode}',
     },
     suggestions: {
+      sectionLabel: 'Conversation starters',
+      editHint: 'Choose a starter to edit it before sending.',
       practiceTopic: 'Practise a topic',
       practiceTopicPrompt:
-        'I want to practise [a specific topic] from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
+        'I want to practise a specific topic from the course materials. Ask me one question at a time and give hints instead of revealing the answer immediately.',
       workThroughProblem: 'Work through a problem',
       workThroughProblemPrompt:
-        'Help me work through this problem step by step: [paste a problem from the course materials]. Ask me questions and give hints before revealing the solution.',
+        'Help me work through a problem from the course materials step by step. Ask me questions and give hints before revealing the solution.',
       explainConcept: 'Explain a concept',
       explainConceptPrompt:
-        'Explain [a specific concept] from the course materials in simple terms, using one worked example and citations.',
+        'Explain a difficult concept from the course materials in simple terms, using one worked example and citations.',
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
-        'Compare [concept A] and [concept B] using the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+        'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
     },
     message: {
       creditsUsed:
@@ -143,6 +203,8 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
@@ -195,8 +257,7 @@ export default {
       title: 'Login Required',
       message:
         'You need to create a KlickerUZH account or log in before you can access this chatbot.',
-      redirectNotice:
-        'After logging in, return to <url>{redirectUrl}</url> to continue your conversation.',
+      redirectNotice: 'After logging in, you will return to this chatbot.',
       loginButton: 'Go to KlickerUZH Login',
     },
     response: {
@@ -1843,21 +1904,69 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Elements - Batch Operations',
+      batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Your permission',
+      batchUpdateStatus: 'Element update eligibility',
+      batchUpdateStatusInactive: 'No element update configured',
+      batchSharingStatus: 'Element sharing eligibility',
       actionApplies: 'Action applies',
+      batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
       modifyBasePoints: 'Modify base points',
       awardBasePoints: 'Award base points',
       noElementsWillBeUpdated: 'No elements will be updated',
       nElementsWillBeUpdated: '{number} elements will be updated',
+      batchSharing: 'Share elements',
+      batchSharingDescription:
+        'Grant the same direct permission on all selected elements. Sharing does not propagate to activities, but linked answer collections receive the required derived read access.',
+      batchSharingLimit:
+        'Sharing is limited to {max} elements per operation. Reduce the selection or disable sharing.',
+      batchSharingUserOrEmail: 'User',
+      batchSharingGroup: 'User group',
+      batchSharingPermission: 'Permission',
+      noElementsWillBeShared: 'No elements can be shared',
+      nElementsWillBeShared: '{number} elements can be shared',
+      batchSharingNotApplicableExplanation:
+        'The selected sharing action cannot be applied to this element for the following reasons:',
+      batchSharingInsufficientPermission:
+        'Sharing elements requires at least admin permissions.',
+      batchOperationsResult: 'Batch operation result',
+      batchOperationsResultDescription:
+        'Review the completed and skipped operations below. This result is read-only.',
+      batchUpdateResultSuccess:
+        'The selected element updates were applied successfully.',
+      batchUpdateResultPartial:
+        '{updated}/{total} selected element updates were applied.',
+      batchUpdateResultFailed:
+        'The selected element updates could not be applied.',
+      batchUpdateResultSkipped:
+        'Element updates were skipped because none of the selected elements were eligible.',
+      batchSharingResult: 'Sharing result',
+      batchSharingResultShared: 'Shared',
+      batchSharingResultSkippedInsufficientPermission:
+        'Skipped: admin permission required',
+      batchSharingResultElementUnavailable: 'Skipped: element unavailable',
+      batchSharingResultFailed: 'Sharing failed',
+      batchSharingResultNotProcessed: 'Not processed',
+      batchSharingRequestFailed:
+        'The sharing request failed before all results could be returned.',
+      batchSharingTargetInvalidOrSelf:
+        'The target user does not exist or is your own account.',
+      batchSharingTargetGroupUnavailable:
+        'The selected user group is no longer available.',
+      batchOperationsRefreshFailed:
+        'The operations finished, but the element list could not be refreshed.',
       batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
 <ul>
 <li>Archiving elements / recovering elements from the archive only applies to non-archived / archived elements, respectively. This action can only be executed by users with admin permissions on the elements in question.</li>
 <li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
 <li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
 <li>Element status changes can be performed by all users.</li>
+<li>Sharing requires at least admin permissions for each element. It does not propagate to activities, but linked answer collections receive the required derived read access.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
@@ -3080,6 +3189,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
+      deleteDraftActivitiesOption:
+        'Also irreversibly delete all linked draft activities.',
+      deleteDraftActivities:
+        'All linked draft activities will be irreversibly deleted. Any remaining live quizzes will be disconnected from the course and remain accessible through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',

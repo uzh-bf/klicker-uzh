@@ -9,14 +9,21 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-function creditsResponse(current: number) {
+function creditsResponse(
+  current: number,
+  options: {
+    availableModels?: unknown[]
+    automaticModelId?: string
+  } = {}
+) {
   return {
     ok: true,
     json: async () => ({
       current,
       total: 100,
       nextResetAt: null,
-      availableModels: [],
+      availableModels: options.availableModels ?? [],
+      automaticModelId: options.automaticModelId,
     }),
   }
 }
@@ -92,5 +99,36 @@ describe('settingsStore credits loading', () => {
     await useSettingsStore.getState().loadCredits('chatbot-1')
 
     expect(useSettingsStore.getState().creditsLoaded).toBe(false)
+  })
+
+  test('replaces a persisted unavailable model with the credit-safe fallback', async () => {
+    useSettingsStore.setState({
+      modelSelectionEnabled: true,
+      selectedModel: 'gpt-5.6-luna',
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(0, {
+          automaticModelId: 'gpt-4.1-mini',
+          availableModels: [
+            {
+              id: 'gpt-4.1-mini',
+              name: 'GPT-4.1 Mini',
+              description: 'fallback',
+              fallback: true,
+              supportsReasoning: false,
+              allowedReasoningEfforts: [],
+              supportsImageAttachments: true,
+            },
+          ],
+        })
+      )
+    )
+
+    await useSettingsStore.getState().loadCredits('chatbot-fallback')
+
+    expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1-mini')
+    expect(useSettingsStore.getState().modelOptions).toHaveLength(1)
   })
 })

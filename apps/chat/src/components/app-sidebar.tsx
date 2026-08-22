@@ -108,19 +108,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   unoptimized
                   className="h-6 w-auto object-contain md:h-8"
                 />
+                {/* The link leaves the app in a new tab; nothing but the
+                    accessible name can carry that hint here. */}
+                <span className="sr-only">
+                  {t('chat.common.opensInNewTab')}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        {/* V4/D6: the standalone chat view no longer renders the shared
-            <Footer> band; its legal line moves here instead (embedded mode
-            never showed the footer or this sidebar, so nothing changes for
-            it). Wording matches packages/shared-components/src/Footer.tsx,
-            which is hardcoded English there too — kept as-is rather than
-            introducing a new i18n key for reused copy. */}
+        {/* Legal line of the standalone chat view, which renders no footer
+            band of its own; embedded mode shows neither this sidebar nor a
+            footer. */}
         <p className="text-muted-foreground px-3 pb-2 text-center text-xs">
-          &copy;{new Date().getFullYear()} DF Teaching Center, Department of
-          Finance, University of Zurich. All rights reserved.
+          {t('chat.sidebar.copyright', {
+            year: String(new Date().getFullYear()),
+          })}
         </p>
       </SidebarFooter>
     </Sidebar>

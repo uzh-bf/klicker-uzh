@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-10'
+timestamp: '2026-08-20'
 tags:
   - frontend
 ---
@@ -27,6 +27,15 @@ metadata blocks without changing the on-screen report. QR rendering and popup
 navigation have bounded failure paths so export cannot remain stuck on a
 spinner.
 
+Assessment comparison charts treat privacy-preserving score ranges as
+categorical groups. Render equal-width bars in the export and verification
+surfaces, highlight the group containing the student's score, and retain the
+exact range/count table for accessible detail. Show percentile as a 0–100
+ruler with a marker at the student's inclusive percentile rank; do not imply
+that the score groups form a normal or continuous distribution. The comparison
+remains omitted below the existing cohort threshold, and the stored V1 report
+contract is unchanged.
+
 ## Next.js tooling
 
 - All five Next.js 16 apps use Turbopack for development and `build:test`. Auth and chat also use Turbopack for production. Control, manage, and PWA keep Webpack only for production while `@ducanh2912/next-pwa` generates their service workers. Each script selects exactly one bundler; never combine `--webpack` with `--turbopack`.
@@ -39,6 +48,13 @@ spinner.
 
 ## Components and styling
 
+- **Local fonts**: all five Next.js apps load Source Sans 3 through
+  `packages/shared-components/src/font.ts`; Chat and Manage also use JetBrains
+  Mono. Both families use package-local WOFF2 assets. Keep the existing exports
+  and CSS variables when changing typography, and keep production builds
+  independent of external font services. Upstream versions, licenses, and asset
+  hashes live beside the files in
+  `packages/shared-components/src/fonts/PROVENANCE.md`.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
@@ -57,6 +73,18 @@ spinner.
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
 
+The manage Elements and Activities lists use the shared `Pagination` control
+with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
+keeps the active filters and sort, resets to page 1, omits `numEntries` and
+`offset`, and hides page navigation. It loads the current filtered result and
+does not select records; the existing list checkbox remains the explicit
+select-all action. Page-size preferences accept only those four values when
+read from local storage. The verification-record modal keeps the shared
+control's default opt-out because its backend fetch remains capped at 100
+records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
+`apps/frontend-manage/src/pages/index.tsx:Index`,
+`apps/frontend-manage/src/pages/activities.tsx:Activities`).
+
 ## i18n (next-intl)
 
 Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `control`). Usage: `useTranslations()` without a namespace argument and full-path keys — `t('manage.settings.userSettings')`, `t('shared.generic.cancel')`; `t.rich` for markup. Messages load per page via `getStaticProps`; the plugin is wired in each `next.config.mjs` (`createNextIntlPlugin`).
@@ -68,10 +96,10 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 ## Gotchas absorbed from experience
 
 - **Feature flags gate alone.** Don't combine a flag with data-dependent counts (`flag && count > 0`) — that creates chicken-and-egg visibility problems.
-  - **Active Feature Flags:**
+  - **Legacy active preview fields:**
     - `privatePreview` (User-profile level): Gates advanced beta features such as element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`).
     - `publicPreview` (User-profile level): Gates general preview features like microlearning analytics and new evaluation navigation interfaces.
-  - _Tradeoff Rationale_: We intentionally skip a dedicated feature flag platform (e.g., Unleash/GrowthBook) to avoid infra complexity for a 2-4 developer team. User-profile fields are our standard flagging mechanism.
+  - The behavior-free `@klicker-uzh/feature-flags` GrowthBook foundation is available for incremental migration, but an existing preview field remains authoritative until all consumers for that behavior move. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
 - **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.
 - **Local embed testing**: `util/embed-harness/` must target the branch-local PWA (`http://127.0.0.1:3101/...`), not the production PWA — production CSP blocks localhost embedding.

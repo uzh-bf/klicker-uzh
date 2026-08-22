@@ -185,7 +185,7 @@ test.describe
       page.getByTestId('transfer-ownership'),
       ownership ? 'exist' : 'not.exist'
     )
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await clickCatalogCollectionAction(
       data.CCPublic,
@@ -197,10 +197,9 @@ test.describe
       .click()
     await page.getByTestId('insert-catalog-collection-name').click()
     await page.getByTestId('insert-catalog-collection-name').clear()
-    await typeInto(
-      page.getByTestId('insert-catalog-collection-name'),
-      `${data.CCPublic} NEW`
-    )
+    await page
+      .getByTestId('insert-catalog-collection-name')
+      .fill(`${data.CCPublic} NEW`)
     await page.getByTestId('catalog-collection-name-change-confirm').click()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic} NEW`),
@@ -211,10 +210,7 @@ test.describe
       .click()
     await page.getByTestId('insert-catalog-collection-name').click()
     await page.getByTestId('insert-catalog-collection-name').clear()
-    await typeInto(
-      page.getByTestId('insert-catalog-collection-name'),
-      `${data.CCPublic}`
-    )
+    await page.getByTestId('insert-catalog-collection-name').fill(data.CCPublic)
     await page.getByTestId('catalog-collection-name-change-confirm').click()
     await expectByAssertion(
       page.getByTestId(`catalog-object-${data.CCPublic}`),
@@ -544,11 +540,7 @@ test.describe
     await loginLecturer(page)
     await openCatalogPage()
     await page.getByTestId('create-catalog-collection-button').click()
-    await page.getByTestId('catalog-collection-name-input').click()
-    await typeInto(
-      page.getByTestId('catalog-collection-name-input'),
-      data.CCPublic
-    )
+    await page.getByTestId('catalog-collection-name-input').fill(data.CCPublic)
     await expect(page.getByTestId('modal-object-access')).toContainText(
       messages.manage.catalog.accessPUBLIC
     )
@@ -561,11 +553,9 @@ test.describe
       page.getByTestId(`catalog-object-${data.CCPublic}`)
     ).toContainText(messages.manage.catalog.accessPUBLIC)
     await page.getByTestId('create-catalog-collection-button').click()
-    await page.getByTestId('catalog-collection-name-input').click()
-    await typeInto(
-      page.getByTestId('catalog-collection-name-input'),
-      data.CCRestricted
-    )
+    await page
+      .getByTestId('catalog-collection-name-input')
+      .fill(data.CCRestricted)
     await page.getByTestId('modal-object-access').click()
     await page.getByTestId('object-access-restricted').click()
     await expect(page.getByTestId('modal-object-access')).toContainText(
@@ -1140,7 +1130,7 @@ test.describe
       page.getByTestId('new-permission-username-or-email'),
       'exist'
     )
-    await page.getByTestId('close-share-object').click({ force: true })
+    await page.getByTestId('close-share-object').click()
     await expect(page.getByTestId('close-share-object')).toBeHidden()
     await clickCatalogCollectionAction(
       data.CCRestricted,

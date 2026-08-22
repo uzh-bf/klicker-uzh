@@ -2327,6 +2327,46 @@ export async function getLiveQuizEvaluation(
 
 // ------ LIVE QUIZ MANAGEMENT (DELETION / EMBEDDING / ...) ------
 // #region
+type LiveQuizWithBlocks = DB.Prisma.LiveQuizGetPayload<{
+  include: { blocks: { include: { elements: true } } }
+}>
+type HardDeletableLiveQuizStatus =
+  | typeof DB.PublicationStatus.DRAFT
+  | typeof DB.PublicationStatus.SCHEDULED
+
+// Transaction-aware primitive for draft/scheduled deletion. The caller owns
+// the surrounding transaction, scheduled-task cleanup, and cache invalidation.
+export async function hardDeleteLiveQuiz(
+  {
+    liveQuiz,
+    courseId,
+    statuses,
+  }: {
+    liveQuiz: LiveQuizWithBlocks
+    courseId?: string
+    statuses: HardDeletableLiveQuizStatus[]
+  },
+  prisma: PrismaTransactionClient
+) {
+  const deletedLiveQuiz = await prisma.liveQuiz.delete({
+    where: {
+      id: liveQuiz.id,
+      ...(courseId ? { courseId } : {}),
+      isDeleted: false,
+      status: { in: statuses },
+    },
+  })
+
+  // the deleted live quiz can no longer drive derived element permissions;
+  // access requests need the same propagation after the hard deletion
+  await propagateActivityToElements(
+    { stacks: liveQuiz.blocks, updateAccessRequests: true },
+    prisma
+  )
+
+  return deletedLiveQuiz
+}
+
 export async function deleteLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -2405,14 +2445,16 @@ export async function deleteLiveQuiz(
 
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
-        const quiz = await prisma.liveQuiz.delete({
-          where: {
-            id,
-            status: {
-              in: [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED],
-            },
+        const quiz = await hardDeleteLiveQuiz(
+          {
+            liveQuiz,
+            statuses: [
+              DB.PublicationStatus.DRAFT,
+              DB.PublicationStatus.SCHEDULED,
+            ],
           },
-        })
+          prisma
+        )
 
         // remove the scheduled hatchet publication task, if it exists
         if (
@@ -2428,14 +2470,6 @@ export async function deleteLiveQuiz(
             )
           }
         }
-
-        // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
-        // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
-        // access requests need to be updated as well, since the derived permissions on elements might have changed
-        await propagateActivityToElements(
-          { stacks: liveQuiz.blocks, updateAccessRequests: true },
-          prisma
-        )
 
         return quiz
       },

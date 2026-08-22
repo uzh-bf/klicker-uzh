@@ -198,8 +198,36 @@ describe('assessment report credential services', () => {
         fixture.participantCtx
       )
     ).rejects.toThrow(
-      'Active assessment participation with an accepted invitation not found'
+      'Assessment participation with an accepted invitation not found'
     )
+  })
+
+  it('allows leaderboard-inactive participants to access their assessment results', async () => {
+    const fixture = await createFixture()
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+      },
+      data: { isActive: false },
+    })
+
+    await expect(
+      getStudentAssessmentResults(
+        {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+        fixture.participantCtx
+      )
+    ).resolves.toEqual({
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    })
   })
 
   it('uses the accepted non-UZH course invitation without an Edu-ID scope', async () => {
@@ -267,7 +295,7 @@ describe('assessment report credential services', () => {
     })
   })
 
-  it('rejects inactive participations and inactive participants', async () => {
+  it('passes leaderboard-inactive participants at the participation gate but blocks pending invitations', async () => {
     const fixture = await createFixture()
     await prisma.participation.update({
       where: {
@@ -278,15 +306,29 @@ describe('assessment report credential services', () => {
       },
       data: { isActive: false },
     })
+    await prisma.participantInvitation.updateMany({
+      where: {
+        courseId: fixture.course.id,
+        participantId: fixture.participant.id,
+      },
+      data: {
+        status: InvitationStatus.PENDING,
+        acceptedAt: null,
+        participantId: null,
+      },
+    })
     await expect(
       issueAssessmentReport(
         { courseId: fixture.course.id },
         fixture.participantCtx
       )
     ).rejects.toMatchObject({
-      extensions: { code: 'ASSESSMENT_REPORT_NOT_ELIGIBLE' },
+      extensions: { code: 'ASSESSMENT_REPORT_IDENTITY_UNVERIFIED' },
     })
+  })
 
+  it('issues a report to leaderboard-inactive participants with an accepted invitation', async () => {
+    const fixture = await createFixture()
     await prisma.participation.update({
       where: {
         courseId_participantId: {
@@ -294,12 +336,32 @@ describe('assessment report credential services', () => {
           participantId: fixture.participant.id,
         },
       },
-      data: { isActive: true },
+      data: { isActive: false },
     })
+
+    await expect(
+      issueAssessmentReport(
+        { courseId: fixture.course.id },
+        fixture.participantCtx
+      )
+    ).resolves.toMatchObject({
+      status: CredentialStatus.ACTIVE,
+      snapshot: {
+        subject: {
+          email: fixture.invitationEmail,
+          source: 'COURSE_INVITATION',
+        },
+      },
+    })
+  })
+
+  it('rejects issuance for an inactive participant account', async () => {
+    const fixture = await createFixture()
     await prisma.participant.update({
       where: { id: fixture.participant.id },
       data: { isActive: false },
     })
+
     await expect(
       issueAssessmentReport(
         { courseId: fixture.course.id },

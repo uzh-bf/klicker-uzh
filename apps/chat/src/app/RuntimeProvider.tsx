@@ -16,14 +16,19 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
+import { resolveSelectedMode } from '../lib/config/modes'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
 export function RuntimeProvider({
   chatbotId,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
   children,
 }: Readonly<{
   chatbotId: string
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
@@ -46,6 +51,10 @@ export function RuntimeProvider({
   const resetSession = useChatStore((state) => state.resetSession)
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
+  const loadedModeOptions = useSettingsStore((state) => state.modeOptions)
+  const modeOptionsChatbotId = useSettingsStore(
+    (state) => state.modeOptionsChatbotId
+  )
   const selectedReasoningEffort = useSettingsStore(
     (state) => state.selectedReasoningEffort
   )
@@ -53,6 +62,15 @@ export function RuntimeProvider({
     (state) =>
       state.modelOptions.find((model) => model.id === selectedModel)
         ?.supportsImageAttachments !== false
+  )
+  const activeModeOptions =
+    modeOptionsChatbotId === chatbotId &&
+    Object.keys(loadedModeOptions).length > 0
+      ? loadedModeOptions
+      : initialModeOptions
+  const effectiveSelectedMode = resolveSelectedMode(
+    activeModeOptions,
+    selectedMode
   )
   const loadCredits = useSettingsStore((state) => state.loadCredits)
   const loadModeOptions = useSettingsStore((state) => state.loadModeOptions)
@@ -95,7 +113,11 @@ export function RuntimeProvider({
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
       void (async () => {
-        await loadModeOptions(chatbotId)
+        await loadModeOptions(
+          chatbotId,
+          initialModeOptions,
+          initialModeOptionsAreFallback
+        )
         await loadCredits(chatbotId)
       })()
       return
@@ -131,10 +153,23 @@ export function RuntimeProvider({
     })()
 
     void (async () => {
-      await loadModeOptions(chatbotId)
+      await loadModeOptions(
+        chatbotId,
+        initialModeOptions,
+        initialModeOptionsAreFallback
+      )
       await loadCredits(chatbotId)
     })()
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
+  }, [
+    chatbotId,
+    embedded,
+    initialModeOptions,
+    initialModeOptionsAreFallback,
+    loadCredits,
+    loadModeOptions,
+    loadThreads,
+    threadId,
+  ])
 
   // sync active thread with URL params
   useEffect(() => {
@@ -229,14 +264,15 @@ export function RuntimeProvider({
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(
     selectedModel,
-    selectedMode,
+    effectiveSelectedMode,
     selectedReasoningEffort
   )
 
   // init thread management hooks
   const { onNew, onEdit, onReload, onCancel } = useThreadManagement(
     generateChatResponse,
-    abortControllerRef
+    abortControllerRef,
+    effectiveSelectedMode
   )
 
   const convertMessage = useCallback(

@@ -367,6 +367,8 @@ export type StreamOptions = {
   chunkDelayMs?: number
   /** Pauses after this many text deltas until the test releases the stream. */
   pauseAfterTextChunk?: number
+  /** Pauses after the first tool output, before answer text starts. */
+  pauseAfterToolOutput?: boolean
   /** Payload of the `finish` part; omitted entirely when not given. */
   metadata?: StreamFinishMetadata
   /** Tool calls emitted before the answer text. */
@@ -374,10 +376,12 @@ export type StreamOptions = {
   /** Emits an SSE `error` part after the text. The client stops reading there
    * and renders its error callout instead of finishing normally. */
   errorText?: string
+  /** Closes the stream after its text without emitting a finish event. */
+  omitFinish?: boolean
 }
 
 function makeStreamLines(text: string, options: StreamOptions = {}) {
-  const { metadata, toolCalls = [], errorText } = options
+  const { metadata, toolCalls = [], errorText, omitFinish } = options
 
   const lines = [
     `data: ${JSON.stringify({ type: 'start' })}`,
@@ -415,16 +419,18 @@ function makeStreamLines(text: string, options: StreamOptions = {}) {
     lines.push(`data: ${JSON.stringify({ type: 'error', errorText })}`)
   }
 
-  lines.push(
-    `data: ${JSON.stringify({ type: 'finish-step' })}`,
-    `data: ${JSON.stringify({
-      type: 'finish',
-      ...(metadata ? { messageMetadata: metadata } : {}),
-    })}`,
-    // Trailing line: the client keeps the last (possibly incomplete) line
-    // buffered, so nothing after this point is parsed anyway.
-    'data: [DONE]'
-  )
+  if (!omitFinish) {
+    lines.push(
+      `data: ${JSON.stringify({ type: 'finish-step' })}`,
+      `data: ${JSON.stringify({
+        type: 'finish',
+        ...(metadata ? { messageMetadata: metadata } : {}),
+      })}`,
+      // Trailing line: the client keeps the last (possibly incomplete) line
+      // buffered, so nothing after this point is parsed anyway.
+      'data: [DONE]'
+    )
+  }
 
   return lines
 }
@@ -443,7 +449,13 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
     const lines = makeStreamLines(options.text ?? 'assistant reply #1', options)
 
     await page.addInitScript(
-      ({ chatbotPath, lines: streamLines, delayMs, pauseAfterTextChunk }) => {
+      ({
+        chatbotPath,
+        lines: streamLines,
+        delayMs,
+        pauseAfterTextChunk,
+        pauseAfterToolOutput,
+      }) => {
         const originalFetch = window.fetch.bind(window)
         let releasePausedStream: (() => void) | undefined
         ;(
@@ -503,6 +515,14 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
                   })
                 }
               }
+              if (
+                pauseAfterToolOutput &&
+                eventType === 'tool-output-available'
+              ) {
+                await new Promise<void>((resolve) => {
+                  releasePausedStream = resolve
+                })
+              }
             },
           })
 
@@ -517,6 +537,7 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
         lines,
         delayMs: options.chunkDelayMs,
         pauseAfterTextChunk: options.pauseAfterTextChunk,
+        pauseAfterToolOutput: options.pauseAfterToolOutput,
       }
     )
     return

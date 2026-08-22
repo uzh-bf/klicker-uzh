@@ -2,14 +2,14 @@
 type: Architecture Overview
 title: Architecture Overview
 description: System map of apps and packages, the request path from browser to resolver, the async response pipeline, and where business logic lives.
-timestamp: '2026-08-03'
+timestamp: '2026-08-06'
 tags:
   - architecture
 ---
 
 # Architecture Overview
 
-> **Migration status (2026-08-03):** GraphQL→tRPC (PR #5132) is open but unmerged — this page describes current reality until it lands, so check its status before touching the API layer. For chat, the AI-SDK route-handler layer **is** the production path after the AI SDK 7 / assistant-ui 0.14 upgrade shipped ([ADR 0003](./adr/0003-chat-framework-upgrade.md)); the Mastra `apps/chat-api` service split stays an open exploration in the draft PRs #5126 / #5129 and no longer implies holding back work on the chat platform. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
+> **Migration status (2026-08-03):** GraphQL→tRPC (PR #5132) is open but unmerged — this page describes current reality until it lands, so check its status before touching the API layer. For chat, the AI-SDK route-handler layer **is** the production path after the AI SDK 7 / assistant-ui 0.15 upgrade shipped ([ADR 0003](./adr/0003-chat-framework-upgrade.md)); the Mastra `apps/chat-api` service split stays an open exploration in the draft PRs #5126 / #5129 and no longer implies holding back work on the chat platform. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
 **The one thing to internalize: the GraphQL codegen artifacts are part of the API contract.** Outside dev/test, the backend executes only _persisted_ operations — it looks incoming hashes up in `@klicker-uzh/graphql/dist/server.json` and rejects unknown ones (`apps/backend-docker/src/app.ts:usePersistedOperations`, `allowArbitraryOperations` only under `NODE_ENV development|test`). Clients send hashes from the sibling `client.json`. Both files (plus `src/ops.ts`) are **git-tracked codegen outputs**: every change to a `.graphql` op or the schema must rerun `pnpm --filter @klicker-uzh/graphql generate` and commit the results, or production-mode requests fail.
 
@@ -31,7 +31,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `feature-flags` (typed GrowthBook contracts and browser/Node adapters), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
