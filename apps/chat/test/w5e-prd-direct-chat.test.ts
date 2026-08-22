@@ -522,11 +522,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
           legacyServerName: receipt?.fixture.legacyServerName,
         },
         cleanup: {
-          restoredLegacy: true,
           candidateAbsent: true,
           legacyAbsent: true,
           fixtureAbsent: true,
-          unrelatedRowsUntouched: true,
           exactZeroReadback: true,
         },
       })
@@ -597,7 +595,6 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         failure: 'proof_failed',
       })
       expect(receipt?.cleanup).toMatchObject({
-        unrelatedRowsUntouched: true,
         exactZeroReadback: true,
       })
       expect(fake.ordinaryWasSelected()).toBe(false)
@@ -650,11 +647,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         state: 'planned',
         failure: { category: 'fixture_create_failed' },
         cleanup: {
-          restoredLegacy: true,
           candidateAbsent: true,
           legacyAbsent: true,
           fixtureAbsent: true,
-          unrelatedRowsUntouched: true,
           exactZeroReadback: true,
         },
       })

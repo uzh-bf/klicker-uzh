@@ -202,11 +202,9 @@ export type W5eReceipt = {
     eduaiRoute: Status
   }
   cleanup: {
-    restoredLegacy: boolean
     candidateAbsent: boolean
     legacyAbsent: boolean
     fixtureAbsent: boolean
-    unrelatedRowsUntouched: boolean
     exactZeroReadback: boolean
   }
   payloadDigest: string
@@ -360,11 +358,9 @@ export function initialReceipt(
       eduaiRoute: 'not_run',
     },
     cleanup: {
-      restoredLegacy: false,
       candidateAbsent: false,
       legacyAbsent: false,
       fixtureAbsent: false,
-      unrelatedRowsUntouched: false,
       exactZeroReadback: false,
     },
   })
@@ -1282,9 +1278,6 @@ async function restoreAndDeleteBinding(
     },
     { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
-  options.receipt = updatedReceipt(options.receipt, {
-    cleanup: { ...options.receipt.cleanup, restoredLegacy: true },
-  })
 }
 
 async function deletePreparedBinding(
@@ -1340,9 +1333,6 @@ async function deletePreparedBinding(
     },
     { isolationLevel: 'Serializable', timeout: DB_TIMEOUT_MS }
   )
-  options.receipt = updatedReceipt(options.receipt, {
-    cleanup: { ...options.receipt.cleanup, restoredLegacy: true },
-  })
 }
 
 async function reconcileSwitching(
@@ -1493,7 +1483,7 @@ async function verifyPostconditions(
   options: RunOptions,
   fixture: FixtureState
 ): Promise<W5eReceipt['cleanup']> {
-  const { client, receipt } = options
+  const { client } = options
   const [
     candidateServer,
     candidateConfig,
@@ -1531,7 +1521,6 @@ async function verifyPostconditions(
       ]),
     { timeout: DB_TIMEOUT_MS }
   )
-  const restoredLegacy = receipt.cleanup.restoredLegacy
   const candidateAbsent = candidateServer === null && candidateConfig === null
   const legacyAbsent = legacyConfig === null && legacyServer === null
   const fixtureAbsent =
@@ -1542,14 +1531,12 @@ async function verifyPostconditions(
     participation === null
   const exactZeroReadback = candidateAbsent && legacyAbsent && fixtureAbsent
   const cleanup = {
-    restoredLegacy,
     candidateAbsent,
     legacyAbsent,
     fixtureAbsent,
-    unrelatedRowsUntouched: true,
     exactZeroReadback,
   }
-  options.receipt = updatedReceipt(receipt, { cleanup })
+  options.receipt = updatedReceipt(options.receipt, { cleanup })
   if (fixture.receiptPersisted) await options.store.write(options.receipt)
   return cleanup
 }
@@ -1580,11 +1567,7 @@ async function attemptCleanup(
     await deleteFixture(options, fixture)
   }
   const cleanup = await verifyPostconditions(options, fixture)
-  if (
-    !cleanup.exactZeroReadback ||
-    !cleanup.restoredLegacy ||
-    !cleanup.unrelatedRowsUntouched
-  ) {
+  if (!cleanup.exactZeroReadback) {
     fail('POSTCONDITION_FAILED', 'protected postconditions are not satisfied')
   }
   options.receipt = updatedReceipt(options.receipt, {
