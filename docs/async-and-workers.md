@@ -64,7 +64,10 @@ the same transaction as the genuine response or correction-only materialization.
 The worker removes that row only after a watched Redis transaction has applied
 the vote, result counters, response hashes, leaderboards, XP, and completion
 marker. Before the transaction, it validates target key types and counter
-values; command-level errors never count as completion. A retry with the same
+values and surfaces command-level errors. Redis does not roll back earlier
+commands in a `MULTI/EXEC`, so a partial transaction is not safely recoverable
+from the completion marker alone; production release still requires a
+per-response contribution ledger or reconciliation path. A retry with the same
 correlation ID resumes the row, while a genuine response without a pending
 effect remains a completed legacy duplicate. Terminally rejected or late
 submissions clear their pending marker. Pre-migration responses without an
