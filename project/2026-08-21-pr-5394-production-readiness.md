@@ -2,17 +2,17 @@
 
 ## Execution snapshot (2026-08-22)
 
-This is a dated release-gate snapshot for source commit `3c0b11398b8ed40be962d78dd9823134b4c831b3` and the correction commit `1035a3a2f`. The PR source is based on `v3` at `f58986faa8cfa4ff78d20a1ebeb1666473343d38`, the exact-head Playwright rerun is green, and the native Sol review completed its correction pass. The two PR documentation logs are removed. GitHub remains the live source for later CI and approval state.
+This is a dated release-gate snapshot for source commit `3c0b11398b8ed40be962d78dd9823134b4c831b3`, the correction commit `1035a3a2f`, and the simplification head `a07def5b5`. The PR source is based on `v3` at `f58986faa8cfa4ff78d20a1ebeb1666473343d38`, the exact-head Playwright rerun is green, and the native Sol review completed its correction pass. The two PR documentation logs are removed. GitHub remains the live source for later CI and approval state.
 
 The final database-backed invitation suite passes 21/21 after a clean disposable reset. The concurrency regression forces two service calls through one shared Prisma query extension, uses a five-second barrier, releases it in `finally`, and awaits both operations before fixture cleanup. Migration status reports 178 migrations and an up-to-date schema. The course-history migration uses `CREATE INDEX CONCURRENTLY` as its single SQL statement so index construction does not take the normal write-blocking lock.
 
-GraphQL generation passed twice without generated-artifact changes. GraphQL, Prisma, frontend-manage, and repository checks passed. The repository build completed with 23 successful tasks and exit code 0. `check:all` remains blocked only because the analytics image lacks a C compiler while building `pandas`. The exact runtime is stopped with `routeCount: 0` and no hosts.
+GraphQL generation passed twice without generated-artifact changes before the simplification head, then regenerated cleanly once more after removing the unused unbounded field. GraphQL, Prisma, frontend-manage, and repository checks passed at both heads. The repository build completed with 23 successful tasks and exit code 0. `check:all` remains blocked only because the analytics image lacks a C compiler while building `pandas`. The exact runtime is stopped with `routeCount: 0` and no hosts.
 
 The historical commit list and verification rows below describe earlier snapshots unless they are superseded by this dated record.
 
 ## Verdict
 
-**Ready for merge review, but not for production rollout.** The published source and exact-head CI are verified, and the native Sol correction pass is complete. Production rollout still requires deployment sequencing, migration verification, accepted-invitation recovery, telemetry, and legacy-client drain.
+**Ready for merge review, but not for production rollout.** The published source and exact-head CI are verified, and the native Sol correction pass is complete. Production rollout still requires deployment sequencing, migration verification, accepted-invitation recovery, and telemetry. No legacy-client drain gate exists because the removed unbounded field never shipped in a deployed release.
 
 This report is limited to the local branch `rs/pr-5394-backend-repair` at the current local repair commits:
 
@@ -49,7 +49,7 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 | Observability | Expected validation outcomes remain structured invitation results, while unexpected infrastructure errors reach GraphQL error handling. The service and importer expose counts, but there is no server-side aggregate metric or PII-free audit event for invitation outcomes. | **Open:** add or explicitly accept operational telemetry and alerting for created, accepted, duplicate, failed, and repaired rows. |
 | Config and secrets | The repair changes no dependencies, environment variables, deployment configuration, or secret-bearing files. Local staged-content review found no credentials or personal data. | **No finding in this slice;** rerun repository secret and generated-artifact checks after push. |
 | UX, accessibility, and localization | CSV parse errors and import summaries now use live regions, the native file input is removed from sequential focus, count-bearing copy uses ICU plural forms, invitation timestamps use the active locale, and the pending delete target is 44px. | **Fixed in the correction slice;** retain browser verification for the release evidence. |
-| Performance and capacity | The new Manage path rejects more than 200 rows server-side, rejects CSV files above 1 MiB or 200 data rows in the browser, and reads invitation history through a stable paginated field capped at 50 entries. The `courseId, invitedAt, id` composite index now covers the page filter and ordering in both Prisma schemas, with a concurrent production migration. The old unbounded field and persisted operation remain for rolling clients. | **Partially fixed:** apply and verify the additive migration, then retire the legacy field only after deployment evidence shows that old clients have drained. |
+| Performance and capacity | The new Manage path rejects more than 200 rows server-side, rejects CSV files above 1 MiB or 200 data rows in the browser, and reads invitation history through a stable paginated field capped at 50 entries. The `courseId, invitedAt, id` composite index now covers the page filter and ordering in both Prisma schemas, with a concurrent production migration. The unused PR-local unbounded list field and its persisted hash were removed at head `a07def5b5` after the consumer audit. | **Partially fixed:** apply and verify the additive migration; the GraphQL surface itself is final. |
 | Docs and operability | Domain and GraphQL-layer docs now describe pending-only metadata updates, exactly-one active identity resolution, preserved leaderboard consent, and surfaced unexpected errors. The two PR-added `docs/log` files are removed, and current `v3` deletions remain applied. | **Partially fixed:** document accepted-invitation recovery and complete/archive any stale implementation-plan artifacts after the final head is published. |
 
 ## Backend invitation evidence
@@ -74,6 +74,8 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 | Full `check:all` | failed at `@klicker-uzh/analytics#lint`: uv could not build pandas 2.2.2 because the runtime image has no `cc`, `gcc`, or `clang`; dependent aggregate tasks were cancelled. No analytics files changed afterward, so this remains an environment blocker rather than a PR finding |
 | Browser verification | manual Agent Browser verification passed in English and German, including finite 10/20/50 choices and page two. The focused Playwright test is committed, but the disposable runtime lacked Playwright's headless shell after the install attempt, so that spec remains a CI/runtime follow-up |
 | Build and exact-head CI | the final build passed with 23 successful tasks and exit code 0, and the exact-head Playwright rerun passed all eight shards and its status gate |
+| Simplification head `a07def5b5` | consumer audit found no caller of the unbounded list field; field, service function, operation document, and persisted hashes removed; codegen, graphql check, frontend-manage check, format check, and the database-backed invitation suite (21/21) pass; exact-head CI reruns green on GitHub |
+| Final review at `a07def5b5` | native Sol xhigh final review of e2e885bdd..a07def5b5 passed with one evidence-drift finding; the plan-compliance correction is this snapshot update; simplifier xhigh reported no further behavior-preserving simplifications |
 
 ## Not checked
 
@@ -84,6 +86,6 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 
 ## Handoffs
 
-1. Keep the legacy unbounded field during the rolling window; remove it only in a separate follow-up after deployment evidence shows that old clients have drained.
+1. No legacy-field follow-up remains: the unused PR-local unbounded field was removed at `a07def5b5` because both fields were introduced by this unmerged PR and no deployed client can depend on them.
 2. Complete the accepted-invitation recovery procedure and PII-free invitation outcome telemetry before production rollout.
 3. Obtain the required code-owner approval before merge. Do not merge or deploy in this task.
