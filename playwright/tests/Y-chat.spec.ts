@@ -2173,7 +2173,7 @@ test.describe('Chatbot Source Citations', () => {
   test('Source details stay in hover and focus previews for cards and citations', async ({
     page,
   }) => {
-    const messageId = '4a1b2c3d-0003-4a91-8f6c-2b7d1e5a9c40'
+    const messageId = '4a1b2c3d-0013-4a91-8f6c-2b7d1e5a9c40'
     const excerpt =
       'This excerpt belongs in the source preview, not in the source card.'
 
