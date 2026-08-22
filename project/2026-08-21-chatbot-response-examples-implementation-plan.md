@@ -5,7 +5,8 @@
 - Date: 2026-08-21
 - Revised: 2026-08-22
 - Ceremony: full path
-- Status: K1 implementation in progress under the approved one-time plan
+- Status: K1 delivery candidate is published, green, and reviewed; Phase 5
+  reconciliation is pending
 - Plan: `project/2026-08-21-chatbot-response-examples-implementation-plan.md`
 - Current repository: `uzh-bf/klicker-uzh`
 - Current branch: `feat/response-examples-foundation`
@@ -16,7 +17,8 @@
 - Intended public target: refreshed `origin/v3-ai`
 - Deferred private repository: `uzh-bf/klicker-uzh-catalyst`; no Catalyst
   change belongs to this milestone
-- Pull requests: none yet
+- Pull requests: draft PR #5474
+  (`feat/response-examples-foundation` -> `v3-ai`)
 - Design: [chatbot response-example design](./2026-08-21-chatbot-response-example-design.md)
 - Scope boundary: independent package; it is not part of the chatbot HITL
   roadmap, U1/M1, or any roadmap execution task
@@ -509,8 +511,8 @@ because those belong to the deferred integration milestone.
 
 ## Progress
 
-- Status: K1 implementation committed and reviewed; draft publication is the
-  remaining authorized boundary step
+- Status: K1 implementation is committed, reviewed, and published as draft PR
+  #5474; Phase 5 reconciliation is the remaining boundary step
 - Completed: repository mapping, product grill, design, ADRs 0028-0036,
   independent-scope correction, current source refresh, stack-capability check,
   two native Sol planning passes, refreshed `v3-ai` adoption, the design
@@ -519,9 +521,9 @@ because those belong to the deferred integration milestone.
   owner-scoped GraphQL query and lifecycle mutations, deterministic digest,
   generated artifacts, synthetic test-only fixtures, focused tests, and the
   matching wiki update
-- Active slice: exact branch publication and one draft PR targeting `v3-ai`
-- Remaining: exact branch publication and one draft PR targeting `v3-ai`;
-  K2, K3, K4, and E1 remain out of scope for this work item
+- Active slice: none; K1 has reached `BOUNDARY_CANDIDATE`
+- Remaining: Phase 5 reconciliation for K1; K2, K3, K4, and E1 remain blocked
+  pending K1 acceptance through Phase 5
 - Latest public evidence: `feat/response-examples-foundation` is based directly
   on `origin/v3-ai` at
   `198747502a81149c2f61bb3dcd097716bbe32244`; PR #5424 remains separate and
@@ -548,7 +550,8 @@ because those belong to the deferred integration milestone.
   no blocking findings and the simplification pass returned ship-as-is; the one
   accepted advisory hardening is commit `d46658b2f`, followed by green focused
   GraphQL checks and 4/4 database tests.
-- CI evidence: draft PR #5474 targets `v3-ai` at head `7146335bc6`; after
+- CI evidence: draft PR #5474 targets `v3-ai` at head
+  `80921561724e5bb91fdd9fa2f1a1b6a336c05f6d`; after
   two branch-specific fixes (missing util auth subpath Rollup entries in
   `d20ef52a7` and a stale manage-assistant Playwright locator in
   `7146335bc6`, both outside the response-example diff), the full check suite
@@ -558,10 +561,12 @@ because those belong to the deferred integration milestone.
   merge, deployment, and live use remain withheld by decision.
 - Required delivery layer: one independently green, reviewed draft PR for K1;
   the four-layer milestone delivery remains pending
-- Achieved delivery layer: committed design, ADRs, approved plan, reviewed K1
-  foundation, and the advisory-hardening commit; draft PR remains to be opened
-- Next action: publish the exact branch and create one draft PR targeting
-  `v3-ai`; keep all withheld actions unchanged.
+- Achieved delivery layer: one independently green, reviewed draft PR #5474,
+  with the committed design, ADRs, approved plan, K1 foundation, and advisory
+  hardening included
+- Next action: run Phase 5 reconciliation against the exact K1 boundary
+  evidence; keep the draft and all withheld actions unchanged, and do not
+  start K2 until K1 is accepted through Phase 5.
 
 ## Next steps after terminal
 
