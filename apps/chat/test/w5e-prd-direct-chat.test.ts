@@ -207,11 +207,15 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       isActive: true,
       updatedAt: new Date('2026-08-21T00:00:00.000Z'),
     }
+    let courseData: Record<string, unknown> | undefined
     type FakeTx = {
       chatbotMCPServer: {
         findUnique: (args: { where: { name: string } }) => Promise<unknown>
       }
-      user: { create: () => Promise<never> }
+      user: { create: () => Promise<{ id: string }> }
+      course: {
+        create: (args: { data: Record<string, unknown> }) => Promise<never>
+      }
     }
     const tx: FakeTx = {
       chatbotMCPServer: {
@@ -220,7 +224,11 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         ),
       },
       user: {
-        create: vi.fn(async () => {
+        create: vi.fn(async () => ({ id: ids.ownerId })),
+      },
+      course: {
+        create: vi.fn(async ({ data }) => {
+          courseData = data
           throw new Error('synthetic nested transaction error')
         }),
       },
@@ -251,6 +259,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       expect(await readFile(receiptPath, 'utf8')).not.toContain(
         'synthetic nested transaction error'
       )
+      expect(courseData).toMatchObject({ authType: 'SSO', pinCode: null })
       expect(transaction).toHaveBeenCalledTimes(1)
       expect(fetchImpl).toHaveBeenCalledTimes(1)
     } finally {

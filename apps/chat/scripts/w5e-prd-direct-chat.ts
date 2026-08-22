@@ -917,7 +917,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
           startDate: now,
           endDate: new Date(now.getTime() + 86_400_000),
           groupDeadlineDate: now,
-          authType: 'PIN',
+          authType: 'SSO',
           pinCode: null,
         },
       })
