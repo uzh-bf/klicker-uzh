@@ -98,5 +98,12 @@ lecturer-demo work.
   Biome, diff checks, gitleaks, and the normal repository pre-commit hook
   passed. The hook again reported only the existing Node 26 versus Node 24
   engine warning and unrelated deprecation warnings.
+- Review correction: the fifth review found percent-encoded Unicode production
+  host aliases. Commit `538f4e630` rejects percent-encoded authority
+  characters before host normalization in all three scripts.
+- Verification after the fifth correction: four positive regression
+  inspections and three percent-encoded production-host negative inspections
+  passed; the archive hard-cap check and focused Biome check passed. No live
+  request was made.
 - S3: in progress — repeat integrated final review after the latest correction.
 - S4: pending — push and open draft PR; merge remains withheld.
