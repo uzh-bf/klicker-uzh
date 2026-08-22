@@ -419,3 +419,10 @@ Gate 3 ruling and names every still-withheld action.
   disabled capability, and deterministic concurrent-charge proof. GraphQL
   generation, package typecheck, and package build pass in the Node 24 DevPod;
   the build retains its known repository-wide Rollup TypeScript warnings.
+- 2026-08-22: the S1 Ox Alpha simplifier requested one behavior-preserving
+  Pothos `t.expose` cleanup, which was accepted. The parallel authorization and
+  data-integrity review returned `ACCEPT` with no blockers. Its wiki-topology
+  clarification was accepted, and its admin-scope suggestion was folded into
+  the existing explicit-target read/write test. The broader helper split and a
+  second-class concurrency variant were declined as unnecessary; the shared
+  guard and column-scoped update already have direct evidence.

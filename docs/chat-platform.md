@@ -146,8 +146,9 @@ Each lane returns its fixed usage class, budget, used credits, non-negative
 remaining credits, and the exact next Zurich reset instant. Missing rows become
 zero-valued lanes, while the outer `authorized` field always reflects the live
 account capability. An `ACCOUNT_OWNER` can access only its own account; an
-`ADMIN` can supply a target owner ID. Other lecturer login scopes and all
-participant roles are denied at both the schema and service boundaries.
+`ADMIN` can supply a target owner ID. Other lecturer login scopes are denied by
+the service. Participant roles are denied by the schema, while the service
+repeats the role and scope checks as a direct-call safeguard.
 
 `setChatAccountUsageBudgets` validates both values against the shared
 `Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows

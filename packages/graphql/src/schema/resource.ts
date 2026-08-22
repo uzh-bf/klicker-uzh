@@ -125,13 +125,11 @@ export const ChatAccountUsageOverviewType =
   ChatAccountUsageOverviewRef.implement({
     fields: (t) => ({
       authorized: t.exposeBoolean('authorized'),
-      baseModelUsage: t.field({
+      baseModelUsage: t.expose('baseModelUsage', {
         type: ChatAccountUsageLaneRef,
-        resolve: (overview) => overview.baseModelUsage,
       }),
-      advancedModelUsage: t.field({
+      advancedModelUsage: t.expose('advancedModelUsage', {
         type: ChatAccountUsageLaneRef,
-        resolve: (overview) => overview.advancedModelUsage,
       }),
     }),
   })

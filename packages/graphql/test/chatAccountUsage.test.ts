@@ -48,7 +48,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     })
 
     ownerCtx = contextFor(ownerId, UserRole.USER, UserLoginScope.ACCOUNT_OWNER)
-    adminCtx = contextFor(adminId, UserRole.ADMIN, UserLoginScope.ACCOUNT_OWNER)
+    adminCtx = contextFor(adminId, UserRole.ADMIN, UserLoginScope.FULL_ACCESS)
   })
 
   afterEach(async () => {
@@ -279,10 +279,38 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     await expect(
       getChatAccountUsage({ ownerId, now: NOW }, adminCtx)
     ).resolves.toMatchObject({ authorized: true })
+    await expect(
+      setChatAccountUsageBudgets(
+        {
+          ownerId: otherOwnerId,
+          baseBudgetCredits: 3,
+          advancedBudgetCredits: 4,
+          now: NOW,
+        },
+        adminCtx
+      )
+    ).resolves.toMatchObject({
+      baseModelUsage: { budgetCredits: 3 },
+      advancedModelUsage: { budgetCredits: 4 },
+    })
 
     for (const targetOwnerId of [otherOwnerId, randomUUID()]) {
       await expect(
         getChatAccountUsage({ ownerId: targetOwnerId, now: NOW }, ownerCtx)
+      ).rejects.toMatchObject({
+        message: 'FORBIDDEN',
+        extensions: { code: 'FORBIDDEN' },
+      })
+      await expect(
+        setChatAccountUsageBudgets(
+          {
+            ownerId: targetOwnerId,
+            baseBudgetCredits: 1,
+            advancedBudgetCredits: 1,
+            now: NOW,
+          },
+          ownerCtx
+        )
       ).rejects.toMatchObject({
         message: 'FORBIDDEN',
         extensions: { code: 'FORBIDDEN' },
