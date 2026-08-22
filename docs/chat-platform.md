@@ -137,8 +137,8 @@ and `usedCredits` are `Decimal(18,6)` defaulting to zero, and the composite
 primary key prevents duplicate account/class/month rows. Counters start at
 zero at migration cutover; a missing row projects to budget 0 / used 0. The
 Zurich month boundary (including DST) is derived deterministically in
-`packages/util/src/chatUsage.ts`. U1 stores and classifies only — runtime
-charging (U2) and the lecturer-facing lanes (U3) are separate follow-ups.
+`packages/util/src/chatUsage.ts`. The participant chat route enforces these
+counters at runtime; the lecturer-facing lanes remain a separate follow-up.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -172,8 +172,7 @@ live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
 a direct comparison. The seeded Benibot fixture allow-lists all three of
 `auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
-fallback invariant below without relying on the `|| m.fallback` exemption that
-the runtime filters apply anyway.
+strict model allow-list. Runtime fallback never bypasses that allow-list.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
@@ -206,22 +205,48 @@ exhaustion disables only that class and never triggers an automatic
 cross-class switch. Participant-facing APIs must return stable class-specific
 exhaustion codes without cost-center or hidden funding fields.
 
-U1 in this Phase 0 branch implements the account-scoped counters and the
-registry classification only. It does not yet charge requests against them,
-and the manage UI does not expose them. The existing `ChatUsageCredits`
-balance remains a separate participant usage credit, and its current fallback
-behavior is legacy. The follow-up must use a
-same-class fallback only, charge reliable provider usage after generation with
-atomic counters, and accept the documented bounded final/concurrent overrun;
-strict reservations, immutable ledgers, automated refunds, invoices,
-per-chatbot allocation, and participant-credit migration are deferred.
+`apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:POST` resolves the
+effective model and its server-derived usage class, then reads the live account
+authorization and current owner/class/Zurich-month row before thread creation,
+image description, message persistence, or provider streaming. A disabled
+authorization, missing or zero row, or exhausted class fails closed with HTTP
+`403` and either `CHAT_MODEL_UNAVAILABLE_BASE` or
+`CHAT_MODEL_UNAVAILABLE_ADVANCED`. The response never exposes budgets, used
+credits, cost centers, contributions, providers, or settlement details.
+Exhausting one class neither disables the other nor invokes fallback.
+
+The client-supplied assistant message ID is the terminal lifecycle key.
+`apps/chat/src/services/accountUsage.ts:isChatTurnKeyClaimed` rejects a
+completed key before MCP or provider work. After generation,
+`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` creates the first
+assistant result, increments the owner/class/month counter by the same rounded
+six-decimal value, and updates the thread timestamp in one `ReadCommitted`
+transaction. Duplicate acceptance verifies assistant role, thread, chatbot,
+and owner; any foreign collision becomes the same generic `409` conflict. A
+normal finish and an abort use this finalizer once, and a late `onEnd` after an
+abort is ignored. Missing reliable main-stream usage still closes the message
+key with `creditsUsed = null` and no account charge. The availability check is
+not a reservation, so the bounded final-turn and concurrent overrun accepted by
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md) remains possible; the next
+request then fails its live check.
+
+The existing `ChatUsageCredits` balance remains a separate participant
+allowance. Its decrement runs after account finalization and is not part of the
+account transaction. At zero participant credits, fallback must intersect the
+selected usage class, `fallback: true`, and the chatbot allow-list. The current
+registry has a `BASE` fallback only, so a zero-credit `ADVANCED` turn is denied
+instead of switching to `BASE`. Automatic model selection retains Auto and is
+therefore attributed to `ADVANCED`; the credits response keeps allow-listed
+model capabilities visible independently of the participant balance. Strict
+reservations, immutable ledgers, automated refunds, invoices, per-chatbot
+allocation, and participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- The legacy zero-credit participant path needs a usable fallback model
-  (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot
-  `allowedModelIds` must include it. The account-usage follow-up must replace
-  this with a same-class fallback and stop when no model in the selected class
-  is available. Audit the legacy path with
+- The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` (default
+  `gpt-4.1-mini`) only when that model is marked as fallback, shares the
+  selected usage class, and appears in the chatbot's explicit
+  `allowedModelIds`. It stops when no allowed fallback exists in that class.
+  Audit configured chatbot allow-lists with
   `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
@@ -241,9 +266,9 @@ their configured description.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
-design-system sidebar drawer is closed. When the balance reaches zero, the legacy path states
-that new messages use the smaller model; the account-usage follow-up must not silently switch
-between base and advanced classes.
+design-system sidebar drawer is closed. When the balance reaches zero, it states
+that some models may no longer be available; the runtime never silently
+switches between base and advanced classes.
 The bar is rendered only by `SidebarMain`; embedded mode continues to use its existing
 `EmbeddedCreditsBar` so the two compact readouts are never shown together.
 

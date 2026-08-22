@@ -1721,7 +1721,7 @@ test.describe('Chatbot Settings Panel', () => {
       '0 / 100'
     )
     await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
-      'You have used up all your credits'
+      'Some models may no longer be available'
     )
 
     await openSettings(page)
@@ -1742,7 +1742,7 @@ test.describe('Chatbot Settings Panel', () => {
       '0 / 100'
     )
     await expect(page.getByTestId('chat-mobile-fallback-notice')).toContainText(
-      'New messages use the smaller model'
+      'Some models may no longer be available'
     )
   })
 

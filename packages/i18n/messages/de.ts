@@ -32,7 +32,7 @@ export default {
       usingPrimaryModel:
         'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
+        'Es sind keine Credits mehr übrig. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -53,9 +53,9 @@ export default {
       resetAt: 'Werden am {date} wieder aufgefüllt.',
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
-        'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+        'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
       fallbackNotice:
-        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
+        'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
     },
     sidebar: {
       newChat: 'Neuer Chat',

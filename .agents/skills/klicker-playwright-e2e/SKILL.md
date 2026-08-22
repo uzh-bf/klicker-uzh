@@ -76,12 +76,13 @@ text. Keep the `/noLogin` assertion focused on the login action and concise
 return copy, not a raw redirect URL.
 
 For chat settings coverage, seed credits through the existing `setCredits`
-helper rather than mocking the credits route. A zero-credit response must leave
-only the fallback model available, reconcile an unavailable persisted model to
-that fallback, and expose the fallback notice in the sidebar-enabled mobile
-layout outside the closed drawer. Set the viewport before `visitChat`; embedded
-chat already owns its compact `EmbeddedCreditsBar` and should not receive the
-sidebar mobile bar.
+helper rather than mocking the credits route. A zero-credit response keeps the
+chatbot's allow-listed models visible and preserves the selected usage class.
+The runtime may choose only an allowed same-class fallback; when none exists,
+it denies the turn instead of switching classes. Assert the neutral model-
+availability notice in the sidebar-enabled mobile layout outside the closed
+drawer. Set the viewport before `visitChat`; embedded chat already owns its
+compact `EmbeddedCreditsBar` and should not receive the sidebar mobile bar.
 
 For chat welcome coverage, assert that the chatbot name and selected mode
 description are visible before clicking a starter. Starter clicks populate the

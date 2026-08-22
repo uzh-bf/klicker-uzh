@@ -272,7 +272,14 @@ They do not bulk-delete shared development data.
 - Record that no `ADVANCED` fallback is currently declared and that runtime
   denies rather than crosses class. Do not expose or describe hidden funding
   amounts.
-- Commit: `docs(chat): document runtime usage charging`.
+- Correct the pre-existing participant zero-credit copy in English and German
+  so it no longer promises a smaller-model fallback that U2 cannot provide.
+  Keep the change informational: it must not imply that every model remains
+  available or alter selection, charging, or denial behavior.
+- Update the focused Playwright expectations and agent-facing E2E guidance,
+  then verify desktop, automatic-selection settings, and mobile surfaces in
+  both locales in a real browser.
+- Commit: `fix(chat): clarify zero-credit model availability`.
 - Run the complete verification portfolio, then an Ox Alpha integrated final
   review of the exact U2 range. Any implementation correction reopens the
   affected focused checks and exact-head final review.
@@ -336,11 +343,12 @@ changing the evidence obligations. A Prisma schema or migration command is not
 planned. If implementation evidence proves a schema change is necessary, stop
 with `BOUNDARY_CANDIDATE` before editing Prisma.
 
-Browser verification is not planned because U2 changes no React component,
-styling, i18n text, auth/redirect/cookie flow, or frontend-facing GraphQL
-operation. The existing settings-store contract receives a focused regression
-test. If the solution needs a visible participant UI change, the browser gate
-arms and the slice stops for a scope update before implementation.
+Browser verification was not part of the initial scope because the runtime
+implementation changed no visible surface. S3 then found inaccurate existing
+zero-credit copy and armed the plan's scope boundary. After the user's narrow
+approval, the browser gate covers the corrected English and German desktop,
+automatic-selection settings, and mobile surfaces. The existing settings-store
+contract retains its focused regression test.
 
 ## Risks and failure shields
 
@@ -407,5 +415,42 @@ arms and the slice stops for a scope update before implementation.
   The focused matrix passed 37 checks; the complete Chat suite passed 369
   tests with six expected integration skips; all six enabled PostgreSQL cases
   passed; and Node 24 `pnpm run check:all` passed.
-- Current state: inspect and commit the immutable S2 slice, then run its Ox
-  Alpha simplifier and risk review before S3.
+- 2026-08-22: S2 was committed at `30544d6f5`. Its Ox Alpha simplifier and
+  risk review both returned `PASS` for `02f1fabbf..30544d6f5`; no code
+  correction was requested. The risk reviewer independently reran 21 focused
+  tests and the Chat package type-check successfully.
+- 2026-08-22: S3 grounding found that the existing participant zero-credit
+  notice still promises that new messages use a smaller model. U2 now correctly
+  denies zero-credit `ADVANCED` turns because the registry has no allowed
+  same-class fallback, so that visible notice would become inaccurate. The
+  plan's browser-gate clause therefore arms: pause before changing i18n or UI,
+  obtain a narrow scope update, then verify the corrected notice in a real
+  browser before accepting S3.
+- 2026-08-22: the user approved the narrow participant notice and browser-
+  verification scope update. The correction uses neutral model-availability
+  copy in both locales, updates the existing desktop/mobile expectations and
+  agent-facing Playwright guidance, and does not change model, fallback,
+  funding, account, or lecturer-lane behavior.
+- 2026-08-22: the complete Chat suite passed again after the copy correction
+  with 369 tests and six expected skips. The Playwright project type-check and
+  test discovery passed, listing 870 tests. The two focused browser tests could
+  not launch because the DevPod lacks Playwright's Chromium headless-shell
+  binary; no product assertion ran or failed.
+- 2026-08-22: `agent-browser` verified the seeded participant at zero credits
+  on the English and German desktop, lecturer-managed automatic-selection
+  settings, and 390-by-844 mobile surfaces. All showed 0 / 100 and the neutral
+  availability copy, with no browser errors. Screenshots are retained under
+  ignored `project/_local/screenshots/`.
+- 2026-08-22: the rebuilt runtime, migration, and synthetic seed completed.
+  Managed route proof still failed on host curl's SSL certificate “out of
+  memory” error, but exact proxy-route reconciliation registered Chat, PWA,
+  API, and Auth and enabled successful HTTPS browser verification.
+- 2026-08-22: the repository-wide OKF validator reported 18 pre-existing
+  metadata errors in unrelated ADR and solution pages. It reported no error
+  for the changed `docs/chat-platform.md` page.
+- 2026-08-22: the final Node 24 `pnpm run check:all` passed all 25 repository
+  checks, and the Chat production build completed successfully. Its expected
+  local warning states that model requests need a key; no model call was part
+  of this browser-copy verification.
+- Current state: inspect and commit S3, then run the integrated Ox Alpha final
+  review.
