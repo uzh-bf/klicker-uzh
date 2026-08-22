@@ -62,3 +62,6 @@ output/
 
 playwright/playwright-report/
 playwright/test-results/
+# Local, untracked agent handoffs and scratch
+project/_local/
+docs/project/_local/
