@@ -164,21 +164,31 @@ U2 charges and U3 exposes the lecturer lanes.
 
 ## Progress
 
-- Current (2026-08-22): U1 executed and reviewed. Complete immutable range
-  `76e6a7f97..ceb95c7e5` — plan commit 366b408d8, S1 schema/migration
-  b507b7e61, S2 registry classification 18ed32d5b, S3 docs c901c5279,
-  review corrections ceb95c7e5.
+- U1-Q1 was approved. U1 is executed and locally committed: plan commit
+  366b408d8, S1 schema/migration b507b7e61, S2 registry classification
+  18ed32d5b, S3 docs c901c5279, slice-review corrections ceb95c7e5,
+  initial final-review dispositions 9ef77cbb7, and the registry-presence
+  invariant restoration 694212f.
 - Slice gates: simplifier DONE_WITH_CONCERNS (2 findings implemented,
   1 rejected per approved-plan validation-test requirement) at
   `project/_local/reviews/2026-08-22-u1-simplifier.md`; slice reviewer DONE
   after re-pass (both MAJOR findings resolved in ceb95c7e5) at
-  `project/_local/reviews/2026-08-22-u1-slice-review.md`; integrated final
-  reviewer DONE_WITH_CONCERNS (three non-blocking docs/test-maintenance
-  findings, all dispositioned in this range's follow-up commit) at
-  `project/_local/reviews/2026-08-22-u1-final-review.md`.
+  `project/_local/reviews/2026-08-22-u1-slice-review.md`.
+- Integrated final gate: Ox Alpha (`combo/ox-alpha`, max effort) passed the
+  substantive range `76e6a7f97..ceb95c7e5` with no blocking findings at
+  `project/_local/reviews/2026-08-22-u1-ox-final-review.md`. The orchestrator
+  restored the only deployment-registry presence assertion after the initial
+  disposition commit removed it. The terminal Ox Alpha re-read covers the
+  exact post-Progress head before boundary publication; any non-PASS result
+  reopens this Progress entry.
 - Verification (exact devcontainer): check:all EXIT=0; chat + graphql builds
   EXIT=0; chat tests 352/352; util tests 55/55; graphql DB test 1/1;
-  prisma migrate status up to date.
+  prisma migrate status up to date. After 694212f, the chat suite again passed
+  40/40 files and 352/352 tests. The host pre-commit rerun reached the chat
+  check under unsupported Node 26 and failed on concurrently generated
+  `.next/dev` files; the commit used the passing Node 24 devcontainer evidence.
 - Delivery: `reviewed` (required) achieved. Boundary owner next action:
   roadmap orchestrator owns push, PR mutation, merge, deployment, live proof,
-  Phase 5, and published-draft updates. Runtime stopped after final checks.
+  Phase 5, and published-draft updates. The exact workspace
+  `feat-chatbot-lecturer-config-pha` is stopped and preserved with zero active
+  routes.
