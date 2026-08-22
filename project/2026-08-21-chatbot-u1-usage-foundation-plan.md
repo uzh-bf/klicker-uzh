@@ -164,11 +164,21 @@ U2 charges and U3 exposes the lecturer lanes.
 
 ## Progress
 
-- Current: planning complete, reviewed, awaiting the orchestrator's
-  execution-plan approval ruling (single question below).
-- Next: on approval, run S1–S3 with reviews (S1/S2 slice review via
-  `slice-reviewer` for data-integrity + simplifier where substantive;
-  integrated `final-reviewer` on the complete package), runtime lifecycle
-  per `$rs-local-runtime-lifecycle`.
-- Delivery: `reviewed` (required); orchestration of Phase 5 and draft PR
-  publication stays with the roadmap orchestrator.
+- Current (2026-08-22): U1 executed and reviewed. Complete immutable range
+  `76e6a7f97..ceb95c7e5` — plan commit 366b408d8, S1 schema/migration
+  b507b7e61, S2 registry classification 18ed32d5b, S3 docs c901c5279,
+  review corrections ceb95c7e5.
+- Slice gates: simplifier DONE_WITH_CONCERNS (2 findings implemented,
+  1 rejected per approved-plan validation-test requirement) at
+  `project/_local/reviews/2026-08-22-u1-simplifier.md`; slice reviewer DONE
+  after re-pass (both MAJOR findings resolved in ceb95c7e5) at
+  `project/_local/reviews/2026-08-22-u1-slice-review.md`; integrated final
+  reviewer DONE_WITH_CONCERNS (three non-blocking docs/test-maintenance
+  findings, all dispositioned in this range's follow-up commit) at
+  `project/_local/reviews/2026-08-22-u1-final-review.md`.
+- Verification (exact devcontainer): check:all EXIT=0; chat + graphql builds
+  EXIT=0; chat tests 352/352; util tests 55/55; graphql DB test 1/1;
+  prisma migrate status up to date.
+- Delivery: `reviewed` (required) achieved. Boundary owner next action:
+  roadmap orchestrator owns push, PR mutation, merge, deployment, live proof,
+  Phase 5, and published-draft updates. Runtime stopped after final checks.

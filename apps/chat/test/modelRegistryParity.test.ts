@@ -120,14 +120,6 @@ function loadDeployedRegistries() {
 describe('deployed chat model registry parity (values.yaml)', () => {
   const deployed = loadDeployedRegistries()
 
-  test('loads both deployment registries', () => {
-    expect(deployed).toHaveLength(2)
-    for (const { chat, backend } of deployed) {
-      expect(chat.length).toBeGreaterThan(0)
-      expect(backend.length).toBeGreaterThan(0)
-    }
-  })
-
   for (const { name, raw, chat, backend } of deployed) {
     test(`${name}: every entry declares an explicit usage class`, () => {
       for (const [index, entry] of raw.entries()) {

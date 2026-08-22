@@ -121,7 +121,7 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 ## Model registry and credits
 
-`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other AND parses both deployed values.yaml registries through both consumers, so values-only drift fails CI. Registry gotchas that have caused production incidents:
+`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other AND parses both deployed values.yaml registries through both consumers, so a missing or inconsistent usage classification in either deployment file fails CI. Registry gotchas that have caused production incidents:
 
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
