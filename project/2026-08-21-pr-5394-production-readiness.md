@@ -90,3 +90,17 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 1. No legacy-field follow-up remains: the unused PR-local unbounded field was removed at `a07def5b5` because both fields were introduced by this unmerged PR and no deployed client can depend on them.
 2. Complete the accepted-invitation recovery procedure and PII-free invitation outcome telemetry before production rollout.
 3. Obtain the required code-owner approval before merge. Do not merge or deploy in this task.
+
+## Final publication addendum (2026-08-23)
+
+- The final functional backend head is `0237a3363`, based on current `v3`
+  `de366d6f943b06f15354db8364cafefef94aa592`. The branch remains
+  mergeable without conflicts; the exact published head and CI run are read
+  back after the final push.
+- The invitation import result no longer publishes unused `invitationId` or
+  `participantId` fields. The operation, schema, persisted-query maps, and
+  generated TypeScript artifacts were regenerated; the GraphQL typecheck and
+  clean seeded 21-test invitation suite pass.
+- `git ls-files docs/log` is empty. No merge, deployment, production access,
+  or worktree deletion was performed. Required code-owner approval remains
+  open.
