@@ -209,6 +209,14 @@ function writeReceipt(filePath: string, receipt: Receipt) {
   fs.writeFileSync(filePath, `${JSON.stringify(receipt, null, 2)}\n`)
 }
 
+function archiveReceipt(filePath: string, receipt: Receipt) {
+  if (receipt.stage !== 'after' || receipt.afterStateHash === null) {
+    throw new Error('Only completed activation receipts can be archived')
+  }
+  const archivePath = `${filePath}.history-${receipt.afterStateHash}.json`
+  if (!fs.existsSync(archivePath)) fs.copyFileSync(filePath, archivePath)
+}
+
 async function readSnapshot(
   db: Database,
   spec: TargetSpec,
@@ -404,7 +412,10 @@ async function main() {
   const secret = requiredEnv(SECRET_ENV_VAR)
   requiredEnv('APP_SECRET')
   const pathToReceipt = receiptPath(target, desiredState)
-  const saved = readReceipt(pathToReceipt)
+  const oppositeState: DesiredState =
+    desiredState === 'active' ? 'inactive' : 'active'
+  let saved = readReceipt(pathToReceipt)
+  let applyAuthorized = false
 
   const [{ prisma }, { decrypt }] = await Promise.all([
     import('@klicker-uzh/prisma'),
@@ -427,29 +438,41 @@ async function main() {
         )
       }
       if (saved.stage === 'after') {
-        if (saved.afterStateHash !== beforeStateHash) {
+        if (saved.afterStateHash === beforeStateHash) {
+          assertDesiredState(before, desiredState)
+          console.log(
+            `Already ${desiredState}: exact ${target} activation state verified; 0 writes executed`
+          )
+          return
+        }
+        const oppositeReceipt = readReceipt(receiptPath(target, oppositeState))
+        if (
+          saved.afterStateHash === null ||
+          !oppositeReceipt ||
+          oppositeReceipt.target !== target ||
+          oppositeReceipt.desiredState !== oppositeState ||
+          oppositeReceipt.stage !== 'after' ||
+          oppositeReceipt.afterStateHash !== beforeStateHash
+        ) {
           throw new Error('The activation state has drifted from its receipt')
         }
-        assertDesiredState(before, desiredState)
-        console.log(
-          `Already ${desiredState}: exact ${target} activation state verified; 0 writes executed`
-        )
-        return
+        archiveReceipt(pathToReceipt, saved)
+        saved = null
       }
       if (
-        saved.stage !== 'before' ||
-        saved.status !== 'dry-run' ||
-        saved.beforeStateHash !== beforeStateHash
+        saved &&
+        (saved.stage !== 'before' ||
+          saved.status !== 'dry-run' ||
+          saved.beforeStateHash !== beforeStateHash)
       ) {
         throw new Error(
           'The activation dry-run receipt does not match current state'
         )
       }
-    } else {
-      assertDesiredState(
-        before,
-        desiredState === 'active' ? 'inactive' : 'active'
-      )
+      if (saved) applyAuthorized = true
+    }
+    if (!saved) {
+      assertDesiredState(before, oppositeState)
       writeReceipt(pathToReceipt, {
         version: 1,
         scope: 'lecturer-demo-prd-activation',
@@ -471,7 +494,7 @@ async function main() {
       )
       return
     }
-    if (!saved) {
+    if (!applyAuthorized) {
       throw new Error(
         'Apply requires a matching before-state dry-run receipt; rerun after the dry run'
       )

@@ -165,7 +165,7 @@ type StateSnapshot = {
 }
 
 type Receipt = {
-  version: 1
+  version: 1 | 2
   scope: 'lecturer-demo-prd-two-courses'
   stage: 'before' | 'after'
   status: 'dry-run' | 'applied'
@@ -803,7 +803,7 @@ function readReceipt(receiptPath: string): Receipt | null {
   }
   const value = raw as Record<string, unknown>
   if (
-    value.version !== 1 ||
+    ![1, 2].includes(Number(value.version)) ||
     value.scope !== 'lecturer-demo-prd-two-courses' ||
     !['before', 'after'].includes(String(value.stage)) ||
     !['dry-run', 'applied'].includes(String(value.status)) ||
@@ -932,7 +932,7 @@ async function main() {
   const payloadHash = hash(payload(bundles))
   const secret = requiredEnv(SECRET_ENV_VAR)
   requiredEnv('APP_SECRET')
-  const saved = readReceipt(receiptPath)
+  let saved = readReceipt(receiptPath)
 
   const [{ prisma }, { decrypt, encrypt }] = await Promise.all([
     import('@klicker-uzh/prisma'),
@@ -963,6 +963,39 @@ async function main() {
       throw new Error(
         'The existing receipt does not match the approved payload'
       )
+    }
+
+    if (saved?.version === 1) {
+      if (saved.stage === 'after') {
+        if (
+          bundles.some(
+            (bundle, index) => !isExact(before.bundles[index]!, bundle)
+          )
+        ) {
+          throw new Error('The applied lecturer-demo state is not exact')
+        }
+        const upgraded: Receipt = {
+          ...saved,
+          version: 2,
+          afterStateHash: beforeStateHash,
+        }
+        writeReceipt(receiptPath, upgraded)
+        saved = upgraded
+      } else {
+        if (apply) {
+          throw new Error(
+            'The legacy dry-run receipt must be upgraded by a fresh dry run before apply'
+          )
+        }
+        assertTargetState(before, bundles)
+        const upgraded: Receipt = {
+          ...saved,
+          version: 2,
+          beforeStateHash,
+        }
+        writeReceipt(receiptPath, upgraded)
+        saved = upgraded
+      }
     }
 
     if (saved?.stage === 'after') {
@@ -1003,7 +1036,7 @@ async function main() {
     }
     if (!saved) {
       writeReceipt(receiptPath, {
-        version: 1,
+        version: 2,
         scope: 'lecturer-demo-prd-two-courses',
         stage: 'before',
         status: 'dry-run',
@@ -1083,7 +1116,7 @@ async function main() {
     )
 
     writeReceipt(receiptPath, {
-      version: 1,
+      version: 2,
       scope: 'lecturer-demo-prd-two-courses',
       stage: 'after',
       status: 'applied',
