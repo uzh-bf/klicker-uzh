@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-21'
+timestamp: '2026-08-22'
 tags:
   - frontend
   - chat
@@ -36,6 +36,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/components/history-rail.tsx` and `src/lib/history-rail.ts` — the read-only active-path history projection, transcript anchors, and responsive navigation rail.
 - `src/components/ui/` — the app's own shadcn-style primitives (`tooltip.tsx`, `action-bar-button.ts`), separate from `@uzh-bf/design-system`.
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
+- `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
@@ -472,7 +473,7 @@ punctuation after it must not wrap alone either. Two mechanisms enforce that and
 needed: `splitCitationMarkers` strips spaces/tabs directly before a marker (newlines survive —
 a soft break is content), and `CitationChip` emits a U+2060 WORD JOINER on **both** sides of
 the chip (`CITATION_CHIP_JOINER`, exported from `citation-chip.tsx`), because an atomic inline
-like the chip's button is a legal break point under UAX #14 even with no whitespace around it.
+like the chip's inline element is a legal break point under UAX #14 even with no whitespace around it.
 LB11 makes the joiner glue only what is immediately adjacent — it cannot reach past a space
 (LB18 still allows the break after a space), so a symmetric joiner welds `word[1].` into one
 unit and adjacent chip runs like `[1][2]` into another, while normal inter-word wrapping stays
@@ -494,9 +495,12 @@ A bare numeric `labeled_page_number` remains a publisher page label, never secon
 such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
 zero-padded `01` — so the number on the card and the `[n]` in the answer read as the same
-token. Card titles clamp at two lines with the
-full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
-so adding `block` alongside it silently disables the clamp. Document cards lay out with
+token. Cards show only the title and locator by default; hover or keyboard focus opens a
+shared tooltip with the full title and excerpt when one exists. Inline citation previews use the
+same content and add the existing navigation hint. These are passive Radix tooltips, so touch
+behavior remains compact cards plus the existing URL and in-page citation actions. Card titles
+clamp at two lines — and note that `line-clamp-2` needs `display: -webkit-box`, so adding `block`
+alongside it silently disables the clamp. Document cards lay out with
 `repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
 tracks so fewer cards stretch across the whole row and only wrap when they genuinely no longer
 fit, and the `min(230px, 100%)` floor keeps a track from forcing horizontal overflow in
@@ -597,7 +601,7 @@ Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat
 
 `history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
-The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

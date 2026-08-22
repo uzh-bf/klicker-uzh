@@ -2496,6 +2496,41 @@ test.describe('Chatbot Source Citations', () => {
     }
   }
 
+  type DocumentsModeSource = {
+    reference: string
+    reference_type: string
+    source_type: string
+    title: string
+    chunks: Array<{
+      content: string
+      page_number?: number
+      labeled_page_number?: string
+    }>
+  }
+
+  function documentsQueryPart({
+    toolCallId,
+    sources,
+  }: {
+    toolCallId: string
+    sources: DocumentsModeSource[]
+  }) {
+    return {
+      type: 'tool-call' as const,
+      toolCallId,
+      toolName: 'KB_doc_query',
+      args: { query: 'preview query' },
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ mode: 'documents', sources }),
+          },
+        ],
+      },
+    }
+  }
+
   /** The same doc_query answer-mode payload as `docQueryPart`, but shaped as
    * the live `tool-output-available` output: the raw MCP CallToolResult
    * envelope the streaming parser stores as the tool result. */
@@ -2614,6 +2649,83 @@ test.describe('Chatbot Source Citations', () => {
     )
   })
 
+  test('Source details stay in hover and focus previews for cards and citations', async ({
+    page,
+  }) => {
+    const messageId = '4a1b2c3d-0013-4a91-8f6c-2b7d1e5a9c40'
+    const excerpt =
+      'This excerpt belongs in the source preview, not in the source card.'
+
+    await seedThread(participantId, {
+      title: 'Source previews',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Show the source details' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-preview',
+              sources: [
+                {
+                  reference: 'preview-guide.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'Preview Guide.pdf',
+                  chunks: [{ content: excerpt, page_number: 12 }],
+                },
+              ],
+            }),
+            { type: 'text', text: 'See [1] for the supporting passage.' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const card = page.locator(`#src-${messageId}-1`)
+    const openPreviews = page.getByRole('tooltip')
+    await expect(card).toContainText('Preview Guide.pdf')
+    await expect(card).toContainText('p. 12')
+    await expect(card).not.toContainText(excerpt)
+    await expect(openPreviews).toHaveCount(0)
+
+    await card.hover()
+    const preview = page.getByRole('tooltip').getByTestId('chat-source-preview')
+    await expect(preview).toBeVisible()
+    await expect(preview).toContainText(excerpt)
+    await expect(preview).toContainText('p. 12')
+
+    await page.mouse.move(0, 0)
+    // Radix's hoverable tooltip closes on the pointermove that follows the
+    // leave event: one synthetic move only fires the leave, so nudge the
+    // pointer again to let the grace-area listener dismiss the popover.
+    await page.mouse.move(1, 1)
+    await expect(openPreviews).toHaveCount(0)
+
+    await card.focus()
+    await expect(preview).toBeVisible()
+
+    const citation = page.getByTestId('chat-citation')
+    await citation.focus()
+    // Each source trigger owns an independent Radix tooltip root, so the
+    // still-focused card tooltip and the newly opened citation tooltip can
+    // be open at the same time; scope this part of the contract to the
+    // citation tooltip itself instead of assuming global exclusivity.
+    const citationTooltip = page
+      .getByRole('tooltip')
+      .filter({ hasText: 'Go to source' })
+    await expect(citationTooltip).toBeVisible()
+    await citation.hover()
+    await expect(
+      citationTooltip.getByTestId('chat-source-preview')
+    ).toContainText(excerpt)
+  })
+
   // Regression guard: a terminal assistant turn whose only content is a
   // completed source-bearing tool call (no answer text) must still surface
   // its source cards once the persisted thread is loaded.
@@ -2712,7 +2824,7 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.locator(`#src-${messageId}-4`)).toHaveCount(0)
   })
 
-  test('A valid [n] citation renders a citation button while an out-of-range marker stays literal text', async ({
+  test('A valid [n] citation renders a citation chip/link while an out-of-range marker stays literal text', async ({
     page,
   }) => {
     await seedThread(participantId, {

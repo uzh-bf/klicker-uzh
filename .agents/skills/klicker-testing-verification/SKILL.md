@@ -127,6 +127,13 @@ not emitted a non-whitespace answer delta. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
+For source citation presentation changes, the browser pass must verify that
+source cards keep the source name and locator visible while excerpts stay in
+hover/focus tooltips, and that inline citation chips expose the same preview
+content plus their existing navigation hint. Keep touch verification scoped to
+the compact card and existing URL/in-page citation actions because Radix
+tooltips do not provide a separate tap disclosure contract.
+
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:
