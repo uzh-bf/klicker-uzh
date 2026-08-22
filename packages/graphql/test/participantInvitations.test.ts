@@ -15,7 +15,6 @@ import {
   deduplicateParticipantInvitationInputs,
   deletePendingAssessmentParticipantInvitation,
   getAssessmentParticipantInvitationPage,
-  getAssessmentParticipantInvitations,
   MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
 } from '../src/services/participantInvitations.js'
 import {
@@ -93,9 +92,12 @@ describe('Assessment participant invitation management', () => {
       },
     })
 
-    await expect(
-      getAssessmentParticipantInvitations({ courseId: course.id }, lecturerCtx)
-    ).resolves.toEqual([
+    const page = await getAssessmentParticipantInvitationPage(
+      { courseId: course.id },
+      lecturerCtx
+    )
+    expect(page.totalCount).toBe(2)
+    expect(page.invitations).toEqual([
       expect.objectContaining({ id: newest.id }),
       expect.objectContaining({ id: oldest.id }),
     ])
@@ -791,7 +793,10 @@ describe('Assessment participant invitation management', () => {
     const course = await seedCourse({}, lecturerCtx)
 
     await expect(
-      getAssessmentParticipantInvitations({ courseId: course.id }, lecturerCtx)
+      getAssessmentParticipantInvitationPage(
+        { courseId: course.id },
+        lecturerCtx
+      )
     ).rejects.toMatchObject({ extensions: { code: 'COURSE_NOT_ASSESSMENT' } })
     await expect(
       createAssessmentParticipantInvitations(

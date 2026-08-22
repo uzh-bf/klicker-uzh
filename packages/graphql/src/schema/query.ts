@@ -86,10 +86,7 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
-import {
-  AssessmentParticipantInvitation,
-  AssessmentParticipantInvitationPage,
-} from './participantInvitation.js'
+import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -961,22 +958,6 @@ export const Query = builder.queryType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.getAssessmentResultsCourse(args, ctx)
-          }
-        ),
-      }),
-
-      assessmentParticipantInvitations: t.withAuth(asUser).field({
-        nullable: true,
-        type: [AssessmentParticipantInvitation],
-        args: { courseId: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await ParticipantInvitationService.getAssessmentParticipantInvitations(
-              args,
-              ctx
-            )
           }
         ),
       }),

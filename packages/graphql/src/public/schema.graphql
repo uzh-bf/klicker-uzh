@@ -2513,7 +2513,6 @@ type Query {
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
   assessmentParticipantInvitationPage(courseId: String!, numEntries: Int, offset: Int): AssessmentParticipantInvitationPage
-  assessmentParticipantInvitations(courseId: String!): [AssessmentParticipantInvitation!]
   assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz

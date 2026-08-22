@@ -480,18 +480,6 @@ async function requireAssessmentCourse(
   }
 }
 
-export async function getAssessmentParticipantInvitations(
-  { courseId }: { courseId: string },
-  ctx: ContextWithUser
-): Promise<ParticipantInvitation[]> {
-  await requireAssessmentCourse(courseId, ctx.prisma)
-
-  return ctx.prisma.participantInvitation.findMany({
-    where: { courseId },
-    orderBy: [{ invitedAt: 'desc' }, { id: 'desc' }],
-  })
-}
-
 export async function getAssessmentParticipantInvitationPage(
   {
     courseId,

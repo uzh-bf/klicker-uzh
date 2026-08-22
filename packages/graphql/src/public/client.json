@@ -178,7 +178,6 @@
    "GetArtificialInstance": "89d6ac92566a3e58b1ded67069879270c412a70254acf111cb1458fa88bd832f",
    "GetAssessmentCourseParticipants": "6946b4c14b120277016f994fae31ba6bc81d0fb6957917d3d6fa75635be0738c",
    "GetAssessmentParticipantInvitationPage": "53eb7636dd2dcb9ae5db55f6c53778840e20f35a8da1102275c0c54dd49907de",
-   "GetAssessmentParticipantInvitations": "067dfb64cd03da6ce24d11569a977942859d46459d58759e00605885069e0ce2",
    "GetAssessmentResultsCourse": "ff3508355bff9ee970dbf4db39b29d7703d5ad87cbfffbe754cfc60f50451e2d",
    "GetAssessmentResultsLiveQuiz": "05e541ea1d4bc44ef44f7a3ab4a7ee13af937c887508cdc7649e2b7de38c300b",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
