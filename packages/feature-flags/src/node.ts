@@ -5,6 +5,7 @@ import type {
   KlickerFeatureFlags,
 } from './contracts.js'
 import {
+  forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
   sanitizeFeatureFlagAttributes,
 } from './contracts.js'
@@ -13,6 +14,9 @@ export type NodeFeatureFlagClientConfig = {
   apiHost?: string
   clientKey?: string
   environment: string | undefined
+  // Comma-separated flag keys to force on where no SDK connection exists.
+  // See `forcedFeatureFlagPayload` for the environments that honor it.
+  forcedOn?: string
   timeoutMs?: number
 }
 
@@ -45,7 +49,11 @@ export class NodeFeatureFlagClient<
     )
 
     if (!this.configured) {
-      this.client.initSync({ payload: { features: {} } })
+      this.client.initSync({
+        payload: {
+          features: forcedFeatureFlagPayload(config.forcedOn, this.environment),
+        },
+      })
     }
   }
 

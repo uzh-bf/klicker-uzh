@@ -15,6 +15,10 @@ const MANAGE_ROLES = new Set(['USER', 'ADMIN'] as const)
 type ManageRole = 'USER' | 'ADMIN'
 
 export interface AuthenticatedManageUser {
+  // Whether the lecturer holds Catalyst, institutionally or individually —
+  // the second half of the beta targeting rule. Read from the session token's
+  // own claims, so it is a snapshot taken at sign-in rather than live state.
+  catalyst: boolean
   role: ManageRole
   // The lecturer's `UserLoginScope` (ACCOUNT_OWNER, FULL_ACCESS,
   // SESSION_EXEC, READ_ONLY, OTP, ...). `undefined` for sessions minted
@@ -26,10 +30,10 @@ export interface AuthenticatedManageUser {
 
 /**
  * Verifies the `next-auth.session-token` cookie (the lecturer/Manage
- * session, signed with APP_SECRET) and returns the subject id, role, and
- * `UserLoginScope` carried by the session. Returns null for a missing or
- * invalid token, or for any session whose role is not a Manage-serving
- * role (USER, or ADMIN as its backend-lattice superset).
+ * session, signed with APP_SECRET) and returns the subject id, role,
+ * `UserLoginScope`, and Catalyst entitlement carried by the session. Returns
+ * null for a missing or invalid token, or for any session whose role is not a
+ * Manage-serving role (USER, or ADMIN as its backend-lattice superset).
  */
 export async function getAuthenticatedManageUser(): Promise<AuthenticatedManageUser | null> {
   const cookieStore = await cookies()
@@ -47,6 +51,9 @@ export async function getAuthenticatedManageUser(): Promise<AuthenticatedManageU
     }
 
     return {
+      catalyst:
+        payload.catalystInstitutional === true ||
+        payload.catalystIndividual === true,
       role: payload.role as ManageRole,
       scope: typeof payload.scope === 'string' ? payload.scope : undefined,
       sub: payload.sub,

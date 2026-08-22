@@ -2,7 +2,16 @@
 // own unknown-feature fallback, which is `false`, so this object is never read
 // at runtime; constraining it to `false` keeps the two in agreement instead of
 // letting a `true` here advertise a fallback the evaluation path cannot honor.
-export const FEATURE_FLAG_DEFAULTS = {} as const satisfies Record<string, false>
+export const FEATURE_FLAG_DEFAULTS = {
+  // The lecturer assistant as a whole: its launcher inside Manage, its own
+  // page in chat, and the API routes behind it.
+  'manage-assistant': false,
+  // Whether that assistant is given the lecturer MCP tools, and therefore
+  // whether it can produce or confirm draft proposals. Separate from the
+  // surface flag so the tools can be withdrawn without taking the assistant
+  // down with them.
+  'manage-assistant-mcp-tools': false,
+} as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
   [Key in keyof typeof FEATURE_FLAG_DEFAULTS]: boolean
@@ -41,6 +50,10 @@ export type FeatureFlagAttributes = Record<
   id?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
+  // Whether the lecturer holds Catalyst, institutionally or individually.
+  // The beta targeting rule requires it alongside saved-group membership, so
+  // a rule can never grant a surface to an account without it.
+  catalyst?: boolean
 }
 
 export type FeatureFlagEvaluationAttributes = FeatureFlagAttributes & {
@@ -68,6 +81,7 @@ export function sanitizeFeatureFlagAttributes(
 
   if (typeof source.id === 'string') sanitized.id = source.id
   if (typeof source.role === 'string') sanitized.role = source.role
+  if (typeof source.catalyst === 'boolean') sanitized.catalyst = source.catalyst
   return sanitized
 }
 
@@ -96,4 +110,26 @@ export function normalizeFeatureFlagEnvironment(
   )
 
   return 'unknown'
+}
+
+// An escape hatch for environments that have no GrowthBook to talk to: local
+// development and the end-to-end suite, where the alternative is either
+// shipping a second gate per surface or leaving the enabled path untested.
+// Honored only when the environment is `development` or `test` and only when
+// no SDK connection is configured, so the value is inert in a staging or
+// production build even if one is set there by mistake. Unregistered keys are
+// dropped rather than invented, so a typo turns nothing on.
+export function forcedFeatureFlagPayload(
+  value: string | undefined,
+  environment: FeatureFlagEnvironment
+): Record<string, { defaultValue: boolean }> {
+  if (environment !== 'development' && environment !== 'test') return {}
+
+  const registered = new Set<string>(Object.keys(FEATURE_FLAG_DEFAULTS))
+  const forced = (value ?? '')
+    .split(',')
+    .map((key) => key.trim())
+    .filter((key) => registered.has(key))
+
+  return Object.fromEntries(forced.map((key) => [key, { defaultValue: true }]))
 }

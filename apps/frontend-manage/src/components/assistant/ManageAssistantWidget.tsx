@@ -5,6 +5,7 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   MANAGE_CONTEXT_MESSAGE_TYPE,
@@ -17,10 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
-import {
-  buildManageAssistantUrl,
-  isManageAssistantEnabled,
-} from './manageAssistantConfig'
+import { buildManageAssistantUrl } from './manageAssistantConfig'
 import {
   buildManageAssistantContext,
   type ManageAssistantContext,
@@ -47,10 +45,8 @@ export function ManageAssistantWidget() {
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
   // excluded explicitly: every other Manage route requires a signed-in user.
-  const enabled =
-    isManageAssistantEnabled(
-      process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED
-    ) && router.pathname !== '/login'
+  const assistantEnabled = useFeatureFlag('manage-assistant')
+  const enabled = assistantEnabled && router.pathname !== '/login'
   const assistantUrl = useMemo(
     () =>
       buildManageAssistantUrl({

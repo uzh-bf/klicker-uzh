@@ -94,12 +94,15 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-          # The manage assistant widget is compiled out of frontend-manage
-          # without these two: NEXT_PUBLIC_* values are inlined into the client
-          # bundle at build time (.env.test maps NEXT_PUBLIC_CHAT_URL from
+          # The manage assistant widget is inert in frontend-manage without
+          # these two: NEXT_PUBLIC_* values are inlined into the client bundle
+          # at build time (.env.test maps NEXT_PUBLIC_CHAT_URL from
           # APP_ORIGIN_CHAT), and Y-manage-assistant.spec.ts needs the widget.
+          # No GrowthBook runs in CI, so the flags are forced on instead —
+          # honored only because the flag environment here resolves to
+          # development.
           APP_ORIGIN_CHAT: http://127.0.0.1:3004
-          NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED: 'true'
+          NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON: manage-assistant,manage-assistant-mcp-tools
 
       - name: Archive Next build outputs
         run: |
@@ -319,6 +322,9 @@ jobs:
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          # The chat-side assistant gates are evaluated server side per request,
+          # so the same flags must be forced on for the running services too.
+          FEATURE_FLAGS_FORCED_ON: manage-assistant,manage-assistant-mcp-tools
           NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
           URL_AUTH: http://127.0.0.1:3010

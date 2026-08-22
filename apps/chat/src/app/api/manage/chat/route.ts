@@ -1,4 +1,5 @@
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
+import { isManageFeatureEnabled } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
@@ -72,6 +73,10 @@ export async function POST(req: NextRequest) {
   }
   const userId = manageUser.sub
 
+  if (!(await isManageFeatureEnabled('manage-assistant', manageUser))) {
+    return NextResponse.json({ error: 'Not available' }, { status: 403 })
+  }
+
   const releaseRequest = tryAcquireManageChatRequest()
   if (!releaseRequest) {
     return NextResponse.json(
@@ -134,20 +139,30 @@ export async function POST(req: NextRequest) {
     }
 
     const context = sanitizeManageAssistantContext(parsed.manageContext)
-    const lecturerMcp = await loadLecturerMcpTools(
-      userId,
-      manageUser.scope,
-      undefined,
-      requestSignal
-    ).catch((error) => {
-      console.warn('Failed to load lecturer MCP tools:', error)
-      return {
-        close: async () => {},
-        hasDraftScope: false,
-        sentinel: createFenceSentinel(),
-        tools: {},
-      }
-    })
+    // A toolless assistant is a usable assistant, so the tool flag withdraws
+    // the tools rather than the whole conversation. Only the surface flag
+    // above refuses the request outright.
+    const mcpToolsEnabled = await isManageFeatureEnabled(
+      'manage-assistant-mcp-tools',
+      manageUser
+    )
+    const noLecturerMcpTools = {
+      close: async () => {},
+      hasDraftScope: false,
+      sentinel: createFenceSentinel(),
+      tools: {},
+    }
+    const lecturerMcp = mcpToolsEnabled
+      ? await loadLecturerMcpTools(
+          userId,
+          manageUser.scope,
+          undefined,
+          requestSignal
+        ).catch((error) => {
+          console.warn('Failed to load lecturer MCP tools:', error)
+          return noLecturerMcpTools
+        })
+      : noLecturerMcpTools
     const toolCount = Object.keys(lecturerMcp.tools).length
     const selectedModel = selectManageAssistantModel(getChatModelRegistry())
     const modelMessages = await convertToModelMessages(parsed.messages, {

@@ -1,14 +1,5 @@
 import assert from 'node:assert/strict'
-import {
-  buildManageAssistantUrl,
-  isManageAssistantEnabled,
-} from '../src/components/assistant/manageAssistantConfig'
-
-assert.equal(isManageAssistantEnabled(undefined), false)
-assert.equal(isManageAssistantEnabled(''), false)
-assert.equal(isManageAssistantEnabled('false'), false)
-assert.equal(isManageAssistantEnabled('true'), true)
-assert.equal(isManageAssistantEnabled('1'), true)
+import { buildManageAssistantUrl } from '../src/components/assistant/manageAssistantConfig'
 
 assert.equal(
   buildManageAssistantUrl({

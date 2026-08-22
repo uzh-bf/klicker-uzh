@@ -142,4 +142,40 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.isEnabled('targeted-flag', enabledAttributes)).toBe(false)
     expect(mockFetch).not.toHaveBeenCalled()
   })
+
+  it('honors a forced flag in development but never in production', () => {
+    const attributes: FeatureFlagAttributes = { actorType: 'user' }
+
+    const development = new NodeFeatureFlagClient({
+      environment: 'development',
+      forcedOn: 'manage-assistant',
+    })
+    expect(development.isEnabled('manage-assistant', attributes)).toBe(true)
+    expect(
+      development.isEnabled('manage-assistant-mcp-tools', attributes)
+    ).toBe(false)
+
+    const production = new NodeFeatureFlagClient({
+      environment: 'production',
+      forcedOn: 'manage-assistant',
+    })
+    expect(production.isEnabled('manage-assistant', attributes)).toBe(false)
+  })
+
+  // GrowthBook is authoritative wherever it is reachable: a configured client
+  // fetches its payload and the override never enters the picture.
+  it('ignores a forced flag once an SDK connection is configured', async () => {
+    const client = new NodeFeatureFlagClient({
+      apiHost: 'https://growthbook.example',
+      clientKey: 'sdk-key',
+      environment: 'development',
+      forcedOn: 'manage-assistant',
+    })
+
+    await client.initialize()
+
+    expect(client.isEnabled('manage-assistant', { actorType: 'user' })).toBe(
+      false
+    )
+  })
 })

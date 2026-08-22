@@ -1,3 +1,4 @@
+import { isManageFeatureEnabled } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const userId = manageUser.sub
+
+  // Proposals can only originate from the lecturer MCP tools, so confirmation
+  // follows the same flag. A proposal token minted while the flag was on must
+  // not stay redeemable after it is turned off.
+  if (
+    !(await isManageFeatureEnabled('manage-assistant-mcp-tools', manageUser))
+  ) {
+    return NextResponse.json({ error: 'Not available' }, { status: 403 })
+  }
 
   const rateLimit = confirmRateLimiter.check(userId)
   if (!rateLimit.allowed) {

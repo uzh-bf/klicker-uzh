@@ -377,6 +377,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.7)
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@klicker-uzh/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -871,6 +874,9 @@ importers:
       '@fullcalendar/timegrid':
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
