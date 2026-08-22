@@ -20,7 +20,7 @@
 | Eight-dimension readiness wave | Config, data, deployment, resilience, observability, docs, performance, and UX reviews | completed; findings dispositioned below |
 | Simplifier | Configured simplifier could not read its encrypted task; native fallback review recorded in the execution evidence | fallback completed; safe reductions applied, broader refactor deferred |
 | Integrated final review | Native Sol final-reviewer review of `66f..7adee1787` | completed; not-ready findings remain |
-| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | exact-head CI for `16faf59cf` still running |
+| Security checks | Gitleaks, CodeQL, SonarCloud, and repository CI on the pushed branch | terminal for current head `01ff09c15`: 45 checks green, one flaky Playwright shard failed (see findings) |
 
 ## Resolved before this head
 
@@ -48,13 +48,14 @@
 | major | Observability | No current-head runtime evidence proves alerts for workflow failure, pending-marker age, effect backlog, replay latency, Redis conflicts, or correction-audience anomalies. | `apps/response-api/src/index.ts:675-697`; worker logging and effect paths | Add or verify values-free metrics and alerts for the listed queues, ages, failures, and response latency. Validate the alert path during a controlled dependency failure. | unverified; no runtime or monitoring target |
 | major | Operability | The wiki explains the acceptance contract but does not provide a runnable release procedure with target inventory, worker registration/drain signals, rollback abort criteria, replay steps, and owners. | `docs/async-and-workers.md`; `docs/domain-model.md`; `project/2026-08-21-pr5395-production-hardening-plan.md` | Add or link the executable deployment and recovery runbook before release approval. | unverified; documentation action remains open |
 | medium | Configuration | Static inspection found no new secret or production environment variable, but API/worker database, Redis, Hatchet, tenant, and `ASSESSMENT_MODE` parity were not proven in a deployed environment. | `apps/response-api/src/index.ts:755-779`; `apps/hatchet-worker-response-processor/src/index.ts:101-112` | Run a values-free preflight that compares target identities and required-key presence, proves workflow registration, and performs one synthetic handshake after migration. | unverified; no environment was started |
+| minor | CI | Exact-head Playwright shard 1 failed once in the public-evaluation-link flow (`O-live-quiz.spec.ts`, 10-second attachment timeout), and the dependent status check failed with it. The branch changes no Playwright files, and the identical suite passed all eight shards on `v3` (`d9e9b46a`) about thirty minutes later. | [failed job](https://github.com/uzh-bf/klicker-uzh/actions/runs/32598170617/job/97095186906); [green v3 run](https://github.com/uzh-bf/klicker-uzh/actions/runs/32599386679) | Treat as environment flake based on the recorded cross-run comparison; rerun the affected workflow before release only if the release owner requires a fully green exact-head record. | confirmed via cross-run comparison |
 
 ## Evidence established
 
 - The parent branch was refreshed from `origin/v3`; both parent and child conflict resolutions are pushed.
 - `pnpm run check:all` passed in the commit hooks for the two fix commits, and the repository build passed in the pre-push hooks.
 - Response API and response-processor type checks passed; response-state tests passed 6/6.
-- The pushed branch head is `16faf59cf9651970a707f90d2e6a31e5148041f9`; the immutable backend review covers code head `7adee1787ad39c96f9e8e615a6d152305dbe1792`, and exact-head CI for the evidence-only report commit is still running.
+- The pushed branch head is `16faf59cf9651970a707f90d2e6a31e5148041f9` for backend review coverage of code head `7adee1787ad39c96f9e8e615a6d152305dbe1792`; exact-head CI later became terminal on documentation head `01ff09c151d92d612aeb36ab0a2e6457af38f376` with 45 green checks and the flaky-shard failure recorded above.
 - The simplifier pass used the native fallback because the configured simplifier task was unreadable. It found and the branch applied the reducer initialization, local decomposition, status mapping, and correction-helper simplifications; it deferred only a larger typed-closure refactor for repeated correction arguments because it would widen stable transaction plumbing.
 - Native Sol reviewed `66f91ad..7adee1787` and verified the workflow-`208`, concurrent-retry, correction locking, and deleted docs/log fixes. The Redis contribution/reconciliation, autonomous replay, timeout, migration, rollback, contention, and runtime gates remain open. Sol rejected the separate marker-TTL concern because existing live-quiz cleanup expires the quiz keyspace, and found no added-test bloat.
 - The correction logic and response workflow were reviewed across the eight readiness dimensions. No secrets, raw data, runtime credentials, staging, or production systems were accessed.
@@ -65,7 +66,7 @@
 - No migration target, backup/restore, mixed-version rollout, rollback, worker crash, Redis interruption, or autonomous replay was executed.
 - No load, latency, queue-drain, or capacity run was executed.
 - No browser run was needed for changed frontend code; the inherited assessment client still needs a current-head response-contract check.
-- GitHub CI for current child head `16faf59cf` remains pending at the time this report was last updated; the native Sol review of code head `7adee1787` is complete and returns not-ready on the open operational blockers above.
+- Exact-head GitHub CI for current child head `01ff09c15` is terminal: 45 checks green and two failures caused by one flaky Playwright shard plus its dependent status check; the native Sol review of code head `7adee1787` remains complete and returns not-ready on the open operational blockers above.
 
 ## Handoffs
 
