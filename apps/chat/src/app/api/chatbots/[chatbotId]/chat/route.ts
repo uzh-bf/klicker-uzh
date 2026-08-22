@@ -5,6 +5,7 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
+  getParticipantFallbackModelId,
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
@@ -25,6 +26,14 @@ import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import {
+  CHAT_TURN_ALREADY_COMPLETED_CODE,
+  ChatTurnConflictError,
+  finalizeChatTurn,
+  isChatAccountUsageAvailable,
+  isChatTurnKeyClaimed,
+  roundChatUsageCredits,
+} from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
@@ -34,7 +43,7 @@ import {
 import { ThreadService } from '@/src/services/threads'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot } from '@klicker-uzh/prisma/client'
+import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
@@ -64,6 +73,34 @@ type ChatRouteModelMessage = {
   content:
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
+}
+
+export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
+export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
+
+function chatModelUnavailableResponse(
+  usageClass: ChatModelConfig['usageClass']
+) {
+  return NextResponse.json(
+    {
+      error: 'Chat model usage is unavailable',
+      code:
+        usageClass === 'BASE'
+          ? CHAT_MODEL_UNAVAILABLE_BASE
+          : CHAT_MODEL_UNAVAILABLE_ADVANCED,
+    },
+    { status: 403 }
+  )
+}
+
+function completedTurnResponse() {
+  return NextResponse.json(
+    {
+      error: 'Chat turn already completed',
+      code: CHAT_TURN_ALREADY_COMPLETED_CODE,
+    },
+    { status: 409 }
+  )
 }
 
 if (!process.env.OPENAI_BASE_URL) {
@@ -635,7 +672,7 @@ export async function POST(
       .optional()
       .default([]),
   })
-  let parsed
+  let parsed: z.infer<typeof bodySchema>
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
@@ -659,9 +696,6 @@ export async function POST(
           imagePreviewBase64: null,
         }
       : image
-  )
-  const resolvedImages = await Promise.all(
-    normalizedImages.map((image) => ensureImagePreviewBase64(image))
   )
 
   const userPrompt = messages
@@ -721,6 +755,10 @@ export async function POST(
       { error: `Unsupported chat mode: ${selectedMode}` },
       { status: 400 }
     )
+  }
+
+  if (await isChatTurnKeyClaimed(assistantMessageId)) {
+    return completedTurnResponse()
   }
 
   const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
@@ -794,7 +832,80 @@ export async function POST(
     toolNames
   )
 
-  // create a new thread if none exists
+  const modelRegistry = getChatModelRegistry()
+  const allowedIds =
+    chatbot.allowedModelIds.length > 0
+      ? new Set(chatbot.allowedModelIds as string[])
+      : null
+
+  if (!chatbot.modelSelection) {
+    const automaticModelId = getAutomaticModelId(
+      chatbot.allowedModelIds as string[]
+    )
+    if (!automaticModelId) {
+      return NextResponse.json(
+        { error: 'No model is available for this chatbot' },
+        { status: 400 }
+      )
+    }
+    selectedModel = automaticModelId
+  }
+
+  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!selectedModelConfig) {
+    return NextResponse.json(
+      { error: `Unknown model: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  // Enforce per-chatbot model allow-list
+  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      const fallbackModelId = getParticipantFallbackModelId(
+        selectedModelConfig.usageClass,
+        chatbot.allowedModelIds as string[]
+      )
+      if (!fallbackModelId) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
+
+      selectedModel = fallbackModelId
+      selectedModelConfig = modelRegistry.find(
+        (modelConfig) => modelConfig.id === fallbackModelId
+      )!
+    }
+  }
+
+  let accountUsageAvailable = false
+  try {
+    accountUsageAvailable = await isChatAccountUsageAvailable({
+      ownerId: chatbot.ownerId,
+      usageClass: selectedModelConfig.usageClass,
+    })
+  } catch (error) {
+    console.error('Failed to check account chat usage:', {
+      requestId,
+      error,
+    })
+  }
+  if (!accountUsageAvailable) {
+    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+  }
+
+  // Create and validate the thread only after account authorization succeeds,
+  // but before any provider or message work starts.
   if (!currentThreadId && messages.length > 0) {
     try {
       const newThread = await ThreadService.createThread(
@@ -806,6 +917,27 @@ export async function POST(
     } catch (error) {
       console.error('Failed to create thread:', { requestId, error })
     }
+  }
+  if (!currentThreadId) {
+    return NextResponse.json(
+      { error: 'Unable to resolve chat thread' },
+      { status: 500 }
+    )
+  }
+
+  const owningThread = await prisma.chatThread.findFirst({
+    where: {
+      id: currentThreadId,
+      participantId,
+      chatbotId,
+    },
+    select: { id: true },
+  })
+  if (!owningThread) {
+    return NextResponse.json(
+      { error: 'Chat thread not found' },
+      { status: 404 }
+    )
   }
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
@@ -826,65 +958,7 @@ export async function POST(
     content: msg.content,
   }))
 
-  const modelRegistry = getChatModelRegistry()
-  const allowedIds =
-    chatbot.allowedModelIds.length > 0
-      ? new Set(chatbot.allowedModelIds as string[])
-      : null
-
-  // Override model selection if modelSelection is disabled
-  let userCredits: { current: number; total: number } | null = null
-  if (!chatbot.modelSelection) {
-    // Get current user credits to determine automatic model selection
-    userCredits = await CreditsService.getUserCredits(participantId, chatbotId)
-    selectedModel = getAutomaticModelId(
-      userCredits,
-      chatbot.allowedModelIds as string[]
-    )
-  }
-
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
-    return NextResponse.json(
-      { error: `Unknown model: ${selectedModel}` },
-      { status: 400 }
-    )
-  }
-
-  // Enforce per-chatbot model allow-list
-  if (
-    allowedIds &&
-    !allowedIds.has(selectedModelConfig.id) &&
-    !selectedModelConfig.fallback
-  ) {
-    return NextResponse.json(
-      { error: `Model not available for this chatbot: ${selectedModel}` },
-      { status: 400 }
-    )
-  }
-
   const maxOutputTokens = selectedModelConfig.maxOutputTokens
-
-  // Enforce fallback-only usage when the user has no credits left.
-  // This prevents bypassing credit gating by manually calling the API.
-  if (chatbot.modelSelection && !selectedModelConfig.fallback) {
-    userCredits =
-      userCredits ??
-      (await CreditsService.getUserCredits(participantId, chatbotId))
-    if (userCredits.current <= 0) {
-      selectedModel = getAutomaticModelId(
-        userCredits,
-        chatbot.allowedModelIds as string[]
-      )
-      selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-      if (!selectedModelConfig) {
-        return NextResponse.json(
-          { error: `Unknown model: ${selectedModel}` },
-          { status: 400 }
-        )
-      }
-    }
-  }
 
   const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
     selectedModelConfig,
@@ -914,6 +988,10 @@ export async function POST(
           tools: mcpTools,
         })
       : null
+
+  const resolvedImages = await Promise.all(
+    normalizedImages.map((image) => ensureImagePreviewBase64(image))
+  )
 
   // create image descriptions if images attached
   let imageDescriptionCost: number = 0
@@ -1030,19 +1108,8 @@ export async function POST(
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
-  const owningThread = currentThreadId
-    ? await prisma.chatThread.findFirst({
-        where: {
-          id: currentThreadId,
-          participantId,
-          chatbotId,
-        },
-        select: { id: true },
-      })
-    : null
-
   logEvent('thread.resolved', {
-    hasOwningThread: Boolean(owningThread),
+    hasOwningThread: true,
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
@@ -1198,6 +1265,70 @@ export async function POST(
   let sawFinish = false
   let finalEmitted = false
 
+  const finalizeAssistantLifecycle = async ({
+    content,
+    reasoningContent,
+    rawCreditsUsed,
+    phase,
+  }: {
+    content: ReturnType<typeof mapAssistantStepContent>
+    reasoningContent: string | null
+    rawCreditsUsed: number | null
+    phase: 'complete' | 'abort'
+  }) => {
+    let finalizationOutcome: 'created' | 'duplicate' | 'failed' = 'failed'
+    let participantCreditsUsed = rawCreditsUsed
+
+    try {
+      const result = await finalizeChatTurn({
+        ownerId: chatbot.ownerId,
+        chatbotId,
+        usageClass: selectedModelConfig.usageClass,
+        threadId: owningThread.id,
+        assistantMessageId,
+        parentId: userMessageId,
+        content: content as Prisma.InputJsonValue,
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
+        reasoningContent,
+        rawCreditsUsed,
+      })
+      finalizationOutcome = result.outcome
+      participantCreditsUsed = result.creditsUsed
+    } catch (error) {
+      console.error('Failed to finalize assistant message and account usage:', {
+        requestId,
+        phase,
+        error,
+      })
+
+      if (error instanceof ChatTurnConflictError) {
+        participantCreditsUsed = null
+      }
+    }
+
+    if (
+      participantCreditsUsed !== null &&
+      participantCreditsUsed > 0 &&
+      finalizationOutcome !== 'duplicate'
+    ) {
+      try {
+        await CreditsService.decrementCredits(
+          participantId,
+          chatbotId,
+          participantCreditsUsed
+        )
+      } catch (error) {
+        console.error('Failed to deduct credits:', {
+          requestId,
+          phase: 'credits.decrement',
+          error,
+        })
+      }
+    }
+  }
+
   const emitFinalOnce = (
     status: 'success' | 'error' | 'aborted',
     payload: Record<string, unknown>
@@ -1302,13 +1433,17 @@ export async function POST(
           })
           return
         }
-        const creditsUsed = result.usage
+        const rawCreditsUsed = result.usage
           ? calcCost(
               selectedModelConfig.cost,
               result.usage.inputTokens || 0,
               result.usage.outputTokens || 0
             ) + imageDescriptionCost
           : null
+        const creditsUsed =
+          rawCreditsUsed === null
+            ? null
+            : roundChatUsageCredits(rawCreditsUsed).toNumber()
         const finishedReasoningContent =
           normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
           normalizeReasoningContent(
@@ -1347,100 +1482,13 @@ export async function POST(
           hadAbort: sawAbort,
         })
 
-        // save assistant response to database
-        if (
-          currentThreadId &&
-          owningThread &&
-          result.steps &&
-          result.steps.length > 0
-        ) {
-          try {
-            const content = mapAssistantStepContent(result.steps)
-            // save assistant message to db
-            const metadata = {
-              chatMode: selectedMode,
-              modelId: selectedModelConfig.id,
-              reasoningEffort: appliedReasoningEffort,
-              reasoningContent: finishedReasoningContent,
-              creditsUsed,
-            }
-            const updated = await prisma.chatMessage.updateMany({
-              where: { id: assistantMessageId, threadId: currentThreadId },
-              data: {
-                content,
-                ...metadata,
-              },
-            })
-
-            if (updated.count === 0) {
-              const existingMessage = await prisma.chatMessage.findUnique({
-                where: { id: assistantMessageId },
-                select: { id: true },
-              })
-
-              if (existingMessage) {
-                console.warn(
-                  'Skipping assistant message update: message exists outside current thread',
-                  {
-                    requestId,
-                    phase: 'persist.assistantMessage',
-                    messageId: assistantMessageId,
-                    threadId: currentThreadId,
-                  }
-                )
-              } else {
-                await prisma.chatMessage.create({
-                  data: {
-                    id: assistantMessageId,
-                    threadId: currentThreadId,
-                    parentId: userMessageId,
-                    role: 'assistant',
-                    content: content,
-                    ...metadata,
-                  },
-                })
-              }
-            }
-
-            // update thread's timestamp
-            await prisma.chatThread.update({
-              where: { id: currentThreadId },
-              data: { updatedAt: new Date() },
-            })
-          } catch (error) {
-            console.error('Failed to save assistant message:', {
-              requestId,
-              phase: 'persist.assistantMessage',
-              error,
-            })
-          }
-        } else if (currentThreadId && !owningThread) {
-          console.warn(
-            'Skipping assistant message save: thread ownership mismatch',
-            {
-              requestId,
-              phase: 'persist.assistantMessage',
-              messageId: assistantMessageId,
-              threadId: currentThreadId,
-            }
-          )
-        }
-
-        // deduct credits
-        if (creditsUsed !== null) {
-          try {
-            await CreditsService.decrementCredits(
-              participantId,
-              chatbotId,
-              creditsUsed
-            )
-          } catch (error) {
-            console.error('Failed to deduct credits:', {
-              requestId,
-              phase: 'credits.decrement',
-              error,
-            })
-          }
+        if (result.steps && result.steps.length > 0) {
+          await finalizeAssistantLifecycle({
+            content: mapAssistantStepContent(result.steps),
+            reasoningContent: finishedReasoningContent,
+            rawCreditsUsed,
+            phase: 'complete',
+          })
         }
 
         if (!firstError) {
@@ -1460,7 +1508,7 @@ export async function POST(
 
       onAbort: async (steps) => {
         sawAbort = true
-        let creditsUsed: number | null = null
+        let rawCreditsUsed: number | null = null
         if (steps && Array.isArray(steps.steps)) {
           let totalCost = 0
           let hasUsage = false
@@ -1478,25 +1526,13 @@ export async function POST(
           }
 
           if (hasUsage) {
-            creditsUsed = totalCost + imageDescriptionCost
-          }
-
-          if (creditsUsed !== null && creditsUsed > 0) {
-            try {
-              await CreditsService.decrementCredits(
-                participantId,
-                chatbotId,
-                creditsUsed
-              )
-            } catch (error) {
-              console.error('Failed to deduct credits:', {
-                requestId,
-                phase: 'credits.decrement',
-                error,
-              })
-            }
+            rawCreditsUsed = totalCost + imageDescriptionCost
           }
         }
+        const creditsUsed =
+          rawCreditsUsed === null
+            ? null
+            : roundChatUsageCredits(rawCreditsUsed).toNumber()
 
         const abortedAssistantContent = buildAbortedAssistantContent(
           Array.isArray(steps?.steps) ? steps.steps : undefined,
@@ -1517,78 +1553,14 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // save partial message (always non-empty: `buildAbortedAssistantContent`
-        // closes every aborted turn with the `chat-stopped` marker part)
-        if (currentThreadId && owningThread) {
-          try {
-            const metadata = {
-              chatMode: selectedMode,
-              modelId: selectedModelConfig.id,
-              reasoningEffort: appliedReasoningEffort,
-              reasoningContent: abortedReasoningContent,
-              creditsUsed,
-            }
-            const updated = await prisma.chatMessage.updateMany({
-              where: { id: assistantMessageId, threadId: currentThreadId },
-              data: {
-                content: abortedAssistantContent,
-                ...metadata,
-              },
-            })
-
-            if (updated.count === 0) {
-              const existingMessage = await prisma.chatMessage.findUnique({
-                where: { id: assistantMessageId },
-                select: { id: true },
-              })
-
-              if (existingMessage) {
-                console.warn(
-                  'Skipping assistant message update: message exists outside current thread',
-                  {
-                    requestId,
-                    phase: 'persist.partialAssistantMessage',
-                    messageId: assistantMessageId,
-                    threadId: currentThreadId,
-                  }
-                )
-              } else {
-                await prisma.chatMessage.create({
-                  data: {
-                    id: assistantMessageId,
-                    threadId: currentThreadId,
-                    parentId: userMessageId,
-                    role: 'assistant',
-                    content: abortedAssistantContent,
-                    ...metadata,
-                  },
-                })
-              }
-            }
-
-            // update thread's timestamp
-            await prisma.chatThread.update({
-              where: { id: currentThreadId },
-              data: { updatedAt: new Date() },
-            })
-          } catch (error) {
-            console.error('Failed to save partial message:', {
-              requestId,
-              phase: 'persist.partialAssistantMessage',
-              error,
-            })
-          }
-        } else if (currentThreadId && !owningThread) {
-          console.warn(
-            'Skipping assistant message save: thread ownership mismatch',
-            {
-              requestId,
-              phase: 'persist.partialAssistantMessage',
-              messageId: assistantMessageId,
-              threadId: currentThreadId,
-            }
-          )
-        }
+        // The marker-only result still closes an aborted lifecycle when the
+        // provider reports no reliable usage.
+        await finalizeAssistantLifecycle({
+          content: abortedAssistantContent,
+          reasoningContent: abortedReasoningContent,
+          rawCreditsUsed,
+          phase: 'abort',
+        })
 
         emitFinalOnce('aborted', {
           elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
@@ -1694,13 +1666,17 @@ export async function POST(
         return undefined
       }
 
-      const creditsUsed = part.totalUsage
+      const rawCreditsUsed = part.totalUsage
         ? calcCost(
             selectedModelConfig.cost,
             part.totalUsage.inputTokens || 0,
             part.totalUsage.outputTokens || 0
           ) + imageDescriptionCost
         : null
+      const creditsUsed =
+        rawCreditsUsed === null
+          ? null
+          : roundChatUsageCredits(rawCreditsUsed).toNumber()
 
       return {
         finishReason: part.finishReason,

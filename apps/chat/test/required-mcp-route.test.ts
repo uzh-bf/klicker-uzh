@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  isChatTurnKeyClaimed: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -35,6 +36,15 @@ vi.mock('@/src/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
   },
+}))
+
+vi.mock('@/src/services/accountUsage', () => ({
+  CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
+  ChatTurnConflictError: class ChatTurnConflictError extends Error {},
+  finalizeChatTurn: vi.fn(),
+  isChatAccountUsageAvailable: vi.fn(),
+  isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
+  roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
 import { POST } from '../src/app/api/chatbots/[chatbotId]/chat/route'
@@ -66,6 +76,7 @@ describe('required MCP chat preflight', () => {
       required: false,
       accepted: true,
     })
+    mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
       systemPrompts: { tutor: { prompt: 'Use course material.' } },

@@ -5,9 +5,10 @@ import { withTransaction } from '../utils/transactions'
 
 const CREDIT_SCALE = 6
 const CREDIT_LIMIT = new Prisma.Decimal('1000000000000')
+export const CHAT_TURN_ALREADY_COMPLETED_CODE = 'CHAT_TURN_ALREADY_COMPLETED'
 
 export class ChatTurnConflictError extends Error {
-  readonly code = 'CHAT_TURN_ALREADY_COMPLETED'
+  readonly code = CHAT_TURN_ALREADY_COMPLETED_CODE
 
   constructor() {
     super('Chat turn already completed')

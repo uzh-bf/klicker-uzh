@@ -396,5 +396,16 @@ arms and the slice stops for a scope update before implementation.
   implemented with focused Decimal tests and an opt-in real-PostgreSQL seam.
   Chat type-checking passed, the default suite passed with 357 tests and six
   expected integration skips, and all six enabled PostgreSQL cases passed.
-- Current state: create the immutable S1 commit, run its Ox Alpha simplifier
-  and risk review, then disposition any verified findings before S2.
+- 2026-08-22: S1 was committed at `02f1fabbf`. Its Ox Alpha simplifier and
+  data-integrity risk review both returned `PASS` for
+  `124a1faf6..02f1fabbf`; no correction was required.
+- 2026-08-22: S2 implementation and local verification are complete. The
+  registry and credits response preserve the selected class, participant
+  fallback is strict by class and allow-list, account availability and turn-key
+  checks precede provider/message work, and normal plus aborted terminal paths
+  share the atomic finalizer while participant decrement remains separate.
+  The focused matrix passed 37 checks; the complete Chat suite passed 369
+  tests with six expected integration skips; all six enabled PostgreSQL cases
+  passed; and Node 24 `pnpm run check:all` passed.
+- Current state: inspect and commit the immutable S2 slice, then run its Ox
+  Alpha simplifier and risk review before S3.
