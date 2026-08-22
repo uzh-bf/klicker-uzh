@@ -52,6 +52,8 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+          cd ../graphql
+          pnpm run build
 
       - name: Test chat app
         if: steps.filter.outputs.should_run == 'true'
