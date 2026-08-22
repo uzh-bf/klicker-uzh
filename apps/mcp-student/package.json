@@ -34,7 +34,7 @@
     "test:watch": "vitest"
   },
   "engines": {
-    "node": "20.x"
+    "node": "=24"
   },
   "volta": {
     "extends": "../../package.json"
