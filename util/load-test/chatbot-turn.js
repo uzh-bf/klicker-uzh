@@ -9,22 +9,27 @@
 //
 // Usage:
 //   KLICKER_BASE_URL=https://chat.klicker.stg.df-app.ch \
-//     KLICKER_PARTICIPANT_TOKEN=<jwt> KLICKER_CHATBOT_ID=<uuid> \
+//     KLICKER_PARTICIPANT_TOKEN=<token> KLICKER_CHATBOT_ID=<uuid> \
 //     KLICKER_SELECTED_MODEL=<model-id> MAX_TURNS=2 \
 //     KLICKER_ALLOW_SIDE_EFFECTS=true k6 run util/load-test/chatbot-turn.js
+//   Normal login (credentials should come from the runtime secret store):
+//     KLICKER_API_URL=https://api.klicker.stg.df-app.ch \
+//       KLICKER_PARTICIPANT_USERNAME_OR_EMAIL=<account> \
+//       KLICKER_PARTICIPANT_PASSWORD=<password> KLICKER_ALLOW_LOGIN=true \
+//       KLICKER_ALLOW_SIDE_EFFECTS=true KLICKER_CHATBOT_ID=<uuid> \
+//       KLICKER_SELECTED_MODEL=<model-id> k6 run util/load-test/chatbot-turn.js
 
 import { check } from 'k6'
 import { randomUUID } from 'k6/crypto'
 import exec from 'k6/execution'
 import http from 'k6/http'
+import {
+  acquireParticipantToken,
+  resolveParticipantAuth,
+} from './chatbot-login.js'
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-const token = (__ENV.KLICKER_PARTICIPANT_TOKEN || '').trim()
-if (!token || token.trim().length === 0) {
-  throw new Error('KLICKER_PARTICIPANT_TOKEN is required for real chat turns')
-}
 
 const rawBaseUrl = (__ENV.KLICKER_BASE_URL || '').trim()
 const baseUrlMatch = rawBaseUrl.match(/^(https?):\/\/([^/?#]+)\/?$/i)
@@ -97,6 +102,7 @@ if (!Number.isInteger(maxTurns) || maxTurns < 1 || maxTurns > 10) {
   throw new Error('MAX_TURNS must be an integer from 1 through 10')
 }
 const question = __ENV.QUESTION || 'What topics are covered?'
+const participantAuth = resolveParticipantAuth(rawBaseUrl, __ENV)
 
 export const options = {
   discardResponseBodies: true,
@@ -114,12 +120,21 @@ export const options = {
   },
 }
 
-export default function () {
+export function setup() {
+  return { participantToken: acquireParticipantToken(participantAuth) }
+}
+
+export default function (setupData) {
   if (
     !Number.isInteger(exec.scenario.iterationInTest) ||
     exec.scenario.iterationInTest >= maxTurns
   ) {
     return
+  }
+
+  const token = setupData?.participantToken || ''
+  if (token.length === 0) {
+    throw new Error('Participant login did not provide a session token')
   }
 
   const assistantMessageId = randomUUID()

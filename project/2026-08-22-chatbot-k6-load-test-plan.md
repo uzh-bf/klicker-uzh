@@ -9,19 +9,24 @@ lecturer-demo work.
 ## Scope and authority
 
 - Include only `util/load-test/chatbot-http.js`, `util/load-test/chatbot-auth.js`,
-  and `util/load-test/chatbot-turn.js`, plus this plan artifact.
+  `util/load-test/chatbot-turn.js`, and the shared
+  `util/load-test/chatbot-login.js` module, plus this plan artifact.
 - Exclude provisioner, activation, database, lecturer-demo, runtime, dependency,
   lockfile, and legacy `util/load-test/k6.js` changes.
 - Authorized: create this worktree and branch, make bounded script/plan edits,
   run local static and k6 inspection checks, commit, push the feature branch,
   and open a draft PR against `v3`.
-- Withheld: live k6 runs, credential or secret access, production/staging
-  traffic, database writes, provider calls, deployment, merge, and lecturer
-  communication.
+- Withheld: live k6 runs, Infisical reads or writes, real credential or secret
+  access, production/staging login or chatbot traffic, database/provider
+  traffic, deployment, merge, and lecturer communication. Normal login updates
+  `Participant.lastLoginAt` once per run, and a chat-turn run persists its
+  synthetic conversation; those effects require a separately authorized live
+  canary.
 - Boundary owner: main session. Terminal: reviewed draft PR published.
-- Pause if remote `v3` moves from `f58986faa8cfa4ff78d20a1ebeb1666473343d38`,
-  the isolated patch no longer applies, or safety hardening requires paths
-  outside the three scripts and this plan.
+- Pause if remote `v3` moves from
+  `d4303516a8d4863b45d81c372f5f0023548f8b4a`, the isolated patch
+  no longer applies, or safety hardening requires paths
+  outside the four k6 paths and this plan.
 
 ## Evidence and decision
 
@@ -33,21 +38,44 @@ lecturer-demo work.
   selection, explicit production opt-in, explicit chat-turn side-effect
   acknowledgement, strict turn-count validation, and corrected comments.
 
+## Normal-login authentication contract
+
+- The authenticated scripts support either the existing
+  `KLICKER_PARTICIPANT_TOKEN` mode or a normal participant login. The modes
+  cannot be mixed.
+- Normal login uses the persisted `LoginParticipant` operation through the
+  target API's `/api/graphql` endpoint. It requires runtime-injected
+  `KLICKER_PARTICIPANT_USERNAME_OR_EMAIL`, `KLICKER_PARTICIPANT_PASSWORD`,
+  `KLICKER_API_URL`, and `KLICKER_ALLOW_LOGIN=true`.
+- Login is limited to the known origin pairs
+  `chat.klicker.stg.df-app.ch` + `api.klicker.stg.df-app.ch` and
+  `chat.klicker.uzh.ch` + `backend-sls.klicker.uzh.ch`. HTTPS, canonical
+  origins, production opt-in, and the existing target guards remain required.
+- The k6 `setup()` function retains only the issued `participant_token` in
+  memory and passes it to VUs. Response bodies, credentials, token values,
+  questions, and answers are not logged or persisted by the suite.
+- A normal login is not read-only: the application updates `lastLoginAt`. A
+  successful Tutor turn additionally persists thread and message records and
+  can invoke retrieval and the provider. Static checks cannot prove those
+  runtime effects.
+
 ## Delegation map
 
 | Slice | Owner | Acceptance |
 | --- | --- | --- |
 | S1 isolated branch and plan | main | Fresh worktree at pinned `v3`; plan committed first |
-| S2 k6 suite extraction and safety hardening | main | Exactly three script paths changed; negative guards fail before network execution |
+| S2 k6 suite extraction and safety hardening | main | The original three script paths changed; negative guards fail before network execution |
 | S3 integrated review | final-reviewer | Correctness, security, maintainability, and boundary findings dispositioned |
 | S4 publication | main | Feature branch pushed and draft PR targets `v3`; no merge |
+| S5 normal-login amendment | main | Shared login module and two authenticated scripts use persisted login with explicit acknowledgements |
+| S6 authenticated static verification | main | Positive/negative k6 inspections, archive guard, repository checks, and exact four-path diff |
 
 ## Test portfolio
 
 | Risk | Obligation | Primary seam | Evidence |
 | --- | --- | --- | --- |
-| Script syntax/options | extend existing | k6 inspection | `k6 inspect --execution-requirements` for all three scripts |
-| Safety guards | add new | preflight validation | missing target/opt-in/token/ack/model/invalid turns fail before network |
+| Script syntax/options | extend existing | k6 inspection | `k6 inspect --execution-requirements` for all three entry scripts, including the shared login module |
+| Safety guards | add new | preflight validation | missing target/auth/opt-in/ack/model/invalid turns and target mismatches fail before network |
 | Formatting/diff hygiene | extend existing | repository checks | formatter check and `git diff --check` |
 | Live behavior | none in this PR | external runtime | intentionally withheld; use separately authorized canary package |
 
@@ -110,3 +138,22 @@ lecturer-demo work.
 - S4: complete — branch head `86f51239b` is pushed as draft PR #5478 against
   `v3`; host read-back confirms the four expected paths and 15 branch commits.
   Required CI checks are pending; merge remains withheld.
+- Fresh host read-back for this continuation reports remote `v3` at
+  `d4303516a8d4863b45d81c372f5f0023548f8b4a`; it is an ancestor of the current
+  branch head `f7e1fa8c5e73975cf43365156a033d60eb25b7bc`, so the existing branch
+  remains ahead without a rebase or reset.
+- S5: complete — the native planner approved a shared `chatbot-login.js`
+  design with the persistence concern recorded above. The implementation is
+  limited to the shared module plus the two authenticated scripts; the
+  anonymous script remains unchanged.
+- S6: in progress — both authenticated entry scripts passed direct-token and
+  normal-login `k6 inspect --execution-requirements` checks with dummy values;
+  PRD login checks passed with the explicit production acknowledgement. Ten
+  negative guard inspections failed closed, including mixed/partial auth,
+  missing login acknowledgement, HTTP/API/path errors, target mismatch, PRD
+  opt-in, and malformed chatbot ID. The archive preserved the turn cap and
+  imported login module without embedding environment values. Biome, Prettier,
+  `git diff --check`, the anonymous HTTP inspection, and persisted-operation
+  hash checks passed. No live login, chatbot, provider, database, or Infisical
+  action is part of this package; runtime proof remains a separate approval
+  gate.
