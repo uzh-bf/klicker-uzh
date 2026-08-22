@@ -475,3 +475,9 @@ Gate 3 ruling and names every still-withheld action.
   publication, additive append as the top layer of stack #5476, exact-head CI
   observation, and a publication-aware Phase 5 re-read. All withheld external
   actions remain unchanged.
+- 2026-08-23: S4 published draft PR #5490 from
+  `rs/chatbot-u3-usage-lanes` onto the accepted U2 branch and appended it as
+  the fourth and top layer of stack #5476. Host read-back confirmed the draft
+  state, exact branch/base pair, published head `fa7992b35`, whole-branch
+  description, and unchanged lower-layer topology. Ready marking, merge,
+  deployment, live traffic, closure, cleanup, and deletion remain withheld.
