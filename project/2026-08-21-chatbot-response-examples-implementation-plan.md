@@ -537,6 +537,11 @@ because those belong to the deferred integration milestone.
   runtime; direct focused Vitest passed 4/4 tests; GraphQL and Prisma checks
   completed with runtime exit marker `0`; GraphQL codegen succeeded after the
   Prisma client build; Prisma sync updated the mirrored analytics schema.
+- Repository check evidence: `pnpm run check`, `pnpm run format:check`, and
+  `pnpm run lint` completed in the exact runtime. The full `pnpm run build`
+  reached a successful GraphQL build but stopped at the existing chat-package
+  module-resolution errors for `@klicker-uzh/util/auth` and
+  `@klicker-uzh/util/client-auth`, outside this K1 diff.
 - Runtime limitation: the repository `test:local` command cannot start its
   database because the exact runtime does not expose Docker CLI; the direct
   focused Vitest path passed against the already-running synthetic database.
