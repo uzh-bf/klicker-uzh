@@ -45,6 +45,11 @@ const passedProof = {
   wrongTenant: 'passed',
   eduaiRoute: 'passed',
 } as const
+const failedProof = {
+  ...passedProof,
+  status: 'failed',
+  retrieval: 'failed',
+} as const
 
 type FakeRow = Record<string, any>
 
@@ -602,6 +607,64 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       expect(fake.maps.servers.get(ordinaryServer.id)).toEqual(ordinarySnapshot)
       expect(fake.maps.servers.size).toBe(1)
       expect(fake.maps.configs.size).toBe(0)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test('refuses synthetic server cleanup when unexpected references remain', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'w5e-reference-guard-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const fake = fakeW5eClient()
+    const ordinaryChatbotId = '00000000-0000-4000-8000-000000000097'
+    const ordinaryReference = {
+      id: '00000000-0000-4000-8000-000000000098',
+      chatbotId: ordinaryChatbotId,
+      mcpServerId: null,
+      chatMode: 'tutor',
+    }
+
+    try {
+      const result = await withW5eEnvironment(receiptPath, () =>
+        runW5eTransaction({
+          client: fake.client,
+          fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
+          runProofImpl: vi.fn(async () => failedProof),
+          receiptStoreFactory: (path) => {
+            const store = createReceiptStore(path)
+            let writes = 0
+            return {
+              read: () => store.read(),
+              write: async (receipt) => {
+                writes++
+                if (writes === 7 && receipt.state === 'switched') {
+                  fake.maps.configs.set(ordinaryReference.id, {
+                    ...ordinaryReference,
+                    mcpServerId: receipt.fixture.candidateServerId,
+                  })
+                }
+                await store.write(receipt)
+              },
+            }
+          },
+        })
+      )
+      const receipt = await createReceiptStore(receiptPath).read()
+
+      expect(result).toMatchObject({
+        status: 'recovery_required',
+        cleanup: 'incomplete',
+        fixtureOperation: 'cleanup',
+        fixtureStatus: 'failed',
+        error: 'transaction_failed',
+        failure: 'cleanup_failed',
+      })
+      expect(receipt).toMatchObject({
+        state: 'recovery_required',
+        fixtureOperation: { operation: 'cleanup', status: 'failed' },
+      })
+      expect(fake.maps.servers.size).toBe(2)
+      expect(fake.maps.configs.size).toBe(2)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

@@ -1270,6 +1270,15 @@ async function restoreAndDeleteBinding(
       })
       if (deletedConfig.count !== 1)
         fail('CONCURRENT_EDIT', 'candidate config could not be deleted')
+      const candidateReferences = await tx.chatbotMCPConfig.findMany({
+        where: { mcpServerId: candidateServer.id },
+        select: { id: true },
+      })
+      if (candidateReferences.length !== 0)
+        fail(
+          'CLEANUP_PRECONDITION',
+          'candidate server has unexpected configuration references'
+        )
       const deletedServer = await tx.chatbotMCPServer.deleteMany({
         where: { id: candidateServer.id, name: SERVER_NAME },
       })
@@ -1321,6 +1330,15 @@ async function deletePreparedBinding(
         fail(
           'CONCURRENT_EDIT',
           'prepared candidate config could not be deleted'
+        )
+      const candidateReferences = await tx.chatbotMCPConfig.findMany({
+        where: { mcpServerId: candidateServer.id },
+        select: { id: true },
+      })
+      if (candidateReferences.length !== 0)
+        fail(
+          'CLEANUP_PRECONDITION',
+          'candidate server has unexpected configuration references'
         )
       const deletedServer = await tx.chatbotMCPServer.deleteMany({
         where: { id: candidateServer.id, name: SERVER_NAME, isActive: false },
@@ -1389,9 +1407,13 @@ async function deleteFixture(
   const { client } = options
   await client.$transaction(
     async (tx) => {
-      const [configs, threads, credits] = await Promise.all([
+      const [configs, legacyReferences, threads, credits] = await Promise.all([
         tx.chatbotMCPConfig.findMany({
           where: { chatbotId: fixture.ids.chatbotId },
+          select: { id: true },
+        }),
+        tx.chatbotMCPConfig.findMany({
+          where: { mcpServerId: fixture.ids.legacyServerId },
           select: { id: true },
         }),
         tx.chatThread.findMany({
@@ -1406,6 +1428,8 @@ async function deleteFixture(
       if (
         configs.length !== 1 ||
         configs[0]?.id !== fixture.ids.legacyConfigId ||
+        legacyReferences.length !== 1 ||
+        legacyReferences[0]?.id !== fixture.ids.legacyConfigId ||
         threads.length !== 0 ||
         credits.length !== 0
       ) {
@@ -1700,10 +1724,13 @@ export async function runW5eTransaction(
       failure = error
       failureCategory = currentPhase
       options.receipt = updatedReceipt(options.receipt, {
-        fixtureOperation: {
-          operation: options.receipt.fixtureOperation.operation,
-          status: 'failed',
-        },
+        fixtureOperation:
+          options.receipt.fixtureOperation.status === 'running'
+            ? {
+                operation: options.receipt.fixtureOperation.operation,
+                status: 'failed',
+              }
+            : options.receipt.fixtureOperation,
       })
     } finally {
       if (fixtureState) {
