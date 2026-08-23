@@ -344,6 +344,16 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   product defect is indicated; per the one-rerun discipline no third run was
   attempted. PR description updated with this evidence and review focus.
   Merge remains withheld.
+- 2026-08-23 — Docs-push rerun on 66c7e3d41 (run 32621060801) confirms the
+  two-shard signature is stable across three independent runs: shard 5 fails
+  with exactly 156 `Page crashed` errors confined to Y-chat (61 pass), and
+  shard 7 fails only the same two install-sheet dictation tests at the same
+  spec lines while all ten other dictation tests pass in about one second
+  each. Shard 6 additionally recorded two Q-practice-quiz login-timeout
+  failures, showing the environmental family now reaches other files.
+  Per plan discipline no further reruns were attempted; the PR description
+  carries this evidence, and the merge gate for these shards is a human
+  decision on the recorded traces.
 
 ## Pause and finish boundary
 
