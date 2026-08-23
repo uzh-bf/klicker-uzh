@@ -579,23 +579,13 @@ flowchart TD
 
 ## Progress
 
-- **Status:** planning complete; awaiting user agreement.
-- **Active slice:** none.
-- **Completed:** handoff reconciliation; fresh source inventory; official Azure,
-  LiteLLM, and Langfuse research; product grilling; ADR and architecture draft;
-  bounded threat model; Sol planner review and disposition.
-- **Remaining:** user approval; rebase; separate documentation and plan commits;
-  SEC and OBS; Stack 1; D1 and I1; Stack 2; C1; required reviews and local
-  verification. G1, S1, A1, and L1 remain gated later work.
-- **Latest verified commit/range:** no task commit. Worktree is uncommitted and
-  based on `8503c1424`; `origin/v3` is `35142c81a` with one unrelated STG values
-  promotion.
-- **Latest checks:** source freshness, active usage-stack topology, ADR format,
-  planner report, Markdown formatting, 15-threat inventory, 16-slice inventory, superseded-wording scan, diff scope, and current remote head verified.
-- **Unresolved required gates:** first exact Provider Profile; user plan approval;
-  usage stack landing; institutional trace governance; any external delivery or
-  runtime authority.
-- **Active children:** none. Sol planner is complete and closed.
-- **Delivery layer:** required local verified commits; achieved design draft;
-  external delivery withheld.
-- **Next action:** hand off the reviewed artifacts and ask the user to approve the execution contract.
+- **Status:** Stack 1 in progress; K2 committed and reviewed.
+- **Active slice:** K2 complete (commit 4d75b3509).
+- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; rebase onto 35142c81a; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509.
+- **K2 verification:** Prisma validate + generate + analytics sync pass; util build pass; GraphQL codegen + typecheck pass; backend typecheck pass; all 7 lifecycle tests pass. Pre-commit hooks passed (gitleaks clean, typecheck across 25 packages, lint, syncpack, prisma-sync). Slice-reviewer verdict PASS-WITH-NOTES; simplifier verdict NO-ACTION. Reports at project/_local/reviews/.
+- **K2 findings for K3:** (P2) Remove secret from GraphQL register/rotate mutations before wiring real gateway custody - use the dedicated ingress route exclusively. (P2) FakeGatewayAdapter default parameter must be replaced by explicit injection when K3 lands. (P3) vaultSecretName exposure on public projection is low-risk but should be restricted. (P3) Ingress route needs per-user rate limiting before real custody.
+- **Remaining:** K3 gateway client + disabled deployment; K4 lecturer UI; D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
+- **Latest verified commit/range:** K2 4d75b3509 on branch rs/ai-provider-credentials-design; ahead 7 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
+- **Unresolved required gates:** D1/I1 contracts before K3 finalization; institutional trace governance; any external delivery or runtime authority.
+- **Delivery layer:** local verified commits only; push/PR/merge/deploy withheld.
+- **Next action:** begin K3 per the plan definition at line 380.
