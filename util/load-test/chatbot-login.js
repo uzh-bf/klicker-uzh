@@ -78,6 +78,28 @@ export function resolveParticipantAuth(rawBaseUrl, env) {
   }
 
   if (hasToken) {
+    const chatOrigin = parseOrigin(rawBaseUrl, 'KLICKER_BASE_URL')
+    if (chatOrigin.protocol !== 'https') {
+      throw new Error('Participant-token mode requires HTTPS chat origins')
+    }
+    if (chatOrigin.port && chatOrigin.port !== '443') {
+      throw new Error(
+        'Participant-token mode requires a canonical HTTPS chat origin'
+      )
+    }
+    if (!Object.hasOwn(expectedApiHostByChatHost, chatOrigin.hostname)) {
+      throw new Error(
+        'Participant-token mode is limited to the known STG or PRD chat origins'
+      )
+    }
+    if (
+      isProductionHostname(chatOrigin.hostname) &&
+      env.KLICKER_ALLOW_PRODUCTION !== 'true'
+    ) {
+      throw new Error(
+        'Set KLICKER_ALLOW_PRODUCTION=true for token mode against the production target'
+      )
+    }
     return { mode: 'token', token }
   }
 
