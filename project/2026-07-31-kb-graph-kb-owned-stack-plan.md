@@ -577,3 +577,12 @@ it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
   E2E, CodeQL, SonarCloud, gitleaks, stg image builds). Remaining open:
   authenticated browser screenshots (TLS/curl route-reconciliation blocker,
   documented above) and runtime teardown.
+- 2026-08-23: Runtime lifecycle closed. The exact checkout
+  `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/kb-v3-ai-finalization`
+  (DevPod workspace `rs-kb-v3-ai-finalization`, provider docker) is
+  `stopped`: `devpod status` reports Stopped, all nine task containers
+  (app, hatchet, postgres, litellm, three redis, azurite, mailhog) exited,
+  and the devrouter route ledger carries zero routes for this workspace.
+  No deletion was performed. Merge/close/deploy authority remains withheld
+  per plan; the plan and log record the browser-evidence limitation instead
+  of claiming screenshots.
