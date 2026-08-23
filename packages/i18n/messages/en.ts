@@ -1561,6 +1561,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The specified user does not exist. Please check the email address and ensure that the user has logged in to KlickerUZH at least once.',
       grantAccessError:
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
+      aiFeaturesAvailability: 'Availability: AI Features',
+      aiFeaturesDescription:
+        'All users on the following list may use the AI features, which spend model budget. Only enable an account once a cost center has been supplied that the usage can be billed to. Enabling or disabling is done by entering the email address (primary Edu-ID email).',
+      aiFeaturesEnable: 'Enable',
+      aiFeaturesDisable: 'Disable',
+      aiFeaturesEnabled:
+        'The specified user has been enabled for the AI features.',
+      aiFeaturesDisabled:
+        'The specified user has been disabled for the AI features.',
+      aiFeaturesUnchanged:
+        'The specified user already had the requested AI feature setting.',
+      aiFeaturesError:
+        'An error occurred while changing the AI feature setting. This might be due to insufficient permissions or a system error.',
     },
     activities: {
       activityType: 'Activity Type',

@@ -18,9 +18,16 @@ cluster-internal service. The browser client key identifies an SDK connection
 and is not a GrowthBook management key.
 
 The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
-`packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`; the foundation
-PR intentionally contains no active product flags and no application imports.
-Applications initialize GrowthBook only when they adopt their first flag.
+`packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`, which currently
+holds one product flag, `ai-beta`. Applications initialize GrowthBook only when
+they adopt their first flag.
+
+`ai-beta` is not the whole gate over the lecturer AI surfaces. It decides
+whether the beta is open to an account; the account's `aiFeaturesEnabled`
+column decides whether that account may spend model budget at all, and an
+administrator sets it once a cost center has been supplied to bill the usage
+to. Both must hold, and the flag alone never opens a surface — see
+[Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
 
 ## Package contract
 

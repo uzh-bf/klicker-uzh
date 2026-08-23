@@ -267,6 +267,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getUsersAiFeatures: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: [UserInfo],
+        resolve: async (_, __, ctx) => {
+          return await AccountService.getUsersAiFeatures(ctx)
+        },
+      }),
+
       userElements: t.withAuth(asUser).field({
         nullable: true,
         type: UserElementList,

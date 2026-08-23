@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
-import { isManageFeatureEnabled } from '../../lib/server/featureFlags'
+import { isManageAiEnabled } from '../../lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '../../lib/server/manageAuth'
 
 interface ManageAssistantPageProps {
@@ -13,7 +13,7 @@ export default async function ManageAssistantPage({
 }: ManageAssistantPageProps) {
   const manageUser = await getAuthenticatedManageUser()
 
-  // The flag is evaluated per lecturer, so it can only be evaluated once one
+  // The gate is evaluated per lecturer, so it can only be evaluated once one
   // is signed in. A signed-out visitor keeps the login prompt rather than a
   // 404: it is a static page carrying no capability, and 404ing it would
   // strand an opted-in lecturer whose session expired.
@@ -24,7 +24,7 @@ export default async function ManageAssistantPage({
     return <ManageLoginRequired embedded={embedded} />
   }
 
-  if (!(await isManageFeatureEnabled('manage-assistant', manageUser))) {
+  if (!(await isManageAiEnabled(manageUser))) {
     notFound()
   }
 

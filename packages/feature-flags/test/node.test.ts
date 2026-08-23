@@ -148,18 +148,15 @@ describe('NodeFeatureFlagClient', () => {
 
     const development = new NodeFeatureFlagClient({
       environment: 'development',
-      forcedOn: 'manage-assistant',
+      forcedOn: 'ai-beta',
     })
-    expect(development.isEnabled('manage-assistant', attributes)).toBe(true)
-    expect(
-      development.isEnabled('manage-assistant-mcp-tools', attributes)
-    ).toBe(false)
+    expect(development.isEnabled('ai-beta', attributes)).toBe(true)
 
     const production = new NodeFeatureFlagClient({
       environment: 'production',
-      forcedOn: 'manage-assistant',
+      forcedOn: 'ai-beta',
     })
-    expect(production.isEnabled('manage-assistant', attributes)).toBe(false)
+    expect(production.isEnabled('ai-beta', attributes)).toBe(false)
   })
 
   // GrowthBook is authoritative wherever it is reachable: a configured client
@@ -169,13 +166,11 @@ describe('NodeFeatureFlagClient', () => {
       apiHost: 'https://growthbook.example',
       clientKey: 'sdk-key',
       environment: 'development',
-      forcedOn: 'manage-assistant',
+      forcedOn: 'ai-beta',
     })
 
     await client.initialize()
 
-    expect(client.isEnabled('manage-assistant', { actorType: 'user' })).toBe(
-      false
-    )
+    expect(client.isEnabled('ai-beta', { actorType: 'user' })).toBe(false)
   })
 })

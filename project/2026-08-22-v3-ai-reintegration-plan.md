@@ -258,6 +258,22 @@ The operations are named `betaFeatures` and `setBetaFeatures` rather than `betaA
 
 One deviation from the plan text worth recording: the plan said to mount the browser flag provider in the lecturer UI *and* chat, and chat received only the Node client. Chat has no client-side flag branch today, so a browser provider there would be dead weight; add it in the same change as chat's first client-side branch.
 
+### A5, amended — one flag plus an account entitlement (2026-08-23)
+
+The two-flag split above is withdrawn at the user's direction: one beta feature flag, and separately a per-account record of whether the account is enabled for the AI features, meaning it has supplied a cost center the usage can be billed to.
+
+`manage-assistant` and `manage-assistant-mcp-tools` are replaced by a single `ai-beta`. Everything the beta adds now moves together — the launcher, the `/manage` page, `POST /api/manage/chat`, the lecturer MCP tools that route loads, and `POST /api/manage/proposals/confirm`. The collapse also closes a gap the split had: confirmation used to follow only the tools flag, so turning the surface off left an already-minted proposal token redeemable.
+
+The account entitlement is a new `User.aiFeaturesEnabled` column, not a reuse of `privatePreview`. `privatePreview` already grants the catalog, user groups, element sharing, and several other unreleased surfaces, so putting billing consent on it would mean granting one implies granting the other. It is also not a GrowthBook attribute: it is a contractual fact about the account, and a rule that forgot to mention it would open the gate, whereas code that requires it cannot.
+
+Both conditions are enforced in one place, `isManageAiEnabled`, so a caller cannot check the flag and forget the entitlement. It reads the entitlement live from the database rather than from the session token: it is the switch that stops spending, and a claim minted at sign-in would keep a revoked cost center spending until the lecturer next signed out. That costs one indexed lookup per request, and only after the flag has already passed, so a lecturer outside the beta costs no query at all. Chat already talks to Prisma, so this needed no new dependency and no change to the JWT claim shape that seven services verify.
+
+Administration mirrors the private preview panel, with one difference: it sets rather than only grants, because a billing arrangement can end. The seeded `lecturer` account is the only fixture enabled for AI features, which leaves every other seeded account as a ready negative case.
+
+Repository checks green: typecheck 27/27, formatting clean, chat 529/529 — including eight tests that were already failing on the branch before this change, three from the Catalyst attribute added in the first half and five in the route boundary suite. Five new tests cover the composite gate directly, including the case that matters most: inside the beta, entitlement withheld, gate closed. Two GraphQL integration tests around activity sharing and assessment restrictions fail against the shared local database both before and after this change, depending on what ran previously; they are untouched by it.
+
+The A6 check inherited from the first half — "assistant up, MCP tools withdrawn" — no longer exists as a state and is dropped.
+
 ### Still open
 
 The four `NEXT_PUBLIC_GROWTHBOOK_*` repository variables do not exist yet — `gh variable list` returns none. Everything else in A0 needs the GrowthBook interface over Tailscale. The ordering constraint stands: the variables must be set before the release images are built, or the images carry no SDK connection and the flags cannot be turned on without a rebuild.

@@ -8,8 +8,7 @@ import {
 describe('feature flag contracts', () => {
   it('registers exactly the lecturer-facing flags, all shipping false', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
-      'manage-assistant': false,
-      'manage-assistant-mcp-tools': false,
+      'ai-beta': false,
     })
   })
 
@@ -77,13 +76,9 @@ describe('feature flag contracts', () => {
     'test',
   ] as const)('forces registered flags on in %s', (environment) => {
     expect(
-      forcedFeatureFlagPayload(
-        'manage-assistant, manage-assistant-mcp-tools',
-        environment
-      )
+      forcedFeatureFlagPayload('ai-beta, not-a-flag', environment)
     ).toEqual({
-      'manage-assistant': { defaultValue: true },
-      'manage-assistant-mcp-tools': { defaultValue: true },
+      'ai-beta': { defaultValue: true },
     })
   })
 
@@ -95,9 +90,7 @@ describe('feature flag contracts', () => {
     'production',
     'unknown',
   ] as const)('refuses to force any flag on in %s', (environment) => {
-    expect(forcedFeatureFlagPayload('manage-assistant', environment)).toEqual(
-      {}
-    )
+    expect(forcedFeatureFlagPayload('ai-beta', environment)).toEqual({})
   })
 
   it.each([
@@ -105,7 +98,7 @@ describe('feature flag contracts', () => {
     '',
     ' , ',
     'not-a-flag',
-    'manage_assistant',
+    'ai_beta',
   ])('forces nothing on for the unregistered value %p', (value) => {
     expect(forcedFeatureFlagPayload(value, 'development')).toEqual({})
   })

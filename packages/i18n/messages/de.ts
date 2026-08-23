@@ -1567,6 +1567,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der angegebene Benutzer existiert nicht. Bitte überprüfen Sie die E-Mail-Adresse und stellen Sie sicher, dass sich der Benutzer mindestens einmal bei KlickerUZH angemeldet hat.',
       grantAccessError:
         'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
+      aiFeaturesAvailability: 'Verfügbarkeit: KI-Funktionen',
+      aiFeaturesDescription:
+        'Alle Benutzer in der folgenden Liste dürfen die KI-Funktionen nutzen, welche Modellbudget verbrauchen. Aktivieren Sie ein Konto erst, wenn eine Kostenstelle vorliegt, der die Nutzung verrechnet werden kann. Die Aktivierung und Deaktivierung erfolgt über die Eingabe der E-Mail-Adresse (primäre Edu-ID-E-Mail).',
+      aiFeaturesEnable: 'Aktivieren',
+      aiFeaturesDisable: 'Deaktivieren',
+      aiFeaturesEnabled:
+        'Der angegebene Benutzer wurde für die KI-Funktionen aktiviert.',
+      aiFeaturesDisabled:
+        'Der angegebene Benutzer wurde für die KI-Funktionen deaktiviert.',
+      aiFeaturesUnchanged:
+        'Der angegebene Benutzer hatte die gewünschte Einstellung für die KI-Funktionen bereits.',
+      aiFeaturesError:
+        'Beim Ändern der Einstellung für die KI-Funktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
     },
     activities: {
       activityType: 'Aktivitätstyp',

@@ -2007,6 +2007,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setAiFeatures(email: String!, enabled: Boolean!): Int
   setBetaFeatures(enabled: Boolean!): Boolean
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
@@ -2545,6 +2546,7 @@ type Query {
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
+  getUsersAiFeatures: [UserInfo!]
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
   groupActivity(id: String!): GroupActivity
@@ -2994,6 +2996,7 @@ type Title {
 }
 
 type User {
+  aiFeaturesEnabled: Boolean!
   catalyst: Boolean!
   catalystTier: String
   email: String!

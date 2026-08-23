@@ -1,9 +1,6 @@
-import type {
-  BooleanFeatureFlagKey,
-  FeatureFlagAttributes,
-  KlickerFeatureFlags,
-} from '@klicker-uzh/feature-flags'
+import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
+import { prisma } from '@klicker-uzh/prisma'
 import type { AuthenticatedManageUser } from './manageAuth'
 
 // One client per process, not per request: it holds the fetched payload and a
@@ -37,15 +34,33 @@ export function manageFeatureFlagAttributes(
 }
 
 /**
- * Evaluates one flag for a signed-in lecturer. Unconfigured or unreachable
- * GrowthBook yields `false`, so a gate written with this refuses rather than
- * opens when the service is missing.
+ * The complete gate over every lecturer-facing AI surface: the `ai-beta` flag,
+ * which decides whether the beta is open to this lecturer at all, and the
+ * account's `aiFeaturesEnabled` setting, which records that an administrator
+ * has a cost center to bill the resulting model usage to. Both must hold.
+ *
+ * The account setting is read live rather than from the session token, so
+ * withdrawing it takes effect on the next request instead of at the lecturer's
+ * next sign-in — it is the switch that stops spending, and a stale snapshot
+ * would keep spending against a revoked cost center.
+ *
+ * Unconfigured or unreachable GrowthBook yields `false`, as does an account
+ * that no longer exists, so a gate written with this refuses rather than opens
+ * when either side is missing.
  */
-export async function isManageFeatureEnabled(
-  key: BooleanFeatureFlagKey<KlickerFeatureFlags>,
+export async function isManageAiEnabled(
   user: AuthenticatedManageUser
 ): Promise<boolean> {
   const featureFlags = getFeatureFlagClient()
   await featureFlags.initialize()
-  return featureFlags.isEnabled(key, manageFeatureFlagAttributes(user))
+  if (!featureFlags.isEnabled('ai-beta', manageFeatureFlagAttributes(user))) {
+    return false
+  }
+
+  const account = await prisma.user.findUnique({
+    select: { aiFeaturesEnabled: true },
+    where: { id: user.sub },
+  })
+
+  return account?.aiFeaturesEnabled === true
 }

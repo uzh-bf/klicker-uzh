@@ -3,14 +3,13 @@
 // at runtime; constraining it to `false` keeps the two in agreement instead of
 // letting a `true` here advertise a fallback the evaluation path cannot honor.
 export const FEATURE_FLAG_DEFAULTS = {
-  // The lecturer assistant as a whole: its launcher inside Manage, its own
-  // page in chat, and the API routes behind it.
-  'manage-assistant': false,
-  // Whether that assistant is given the lecturer MCP tools, and therefore
-  // whether it can produce or confirm draft proposals. Separate from the
-  // surface flag so the tools can be withdrawn without taking the assistant
-  // down with them.
-  'manage-assistant-mcp-tools': false,
+  // The one switch over everything the AI beta adds for lecturers: the
+  // assistant launcher inside Manage, the assistant's own page in chat, the
+  // API routes behind it, the lecturer MCP tools it is given, and the
+  // confirmation route that redeems the proposals those tools produce. They
+  // move together on purpose — a surface withdrawn while the tools behind it
+  // stay live is a gap, not a finer control.
+  'ai-beta': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

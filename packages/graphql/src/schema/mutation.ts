@@ -1661,6 +1661,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      setAiFeatures: t.withAuth(asAdmin).int({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.setAiFeatures(args, ctx)
+        },
+      }),
+
       createAnswerCollection: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: AnswerCollection,

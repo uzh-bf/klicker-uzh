@@ -102,7 +102,7 @@ jobs:
           # honored only because the flag environment here resolves to
           # development.
           APP_ORIGIN_CHAT: http://127.0.0.1:3004
-          NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON: manage-assistant,manage-assistant-mcp-tools
+          NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON: ai-beta
 
       - name: Archive Next build outputs
         run: |
@@ -324,7 +324,7 @@ jobs:
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
           # The chat-side assistant gates are evaluated server side per request,
           # so the same flags must be forced on for the running services too.
-          FEATURE_FLAGS_FORCED_ON: manage-assistant,manage-assistant-mcp-tools
+          FEATURE_FLAGS_FORCED_ON: ai-beta
           NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
           URL_AUTH: http://127.0.0.1:3010
