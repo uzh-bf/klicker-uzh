@@ -22,3 +22,12 @@ regardless of Catalyst entitlement.
 
 The `catalyst` auth scope remains in the codebase for other current and future
 Catalyst-gated surfaces (e.g., the course chatbot).
+
+## Requesting Catalyst access
+
+Users who need the paid tier request it directly inside KlickerUZH: the Manage
+support dialog offers a request form to non-Catalyst account owners. The form
+sends one email to `klicker@df.uzh.ch` with reply-to set to the account email.
+No request state is persisted; transport failures return a stable values-free
+error. The public Catalyst page directs users to this flow instead of an
+external form provider, keeping account data within KlickerUZH's own boundary.
