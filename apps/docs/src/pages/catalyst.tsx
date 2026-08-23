@@ -74,12 +74,9 @@ function Catalyst() {
               the project financially.
             </p>
             <p>
-              To get access and for other inquiries please fill out the
-              following{' '}
-              <a href="https://forms.office.com/e/4AsWW1uck2" target="_blank">
-                form
-              </a>
-              .
+              To get access, sign in to KlickerUZH Manage and open the support
+              dialog via the question-mark icon. There you can send us a direct
+              Catalyst access request.
             </p>
           </Prose>
 
@@ -100,12 +97,6 @@ function Catalyst() {
                     <div>
                       <FontAwesomeIcon icon={faCheck} />
                     </div>
-                    <div>Live Q&A and Real-Time Feedback</div>
-                  </li>
-                  <li className="flex gap-x-3">
-                    <div>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </div>
                     <div>Microlearning</div>
                   </li>
                   <li className="flex gap-x-3">
@@ -119,6 +110,12 @@ function Catalyst() {
                       <FontAwesomeIcon icon={faCheck} />
                     </div>
                     <div>Group Activities</div>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <div>
+                      <FontAwesomeIcon icon={faCheck} />
+                    </div>
+                    <div>Live Q&A and Real-Time Feedback</div>
                   </li>
                   <li className="flex gap-x-3">
                     <div>
@@ -169,18 +166,6 @@ function Catalyst() {
                     <div>Direct Support Channels (best-effort)</div>
                   </li>
                 </ul>
-
-                <div>
-                  To get access and for other inquiries please fill out the
-                  following{' '}
-                  <a
-                    href="https://forms.office.com/e/4AsWW1uck2"
-                    target="_blank"
-                  >
-                    form
-                  </a>
-                  .
-                </div>
               </div>
             </div>
           </div>
