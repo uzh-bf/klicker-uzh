@@ -1,3 +1,16 @@
+enum ProviderCredentialStatus {
+  PENDING_VALIDATION
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  DELETION_PENDING
+  DELETED
+}
+
+enum ProviderNoticeAcknowledgementSource {
+  CHAT_FIRST_USE
+}
+
 enum CreditResetPeriod {
   DAILY
   WEEKLY
@@ -58,16 +71,16 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id               String   @id @default(uuid()) @db.Uuid
-  threadId         String   @db.Uuid
-  parentId         String?  @db.Uuid
+  id               String             @id @default(uuid()) @db.Uuid
+  threadId         String             @db.Uuid
+  parentId         String?            @db.Uuid
   role             String // 'user' | 'assistant'
   content          Json // Array<{ type: string; text: string }>
   chatMode         String?
   modelId          String?
   reasoningEffort  String?
-  reasoningContent String?  @db.Text
-  creditsUsed      Decimal? @db.Decimal(18, 6)
+  reasoningContent String?            @db.Text
+  creditsUsed      Decimal?           @db.Decimal(18, 6)
   // Participant feedback on an assistant answer; null until they vote.
   rating           ChatMessageRating?
 
@@ -85,11 +98,11 @@ model ChatMessage {
 model ChatAttachment {
   id String @id @default(uuid()) @db.Uuid
 
-  type             ChatAttachmentType
-  position         Int
-  imageBase64      String?            @db.Text // base64 data URL for display 
-  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
-  imageDescription String?            @db.Text // AI-generated description for context injection
+  type               ChatAttachmentType
+  position           Int
+  imageBase64        String?            @db.Text // base64 data URL for display 
+  imagePreviewBase64 String?            @db.Text // compact preview data URL for history rendering
+  imageDescription   String?            @db.Text // AI-generated description for context injection
 
   messageId String      @db.Uuid
   message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -134,6 +147,7 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  providerBindings  ChatbotProviderBinding[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -212,4 +226,157 @@ model ChatbotDisclaimer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ProviderProfile {
+  id      String @id @default(uuid()) @db.Uuid
+  key     String @unique // Stable platform key, e.g. 'uzh-azure-openai'
+  version Int    @default(1)
+
+  providerKind        String // e.g. 'azure_openai' | 'openai' | 'openrouter'
+  endpointAlias       String // Fixed gateway-side endpoint alias, never user-supplied
+  deploymentAliases   String[] // Approved model deployment aliases for this profile
+  autoManifestVersion String? // Set only when the profile's complete Auto manifest is published
+
+  pricingSource String // Model cost map reference used for estimates
+  currency      String @db.Char(3) // ISO 4217 currency for estimated costs
+  dataBoundary  Json? // Factual data-processing boundary fields shown in the notice
+  noticeVersion Int    @default(1)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  credentials ProviderCredential[]
+
+  @@index([isActive])
+}
+
+model ProviderCredential {
+  id String @id @default(uuid()) @db.Uuid
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  profile   ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  profileId String          @db.Uuid
+
+  // Vault custody lives behind the AI Credential Gateway; product state stores
+  // only the opaque handle facts.
+  vaultSecretName    String
+  vaultSecretVersion Int
+  safeFingerprint    String? // Truncated display fingerprint, never the secret material
+
+  status              ProviderCredentialStatus @default(PENDING_VALIDATION)
+  validatedModelAlias String? // Named-model capability proven by validation
+  validatedAt         DateTime?
+
+  bindings      ChatbotProviderBinding[]
+  usageAccounts ByokUsageAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([profileId, status])
+}
+
+model ChatbotProviderBinding {
+  id String @id @default(uuid()) @db.Uuid
+
+  credential   ProviderCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  credentialId String             @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  allowedModelAlias String // Named model from the profile's approved aliases
+  isActive          Boolean @default(false)
+
+  participantQuotaLimit Decimal @db.Decimal(18, 6)
+  aggregateQuotaLimit   Decimal @db.Decimal(18, 6)
+
+  currentNoticeVersion Int @default(1)
+
+  acknowledgements  ProviderNoticeAcknowledgement[]
+  traceDeletionJobs TraceDeletionJob[]
+  usageAccounts     ByokUsageAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatbotId, credentialId])
+  @@index([chatbotId, isActive])
+}
+
+model ProviderNoticeAcknowledgement {
+  id String @id @default(uuid()) @db.Uuid
+
+  binding   ChatbotProviderBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bindingId String                 @db.Uuid
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  noticeVersion Int
+  source        ProviderNoticeAcknowledgementSource
+
+  acknowledgedAt DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([participantId, bindingId, noticeVersion])
+}
+
+model ByokUsageAccount {
+  id String @id @default(uuid()) @db.Uuid
+
+  credential   ProviderCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  credentialId String             @db.Uuid
+
+  binding   ChatbotProviderBinding? @relation(fields: [bindingId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  bindingId String?                 @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  reservedAmount Decimal @default(0) @db.Decimal(18, 6)
+  usedAmount     Decimal @default(0) @db.Decimal(18, 6)
+  currency       String  @db.Char(3)
+
+  settledAt DateTime?
+  isSettled Boolean   @default(false)
+
+  requestTraceId String? // Langfuse/OTel trace id for deletion selection
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([credentialId, isSettled])
+  @@index([participantId])
+}
+
+model TraceDeletionJob {
+  id String @id @default(uuid()) @db.Uuid
+
+  binding   ChatbotProviderBinding? @relation(fields: [bindingId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  bindingId String?                 @db.Uuid
+
+  tombstonedUserId    String? @db.Uuid
+  tombstonedChatbotId String? @db.Uuid
+
+  traceSelectors Json // Trace ids and selectors to delete; never payload copies
+
+  requestedAt   DateTime?
+  verifiedAt    DateTime?
+  attempts      Int       @default(0)
+  terminalState String    @default("PENDING") // PENDING | REQUESTED | VERIFIED | FAILED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([terminalState])
 }
