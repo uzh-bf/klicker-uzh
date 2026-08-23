@@ -11,7 +11,7 @@ lecturer-demo work.
 - Branch: `rs/chatbot-k6-load-test`
 - Target: `v3`
 - PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
-- Current reviewed source head: `85ef8af`
+- Current reviewed head: `274f50dde`
 
 ## Scope and authority
 
@@ -194,7 +194,7 @@ lecturer-demo work.
   current feature head. PR CI completed with all non-skipped checks passing;
   filtered jobs are skipped only after their status gates pass. The current
   target is `v3` at `ee5712399`, and the branch is zero commits behind and
-  twenty-four commits ahead. The exact target diff remains the five listed
+  twenty-nine commits ahead. The exact target diff remains the five listed
   package paths.
 - S12: complete — Sol's review of `b9a7cbdf9` found one high-severity
   credential-boundary issue and four follow-up concerns. The token-mode issue
@@ -205,7 +205,12 @@ lecturer-demo work.
   three-chatbot smoke coverage and an unknown-host token guard, passed; the
   repository pre-commit checks also passed. A final Sol review of the exact
   post-correction range remains required.
-- Remaining: run the integrated final review over the exact post-correction
-  range, update the whole-branch PR description, and record that review. Live
-  login, chatbot/provider traffic, merge, deployment, and lecturer
-  communication remain withheld.
+- S13: complete — Sol final-reviewer reviewed the exact
+  `ee5712399fcda479422a61b78004a1cb3b0636e9..274f50dde` range across the five
+  package paths and returned DONE with no findings. The report is preserved at
+  `project/_local/reviews/2026-08-23-chatbot-k6-final-review.md`. Final PR CI
+  on `274f50dde` passed all non-skipped checks; filtered jobs were skipped only
+  after their status gates passed.
+- Remaining: update the whole-branch PR description. Live login,
+  chatbot/provider traffic, merge, deployment, and lecturer communication
+  remain withheld.
