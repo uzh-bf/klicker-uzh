@@ -18,6 +18,7 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
@@ -3522,6 +3523,23 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
+        },
+      }),
+
+      requestCatalystAccess: t.withAuth(asUserOwner).field({
+        type: 'Boolean',
+        args: {
+          institution: t.arg.string({
+            required: true,
+            validate: { minLength: 2, maxLength: 160 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 20, maxLength: 2000 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SupportService.requestCatalystAccess(args, ctx)
         },
       }),
 
