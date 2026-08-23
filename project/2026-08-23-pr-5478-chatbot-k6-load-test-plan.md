@@ -11,7 +11,7 @@ lecturer-demo work.
 - Branch: `rs/chatbot-k6-load-test`
 - Target: `v3`
 - PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
-- Current reviewed head: `274f50dde`
+- Current reviewed head: `38b940e28`
 
 ## Scope and authority
 
@@ -217,5 +217,9 @@ lecturer-demo work.
   evidence, Sol's final review, and the withheld live-runtime gate. CI on the
   latest published head `ec66a2e34` passed all non-skipped checks; filtered jobs
   were skipped only after their status gates passed.
+- S15: complete — final plan publication moved the branch to `38b940e28`,
+  thirty-one commits ahead and zero behind `v3`. The host read-back confirms
+  PR #5478 is open, non-draft, and clean, with all required checks passing and
+  only status-gated filtered jobs skipped.
 - Remaining: live login, chatbot/provider traffic, merge, deployment, and
   lecturer communication remain withheld.
