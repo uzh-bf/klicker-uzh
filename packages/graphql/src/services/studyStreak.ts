@@ -22,7 +22,7 @@ interface StreakState {
   lastProcessedDate: string | null
 }
 
-function zurichDate(value: Date | string): string {
+export function zurichDate(value: Date | string): string {
   return dayjs(value).tz(COURSE_TIMEZONE).format('YYYY-MM-DD')
 }
 

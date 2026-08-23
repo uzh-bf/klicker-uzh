@@ -7,6 +7,7 @@ import {
 } from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import { zurichDate } from '../services/studyStreak.js'
 import {
   type IAchievement,
   type IParticipantAchievementInstance,
@@ -279,9 +280,8 @@ export const Participation = ParticipationRef.implement({
       resolve: (parent) => {
         if (!parent.studyStreakLastQualifiedDate) return false
         return (
-          new Date(parent.studyStreakLastQualifiedDate)
-            .toISOString()
-            .slice(0, 10) === new Date().toISOString().slice(0, 10)
+          zurichDate(parent.studyStreakLastQualifiedDate) ===
+          zurichDate(new Date())
         )
       },
     }),
