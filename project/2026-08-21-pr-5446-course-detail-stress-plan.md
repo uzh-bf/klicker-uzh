@@ -418,8 +418,8 @@ above where it is more specific.
   Completion toasts now expose the localized 30-second action without routing
   automatically. S7 is in progress with the focused Playwright cases, alias
   cleanup, and wiki updates.
-- 2026-08-23: S7 browser verification passes for concurrent status pairing and
-  restored completed-job actions (`2 passed`, 29.9 seconds). The linked
-  manage route serves the dynamic course detail page with HTTP 200 after its
-  stale Next.js development cache was refreshed. The retained DevPod remains
-  running for manual verification.
+- 2026-08-23: S7 browser verification passes for concurrent status pairing,
+  restored completed-job actions, and 51-job batching (`3 passed`, 46.9
+  seconds). The linked manage route serves the dynamic course detail page with
+  HTTP 200 after its stale Next.js development cache was refreshed. The
+  retained DevPod remains running for manual verification.

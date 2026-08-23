@@ -81,6 +81,7 @@ const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STORAGE_KEY = 'course-duplication-job-ids'
 const COURSE_DUPLICATION_POLL_INTERVAL = 5000
+const COURSE_DUPLICATION_STATUS_BATCH_SIZE = 50
 
 function getCourseDuplicationGroupSize(
   value: number | string | null | undefined,
@@ -435,14 +436,24 @@ export function CourseDuplicationProvider({
       const requestedJobIds = [...jobIdsRef.current]
 
       try {
-        if (requestedJobIds.length > 0) {
+        for (
+          let batchStart = 0;
+          batchStart < requestedJobIds.length;
+          batchStart += COURSE_DUPLICATION_STATUS_BATCH_SIZE
+        ) {
+          if (cancelled) return
+
+          const batchJobIds = requestedJobIds.slice(
+            batchStart,
+            batchStart + COURSE_DUPLICATION_STATUS_BATCH_SIZE
+          )
           const result = await fetchStatuses({
-            variables: { ids: requestedJobIds },
+            variables: { ids: batchJobIds },
           })
           const statuses = result.data?.courseDuplicationStatuses
 
           if (!cancelled && statuses) {
-            handleStatusResponse(statuses, requestedJobIds)
+            handleStatusResponse(statuses, batchJobIds)
           }
         }
       } catch (error) {

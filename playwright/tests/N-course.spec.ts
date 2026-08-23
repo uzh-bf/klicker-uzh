@@ -3083,10 +3083,17 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
     const firstJobId = '11111111-1111-4111-8111-111111111111'
     const secondJobId = '22222222-2222-4222-8222-222222222222'
-    const startHash =
-      '45e45e030f97fba0a09889639cf20add18c139cd3b180ad4fbd1fe42cf37b243'
-    const statusHash =
-      '5d469e76adfaa84fb424764d00543ecfb678b525bec3b90f355cceba16933747'
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const startHash = persistedOperations.StartCourseDuplication
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
     await page.addInitScript(
       ({ firstJobId, secondJobId, startHash, statusHash }) => {
         let startCount = 0
@@ -3304,8 +3311,16 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     // Mock at the fetch level inside the browser: Playwright's page.route()
     // reissues intercepted requests outside the browser network stack and
     // drops httpOnly cookies there, so even a narrowed pattern breaks auth.
-    const statusHash =
-      '5d469e76adfaa84fb424764d00543ecfb678b525bec3b90f355cceba16933747'
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
     await page.addInitScript(
       ({ statusHash, jobs }) => {
         const originalFetch = window.fetch.bind(window)
@@ -3456,6 +3471,155 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(page).toHaveURL(
       new RegExp(`/courses/${seededCourseB!.courseId}`)
     )
+  })
+
+  test('Batches restored duplication status requests above the API limit', async ({
+    loginLecturer,
+    page,
+  }) => {
+    test.setTimeout(60_000)
+
+    const restoredJobs = Array.from({ length: 51 }, (_, index) => ({
+      id: `77777777-7777-4777-8777-${String(index).padStart(12, '0')}`,
+      name: `Batch Copy ${index}`,
+      createdCourseId: null,
+    }))
+
+    await loginLecturer()
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+
+    await page.addInitScript(
+      ({ statusHash, jobs }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isStatusPoll = false
+          let requestedIds: string[] = []
+
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(
+                input instanceof Request ? input.url : String(input),
+                window.location.origin
+              )
+              const extensions = url.searchParams.get('extensions') || ''
+              const marker = String.fromCharCode(
+                34,
+                115,
+                104,
+                97,
+                50,
+                53,
+                54,
+                72,
+                97,
+                115,
+                104,
+                34,
+                58,
+                34
+              )
+              const hashStart = extensions.indexOf(marker)
+              if (hashStart >= 0) {
+                const hashEnd = extensions.indexOf(
+                  String.fromCharCode(34),
+                  hashStart + marker.length
+                )
+                isStatusPoll =
+                  extensions.slice(hashStart + marker.length, hashEnd) ===
+                  statusHash
+              }
+              const rawVariables = url.searchParams.get('variables')
+              if (rawVariables) {
+                requestedIds = JSON.parse(rawVariables).ids ?? []
+              }
+            } catch {
+              // malformed persisted-query parameters; use the request body
+            }
+          }
+
+          if (!isStatusPoll && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body)
+              isStatusPoll =
+                body.operationName === 'GetCourseDuplicationStatuses'
+              requestedIds = body.variables?.ids ?? []
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isStatusPoll) return originalFetch(input, init)
+
+          const batchSizes = ((
+            window as unknown as { __duplicationBatchSizes?: number[] }
+          ).__duplicationBatchSizes ??= [])
+          batchSizes.push(requestedIds.length)
+
+          return new Response(
+            JSON.stringify({
+              data: {
+                courseDuplicationStatuses: jobs
+                  .filter((job) => requestedIds.includes(job.id))
+                  .map((job) => ({
+                    id: job.id,
+                    status: 'PENDING',
+                    sourceCourseId: 'source-batched',
+                    sourceCourseName: 'Synthetic source course',
+                    targetCourseName: job.name,
+                    createdCourseId: null,
+                    errorType: null,
+                    errorMessage: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  })),
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      { statusHash, jobs: restoredJobs }
+    )
+
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.addInitScript((jobs) => {
+      window.localStorage.setItem(
+        'course-duplication-job-ids',
+        JSON.stringify(jobs.map((job) => job.id))
+      )
+    }, restoredJobs)
+    await page.goto(`${manageUrl}/?dup-batch-verify=1`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.waitForFunction(
+      () =>
+        ((window as unknown as { __duplicationBatchSizes?: number[] })
+          .__duplicationBatchSizes?.length ?? 0) >= 2,
+      undefined,
+      { timeout: 30_000 }
+    )
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('51')
+    const batchSizes = await page.evaluate(
+      () =>
+        (window as unknown as { __duplicationBatchSizes?: number[] })
+          .__duplicationBatchSizes ?? []
+    )
+    expect(batchSizes.slice(0, 2)).toEqual([50, 1])
+    expect(batchSizes.every((batchSize) => batchSize <= 50)).toBe(true)
   })
 
   test('Duplicate the course without group creation and verify group activities are not copied', async ({
