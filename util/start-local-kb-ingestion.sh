@@ -4,9 +4,12 @@ set -euo pipefail
 umask 077
 
 data_ingestion_repo="${DATA_INGESTION_REPO:-}"
-api_port="${KB_INGESTION_LOCAL_PORT:-18080}"
+api_port="${KB_INGESTION_LOCAL_PORT:-18081}"
 api_key="${KB_INGESTION_API_KEY:-dev-local-kb-ingestion-api-key}"
 app_origin="${KLICKER_KB_APP_ORIGIN:-}"
+state_backend="${KB_INGESTION_STATE_BACKEND:-sqlite}"
+state_dsn="${KB_INGESTION_STATE_DSN:-}"
+state_schema="${KB_INGESTION_STATE_SCHEMA:-ingestion_state_local}"
 foreground=0
 
 if [[ "${1:-}" == "--foreground" ]]; then
@@ -77,11 +80,29 @@ limits:
 EOF
 
 export INGESTION_PRODUCER_REGISTRY_DIR="$registry_dir"
-export INGESTION_STATE_BACKEND=sqlite
-export INGESTION_STATE_DB="$state_db"
 export INGESTION_SECRET_INGESTION_PRODUCER_KLICKER_API_KEY="$api_key"
 export INGESTION_SECRET_INGESTION_WEBHOOK_KLICKER_HMAC_KEY="${KB_WEBHOOK_SECRET:-dev-kb-webhook-secret}"
 export INGESTION_METRICS_BEARER_TOKEN="${KB_INGESTION_METRICS_TOKEN:-dev-local-kb-metrics-token}"
+
+case "$state_backend" in
+  sqlite)
+    export INGESTION_STATE_BACKEND=sqlite
+    export INGESTION_STATE_DB="$state_db"
+    ;;
+  postgres)
+    if [[ -z "$state_dsn" ]]; then
+      echo "KB_INGESTION_STATE_DSN is required when KB_INGESTION_STATE_BACKEND=postgres." >&2
+      exit 2
+    fi
+    export INGESTION_STATE_BACKEND=postgres
+    export INGESTION_STATE_DSN="$state_dsn"
+    export INGESTION_STATE_SCHEMA="$state_schema"
+    ;;
+  *)
+    echo "KB_INGESTION_STATE_BACKEND must be sqlite or postgres." >&2
+    exit 2
+    ;;
+esac
 
 uv run --project "$data_ingestion_repo/modules/ingestion-api" python -m ingestion_api.migrations
 
@@ -90,14 +111,14 @@ if [[ "$foreground" == "1" ]]; then
   cd "$data_ingestion_repo"
   exec uv run --project modules/ingestion-api uvicorn \
     ingestion_api.app:create_app --factory \
-    --host 0.0.0.0 --port "$api_port"
+    --host 127.0.0.1 --port "$api_port"
 fi
 
 (
   cd "$data_ingestion_repo"
   exec nohup uv run --project modules/ingestion-api uvicorn \
     ingestion_api.app:create_app --factory \
-    --host 0.0.0.0 --port "$api_port"
+    --host 127.0.0.1 --port "$api_port"
 ) >"$log_file" 2>&1 < /dev/null &
 api_pid=$!
 echo "$api_pid" >"$pid_file"

@@ -8,6 +8,10 @@ services:
           - '${WORKSPACE:-klicker-uzh}-db'
 
   azurite:
+    # Keep the browser-facing Blob route on DevRouter while exposing the same
+    # container to host-side graph workers through loopback only.
+    ports:
+      - '127.0.0.1:${KB_GRAPH_BLOB_HOST_PORT:-10003}:10000'
     networks:
       devnet:
         aliases:
@@ -18,6 +22,10 @@ services:
       DEVROUTER_WORKSPACE: '${DEVROUTER_WORKSPACE:-}'
       BLOB_STORAGE_ACCOUNT_URL: 'https://blob.klicker.${WORKSPACE:-klicker-uzh}.localhost/klickerdev'
       BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://${WORKSPACE:-klicker-uzh}-azurite:10000/klickerdev'
+      KB_GRAPH_BLOB_HOST_PORT: '${KB_GRAPH_BLOB_HOST_PORT:-10003}'
+      KB_GRAPH_BLOB_ACCOUNT_URL: 'http://127.0.0.1:${KB_GRAPH_BLOB_HOST_PORT:-10003}/klickerdev/'
+      KB_INGESTION_LOCAL_PORT: '${KB_INGESTION_LOCAL_PORT:-18081}'
+      KB_INGESTION_API_URL: 'http://host.docker.internal:${KB_INGESTION_LOCAL_PORT:-18081}'
     extra_hosts:
       - 'api.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'
       - 'auth.klicker.${WORKSPACE:-klicker-uzh}.localhost:host-gateway'

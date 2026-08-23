@@ -248,6 +248,59 @@ describe('KB graph external dispatch', () => {
     expect(() => validateKBGraphWorkerConfig(externalEnv)).not.toThrow()
   })
 
+  it('uses a loopback Blob endpoint for host-side graph sources', () => {
+    const sourceUrl = getKBGraphSourceUrl(
+      {
+        type: KBResourceType.BLOB,
+        sourceUrl: null,
+        blobName: 'slides/private.pdf',
+      },
+      {
+        ownerId: OWNER_ID,
+        env: {
+          BLOB_STORAGE_ACCOUNT_NAME: 'klickertest',
+          BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
+          BLOB_STORAGE_ACCOUNT_URL: 'https://blob.example.org',
+          KB_GRAPH_BLOB_ACCOUNT_URL:
+            'http://127.0.0.1:10003/klickerdev',
+          KB_GRAPH_TIMEOUT_SECONDS: '3600',
+        },
+        now: () => NOW,
+      }
+    )
+
+    const parsed = new URL(sourceUrl)
+    expect(`${parsed.origin}${parsed.pathname}`).toBe(
+      `http://127.0.0.1:10003/klickerdev/kb-${OWNER_ID}/slides/private.pdf`
+    )
+    expect(parsed.searchParams.get('sp')).toBe('r')
+    expect(parsed.searchParams.get('spr')).toBeNull()
+  })
+
+  it('rejects a cleartext non-local Blob endpoint', () => {
+    expect(() =>
+      getKBGraphSourceUrl(
+        {
+          type: KBResourceType.BLOB,
+          sourceUrl: null,
+          blobName: 'slides/private.pdf',
+        },
+        {
+          ownerId: OWNER_ID,
+          env: {
+            BLOB_STORAGE_ACCOUNT_NAME: 'klickertest',
+            BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
+            KB_GRAPH_BLOB_ACCOUNT_URL: 'http://blob.example.org',
+            KB_GRAPH_TIMEOUT_SECONDS: '3600',
+          },
+          now: () => NOW,
+        }
+      )
+    ).toThrow(
+      'KB graph Blob account URL must use HTTPS outside local development'
+    )
+  })
+
   it('fails a queued build closed when the global graph kill switch is enabled', async () => {
     const prisma = createDispatchPrisma()
     const client = createClient()

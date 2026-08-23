@@ -7,6 +7,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 graph_repo="${KG_CONTENT_GENERATION_REPO:-}"
 token_file="${KG_CONTENT_GENERATION_HATCHET_ENV:-}"
 output_file="${KLICKER_LOCAL_KB_SERVICES_ENV:-$repo_root/.devcontainer/.local-kb-services.env}"
+falkordb_host_port="${KB_GRAPH_FALKORDB_HOST_PORT:-${FALKORDB_HOST_PORT:-6379}}"
 
 if [[ -z "$graph_repo" ]]; then
   echo "KG_CONTENT_GENERATION_REPO must point to the kg-content-generation checkout." >&2
@@ -44,7 +45,7 @@ KB_GRAPH_STANDARD_CLEANING_MODEL=openai/gpt-5.4
 KB_GRAPH_HIGH_GENERATION_MODEL=openai/gpt-5.4
 KB_GRAPH_HIGH_CLEANING_MODEL=openai/gpt-5.4
 KB_FALKORDB_HOST=host.docker.internal
-KB_FALKORDB_PORT=6379
+KB_FALKORDB_PORT=$falkordb_host_port
 KB_FALKORDB_TLS=false
 KB_FALKORDB_QUERY_TIMEOUT_MS=5000
 EOF

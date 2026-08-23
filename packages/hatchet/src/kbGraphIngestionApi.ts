@@ -308,12 +308,26 @@ export function getKBGraphSourceUrl(
   )
   const accessKey = requireEnvironmentVariable(env, 'BLOB_STORAGE_ACCESS_KEY')
   const credential = new StorageSharedKeyCredential(accountName, accessKey)
-  // The external LightRAG worker needs the public account URL; never hand it a
-  // cluster-internal Blob endpoint.
-  const serviceClient = new BlobServiceClient(
-    getBlobStorageAccountUrl(accountName, env.BLOB_STORAGE_ACCOUNT_URL),
-    credential
+  // The external LightRAG worker needs a host-reachable account URL. Production
+  // uses the public HTTPS endpoint; local development can override this with a
+  // loopback or .localhost Azurite endpoint without changing browser uploads.
+  const graphAccountUrl = getBlobStorageAccountUrl(
+    accountName,
+    env.KB_GRAPH_BLOB_ACCOUNT_URL ?? env.BLOB_STORAGE_ACCOUNT_URL
   )
+  const graphAccount = new URL(graphAccountUrl)
+  const graphAccountHost = graphAccount.hostname
+  const isLocalDevEndpoint =
+    graphAccountHost === 'localhost' ||
+    graphAccountHost.endsWith('.localhost') ||
+    graphAccountHost.startsWith('127.') ||
+    graphAccountHost === '[::1]'
+  if (graphAccount.protocol === 'http:' && !isLocalDevEndpoint) {
+    throw new Error(
+      'KB graph Blob account URL must use HTTPS outside local development'
+    )
+  }
+  const serviceClient = new BlobServiceClient(graphAccountUrl, credential)
   const containerName = getKBGraphOwnerContainerName(ownerId)
   const blobClient = serviceClient
     .getContainerClient(containerName)
@@ -328,7 +342,7 @@ export function getKBGraphSourceUrl(
       containerName,
       blobName: source.blobName,
       permissions: BlobSASPermissions.parse('r'),
-      protocol: SASProtocol.Https,
+      ...(isLocalDevEndpoint ? {} : { protocol: SASProtocol.Https }),
       startsOn: new Date(
         currentTime.getTime() - KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS
       ),
