@@ -3,6 +3,7 @@ import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   mockGrowthBookLearningAnalytics,
+  prepareSeededMicroLearningEvaluation,
   updateLecturerPrivatePreview,
 } from '../util/fixtures/manage.js'
 
@@ -11,6 +12,7 @@ test('CLEANUP', cleanupTest)
 test.describe('Tests the availability of standard activity creation formats', () => {
   test.beforeAll(async () => {
     await seedActivities()
+    await prepareSeededMicroLearningEvaluation()
   })
 
   test.afterAll(async () => {

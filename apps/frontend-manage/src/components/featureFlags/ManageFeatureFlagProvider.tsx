@@ -1,8 +1,8 @@
+import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import {
-  type FeatureFlagAttributes,
-  normalizeFeatureFlagEnvironment,
-} from '@klicker-uzh/feature-flags'
-import { FeatureFlagProvider } from '@klicker-uzh/feature-flags/react'
+  type BrowserFeatureFlagConfig,
+  FeatureFlagProvider,
+} from '@klicker-uzh/feature-flags/react'
 import type { UserProfileQuery } from '@klicker-uzh/graphql/dist/ops'
 import { type ReactNode, useMemo } from 'react'
 
@@ -16,7 +16,8 @@ interface ManageFeatureFlagProviderProps {
 const config = {
   apiHost: process.env.NEXT_PUBLIC_GROWTHBOOK_API_HOST,
   clientKey: process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,
-}
+  environment: process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV,
+} satisfies BrowserFeatureFlagConfig
 
 function ManageFeatureFlagProvider({
   user,
@@ -27,9 +28,6 @@ function ManageFeatureFlagProvider({
       id: user.id,
       actorType: 'user',
       role: user.role,
-      environment: normalizeFeatureFlagEnvironment(
-        process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV
-      ),
     }),
     [user.id, user.role]
   )

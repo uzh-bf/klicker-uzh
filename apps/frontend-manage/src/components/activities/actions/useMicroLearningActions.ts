@@ -29,7 +29,7 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { type Dispatch, type SetStateAction, useMemo } from 'react'
+import { type Dispatch, type SetStateAction, useCallback, useMemo } from 'react'
 import type { ActivityAction } from './useAvailableActions'
 
 function useMicroLearningActions({
@@ -59,12 +59,15 @@ function useMicroLearningActions({
   const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
     UnpublishMicroLearningDocument
   )
-  const onSuccessToast = () =>
-    toast({
-      type: 'success',
-      message: t('manage.course.linkAccessCopied'),
-      options: { duration: 4000 },
-    })
+  const onSuccessToast = useCallback(
+    () =>
+      toast({
+        type: 'success',
+        message: t('manage.course.linkAccessCopied'),
+        options: { duration: 4000 },
+      }),
+    [t]
+  )
 
   const href = `${process.env.NEXT_PUBLIC_PWA_URL}${microLearning.courseLanguage ? `/${microLearning.courseLanguage}` : ''}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
   const actions = useMemo(
@@ -84,7 +87,7 @@ function useMicroLearningActions({
           try {
             navigator.clipboard.writeText(href)
             onSuccessToast()
-          } catch (e) {}
+          } catch {}
         },
         data: { cy: `copy-microlearning-link-${microLearning.name}` },
       },
@@ -97,7 +100,7 @@ function useMicroLearningActions({
             const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${href}`
             await navigator.clipboard.writeText(link)
             onSuccessToast()
-          } catch (e) {}
+          } catch {}
         },
         data: { cy: `copy-lti-link-${microLearning.name}` },
       },
@@ -186,7 +189,9 @@ function useMicroLearningActions({
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
           ),
         disabled: !learningAnalyticsEnabled,
-        data: { cy: `open-analytics-async-activity` },
+        data: {
+          cy: `open-analytics-microlearning-${microLearning.name}`,
+        },
       },
       {
         id: 'shareMicroLearning',
@@ -279,6 +284,9 @@ function useMicroLearningActions({
       setDeletionModal,
       setRemovalModal,
       setActivityLogOpen,
+      onSuccessToast,
+      refetchActivities,
+      unpublishing,
     ]
   )
 

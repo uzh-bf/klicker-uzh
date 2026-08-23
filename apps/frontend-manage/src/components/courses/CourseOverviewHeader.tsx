@@ -231,21 +231,18 @@ function CourseOverviewHeader({
           },
         ]
       : []),
-    ...(user?.publicPreview
-      ? [
-          {
-            id: 'course-learning-analytics',
-            label: courseActionMenuLabel(
-              <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
-              t('manage.course.learningAnalytics')
-            ),
-            onClick: () => {
-              window.open(`/analytics/${course.id}/activity`, '_blank')
-            },
-            data: { cy: 'course-learning-analytics-link' },
-          },
-        ]
-      : []),
+    {
+      id: 'course-learning-analytics',
+      label: courseActionMenuLabel(
+        <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
+        t('manage.course.learningAnalytics')
+      ),
+      onClick: () => {
+        window.open(`/analytics/${course.id}/activity`, '_blank')
+      },
+      disabled: !learningAnalyticsEnabled,
+      data: { cy: 'course-learning-analytics-link' },
+    },
     ...(course.isAssessmentEnabled && course.isManager
       ? [
           {
@@ -336,18 +333,6 @@ function CourseOverviewHeader({
             data={{ cy: `course-join-qr-code` }}
           />
         )}
-        <Button
-          primary
-          disabled={!learningAnalyticsEnabled}
-          onClick={() => {
-            window.open(`/analytics/${course.id}/activity`, '_blank')
-          }}
-          className={{ root: 'h-8' }}
-          data={{ cy: 'course-learning-analytics-link' }}
-        >
-          <Button.Icon icon={faChartPie} />
-          <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
-        </Button>
         {course.isAssessmentEnabled && course.isManager ? (
           <Button
             primary

@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-22'
+timestamp: '2026-08-23'
 tags:
   - architecture
   - frontend

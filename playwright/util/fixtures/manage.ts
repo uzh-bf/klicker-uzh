@@ -1,16 +1,37 @@
 // ---------------------------------------------------------------------------
-// Helper: validates feature availability based on preview flags
+// Helper: validates feature availability across GrowthBook and preview flags
 // Mirrors the validateFeatureAvailability() function in the Cypress spec.
 // Not.toBeAttached() mirrors cy.should('not.exist') — elements absent from DOM.
 
-import type { ElementType } from '@klicker-uzh/prisma/client'
-import { expect, type Page } from '@playwright/test'
+import {
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
+  PublicationStatus,
+} from '@klicker-uzh/prisma/client'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
-import { LECTURER_SHORTNAME, SEED, SEEDED_COURSE } from '../constants.js'
+import { openActivityActionMenu, openCourseActionMenu } from '../actions.js'
+import {
+  LECTURER_ID,
+  LECTURER_SHORTNAME,
+  SEED,
+  SEEDED_COURSE,
+  URL_MANAGE,
+} from '../constants.js'
 
 export type ValidateFeatureAvailabilityOptions = {
   learningAnalytics: boolean
   privatePreview: boolean
+}
+
+async function expectFlaggedControl(locator: Locator, enabled: boolean) {
+  await expect(locator).toBeVisible()
+  if (enabled) {
+    await expect(locator).toBeEnabled()
+  } else {
+    await expect(locator).toBeDisabled()
+  }
 }
 
 const growthbookApiHost =
@@ -44,30 +65,83 @@ export async function updateLecturerPrivatePreview(privatePreview: boolean) {
   })
 }
 
+export async function prepareSeededMicroLearningEvaluation() {
+  const prisma = await getPrisma()
+  const microLearning = await prisma.microLearning.findFirstOrThrow({
+    where: { name: SEED.microlearning },
+    select: { id: true },
+  })
+
+  await prisma.elementStack.deleteMany({
+    where: { microLearningId: microLearning.id },
+  })
+
+  const element = await prisma.element.create({
+    data: {
+      name: 'Seed Analytics Content',
+      content: 'Seed content for the asynchronous evaluation.',
+      options: {},
+      type: ElementType.CONTENT,
+      ownerId: LECTURER_ID,
+    },
+  })
+  const elementData = {
+    id: `${element.id}-v${element.version}`,
+    elementId: element.id,
+    type: element.type,
+    name: element.name,
+    content: element.content,
+    basePoints: element.basePoints,
+    pointsMultiplier: element.pointsMultiplier,
+  }
+  const results = { total: 0 }
+
+  await prisma.microLearning.update({
+    where: { id: microLearning.id },
+    data: {
+      status: PublicationStatus.PUBLISHED,
+      stacks: {
+        create: {
+          type: ElementStackType.MICROLEARNING,
+          order: 0,
+          elements: {
+            create: {
+              type: ElementInstanceType.MICROLEARNING,
+              elementType: ElementType.CONTENT,
+              order: 0,
+              options: {},
+              elementData,
+              results,
+              anonymousResults: results,
+              elementId: element.id,
+              ownerId: LECTURER_ID,
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
 export async function validateFeatureAvailabilityFixture(
   page: Page,
   options: ValidateFeatureAvailabilityOptions
 ) {
   // analytics nav item
-  await expect(page.getByTestId('analytics')).toBeVisible()
-  if (options.learningAnalytics) {
-    await expect(page.getByTestId('analytics')).toBeEnabled()
-  } else {
-    await expect(page.getByTestId('analytics')).toBeDisabled()
-  }
+  await expectFlaggedControl(
+    page.getByTestId('analytics'),
+    options.learningAnalytics
+  )
 
   // course learning analytics link
   await page.getByTestId('courses').click()
   await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
+  await openCourseActionMenu(page, 'course-learning-analytics-link')
   const courseLearningAnalytics = page.getByTestId(
     'course-learning-analytics-link'
   )
-  await expect(courseLearningAnalytics).toBeVisible()
-  if (options.learningAnalytics) {
-    await expect(courseLearningAnalytics).toBeEnabled()
-  } else {
-    await expect(courseLearningAnalytics).toBeDisabled()
-  }
+  await expectFlaggedControl(courseLearningAnalytics, options.learningAnalytics)
+  await page.keyboard.press('Escape')
 
   // sharing buttons per activity type (private preview only)
   await page.getByTestId('courses').click()
@@ -75,7 +149,12 @@ export async function validateFeatureAvailabilityFixture(
 
   // Live quiz
   await page.getByTestId('tab-liveQuizzes').click()
-  await page.getByTestId(`actions-LIVE_QUIZ-${SEED.liveQuiz}`).click()
+  await openActivityActionMenu(
+    page,
+    'LIVE_QUIZ',
+    SEED.liveQuiz,
+    `view-activity-log-${SEED.liveQuiz}`
+  )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.liveQuiz}`)
   ).toBeVisible()
@@ -92,10 +171,20 @@ export async function validateFeatureAvailabilityFixture(
 
   // Microlearning
   await page.getByTestId('tab-microLearnings').click()
-  await page.getByTestId(`actions-MICRO_LEARNING-${SEED.microlearning}`).click()
+  const microLearningAnalytics = `open-analytics-microlearning-${SEED.microlearning}`
+  await openActivityActionMenu(
+    page,
+    'MICRO_LEARNING',
+    SEED.microlearning,
+    microLearningAnalytics
+  )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.microlearning}`)
   ).toBeVisible()
+  await expectFlaggedControl(
+    page.getByTestId(microLearningAnalytics),
+    options.learningAnalytics
+  )
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-microlearning-${SEED.microlearning}`)
@@ -109,10 +198,20 @@ export async function validateFeatureAvailabilityFixture(
 
   // Practice quiz
   await page.getByTestId('tab-practiceQuizzes').click()
-  await page.getByTestId(`actions-PRACTICE_QUIZ-${SEED.practiceQuiz}`).click()
+  const practiceQuizAnalytics = `open-analytics-practice-quiz-${SEED.practiceQuiz}`
+  await openActivityActionMenu(
+    page,
+    'PRACTICE_QUIZ',
+    SEED.practiceQuiz,
+    practiceQuizAnalytics
+  )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.practiceQuiz}`)
   ).toBeVisible()
+  await expectFlaggedControl(
+    page.getByTestId(practiceQuizAnalytics),
+    options.learningAnalytics
+  )
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-practice-quiz-${SEED.practiceQuiz}`)
@@ -126,7 +225,12 @@ export async function validateFeatureAvailabilityFixture(
 
   // Group activity
   await page.getByTestId('tab-groupActivities').click()
-  await page.getByTestId(`actions-GROUP_ACTIVITY-${SEED.groupActivity}`).click()
+  await openActivityActionMenu(
+    page,
+    'GROUP_ACTIVITY',
+    SEED.groupActivity,
+    `view-activity-log-${SEED.groupActivity}`
+  )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.groupActivity}`)
   ).toBeVisible()
@@ -140,6 +244,20 @@ export async function validateFeatureAvailabilityFixture(
     ).not.toBeAttached()
   }
   await page.keyboard.press('Escape')
+
+  // Direct asynchronous evaluation routes remain reachable. The flag controls
+  // only the analytics affordance rendered by the shared evaluation header.
+  const prisma = await getPrisma()
+  const microLearning = await prisma.microLearning.findFirstOrThrow({
+    where: { name: SEED.microlearning },
+    select: { id: true },
+  })
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  await page.goto(`${manageUrl}/microLearning/${microLearning.id}/evaluation`)
+  await expectFlaggedControl(
+    page.getByTestId('quiz-analytics'),
+    options.learningAnalytics
+  )
 }
 
 // ---------------------------------------------------------------------------
