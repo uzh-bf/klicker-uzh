@@ -3046,6 +3046,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
+      courseName: 'Kurs',
+      activityName: 'Aktivität',
+      activityStatus: 'Aktivitätsstatus',
+      elementName: 'Element',
+      elementType: 'Elementtyp',
+      linkActivityDetails: 'Aktivitätsdetails anzeigen',
+      instanceScheduled: 'Element ist zur Durchführung geplant',
+      instanceActive:
+        'Element ist aktuell aktiv und die Resultate aktualisieren sich laufend',
+      instanceExecuted:
+        'Element wurde durchgeführt und Resultate sind finalisiert',
+      instanceLastRefetch: 'Letztes Daten-Update',
+      instanceExecutionDate: 'Element durchgeführt am',
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:

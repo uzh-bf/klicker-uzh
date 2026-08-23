@@ -2,6 +2,7 @@ import {
   ConfusionTimestep,
   Feedback,
   LocaleType,
+  PublicationStatus,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
@@ -35,8 +36,10 @@ export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
 
 interface ActivityEvaluationProps {
   courseId?: string | null
+  courseName?: string | null
   activityId: string
   activityName: string
+  activityStatus?: PublicationStatus
   courseLanguage?: LocaleType | null
   stacks: StackEvaluation[]
   feedbacks?: Feedback[] | null
@@ -46,12 +49,15 @@ interface ActivityEvaluationProps {
   isAssessmentEnabled?: boolean | null
   pinCode?: string | null
   type?: ActivityEvaluationType
+  lastRefetchTime?: Date
 }
 
 function ActivityEvaluation({
   courseId,
+  courseName,
   activityId,
   activityName,
+  activityStatus,
   courseLanguage,
   stacks,
   feedbacks,
@@ -61,6 +67,7 @@ function ActivityEvaluation({
   pinCode,
   hideActiveBlockResults = false,
   type = 'Asynchronous',
+  lastRefetchTime,
 }: ActivityEvaluationProps) {
   const router = useRouter()
   const t = useTranslations()
@@ -125,7 +132,14 @@ function ActivityEvaluation({
     typeof activeStack === 'number' &&
     typeof instanceResults[activeInstance] === 'undefined'
   ) {
-    return <EvaluationUnavailableNotification />
+    return (
+      <EvaluationUnavailableNotification
+        courseName={courseName}
+        activityName={activityName}
+        activityId={activityId}
+        activityStatus={activityStatus}
+      />
+    )
   }
 
   return (
@@ -172,6 +186,11 @@ function ActivityEvaluation({
             activeInstance={activeInstance}
             activeStack={activeStack}
             courseLanguage={courseLanguage}
+            courseId={courseId}
+            courseName={courseName}
+            activityName={activityName}
+            activityId={activityId}
+            activityStatus={activityStatus}
             isAssessmentEnabled={isAssessmentEnabled ?? false}
             pinCode={pinCode}
             textSize={textSize}
@@ -191,9 +210,9 @@ function ActivityEvaluation({
                 : false
             }
             type={type}
+            lastRefetchTime={lastRefetchTime}
           />
         )}
-
         {type === 'LiveQuiz' &&
           leaderboard !== null &&
           activeStack === 'leaderboard' && (
@@ -220,7 +239,6 @@ function ActivityEvaluation({
               </div>
             </div>
           )}
-
         {type === 'LiveQuiz' &&
           feedbacks !== null &&
           activeStack === 'feedbacks' && (
@@ -243,7 +261,6 @@ function ActivityEvaluation({
               </div>
             </div>
           )}
-
         {type === 'LiveQuiz' &&
           confusionFeedbacks !== null &&
           activeStack === 'confusion' && (

@@ -5,6 +5,7 @@ import {
   ElementInstanceEvaluation,
   ElementType,
   LocaleType,
+  PublicationStatus,
   StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
@@ -15,6 +16,8 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from '../liveQuiz/cockpit/LiveQuizCountdown'
 import { ActivityEvaluationType } from './ActivityEvaluation'
+import BlockStatusIndicator from './BlockStatusIndicator'
+import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
 import ChoicesEvaluation from './elements/ChoicesEvaluation'
@@ -41,6 +44,12 @@ interface ElementEvaluationProps {
   isAssessmentEnabled: boolean
   pinCode?: string | null
   className?: string
+  lastRefetchTime?: Date
+  courseId?: string | null
+  courseName?: string | null
+  activityName: string
+  activityId: string
+  activityStatus?: PublicationStatus
 }
 
 function ElementEvaluation({
@@ -59,6 +68,11 @@ function ElementEvaluation({
   isAssessmentEnabled,
   pinCode,
   className,
+  lastRefetchTime,
+  courseName,
+  activityName,
+  activityId,
+  activityStatus,
 }: ElementEvaluationProps) {
   const t = useTranslations()
   const [inCooldown, setInCooldown] = useState(false)
@@ -141,7 +155,26 @@ function ElementEvaluation({
                 }
               />
             </div>
-            <div className="min-h-0 flex-1">
+            <div className="relative min-h-0 flex-1">
+              {type === 'LiveQuiz' && currentStack.status && (
+                <div className="absolute bottom-4 left-4">
+                  <BlockStatusIndicator
+                    status={currentStack.status}
+                    lastRefetchTime={lastRefetchTime}
+                    expiresAt={currentStack.expiresAt}
+                  />
+                </div>
+              )}
+              {currentStack.status === ElementBlockStatus.Scheduled && (
+                <EvaluationUnavailableNotification
+                  courseName={courseName}
+                  activityName={activityName}
+                  activityId={activityId}
+                  elementName={currentInstance.name}
+                  elementType={currentInstance.type}
+                  activityStatus={activityStatus}
+                />
+              )}
               {currentInstance.__typename ===
                 'ChoicesActivityEvaluationData' && (
                 <ChoicesEvaluation

@@ -2999,6 +2999,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      courseName: 'Course',
+      activityName: 'Activity',
+      activityStatus: 'Activity Status',
+      elementName: 'Element',
+      elementType: 'Element Type',
+      linkActivityDetails: 'Open activity details',
+      instanceScheduled: 'Element is scheduled for execution',
+      instanceActive:
+        'Element is being executed and results are updated in real-time',
+      instanceExecuted: 'Element has been executed and results are finalized',
+      instanceLastRefetch: 'Last data refresh',
+      instanceExecutionDate: 'Element executed at',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:

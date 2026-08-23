@@ -42,14 +42,16 @@ type ActivityEvaluation {
   confusionFeedbacks: [ConfusionTimestep!]
   courseId: String
   courseLanguage: LocaleType
+  courseName: String
   description: String
-  displayName: String
+  displayName: String!
   feedbacks: [Feedback!]
   id: ID!
   isAssessmentEnabled: Boolean
   name: String!
   pinCode: String
   results: [StackEvaluation!]!
+  status: PublicationStatus
 }
 
 type ActivityFeedback {
