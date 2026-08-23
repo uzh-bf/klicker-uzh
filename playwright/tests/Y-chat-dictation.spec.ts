@@ -9,6 +9,7 @@ import {
   setParticipantToken,
   seedThread,
 } from '../util/chat.js'
+import { isRendererCrash } from '../util/resources.js'
 
 /**
  * Chatbot Dictation E2E (split from Y-chat.spec.ts)
@@ -177,14 +178,18 @@ async function visitChat(page: Page) {
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })
-  // The loading skeleton clears once hydration completes; on a heavily
-  // loaded CI runner that can stall. A full navigation recovers it instead
-  // of failing every assertion that follows; `reload` would throw when the
-  // crashed renderer cannot be revived (observed as a whole-shard cascade).
+  // A hydration stall under CI load is transient: one recovery navigation
+  // re-runs the app and usually clears it. A renderer crash is not: retrying
+  // navigation on a dead renderer masks the original failure and turns one
+  // crash into a cascade of misleading assertion failures, so crash-class
+  // errors are surfaced immediately instead of retried here.
   const skeleton = page.getByTestId('chat-loading')
   try {
     await expect(skeleton).toHaveCount(0)
-  } catch {
+  } catch (error) {
+    if (isRendererCrash(error)) {
+      throw error
+    }
     await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
       waitUntil: 'domcontentloaded',
     })

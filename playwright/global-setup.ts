@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import fs from 'node:fs'
+import { startResourceSampler, stopResourceSampler } from './util/resources.js'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -571,6 +572,7 @@ export async function seedActivities() {
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
+  startResourceSampler()
   console.log('[global-setup] Ensuring database views...')
   await ensureDatabaseViews()
   console.log('[global-setup] Cleaning up database...')
@@ -578,4 +580,7 @@ export default async function globalSetup() {
   console.log('[global-setup] Seeding database...')
   await seedDatabase()
   console.log('[global-setup] Done.')
+  process.on('exit', () => {
+    stopResourceSampler()
+  })
 }
