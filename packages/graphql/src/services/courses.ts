@@ -2463,6 +2463,31 @@ async function computeRollingLeaderboardEntries(
   return { leaderboardEntries, count, sum }
 }
 
+/**
+ * Selects the Top 10 plus up to three ranked rows immediately before and
+ * after the requesting participant so participants outside the Top 10 keep
+ * their positional context. Entries are expected in final ranked order; the
+ * union is expressed over positions, so overlaps collapse naturally.
+ */
+export function selectLeaderboardNearbyContext<
+  T extends { participantId?: string | null },
+>(entries: T[], selfParticipantId: string | undefined): T[] {
+  const selfIndex = entries.findIndex(
+    (entry) => entry.participantId === selfParticipantId
+  )
+
+  if (selfIndex === -1) {
+    return entries.slice(0, 10)
+  }
+
+  const nearbyLower = Math.max(0, selfIndex - 3)
+  const nearbyUpper = Math.min(entries.length - 1, selfIndex + 3)
+
+  return entries.filter(
+    (_entry, ix) => ix < 10 || (ix >= nearbyLower && ix <= nearbyUpper)
+  )
+}
+
 export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
   ctx: Context
@@ -2549,9 +2574,10 @@ export async function getStudentCourseLeaderboard(
         )
       )
 
-      // keep the top 10 entries, plus the requesting participant's own entry
-      const filteredEntries = sortedEntries.filter(
-        (entry, ix) => ix < 10 || entry.participantId === ctx.user?.sub
+      // keep the Top 10 and the requesting participant's nearby context
+      const filteredEntries = selectLeaderboardNearbyContext(
+        sortedEntries,
+        ctx.user?.sub
       )
 
       return {
@@ -2574,8 +2600,13 @@ export async function getStudentCourseLeaderboard(
         ctx as ContextWithUser // user id and role have been validated in if statement
       )
 
+    const filteredRollingEntries = selectLeaderboardNearbyContext(
+      leaderboardEntries,
+      ctx.user?.sub
+    )
+
     return {
-      leaderboard: leaderboardEntries,
+      leaderboard: filteredRollingEntries,
       leaderboardStatistics: {
         participantCount: count,
         averageScore: count > 0 ? sum / count : 0,
