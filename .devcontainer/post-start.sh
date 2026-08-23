@@ -87,6 +87,7 @@ MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
   --log /tmp/local-mcp.log \
   -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
 
+# Keep startup bounded: this fixture check must not delay managed-app readiness.
 for attempt in $(seq 1 20); do
   if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
     break
@@ -105,7 +106,58 @@ done
   --name klicker-dev \
   --match 'turbo run dev' \
   --log /tmp/dev.log \
-  -- pnpm run dev:container
+  -- bash -lc '
+    # The helper has stopped any previous owned group before this command
+    # starts, so clearing the generated Manage route manifest is safe here.
+    for attempt in $(seq 1 30); do
+      rm -rf apps/frontend-manage/.next/dev || true
+      if [ ! -e apps/frontend-manage/.next/dev ]; then
+        break
+      fi
+      sleep 1
+    done
+    if [ -e apps/frontend-manage/.next/dev ]; then
+      echo "[post-start] ERROR: Could not clear the generated Manage route manifest." >&2
+      exit 1
+    fi
+    exec pnpm run dev:container
+  '
+
+# Next's development server compiles fallback dynamic routes on their first
+# request. Prime the Manage course routes before a browser can request them so
+# a cold Turbopack start cannot turn the first course visit into a 404. Keep
+# both probes inside one short deadline so devrouter retains startup ownership.
+if [[ "${APP_ORIGIN_MANAGE}" == https://* ]] &&
+  [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
+  MANAGE_CURL_CA=(--cacert /etc/devrouter/mkcert-rootCA.pem)
+else
+  MANAGE_CURL_CA=()
+fi
+
+manage_probe_deadline=$((SECONDS + 60))
+manage_list_ready=false
+manage_course_ready=false
+while (( SECONDS < manage_probe_deadline )); do
+  if [[ "$manage_list_ready" == false ]]; then
+    manage_status=$(curl "${MANAGE_CURL_CA[@]}" --silent --show-error \
+      --max-time 5 --output /dev/null --write-out '%{http_code}' \
+      "${APP_ORIGIN_MANAGE}/courses" || true)
+    [[ "$manage_status" =~ ^[23][0-9][0-9]$ ]] && manage_list_ready=true
+  fi
+  if [[ "$manage_course_ready" == false ]]; then
+    manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
+    manage_course_status=$(curl "${MANAGE_CURL_CA[@]}" --silent --show-error \
+      --max-time 5 --output /dev/null --write-out '%{http_code}' \
+      "$manage_course_path" || true)
+    [[ "$manage_course_status" =~ ^[23][0-9][0-9]$ ]] && manage_course_ready=true
+  fi
+  [[ "$manage_list_ready" == true && "$manage_course_ready" == true ]] && break
+  sleep 1
+done
+
+if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
+  echo '[post-start] WARN: Manage course-route warm-up did not finish; leaving readiness to devrouter.' >&2
+fi
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF

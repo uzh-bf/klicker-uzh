@@ -48,6 +48,7 @@ function CourseOverviewPage() {
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
+    ssr: false,
     fetchPolicy: 'network-only', // critical query, should always be up to date
   })
 
