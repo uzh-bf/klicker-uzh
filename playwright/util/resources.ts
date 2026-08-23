@@ -78,6 +78,17 @@ function readSelfLimits() {
     : { fdSoft: null, fdHard: null }
 }
 
+function readDevShm() {
+  try {
+    const stats = fs.statfsSync('/dev/shm')
+    const mb = (blocks: number) =>
+      Math.round((blocks * stats.bsize) / 1024 / 1024)
+    return { totalMb: mb(stats.blocks), availMb: mb(stats.bavail) }
+  } catch {
+    return { totalMb: null, availMb: null }
+  }
+}
+
 function sampleOnce() {
   const memoryCurrentKb = readCount('/sys/fs/cgroup/memory.current')
   const memoryMaxKb = readCount('/sys/fs/cgroup/memory.max')
@@ -90,6 +101,7 @@ function sampleOnce() {
     return { resource, someAvg10: some ?? null, fullAvg10: full ?? null }
   })
   const fdLimits = readSelfLimits()
+  const devShm = readDevShm()
   const fileNr = (() => {
     const line = readFileOrNull('/proc/sys/fs/file-nr')
     if (!line) return null
@@ -111,6 +123,8 @@ function sampleOnce() {
     cgroupPidsMax: pidsMax && pidsMax < 1_000_000 ? pidsMax : null,
     procFdSoftLimit: fdLimits.fdSoft,
     procFdHardLimit: fdLimits.fdHard,
+    shmTotalMb: devShm.totalMb,
+    shmAvailMb: devShm.availMb,
     hostFdAllocated: fileNr ? fileNr.allocated : null,
     hostFdMax: fileNr ? fileNr.max : null,
     hostMemAvailableMb: (() => {
