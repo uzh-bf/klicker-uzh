@@ -15,6 +15,8 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 
 Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Keep the contextual action primary and place low-frequency actions in one labelled overflow menu. Keep the visible buttons and overflow trigger in one action cluster; let that cluster wrap across viewports without separating or shrinking the ellipsis control or duplicating controls (`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`).
 
+Assessment participant administration follows that rule: managers reach the dedicated invitation page from the course overflow menu (`CourseOverviewHeader.tsx:courseActionMenuItems`). The page parses CSV files with a small dependency-free browser parser only after file selection, then sends typed rows through generated GraphQL operations (`apps/frontend-manage/src/components/courses/participantInvitations/ParticipantInvitationCsvUpload.tsx:handleFileSelection`). The canonical browser-generated template contains only `email,matriculationNumber`; uploaded files may use comma or semicolon delimiters and supported matriculation-header aliases, but required semantic headers must be unique and every non-empty record must match the header width. Reject malformed quoting locally while preserving server-side per-row email errors and partial success. The affiliation notice is advisory: only a verified Swiss Edu-ID affiliation can establish the identity match, so do not infer or enforce affiliation from a domain suffix. Keep per-row import failures visible, show `PENDING` and `ACCEPTED` as distinct table states, and expose deletion only on pending rows (`ParticipantInvitationsTable.tsx:ParticipantInvitationsTable`).
+
 Assessment report exports intentionally keep one browser-side artifact:
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
 creates the self-contained HTML used by both report actions. **View report**
@@ -85,6 +87,13 @@ control's default opt-out because its backend fetch remains capped at 100
 records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
 `apps/frontend-manage/src/pages/index.tsx:Index`,
 `apps/frontend-manage/src/pages/activities.tsx:Activities`).
+
+Assessment participant invitations use the same control with finite `10`, `20`,
+and `50` page sizes and no `All` option. The page requests the additive
+`assessmentParticipantInvitations` operation with `numEntries` and `offset`,
+shows the server-provided total, and resets to page 1 after an import or delete.
+CSV selection rejects files above 1 MiB and imports above 200 data rows before
+submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
 
 ## i18n (next-intl)
 

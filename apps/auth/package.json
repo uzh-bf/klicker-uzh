@@ -59,7 +59,7 @@
     "lint": "eslint .",
     "start": "next start --port 3010",
     "start:test": "cross-env NODE_ENV=test pnpm start",
-    "test:prisma-adapter": "node scripts/testPrismaAdapter.mjs"
+    "test:prisma-adapter": "pnpm --filter @klicker-uzh/util build && node scripts/testPrismaAdapter.mjs && node --experimental-strip-types scripts/testAssessmentIdentity.mts"
   },
   "engines": {
     "node": "=24"

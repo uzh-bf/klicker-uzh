@@ -243,6 +243,68 @@ describe('assessment report credential services', () => {
       source: 'COURSE_INVITATION',
     })
     expect(issued.snapshot.subject.email).not.toBe(fixture.participant.email)
+
+    const publicRecord = await getPublicAssessmentReport(
+      { token: issued.token },
+      publicContext()
+    )
+    expect(publicRecord?.snapshot?.subject).toEqual({
+      name: null,
+      source: 'COURSE_INVITATION',
+    })
+  })
+
+  it('stores assessment edu-ID identity in the private report and exposes only the name publicly', async () => {
+    const fixture = await createFixture()
+    // A self-chosen profile email must never surface on the credential, so make it
+    // differ from the invitation address the report is expected to carry.
+    const profileEmail = `${TEST_PREFIX}-profile-${fixture.participant.id}@example.net`
+    await prisma.participant.update({
+      where: { id: fixture.participant.id },
+      data: { email: profileEmail },
+    })
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: fixture.course.id,
+          participantId: fixture.participant.id,
+        },
+      },
+      data: {
+        assessmentGivenName: 'Ada',
+        assessmentSurname: 'Lovelace',
+        assessmentMatriculationNumber: '00-123-456',
+      },
+    })
+
+    const issued = await issueAssessmentReport(
+      { courseId: fixture.course.id },
+      fixture.participantCtx
+    )
+    expect(issued.snapshot).toMatchObject({
+      version: 2,
+      subject: {
+        email: fixture.invitationEmail,
+        givenName: 'Ada',
+        surname: 'Lovelace',
+        matriculationNumber: '00-123-456',
+        source: 'SWITCH_EDUID',
+      },
+    })
+    expect(issued.snapshot.subject.email).not.toBe(profileEmail)
+
+    const publicRecord = await getPublicAssessmentReport(
+      { token: issued.token },
+      publicContext()
+    )
+    expect(publicRecord?.snapshot?.subject).toEqual({
+      name: 'Ada Lovelace',
+      source: 'SWITCH_EDUID',
+    })
+    expect(publicRecord?.snapshot?.subject).not.toHaveProperty('email')
+    expect(publicRecord?.snapshot?.subject).not.toHaveProperty(
+      'matriculationNumber'
+    )
   })
 
   it('uses the earliest accepted valid invitation deterministically', async () => {
