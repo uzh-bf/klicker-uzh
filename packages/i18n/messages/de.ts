@@ -1671,6 +1671,65 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
+      participantInvitationsDescription:
+        'Laden Sie Teilnehmende zu diesem Assessment-Kurs ein und verfolgen Sie, ob die Einladung angenommen wurde.',
+      invitationBackToCourse: 'Zurück zum Kurs',
+      invitationImportTitle: 'Einladungen importieren',
+      invitationImportDescription:
+        'Wählen Sie eine CSV-Datei mit den E-Mail-Adressen und Matrikelnummern der Teilnehmenden. Die Datei wird in Ihrem Browser verarbeitet, bevor die Einladungen übermittelt werden.',
+      invitationAffiliationWarning:
+        'Verwenden Sie genau die E-Mail-Adresse, die in der Swiss Edu-ID als verifizierte Hochschulzugehörigkeit hinterlegt ist (z. B. eine @uzh.ch-Adresse). Private E-Mail-Adressen können bei der Anmeldung möglicherweise nicht zugeordnet werden.',
+      invitationDownloadTemplate: 'CSV-Vorlage herunterladen',
+      invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
+      invitationCsvHeaders:
+        'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
+      invitationCsvReady:
+        '{count, plural, one {# Zeile ist für den Import bereit} other {# Zeilen sind für den Import bereit}}',
+      invitationSelectCsv: 'CSV-Datei auswählen',
+      invitationImportButton:
+        '{count, plural, one {# Einladung importieren} other {# Einladungen importieren}}',
+      invitationCsvMissingHeaders:
+        'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
+      invitationCsvInvalidHeaders:
+        'Die CSV-Datei muss genau eine email-Spalte und eine matriculationNumber-Spalte enthalten.',
+      invitationCsvInvalidRows:
+        'Jede CSV-Zeile muss gleich viele Spalten wie die Kopfzeile enthalten.',
+      invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
+      invitationCsvParseError:
+        'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',
+      invitationCsvTooLarge:
+        'Die CSV-Datei ist zu gross. Wählen Sie eine Datei mit höchstens 1 MB.',
+      invitationCsvTooManyRows:
+        'Die CSV-Datei enthält mehr als {count} Teilnehmendenzeilen. Teilen Sie sie in kleinere Dateien auf.',
+      invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
+      invitationImportFailed:
+        'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
+      invitationImportInvalidEmail: 'Ungültiges E-Mail-Format',
+      invitationImportSummary:
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
+      invitationListTitle: 'Einladungen',
+      invitationListDescription:
+        'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
+      invitationCount:
+        '{count, plural, one {# Einladung} other {# Einladungen}}',
+      invitationEmail: 'E-Mail',
+      invitationMatriculationNumber: 'Matrikelnummer',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Eingeladen',
+      invitationActions: 'Aktionen',
+      invitationStatusPending: 'Ausstehend',
+      invitationStatusAccepted: 'Angenommen',
+      invitationDeleteLabel: 'Ausstehende Einladung für {email} löschen',
+      invitationDeleteTitle: 'Ausstehende Einladung löschen',
+      invitationDeleteDescription:
+        'Möchten Sie die ausstehende Einladung für {email} löschen? Die teilnehmende Person kann sie danach nicht mehr annehmen.',
+      invitationDeleteSuccess: 'Die ausstehende Einladung wurde gelöscht.',
+      invitationDeleteFailed:
+        'Die ausstehende Einladung konnte nicht gelöscht werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
+      invitationEmpty: 'Es wurden noch keine Einladungen erstellt.',
+      invitationLoadingError:
+        'Die Teilnehmendeneinladungen konnten nicht geladen werden. Prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       liveQuizStudentResultsTitle: 'Studierendenresultate',
       liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
       liveQuizStudentGivenNameColumn: 'Vorname der studierenden Person',
@@ -3283,6 +3342,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
       appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
