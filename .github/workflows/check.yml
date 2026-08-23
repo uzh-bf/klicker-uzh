@@ -69,6 +69,9 @@ jobs:
       - name: Check AGENTS.md command smoke
         run: pnpm run check:agents-md
 
+      - name: Check removed engineering-wiki paths
+        run: pnpm run check:removed-doc-artifacts
+
       - name: Build packages for typecheck (turbo)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
