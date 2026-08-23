@@ -20,7 +20,6 @@
 //       KLICKER_SELECTED_MODEL=<model-id> k6 run util/load-test/chatbot-turn.js
 
 import { check } from 'k6'
-import { randomUUID } from 'k6/crypto'
 import exec from 'k6/execution'
 import http from 'k6/http'
 import {
@@ -105,7 +104,6 @@ const question = __ENV.QUESTION || 'What topics are covered?'
 const participantAuth = resolveParticipantAuth(rawBaseUrl, __ENV)
 
 export const options = {
-  discardResponseBodies: true,
   scenarios: {
     turns: {
       executor: 'per-vu-iterations',
@@ -137,9 +135,9 @@ export default function (setupData) {
     throw new Error('Participant login did not provide a session token')
   }
 
-  const assistantMessageId = randomUUID()
+  const assistantMessageId = crypto.randomUUID()
   const payload = JSON.stringify({
-    messages: [{ id: randomUUID(), role: 'user', content: question }],
+    messages: [{ id: crypto.randomUUID(), role: 'user', content: question }],
     threadId: null,
     selectedModel,
     selectedMode: 'tutor',
@@ -153,11 +151,32 @@ export default function (setupData) {
     cookies: { participant_token: token },
     headers: { 'Content-Type': 'application/json' },
     tags: { name: 'chat-turn' },
-    timeout: '60s',
+    timeout: '90s',
     redirects: 0,
   })
 
+  // The endpoint answers with an AI SDK SSE stream, not JSON. Validate the
+  // protocol shape only: a finish event must arrive and no error event may
+  // appear. Message content is never read or persisted by this script.
+  const rawBody = res.body || ''
+  let sawFinishEvent = false
+  let sawStreamErrorEvent = false
+  for (const line of rawBody.split('\n')) {
+    if (!line.startsWith('data: ')) continue
+    const eventPayload = line.substring(6).trim()
+    if (eventPayload === '[DONE]' || eventPayload.length === 0) continue
+    try {
+      const event = JSON.parse(eventPayload)
+      if (event && event.type === 'finish') sawFinishEvent = true
+      if (event && event.type === 'error') sawStreamErrorEvent = true
+    } catch {
+      // ignore non-JSON keepalive lines
+    }
+  }
+
   check(res, {
     'chat turn returned success': (r) => r.status >= 200 && r.status < 300,
+    'chat turn streamed finish event': () => sawFinishEvent,
+    'chat turn stream had no error event': () => !sawStreamErrorEvent,
   })
 }
