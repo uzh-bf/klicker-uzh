@@ -211,7 +211,8 @@ function getGraphMonitorBatchOffset(total: number, now: Date) {
     return 0
   }
   const runNumber = Math.floor(now.getTime() / KB_GRAPH_MONITOR_INTERVAL_MS)
-  return (runNumber * KB_GRAPH_MONITOR_BATCH_SIZE) % total
+  const pageCount = Math.ceil(total / KB_GRAPH_MONITOR_BATCH_SIZE)
+  return (runNumber % pageCount) * KB_GRAPH_MONITOR_BATCH_SIZE
 }
 
 async function withProviderTimeout<T>(

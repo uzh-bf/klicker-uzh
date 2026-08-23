@@ -317,8 +317,14 @@ describe('KB retention maintenance', () => {
     expect(prisma.kBUploadTicket.deleteMany).toHaveBeenCalledOnce()
   })
 
-  it('rotates bounded retries so retained failures cannot starve later rows', async () => {
-    const rotatedNow = new Date(NOW.getTime() + 15 * 60 * 1000)
+  it.each([
+    { pendingDispatchCount: 33, elapsedIntervals: 1, expectedSkip: 32 },
+    { pendingDispatchCount: 65, elapsedIntervals: 2, expectedSkip: 64 },
+  ])('rotates bounded retries so retained failures cannot starve later rows ($pendingDispatchCount rows)', async ({
+    pendingDispatchCount,
+    elapsedIntervals,
+    expectedSkip,
+  }) => {
     const pending = {
       id: RESOURCE_ID,
       kbId: KB_ID,
@@ -330,7 +336,7 @@ describe('KB retention maintenance', () => {
     }
     const prisma = maintenancePrisma({
       pendingDispatch: [pending],
-      pendingDispatchCount: 64,
+      pendingDispatchCount,
       currentResource: {
         kbId: KB_ID,
         deletedAt: NOW,
@@ -344,12 +350,12 @@ describe('KB retention maintenance', () => {
     await maintainKBResources({
       prisma: prisma as never,
       client: client(),
-      now: () => rotatedNow,
+      now: () => new Date(NOW.getTime() + elapsedIntervals * 15 * 60 * 1000),
     })
 
     expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ skip: 32, take: 32 })
+      expect.objectContaining({ skip: expectedSkip, take: 32 })
     )
   })
 

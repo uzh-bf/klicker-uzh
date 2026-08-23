@@ -117,7 +117,8 @@ function getBatchOffset(total: number, now: Date) {
     return 0
   }
   const runNumber = Math.floor(now.getTime() / KB_MAINTENANCE_INTERVAL_MS)
-  return (runNumber * KB_MAINTENANCE_BATCH_SIZE) % total
+  const pageCount = Math.ceil(total / KB_MAINTENANCE_BATCH_SIZE)
+  return (runNumber % pageCount) * KB_MAINTENANCE_BATCH_SIZE
 }
 
 async function deleteKBBlob(

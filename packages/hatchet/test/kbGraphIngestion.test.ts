@@ -261,8 +261,7 @@ describe('KB graph external dispatch', () => {
           BLOB_STORAGE_ACCOUNT_NAME: 'klickertest',
           BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
           BLOB_STORAGE_ACCOUNT_URL: 'https://blob.example.org',
-          KB_GRAPH_BLOB_ACCOUNT_URL:
-            'http://127.0.0.1:10003/klickerdev',
+          KB_GRAPH_BLOB_ACCOUNT_URL: 'http://127.0.0.1:10003/klickerdev',
           KB_GRAPH_TIMEOUT_SECONDS: '3600',
         },
         now: () => NOW,
@@ -923,9 +922,16 @@ describe('KB graph external reconciliation', () => {
     })
   })
 
-  it('rotates the timed-out graph backstop window', async () => {
+  it.each([
+    { buildCount: 33, elapsedIntervals: 1, expectedSkip: 32 },
+    { buildCount: 65, elapsedIntervals: 2, expectedSkip: 64 },
+  ])('rotates the timed-out graph backstop window for $buildCount builds', async ({
+    buildCount,
+    elapsedIntervals,
+    expectedSkip,
+  }) => {
     const prisma = createMonitorPrisma([], {
-      timedOutBuildCount: 64,
+      timedOutBuildCount: buildCount,
     })
     const client = createClient()
 
@@ -933,29 +939,36 @@ describe('KB graph external reconciliation', () => {
       prisma: prisma as never,
       client,
       env: externalEnv,
-      now: () => new Date(NOW.getTime() + 15 * 60 * 1000),
+      now: () => new Date(NOW.getTime() + elapsedIntervals * 15 * 60 * 1000),
     })
 
     expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ skip: 32, take: 32 })
+      expect.objectContaining({ skip: expectedSkip, take: 32 })
     )
   })
 
-  it('rotates the active graph monitor window', async () => {
-    const prisma = createMonitorPrisma([], { activeBuildCount: 64 })
+  it.each([
+    { buildCount: 33, elapsedIntervals: 1, expectedSkip: 32 },
+    { buildCount: 65, elapsedIntervals: 2, expectedSkip: 64 },
+  ])('rotates the active graph monitor window for $buildCount builds', async ({
+    buildCount,
+    elapsedIntervals,
+    expectedSkip,
+  }) => {
+    const prisma = createMonitorPrisma([], { activeBuildCount: buildCount })
     const client = createClient()
 
     await monitorActiveKBGraphBuilds({
       prisma: prisma as never,
       client,
       env: externalEnv,
-      now: () => new Date(NOW.getTime() + 15 * 60 * 1000),
+      now: () => new Date(NOW.getTime() + elapsedIntervals * 15 * 60 * 1000),
     })
 
     expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ skip: 32, take: 32 })
+      expect.objectContaining({ skip: expectedSkip, take: 32 })
     )
   })
 
