@@ -1,10 +1,17 @@
-# Chatbot k6 load-test package
+# Chatbot k6 load-test package — PR #5478
 
 ## Goal
 
 Publish the reusable Klicker chatbot HTTP/authenticated-turn k6 suite as an
-independent draft PR against `v3`, without carrying the closed provisioner or
+independent PR against `v3`, without carrying the closed provisioner or
 lecturer-demo work.
+
+## Plan identity
+
+- Branch: `rs/chatbot-k6-load-test`
+- Target: `v3`
+- PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
+- Current reviewed head: `8e8009c56`
 
 ## Scope and authority
 
@@ -22,11 +29,13 @@ lecturer-demo work.
   `Participant.lastLoginAt` once per run, and a chat-turn run persists its
   synthetic conversation; those effects require a separately authorized live
   canary.
-- Boundary owner: main session. Terminal: reviewed draft PR published.
-- Pause if remote `v3` moves from
-  `d4303516a8d4863b45d81c372f5f0023548f8b4a`, the isolated patch
-  no longer applies, or safety hardening requires paths
-  outside the four k6 paths and this plan.
+- Boundary owner: main session. Terminal: reviewed PR package published; live
+  k6 traffic, merge, deployment, and lecturer communication remain withheld.
+- The prior base-movement pause was triggered when `v3` moved from
+  `d4303516a8d4863b45d81c372f5f0023548f8b4a` and was resolved by the approved
+  merge of current `v3` at `8e8009c56`. Pause again if the target moves before
+  the next publication, the isolated patch no longer applies, or safety
+  hardening requires paths outside the four k6 paths and this plan.
 
 ## Evidence and decision
 
@@ -173,3 +182,15 @@ lecturer-demo work.
   feature branch and draft PR #5478 against `v3` is updated with the whole
   five-path package. PR CI is pending on that head; merge, deployment, and live
   k6 traffic remain withheld.
+- S10: complete — fresh remote read-back found `v3` at `ee5712399` and the
+  feature branch at `3ddec2cd7`; the approved merge commit `8e8009c56` brings
+  the branch to zero commits behind and twenty-four commits ahead. The branch
+  push succeeded and PR [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
+  now tracks `8e8009c56` as an open, non-draft PR. Focused `k6 inspect
+  --execution-requirements`, Biome, and `git diff --check` verification passed
+  after the rebaseline. The preserved uncommitted `AGENTS.md` documentation is
+  outside this package and is not staged.
+- Remaining: PR CI after the rebaseline is pending; reconcile this plan and
+  the whole-branch PR description, then run the integrated final review. Live
+  login, chatbot/provider traffic, merge, deployment, and lecturer
+  communication remain withheld.
