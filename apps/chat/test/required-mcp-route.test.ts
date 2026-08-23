@@ -155,6 +155,9 @@ describe('required MCP chat preflight', () => {
       expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
+        sessionId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        ),
       })
     )
     expect(mocks.createThread).not.toHaveBeenCalled()

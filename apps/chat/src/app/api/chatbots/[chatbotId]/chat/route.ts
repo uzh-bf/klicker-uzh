@@ -820,11 +820,12 @@ export async function POST(
     },
   }))
 
-  // The doc-query scope token carries this session id as its JWT subject, so a
-  // caller-supplied thread id has to be proven to belong to this participant and
-  // chatbot before the token is minted rather than where the thread is first
-  // used further down. A request that opens a new thread has no id yet and falls
-  // back to the request id.
+  // The doc-query scope token carries this session id as its JWT subject. An
+  // existing id must belong to this participant and chatbot. For a new thread,
+  // allocate the eventual database id before loading MCP tools so every request
+  // for that thread uses one stable scope subject without persisting anything
+  // when a required MCP server is unavailable.
+  const pendingThreadId = currentThreadId ? undefined : randomUUID()
   const scopeOwningThread = currentThreadId
     ? await prisma.chatThread.findFirst({
         where: { id: currentThreadId, participantId, chatbotId },
@@ -834,7 +835,7 @@ export async function POST(
   const mcpScopeSessionId = resolveMcpScopeSessionId({
     requestedThreadId: currentThreadId,
     owningThreadId: scopeOwningThread?.id,
-    fallbackId: requestId,
+    fallbackId: pendingThreadId ?? requestId,
   })
   if (mcpScopeSessionId === null) {
     return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
@@ -869,7 +870,8 @@ export async function POST(
       const newThread = await ThreadService.createThread(
         participantId,
         chatbotId,
-        null
+        null,
+        pendingThreadId
       )
       currentThreadId = newThread.id
     } catch (error) {
