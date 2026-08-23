@@ -67,6 +67,7 @@ import type {
   ResponseInput,
 } from '../ops.js'
 import { upsertDailyTimelineEntry } from './participants.js'
+import { reconcileStudyStreak } from './studyStreak.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
   elementStack?: {
@@ -769,7 +770,7 @@ async function respondToFlashcard(
     }
 
     // create question detail response
-    createFlashcardResponseDetail({
+    await createFlashcardResponseDetail({
       prisma,
       id,
       response,
@@ -3234,6 +3235,19 @@ export async function respondToElementStack(
     if (evaluation) {
       evaluationsArr.push(evaluation)
     }
+  }
+
+  // fail-open streak reconciliation after all response writes are committed;
+  const participantSub =
+    ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined
+  if (participantSub && !isOwner) {
+    reconcileStudyStreak(
+      { prisma: ctx.prisma },
+      {
+        courseId,
+        participantId: participantSub,
+      }
+    )
   }
 
   return {

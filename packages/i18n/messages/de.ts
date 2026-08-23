@@ -831,6 +831,14 @@ Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an 
 
 Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
 `,
+      studyStreakCard: 'Lernserie',
+      studyStreakDays: '{current, plural, one {# Tag} other {# Tage}}',
+      studyStreakLongest: 'Längste Serie: {longest} Tage',
+      studyStreakFreezeBalance: 'Verfügbare Pausen: {balance}',
+      studyStreakNotDoneToday:
+        'Beantworte heute 5 Fragen, um deine Serie zu halten!',
+      studyStreakDoneToday:
+        'Super gemacht – deine Serie ist für heute gesichert.',
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },

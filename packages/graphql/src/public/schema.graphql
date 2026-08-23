@@ -2387,6 +2387,10 @@ type Participation {
   id: Int!
   isActive: Boolean!
   participant: Participant
+  studyStreakCurrent: Int!
+  studyStreakFreezeBalance: Int!
+  studyStreakLongest: Int!
+  studyStreakQualifiedToday: Boolean!
   subscriptions: [PushSubscription!]
 }
 

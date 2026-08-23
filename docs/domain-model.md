@@ -27,6 +27,10 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
 
+### Private Study streaks
+
+Each active `Participation` also carries a **private Study streak**, visible only to the student (`studyStreakCurrent`, `studyStreakLongest`, `studyStreakFreezeBalance`, plus bookkeeping columns; see ADR 0009). A qualified day means five or more eligible responses (PracticeQuiz or MicroLearning) on one Europe/Zurich weekday within course bounds. Weekends are neutral: they neither advance nor break the streak and never consume a freeze. Each missed active weekday consumes one available freeze (start balance two, maximum three, earn one after seven further qualified days); an uncovered break resets the current streak. Reconciliation runs fail-open after each response batch commits, replaying qualifying dates from `QuestionResponseDetail` under a row lock, so a streak failure never affects grading or XP. Joining the leaderboard starts tracking; leaving resets current/progress but preserves longest and balance; rejoining restarts from zero with no backfill.
+
 ### Assessment participant invitations
 
 `ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.

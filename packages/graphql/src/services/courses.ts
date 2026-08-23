@@ -123,6 +123,17 @@ export async function joinCourseLeaderboard(
   ctx: ContextWithUser
 ) {
   // upsert or activate participation in the course
+  const existingParticipation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+    select: { isActive: true },
+  })
+  const wasInactive = !existingParticipation || !existingParticipation.isActive
+
   const participation = await ctx.prisma.participation.upsert({
     where: {
       courseId_participantId: {
@@ -134,8 +145,15 @@ export async function joinCourseLeaderboard(
       isActive: true,
       course: { connect: { id: courseId } },
       participant: { connect: { id: ctx.user.sub } },
+      studyStreakTrackingStartedAt: new Date(),
     },
-    update: { isActive: true },
+    update: {
+      isActive: true,
+      // rejoin after leave: restart streak tracking (no backfill)
+      ...(wasInactive && existingParticipation
+        ? { studyStreakTrackingStartedAt: new Date() }
+        : {}),
+    },
   })
 
   if (!participation) return null
@@ -227,6 +245,12 @@ export async function leaveCourseLeaderboard(
     },
     data: {
       isActive: false,
+      // leave resets the current streak and today/progress state,
+      // but preserves longest streak and freeze balance (roadmap contract)
+      studyStreakCurrent: 0,
+      studyStreakQualifiedDaysSinceFreeze: 0,
+      studyStreakLastQualifiedDate: null,
+      studyStreakLastProcessedDate: null,
     },
   })
 

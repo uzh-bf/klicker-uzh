@@ -9,10 +9,10 @@ import {
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -27,21 +27,21 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '../../../components/Layout'
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 
 interface Props {
   courseId: string
@@ -454,6 +454,39 @@ function CourseOverview({
                         {t('pwa.courses.individualLeaderboardUpdate')}
                       </div>
                     </div>
+
+                    {/* private Study streak card (self-only, gamification participants) */}
+                    {participation?.isActive && (
+                      <div
+                        className="mt-2 rounded border bg-slate-50 p-3"
+                        data-cy="study-streak-card"
+                      >
+                        <div className="text-sm font-bold">
+                          {t('pwa.general.studyStreakCard')}
+                        </div>
+                        <div className="text-2xl font-bold text-primary">
+                          {t('pwa.general.studyStreakDays', {
+                            current: participation.studyStreakCurrent ?? 0,
+                          })}
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          {t('pwa.general.studyStreakLongest', {
+                            longest: participation.studyStreakLongest ?? 0,
+                          })}
+                        </div>
+                        <div className="text-xs text-slate-600">
+                          {t('pwa.general.studyStreakFreezeBalance', {
+                            balance:
+                              participation.studyStreakFreezeBalance ?? 0,
+                          })}
+                        </div>
+                        <div className="mt-1 text-xs">
+                          {participation.studyStreakQualifiedToday
+                            ? t('pwa.general.studyStreakDoneToday')
+                            : t('pwa.general.studyStreakNotDoneToday')}
+                        </div>
+                      </div>
+                    )}
 
                     {course.isGroupCreationEnabled && (
                       <div className="flex w-full flex-1 flex-col justify-between gap-8 md:w-1/2">

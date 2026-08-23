@@ -270,6 +270,22 @@ export const Participation = ParticipationRef.implement({
 
     isActive: t.exposeBoolean('isActive'),
 
+    // self-only private Study streak status (Europe/Zurich weekdays,
+    // PracticeQuiz and MicroLearning; see gamification ADR)
+    studyStreakCurrent: t.exposeInt('studyStreakCurrent'),
+    studyStreakLongest: t.exposeInt('studyStreakLongest'),
+    studyStreakFreezeBalance: t.exposeInt('studyStreakFreezeBalance'),
+    studyStreakQualifiedToday: t.boolean({
+      resolve: (parent) => {
+        if (!parent.studyStreakLastQualifiedDate) return false
+        return (
+          new Date(parent.studyStreakLastQualifiedDate)
+            .toISOString()
+            .slice(0, 10) === new Date().toISOString().slice(0, 10)
+        )
+      },
+    }),
+
     subscriptions: t.expose('subscriptions', {
       type: [PushSubscriptionRef],
       nullable: true,
