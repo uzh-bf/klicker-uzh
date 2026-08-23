@@ -5,6 +5,7 @@ import {
   faRotate,
 } from '@fortawesome/free-solid-svg-icons'
 import {
+  AssessmentReportIdentitySource,
   GetStudentAssessmentResultsDocument,
   MIssueCredentialDocument,
   type MIssueCredentialMutation,
@@ -328,9 +329,11 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           verificationUrl,
           klickerLogoDataUrl
         )
-        const identitySourceLabel = t(
-          'pwa.assessment.identitySourceCourseInvitation'
-        )
+        const identitySourceLabel =
+          report.snapshot.subject.source ===
+          AssessmentReportIdentitySource.SwitchEduid
+            ? t('pwa.assessment.identitySourceEduId')
+            : t('pwa.assessment.identitySourceCourseInvitation')
         const comparison = report.snapshot.comparison
         const userBin = comparison?.histogram.find((bin, index, histogram) => {
           return isScoreInHistogramBin({
@@ -354,7 +357,9 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
           timeZone: t('pwa.assessment.reportTimeZone'),
           course: t('pwa.assessment.courseNameLabel'),
           courseReference: t('pwa.assessment.courseReferenceLabel'),
-          student: t('pwa.assessment.studentEmailLabel'),
+          studentName: t('pwa.assessment.studentNameLabel'),
+          studentEmail: t('pwa.assessment.studentEmailAddressLabel'),
+          matriculationNumber: t('pwa.assessment.matriculationNumberLabel'),
           identitySource: t('pwa.assessment.identitySourceLabel'),
           pointsSummary: t('pwa.assessment.pointsSummaryLabel'),
           achieved: t('pwa.assessment.achievedPointsLabel'),

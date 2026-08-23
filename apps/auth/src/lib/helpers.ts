@@ -1,4 +1,3 @@
-import { sendTeamsNotifications } from '@/lib/util'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import type { CollectedInvitationEmails, JWTPayload } from '@klicker-uzh/util'
@@ -7,9 +6,9 @@ import {
   extractProviderFromAffiliationId,
   generateRandomString,
   InvitationEmailMode,
+  PrismaTransactionClient,
   parseCookiesHeader,
   parseCsvHosts,
-  PrismaTransactionClient,
   signJWT,
   verifyJWT,
 } from '@klicker-uzh/util'
@@ -19,6 +18,8 @@ import { NextApiRequest } from 'next'
 import type { Profile } from 'next-auth'
 import { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
+import { sendTeamsNotifications } from '@/lib/util'
+import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
 import {
   DEFAULT_LECTURER_HOSTS,
   DEFAULT_STUDENT_HOSTS,
@@ -28,6 +29,9 @@ import {
 
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
+  given_name?: string
+  family_name?: string
+  swissEduPersonMatriculationNumber?: string
   swissEduIDLinkedAffiliation?: string[]
   swissEduIDLinkedAffiliationMail?: string[]
   swissEduIDLinkedAffiliationUniqueID?: string[]
@@ -411,6 +415,12 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         )
       }
 
+      await updateAssessmentParticipantIdentity(
+        tx,
+        existing.participantId,
+        profile
+      )
+
       await tx.participant.update({
         where: { id: existing.participantId },
         data: { lastLoginAt: new Date(), email: profile.email?.toLowerCase() },
@@ -512,6 +522,8 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         error
       )
     }
+
+    await updateAssessmentParticipantIdentity(tx, participant.id, profile)
 
     // Ensure the transaction returns the participant for the caller
     return participant

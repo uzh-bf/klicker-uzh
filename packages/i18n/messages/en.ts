@@ -1400,6 +1400,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       identitySourceLabel: 'Verified identity source',
       identitySourceCourseInvitation:
         'Accepted assessment-course invitation email',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Achieved',
       availablePointsLabel: 'Available',
       performanceInsightsTitle: 'Peer comparison',
@@ -1439,6 +1440,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
+      studentNameLabel: 'Student name',
+      studentEmailAddressLabel: 'Email address',
+      matriculationNumberLabel: 'Matriculation number',
       studentEmailLabel: 'Student',
       pointsSummaryLabel: 'Points Summary',
       yourScoreLabel: 'You',
@@ -1662,6 +1666,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       assessmentResults: 'Assessment Results',
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentGivenNameColumn: 'Student given name',
+      liveQuizStudentSurnameColumn: 'Student surname',
+      liveQuizStudentMatriculationNumberColumn: 'Student matriculation number',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',

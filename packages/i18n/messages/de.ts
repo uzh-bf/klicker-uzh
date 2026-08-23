@@ -1405,6 +1405,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       identitySourceLabel: 'Verifizierte Identitätsquelle',
       identitySourceCourseInvitation:
         'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Erreicht',
       availablePointsLabel: 'Verfügbar',
       performanceInsightsTitle: 'Peer-Vergleich',
@@ -1444,6 +1445,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
+      studentNameLabel: 'Name der studierenden Person',
+      studentEmailAddressLabel: 'E-Mail-Adresse',
+      matriculationNumberLabel: 'Matrikelnummer',
       studentEmailLabel: 'Studierende/r',
       pointsSummaryLabel: 'Punkteübersicht',
       yourScoreLabel: 'Du',
@@ -1669,6 +1673,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       assessmentResults: 'Assessment Resultate',
       liveQuizStudentResultsTitle: 'Studierendenresultate',
       liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentGivenNameColumn: 'Vorname der studierenden Person',
+      liveQuizStudentSurnameColumn: 'Nachname der studierenden Person',
+      liveQuizStudentMatriculationNumberColumn:
+        'Matrikelnummer der studierenden Person',
       liveQuizStudentResultsEmpty:
         'Es sind noch keine Studierendenresultate vorhanden.',
       errorLoadingLiveQuizResults:
