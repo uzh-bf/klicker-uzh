@@ -487,6 +487,15 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   so any browser-provided constructor under webdriver is skipped
   regardless of its method surface while fake-based E2E states remain
   exercised. Marker-head CI run 32660080016 is the exact-head verdict.
+  exercised. Marker-head CI run 32660080016 is the exact-head verdict.
+- 2026-08-23 — Exact-head green achieved on b7159ea42 (run 32660457013):
+  all 38 successful checks passed with one path-filter skip, shard 5
+  passed for the first time across twelve recorded rounds, and the PR is
+  mergeable with no failing checks. The marker-based automation guard is
+  therefore proven on exact-head CI; both review gates for the crash-fix
+  slice are resolved (simplifier accept, slice-reviewer concern addressed
+  by this exact refinement). Remaining package boundary per plan: PR
+  description refresh and delivery_pending manual gate stay outside CI.
 
 ## Pause and finish boundary
 
