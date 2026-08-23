@@ -36,8 +36,10 @@ query GetPublicParticipantProfile($id: String!) {
       id
       achievedAt
       achievedCount
+      receiptAcknowledgedAt
       achievement {
         id
+        isDiscoverable
         nameDE
         nameEN
         descriptionDE

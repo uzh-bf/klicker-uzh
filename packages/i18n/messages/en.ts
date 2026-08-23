@@ -832,6 +832,7 @@ Other participants will only see your public **participant profile**, including 
       studyStreakNotDoneToday:
         'Answer 5 questions today to keep your streak going!',
       studyStreakDoneToday: 'Nice work — your streak is secured for today.',
+      newAchievementReceipt: 'New achievement unlocked!',
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },

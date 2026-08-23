@@ -1,7 +1,8 @@
-import { ParticipantAchievementInstance } from '@klicker-uzh/graphql/dist/ops'
+import type { ParticipantAchievementInstance } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 
 function ReceivedAchievementTile({
   instance,
@@ -10,6 +11,9 @@ function ReceivedAchievementTile({
 }) {
   const { locale } = useRouter()
   const achievement = instance.achievement
+  const t = useTranslations()
+  // receipt is pending when the student has not yet seen this award
+  const receiptPending = !instance.receiptAcknowledgedAt
 
   return (
     <div className="flex w-full flex-row items-center gap-4 rounded border px-3 py-2">
@@ -22,6 +26,11 @@ function ReceivedAchievementTile({
       />
 
       <div className="flex-1">
+        {receiptPending && (
+          <div className="mb-1 text-xs font-bold text-primary">
+            {t('pwa.general.newAchievementReceipt')}
+          </div>
+        )}
         <div className="text-sm font-bold">
           {locale === 'de' ? achievement.nameDE : achievement.nameEN}
         </div>

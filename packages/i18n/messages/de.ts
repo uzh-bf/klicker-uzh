@@ -839,6 +839,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Beantworte heute 5 Fragen, um deine Serie zu halten!',
       studyStreakDoneToday:
         'Super gemacht – deine Serie ist für heute gesichert.',
+      newAchievementReceipt: 'Neue Errungenschaft freigeschaltet!',
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },

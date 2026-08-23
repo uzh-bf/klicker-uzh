@@ -16,6 +16,7 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
           rewardedPoints: achievement.rewardedPoints,
           rewardedXP: achievement.rewardedXP,
           type: achievement.type,
+          isDiscoverable: ACHIEVEMENT_AWARD_PATHS.includes(achievement.id),
         },
         update: {
           nameDE: achievement.nameDE,
@@ -25,6 +26,7 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
           icon: achievement.icon,
           rewardedPoints: achievement.rewardedPoints,
           rewardedXP: achievement.rewardedXP,
+          isDiscoverable: ACHIEVEMENT_AWARD_PATHS.includes(achievement.id),
         },
       })
     })
@@ -32,6 +34,11 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
 
   return achievements
 }
+
+// Achievements with an implemented award path (group activity grading in
+// packages/graphql/src/services/groups.ts); all others are seeded as not
+// discoverable until their award logic ships (gamification roadmap).
+const ACHIEVEMENT_AWARD_PATHS = [8, 9]
 
 // const prismaClient = new Prisma.PrismaClient()
 // await seedAchievements(prismaClient)

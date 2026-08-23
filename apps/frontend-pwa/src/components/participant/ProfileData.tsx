@@ -39,7 +39,9 @@ function ProfileData({
   const remainingAchievements = useMemo(
     () =>
       possibleAchievements?.filter(
-        (a) => !achievements?.some((b) => b.achievement.id === a.id)
+        (a) =>
+          a.isDiscoverable &&
+          !achievements?.some((b) => b.achievement.id === a.id)
       ),
     [achievements, possibleAchievements]
   )

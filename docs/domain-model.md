@@ -91,4 +91,6 @@ removes linked draft live quizzes
 - Responses are stored as `QuestionResponse`/`QuestionResponseDetail` (`response.prisma`) with `totalPointsAwarded`, `totalXpAwarded`, `score`.
 - Leaderboards: `LeaderboardEntry` with `LeaderboardType` `SESSION | COURSE`, updated via `stacks.ts:updateLeaderboardOnQuestionResponse`.
 - `Achievement` (`gamification.prisma`) has `type` PARTICIPANT/GROUP/CLASS and `scope` GLOBAL/COURSE, with per-subject instance models; `Level` defines XP thresholds as a linked list; `Title` and `AwardEntry` complete the set.
-- **Unmapped (verify in code before relying on it):** the exact trigger points for achievement awards, and the LiveQuiz bonus-point formula (time-decay multipliers).
+- Only two achievements currently have an implemented award path (Dream Team and Team Spirit, awarded in `groups.ts`). All other seeded achievements are marked `isDiscoverable=false` so students never see entries they cannot earn; new award implementations flip the flag at seed time via `ACHIEVEMENT_AWARD_PATHS`.
+- When a student receives a discoverable achievement, the instance starts with `receiptAcknowledgedAt=null`. The student sees a "New achievement unlocked!" badge until they call `acknowledgeAchievementReceipt`, which sets the timestamp idempotently. Receipts are self-only and non-blocking.
+- **Unmapped (verify in code before relying on it):** the LiveQuiz bonus-point formula (time-decay multipliers).

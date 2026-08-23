@@ -356,6 +356,24 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      acknowledgeAchievementReceipt: t.withAuth(asParticipant).boolean({
+        args: {
+          achievementInstanceId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const updated =
+            await ctx.prisma.participantAchievementInstance.updateMany({
+              where: {
+                id: args.achievementInstanceId,
+                participantId: ctx.user.sub,
+                receiptAcknowledgedAt: null,
+              },
+              data: { receiptAcknowledgedAt: new Date() },
+            })
+          return updated.count > 0
+        },
+      }),
+
       startGroupActivity: t.withAuth(asParticipant).field({
         nullable: true,
         type: GroupActivityDetails,

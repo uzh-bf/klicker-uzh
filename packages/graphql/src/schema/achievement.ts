@@ -14,6 +14,7 @@ export const Achievement = builder.objectType(AchievementRef, {
     descriptionEN: t.exposeString('descriptionEN', { nullable: true }),
     icon: t.exposeString('icon'),
     iconColor: t.exposeString('iconColor', { nullable: true }),
+    isDiscoverable: t.exposeBoolean('isDiscoverable'),
   }),
 })
 
@@ -34,6 +35,10 @@ export const ParticipantAchievementInstance = builder.objectType(
 
       achievedAt: t.expose('achievedAt', { type: 'Date' }),
       achievedCount: t.exposeInt('achievedCount'),
+      receiptAcknowledgedAt: t.expose('receiptAcknowledgedAt', {
+        type: 'Date',
+        nullable: true,
+      }),
 
       achievement: t.expose('achievement', {
         type: AchievementRef,

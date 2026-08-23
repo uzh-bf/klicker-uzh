@@ -790,7 +790,14 @@ export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   })
   if (!participant) return null
 
-  const achievements = await ctx.prisma.achievement.findMany()
+  // only show achievements the student can still earn (discoverable and
+  // not yet received); received ones come from participant.achievements
+  const achievements = await ctx.prisma.achievement.findMany({
+    where: {
+      isDiscoverable: true,
+      participantInstances: { none: { participantId: ctx.user.sub } },
+    },
+  })
 
   return {
     participant: { ...participant, isSelf: true },
