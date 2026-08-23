@@ -50,9 +50,9 @@ export function registerKBHttpRoutes(
         res.set({
           'Cache-Control': 'private, no-store',
           'Content-Length': String(result.contentLength),
-          'Content-Type': result.contentType,
           'X-Content-Type-Options': 'nosniff',
         })
+        res.setHeader('Content-Type', result.contentType)
         result.stream.on('error', () => res.destroy())
         result.stream.pipe(res)
       } catch {
