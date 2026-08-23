@@ -38,7 +38,6 @@ type KnowledgeGraphModule = {
 }
 
 const nodeRequire = createRequire(import.meta.url)
-const knowledgeGraphPackage = ['@klicker-uzh', 'knowledge-graph'].join('/')
 let knowledgeGraph: KnowledgeGraphModule | undefined
 let knowledgeGraphPromise: Promise<KnowledgeGraphModule> | undefined
 
@@ -48,7 +47,7 @@ function loadKnowledgeGraph(): Promise<KnowledgeGraphModule> {
     // chain. Use Node in development and let the production bundler resolve it.
     const loaded =
       process.env.NODE_ENV === 'development'
-        ? (nodeRequire(knowledgeGraphPackage) as KnowledgeGraphModule)
+        ? (nodeRequire('@klicker-uzh/knowledge-graph') as KnowledgeGraphModule)
         : ((await import(
             '@klicker-uzh/knowledge-graph'
           )) as KnowledgeGraphModule)
