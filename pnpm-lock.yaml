@@ -58,6 +58,34 @@ importers:
         specifier: ~2.6.1
         version: 2.6.1
 
+  apps/ai-credential-gateway:
+    dependencies:
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
+    devDependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      '@rollup/plugin-typescript':
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.12.4
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      tsx:
+        specifier: ~4.19.4
+        version: 4.19.4
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ~3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
+
   apps/analytics:
     devDependencies:
       nodemon:
@@ -9933,9 +9961,6 @@ packages:
   '@types/node@17.0.45':
     resolution: {integrity: sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==}
 
-  '@types/node@20.19.33':
-    resolution: {integrity: sha512-Rs1bVAIdBs5gbTIKza/tgpMuG1k3U/UMJLWecIMxNdJFDMzcM5LOiLVRYh3PilWEYDIeUDv7bpiHPLPsbydGcw==}
-
   '@types/node@24.12.4':
     resolution: {integrity: sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA==}
 
@@ -13350,9 +13375,6 @@ packages:
   get-symbol-description@1.1.0:
     resolution: {integrity: sha512-w9UMqWwJxHNOvoNzSJ2oPF5wvYcvP7jUvYzhp67yEhTi17ZDBBC1z9pTdGuzjD+EFIqLSYRweZjqfiPzQ06Ebg==}
     engines: {node: '>= 0.4'}
-
-  get-tsconfig@4.10.1:
-    resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
 
   get-tsconfig@4.14.0:
     resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
@@ -18584,9 +18606,6 @@ packages:
   std-env@3.10.0:
     resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
 
-  std-env@3.9.0:
-    resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
-
   stdin-discarder@0.2.2:
     resolution: {integrity: sha512-UhDfHmA92YAlNnCfhmq0VeNL5bDbiZGg7sZ2IvPsXubGkiNa9EC+tUTsjBRsYUAz87btI6/1wf4XoVvQ3uRnmQ==}
     engines: {node: '>=18'}
@@ -18989,10 +19008,6 @@ packages:
   tinyexec@0.3.2:
     resolution: {integrity: sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==}
 
-  tinyglobby@0.2.14:
-    resolution: {integrity: sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ==}
-    engines: {node: '>=12.0.0'}
-
   tinyglobby@0.2.16:
     resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
     engines: {node: '>=12.0.0'}
@@ -19334,9 +19349,6 @@ packages:
 
   underscore@1.13.8:
     resolution: {integrity: sha512-DXtD3ZtEQzc7M8m4cXotyHR+FAS18C64asBYY5vqZexfYryNNnDc02W4hKg3rdQuqOYas1jkseX0+nZXjTXnvQ==}
-
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
@@ -27937,7 +27949,7 @@ snapshots:
       '@types/resolve': 1.20.2
       deepmerge: 4.3.1
       is-module: 1.0.0
-      resolve: 1.22.10
+      resolve: 1.22.12
     optionalDependencies:
       rollup: 2.79.2
 
@@ -27947,7 +27959,7 @@ snapshots:
       '@types/resolve': 1.20.2
       deepmerge: 4.3.1
       is-module: 1.0.0
-      resolve: 1.22.10
+      resolve: 1.22.12
     optionalDependencies:
       rollup: 4.34.9
 
@@ -27976,7 +27988,7 @@ snapshots:
   '@rollup/plugin-typescript@12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)':
     dependencies:
       '@rollup/pluginutils': 5.2.0(rollup@4.34.9)
-      resolve: 1.22.10
+      resolve: 1.22.12
       typescript: 6.0.3
     optionalDependencies:
       rollup: 4.34.9
@@ -27985,7 +27997,7 @@ snapshots:
   '@rollup/plugin-typescript@12.1.4(rollup@4.62.2)(tslib@2.8.1)(typescript@6.0.3)':
     dependencies:
       '@rollup/pluginutils': 5.2.0(rollup@4.62.2)
-      resolve: 1.22.10
+      resolve: 1.22.12
       typescript: 6.0.3
     optionalDependencies:
       rollup: 4.62.2
@@ -28000,7 +28012,7 @@ snapshots:
 
   '@rollup/pluginutils@5.2.0(rollup@2.79.2)':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.4
     optionalDependencies:
@@ -28008,7 +28020,7 @@ snapshots:
 
   '@rollup/pluginutils@5.2.0(rollup@4.34.9)':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.4
     optionalDependencies:
@@ -28016,7 +28028,7 @@ snapshots:
 
   '@rollup/pluginutils@5.2.0(rollup@4.62.2)':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.4
     optionalDependencies:
@@ -28782,7 +28794,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.19.33
+      '@types/node': 24.12.4
 
   '@types/bonjour@3.5.13':
     dependencies:
@@ -28816,7 +28828,7 @@ snapshots:
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 20.19.33
+      '@types/node': 24.12.4
 
   '@types/d3-array@3.2.1': {}
 
@@ -29021,10 +29033,6 @@ snapshots:
 
   '@types/node@17.0.45': {}
 
-  '@types/node@20.19.33':
-    dependencies:
-      undici-types: 6.21.0
-
   '@types/node@24.12.4':
     dependencies:
       undici-types: 7.16.0
@@ -29192,7 +29200,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 20.19.33
+      '@types/node': 24.12.4
 
   '@types/xml2js@0.4.14':
     dependencies:
@@ -29383,7 +29391,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       minimatch: 10.2.5
       semver: 7.8.0
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -29398,7 +29406,7 @@ snapshots:
       debug: 4.4.3(supports-color@5.5.0)
       minimatch: 10.2.5
       semver: 7.8.0
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -33441,10 +33449,6 @@ snapshots:
       call-bound: 1.0.4
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
-
-  get-tsconfig@4.10.1:
-    dependencies:
-      resolve-pkg-maps: 1.0.0
 
   get-tsconfig@4.14.0:
     dependencies:
@@ -39313,7 +39317,7 @@ snapshots:
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       module-details-from-path: 1.0.4
-      resolve: 1.22.10
+      resolve: 1.22.12
     transitivePeerDependencies:
       - supports-color
 
@@ -40299,8 +40303,6 @@ snapshots:
 
   std-env@3.10.0: {}
 
-  std-env@3.9.0: {}
-
   stdin-discarder@0.2.2: {}
 
   stickyfill@1.1.1: {}
@@ -40810,11 +40812,6 @@ snapshots:
 
   tinyexec@0.3.2: {}
 
-  tinyglobby@0.2.14:
-    dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
-
   tinyglobby@0.2.16:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.4)
@@ -40942,7 +40939,7 @@ snapshots:
   tsx@4.19.4:
     dependencies:
       esbuild: 0.25.9
-      get-tsconfig: 4.10.1
+      get-tsconfig: 4.14.0
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -41129,8 +41126,6 @@ snapshots:
   undefsafe@2.0.5: {}
 
   underscore@1.13.8: {}
-
-  undici-types@6.21.0: {}
 
   undici-types@7.16.0: {}
 
@@ -41524,7 +41519,7 @@ snapshots:
       picomatch: 4.0.4
       postcss: 8.5.14
       rollup: 4.62.2
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 24.12.4
       fsevents: 2.3.3
@@ -41550,10 +41545,10 @@ snapshots:
       magic-string: 0.30.18
       pathe: 2.0.3
       picomatch: 4.0.4
-      std-env: 3.9.0
+      std-env: 3.10.0
       tinybench: 2.9.0
       tinyexec: 0.3.2
-      tinyglobby: 0.2.14
+      tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 7.3.2(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
@@ -41783,7 +41778,7 @@ snapshots:
       figures: 3.2.0
       markdown-table: 2.0.0
       pretty-time: 1.1.0
-      std-env: 3.9.0
+      std-env: 3.10.0
       webpack: 5.101.3(@swc/core@1.13.5(@swc/helpers@0.5.15))
       wrap-ansi: 7.0.0
 
