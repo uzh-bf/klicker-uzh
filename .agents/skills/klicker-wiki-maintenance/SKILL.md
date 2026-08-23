@@ -11,7 +11,7 @@ description: Keep the KlickerUZH engineering wiki (docs/) and custom skills (.ag
 - `docs/adr/` records why significant, hard-to-reverse decisions were made, following `$domain-modeling`;
 - `docs/solutions/` captures verified lessons from resolved problems.
 
-User-facing documentation belongs in `apps/docs`, procedures belong in `.agents/skills/`, task plans and reviews belong in `project/`, and change history belongs in Git. OKF root indexes and logs are optional reserved files; this bundle intentionally omits both.
+User-facing documentation belongs in `apps/docs`, procedures belong in `.agents/skills/`, task plans and reviews belong in `project/`, and change history belongs in Git. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are reserved and intentionally absent; never create or restore them.
 
 ## The same-change-set rule
 
