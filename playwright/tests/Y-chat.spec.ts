@@ -50,6 +50,13 @@ async function sendMessage(page: Page, text: string) {
   await page.getByTestId('chat-send-button').click()
 }
 
+async function selectChatMode(page: Page, mode: string, label: string) {
+  const switcher = page.getByTestId('chat-mode-switcher')
+  await switcher.click()
+  await page.getByTestId('chat-mode-option-' + mode).click()
+  await expect(switcher).toContainText(label)
+}
+
 // ===========================================================================
 // Authentication & Access Control
 // ===========================================================================
@@ -576,6 +583,47 @@ test.describe('Chatbot Messaging Interface', () => {
     })
 
     expect(stayedMounted).toBe(true)
+  })
+
+  test('Filled-square stop button cancels a running answer from the keyboard', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: ['A response that is still running', ' and should not land.'],
+      chunkDelayMs: 40,
+      pauseAfterTextChunk: 1,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Start a response I can stop')
+    await expect(
+      page.getByText('A response that is still running')
+    ).toBeVisible({ timeout: 15_000 })
+
+    const cancelButton = page.getByTestId('chat-cancel-button')
+    await expect(cancelButton).toHaveAccessibleName('Stop response')
+    const square = cancelButton.locator('svg.lucide-square')
+    await expect(square).toHaveCount(1)
+    expect(
+      await square.evaluate(
+        (element) => getComputedStyle(element).fill !== 'none'
+      )
+    ).toBe(true)
+
+    await cancelButton.focus()
+    await page.keyboard.press('Enter')
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(cancelButton).toBeHidden()
+    await expect(page.getByTestId('chat-send-button')).toBeVisible()
+    await expect(page.getByTestId('chat-run-status')).toHaveText(
+      'Answer stopped.'
+    )
   })
 
   test('Streaming hides incomplete LaTeX until the formula closes', async ({
@@ -1553,10 +1601,16 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toHaveCount(0)
   })
 
-  test('Mode switcher shows available modes', async ({ page }) => {
+  test('Mode dropdown shows the selected mode and available options', async ({
+    page,
+  }) => {
     await visitChat(page)
 
-    await expect(page.getByTestId('chat-mode-switcher')).toBeVisible()
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await expect(switcher).toBeVisible()
+    await expect(switcher).toContainText('Tutor')
+    await switcher.click()
+
     await expect(page.getByTestId('chat-mode-option-tutor')).toContainText(
       'Tutor'
     )
@@ -1570,26 +1624,50 @@ test.describe('Chatbot Settings Panel', () => {
   }) => {
     await visitChat(page)
 
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
+
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await expect(switcher).toHaveAccessibleName('Chat mode: Explainer')
+    await switcher.click()
+    await expect(
+      page.getByTestId('chat-mode-option-explainer')
+    ).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
-      'aria-pressed',
+      'aria-selected',
       'false'
     )
   })
 
-  test('Mode switcher explains what each mode is for', async ({ page }) => {
+  test('Mode dropdown supports keyboard selection and restores trigger focus', async ({
+    page,
+  }) => {
     await visitChat(page)
 
-    await page.getByTestId('chat-mode-option-tutor').hover()
-    await expect(
-      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
-    ).toContainText('patient')
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await switcher.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toBeVisible()
 
-    await page.getByTestId('chat-mode-option-explainer').hover()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveCount(0)
+    await expect(switcher).toBeFocused()
+
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await expect(switcher).toContainText('Explainer')
+    await expect(switcher).toBeFocused()
+  })
+
+  test('Mode dropdown explains what each mode is for', async ({ page }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-mode-switcher').click()
+    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
+      'patient'
+    )
     await expect(
-      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
+      page.getByTestId('chat-mode-description-explainer')
     ).toContainText('difficult concepts')
   })
 
@@ -1796,9 +1874,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     // Persist "explainer" as the session's selected mode (e.g. picked while
     // starting a new chat), independent of the tutor thread above.
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
 
     // Open the tutor thread via a direct URL load (bookmark/reload), not a
     // sidebar click.
@@ -1806,13 +1882,7 @@ test.describe('Chatbot Settings Panel', () => {
       waitUntil: 'domcontentloaded',
     })
 
-    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    )
-    await expect(
-      page.getByTestId('chat-mode-option-explainer')
-    ).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByTestId('chat-mode-switcher')).toContainText('Tutor')
   })
 })
 
@@ -2506,29 +2576,37 @@ test.describe('Chatbot Source Citations', () => {
   test('Citations and source cards render on a live streamed answer', async ({
     page,
   }) => {
+    const streamedParagraphs = Array.from(
+      { length: 24 },
+      (_, index) =>
+        `Streaming paragraph ${index + 1} keeps the answer growing while sources remain hidden.`
+    ).join('\n\n')
     await mockChatStream(page, {
-      text: 'Live answer citing [1] and also [2].',
+      textChunks: [
+        `Live answer citing [1].\n\n${streamedParagraphs}`,
+        '\n\nThe final paragraph also cites [2].',
+      ],
       chunkDelayMs: 20,
       pauseAfterToolOutput: true,
+      pauseAfterTextChunk: 1,
       toolCalls: [
         {
           toolCallId: 'live-call-1',
           toolName: 'KB_doc_query',
           input: { query: 'live query' },
-          output: docQueryToolOutput([
-            {
-              file_name: 'Live Alpha.pdf',
-              source_url: 'https://example.com/live-alpha.pdf',
+          output: docQueryToolOutput(
+            Array.from({ length: 8 }, (_, index) => ({
+              file_name:
+                index === 0
+                  ? 'Live Alpha.pdf'
+                  : index === 1
+                    ? 'Live Beta.pdf'
+                    : `Live Source ${index + 1}.pdf`,
+              source_url: `https://example.com/live-source-${index + 1}.pdf`,
               source_type: 'document',
-              page_number: 2,
-            },
-            {
-              file_name: 'Live Beta.pdf',
-              source_url: 'https://example.com/live-beta.pdf',
-              source_type: 'document',
-              page_number: 6,
-            },
-          ]),
+              page_number: index + 2,
+            }))
+          ),
         },
       ],
     })
@@ -2543,6 +2621,49 @@ test.describe('Chatbot Source Citations', () => {
     )
     await expect(section).toHaveCount(0)
     await expect(page.getByText('Live answer citing')).toHaveCount(0)
+    const viewport = page.getByTestId('chat-thread-viewport')
+    const scrollTopBeforeText = await viewport.evaluate(
+      (element) => element.scrollTop
+    )
+    const cancelButton = page.getByTestId('chat-cancel-button')
+    await expect(cancelButton).toBeVisible()
+    await expect(cancelButton).toHaveAccessibleName('Stop response')
+    expect(
+      await cancelButton
+        .locator('svg.lucide-square')
+        .evaluate((element) => getComputedStyle(element).fill !== 'none')
+    ).toBe(true)
+
+    // Let answer text start, then pause again. Sources must remain out of
+    // layout for the entire running state and the viewport must follow the
+    // streamed answer itself.
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(page.getByText('Live answer citing')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(section).toHaveCount(0)
+    expect(
+      await viewport.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    ).toBe(true)
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(scrollTopBeforeText)
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) =>
+            element.scrollHeight - element.scrollTop - element.clientHeight
+        )
+      )
+      .toBeLessThanOrEqual(1)
 
     await page.evaluate(() => {
       const state = window as typeof window & {
@@ -2552,8 +2673,17 @@ test.describe('Chatbot Source Citations', () => {
     })
 
     await expect(section).toBeVisible({ timeout: 15_000 })
-    await expect(section).toContainText('Sources · 2')
-    await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
+    await expect(section).toContainText('Sources · 8')
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(8)
+    await expect(section.getByRole('heading')).toBeInViewport()
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) =>
+            element.scrollHeight - element.scrollTop - element.clientHeight
+        )
+      )
+      .toBeGreaterThan(100)
 
     const citations = page.getByTestId('chat-citation')
     await expect(citations).toHaveCount(2)
@@ -2582,6 +2712,82 @@ test.describe('Chatbot Source Citations', () => {
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+  })
+
+  test('Mobile header and sources stay clear of the expanded composer', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await seedThread(participantId, {
+      title: 'Mobile source layout',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Show the mobile source layout' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-mobile-layout',
+              sources: Array.from({ length: 6 }, (_, index) => ({
+                file_name: 'Course source ' + (index + 1) + '.mp4',
+                source_url: 'https://example.com/video-' + (index + 1),
+                source_type: 'video',
+                page_number: index + 1,
+              })),
+            }),
+            {
+              type: 'text',
+              text: 'A concise answer with several supporting sources.',
+            },
+          ],
+        },
+      ],
+    })
+
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const header = page.getByTestId('chat-header')
+    await expect(header).toBeVisible()
+    expect(
+      await header.evaluate(
+        (element) => element.scrollWidth - element.clientWidth
+      )
+    ).toBeLessThanOrEqual(1)
+    await selectChatMode(page, 'explainer', 'Explainer')
+
+    const composerInput = page.getByTestId('chat-composer-input')
+    await composerInput.fill(
+      Array.from(
+        { length: 8 },
+        (_, index) => `Expanded mobile composer line ${index + 1}`
+      ).join('\n')
+    )
+    await page
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload())
+    await expect(page.getByTestId('chat-composer-attachment')).toBeVisible()
+
+    const viewport = page.getByTestId('chat-thread-viewport')
+    await viewport.evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+    })
+
+    const lastSource = page.getByTestId('chat-source-card').last()
+    const composer = page.getByTestId('chat-composer')
+    await expect(lastSource).toBeVisible()
+    await expect(composer).toBeVisible()
+    const [lastSourceBox, composerBox] = await Promise.all([
+      lastSource.boundingBox(),
+      composer.boundingBox(),
+    ])
+    expect(lastSourceBox).not.toBeNull()
+    expect(composerBox).not.toBeNull()
+    expect(lastSourceBox!.y + lastSourceBox!.height).toBeLessThanOrEqual(
+      composerBox!.y - 8
+    )
   })
 
   test('Assistant message caption exposes a parseable ISO timestamp', async ({
@@ -2724,9 +2930,7 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await visitChat(page)
 
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
 
     await sendMessage(page, 'What does the caption say?')
 

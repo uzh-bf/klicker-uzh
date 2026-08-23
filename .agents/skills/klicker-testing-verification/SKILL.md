@@ -115,8 +115,8 @@ the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.
 During the live stream, a completed tool chip may precede answer text, but the
-source section must stay absent while the assistant is still running and has
-not emitted a non-whitespace answer delta. A terminal incomplete or aborted
+source section must stay absent for the assistant message's entire running
+state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
