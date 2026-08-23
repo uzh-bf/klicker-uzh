@@ -619,8 +619,14 @@ test.describe('Chatbot Messaging Interface', () => {
       state.__releaseMockChatStream?.()
     })
 
-    await expect(cancelButton).toBeHidden()
-    await expect(page.getByTestId('chat-send-button')).toBeVisible()
+    await expect(cancelButton).toHaveAttribute('aria-hidden', 'true')
+    await expect(cancelButton).toHaveAttribute('inert', '')
+    await expect(cancelButton).toHaveAttribute('tabindex', '-1')
+
+    const sendButton = page.getByTestId('chat-send-button')
+    await expect(sendButton).toHaveAttribute('aria-hidden', 'false')
+    await expect(sendButton).not.toHaveAttribute('inert', '')
+    await expect(sendButton).toHaveAttribute('tabindex', '0')
     await expect(page.getByTestId('chat-run-status')).toHaveText(
       'Answer stopped.'
     )
@@ -2470,7 +2476,7 @@ test.describe('Chatbot Source Citations', () => {
       (_, index) => `Supporting context line ${index + 1}.`
     ).join('\n\n')
 
-    await seedThread(participantId, {
+    const thread = await seedThread(participantId, {
       title: 'Citation click',
       messages: [
         {
@@ -2496,11 +2502,11 @@ test.describe('Chatbot Source Citations', () => {
         },
       ],
     })
-    await visitChat(page)
-    await page.getByTestId('chat-thread-select').first().click()
-    // Selecting a thread is itself a client-side navigation. Let it commit
-    // before the baseline is taken, or the citation click gets blamed for a
-    // URL change the router had already queued.
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    // Let the direct thread navigation settle before taking the baseline, or
+    // the citation click could be blamed for an unrelated URL transition.
     await expect(page).toHaveURL(/\/threads\//)
     const citation = page.getByTestId('chat-citation')
     const source = page.locator(`#src-${messageId}-7`)
@@ -2767,7 +2773,7 @@ test.describe('Chatbot Source Citations', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await seedThread(participantId, {
+    const thread = await seedThread(participantId, {
       title: 'Mobile source layout',
       messages: [
         {
@@ -2795,8 +2801,9 @@ test.describe('Chatbot Source Citations', () => {
       ],
     })
 
-    await visitChat(page)
-    await page.getByTestId('chat-thread-select').first().click()
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
 
     const header = page.getByTestId('chat-header')
     await expect(header).toBeVisible()
