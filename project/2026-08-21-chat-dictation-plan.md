@@ -425,6 +425,39 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   per slice C of the improvement plan (trace/video recording on retry only,
   container --init, --ipc=host, alternate Chromium build), ordered so each
   run isolates one variable against this now-clean resource baseline.
+- 2026-08-23 — Factor rounds on 92a90ca52 and the corrected bookkeeping
+  narrow the cause to shared memory. The fd round raised the worker limit to
+  65536 (confirmed in every sample) while host-wide allocation never passed
+  about 7900 fds, so fd exhaustion is excluded; run 32648419614 repeated the
+  identical signature of 78 Y-chat page-crash failures with all five
+  survivors being exactly the tests that never open the chat page. The
+  earlier --disable-gpu experiment had silently remained in force because
+  its planned revert never landed, so that round tested gpu-disable plus fd
+  raise together and the crash survived both. Placement is not the
+  discriminator either: v3 puts Y-chat on shard 5 as well and passes there,
+  so the branch's chat bundle is what tips the job over a resource limit
+  that v3 stays under. The one remaining classic resource is the 64 MB
+  default /dev/shm of the job container: shard 5's browser first runs the
+  long U-catalog suite, then hits the heaviest chat render of the whole
+  matrix, while shard 7 loads the same app code without crashing after a
+  lighter prefix. Factor 3 (9c96af5f9) therefore routes Chromium
+  shared-memory segments to /tmp via --disable-dev-shm-usage and adds live
+  /dev/shm capacity counters (shmTotalMb/shmAvailMb) to the sampler so the
+  mechanism is provable rather than inferred; CI run 32651372590 is the
+  exact-head verdict. Merge remains withheld.
+- 2026-08-23 — Shared-memory round on 9c96af5f9 (run 32651372590) excluded
+  the last classic resource: shard 5 repeated the byte-identical signature
+  of 78 Y-chat page crashes with all five survivors again being exactly
+  the tests that never open the chat page, while the new sampler fields
+  show /dev/shm at 64 MB total and never below 64 MB available across all
+  samples - Chromium backed its shared-memory segments with /tmp and
+  consumed none of it. Memory, file descriptors, GPU, and shared memory
+  are therefore all excluded by direct measurement, and every remaining
+  hypothesis requires Chromium's own account of the renderer death. The
+  next diagnostic round streams browser stderr into service.log via
+  DEBUG=pw:browser so the death signal lands beside the pw-crash
+  timestamps; failure traces already capture the full network log and
+  video per crash. Merge remains withheld.
 
 ## Pause and finish boundary
 
