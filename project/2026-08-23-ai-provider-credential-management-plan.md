@@ -579,13 +579,13 @@ flowchart TD
 
 ## Progress
 
-- **Status:** Stack 1 in progress; K3 committed.
-- **Active slice:** K3 complete (commit 7ecb69d26).
-- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26.
-- **K3 verification:** tsc typecheck passes from within the package; all 12 gateway tests pass (vault ops, replay, expiry, model validation, version mismatch); pre-commit hooks passed (gitleaks clean, turbo check across 31 packages, syncpack, lint-staged). The gateway is DB-free with fake vault/provider adapters proving the control-plane contract without real custody.
-- **K2 findings addressed in K3:** FakeGatewayAdapter default replaced by explicit adapter injection through the VaultAdapter interface. Active-pointer concept added to the vault to properly model validate-before-switch rotation.
-- **Remaining:** K4 lecturer UI; D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
-- **Latest verified commit/range:** K3 7ecb69d26 on branch rs/ai-provider-credentials-design; ahead 9 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
+- **Status:** Stack 1 through K3 complete; K4 pending.
+- **Active slice:** none; clean checkpoint between K3 and K4.
+- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26 (PASS-WITH-NOTES).
+- **K3 verification summary:** tsc typecheck passes; all 12 tests pass; pre-commit hooks passed (gitleaks clean, turbo check 31 packages). Gateway is DB-free with fake adapters proving control-plane contracts.
+- **Review reports location:** project/_local/reviews/2026-08-24-k{2,3}-slice-review.md and -simplifier.md (local-only, gitignored).
+- **Remaining:** K4 lecturer UI (browser verification + i18n + a11y); D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
+- **Latest verified commit/range:** fee5bdc09 (Progress) on branch rs/ai-provider-credentials-design; ahead 10 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
 - **Unresolved required gates:** D1/I1 contracts before gateway finalization; institutional trace governance; any external delivery or runtime authority.
 - **Delivery layer:** local verified commits only; push/PR/merge/deploy withheld.
-- **Next action:** run slice-reviewer and simplifier for K3, then begin K4 per plan definition at line 405.
+- **Next action:** begin K4 per plan definition at line 405; requires browser verification environment and fresh context for the UI-heavy work.
