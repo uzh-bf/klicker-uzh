@@ -46,7 +46,7 @@ function useElementActions({
     useMutation(ApplyElementBatchOperationsDocument)
 
   const updateArchiveState = useCallback(async () => {
-    let result: 'success' | 'failure' | 'uncertain' = 'failure'
+    let result: 'success' | 'failure' | 'uncertain'
 
     try {
       const { data } = await applyElementBatchOperations({
