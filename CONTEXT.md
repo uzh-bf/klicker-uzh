@@ -178,9 +178,10 @@ the lecturer's authorized budget applies.
 _Avoid_: premium usage, lecturer-funded usage
 
 **Monthly usage budget**:
-A lecturer-defined, account-wide budget for one usage class. Base and advanced
-budgets reset monthly; a base budget does not state how much the teaching
-center covers.
+A lecturer-defined, account-wide configured limit for one usage class. The
+limit persists until the lecturer changes it; only used credits reset at the
+Europe/Zurich month boundary. A base budget does not state how much the
+teaching center covers.
 _Avoid_: chatbot budget, subsidy allowance
 
 **Usage lane**:

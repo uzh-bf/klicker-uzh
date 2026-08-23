@@ -19,14 +19,16 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
 - [0006](./0006-public-catalyst-capability-floor.md) — What public KlickerUZH keeps when Catalyst is absent
 - [0007](./0007-reintegrate-v3-ai-behind-feature-flags.md) — Reintegrate `v3-ai` into `v3` behind feature flags, after VK2
+- [0008](./0008-assessment-identity-boundary-and-public-projection.md) — Keep assessment identity course-scoped and minimize public credential identity
+- [0008](./0008-use-growthbook-for-feature-flags.md) — Use GrowthBook for shared feature flags
 - [0019](./0019-chatbot-config-postgresql-authoritative.md) — Chatbot configuration is PostgreSQL-authoritative; runtimes compile it per request
 - [0020](./0020-two-tier-chatbot-approval.md) — Two-tier approval: account AI capability plus per-chatbot publication
 - [0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — Standard modes are templated, custom modes are reviewed; both layer over fixed scaffolding
 - [0022](./0022-no-student-text-in-manage.md) — The manage surface shows no student-authored text
 
-`0001` and `0003` are each used twice — the deployment and chat lines numbered
-independently before this index existed. Numbers are not reassigned, because existing
-records cite them. `0005` is reserved by an open PR, and open branches claim numbers through
-`0018` (KB line `0009`–`0016`, feature flags, UZH theming). Pick the next free
-number by checking this directory **and** `docs/adr/` on open branches, not by
-counting entries.
+`0001`, `0003`, and `0008` are each used twice — their lines were numbered
+independently before this index existed. Numbers are not reassigned, because
+existing records cite them. `0005` is reserved by an open PR, and open branches
+claim numbers through `0018` (KB line `0009`–`0016`, feature flags, UZH
+theming). Pick the next free number by checking this directory **and**
+`docs/adr/` on open branches, not by counting entries.

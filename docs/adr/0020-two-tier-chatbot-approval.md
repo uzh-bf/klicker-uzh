@@ -42,14 +42,15 @@ as `BASE` or `ADVANCED`; `Auto` is `ADVANCED` for the MVP until every routed
 billable step can be attributed. Fallbacks stay within the selected class, and
 the service never silently switches classes when a class is exhausted.
 
-The lecturer defines one account-wide monthly budget for each class. Both
-budgets reset monthly. The lecturer-facing UI shows exactly two lanes — **base
-model usage** and **advanced model usage** — with the configured budget, used
-credits, remaining credits, and reset date. The teaching center contributes a
-limited, internal amount toward base usage, but the contribution and its
-settlement are never shown. Advanced usage receives no teaching-center
-contribution. Base usage above the hidden contribution remains base usage and
-may consume the authorized paid budget.
+The lecturer defines one account-wide monthly budget for each class. Each
+configured limit persists until the lecturer changes it; only the used-credit
+counter resets at the Europe/Zurich month boundary. The lecturer-facing UI
+shows exactly two lanes — **base model usage** and **advanced model usage** —
+with the configured budget, used credits, remaining credits, and reset date.
+The teaching center contributes a limited, internal amount toward base usage,
+but the contribution and its settlement are never shown. Advanced usage
+receives no teaching-center contribution. Base usage above the hidden
+contribution remains base usage and may consume the authorized paid budget.
 
 The MVP performs an availability pre-check and charges reliable provider usage
 after generation with atomic counters. Bounded final-turn and concurrent
