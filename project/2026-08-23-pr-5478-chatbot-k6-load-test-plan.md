@@ -11,7 +11,7 @@ lecturer-demo work.
 - Branch: `rs/chatbot-k6-load-test`
 - Target: `v3`
 - PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
-- Current reviewed head: `245f18464`
+- Current reviewed source head: `85ef8af`
 
 ## Scope and authority
 
@@ -196,7 +196,16 @@ lecturer-demo work.
   target is `v3` at `ee5712399`, and the branch is zero commits behind and
   twenty-four commits ahead. The exact target diff remains the five listed
   package paths.
-- Remaining: update the whole-branch PR description, run the integrated final
-  review over the exact current range, and record that review. Live login,
-  chatbot/provider traffic, merge, deployment, and lecturer communication
-  remain withheld.
+- S12: complete — Sol's review of `b9a7cbdf9` found one high-severity
+  credential-boundary issue and four follow-up concerns. The token-mode issue
+  is fixed by `b9a7cbdf9`, which restricts authenticated requests to canonical
+  HTTPS STG/PRD chat origins. Commit `85ef8af` fixes the false-green turn
+  threshold, covers every supplied chatbot in smoke mode, and repairs both
+  normal-login examples. Positive and negative k6 inspections, including
+  three-chatbot smoke coverage and an unknown-host token guard, passed; the
+  repository pre-commit checks also passed. A final Sol review of the exact
+  post-correction range remains required.
+- Remaining: run the integrated final review over the exact post-correction
+  range, update the whole-branch PR description, and record that review. Live
+  login, chatbot/provider traffic, merge, deployment, and lecturer
+  communication remain withheld.
