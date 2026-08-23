@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { getEffectiveChatAccountUsage, prisma } from '@klicker-uzh/prisma'
 import { type ChatUsageClass, Prisma } from '@klicker-uzh/prisma/client'
 import { getZurichMonthStart } from '@klicker-uzh/util'
 import { withTransaction } from '../utils/transactions'
@@ -62,21 +62,22 @@ export async function isChatAccountUsageAvailable({
   usageClass: ChatUsageClass
   now?: Date
 }): Promise<boolean> {
-  const usage = await prisma.chatAccountUsage.findFirst({
-    where: {
+  const monthStart = getZurichMonthStart(now)
+  const [owner, usage] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { aiChatbotPublishingEnabled: true },
+    }),
+    getEffectiveChatAccountUsage(prisma, {
       ownerId,
       usageClass,
-      monthStart: getZurichMonthStart(now),
-      owner: { aiChatbotPublishingEnabled: true },
-    },
-    select: {
-      budgetCredits: true,
-      usedCredits: true,
-    },
-  })
+      monthStart,
+    }),
+  ])
 
   return Boolean(
-    usage?.budgetCredits.greaterThan(0) &&
+    owner?.aiChatbotPublishingEnabled &&
+      usage?.budgetCredits.greaterThan(0) &&
       usage.usedCredits.lessThan(usage.budgetCredits)
   )
 }
@@ -131,7 +132,16 @@ export async function finalizeChatTurn(
       })
 
       if (credits !== null) {
-        await tx.chatAccountUsage.update({
+        const effectiveUsage = await getEffectiveChatAccountUsage(tx, {
+          ownerId: input.ownerId,
+          usageClass: input.usageClass,
+          monthStart,
+        })
+        if (!effectiveUsage) {
+          throw new Error('Chat account usage is not configured')
+        }
+
+        await tx.chatAccountUsage.upsert({
           where: {
             ownerId_usageClass_monthStart: {
               ownerId: input.ownerId,
@@ -139,7 +149,14 @@ export async function finalizeChatTurn(
               monthStart,
             },
           },
-          data: {
+          create: {
+            ownerId: input.ownerId,
+            usageClass: input.usageClass,
+            monthStart,
+            budgetCredits: effectiveUsage.budgetCredits,
+            usedCredits: credits,
+          },
+          update: {
             usedCredits: { increment: credits },
           },
         })

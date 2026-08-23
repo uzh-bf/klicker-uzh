@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   streamText: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
   responseOptions: null as Record<string, unknown> | null,
+  ChatTurnConflictError: class ChatTurnConflictError extends Error {},
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -75,11 +76,9 @@ vi.mock('@/src/services/credits', () => ({
 }))
 
 vi.mock('@/src/services/accountUsage', () => {
-  class ChatTurnConflictError extends Error {}
-
   return {
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
-    ChatTurnConflictError,
+    ChatTurnConflictError: mocks.ChatTurnConflictError,
     finalizeChatTurn: mocks.finalizeChatTurn,
     isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
     isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
@@ -447,6 +446,42 @@ describe('account usage chat route', () => {
       outcome: 'duplicate',
       creditsUsed: 0.00006,
     })
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
+    })
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  test('does not decrement participant credits for a finalization conflict', async () => {
+    mocks.finalizeChatTurn.mockRejectedValueOnce(
+      new mocks.ChatTurnConflictError()
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
+    })
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  test('does not decrement participant credits after an unknown finalization error', async () => {
+    mocks.finalizeChatTurn.mockRejectedValueOnce(
+      new Error('synthetic finalization failure')
+    )
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })

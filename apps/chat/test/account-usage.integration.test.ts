@@ -10,6 +10,7 @@ const describePostgres =
   process.env.CHAT_ACCOUNT_USAGE_INTEGRATION === '1' ? describe : describe.skip
 const NOW = new Date('2026-08-15T12:00:00.000Z')
 const MONTH_START = new Date('2026-08-01T00:00:00.000Z')
+const PREVIOUS_MONTH_START = new Date('2026-07-01T00:00:00.000Z')
 const OWNER_ID = randomUUID()
 const COURSE_ID = randomUUID()
 const CHATBOT_ID = randomUUID()
@@ -67,6 +68,21 @@ async function resetUsage(usedCredits = 0, budgetCredits = 10) {
       usedCredits,
     },
     update: { budgetCredits, usedCredits },
+  })
+}
+
+async function resetToPreviousUsage(usedCredits = 0, budgetCredits = 10) {
+  await prisma.chatAccountUsage.deleteMany({
+    where: { ownerId: OWNER_ID, usageClass: 'BASE' },
+  })
+  await prisma.chatAccountUsage.create({
+    data: {
+      ownerId: OWNER_ID,
+      usageClass: 'BASE',
+      monthStart: PREVIOUS_MONTH_START,
+      budgetCredits,
+      usedCredits,
+    },
   })
 }
 
@@ -198,6 +214,29 @@ describePostgres('account usage PostgreSQL integration', () => {
     ).toBe(false)
   })
 
+  test('carries a prior budget with zero effective usage at precheck', async () => {
+    await resetToPreviousUsage(10, 10)
+
+    expect(
+      await accountUsage.isChatAccountUsageAvailable({
+        ownerId: OWNER_ID,
+        usageClass: 'BASE',
+        now: NOW,
+      })
+    ).toBe(true)
+    expect(
+      await prisma.chatAccountUsage.findUnique({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      })
+    ).toBeNull()
+  })
+
   test('persists missing reliable usage without charging the account', async () => {
     const messageId = randomUUID()
     const result = await accountUsage.finalizeChatTurn(
@@ -250,6 +289,56 @@ describePostgres('account usage PostgreSQL integration', () => {
     expect(usage.usedCredits.toString()).toBe('0.333334')
   })
 
+  test('materializes the current month from the carried budget', async () => {
+    await resetToPreviousUsage(8, 10)
+
+    await accountUsage.finalizeChatTurn(turnInput(randomUUID()))
+
+    const [previousUsage, currentUsage] = await Promise.all([
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: PREVIOUS_MONTH_START,
+          },
+        },
+      }),
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      }),
+    ])
+    expect(previousUsage.usedCredits.toString()).toBe('8')
+    expect(currentUsage.budgetCredits.toString()).toBe('10')
+    expect(currentUsage.usedCredits.toString()).toBe('0.25')
+  })
+
+  test('rolls back the assistant message when no budget was configured', async () => {
+    const messageId = randomUUID()
+    await prisma.chatAccountUsage.deleteMany({
+      where: { ownerId: OWNER_ID, usageClass: 'BASE' },
+    })
+
+    await expect(
+      accountUsage.finalizeChatTurn(turnInput(messageId))
+    ).rejects.toThrow('Chat account usage is not configured')
+
+    expect(
+      await prisma.chatMessage.findUnique({ where: { id: messageId } })
+    ).toBeNull()
+    expect(
+      await prisma.chatAccountUsage.count({
+        where: { ownerId: OWNER_ID, usageClass: 'BASE' },
+      })
+    ).toBe(0)
+  })
+
   test('returns the same conflict boundary for a foreign message collision', async () => {
     const messageId = randomUUID()
     await accountUsage.finalizeChatTurn(turnInput(messageId))
@@ -273,6 +362,8 @@ describePostgres('account usage PostgreSQL integration', () => {
   })
 
   test('atomically sums concurrent distinct turn charges', async () => {
+    await resetToPreviousUsage(4, 10)
+
     const results = await Promise.all(
       Array.from({ length: 8 }, () =>
         accountUsage.finalizeChatTurn(
@@ -295,7 +386,17 @@ describePostgres('account usage PostgreSQL integration', () => {
         },
       },
     })
+    expect(usage.budgetCredits.toString()).toBe('10')
     expect(usage.usedCredits.toString()).toBe('1')
+    expect(
+      await prisma.chatAccountUsage.count({
+        where: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      })
+    ).toBe(1)
   })
 
   test('accepts one bounded overrun and denies the next precheck', async () => {

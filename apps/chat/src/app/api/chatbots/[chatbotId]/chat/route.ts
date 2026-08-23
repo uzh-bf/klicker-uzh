@@ -28,7 +28,6 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
-  ChatTurnConflictError,
   finalizeChatTurn,
   isChatAccountUsageAvailable,
   isChatTurnKeyClaimed,
@@ -1277,7 +1276,7 @@ export async function POST(
     phase: 'complete' | 'abort'
   }) => {
     let finalizationOutcome: 'created' | 'duplicate' | 'failed' = 'failed'
-    let participantCreditsUsed = rawCreditsUsed
+    let participantCreditsUsed: number | null = null
 
     try {
       const result = await finalizeChatTurn({
@@ -1295,23 +1294,21 @@ export async function POST(
         rawCreditsUsed,
       })
       finalizationOutcome = result.outcome
-      participantCreditsUsed = result.creditsUsed
+      if (result.outcome === 'created') {
+        participantCreditsUsed = result.creditsUsed
+      }
     } catch (error) {
       console.error('Failed to finalize assistant message and account usage:', {
         requestId,
         phase,
         error,
       })
-
-      if (error instanceof ChatTurnConflictError) {
-        participantCreditsUsed = null
-      }
     }
 
     if (
+      finalizationOutcome === 'created' &&
       participantCreditsUsed !== null &&
-      participantCreditsUsed > 0 &&
-      finalizationOutcome !== 'duplicate'
+      participantCreditsUsed > 0
     ) {
       try {
         await CreditsService.decrementCredits(
