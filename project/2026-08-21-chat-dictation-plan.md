@@ -373,6 +373,14 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   The PR description carries this fifth-run evidence and corrects the
   final-head label from be25e7fbe to 240bd4110. Merge remains withheld.
 
+- 2026-08-23 — Docs-only Progress push moved the branch tip to 8b59ca6e8, so
+  run 32627156168 confirmed the stable signature across a sixth independent
+  run on this exact head: every non-Playwright workflow passes, shards 1-4 and
+  6-8 pass, shard 5 repeats the Y-chat crash cascade (78 failed / 61 passed),
+  and shard 7 repeats only the two install-sheet dictation tests (2 failed /
+  191 passed). The PR body now cites the true tip; no further commits are
+  planned, so no further CI round is triggered. Merge remains withheld.
+
 ## Pause and finish boundary
 
 - Stop if W0 evidence is reinterpreted as positive support, if a recogniser path
