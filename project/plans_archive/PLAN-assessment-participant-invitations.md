@@ -13,7 +13,7 @@ pending invitations.
 - No invitation emails or notifications.
 - No editing of accepted invitations and no deletion of accepted invitations.
 - No background job, uploaded-file storage, manual invitation form, search,
-  filtering, pagination, or CSV template download in the first iteration.
+  filtering, or CSV template download in the first iteration.
 - No change to participant Edu-ID authentication or invitation acceptance.
 
 ## Domain vocabulary
@@ -65,8 +65,9 @@ participant-facing field.
 
 ### Query
 
-`assessmentParticipantInvitations(courseId)` returns invitations ordered by
-newest `invitedAt` first. Each row exposes:
+`assessmentParticipantInvitations(courseId, numEntries, offset)` returns a
+bounded page of invitations ordered by newest `invitedAt` first. Each row
+exposes:
 
 - `id`
 - `email`
@@ -273,7 +274,9 @@ export async function deletePendingAssessmentParticipantInvitation(
 ```graphql
 assessmentParticipantInvitations(
   courseId: String!
-): [AssessmentParticipantInvitation!]
+  numEntries: Int!
+  offset: Int!
+): AssessmentParticipantInvitationPage
 
 createAssessmentParticipantInvitations(
   courseId: String!

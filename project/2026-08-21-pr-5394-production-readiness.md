@@ -2,7 +2,13 @@
 
 ## Execution snapshot (2026-08-22)
 
-This is a dated release-gate snapshot for source commit `3c0b11398b8ed40be962d78dd9823134b4c831b3`, the correction commit `1035a3a2f`, and the simplification head `a07def5b5`. The PR source is based on `v3` at `f58986faa8cfa4ff78d20a1ebeb1666473343d38`, the exact-head Playwright rerun is green, and the native Sol review completed its correction pass. The two PR documentation logs are removed. GitHub remains the live source for later CI and approval state.
+This is a dated release-gate snapshot for the final published invitation
+branch. The final functional change is `0237a3363`, the published evidence
+head is `268a2740ad52d340dc5874cf3a74d0d5dac6c07c`, and the PR is based on
+`v3` at `de366d6f943b06f15354db8364cafefef94aa592`. The exact-head Playwright
+workflow is green, the native Sol review completed its correction pass, and
+the two PR documentation logs are removed. GitHub remains the live source for
+later approval state.
 
 The final database-backed invitation suite passes 21/21 after a clean disposable reset. The concurrency regression forces two service calls through one shared Prisma query extension, uses a five-second barrier, releases it in `finally`, and awaits both operations before fixture cleanup. Migration status reports 178 migrations and an up-to-date schema. The course-history migration uses `CREATE INDEX CONCURRENTLY` as its single SQL statement so index construction does not take the normal write-blocking lock.
 
@@ -37,7 +43,7 @@ This report is limited to the local branch `rs/pr-5394-backend-repair` at the cu
 - `b4d92c8cc` — record indexed invitation verification and publish-readiness evidence.
 - `1035a3a2f` — close the migration-safety, accessibility, and localization findings from the native Sol review.
 
-The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb1666473343d38`; it is an ancestor of the reviewed source snapshot. The source branch was published before the exact-head CI rerun.
+The authoritative final `v3` readback is `de366d6f943b06f15354db8364cafefef94aa592`; it is an ancestor of the published source snapshot. The source branch was published before the exact-head CI rerun.
 
 ## Findings
 
@@ -94,13 +100,13 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 ## Final publication addendum (2026-08-23)
 
 - The final functional backend head is `0237a3363`, and the exact published
-  head is `2654bbf959b83391cddc7f3a20bc7b3eb57a062a`, based on current `v3`
+  evidence head is `268a2740ad52d340dc5874cf3a74d0d5dac6c07c`, based on current `v3`
   `de366d6f943b06f15354db8364cafefef94aa592`. GitHub reports `MERGEABLE` with
   no conflicts and `BLOCKED` only because the required code-owner approval is
   absent.
-- Exact-head workflow `32606503311` completed successfully on the published
+- Exact-head workflow `32607577986` completed successfully on the published
   head. The generated merge ref
-  `584e62d2010e38def931f2027732f26b9485cd8e` has an identical tree, and 45
+  `99905a66792b40033f86bde22fcdef8769486a39` has an identical tree, and 45
   required PR checks are green.
 - The invitation import result no longer publishes unused `invitationId` or
   `participantId` fields. The operation, schema, persisted-query maps, and
