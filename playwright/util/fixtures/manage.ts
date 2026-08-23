@@ -65,10 +65,14 @@ export async function updateLecturerPrivatePreview(privatePreview: boolean) {
   })
 }
 
-export async function prepareSeededMicroLearningEvaluation() {
+export async function prepareSeededAnalyticsActivities() {
   const prisma = await getPrisma()
   const microLearning = await prisma.microLearning.findFirstOrThrow({
     where: { name: SEED.microlearning },
+    select: { id: true },
+  })
+  const practiceQuiz = await prisma.practiceQuiz.findFirstOrThrow({
+    where: { name: SEED.practiceQuiz },
     select: { id: true },
   })
 
@@ -120,6 +124,11 @@ export async function prepareSeededMicroLearningEvaluation() {
         },
       },
     },
+  })
+
+  await prisma.practiceQuiz.update({
+    where: { id: practiceQuiz.id },
+    data: { status: PublicationStatus.PUBLISHED },
   })
 }
 
