@@ -409,6 +409,22 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   multi-path memory.events probing and timestamped pw-crash markers so the
   next round can separate the two remaining hypotheses. Merge remains
   withheld.
+- 2026-08-23 — Telemetry round on 14c76f6c9 (run 32643406987) settled the
+  shard-5 mechanism: scoped cgroup memory.events stayed at oom=0 and
+  oom_kill=0 across all 97 samples while two page-crash events (14:00:08,
+  14:00:21) hit the first authenticated chat render and its retry; host
+  memory never dropped below about 10 GB available, load stayed under 3.9 on
+  four cores, memory PSI peaked at 0.14, and the job container has no memory
+  limit set. Renderer OOM is therefore excluded as the cause. The crash is a
+  Chromium renderer fault specific to this CI context - most plausibly the
+  Playwright 1.58.2 noble container image rendering this app under its exact
+  CPU/service load - and reproduces only inside CI, not in the local arm64
+  container. Shard 8 passed cleanly this round, confirming its earlier
+  single failure was the known self-polluting MA-elements flake rather than
+  a branch regression. Remaining path for shard 5: one-factor experiments
+  per slice C of the improvement plan (trace/video recording on retry only,
+  container --init, --ipc=host, alternate Chromium build), ordered so each
+  run isolates one variable against this now-clean resource baseline.
 
 ## Pause and finish boundary
 
