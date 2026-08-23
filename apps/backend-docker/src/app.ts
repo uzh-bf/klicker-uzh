@@ -10,6 +10,7 @@ import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
+import { registerKBHttpRoutes } from './kbHttpRoutes.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -105,6 +106,11 @@ function prepareApp({
     req.locals = { user }
     next()
   }
+
+  // The ingestion bridge authenticates with its own gateway key and webhook
+  // signature. Register these routes before the end-user JWT middleware so a
+  // system bearer key is never interpreted as a Klicker session token.
+  registerKBHttpRoutes(app, { prisma })
 
   app.use(cookieParser())
   app.use(jwtMiddleware)

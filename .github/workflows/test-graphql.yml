@@ -22,7 +22,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/(backend-docker|hatchet-worker-general)/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -149,6 +149,8 @@ jobs:
           pnpm run build
           cd ../../apps/hatchet-worker-general
           pnpm run build
+          cd ../backend-docker
+          pnpm run build
 
       - name: Setup database
         run: |
@@ -160,6 +162,8 @@ jobs:
       - name: Run tests
         run: |
           set -euo pipefail
+
+          pnpm --filter @klicker-uzh/backend-docker test
 
           . ./util/_create_hatchet_token_graphql.sh
 
