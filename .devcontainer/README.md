@@ -11,10 +11,11 @@ one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, the **two
-> Hatchet workers**, and the **lecturer MCP server** (`mcp-lecturer`). All run
-> in the one `app` container; the workers and `mcp-lecturer` have no
-> port/route (`mcp-lecturer` listens on `localhost:7081`, reached in-container
-> by `chat`). Still skipped: `analytics` (Python), `office-addin`, and `docs`
+> Hatchet workers**, and both internal MCP servers (`mcp-lecturer` and
+> `mcp-student`). All run in the one `app` container; the workers and MCP
+> servers have no port/route (`mcp-lecturer` listens on `localhost:7081` and
+> `mcp-student` on `localhost:7080`, both reached in-container by `chat`). Still
+> skipped: `analytics` (Python), `office-addin`, and `docs`
 > (no `dev` task / extra toolchain). The legacy host-based stack (`docker-compose.yml`,
 > `util/traefik`, Infisical, `/etc/hosts` + mkcert `*.klicker.com`) is untouched.
 
@@ -103,12 +104,14 @@ the exact Manage origin as Blob CORS on that local emulator. This split keeps
 browser uploads production-like without making Node trust the host's routed
 certificate or requiring Azure credentials.
 
-The lecturer MCP server (`mcp-lecturer`) also runs in the `app` container with
-**no route** — it listens on `localhost:7081` and `apps/chat` reaches it there
-directly (in-container; see `apps/chat/src/services/mcpUrl.ts`'s development
-default). It needs `APP_ORIGIN_AUTH` (JWT issuer, already exported above —
-namespaced per workspace the same way) and a JWT secret, which it takes from
-`MCP_LECTURER_JWT_SECRET` or falls back to `APP_SECRET`.
+The lecturer and student MCP servers also run in the `app` container with **no
+route** — they listen on `localhost:7081` and `localhost:7080`, respectively,
+and `apps/chat` reaches them directly (in-container; see
+`apps/chat/src/services/lecturerMcp.ts:getLecturerMcpUrl` and
+`apps/chat/src/services/studentPracticeMcp.ts:getStudentPracticeMcpUrl`). Both
+need `APP_ORIGIN_AUTH` (JWT issuer, already exported above — namespaced per
+workspace the same way). Lecturer tokens use `MCP_LECTURER_JWT_SECRET` or fall
+back to `APP_SECRET`; student tokens use `APP_SECRET`.
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
@@ -135,15 +138,15 @@ the hardcoded defaults only know `klicker.com`.
 
 ## What's inside
 
-| Service                             | Image                                            | Purpose                                                               |
-| ----------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------- |
-| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and `mcp-lecturer` |
-| `postgres`                          | `postgres:15`                                    | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)                |
-| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                         |
-| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                         |
-| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                                |
-| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                      | workflow engine (gRPC :7077, no UI auth)                              |
-| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2`       | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)  |
+| Service                             | Image                                            | Purpose                                                                 |
+| ----------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| `app`                               | local `Dockerfile` (Node 24 + pnpm 11.5.0)       | runs every routed app plus the two Hatchet workers and both MCP servers |
+| `postgres`                          | `postgres:15`                                    | DB (klicker-prod + shadow/lti/qa/hatchet via init.sql)                  |
+| `redis_exec`/`_assessment`/`_cache` | `redis:7`                                        | live-quiz exec / assessment / cache + pub/sub                           |
+| `mailhog`                           | `mailhog/mailhog`                                | dev SMTP sink                                                           |
+| `azurite`                           | `mcr.microsoft.com/azure-storage/azurite:3.36.0` | local Blob service for browser uploads                                  |
+| `hatchet`                           | `hatchet-lite-dev:v0.101.0`                      | workflow engine (gRPC :7077, no UI auth)                                |
+| `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2`       | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)    |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 `post-create.sh` (install + build packages + prisma reset/push/seed + token) then
@@ -208,9 +211,9 @@ disabled and the rest of the DevPod still starts normally.
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
   (the container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
-- `mcp-lecturer` runs plain `tsx` (no `--watch`) — `tsx --watch` is known to
-  silently kill long-running Node 24 servers in this repo, so it deliberately
-  does not use it in dev (no restart-on-change; restart the app manually via
+- Both MCP servers run plain `tsx` (no `--watch`) — `tsx --watch` is known to
+  silently kill long-running Node 24 servers in this repo, so they deliberately
+  do not use it in dev (no restart-on-change; restart the app manually via
   `devrouter exec . -- ...` after edits).
 - Auto V2 sends its Luna-low classification and semantic embedding requests to
   the same upstream as the selected answer model. With OpenRouter, use only

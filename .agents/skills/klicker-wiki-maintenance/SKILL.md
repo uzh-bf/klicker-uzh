@@ -38,7 +38,7 @@ New non-obvious patterns discovered during a task go to the matching page above 
 
 ## On every wiki edit
 
-1. Log the change as a **new file** `docs/log/YYYY-MM-DD-<slug>.md` (`## date` heading + `**Creation**`/`**Update**`/`**Deprecation**` bullets, links relative to `docs/`, i.e. `../page.md`), bump the page `timestamp`. Never append to `docs/log.md`, the archive, or another batch's file — one file per batch is what keeps concurrent branches conflict-free.
+1. Bump the page `timestamp`. Git history is the change log — the wiki carries no log file.
 2. On add/remove/rename: update `index.md`; grep the whole repo for inbound links (other pages, skills, README, AGENTS.md). Renames break concept IDs — avoid them.
 3. Validate + format:
 

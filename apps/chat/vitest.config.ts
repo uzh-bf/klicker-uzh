@@ -9,6 +9,7 @@ export default defineConfig({
     // file (fetch, URL, window, ...) leaks into whichever file the scheduler
     // runs next. Restore real globals before every test.
     unstubGlobals: true,
+    setupFiles: ['./test/setup-node-environment.ts'],
     testTimeout: 30000,
     silent: false,
     reporters: ['verbose'],
