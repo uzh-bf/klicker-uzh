@@ -306,10 +306,7 @@ jobs:
           TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
           echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
           .github/scripts/wait-for-services.sh -- \
-            env NODE_ENV=test \
-            pnpm --filter @klicker-uzh/playwright exec playwright test \
-              --project=chromium \
-              $TEST_FILES
+            bash -c 'ulimit -n 65536 2>/dev/null || true; export NODE_ENV=test; exec pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium '"$TEST_FILES"''
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod

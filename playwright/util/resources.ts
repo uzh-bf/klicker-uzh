@@ -69,6 +69,15 @@ function extractCounter(contents: string, key: string): number | null {
   return value === undefined ? null : parseInt(value, 10)
 }
 
+function readSelfLimits() {
+  const contents = readFileOrNull('/proc/self/limits')
+  if (!contents) return { fdSoft: null, fdHard: null }
+  const match = contents.match(/^Max open files\s+(\d+)\s+(\d+)/m)
+  return match
+    ? { fdSoft: parseInt(match[1], 10), fdHard: parseInt(match[2], 10) }
+    : { fdSoft: null, fdHard: null }
+}
+
 function sampleOnce() {
   const memoryCurrentKb = readCount('/sys/fs/cgroup/memory.current')
   const memoryMaxKb = readCount('/sys/fs/cgroup/memory.max')
@@ -80,6 +89,15 @@ function sampleOnce() {
     const full = line?.match(/^full .*avg10=([\d.]+)/)?.[1]
     return { resource, someAvg10: some ?? null, fullAvg10: full ?? null }
   })
+  const fdLimits = readSelfLimits()
+  const fileNr = (() => {
+    const line = readFileOrNull('/proc/sys/fs/file-nr')
+    if (!line) return null
+    const parts = line.split(/\s+/).filter(Boolean)
+    return parts.length >= 3
+      ? { allocated: parseInt(parts[0], 10), max: parseInt(parts[2], 10) }
+      : null
+  })()
   return {
     ts: new Date().toISOString(),
     cgroupMemoryCurrentMb:
@@ -91,6 +109,10 @@ function sampleOnce() {
     cgroupMemoryEvents: readMemoryEvents(),
     cgroupPidsCurrent: pidsCurrent,
     cgroupPidsMax: pidsMax && pidsMax < 1_000_000 ? pidsMax : null,
+    procFdSoftLimit: fdLimits.fdSoft,
+    procFdHardLimit: fdLimits.fdHard,
+    hostFdAllocated: fileNr ? fileNr.allocated : null,
+    hostFdMax: fileNr ? fileNr.max : null,
     hostMemAvailableMb: (() => {
       const kb = readMemInfoKb('MemAvailable')
       return kb === null ? null : Math.round(kb / 1024)
