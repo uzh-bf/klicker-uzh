@@ -579,13 +579,13 @@ flowchart TD
 
 ## Progress
 
-- **Status:** Stack 1 in progress; K2 committed and reviewed.
-- **Active slice:** K2 complete (commit 4d75b3509).
-- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; rebase onto 35142c81a; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509.
-- **K2 verification:** Prisma validate + generate + analytics sync pass; util build pass; GraphQL codegen + typecheck pass; backend typecheck pass; all 7 lifecycle tests pass. Pre-commit hooks passed (gitleaks clean, typecheck across 25 packages, lint, syncpack, prisma-sync). Slice-reviewer verdict PASS-WITH-NOTES; simplifier verdict NO-ACTION. Reports at project/_local/reviews/.
-- **K2 findings for K3:** (P2) Remove secret from GraphQL register/rotate mutations before wiring real gateway custody - use the dedicated ingress route exclusively. (P2) FakeGatewayAdapter default parameter must be replaced by explicit injection when K3 lands. (P3) vaultSecretName exposure on public projection is low-risk but should be restricted. (P3) Ingress route needs per-user rate limiting before real custody.
-- **Remaining:** K3 gateway client + disabled deployment; K4 lecturer UI; D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
-- **Latest verified commit/range:** K2 4d75b3509 on branch rs/ai-provider-credentials-design; ahead 7 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
-- **Unresolved required gates:** D1/I1 contracts before K3 finalization; institutional trace governance; any external delivery or runtime authority.
+- **Status:** Stack 1 in progress; K3 committed.
+- **Active slice:** K3 complete (commit 7ecb69d26).
+- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26.
+- **K3 verification:** tsc typecheck passes from within the package; all 12 gateway tests pass (vault ops, replay, expiry, model validation, version mismatch); pre-commit hooks passed (gitleaks clean, turbo check across 31 packages, syncpack, lint-staged). The gateway is DB-free with fake vault/provider adapters proving the control-plane contract without real custody.
+- **K2 findings addressed in K3:** FakeGatewayAdapter default replaced by explicit adapter injection through the VaultAdapter interface. Active-pointer concept added to the vault to properly model validate-before-switch rotation.
+- **Remaining:** K4 lecturer UI; D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
+- **Latest verified commit/range:** K3 7ecb69d26 on branch rs/ai-provider-credentials-design; ahead 9 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
+- **Unresolved required gates:** D1/I1 contracts before gateway finalization; institutional trace governance; any external delivery or runtime authority.
 - **Delivery layer:** local verified commits only; push/PR/merge/deploy withheld.
-- **Next action:** begin K3 per the plan definition at line 380.
+- **Next action:** run slice-reviewer and simplifier for K3, then begin K4 per plan definition at line 405.
