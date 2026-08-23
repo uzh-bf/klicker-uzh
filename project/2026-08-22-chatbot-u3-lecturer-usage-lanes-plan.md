@@ -490,3 +490,22 @@ Gate 3 ruling and names every still-withheld action.
   and are not represented as passing. The two post-boundary commits are
   evidence-only additions in the roadmap and plan. M1 has reached its terminal
   Gate 3 boundary with every withheld action unchanged.
+- 2026-08-23: the user approved Gate 3 and the exact current-`v3` recovery.
+  Stack #5476 was rebased locally onto `2dc517aed`, preserving the shared and
+  chatbot context, the combined chat-platform documentation, and both util
+  exports. One missing blank line found by repository formatting was corrected
+  on the Phase 0 layer before U1 through U3 were recascaded. The corrected local
+  heads are Phase 0 `7eb4c50ef`, U1 `02061e204`, U2 `3252d0a6f`, and U3
+  `0953f96a6` before this evidence commit.
+- 2026-08-23: refreshed Node 24 verification passes on the recascaded top: the
+  repository build completes 23/23 tasks; all 29 non-analytics packages pass
+  31 typecheck/lint tasks; formatting and GraphQL generation have no drift;
+  util passes 58 tests; Chat passes 369 with 6 expected skips; the focused
+  PostgreSQL/GraphQL file passes 11/11; and Playwright discovery lists 872
+  tests. The root `check:all` analytics lint remains environment-blocked
+  because uv selected Python 3.14 and the image lacks a C compiler for pandas.
+  Host route readiness also hit a local curl certificate error after the
+  applications reached their ports. The exact DevPod is stopped with zero
+  routes. Ox Alpha rebase review and the authorized force-with-lease
+  publication remain next; all merge, deployment, live, closure, cleanup, and
+  deletion boundaries remain withheld.
