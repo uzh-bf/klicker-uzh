@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-18'
+timestamp: '2026-08-23'
 tags:
   - backend
   - graphql
@@ -12,13 +12,15 @@ tags:
 
 > **Migration in flight (2026-07):** a dual GraphQL→tRPC migration is open as PR #5132 (not yet merged) — a tRPC API in `packages/api` mounted at `/api/trpc` beside `/api/graphql`, with frontends moving to React Query app by app. This page describes current reality and stays authoritative until that PR merges; before extending the API surface, check the PR's status and which surface your target app uses. Staged doc/skill changes: `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**The pattern to copy exactly: resolvers are one-liners; authorization is three explicit, named layers.** Every protected field in `packages/graphql/src/schema/` composes the same three pieces — declare the role with `t.withAuth(...)`, check object-level permission with `withPermission(...)`, and let the service do the work. Deviating from this shape (inline logic in resolvers, hand-rolled permission checks) is the number-one review flag.
+**The pattern to copy exactly: resolvers are one-liners and authorization has explicit, named layers.** Every protected field declares its role with `t.withAuth(...)`. Shareable aggregates supported by `PermissionCheck` also wrap the resolver with `withPermission(...)`; owner-only aggregates such as `KB` enforce their persisted owner relation at the service boundary because they have no sharing primitive. Resolvers still delegate immediately rather than implementing authorization or business logic inline.
 
 ## Three-layer authorization
 
 1. **Role/scope gate — `t.withAuth(scopeObject)`.** Scope objects are defined once near the top of `packages/graphql/src/schema/mutation.ts` (and mirrored in `query.ts`): `asUser`, `asUserFullAccess`, `asUserSessionExec`, `asUserOwner`, `asUserWithCatalyst`, `asParticipant`, `asTemporaryParticipant`, `asAdmin`. Their semantics come from `packages/graphql/src/builder.ts` auth scopes: `authenticated` (logged in, not OTP), `role` (USER also passes for ADMIN; PARTICIPANT is exact), `scope` (a ladder — `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY`, a login with a higher scope passes lower requirements), `catalyst`. `defaultStrategy: 'all'`; failure throws `GraphQLError('Unauthorized')`.
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
+
+`PermissionCheck` has no KB key because knowledge bases are not shareable aggregates. KB schema fields use the appropriate `t.withAuth(...)` scope, then every service query or mutation resolves the KB through `ownerId: ctx.user.sub` or an equivalent persisted owner relation before reading or mutating it. Do not add a fake permission mapping or widen KB sharing to make its resolver look like a course resolver.
 
 Worked examples: `deleteCourse` in `mutation.ts` (asUser + ADMIN permission on courseId), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ). Existing fields use `t.withAuth(...)` exclusively — follow them rather than inventing `authScopes` variants.
 

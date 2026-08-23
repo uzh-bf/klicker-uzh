@@ -11,7 +11,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 1. **Service function** — `packages/graphql/src/services/<area>.ts`. All logic, Prisma, Redis, pubSub here. Signature `(args, ctx: ContextWithUser) => …`. Errors: `GraphQLError` with `extensions.code` (grep `LIVE_QUIZ_PIN_INVALID` for the pattern) — not bare `Error`.
 2. **Schema field** — `packages/graphql/src/schema/query.ts` / `mutation.ts` / `subscription.ts` (+ new object types in the area file). The resolver is a **one-liner** delegating to the service.
-3. **Auth on the field** — copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
+3. **Auth on the field** — always declare the role with `t.withAuth(...)`. For shareable aggregates represented by `PermissionCheck`, copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
 
    ```ts
    deleteCourse: t.withAuth(asUser).field({
@@ -27,7 +27,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    })
    ```
 
-   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that.
+   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. Owner-only aggregates that have no `PermissionCheck` key, including `KB`, keep the role gate on the schema field and must resolve the persisted owner relation inside every service entry point. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.

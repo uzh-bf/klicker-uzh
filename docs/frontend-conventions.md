@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-16'
+timestamp: '2026-08-23'
 tags:
   - frontend
 ---
@@ -86,6 +86,8 @@ The KB file picker exposes only the production ingestion contract: PDF, TXT, and
 The detail metrics distinguish visible data, quota usage, upload reservations, pending asynchronous cleanup, unknown-size conservative reservations, and linked consumers. Do not present tombstoned storage as already released or treat derived values as mutable counters.
 
 `packages/kb-management/src/components/KnowledgeGraphPanel.tsx:KnowledgeGraphPanel` is the lecturer-facing graph lifecycle boundary. It exposes the per-KB opt-in, standard/high estimate, maximum reservation, billing mode, reservation status, remaining quota, worst-case balance, settled cost, actual token/request usage, and the localized safe status state. Quota amounts use the persisted quota currency, while historical build cost uses its recorded build currency; a persisted quota currency/limit mismatch makes the cost configuration unavailable until reconciled. The rebuild action stays disabled while the KB is opted out, the global graph switch leaves cost configuration incomplete, or a build is active. Display billing and reservation statuses through localized labels rather than raw enum values or backend status prose, keep provider credentials out of the client, and preserve the `data-cy` hooks for the switch, cost block, status, and rebuild action.
+
+The shared graph viewer keeps fixed hooks for search input/submit, search results, loaded nodes, loaded relationships, details close, expand, zoom, fit, reset, and retry actions. Node and relationship identifiers remain content, not selector names; combine the fixed hook with accessible name or visible text when a test must distinguish one item.
 
 ## i18n (next-intl)
 
