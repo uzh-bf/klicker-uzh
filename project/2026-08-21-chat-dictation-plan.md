@@ -458,6 +458,23 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   DEBUG=pw:browser so the death signal lands beside the pw-crash
   timestamps; failure traces already capture the full network log and
   video per crash. Merge remains withheld.
+- 2026-08-23 — Browser-stderr diagnostics on df07c0128 (run 32654313091)
+  named the death mechanism directly: at the first pw-crash timestamp
+  Chromium logged "Terminating render process for bad Mojo message"
+  for interface media.mojom.OnDeviceSpeechRecognition followed by
+  "Terminating renderer for bad IPC message, reason 123". The branch's
+  DictationProvider eagerly probes SpeechRecognition.available() on every
+  chat-page load, and the Playwright noble image ships the JS interface
+  without the on-device speech service binder, so each probe kills the
+  renderer and every later navigation on that worker dies identically -
+  hence 78 failures whose survivors are exactly the five Y-chat tests
+  that never open the chat page, while Y-chat-dictation passes because
+  its fake recognition replaces the constructor before page scripts run.
+  All resource workarounds are reverted after being excluded by direct
+  measurement. Fix: refreshCapability skips the probe when
+  navigator.webdriver is true and reports unsupported, so automation
+  never touches the fatal path while real browsers keep the eager probe.
+  Exact-head green proof is pending on the next CI round.
 
 ## Pause and finish boundary
 

@@ -47,12 +47,7 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
-      // CI-only renderer crashes hit the first heavy chat render while
-      // memory, fd, and GPU telemetry stay clean; the 64 MB default
-      // /dev/shm of the job container is the remaining resource suspect,
-      // so back Chromium shared-memory segments with /tmp instead
-      // (run 32648419614 evidence).
-      args: ['--lang=en-US', '--disable-gpu', '--disable-dev-shm-usage'],
+      args: ['--lang=en-US'],
     },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent

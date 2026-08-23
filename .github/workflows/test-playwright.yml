@@ -306,14 +306,9 @@ jobs:
           TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
           echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
           .github/scripts/wait-for-services.sh -- \
-            bash -c 'ulimit -n 65536 2>/dev/null || true; export NODE_ENV=test; exec pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium '"$TEST_FILES"''
+            bash -c 'export NODE_ENV=test; exec pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium '"$TEST_FILES"''
         env:
           APP_SECRET: abcd
-          # Renderer crashes survive every resource fix (memory, fds, GPU,
-          # /dev/shm); pw:browser streams Chromium's own stderr so the death
-          # signal recorded next to the pw-crash timestamps identifies the
-          # mechanism directly.
-          DEBUG: pw:browser
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
           NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
