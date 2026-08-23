@@ -25,7 +25,9 @@ import {
 } from './kbGraphIngestionApi.js'
 
 const KB_GRAPH_MONITOR_BATCH_SIZE = 32
+const KB_GRAPH_MONITOR_CONCURRENCY = 8
 const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
+const KB_GRAPH_MONITOR_PROVIDER_TIMEOUT_MS = 10_000
 export const KB_GRAPH_DISPATCH_AMBIGUOUS_CODE = 'KB_GRAPH_DISPATCH_AMBIGUOUS'
 const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
 // A dispatch claim is written just before the provider call, so a claimed build
@@ -90,6 +92,7 @@ export type DispatchKBGraphDependencies = {
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBGraphLogger
+  providerOperationTimeoutMs?: number
   getSourceUrl?: (
     source: KBGraphDispatchRecord['sources'][number],
     options: { ownerId: string; env: NodeJS.ProcessEnv; now: () => Date }
@@ -102,6 +105,7 @@ export type MonitorKBGraphBuildsDependencies = {
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBGraphLogger
+  providerOperationTimeoutMs?: number
   getTerminalResult?: (runId: string) => Promise<unknown>
   settleTerminalResult?: (input: {
     buildId: string
@@ -208,6 +212,47 @@ function getGraphMonitorBatchOffset(total: number, now: Date) {
   }
   const runNumber = Math.floor(now.getTime() / KB_GRAPH_MONITOR_INTERVAL_MS)
   return (runNumber * KB_GRAPH_MONITOR_BATCH_SIZE) % total
+}
+
+async function withProviderTimeout<T>(
+  operation: Promise<T>,
+  timeoutMilliseconds: number | undefined
+): Promise<T> {
+  if (timeoutMilliseconds === undefined) {
+    return operation
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error('KB graph provider operation timed out')),
+          timeoutMilliseconds
+        )
+      }),
+    ])
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  task: (item: T) => Promise<void>
+): Promise<void> {
+  let nextIndex = 0
+  const workerCount = Math.min(KB_GRAPH_MONITOR_CONCURRENCY, items.length)
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const item = items[nextIndex]
+        nextIndex += 1
+        await task(item)
+      }
+    })
+  )
 }
 
 function isDispatchableBuild(build: {
@@ -484,7 +529,12 @@ export async function resolveAmbiguousKBGraphDispatch(
   build: { id: string; kbId: string; createdAt: Date },
   dependencies: Pick<
     DispatchKBGraphDependencies,
-    'prisma' | 'client' | 'env' | 'logger' | 'now'
+    | 'prisma'
+    | 'client'
+    | 'env'
+    | 'logger'
+    | 'now'
+    | 'providerOperationTimeoutMs'
   >
 ): Promise<KBGraphDispatchAmbiguityResolution> {
   const env = dependencies.env ?? process.env
@@ -495,15 +545,18 @@ export async function resolveAmbiguousKBGraphDispatch(
   try {
     const config = getExternalKBGraphConfig(env)
     const client = dependencies.client ?? getExternalKBGraphClient(env)
-    recoveredRun = await recoverExternalKBGraphRun({
-      client,
-      workflowName: config.workflowName,
-      additionalMetadata: {
-        [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
-        [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
-      },
-      recoveryAnchor: build.createdAt,
-    })
+    recoveredRun = await withProviderTimeout(
+      recoverExternalKBGraphRun({
+        client,
+        workflowName: config.workflowName,
+        additionalMetadata: {
+          [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
+          [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
+        },
+        recoveryAnchor: build.createdAt,
+      }),
+      dependencies.providerOperationTimeoutMs
+    )
   } catch {
     await logErrorBestEffort(
       dependencies.logger,
@@ -982,21 +1035,24 @@ async function monitorTimedOutKBGraphBuilds(
   builds: TimedOutKBGraphBuild[],
   dependencies: MonitorKBGraphBuildsDependencies,
   client: ExternalKBGraphClient,
-  now: () => Date
+  now: () => Date,
+  providerOperationTimeoutMs: number
 ): Promise<void> {
-  for (const build of builds) {
+  await runWithConcurrency(builds, async (build) => {
     const identifiers = graphIdentifiers(build)
     try {
-      const externalStatus = await client.runs.get_status(
-        build.externalOperationId
+      const externalStatus = await withProviderTimeout(
+        client.runs.get_status(build.externalOperationId),
+        providerOperationTimeoutMs
       )
       if (externalStatus !== 'COMPLETED') {
-        continue
+        return
       }
 
       if (dependencies.getTerminalResult && dependencies.settleTerminalResult) {
-        const terminalResult = await dependencies.getTerminalResult(
-          build.externalOperationId
+        const terminalResult = await withProviderTimeout(
+          dependencies.getTerminalResult(build.externalOperationId),
+          providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
           buildId: build.id,
@@ -1020,7 +1076,7 @@ async function monitorTimedOutKBGraphBuilds(
         identifiers
       )
     }
-  }
+  })
 }
 
 export async function monitorActiveKBGraphBuilds(
@@ -1029,15 +1085,23 @@ export async function monitorActiveKBGraphBuilds(
   const env = dependencies.env ?? process.env
   const now = dependencies.now ?? (() => new Date())
   const timeoutMilliseconds = getKBGraphTimeoutSeconds(env) * 1000
+  const providerOperationTimeoutMs =
+    dependencies.providerOperationTimeoutMs ??
+    KB_GRAPH_MONITOR_PROVIDER_TIMEOUT_MS
   const sweepNow = now()
-  const builds = await dependencies.prisma.kBGraphBuild.findMany({
-    where: {
-      status: {
-        in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
-      },
-      externalOperationId: { not: null },
-      externalStartedAt: { not: null },
+  const activeWhere = {
+    status: {
+      in: [KBGraphBuildStatus.QUEUED, KBGraphBuildStatus.PROCESSING],
     },
+    externalOperationId: { not: null },
+    externalStartedAt: { not: null },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const activeCount = await dependencies.prisma.kBGraphBuild.count({
+    where: activeWhere,
+  })
+  const activeOffset = getGraphMonitorBatchOffset(activeCount, sweepNow)
+  const builds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: activeWhere,
     select: {
       id: true,
       kbId: true,
@@ -1045,6 +1109,8 @@ export async function monitorActiveKBGraphBuilds(
       externalStartedAt: true,
     },
     orderBy: { createdAt: 'asc' },
+    ...(activeOffset > 0 ? { skip: activeOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
   })
   const timedOutWhere = {
     status: KBGraphBuildStatus.FAILED,
@@ -1072,21 +1138,25 @@ export async function monitorActiveKBGraphBuilds(
   })
   // Runs ahead of the early return: a build parked on an ambiguous dispatch has
   // neither a correlated run nor a timeout, so no other sweep would revisit it.
-  await recheckAmbiguousKBGraphDispatches(dependencies, sweepNow)
+  await recheckAmbiguousKBGraphDispatches(
+    { ...dependencies, providerOperationTimeoutMs },
+    sweepNow
+  )
 
   if (builds.length === 0 && timedOutBuilds.length === 0) {
     return
   }
 
   const client = dependencies.client ?? getExternalKBGraphClient(env)
-  for (const build of builds) {
+  await runWithConcurrency(builds, async (build) => {
     if (!build.externalOperationId || !build.externalStartedAt) {
-      continue
+      return
     }
     const identifiers = graphIdentifiers(build)
     try {
-      const externalStatus = await client.runs.get_status(
-        build.externalOperationId
+      const externalStatus = await withProviderTimeout(
+        client.runs.get_status(build.externalOperationId),
+        providerOperationTimeoutMs
       )
       const observedAt = now()
       if (
@@ -1113,30 +1183,34 @@ export async function monitorActiveKBGraphBuilds(
             prisma: dependencies.prisma,
             finishedAt: observedAt,
           })
-          continue
+          return
         }
 
-        const terminalResult = await dependencies.getTerminalResult(
-          build.externalOperationId
+        const terminalResult = await withProviderTimeout(
+          dependencies.getTerminalResult(build.externalOperationId),
+          providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
           buildId: build.id,
           result: terminalResult,
           finishedAt: observedAt,
         })
-        continue
+        return
       }
 
       if (
         observedAt.getTime() - build.externalStartedAt.getTime() >
         timeoutMilliseconds
       ) {
-        await cancelExternalKBGraphRunBestEffort({
-          client,
-          runId: build.externalOperationId,
-          identifiers,
-          logger: dependencies.logger,
-        })
+        await withProviderTimeout(
+          cancelExternalKBGraphRunBestEffort({
+            client,
+            runId: build.externalOperationId,
+            identifiers,
+            logger: dependencies.logger,
+          }),
+          providerOperationTimeoutMs
+        )
         await finishKBGraphBuild({
           build: {
             ...build,
@@ -1148,7 +1222,7 @@ export async function monitorActiveKBGraphBuilds(
           prisma: dependencies.prisma,
           finishedAt: observedAt,
         })
-        continue
+        return
       }
 
       if (externalStatus === 'RUNNING') {
@@ -1172,7 +1246,7 @@ export async function monitorActiveKBGraphBuilds(
         identifiers
       )
     }
-  }
+  })
   await monitorTimedOutKBGraphBuilds(
     timedOutBuilds.flatMap((build) =>
       build.externalOperationId === null
@@ -1181,7 +1255,8 @@ export async function monitorActiveKBGraphBuilds(
     ),
     dependencies,
     client,
-    now
+    now,
+    providerOperationTimeoutMs
   )
 }
 
@@ -1195,7 +1270,11 @@ export async function monitorActiveKBGraphBuilds(
 export async function recheckAmbiguousKBGraphDispatches(
   dependencies: Pick<
     MonitorKBGraphBuildsDependencies,
-    'prisma' | 'client' | 'env' | 'logger'
+    | 'prisma'
+    | 'client'
+    | 'env'
+    | 'logger'
+    | 'providerOperationTimeoutMs'
   >,
   sweepNow: Date
 ): Promise<void> {
@@ -1219,12 +1298,12 @@ export async function recheckAmbiguousKBGraphDispatches(
     ...(ambiguousOffset > 0 ? { skip: ambiguousOffset } : {}),
     take: KB_GRAPH_MONITOR_BATCH_SIZE,
   })
-  for (const build of ambiguousBuilds) {
+  await runWithConcurrency(ambiguousBuilds, async (build) => {
     await resolveAmbiguousKBGraphDispatch(build, {
       ...dependencies,
       now: () => sweepNow,
     })
-  }
+  })
 }
 
 export async function markKBGraphBuildDispatchFailed(

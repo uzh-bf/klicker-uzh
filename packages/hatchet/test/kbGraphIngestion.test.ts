@@ -159,6 +159,7 @@ function createDispatchPrisma({
 function createMonitorPrisma(
   builds: Array<Record<string, unknown>>,
   {
+    activeBuildCount = builds.length,
     timedOutBuilds = [],
     timedOutBuildCount = timedOutBuilds.length,
     newerBuild = null,
@@ -166,6 +167,7 @@ function createMonitorPrisma(
     ambiguousBuilds = [],
     ambiguousBuildCount = ambiguousBuilds.length,
   }: {
+    activeBuildCount?: number
     timedOutBuilds?: Array<Record<string, unknown>>
     timedOutBuildCount?: number
     newerBuild?: { id: string } | null
@@ -186,6 +188,7 @@ function createMonitorPrisma(
         .mockResolvedValueOnce(ambiguousBuilds),
       count: vi
         .fn()
+        .mockResolvedValueOnce(activeBuildCount)
         .mockResolvedValueOnce(timedOutBuildCount)
         .mockResolvedValueOnce(ambiguousBuildCount),
       findFirst: vi.fn().mockResolvedValue(newerBuild),
@@ -883,6 +886,96 @@ describe('KB graph external reconciliation', () => {
     expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ skip: 32, take: 32 })
+    )
+  })
+
+  it('rotates the active graph monitor window', async () => {
+    const prisma = createMonitorPrisma([], { activeBuildCount: 64 })
+    const client = createClient()
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => new Date(NOW.getTime() + 15 * 60 * 1000),
+    })
+
+    expect(prisma.kBGraphBuild.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ skip: 32, take: 32 })
+    )
+  })
+
+  it('limits active provider status checks to eight at a time', async () => {
+    const builds = Array.from({ length: 16 }, (_, index) => ({
+      id: `build-${index}`,
+      kbId: KB_ID,
+      externalOperationId: `external-run-${index}`,
+      externalStartedAt: new Date('2026-08-01T11:59:00.000Z'),
+    }))
+    const prisma = createMonitorPrisma(builds)
+    const client = createClient()
+    let activeCalls = 0
+    let maxActiveCalls = 0
+    vi.mocked(client.runs.get_status).mockImplementation(async () => {
+      activeCalls += 1
+      maxActiveCalls = Math.max(maxActiveCalls, activeCalls)
+      await Promise.resolve()
+      activeCalls -= 1
+      return 'QUEUED'
+    })
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => NOW,
+    })
+
+    expect(maxActiveCalls).toBe(8)
+  })
+
+  it('continues independent builds when one provider status call hangs', async () => {
+    const hungBuild = {
+      id: 'build-hung',
+      kbId: KB_ID,
+      externalOperationId: 'external-run-hung',
+      externalStartedAt: new Date('2026-08-01T11:59:00.000Z'),
+    }
+    const readyBuild = {
+      id: 'build-ready',
+      kbId: KB_ID,
+      externalOperationId: 'external-run-ready',
+      externalStartedAt: new Date('2026-08-01T11:59:00.000Z'),
+    }
+    const prisma = createMonitorPrisma([hungBuild, readyBuild])
+    const client = createClient()
+    vi.mocked(client.runs.get_status).mockImplementation((runId) =>
+      runId === 'external-run-hung'
+        ? new Promise(() => {})
+        : Promise.resolve('RUNNING')
+    )
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => NOW,
+      providerOperationTimeoutMs: 5,
+    })
+
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'build-ready' }),
+        data: expect.objectContaining({
+          status: KBGraphBuildStatus.PROCESSING,
+        }),
+      })
+    )
+    expect(prisma.kBGraphBuild.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: 'build-hung' }),
+      })
     )
   })
 
