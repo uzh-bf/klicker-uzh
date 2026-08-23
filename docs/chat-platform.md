@@ -353,6 +353,16 @@ Two further credit conventions are easy to break:
   success the footer stays visible with the last known balance, even if a later
   refresh fails.
 
+## System-prompt provenance
+
+Assistant turns carry two-layer provenance ([ADR 0043](./adr/0043-chat-system-prompt-two-layer-provenance.md)).
+
+- **Authored layer**: `ChatbotModePromptVersion` stores the immutable, per-mode instruction text a lecturer (or the platform default) accepted. `ChatbotMode` owns the stable mode key, its lifecycle status, and the active-version pointer.
+- **Effective layer**: `ChatbotEffectiveSystemPrompt` stores the exact final instruction text (authored text plus runtime contracts) keyed by SHA-256. Identical texts share one row.
+- **Messages**: assistant messages record `effectiveSystemPromptId`. Null means unknown (historical messages); it is never inferred. New turns resolve and persist the reference before generation and fail closed when it cannot be resolved.
+
+The legacy `Chatbot.systemPrompts` JSON remains the compatibility projection during mixed-version releases; accepted authored changes update catalog rows and that JSON atomically.
+
 ## Theming and design tokens
 
 Chat carries the UZH brand through the shadcn semantic tokens in `src/app/globals.css` (`--primary` = `#0028a5` etc.), not through per-component colours. Two rules:

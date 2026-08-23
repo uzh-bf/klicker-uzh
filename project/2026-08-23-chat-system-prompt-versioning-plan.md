@@ -453,7 +453,7 @@ rebasing these layers onto current `v3`. Publishing into or alongside stack
 
 - Add the shared default, enum/models/message FK, expand migration, analytics
   mirror, triggers, and migration proof.
-- Add ADR 0037 after rechecking all open refs.
+- Add ADR 0043 after rechecking all open refs.
 - Update `CONTEXT.md`, `docs/domain-model.md`,
   `docs/data-and-migrations.md`, ADR discovery, and the data-model skill.
 - Acceptance: migration preserves the exact supported-mode and prompt
@@ -617,5 +617,26 @@ adapted.
 - 2026-08-23: configured planner returned `DONE_WITH_CONCERNS`; all three
   required corrections are incorporated and its behavior-changing tutor/JSON
   suggestions are dispositioned above.
+- 2026-08-23 (S1, in progress): schema models plus expand migration
+  `20260823180000_chatbot_prompt_catalog` created; applied and verified on the
+  disposable DevPod DB and recorded via `migrate resolve`. Migration proof
+  fixture passed: null/empty JSON materializes the tutor fallback (frozen
+  default length 2160), explicit tutor preserved byte-for-byte, explicit empty
+  custom mode snapshots an empty string, historical messages stay null,
+  key/version immutability and direct-delete guards raise. Deferred composite
+  same-mode guard added after the first proof run caught the missing backing
+  unique index. ADR 0043 added and indexed; CONTEXT.md,
+  `docs/chat-platform.md`, and `docs/data-and-migrations.md` updated;
+  analytics mirror synced. Remaining for S1: shared-default module move,
+  review gates, commit.
+- 2026-08-23 (S1, verified): shared-default module added at `packages/prisma/src/chatbotPromptDefaults.ts` (`DEFAULT_TUTOR_PROMPT`),
+  re-exported from `@klicker-uzh/prisma`; Chat app prompt config re-pointed.
+  Frozen migration literal corrected (removed source-form backslash-backtick escapes;
+  restored trailing newline) so the materialized tutor v1 is exactly 2155 bytes and
+  byte-equal to the shared constant - proven via full-chain migration replay onto a
+  fresh proof database with legacy-shaped seed rows (null JSON -> tutor fallback,
+  explicit tutor preserved, empty non-tutor mode snapshots empty string, effective
+  count 0, historical messages null). docs/domain-model.md and the data-model skill
+  updated. Prisma package check, Chat app typecheck, and Biome pass on touched files.
 - Current boundary: waiting for Gate 1 approval of this plan. No implementation
   file, branch base, remote branch, PR, deployment, or live data has changed.

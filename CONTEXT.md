@@ -199,6 +199,16 @@ usage, remaining contribution, and settlement details are never returned to
 lecturer or participant clients.
 _Avoid_: free allowance, unlimited allowance, subsidy balance
 
+### System-prompt provenance
+
+**Mode Prompt Version**:
+An immutable, numbered snapshot of the authored instruction/persona text for one chatbot mode. Accepting an authored change creates the next version.
+_Avoid_: prompt backup, prompt history entry
+
+**Effective System Prompt**:
+The exact final instruction text sent to the model for one turn: authored version plus runtime contracts. Messages reference it once and share it; identical text reuses one row.
+_Avoid_: compiled prompt cache, prompt hash key
+
 ### Legacy and boundary terms
 
 **Participant usage credits**:

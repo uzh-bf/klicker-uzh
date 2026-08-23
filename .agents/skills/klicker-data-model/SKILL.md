@@ -30,6 +30,7 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
+- **Chat prompt-catalog rows are immutable** (ADR 0043): ChatbotModePromptVersion and ChatbotEffectiveSystemPrompt reject identity/text updates and guarded deletes; authoring goes through the transactional catalog writer (added in P1/S2), and migration 20260823180000 embeds a frozen tutor-default literal that must stay byte-stable.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
 ## Seeds — two independent paths

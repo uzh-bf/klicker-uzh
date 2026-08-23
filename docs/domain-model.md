@@ -88,3 +88,7 @@ removes linked draft live quizzes
 - Leaderboards: `LeaderboardEntry` with `LeaderboardType` `SESSION | COURSE`, updated via `stacks.ts:updateLeaderboardOnQuestionResponse`.
 - `Achievement` (`gamification.prisma`) has `type` PARTICIPANT/GROUP/CLASS and `scope` GLOBAL/COURSE, with per-subject instance models; `Level` defines XP thresholds as a linked list; `Title` and `AwardEntry` complete the set.
 - **Unmapped (verify in code before relying on it):** the exact trigger points for achievement awards, and the LiveQuiz bonus-point formula (time-decay multipliers).
+
+## Chatbot system-prompt provenance
+
+**Every assistant message can be traced without storing its prompt twice.** Each chatbot mode owns immutable, dense-numbered ChatbotModePromptVersion rows holding the lecturer-authored base text; a SHA-256-keyed ChatbotEffectiveSystemPrompt row stores the exact final instructions - base version plus runtime citation/language contracts - once per distinct compiled text. ChatMessage.effectiveSystemPromptId references the effective row that produced the message; null on historical messages means unknown and is never backfilled. See ADR 0043 and [Chat Platform](./chat-platform.md).

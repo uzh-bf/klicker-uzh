@@ -43,6 +43,15 @@ enum ChatUsageClass {
   ADVANCED
 }
 
+// Lifecycle state of one authored chatbot mode. ENABLED is selectable in the
+// participant mode picker; DISABLED is hidden but retains its prompt lineage;
+// RETIRED is a terminal state that also retains lineage. See ADR 0037.
+enum ChatbotModePromptStatus {
+  ENABLED
+  DISABLED
+  RETIRED
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -121,10 +130,18 @@ model ChatMessage {
   creditsUsed      Decimal? @db.Decimal(18, 6)
   lifecycleStatus    ChatMessageLifecycleStatus @default(COMPLETED)
   lifecycleAttemptId String? @db.Uuid
+  // Exact effective system-prompt provenance for assistant turns. Null means
+  // unknown (historical or non-assistant messages); it is never inferred. The
+  // referenced row stores the exact final instruction text once, so messages
+  // do not duplicate prompt content. New assistant writes require a resolved
+  // reference before generation (fail closed). See ADR 0043.
+  effectiveSystemPromptId String? @db.Uuid
   // Participant feedback on an assistant answer; null until they vote.
   rating           ChatMessageRating?
 
   attachments ChatAttachment[]
+
+  effectiveSystemPrompt ChatbotEffectiveSystemPrompt? @relation(fields: [effectiveSystemPromptId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -133,6 +150,7 @@ model ChatMessage {
 
   @@index([threadId])
   @@index([parentId])
+  @@index([effectiveSystemPromptId])
 }
 
 model ChatAttachment {
@@ -196,6 +214,7 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  modes             ChatbotMode[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -274,4 +293,72 @@ model ChatbotDisclaimer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Stable identity for one authored chatbot mode ("tutor", ...). The key is
+// immutable after creation; status changes never create prompt versions and
+// never delete lineage while the chatbot exists. Deleting the chatbot removes
+// its modes, versions, and effective prompts with no tombstones.
+model ChatbotMode {
+  id String @id @default(uuid()) @db.Uuid
+
+  chatbotId String @db.Uuid
+  key       String
+
+  name        String?
+  description String?
+  status      ChatbotModePromptStatus @default(ENABLED)
+
+  activePromptVersionId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activePromptVersion ChatbotModePromptVersion?  @relation("ChatbotModeActiveVersion", fields: [activePromptVersionId], references: [id], onDelete: NoAction, onUpdate: Cascade)
+  versions            ChatbotModePromptVersion[] @relation("ChatbotModeVersions")
+
+  chatbot Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([chatbotId, key])
+}
+
+// Immutable version of the authored instruction/persona text for one mode.
+// Only accepted authoring creates a new row; version numbers are dense,
+// per-mode integers starting at 1. Rows are never updated or individually
+// deleted (enforced by trigger); only deleting the owning chatbot removes them.
+model ChatbotModePromptVersion {
+  id String @id @default(uuid()) @db.Uuid
+
+  modeId String @db.Uuid
+  version Int
+
+  authoredPrompt String @db.Text
+
+  createdAt DateTime @default(now())
+
+  mode             ChatbotMode                    @relation("ChatbotModeVersions", fields: [modeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  activeForModes   ChatbotMode[]                  @relation("ChatbotModeActiveVersion")
+  effectivePrompts ChatbotEffectiveSystemPrompt[]
+
+  @@unique([modeId, version])
+}
+
+// Exact final system-instruction text sent to the model for one authored
+// version plus the runtime contracts applied at generation time. Identified by
+// SHA-256 of the text; rows are immutable (trigger-enforced) and shared by all
+// messages generated with that exact text.
+model ChatbotEffectiveSystemPrompt {
+  id String @id @default(uuid()) @db.Uuid
+
+  modePromptVersionId String @db.Uuid
+  sha256              String
+
+  systemPrompt String @db.Text
+
+  createdAt DateTime @default(now())
+
+  modePromptVersion ChatbotModePromptVersion @relation(fields: [modePromptVersionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  messages          ChatMessage[]
+
+  @@unique([modePromptVersionId, sha256])
 }
