@@ -354,6 +354,15 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   Per plan discipline no further reruns were attempted; the PR description
   carries this evidence, and the merge gate for these shards is a human
   decision on the recorded traces.
+- 2026-08-23 — Final-head run on be25e7fbe (32622423413) confirms the stable
+  signature across a fourth independent run: shards 1-4 and 6 pass, shard 5
+  repeats the Y-chat crash cascade (155 crashes; 78 failed / 60 passed),
+  shard 7 repeats only the two install-sheet dictation tests (2 failed /
+  191 passed, no crashes), and shard 8 records one unrelated
+  MA-elements-operations timeout in the same overloaded-runner family. The
+  SonarCloud job failed once with a provider-side HTTP 500 and passed on
+  rerun. The PR description now carries the complete four-run evidence table.
+  Merge remains withheld.
 
 ## Pause and finish boundary
 
