@@ -202,7 +202,7 @@ API-only development:
 
 ```bash
 KB_INGESTION_STATE_BACKEND=postgres \
-KB_INGESTION_STATE_DSN=postgresql://hatchet:hatchet@127.0.0.1:<pg-port>/hatchet \
+KB_INGESTION_STATE_DSN=postgresql://<local-user>@127.0.0.1:<pg-port>/hatchet \
 KB_INGESTION_STATE_SCHEMA=ingestion_state_local \
 DATA_INGESTION_REPO=/path/to/data-ingestion \
 KLICKER_KB_APP_ORIGIN=https://api.klicker.<workspace>.localhost \

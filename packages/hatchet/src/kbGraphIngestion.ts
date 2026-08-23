@@ -247,7 +247,7 @@ async function runWithConcurrency<T>(
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
       while (nextIndex < items.length) {
-        const item = items[nextIndex]
+        const item = items[nextIndex]!
         nextIndex += 1
         await task(item)
       }
@@ -1270,11 +1270,7 @@ export async function monitorActiveKBGraphBuilds(
 export async function recheckAmbiguousKBGraphDispatches(
   dependencies: Pick<
     MonitorKBGraphBuildsDependencies,
-    | 'prisma'
-    | 'client'
-    | 'env'
-    | 'logger'
-    | 'providerOperationTimeoutMs'
+    'prisma' | 'client' | 'env' | 'logger' | 'providerOperationTimeoutMs'
   >,
   sweepNow: Date
 ): Promise<void> {
