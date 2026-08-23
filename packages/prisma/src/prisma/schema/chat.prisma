@@ -66,9 +66,10 @@ model ChatUsageCredits {
 // Account-scoped monthly usage budget and used-credit counter for one usage
 // class. One row per owner account + class + Europe/Zurich calendar month;
 // monthStart is the first calendar day of the month (DATE). Rows are created
-// on demand; a missing row projects to budget 0 / used 0. Counters start at
-// zero at migration cutover and reset at the start of each month. See
-// CONTEXT.md and docs/adr/0020-two-tier-chatbot-approval.md.
+// on demand. When the current row is missing, the latest configured budget
+// carries forward while used credits reset to zero. Accounts without usage
+// history remain unconfigured. See CONTEXT.md and
+// docs/adr/0020-two-tier-chatbot-approval.md.
 model ChatAccountUsage {
   monthStart DateTime @db.Date // first calendar day of the month (Europe/Zurich)
 
