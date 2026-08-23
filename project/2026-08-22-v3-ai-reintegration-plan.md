@@ -274,6 +274,10 @@ Repository checks green: typecheck 27/27, formatting clean, chat 529/529 — inc
 
 The A6 check inherited from the first half — "assistant up, MCP tools withdrawn" — no longer exists as a state and is dropped.
 
+Verified in the browser against the seeded database in the `feat-v3-ai-reintegration` workspace. The admin panel lists only the seeded lecturer under AI features; enabling and then disabling a second account moved that account in and out of the table with the matching confirmations. With the flag forced on, the entitled lecturer saw the launcher and its panel rendered the embedded assistant. Withdrawing the lecturer's own entitlement removed the launcher on reload and left chat's `/manage` without the assistant — though that page showed a "Chatbot not found" card rather than the framework's not-found page, so the negative path is confirmed as closed but its exact rendering is worth pinning down on staging. Delegated login is broken in this workspace for unrelated reasons (`apps/auth` answers every `/api/auth/*` route with 404), so the session was established by minting a token against the committed dev secret.
+
+Committed as `feat(flags): collapse the assistant flags into one beta flag plus an account entitlement`.
+
 ### Still open
 
 The four `NEXT_PUBLIC_GROWTHBOOK_*` repository variables do not exist yet — `gh variable list` returns none. Everything else in A0 needs the GrowthBook interface over Tailscale. The ordering constraint stands: the variables must be set before the release images are built, or the images carry no SDK connection and the flags cannot be turned on without a rebuild.
