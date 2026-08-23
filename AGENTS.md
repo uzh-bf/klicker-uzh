@@ -269,6 +269,20 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 
 <!-- devrouter -->
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in ClickUp, reached through the `clickup_*` MCP tools; GitHub Issues are not used. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles keep their default names and are applied as ClickUp tags. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one shared `CONTEXT.md` at the root plus `docs/adr/`, with no context map. See `docs/agents/domain.md`.
+
 ## devrouter
 
 This repository uses [devrouter](https://github.com/rschlaefli/devrouter) for local dev routing.

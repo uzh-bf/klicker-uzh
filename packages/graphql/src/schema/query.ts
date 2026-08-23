@@ -13,6 +13,7 @@ import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -87,6 +88,7 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
+import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -971,6 +973,35 @@ export const Query = builder.queryType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
+      }),
+
+      assessmentParticipantInvitations: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentParticipantInvitationPage,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          numEntries: t.arg.int({
+            required: false,
+            validate: {
+              min: 1,
+              max: ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_PAGE_SIZE,
+            },
+          }),
+          offset: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await ParticipantInvitationService.getAssessmentParticipantInvitationPage(
+              args,
+              ctx
+            )
           }
         ),
       }),

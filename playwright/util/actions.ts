@@ -32,7 +32,9 @@ async function findVisibleByTestId(
 
 function openMenuItemByTestId(page: Page, testId: string) {
   return page
-    .locator('[data-slot="dropdown-menu-content"][data-state="open"]')
+    .locator(
+      '[data-slot="dropdown-menu-content"][data-state="open"], [data-slot="menubar-content"][data-state="open"]'
+    )
     .getByTestId(testId)
     .first()
 }
