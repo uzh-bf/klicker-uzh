@@ -118,24 +118,21 @@ test('forwards the exact raw webhook body and headers', async () => {
     return { statusCode: 202, body: { accepted: true } }
   }) as typeof handleKBIngestionWebhook
 
-  await withRoutes(
-    routeDependencies({ ingestionWebhook }),
-    async (origin) => {
-      const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Ingestion-Event-Id': RESOURCE_ID,
-        },
-        body: rawBody,
-      })
+  await withRoutes(routeDependencies({ ingestionWebhook }), async (origin) => {
+    const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Ingestion-Event-Id': RESOURCE_ID,
+      },
+      body: rawBody,
+    })
 
-      assert.equal(response.status, 202)
-      assert.deepEqual(await response.json(), { accepted: true })
-      assert.deepEqual(observedBody, rawBody)
-      assert.equal(observedHeader, RESOURCE_ID)
-    }
-  )
+    assert.equal(response.status, 202)
+    assert.deepEqual(await response.json(), { accepted: true })
+    assert.deepEqual(observedBody, rawBody)
+    assert.equal(observedHeader, RESOURCE_ID)
+  })
 })
 
 test('rejects a webhook without an application/json raw body', async () => {
@@ -145,20 +142,17 @@ test('rejects a webhook without an application/json raw body', async () => {
     throw new Error('unexpected')
   }) as typeof handleKBIngestionWebhook
 
-  await withRoutes(
-    routeDependencies({ ingestionWebhook }),
-    async (origin) => {
-      const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: '{}',
-      })
+  await withRoutes(routeDependencies({ ingestionWebhook }), async (origin) => {
+    const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: '{}',
+    })
 
-      assert.equal(response.status, 400)
-      assert.deepEqual(await response.json(), { error: 'Invalid request' })
-      assert.equal(called, false)
-    }
-  )
+    assert.equal(response.status, 400)
+    assert.deepEqual(await response.json(), { error: 'Invalid request' })
+    assert.equal(called, false)
+  })
 })
 
 test('returns a generic error when webhook handling throws', async () => {
@@ -166,19 +160,16 @@ test('returns a generic error when webhook handling throws', async () => {
     throw new Error('sensitive webhook detail')
   }) as typeof handleKBIngestionWebhook
 
-  await withRoutes(
-    routeDependencies({ ingestionWebhook }),
-    async (origin) => {
-      const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      })
+  await withRoutes(routeDependencies({ ingestionWebhook }), async (origin) => {
+    const response = await fetch(`${origin}/api/webhooks/kb-ingestion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
 
-      assert.equal(response.status, 500)
-      assert.deepEqual(await response.json(), {
-        error: 'Internal server error',
-      })
-    }
-  )
+    assert.equal(response.status, 500)
+    assert.deepEqual(await response.json(), {
+      error: 'Internal server error',
+    })
+  })
 })
