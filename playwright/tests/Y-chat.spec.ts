@@ -2462,6 +2462,8 @@ test.describe('Chatbot Source Citations', () => {
   test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 600, height: 1200 })
+
     const messageId = '4a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
     const longAnswer = Array.from(
       { length: 40 },
@@ -2521,7 +2523,20 @@ test.describe('Chatbot Source Citations', () => {
     ).toBeVisible()
     await citation.click()
 
-    await expect(source).toBeInViewport()
+    await expect
+      .poll(async () => {
+        const [sourceBox, composerBox] = await Promise.all([
+          source.boundingBox(),
+          page.getByTestId('chat-composer').boundingBox(),
+        ])
+
+        if (!sourceBox || !composerBox) return false
+
+        return (
+          sourceBox.y >= 0 && sourceBox.y + sourceBox.height <= composerBox.y
+        )
+      })
+      .toBe(true)
     expect(page.url()).toBe(urlBefore)
     expect(await page.evaluate(() => window.location.hash)).toBe(hashBefore)
   })
