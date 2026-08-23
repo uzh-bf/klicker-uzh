@@ -140,6 +140,7 @@ and is enforced field-by-field in the API layer.
   results. Editing the source element bumps that element's version and flags
   the instance as outdated; it never rewrites what participants already saw or
   answered.
+
 ## Chatbot usage
 
 These terms define the language for lecturer authorization, model usage, and
