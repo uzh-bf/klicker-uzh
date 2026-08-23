@@ -330,6 +330,20 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   two chat files onto different shards under the checked-in timings. Commit
   6f6f65ae1 passed the full pre-commit suite (gitleaks, check:all) and is
   running as exact-head CI run 32616086751. Merge remains withheld.
+- 2026-08-23 — Exact-head run 32616239256 on final head f19723a77: every
+  non-Playwright workflow passes (format, lint, syncpack, gitleaks, knip,
+  CodeQL, SonarCloud, typecheck, chat Docker build, all package tests).
+  Attempt 1 Playwright: six shards green; shard 7 fails only the two install-
+  sheet dictation tests and shard 5 shows the known crash cascade. The failed-
+  shard rerun (attempt 2) reproduced both signatures: shard 5 again about 154
+  `page.goto: Page crashed` failures confined to Y-chat plus one KPRIM retry
+  that passes on its own attempt, while shard 7's two failures have traces
+  proving the install click landed during a roughly 10-second renderer freeze
+  with full recovery afterward — the same CI-load stall family. The sheet-open
+  snapshot in the error context shows the modal rendered correctly, so no new
+  product defect is indicated; per the one-rerun discipline no third run was
+  attempted. PR description updated with this evidence and review focus.
+  Merge remains withheld.
 
 ## Pause and finish boundary
 
