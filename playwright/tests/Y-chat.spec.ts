@@ -2462,6 +2462,12 @@ test.describe('Chatbot Source Citations', () => {
   test('Clicking a citation scrolls to its source without navigating or changing the URL hash', async ({
     page,
   }) => {
+    const messageId = '4a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
+    const longAnswer = Array.from(
+      { length: 40 },
+      (_, index) => `Supporting context line ${index + 1}.`
+    ).join('\n\n')
+
     await seedThread(participantId, {
       title: 'Citation click',
       messages: [
@@ -2470,6 +2476,7 @@ test.describe('Chatbot Source Citations', () => {
           content: [{ type: 'text', text: 'Explain the concept' }],
         },
         {
+          id: messageId,
           role: 'assistant',
           content: [
             docQueryPart({
@@ -2483,7 +2490,7 @@ test.describe('Chatbot Source Citations', () => {
                 },
               ],
             }),
-            { type: 'text', text: 'As shown in [1].' },
+            { type: 'text', text: `As shown in [1].\n\n${longAnswer}` },
           ],
         },
       ],
@@ -2494,13 +2501,24 @@ test.describe('Chatbot Source Citations', () => {
     // before the baseline is taken, or the citation click gets blamed for a
     // URL change the router had already queued.
     await expect(page).toHaveURL(/\/threads\//)
-    await expect(page.getByTestId('chat-citation')).toBeVisible()
+    const citation = page.getByTestId('chat-citation')
+    const source = page.locator(`#src-${messageId}-1`)
+    await expect(citation).toBeVisible()
+    await expect(source).toBeVisible()
+
+    // Put the citation in view while its distant source card remains below
+    // the viewport. This makes the assertion red-capable when the click does
+    // not actually scroll, instead of only checking that the URL stayed put.
+    await citation.scrollIntoViewIfNeeded()
+    await expect(citation).toBeInViewport()
+    await expect(source).not.toBeInViewport()
 
     const urlBefore = page.url()
     const hashBefore = await page.evaluate(() => window.location.hash)
 
-    await page.getByTestId('chat-citation').click()
+    await citation.click()
 
+    await expect(source).toBeInViewport()
     expect(page.url()).toBe(urlBefore)
     expect(await page.evaluate(() => window.location.hash)).toBe(hashBefore)
   })
@@ -2693,6 +2711,15 @@ test.describe('Chatbot Source Citations', () => {
     await expect(citations.nth(1)).toHaveAccessibleName(
       'Source 2: Live Beta.pdf'
     )
+
+    const firstSource = page.getByTestId('chat-source-card').first()
+    await citations.nth(0).scrollIntoViewIfNeeded()
+    await expect(citations.nth(0)).toBeInViewport()
+    await expect(firstSource).not.toBeInViewport()
+
+    await citations.nth(0).click()
+
+    await expect(firstSource).toBeInViewport()
   })
 
   test('Composer hint is visible in standalone mode and hidden when embedded', async ({
