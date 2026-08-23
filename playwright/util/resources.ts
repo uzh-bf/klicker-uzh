@@ -5,7 +5,7 @@ import path from 'node:path'
  * Values-free CI diagnostics: samples cgroup memory/PID usage and kernel
  * pressure metrics during a shard run so a renderer crash can be attributed
  * to resource exhaustion instead of being guessed at from test failures.
- * Samples contain counters only — never request bodies or user content.
+ * Samples contain counters only - never request bodies or user content.
  */
 
 const SAMPLE_INTERVAL_MS = 15_000
@@ -34,12 +34,46 @@ function readMemInfoKb(key: string): number | null {
   return match ? parseInt(match[1], 10) : null
 }
 
+// Root-level memory.events is often unreadable inside the CI job container,
+// while scoped cgroups that own the browser processes remain readable. Probe
+// a small static list so an OOM kill by a scoped limit cannot stay invisible.
+const MEMORY_EVENTS_PATHS = [
+  '/sys/fs/cgroup/memory.events',
+  '/sys/fs/cgroup/init.scope/memory.events',
+  '/sys/fs/cgroup/system.slice/memory.events',
+]
+
+interface MemoryEventsSample {
+  path: string
+  oom: number | null
+  oomKill: number | null
+}
+
+function readMemoryEvents(): MemoryEventsSample[] {
+  const results: MemoryEventsSample[] = []
+  for (const filePath of MEMORY_EVENTS_PATHS) {
+    const contents = readFileOrNull(filePath)
+    if (contents === null) continue
+    results.push({
+      path: filePath,
+      oom: extractCounter(contents, 'oom'),
+      oomKill: extractCounter(contents, 'oom_kill'),
+    })
+  }
+  return results
+}
+
+function extractCounter(contents: string, key: string): number | null {
+  const pattern = new RegExp('^' + key + ' (\\d+)$', 'm')
+  const value = contents.match(pattern)?.[1]
+  return value === undefined ? null : parseInt(value, 10)
+}
+
 function sampleOnce() {
   const memoryCurrentKb = readCount('/sys/fs/cgroup/memory.current')
   const memoryMaxKb = readCount('/sys/fs/cgroup/memory.max')
   const pidsCurrent = readCount('/sys/fs/cgroup/pids.current')
   const pidsMax = readCount('/sys/fs/cgroup/pids.max')
-  const memoryEvents = readFileOrNull('/sys/fs/cgroup/memory.events')
   const psiSummary = ['cpu', 'memory', 'io'].map((resource) => {
     const line = readFileOrNull('/proc/pressure/' + resource)
     const some = line?.match(/^some .*avg10=([\d.]+)/)?.[1]
@@ -54,9 +88,7 @@ function sampleOnce() {
       memoryMaxKb === null || memoryMaxKb > 4_000_000
         ? null
         : Math.round(memoryMaxKb / 1024),
-    cgroupMemoryEventsOom: memoryEvents?.match(/oom (\\d+)/)?.[1] ?? null,
-    cgroupMemoryEventsOomKill:
-      memoryEvents?.match(/oom_kill (\\d+)/)?.[1] ?? null,
+    cgroupMemoryEvents: readMemoryEvents(),
     cgroupPidsCurrent: pidsCurrent,
     cgroupPidsMax: pidsMax && pidsMax < 1_000_000 ? pidsMax : null,
     hostMemAvailableMb: (() => {

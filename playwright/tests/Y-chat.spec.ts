@@ -34,6 +34,11 @@ const MALFORMED_CHATBOT_ID = 'not-a-chatbot-id'
  */
 
 async function visitChat(page: Page) {
+  // Timestamped crash markers let the CI log be correlated with the resource
+  // sampler timeline (test-results/resource-samples.jsonl) after a run.
+  page.on('crash', () => {
+    console.log('[pw-crash]', new Date().toISOString())
+  })
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })

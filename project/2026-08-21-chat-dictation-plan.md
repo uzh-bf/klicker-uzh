@@ -381,6 +381,35 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   191 passed). The PR body now cites the true tip; no further commits are
   planned, so no further CI round is triggered. Merge remains withheld.
 
+- 2026-08-23 — Investigation with a dedicated Sol planning pass proved the
+  shard-7 failures were a deterministic test-selector defect, not a CI-load
+  stall: DictationSheet passed its cy id via the Modal `data` prop without a
+  trigger element, so the design system never rendered `chat-dictation-sheet`
+  in the DOM, and both failing tests assert exactly that missing id. Six of
+  six local repetitions failed at tip 47862e506 before the fix, disproving
+  the earlier passes-locally claim. Commit afc5fcd24 moves the id to
+  `dataContent`; the full dictation spec then passed 12 of 12 locally and
+  shard 7 passed for the first time across seven recorded runs on exact-head
+  CI run 32639066328.
+- 2026-08-23 — Crash observability slice landed as 83cef5faa: visitChat now
+  rethrows renderer-crash errors instead of masking them behind recovery
+  navigation, and a values-free resource sampler writes cgroup memory/PID,
+  PSI pressure, load average, and MemAvailable counters to
+  test-results/resource-samples.jsonl on every shard. Run 32639066328
+  evidence: shard 5 repeated the crash family (78 failed / 60 passed) with
+  no host-memory pressure (minimum 9.9 GB available, load at most 3.8 on
+  four cores, memory PSI at most 0.2); two distinct crash events each freed
+  roughly 300-410 MB of cgroup memory exactly at their failure timestamps;
+  the root cgroup memory.events file was unreadable, so a container-scoped
+  OOM kill remains possible alongside the Chromium renderer fault hypothesis.
+  Shard 8 failed one MA-elements-operations test whose retry hit a strict-
+  mode duplicate-element violation created by its own timed-out attempt -
+  the same self-polluting overload family recorded once before on be25e7fbe,
+  unrelated to this branch's changes. A follow-up telemetry commit adds
+  multi-path memory.events probing and timestamped pw-crash markers so the
+  next round can separate the two remaining hypotheses. Merge remains
+  withheld.
+
 ## Pause and finish boundary
 
 - Stop if W0 evidence is reinterpreted as positive support, if a recogniser path
