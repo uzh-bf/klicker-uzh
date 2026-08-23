@@ -317,6 +317,19 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   the renderer is dead. The recovery now performs a full `goto` instead of
   `reload`; Playwright can navigate to a crashed page but cannot reload it.
   Chat-side checks stay green locally. Merge remains withheld.
+- 2026-08-23 — Trace/video analysis of run 32609248151 plus a local
+  production-mode reproduction identified the recurring shard-5 crash as
+  per-shard browser overload rather than an infrastructure OOM problem: the
+  whole Y-chat spec (about 96 tests after this branch) ran serially in one
+  Playwright worker/browser, and the added dictation tests pushed that worker
+  past a renderer-stability edge. The same test passes locally in 3 seconds
+  against a production-mode chat build, and the trace shows no app API call
+  before the renderer dies during recovery navigation. Fix: split the
+  dictation describe block and its helpers into
+  `playwright/tests/Y-chat-dictation.spec.ts` so the shard balancer packs the
+  two chat files onto different shards under the checked-in timings. Commit
+  6f6f65ae1 passed the full pre-commit suite (gitleaks, check:all) and is
+  running as exact-head CI run 32616086751. Merge remains withheld.
 
 ## Pause and finish boundary
 
