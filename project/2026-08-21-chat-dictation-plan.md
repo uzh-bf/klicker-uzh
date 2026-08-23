@@ -475,6 +475,18 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   navigator.webdriver is true and reports unsupported, so automation
   never touches the fatal path while real browsers keep the eager probe.
   Exact-head green proof is pending on the next CI round.
+- 2026-08-23 — The first guard variant (19632b3e6, run 32657991927) still
+  failed shard 5 with the identical crash cascade, disproving its
+  method-presence heuristic: the native headless interface does expose a
+  static available() method, so !constructor.available never held. A
+  parallel slice review (simplifier accept; slice-reviewer
+  done-with-concerns, privacy/accessibility/architecture pass) had flagged
+  exactly this failure mode as P2 and recommended an explicit polyfill
+  signal. Refinement a9658f702 keys the automation exemption to the
+  window.__dictationFake marker the E2E polyfill installs before app code,
+  so any browser-provided constructor under webdriver is skipped
+  regardless of its method surface while fake-based E2E states remain
+  exercised. Marker-head CI run 32660080016 is the exact-head verdict.
 
 ## Pause and finish boundary
 
