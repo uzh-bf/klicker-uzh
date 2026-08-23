@@ -7,11 +7,11 @@ export async function register() {
   }
 
   const { LangfuseSpanProcessor } = await import('@langfuse/otel')
-  const { NodeTracerProvider } = await import('@opentelemetry/sdk-trace-node')
+  const { NodeSDK } = await import('@opentelemetry/sdk-node')
 
-  const langfuseSpanProcessor = new LangfuseSpanProcessor()
+  const sdk = new NodeSDK({
+    spanProcessors: [new LangfuseSpanProcessor()],
+  })
 
-  const tracerProvider = new NodeTracerProvider()
-  tracerProvider.addSpanProcessor(langfuseSpanProcessor)
-  tracerProvider.register()
+  sdk.start()
 }

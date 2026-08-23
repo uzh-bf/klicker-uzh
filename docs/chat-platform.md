@@ -526,7 +526,7 @@ Ratings are currently **write-only**: nothing in the repository reads them back.
 
 PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
 
-> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. Rating-score mirroring is disabled until the OTel major bump lands.
+> **Version contract (repaired 2026-08):** `apps/chat` registers the Langfuse exporter through `@opentelemetry/sdk-node@0.202.0`, whose bundled `sdk-trace-base` 2.x satisfies the `@langfuse/otel` peer requirement. Do not downgrade to the standalone `sdk-trace-node@1.x` setup — span export throws again and no trace reaches Langfuse. The synthetic-trace proof (product span, terminal outcome, deletion selectors, no credential-shaped canary) is tracked by the provider-credential plan's OBS acceptance check; rating-score mirroring stays disabled until that delivery lifecycle exists.
 
 ## Client-state gotchas
 
