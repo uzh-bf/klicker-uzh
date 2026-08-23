@@ -85,6 +85,7 @@ export function KnowledgeGraphDetails({
           </div>
           <button
             type="button"
+            data-cy="knowledge-graph-close"
             aria-label={labels.closeAriaLabel}
             onClick={onClose}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E9E9E9] bg-white text-xl text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"

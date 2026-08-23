@@ -639,6 +639,7 @@ export function KnowledgeGraphViewer({
             />
             <button
               type="submit"
+              data-cy="knowledge-graph-search-submit"
               disabled={isSearching || searchQuery.trim().length === 0}
               className="min-h-11 rounded-full border border-[#0028A5] bg-[#0028A5] px-5 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -823,6 +824,7 @@ export function KnowledgeGraphViewer({
                   <li key={node.id}>
                     <button
                       type="button"
+                      data-cy="knowledge-graph-search-result"
                       onClick={() => focusNode(node.id)}
                       className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
                     >
@@ -856,6 +858,7 @@ export function KnowledgeGraphViewer({
                   <li key={node.id}>
                     <button
                       type="button"
+                      data-cy="knowledge-graph-loaded-node"
                       aria-pressed={state.selectedNodeId === node.id}
                       onClick={() => focusNode(node.id)}
                       className="min-h-11 w-full rounded px-3 py-2 text-left text-sm text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] aria-pressed:bg-[#F5F5FB] aria-pressed:text-[#0028A5]"
@@ -890,6 +893,7 @@ export function KnowledgeGraphViewer({
                   <li key={edge.id}>
                     <button
                       type="button"
+                      data-cy="knowledge-graph-loaded-relationship"
                       aria-label={labels.selectRelationshipAriaLabel(
                         source,
                         target,
