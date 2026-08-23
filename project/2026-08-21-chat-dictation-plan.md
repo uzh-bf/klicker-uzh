@@ -364,6 +364,15 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   rerun. The PR description now carries the complete four-run evidence table.
   Merge remains withheld.
 
+- 2026-08-23 — Final-head run on 240bd4110 (32623660071) confirms the stable
+  signature across a fifth independent run: every non-Playwright workflow
+  passes on this exact head, shards 1-4 and 6-8 pass, shard 5 repeats the
+  Y-chat crash cascade (78 failed / 61 passed, all `page.goto: Page crashed`),
+  and shard 7 repeats only the two install-sheet dictation tests at lines 269
+  and 440 (2 failed / 191 passed, both retries fail identically, no crashes).
+  The PR description carries this fifth-run evidence and corrects the
+  final-head label from be25e7fbe to 240bd4110. Merge remains withheld.
+
 ## Pause and finish boundary
 
 - Stop if W0 evidence is reinterpreted as positive support, if a recogniser path
