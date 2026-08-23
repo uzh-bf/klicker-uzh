@@ -93,10 +93,15 @@ The authoritative current `v3` readback is `f58986faa8cfa4ff78d20a1ebeb166647334
 
 ## Final publication addendum (2026-08-23)
 
-- The final functional backend head is `0237a3363`, based on current `v3`
-  `de366d6f943b06f15354db8364cafefef94aa592`. The branch remains
-  mergeable without conflicts; the exact published head and CI run are read
-  back after the final push.
+- The final functional backend head is `0237a3363`, and the exact published
+  head is `2654bbf959b83391cddc7f3a20bc7b3eb57a062a`, based on current `v3`
+  `de366d6f943b06f15354db8364cafefef94aa592`. GitHub reports `MERGEABLE` with
+  no conflicts and `BLOCKED` only because the required code-owner approval is
+  absent.
+- Exact-head workflow `32606503311` completed successfully on the published
+  head. The generated merge ref
+  `584e62d2010e38def931f2027732f26b9485cd8e` has an identical tree, and 45
+  required PR checks are green.
 - The invitation import result no longer publishes unused `invitationId` or
   `participantId` fields. The operation, schema, persisted-query maps, and
   generated TypeScript artifacts were regenerated; the GraphQL typecheck and
