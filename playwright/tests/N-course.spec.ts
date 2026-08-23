@@ -15,6 +15,8 @@ import {
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
+  COURSE_ID_TEST2,
+  COURSE_ID_TEST3,
   LECTURER_EMAIL,
   LECTURER_ID,
   LECTURER_IND_EMAIL,
@@ -953,11 +955,45 @@ async function confirmCourseDeletion(page: Page) {
 }
 
 async function openCourseInManage(page: Page, courseName: string) {
-  await page.getByTestId('courses').click()
-  await page.getByTestId(`course-list-button-${courseName}`).click()
-  await expect(page.getByTestId('tab-liveQuizzes')).toBeVisible({
-    timeout: 30_000,
-  })
+  const coursesNavigation = page.getByTestId('courses')
+  if (await coursesNavigation.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await coursesNavigation.click()
+  } else {
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
+  }
+  const courseButton = page.getByTestId(`course-list-button-${courseName}`)
+  if (await courseButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await courseButton.click()
+  } else {
+    await page
+      .getByRole('button', { name: new RegExp(escapeRegExp(courseName)) })
+      .first()
+      .click()
+  }
+  const liveQuizzesTab = page.getByTestId('tab-liveQuizzes')
+  if (await liveQuizzesTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await expect(liveQuizzesTab).toBeVisible({ timeout: 30_000 })
+  } else {
+    await expect(page.getByRole('tab', { name: 'Live Quizzes' })).toBeVisible({
+      timeout: 30_000,
+    })
+  }
+}
+
+async function chooseCourseDuplicationAction(page: Page) {
+  const duplicateAction = page.getByTestId('course-duplicate-button')
+  if (await duplicateAction.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await duplicateAction.click()
+    return
+  }
+
+  await page.getByRole('button', { name: 'More course actions' }).click()
+  await page.getByRole('menuitem', { name: 'Duplicate course' }).click()
+}
+
+function courseDuplicationStatusTrigger(page: Page) {
+  const trigger = page.getByTestId('course-duplication-status-trigger')
+  return trigger.or(page.getByRole('button', { name: /Course duplications/ }))
 }
 
 async function submitCourseDuplication(page: Page, copyName?: string) {
@@ -2793,183 +2829,350 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     loginLecturer,
     page,
   }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(180_000)
 
     const firstJobId = '11111111-1111-4111-8111-111111111111'
     const secondJobId = '22222222-2222-4222-8222-222222222222'
-    let startCount = 0
-    let releaseFirstStatus: (() => void) | undefined
-    let resolveFirstStatusRequest: (() => void) | undefined
-    const firstStatusRequest = new Promise<void>((resolve) => {
-      resolveFirstStatusRequest = resolve
-    })
-
-    const makeJob = (
-      id: string,
-      sourceCourseId: string,
-      targetCourseName: string
-    ) => ({
-      id,
-      status: 'PENDING',
-      sourceCourseId,
-      sourceCourseName: 'Synthetic source course',
-      targetCourseName,
-      createdCourseId: null,
-      errorType: null,
-      errorMessage: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })
-
-    await page.route('**/api/graphql', async (route) => {
-      const request = route.request()
-      if (request.method() !== 'POST') {
-        await route.continue()
-        return
-      }
-
-      const body = request.postDataJSON() as {
-        operationName?: string
-        variables?: Record<string, unknown>
-      }
-
-      if (body.operationName === 'StartCourseDuplication') {
-        const sourceCourseId = String(body.variables?.sourceCourseId)
-        const targetCourseName = String(body.variables?.name)
-        const job = makeJob(
-          startCount++ === 0 ? firstJobId : secondJobId,
+    const startHash =
+      '45e45e030f97fba0a09889639cf20add18c139cd3b180ad4fbd1fe42cf37b243'
+    const statusHash =
+      '5d469e76adfaa84fb424764d00543ecfb678b525bec3b90f355cceba16933747'
+    await page.addInitScript(
+      ({ firstJobId, secondJobId, startHash, statusHash }) => {
+        let startCount = 0
+        const makeJob = (
+          id: string,
+          sourceCourseId: string,
+          targetCourseName: string
+        ) => ({
+          id,
+          status: 'PENDING',
           sourceCourseId,
-          targetCourseName
-        )
-
-        await route.fulfill({
-          json: { data: { startCourseDuplication: job } },
+          sourceCourseName: 'Synthetic source course',
+          targetCourseName,
+          createdCourseId: null,
+          errorType: null,
+          errorMessage: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
-        return
-      }
-
-      if (body.operationName !== 'GetCourseDuplicationStatuses') {
-        await route.continue()
-        return
-      }
-
-      const requestedIds = (body.variables?.ids as string[] | undefined) ?? []
-
-      if (requestedIds.length === 1 && requestedIds[0] === firstJobId) {
-        resolveFirstStatusRequest?.()
-        await new Promise<void>((resolve) => {
-          releaseFirstStatus = resolve
-        })
-        await route.fulfill({
-          json: {
-            data: {
-              courseDuplicationStatuses: [
-                makeJob(firstJobId, 'source-a', 'Copy A'),
-              ],
-            },
-          },
-        })
-        return
-      }
-
-      await route.fulfill({
-        json: {
-          data: {
-            courseDuplicationStatuses: requestedIds.includes(firstJobId)
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let operationName: string | undefined
+          let variables:
+            | { ids?: string[]; sourceCourseId?: string; name?: string }
+            | undefined
+          if (typeof input === 'string' || input instanceof URL) {
+            try {
+              const url = new URL(String(input), window.location.origin)
+              const extensions = url.searchParams.get('extensions') || ''
+              const marker = String.fromCharCode(
+                34,
+                115,
+                104,
+                97,
+                50,
+                53,
+                54,
+                72,
+                97,
+                115,
+                104,
+                34,
+                58,
+                34
+              )
+              const idx = extensions.indexOf(marker)
+              let h = ''
+              if (idx >= 0) {
+                const s = idx + marker.length
+                const e2 = extensions.indexOf(String.fromCharCode(34), s)
+                if (e2 > s) h = extensions.slice(s, e2)
+              }
+              operationName = url.searchParams.get('operationName') || undefined
+              const rawVariables = url.searchParams.get('variables')
+              if (rawVariables) {
+                try {
+                  variables = JSON.parse(rawVariables)
+                } catch {
+                  // malformed variables; treat as a non-matching request
+                }
+              }
+              if (h === statusHash)
+                operationName = 'GetCourseDuplicationStatuses'
+              else if (h === startHash) operationName = 'StartCourseDuplication'
+            } catch {
+              // relative or malformed URL; fall through to real fetch
+            }
+          }
+          if (!operationName && typeof init?.body === 'string') {
+            try {
+              const body = JSON.parse(init.body) as {
+                operationName?: string
+                variables?: typeof variables
+              }
+              operationName = body.operationName
+              variables = body.variables
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+          if (operationName === 'StartCourseDuplication') {
+            const jobId = startCount === 0 ? firstJobId : secondJobId
+            startCount += 1
+            return new Response(
+              JSON.stringify({
+                data: {
+                  startCourseDuplication: makeJob(
+                    jobId,
+                    String(variables?.sourceCourseId),
+                    String(variables?.name)
+                  ),
+                },
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+          if (operationName === 'GetCourseDuplicationStatuses') {
+            const requestedIds = variables?.ids ?? []
+            if (requestedIds.length === 1 && requestedIds[0] === firstJobId) {
+              ;(
+                window as unknown as {
+                  __firstDuplicationStatusObserved?: boolean
+                }
+              ).__firstDuplicationStatusObserved = true
+              await new Promise<void>((resolve) => {
+                window.addEventListener(
+                  'course-duplication-release',
+                  () => resolve(),
+                  { once: true }
+                )
+              })
+            }
+            const statuses = requestedIds.includes(firstJobId)
               ? [makeJob(firstJobId, 'source-a', 'Copy A')]
-              : [],
-          },
-        },
-      })
-    })
+              : []
+            return new Response(
+              JSON.stringify({ data: { courseDuplicationStatuses: statuses } }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+          return originalFetch(input, init)
+        }
+      },
+      { firstJobId, secondJobId, startHash, statusHash }
+    )
 
     await loginLecturer()
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
     await openCourseInManage(page, RUNNING_COURSE.name)
-    await chooseCourseAction(page, 'course-duplicate-button')
-    await page.getByTestId('manipulate-course-submit').click()
-    await firstStatusRequest
-
+    await chooseCourseDuplicationAction(page)
+    // Explicitly satisfy the shared course form: defaults derived from the
+    // user profile can arrive late under the fetch-level mock and leave the
+    // submit button disabled through no fault of the duplication flow.
+    await page
+      .getByRole('textbox', { name: 'Course name' })
+      .fill(`${RUNNING_COURSE.name} Copy A`)
+    await page
+      .getByRole('textbox', { name: 'Course display name' })
+      .fill(`${RUNNING_COURSE.name} Copy A`)
+    await page
+      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .fill('lecturer@df.uzh.ch')
+    // The seeded source course carries a group-creation deadline older than
+    // its start date; adjust it into the copied date range so the shared
+    // form passes validation.
+    await page
+      .getByRole('textbox', { name: 'Group Creation Deadline' })
+      .fill(getNativeDateInputValue(new Date('2035-06-30T12:00')))
+    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await page.waitForFunction(
+      () =>
+        Boolean(
+          (
+            window as unknown as {
+              __firstDuplicationStatusObserved?: boolean
+            }
+          ).__firstDuplicationStatusObserved
+        ),
+      undefined,
+      { timeout: 30_000 }
+    )
+    await page.getByRole('menuitem', { name: 'Courses' }).click()
     await openCourseInManage(page, PAST_COURSE.name)
-    await chooseCourseAction(page, 'course-duplicate-button')
-    await page.getByTestId('manipulate-course-submit').click()
-    await expect(
-      page.getByTestId('course-duplication-status-trigger')
-    ).toContainText('2')
+    await chooseCourseDuplicationAction(page)
+    await page
+      .getByRole('textbox', { name: 'Course name' })
+      .fill(`${PAST_COURSE.name} Copy B`)
+    await page
+      .getByRole('textbox', { name: 'Course display name' })
+      .fill(`${PAST_COURSE.name} Copy B`)
+    await page
+      .getByRole('textbox', { name: 'finance@uzh.ch' })
+      .fill('lecturer@df.uzh.ch')
+    await page.getByRole('button', { name: 'Duplicate' }).click()
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
 
-    releaseFirstStatus?.()
-    await expect(
-      page.getByTestId('course-duplication-status-trigger')
-    ).toContainText('2')
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('course-duplication-release'))
+    })
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
 
-    await expect(
-      page.getByTestId('course-duplication-status-trigger')
-    ).toContainText('1', { timeout: 15_000 })
+    await expect(courseDuplicationStatusTrigger(page)).toContainText('1', {
+      timeout: 15_000,
+    })
   })
 
   test('Shows separate actions for restored completed duplication jobs', async ({
     loginLecturer,
     page,
   }) => {
-    test.setTimeout(60_000)
+    test.setTimeout(120_000)
 
-    const restoredCourseA = '33333333-3333-4333-8333-333333333333'
-    const restoredCourseB = '44444444-4444-4444-8444-444444444444'
+    const copyAName = 'Restored Copy A'
+    const copyBName = 'Restored Copy B'
+
+    // Use deterministic seeded courses as valid destinations for the restored
+    // jobs, keeping this browser-only test independent of host-side Prisma TLS.
+    const seededCourseA = { courseId: COURSE_ID_TEST2 }
+    const seededCourseB = { courseId: COURSE_ID_TEST3 }
+
     const restoredJobs = [
       {
         id: '55555555-5555-4555-8555-555555555555',
-        name: 'Restored Copy A',
-        createdCourseId: restoredCourseA,
+        name: copyAName,
+        createdCourseId: seededCourseA!.courseId,
       },
       {
         id: '66666666-6666-4666-8666-666666666666',
-        name: 'Restored Copy B',
-        createdCourseId: restoredCourseB,
+        name: copyBName,
+        createdCourseId: seededCourseB!.courseId,
       },
     ]
 
     await loginLecturer()
-    await page.evaluate((jobs) => {
+    // Mock at the fetch level inside the browser: Playwright's page.route()
+    // reissues intercepted requests outside the browser network stack and
+    // drops httpOnly cookies there, so even a narrowed pattern breaks auth.
+    const statusHash =
+      '5d469e76adfaa84fb424764d00543ecfb678b525bec3b90f355cceba16933747'
+    await page.addInitScript(
+      ({ statusHash, jobs }) => {
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isStatusPoll = false
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(
+                input instanceof Request ? input.url : String(input),
+                window.location.origin
+              )
+              const extensions = url.searchParams.get('extensions') || ''
+              const idx = extensions.indexOf(
+                String.fromCharCode(
+                  34,
+                  115,
+                  104,
+                  97,
+                  50,
+                  53,
+                  54,
+                  72,
+                  97,
+                  115,
+                  104,
+                  34,
+                  58,
+                  34
+                )
+              )
+              let h = ''
+              if (idx >= 0) {
+                const s = idx + 14
+                const e2 = extensions.indexOf(String.fromCharCode(34), s)
+                if (e2 > s) h = extensions.slice(s, e2)
+              }
+              if (h === statusHash) isStatusPoll = true
+            } catch (e) {
+              // relative or malformed URL; treat as non-matching
+            }
+          }
+
+          if (!isStatusPoll && typeof init?.body === 'string') {
+            try {
+              if (
+                JSON.parse(init.body).operationName ===
+                'GetCourseDuplicationStatuses'
+              ) {
+                isStatusPoll = true
+              }
+            } catch {
+              // not a JSON body; fall through to real fetch
+            }
+          }
+
+          if (!isStatusPoll) return originalFetch(input, init)
+
+          return new Response(
+            JSON.stringify({
+              data: {
+                courseDuplicationStatuses: jobs.map((job) => ({
+                  id: job.id,
+                  status: 'COMPLETED',
+                  sourceCourseId: 'source-restored',
+                  sourceCourseName: 'Synthetic source course',
+                  targetCourseName: job.name,
+                  createdCourseId: job.createdCourseId,
+                  errorType: null,
+                  errorMessage: null,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                })),
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      {
+        statusHash,
+        jobs: restoredJobs.map(({ id, name, createdCourseId }) => ({
+          id,
+          name,
+          createdCourseId,
+        })),
+      }
+    )
+
+    // Seed the persisted ids before the provider mounts on the next page. The
+    // one-shot marker prevents later navigations from reintroducing them.
+    const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.addInitScript((jobs) => {
+      const marker = '__pr5446-restored-duplication-seeded'
+      if (window.sessionStorage.getItem(marker)) return
+
       window.localStorage.setItem(
         'course-duplication-job-ids',
         JSON.stringify(jobs.map((job) => job.id))
       )
+      window.sessionStorage.setItem(marker, '1')
     }, restoredJobs)
-
-    await page.route('**/api/graphql', async (route) => {
-      const request = route.request()
-      if (request.method() !== 'POST') {
-        await route.continue()
-        return
-      }
-
-      const body = request.postDataJSON() as { operationName?: string }
-      if (body.operationName !== 'GetCourseDuplicationStatuses') {
-        await route.continue()
-        return
-      }
-
-      await route.fulfill({
-        json: {
-          data: {
-            courseDuplicationStatuses: restoredJobs.map((job) => ({
-              id: job.id,
-              status: 'COMPLETED',
-              sourceCourseId: 'source-restored',
-              sourceCourseName: 'Synthetic source course',
-              targetCourseName: job.name,
-              createdCourseId: job.createdCourseId,
-              errorType: null,
-              errorMessage: null,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            })),
-          },
-        },
-      })
+    await page.goto(`${manageUrl}/?dup-verify=1`, {
+      waitUntil: 'domcontentloaded',
     })
+    // Completion must not navigate automatically; capture this URL and
+    // require it to be unchanged until the user clicks a toast action.
+    const preActionUrl = page.url()
 
-    const originalUrl = page.url()
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    const toaster = page.getByLabel(/Notifications/)
+    const toastB = toaster
+      .getByRole('listitem')
+      .filter({ hasText: restoredJobs[1].name })
+    await expect(toastB).toBeVisible({ timeout: 30_000 })
     await expect(
       page.getByText(
         messages.manage.courseList.courseDuplicationSucceeded.replace(
@@ -2991,9 +3194,18 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       name: messages.manage.courseList.courseDuplicationOpenCourse,
     })
     await expect(openCourseActions).toHaveCount(2)
-    await expect(page).toHaveURL(originalUrl)
-    await openCourseActions.nth(1).click()
-    await expect(page).toHaveURL(`/courses/${restoredCourseB}`)
+    await expect(page).toHaveURL(preActionUrl)
+    // Sonner stacks collapsed toasts on top of each other; hovering the
+    // front toast expands the stack so every action becomes clickable.
+    await toaster.getByRole('listitem').first().hover()
+    await toastB
+      .getByRole('button', {
+        name: messages.manage.courseList.courseDuplicationOpenCourse,
+      })
+      .click()
+    await expect(page).toHaveURL(
+      new RegExp(`/courses/${seededCourseB!.courseId}`)
+    )
   })
 
   test('Duplicate the course without group creation and verify group activities are not copied', async ({

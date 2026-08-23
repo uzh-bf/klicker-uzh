@@ -412,3 +412,14 @@ above where it is more specific.
 - 2026-08-22: S6 is now in progress. The provider will use a captured request
   ID set for each status promise and keep completion navigation inside the
   localized toast action only.
+- 2026-08-22: S6 is implemented and reviewed through `383bee05e`. The serial
+  polling loop retains request-set pairing across concurrent job additions,
+  ignores undefined responses instead of pruning jobs, and stops idle timers.
+  Completion toasts now expose the localized 30-second action without routing
+  automatically. S7 is in progress with the focused Playwright cases, alias
+  cleanup, and wiki updates.
+- 2026-08-23: S7 browser verification passes for concurrent status pairing and
+  restored completed-job actions (`2 passed`, 29.9 seconds). The linked
+  manage route serves the dynamic course detail page with HTTP 200 after its
+  stale Next.js development cache was refreshed. The retained DevPod remains
+  running for manual verification.
