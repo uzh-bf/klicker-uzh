@@ -13,7 +13,8 @@
 //     KLICKER_SELECTED_MODEL=<model-id> MAX_TURNS=2 \
 //     KLICKER_ALLOW_SIDE_EFFECTS=true k6 run util/load-test/chatbot-turn.js
 //   Normal login (credentials should come from the runtime secret store):
-//     KLICKER_API_URL=https://api.klicker.stg.df-app.ch \
+//     KLICKER_BASE_URL=https://chat.klicker.stg.df-app.ch \
+//       KLICKER_API_URL=https://api.klicker.stg.df-app.ch \
 //       KLICKER_PARTICIPANT_USERNAME_OR_EMAIL=<account> \
 //       KLICKER_PARTICIPANT_PASSWORD=<password> KLICKER_ALLOW_LOGIN=true \
 //       KLICKER_ALLOW_SIDE_EFFECTS=true KLICKER_CHATBOT_ID=<uuid> \
@@ -113,7 +114,7 @@ export const options = {
     },
   },
   thresholds: {
-    checks: ['rate>=0.9'],
+    checks: ['rate==1'],
     'http_req_duration{name:chat-turn}': ['p(95)<30000'],
   },
 }

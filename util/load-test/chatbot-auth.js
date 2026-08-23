@@ -7,7 +7,8 @@
 //     KLICKER_PARTICIPANT_TOKEN=<token> KLICKER_CHATBOT_IDS=<uuid>[,...] \
 //     k6 run -e PROFILE=smoke util/load-test/chatbot-auth.js
 //   Normal login (credentials should come from the runtime secret store):
-//     KLICKER_API_URL=https://api.klicker.stg.df-app.ch \
+//     KLICKER_BASE_URL=https://chat.klicker.stg.df-app.ch \
+//       KLICKER_API_URL=https://api.klicker.stg.df-app.ch \
 //       KLICKER_PARTICIPANT_USERNAME_OR_EMAIL=<account> \
 //       KLICKER_PARTICIPANT_PASSWORD=<password> KLICKER_ALLOW_LOGIN=true \
 //       KLICKER_CHATBOT_IDS=<uuid>[,...] \
@@ -85,7 +86,7 @@ if (chatbotIds.some((id) => !uuidPattern.test(id))) {
 
 const profile = __ENV.PROFILE || 'smoke'
 const profiles = {
-  smoke: { vus: 1, iterations: 4 },
+  smoke: { vus: 1, iterations: chatbotIds.length * 2 },
   light: { vus: 2, duration: '15s' },
   steady: { vus: 3, duration: '30s' },
 }
