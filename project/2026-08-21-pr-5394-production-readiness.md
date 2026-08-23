@@ -99,15 +99,15 @@ The authoritative final `v3` readback is `de366d6f943b06f15354db8364cafefef94aa5
 
 ## Final publication addendum (2026-08-23)
 
-- The final functional backend head is `0237a3363`, and the exact published
-  evidence head is `268a2740ad52d340dc5874cf3a74d0d5dac6c07c`, based on current `v3`
-  `de366d6f943b06f15354db8364cafefef94aa592`. GitHub reports `MERGEABLE` with
-  no conflicts and `BLOCKED` only because the required code-owner approval is
-  absent.
-- Exact-head workflow `32607577986` completed successfully on the published
-  head. The generated merge ref
-  `99905a66792b40033f86bde22fcdef8769486a39` has an identical tree, and 45
-  required PR checks are green.
+- The final functional backend head is `0237a3363`, and the last fully
+  verified functional evidence head is `268a2740ad52d340dc5874cf3a74d0d5dac6c07c`,
+  based on current `v3` `de366d6f943b06f15354db8364cafefef94aa592`.
+  Documentation-only commits may advance the PR head; GitHub's live PR
+  readback is authoritative for current mergeability, checks, and merge ref.
+- Exact-head workflow `32607577986` completed successfully on the last fully
+  verified functional evidence head. The current publication check is tracked
+  on the PR and must reach a terminal state before this snapshot is called
+  final.
 - The invitation import result no longer publishes unused `invitationId` or
   `participantId` fields. The operation, schema, persisted-query maps, and
   generated TypeScript artifacts were regenerated; the GraphQL typecheck and

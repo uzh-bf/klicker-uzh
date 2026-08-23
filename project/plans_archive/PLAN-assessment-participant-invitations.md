@@ -21,8 +21,9 @@ pending invitations.
 - A `ParticipantInvitation` grants one email address access to one assessment
   `Course`.
 - A `PENDING` invitation has not yet been linked to a `Participant`.
-- An `ACCEPTED` invitation is linked to a verified participant and backs an
-  active `Participation` in the course.
+- An `ACCEPTED` invitation grants assessment-course admission and may back a
+  `Participation` row; `Participation.isActive` remains independent
+  leaderboard consent and is preserved during invitation handling.
 - The optional `matriculationNumber` is an identifier attached to the
   invitation, not to the participant account.
 
