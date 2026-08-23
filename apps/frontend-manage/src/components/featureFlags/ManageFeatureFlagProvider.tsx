@@ -1,15 +1,13 @@
+import { useQuery } from '@apollo/client'
 import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import {
   type BrowserFeatureFlagConfig,
   FeatureFlagProvider,
 } from '@klicker-uzh/feature-flags/react'
-import type { UserProfileQuery } from '@klicker-uzh/graphql/dist/ops'
+import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { type ReactNode, useMemo } from 'react'
 
-type UserProfile = NonNullable<UserProfileQuery['userProfile']>
-
 interface ManageFeatureFlagProviderProps {
-  user: UserProfile
   children: ReactNode
 }
 
@@ -20,16 +18,24 @@ const config = {
 } satisfies BrowserFeatureFlagConfig
 
 function ManageFeatureFlagProvider({
-  user,
   children,
 }: ManageFeatureFlagProviderProps) {
+  const { data } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
+  const user = data?.userProfile
+  const userId = user?.id
+  const userRole = user?.role
   const attributes = useMemo<FeatureFlagAttributes>(
-    () => ({
-      id: user.id,
-      actorType: 'user',
-      role: user.role,
-    }),
-    [user.id, user.role]
+    () =>
+      userId
+        ? {
+            id: userId,
+            actorType: 'user',
+            role: userRole,
+          }
+        : { actorType: 'anonymous' },
+    [userId, userRole]
   )
 
   return (

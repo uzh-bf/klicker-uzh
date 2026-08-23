@@ -10,7 +10,6 @@ import type React from 'react'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
-import ManageFeatureFlagProvider from './featureFlags/ManageFeatureFlagProvider'
 
 interface LayoutProps {
   displayName?: string
@@ -68,7 +67,7 @@ function Layout({
   }
 
   return (
-    <ManageFeatureFlagProvider user={dataUser.userProfile}>
+    <>
       <Head>
         <title>{displayName}</title>
         <meta name="description" content={displayName} charSet="utf-8"></meta>
@@ -89,7 +88,7 @@ function Layout({
         {children}
       </div>
       <Footer />
-    </ManageFeatureFlagProvider>
+    </>
   )
 }
 

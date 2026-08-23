@@ -27,11 +27,13 @@ initialize GrowthBook only when they adopt their first flag.
 | -------------------- | ------------------ | -------- | ---------------------------------------------------- |
 | `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
 
-Manage initializes the browser provider after `QUserProfile` resolves and
-targets the authenticated lecturer by stable `User.id`, role, actor type, and
-environment. The former `User.publicPreview` field is no longer selected by
-that operation and is not authoritative for learning analytics. The Prisma and
-public GraphQL fields remain available for other consumers and a later cleanup.
+Manage mounts the browser provider at the application root with anonymous
+attributes, then updates it after `QUserProfile` resolves to target the
+authenticated lecturer by stable `User.id`, role, actor type, and environment.
+This keeps full-screen routes such as activity evaluations inside the provider.
+The former `User.publicPreview` field is no longer selected by that operation
+and is not authoritative for learning analytics. The Prisma and public GraphQL
+fields remain available for other consumers and a later cleanup.
 
 Direct analytics routes remain reachable to authenticated lecturers. The flag
 controls product affordances, not authorization; routes and APIs continue to
@@ -98,8 +100,10 @@ It must also pass
 `process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV` as `environment`.
 
 The app owns environment-variable registration in `turbo.json`; the shared
-package itself reads no process environment. Mount the provider after identity
-is known, and memoize the attribute object:
+package itself reads no process environment. Mount the provider above every
+flag consumer, and memoize the attribute object. If identity loads
+asynchronously, start with `actorType: 'anonymous'` and apply the authenticated
+attributes when they become available:
 
 ```tsx
 <FeatureFlagProvider config={browserConfig} attributes={attributes}>
@@ -133,8 +137,8 @@ and warns that they are not masked. Missing variables still produce a valid
 image, but the browser adapter performs no SDK request and keeps flags off.
 
 Manage registers these variables in `turbo.json` and supplies the provider from
-its authenticated layout. Its Playwright fixture intercepts only the external
-SDK response so feature states remain deterministic while the real Klicker
+its application root. Its Playwright fixture intercepts only the external SDK
+response so feature states remain deterministic while the real Klicker
 authentication, API, and database are exercised.
 
 ## Node.js adoption
