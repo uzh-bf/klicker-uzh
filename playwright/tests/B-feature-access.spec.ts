@@ -5,7 +5,7 @@ import { updateLecturerPreviewFlags } from '../util/fixtures/manage.js'
 
 test('CLEANUP', cleanupTest)
 
-test.describe('Tests the availability of certain functionalities to catalyst users only', () => {
+test.describe('Tests the availability of standard activity creation formats', () => {
   test.beforeAll(async () => {
     await seedActivities()
   })
@@ -38,28 +38,30 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     await expect(page.getByTestId('homepage')).toBeVisible()
   })
 
-  test('Test that the creation buttons for practice quizzes and microlearnings are only available to catalyst users', async ({
+  test('Test that all standard creation buttons are enabled for free users', async ({
+    page,
+    loginFreeUser,
+  }) => {
+    await loginFreeUser()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+
+    await expect(page.getByTestId('create-live-quiz')).not.toBeDisabled()
+    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
+    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
+    await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
+  })
+
+  test('Test that all standard creation buttons are enabled for catalyst users', async ({
     page,
     loginLecturer,
-    loginFreeUser,
-    loginIndividualCatalyst,
-    loginInstitutionalCatalyst,
   }) => {
     await loginLecturer()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+
+    await expect(page.getByTestId('create-live-quiz')).not.toBeDisabled()
     await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
     await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
-
-    await loginFreeUser()
-    await expect(page.getByTestId('create-practice-quiz')).toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).toBeDisabled()
-
-    await loginIndividualCatalyst()
-    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
-
-    await loginInstitutionalCatalyst()
-    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
+    await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
   })
 
   test('Verify that both public and private preview features are available for lecturer', async ({

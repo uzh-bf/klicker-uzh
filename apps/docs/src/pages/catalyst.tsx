@@ -106,6 +106,24 @@ function Catalyst() {
                     <div>
                       <FontAwesomeIcon icon={faCheck} />
                     </div>
+                    <div>Microlearning</div>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <div>
+                      <FontAwesomeIcon icon={faCheck} />
+                    </div>
+                    <div>Practice Quizzes</div>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <div>
+                      <FontAwesomeIcon icon={faCheck} />
+                    </div>
+                    <div>Group Activities</div>
+                  </li>
+                  <li className="flex gap-x-3">
+                    <div>
+                      <FontAwesomeIcon icon={faCheck} />
+                    </div>
                     <div>Courses and Leaderboards</div>
                   </li>
                   <li className="flex gap-x-3">
@@ -138,24 +156,6 @@ function Catalyst() {
                     </div>
                   </li>
 
-                  <li className="flex gap-x-3">
-                    <div>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </div>
-                    <div>Microlearning</div>
-                  </li>
-                  <li className="flex gap-x-3">
-                    <div>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </div>
-                    <div>Practice Quizzes</div>
-                  </li>
-                  <li className="flex gap-x-3">
-                    <div>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </div>
-                    <div>Group Activities</div>
-                  </li>
                   <li className="flex gap-x-3">
                     <div>
                       <FontAwesomeIcon icon={faCheck} />

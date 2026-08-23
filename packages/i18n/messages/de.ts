@@ -1522,8 +1522,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       status: 'Status',
       searchPlaceholder: 'Suchen...',
       sortBy: 'Sortieren nach..',
-      catalystRequired:
-        'Catalyst-Zugriff erforderlich. Mehr Informationen unter <link></link>.',
       elementPreview: 'Elementvorschau: {element}',
       elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
       elementTypeDescription: 'Typ',
