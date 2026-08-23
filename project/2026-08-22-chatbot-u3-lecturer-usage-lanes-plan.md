@@ -509,3 +509,15 @@ Gate 3 ruling and names every still-withheld action.
   routes. Ox Alpha rebase review and the authorized force-with-lease
   publication remain next; all merge, deployment, live, closure, cleanup, and
   deletion boundaries remain withheld.
+- 2026-08-23: the final pre-publication fetch found `v3` had advanced from
+  `2dc517aed` to deploy-only staging promotion `1ad0124a9` (#5494). Recovery
+  refs preserve the first corrected stack. Phase 0 through U3 recascaded
+  without conflicts, and per-layer range-diff shows every commit unchanged.
+  The refreshed local heads before this evidence commit are Phase 0
+  `d55996d82`, U1 `b29c628ed`, U2 `930f92746`, and U3 `69d63dd01`. Linear
+  ancestry from current `v3` is proven. The earlier Node 24 checks remain
+  applicable because the stack patches are unchanged and the new base delta
+  touches only `deploy/env-uzh-stg/values.yaml`. A focused formatting check,
+  fresh Ox Alpha review, and exact remote lease gate remain before publication;
+  all merge, deployment, live, closure, cleanup, and deletion boundaries remain
+  withheld.
