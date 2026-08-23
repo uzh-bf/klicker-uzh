@@ -521,3 +521,15 @@ Gate 3 ruling and names every still-withheld action.
   fresh Ox Alpha review, and exact remote lease gate remain before publication;
   all merge, deployment, live, closure, cleanup, and deletion boundaries remain
   withheld.
+- 2026-08-23: Ox Alpha accepted the final recascade with no blocking finding.
+  Phase 0 through U3 were atomically force-with-lease published at
+  `d55996d82`, `b29c628ed`, `930f92746`, and `147967f6f`; PRs #5475, #5480,
+  and #5490 were then marked ready bottom-up with unchanged bases. Phase 0 has
+  44 passing checks and one intentional skip, with only its documented
+  historical GitGuardian fixture finding outstanding. U1 has 61 passing rollup
+  entries, U2 has 58 after one successful unchanged-head retry of an unrelated
+  elements-sharing Playwright flake, and U3 has 62. Every current Playwright
+  matrix passes, all four PRs are open and mergeable, and no unresolved check
+  remains. This evidence-only top-layer commit still needs exact-head CI before
+  the handoff is complete; merge, deployment, live traffic, closure, cleanup,
+  and deletion remain withheld.
