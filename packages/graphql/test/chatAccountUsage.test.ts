@@ -258,17 +258,29 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     })
   })
 
-  it('ignores prior-month rows at the next Zurich month boundary', async () => {
-    await seedUsage({ usageClass: 'BASE', budgetCredits: 5, usedCredits: 2 })
+  it('carries both prior-month budgets with reset usage', async () => {
+    await Promise.all([
+      seedUsage({ usageClass: 'BASE', budgetCredits: 5, usedCredits: 2 }),
+      seedUsage({ usageClass: 'ADVANCED', budgetCredits: 7, usedCredits: 4 }),
+    ])
 
     const overview = await getChatAccountUsage({ now: NEXT_MONTH }, ownerCtx)
 
-    expect(overview?.baseModelUsage).toEqual({
-      usageClass: 'BASE',
-      budgetCredits: 0,
-      usedCredits: 0,
-      remainingCredits: 0,
-      resetAt: getZurichMonthReset(NEXT_MONTH),
+    expect(overview).toMatchObject({
+      baseModelUsage: {
+        usageClass: 'BASE',
+        budgetCredits: 5,
+        usedCredits: 0,
+        remainingCredits: 5,
+        resetAt: getZurichMonthReset(NEXT_MONTH),
+      },
+      advancedModelUsage: {
+        usageClass: 'ADVANCED',
+        budgetCredits: 7,
+        usedCredits: 0,
+        remainingCredits: 7,
+        resetAt: getZurichMonthReset(NEXT_MONTH),
+      },
     })
   })
 
@@ -398,6 +410,66 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         remainingCredits: 0,
       },
     })
+  })
+
+  it('replaces carried budgets when a later month is configured', async () => {
+    await Promise.all([
+      seedUsage({ usageClass: 'BASE', budgetCredits: 5, usedCredits: 2 }),
+      seedUsage({ usageClass: 'ADVANCED', budgetCredits: 7, usedCredits: 4 }),
+    ])
+
+    const updated = await setChatAccountUsageBudgets(
+      {
+        baseBudgetCredits: 11,
+        advancedBudgetCredits: 13,
+        now: NEXT_MONTH,
+      },
+      ownerCtx
+    )
+
+    expect(updated).toMatchObject({
+      baseModelUsage: {
+        budgetCredits: 11,
+        usedCredits: 0,
+        remainingCredits: 11,
+      },
+      advancedModelUsage: {
+        budgetCredits: 13,
+        usedCredits: 0,
+        remainingCredits: 13,
+      },
+    })
+    await expect(
+      getChatAccountUsage({ now: NEXT_MONTH }, ownerCtx)
+    ).resolves.toMatchObject({
+      baseModelUsage: { budgetCredits: 11, usedCredits: 0 },
+      advancedModelUsage: { budgetCredits: 13, usedCredits: 0 },
+    })
+
+    const previousRows = await prisma.chatAccountUsage.findMany({
+      where: { ownerId, monthStart: getZurichMonthStart(NOW) },
+    })
+    expect(previousRows).toHaveLength(2)
+    expect(
+      previousRows
+        .find((row) => row.usageClass === 'BASE')
+        ?.budgetCredits.toNumber()
+    ).toBe(5)
+    expect(
+      previousRows
+        .find((row) => row.usageClass === 'BASE')
+        ?.usedCredits.toNumber()
+    ).toBe(2)
+    expect(
+      previousRows
+        .find((row) => row.usageClass === 'ADVANCED')
+        ?.budgetCredits.toNumber()
+    ).toBe(7)
+    expect(
+      previousRows
+        .find((row) => row.usageClass === 'ADVANCED')
+        ?.usedCredits.toNumber()
+    ).toBe(4)
   })
 
   it('rejects malformed budgets without a partial write', async () => {

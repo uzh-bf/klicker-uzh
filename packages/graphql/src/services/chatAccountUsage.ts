@@ -1,3 +1,4 @@
+import { getEffectiveChatAccountUsage } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   getDefaultChatAccountUsage,
@@ -84,28 +85,31 @@ function projectLane(
 
 function projectOverview({
   authorized,
-  usages,
+  baseModelUsage,
+  advancedModelUsage,
   resetAt,
 }: {
   authorized: boolean
-  usages: Pick<
+  baseModelUsage: Pick<
     DB.ChatAccountUsage,
-    'usageClass' | 'budgetCredits' | 'usedCredits'
-  >[]
+    'budgetCredits' | 'usedCredits'
+  > | null
+  advancedModelUsage: Pick<
+    DB.ChatAccountUsage,
+    'budgetCredits' | 'usedCredits'
+  > | null
   resetAt: Date
 }): ChatAccountUsageOverview {
   return {
     authorized,
     baseModelUsage: projectLane(
       DB.ChatUsageClass.BASE,
-      usages.find((usage) => usage.usageClass === DB.ChatUsageClass.BASE) ??
-        null,
+      baseModelUsage,
       resetAt
     ),
     advancedModelUsage: projectLane(
       DB.ChatUsageClass.ADVANCED,
-      usages.find((usage) => usage.usageClass === DB.ChatUsageClass.ADVANCED) ??
-        null,
+      advancedModelUsage,
       resetAt
     ),
   }
@@ -120,23 +124,27 @@ export async function getChatAccountUsage(
   const monthStart = getZurichMonthStart(now)
   const owner = await ctx.prisma.user.findUnique({
     where: { id: ownerId },
-    select: {
-      aiChatbotPublishingEnabled: true,
-      chatAccountUsages: {
-        where: { monthStart },
-        select: {
-          usageClass: true,
-          budgetCredits: true,
-          usedCredits: true,
-        },
-      },
-    },
+    select: { aiChatbotPublishingEnabled: true },
   })
   if (!owner) return null
 
+  const [baseModelUsage, advancedModelUsage] = await Promise.all([
+    getEffectiveChatAccountUsage(ctx.prisma, {
+      ownerId,
+      usageClass: DB.ChatUsageClass.BASE,
+      monthStart,
+    }),
+    getEffectiveChatAccountUsage(ctx.prisma, {
+      ownerId,
+      usageClass: DB.ChatUsageClass.ADVANCED,
+      monthStart,
+    }),
+  ])
+
   return projectOverview({
     authorized: owner.aiChatbotPublishingEnabled,
-    usages: owner.chatAccountUsages,
+    baseModelUsage,
+    advancedModelUsage,
     resetAt: getZurichMonthReset(now),
   })
 }
@@ -207,7 +215,8 @@ export async function setChatAccountUsageBudgets(
 
     return projectOverview({
       authorized: true,
-      usages: [baseModelUsage, advancedModelUsage],
+      baseModelUsage,
+      advancedModelUsage,
       resetAt,
     })
   })

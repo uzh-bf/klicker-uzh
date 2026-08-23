@@ -350,3 +350,23 @@ and Phase 5 proceed without another approval.
   equal their frozen leases; PRs #5460, #5475, #5480, and #5490 remain open,
   ready, and mergeable with unchanged bases. S0 commit and the approved base
   recascade are next.
+- 2026-08-23: S1 through S3 are locally complete. Phase 0 now states that
+  monthly budgets persist until an authorized owner changes them. U1 resolves
+  the effective current window from the latest configured budget, and U2
+  materializes and charges that window without deducting participant credits
+  after duplicate or failed finalization. The focused Node 24 checks pass, and
+  the U2 Ox Alpha simplifier and risk review accepted the immutable correction.
+- 2026-08-23: S4 now projects both GraphQL lanes through the shared effective-
+  month resolver. The focused PostgreSQL and GraphQL file passes 15/15; schema
+  generation, package checks, and clean production builds pass. English and
+  German desktop and mobile browser proof shows the carried BASE 5 and
+  ADVANCED 7 budgets with zero usage and the September 1, 2026 reset. The
+  synthetic fixture, browser cookies, and short-lived owner token were removed
+  after capture.
+- 2026-08-23: The first U3 commit hook found one lower-layer U1 parity omission:
+  the durable rollover comment had not been mirrored into the analytics Prisma
+  schema. U1 was amended to include only that generated mirror, U2 and U3 were
+  recascaded, and range-diff proves every descendant patch unchanged. Prisma
+  schema sync and the focused 15-test file pass again in Node 24. The current
+  immutable heads are Phase 0 `a02d9a803`, U1 `8f6dca149`, U2 `8bd456f89`, and
+  U3 `4a9fd5c76` before this progress update; S4 Ox Alpha review is next.

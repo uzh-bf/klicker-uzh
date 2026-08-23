@@ -76,7 +76,9 @@ participant text, or a third lane.
 
 - `ChatAccountUsage` already has the composite owner/class/month key and
   `Decimal(18,6)` budget/used values. A missing row means zero budget and zero
-  usage. No U3 schema migration is needed.
+  usage only when the class has no configured history. The latest configured
+  budget otherwise carries forward while used credits reset. No U3 schema
+  migration is needed.
 - `getZurichMonthStart` and `getZurichMonthReset` already derive the persisted
   month key and exact next Zurich reset instant, including DST. U3 reuses them
   and accepts a service-only `now` seam for deterministic tests. The GraphQL
@@ -122,7 +124,7 @@ The schema uses `asUser`, which rejects participant callers before resolution,
 and the service repeats the role/scope check for forged service-context tests.
 No branch reveals whether an unrelated owner ID exists.
 
-### D2 — fixed current-month projection
+### D2 — fixed effective-month projection
 
 The query returns one overview with the live `authorized` boolean and fixed
 `baseModelUsage` and `advancedModelUsage` fields. Each lane contains:
@@ -134,8 +136,10 @@ The query returns one overview with the live `authorized` boolean and fixed
 - `resetAt`, the exact next Europe/Zurich month boundary.
 
 Both lanes always project for an authorized caller, even when the capability
-is false or a usage row is missing. Missing rows become zero/zero/zero. The
-query returns only the current month; the service-only `now` parameter proves
+is false or a current-month usage row is missing. The newest configured budget
+at or before the current month remains visible while prior usage resets to
+zero; only a lane with no configured history becomes zero/zero/zero. The query
+returns only the effective month; the service-only `now` parameter proves
 next-month rollover without exposing a client-controlled clock.
 
 The output uses GraphQL floats because the repository credit validator accepts
@@ -213,10 +217,10 @@ Old clients remain valid and deployed operation hashes do not change.
 | USER cannot target another account or learn whether it exists | Existing/non-existing target matrix with identical generic denial |
 | FULL_ACCESS, SESSION_EXEC, READ_ONLY, participant, and temporary participant are denied | Forged service-context matrix plus schema-level participant denial |
 | Disabled capability remains visible as authorization false but cannot be edited | Query projection and rejected mutation with unchanged rows |
-| Missing rows project deterministic zero values | Service test with no current-month rows |
+| Never-configured lanes project deterministic zero values | Service test with no account/class history |
 | Normal rows expose exact budget/used/remaining/reset fields | Service and GraphQL response assertions |
 | Exhausted and overrun rows clamp remaining to zero | Service test with `usedCredits >= budgetCredits` |
-| Next Zurich month ignores the prior month's rows | Service-only `now` test across a month boundary |
+| Next Zurich month carries both configured limits and resets both used counters | Service-only `now` test across a month boundary |
 | Both budget rows create atomically | PostgreSQL mutation test |
 | Updating budgets preserves used credits | PostgreSQL mutation test with non-zero counters |
 | Invalid negative, over-precision, non-finite, or oversized inputs make no partial write | Service validation matrix |
@@ -533,3 +537,17 @@ Gate 3 ruling and names every still-withheld action.
   remains. This evidence-only top-layer commit still needs exact-head CI before
   the handoff is complete; merge, deployment, live traffic, closure, cleanup,
   and deletion remain withheld.
+- 2026-08-23: M1-R1 corrects the U3 projection to use the shared effective-
+  month resolver for both fixed lanes. The focused PostgreSQL and GraphQL file
+  passes 15/15 tests, including two-lane carry-forward and later-month budget
+  replacement with prior rows unchanged. GraphQL generation, check, and build
+  pass; the Manage check and clean worktree-scoped production build pass with
+  only the known repository warnings.
+- 2026-08-23: mandatory browser proof used a clean production runtime because
+  the shared Turbopack dev cache had been invalidated by the production build.
+  English and German desktop and 390x844 mobile views show BASE 5/0/5 and
+  ADVANCED 7/0/7 with the September 1, 2026 Europe/Zurich reset. Final console,
+  page-error, and 4xx/5xx request buffers are empty. Credential-free section
+  screenshots remain under ignored `project/_local/screenshots/`; the short-
+  lived synthetic owner token was removed and the local fixture was restored
+  to zero usage rows with chatbot publishing disabled.
