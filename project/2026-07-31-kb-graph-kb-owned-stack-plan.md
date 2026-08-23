@@ -451,3 +451,93 @@ current contract acceptance required by the roadmap.
   states; without FalkorDB the student graph view shows the graceful
   "temporarily unavailable" state (W2-C evidence).
 
+## 2026-08-23 finalization amendment — single PR #5424 landing
+
+The user superseded the earlier five-PR delivery topology for this package.
+[PR #5424](https://github.com/uzh-bf/klicker-uzh/pull/5424) is now the sole
+integration line and the first KB PR to land on `v3-ai`. PR #5174 is its
+ancestor, PR #5078 remains selective reference material, and the question
+generation PRs remain under their existing owner. Question generation consumes
+the canonical `KBGraphBuild` ledger after a build is succeeded and published;
+it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
+
+### Frozen integration refs
+
+- Clean worktree: `trees/rs/kb-v3-ai-finalization` on
+  `rs/kb-v3-ai-finalization`.
+- Target: `origin/v3-ai` at
+  `3425cebb41c6f92a0c6be64e4325382205e9619c`.
+- PR head: `origin/feat/kb-graph-lifecycle` at
+  `599ffcd155377f9a24e8688e16af685674d29682`.
+- The frozen head is 158 commits ahead and one commit behind the target. Recheck
+  both refs before publication and stop for review if either changes.
+
+### Integration and corrective slices
+
+1. **I1 — integrate current `v3-ai`.** Merge the frozen target into the clean
+   finalization branch. Seven files changed on both sides. Four require manual
+   conflict resolution: preserve the local KB/Azurite setup alongside current
+   MCP and LiteLLM documentation in `.devcontainer/README.md`; keep the generic
+   dependency build plus the knowledge-graph changed-path trigger in
+   `.github/workflows/test-chat.yml`; retain auth, client-auth, and public-URL
+   entries in `packages/util/rollup.config.js`; and keep the current
+   `suggestions` naming in `playwright/tests/Y-manage-assistant.spec.ts`.
+   Inspect the three automatic merges in `.devcontainer/devcontainer.env`,
+   `.devcontainer/post-start.sh`, and `docs/chat-platform.md` before committing.
+2. **B1 — restore backend ingestion routes.** Mount the authenticated GET source
+   gateway and raw-body POST ingestion webhook before end-user JWT middleware.
+   Add service-free route tests and CI execution for successful forwarding,
+   invalid input/content type, and generic failure responses.
+3. **B2 — keep new-thread token scope stable.** Preallocate one UUID for a new
+   chat thread, mint the MCP scope token with that UUID, and persist the same ID
+   only after required-MCP availability succeeds. Preserve no-thread-on-MCP-
+   failure behavior and cover first-turn and existing-thread ownership cases.
+4. **B3 — bound graph reconciliation.** Reuse the rotating monitor window for at
+   most 32 active builds, process at concurrency eight, and apply a ten-second
+   timeout to every provider operation awaited by the sweep. A timed-out call
+   leaves correlated state fenced for a later retry; independent builds continue.
+5. **B4 — complete safe local-runtime wiring.** Selectively reimplement only the
+   relevant semantics from `8fa7ea50d` and `09ac131d8`: overridable loopback-
+   bound graph and ingestion ports; host-reachable Azurite source URLs through
+   `KB_GRAPH_BLOB_ACCOUNT_URL`; HTTP SAS URLs only for loopback or `.localhost`;
+   optional explicitly configured shared PostgreSQL ingestion state while
+   keeping SQLite as the default; and matching tests, docs, env, post-start,
+   ignore, and Turbo wiring. Do not copy model IDs or unrelated dirty runtime/UI
+   work. Preserve the user-owned dirty `trees/kb-graph-stack` unchanged.
+6. **B5 — add graph interaction selectors.** Add stable `data-cy` hooks to the
+   graph search submit, search results, loaded nodes, relationships, and close
+   action without changing interaction behavior.
+7. **B6 — align owner-only authorization guidance.** Clarify the GraphQL wiki
+   and matching API skill: KB aggregates are owner-only and enforce ownership
+   inside the service; `withPermission` remains required for shareable
+   aggregates supported by `PermissionCheck`. Do not widen KB sharing. Record
+   the behavioral/documentation changes in the dated wiki log.
+
+### Verification and publication boundary
+
+- Run each focused package suite, route tests, type checks, generation where
+  needed, root `check:all`, the production build, and `git diff --check`.
+- Start the exact finalization worktree through DevRouter. Verify the affected
+  lecturer graph interactions and first-turn chat scope path with delegated
+  local login, capture required screenshots, then stop that exact runtime and
+  prove zero remaining routes and a stopped provider workspace.
+- Run simplifier and risk-selected slice review on substantive B1-B4 commits,
+  then one final reviewer over the integrated verified branch.
+- Publication authority covers normal push of the exact finalization commits to
+  `feat/kb-graph-lifecycle`, PR #5424 body/readback updates, reviewed Sonar thread
+  disposition, and exact-head CI monitoring. Force-push, merge, close, deploy,
+  external ingestion/platform mutation, and sibling PR changes remain withheld.
+- GitGuardian incidents are classified separately using names/statuses only.
+  Stop if classification requires incident values, credentials, or new
+  administrative authority. The hardcoded private CIDRs in `publicUrl.ts` are
+  intentional SSRF denylist entries and are documented as Sonar false positives.
+
+### Progress
+
+- 2026-08-23: Ref freeze and independent plan review completed. The review
+  confirmed three merge blockers at the frozen head: the source and webhook
+  handlers are not mounted, a first-turn MCP token uses the request ID rather
+  than the eventual thread ID, and active graph reconciliation is unbounded and
+  sequential. The seven-changed-path/four-conflict distinction is recorded
+  above. No merge, push, PR mutation, deployment, or sibling worktree mutation
+  occurred during this planning checkpoint.

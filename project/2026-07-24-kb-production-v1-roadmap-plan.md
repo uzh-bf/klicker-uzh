@@ -295,3 +295,20 @@ Superseded 2026-07-29: the W6/W7 goal below completed at `925eea6a8` (see Progre
 - Branch and checkpoint: implement and commit the reviewed plan and each coherent slice directly on `kb-poc`; keep [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) draft into `v3-ai`. Keep this `Progress` section synchronized and resume from verified Git state.
 - Verification: migration/schema sync, contract and concurrency fixtures, focused real-PostgreSQL GraphQL and Hatchet tests, generated artifacts, package checks, per-slice review, root `check:all`, production build, delegated-login EN/DE desktop/mobile browser proof with screenshots, final maintainability/security/spec/branch crosschecks, push and PR read-back, and fresh CI.
 - Pause conditions: stop only for a material contract/security/product decision, required authority to change the external D-8 registry, a destructive or external action, unavailable required credentials, or a verification blocker unresolved after distinct safe approaches. The external D-8 registry validation remains an explicit platform-track gate and does not block completion of the Klicker-owned W6/W7 implementation.
+
+## 2026-08-23 delivery-topology ruling
+
+The user superseded the earlier multi-PR W9 topology for finalization. PR #5424
+is the single KB management and knowledge-graph integration line into `v3-ai`
+and lands before dependent response-example or question-generation work. PR
+#5174 is an ancestor and is not landed separately; PR #5078 remains selective
+reference material. Question generation keys its work to a succeeded and
+published canonical `KBGraphBuild`; no separate `KBGraphVersion` lifecycle or
+webhook is added.
+
+The implementation-ready correction and verification plan is recorded in
+`project/2026-07-31-kb-graph-kb-owned-stack-plan.md` under the 2026-08-23
+finalization amendment. Publication authority covers a normal update to PR
+#5424 and its exact-head review/CI loop. Merge, closure, deployment, force-push,
+external-platform mutation, and changes to sibling-owned question-generation
+PRs remain withheld.
