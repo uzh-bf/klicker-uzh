@@ -104,6 +104,11 @@ subject. It is always the accepted course-invitation address, never the address
 a participant sets on their own profile — the invitation address carries edu-ID
 provenance, the profile address is unvalidated and freely editable.
 
+**Invitation roster identity**: Identity information supplied by an assessment
+course's invitation or roster. It stays distinct from the identity edu-ID
+asserts, so that matches, missing values, and conflicts between the two remain
+visible rather than being silently resolved.
+
 **Public credential verification**: The bearer-token page that verifies an
 assessment credential. Its public projection contains only the student's full
 name; it never contains an email address or a matriculation number.
@@ -122,7 +127,13 @@ and is enforced field-by-field in the API layer.
   claims. Where something must be attested, it comes from the verified source
   or it is absent.
 - Assessment participation identity is retained only for assessment
-  participation and is nullable everywhere else.
+  participation and is nullable everywhere else. The manage interface does not
+  display it; assessment exports and the student's own credential download are
+  its intended consumers.
+- The edu-ID release approval covers the email, unique ID, surname, and given
+  name claims as required, plus matriculation number and the linked-affiliation
+  claims as desired. Assessment identity consumes only the name and
+  matriculation claims; the account and affiliation flows own the rest.
 - Public projections are deliberately smaller than private ones. Widening one
   is a decision that belongs in an ADR, not in a rendering change.
 - An element instance keeps its own copy of the element's data and its own

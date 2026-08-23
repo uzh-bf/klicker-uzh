@@ -1,5 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { AssessmentReportSnapshotV1 } from '@klicker-uzh/types'
+import type {
+  AssessmentReportPublicSnapshot,
+  AssessmentReportSnapshot,
+} from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
@@ -25,7 +28,7 @@ export type PublicAssessmentReportVerification =
   | {
       status: typeof DB.CredentialStatus.ACTIVE
       issuedAt: Date
-      snapshot: AssessmentReportSnapshotV1
+      snapshot: AssessmentReportPublicSnapshot
     }
   | {
       status:
@@ -49,6 +52,25 @@ function forbiddenError() {
   return new GraphQLError('FORBIDDEN', {
     extensions: { code: 'FORBIDDEN' },
   })
+}
+
+export function projectPublicAssessmentReportSnapshot(
+  snapshot: AssessmentReportSnapshot
+): AssessmentReportPublicSnapshot {
+  const name =
+    snapshot.version === 2
+      ? [snapshot.subject.givenName, snapshot.subject.surname]
+          .filter((value): value is string => Boolean(value))
+          .join(' ') || null
+      : null
+
+  return {
+    version: snapshot.version,
+    subject: { name, source: snapshot.subject.source },
+    course: snapshot.course,
+    results: snapshot.results,
+    comparison: snapshot.comparison,
+  }
 }
 
 function requireFullAccess(ctx: ContextWithUser) {
@@ -105,7 +127,11 @@ export async function getPublicAssessmentReport(
     }
   }
 
-  return { status: record.status, issuedAt: record.issuedAt, snapshot }
+  return {
+    status: record.status,
+    issuedAt: record.issuedAt,
+    snapshot: projectPublicAssessmentReportSnapshot(snapshot),
+  }
 }
 
 export async function getCourseAssessmentReportRecords(
