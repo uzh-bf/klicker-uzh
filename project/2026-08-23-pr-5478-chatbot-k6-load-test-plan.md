@@ -11,7 +11,7 @@ lecturer-demo work.
 - Branch: `rs/chatbot-k6-load-test`
 - Target: `v3`
 - PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
-- Current reviewed head: `194a3a5cb`
+- Current reviewed head: `3c44b9675`
 
 ## Scope and authority
 
@@ -223,6 +223,10 @@ lecturer-demo work.
   only status-gated filtered jobs skipped.
 - S16: complete — the final host read-back confirms head `194a3a5cb`, zero
   commits behind and thirty-two ahead of `v3`, with all required checks
+  passing. This is a bookkeeping-only plan update; no source or runtime
+  behavior changed.
+- S17: complete — the final publication read-back confirms head `3c44b9675`,
+  zero commits behind and thirty-three ahead of `v3`, with all required checks
   passing. This is a bookkeeping-only plan update; no source or runtime
   behavior changed.
 - Remaining: live login, chatbot/provider traffic, merge, deployment, and
