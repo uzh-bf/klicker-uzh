@@ -557,3 +557,23 @@ it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
   reports `curl (60) SSL certificate problem: out of memory`, so no browser
   success or screenshot is claimed. Runtime teardown remains required after
   the final runtime-dependent checks.
+- 2026-08-23: Publication landed at head `30c3b0ee7` on
+  `feat/kb-graph-lifecycle` (fast-forward through `0387560a8`); PR #5424
+  readback matches this exact head and frozen target `v3-ai` is unchanged at
+  `3425cebb4`. A formatting-only follow-up commit fixed the one drift CI found.
+  Browser evidence remains open for a different reason than first recorded:
+  the route itself serves correctly (curl reaches Traefik over HTTPS), but
+  macOS curl cannot validate the oversized multi-SAN certificate, and both the
+  in-app automation browser and sandboxed Chrome refuse every `*.localhost`
+  origin with `ERR_BLOCKED_BY_CLIENT`, so no authenticated screenshot could be
+  captured from this environment. Runtime teardown follows as the last step;
+  merge/close/deploy authority stays withheld per plan.
+- 2026-08-23: Publication completed. Normal push landed
+  `feat/kb-graph-lifecycle` at `30c3b0ee7` (fast-forward from the frozen head;
+  target `v3-ai` unchanged at `3425cebb4`). The first push failed CI file
+  formatting on a biome drift in `kbHttpRoutes.test.ts`; fixed in commit
+  `30c3b0ee7` and re-pushed. Exact-head CI now passes 26/26 workflows with zero
+  failures (codebase check, types, graphql/chat/hatchet/MCP tests, Playwright
+  E2E, CodeQL, SonarCloud, gitleaks, stg image builds). Remaining open:
+  authenticated browser screenshots (TLS/curl route-reconciliation blocker,
+  documented above) and runtime teardown.
