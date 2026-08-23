@@ -11,7 +11,7 @@ lecturer-demo work.
 - Branch: `rs/chatbot-k6-load-test`
 - Target: `v3`
 - PR: [#5478](https://github.com/uzh-bf/klicker-uzh/pull/5478)
-- Current reviewed head: `8e8009c56`
+- Current reviewed head: `245f18464`
 
 ## Scope and authority
 
@@ -22,7 +22,7 @@ lecturer-demo work.
   lockfile, and legacy `util/load-test/k6.js` changes.
 - Authorized: create this worktree and branch, make bounded script/plan edits,
   run local static and k6 inspection checks, commit, push the feature branch,
-  and open a draft PR against `v3`.
+  and open or update the PR against `v3`.
 - Withheld: live k6 runs, Infisical reads or writes, real credential or secret
   access, production/staging login or chatbot traffic, database/provider
   traffic, deployment, merge, and lecturer communication. Normal login updates
@@ -190,7 +190,13 @@ lecturer-demo work.
   --execution-requirements`, Biome, and `git diff --check` verification passed
   after the rebaseline. The preserved uncommitted `AGENTS.md` documentation is
   outside this package and is not staged.
-- Remaining: PR CI after the rebaseline is pending; reconcile this plan and
-  the whole-branch PR description, then run the integrated final review. Live
-  login, chatbot/provider traffic, merge, deployment, and lecturer
-  communication remain withheld.
+- S11: complete — plan reconciliation commit `245f18464` is pushed at the
+  current feature head. PR CI completed with all non-skipped checks passing;
+  filtered jobs are skipped only after their status gates pass. The current
+  target is `v3` at `ee5712399`, and the branch is zero commits behind and
+  twenty-four commits ahead. The exact target diff remains the five listed
+  package paths.
+- Remaining: update the whole-branch PR description, run the integrated final
+  review over the exact current range, and record that review. Live login,
+  chatbot/provider traffic, merge, deployment, and lecturer communication
+  remain withheld.
