@@ -1,7 +1,11 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../fixtures/questions.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActionByTestId,
+  chooseActivityAction,
+  openActionMenuByTestId,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -2134,6 +2138,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expectNotAttached(
         page.getByTestId(`actions-element-${data.SCML.title}`)
       )
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst()
@@ -2149,13 +2156,20 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `view-activity-log-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
       await expect(
         page.getByTestId(`remove-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst2()
@@ -2171,7 +2185,11 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `archive-element-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
@@ -2181,6 +2199,79 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`delete-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expect(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      ).toBeVisible()
+    })
+
+    test('ADMIN users can archive and restore an element from its action menu', async ({
+      page,
+      loginInstitutionalCatalyst2,
+    }) => {
+      await loginInstitutionalCatalyst2()
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').fill(data.SCML.title)
+      await page.keyboard.press('Enter')
+
+      const element = page.getByTestId(`element-item-${data.SCML.title}`)
+      const archiveSwitch = page.getByTestId('show-archive-switch')
+      const archiveBadge = page.getByTestId(`archive-badge-${data.SCML.title}`)
+      let archiveAttempted = false
+
+      try {
+        await expect(element).toBeVisible()
+        archiveAttempted = true
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `archive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementArchivedSuccessfully
+          )
+        ).toBeVisible()
+        await expect(element).not.toBeAttached()
+
+        await archiveSwitch.click()
+        await expect(element).toBeVisible()
+        await expect(archiveBadge).toBeVisible()
+
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `unarchive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementRestoredSuccessfully
+          )
+        ).toBeVisible()
+        await expect(archiveBadge).not.toBeAttached()
+        archiveAttempted = false
+      } finally {
+        if (archiveAttempted) {
+          if ((await archiveSwitch.getAttribute('aria-checked')) !== 'true') {
+            await archiveSwitch.click()
+          }
+
+          await element.waitFor({ state: 'visible' }).catch(() => undefined)
+          if (await archiveBadge.isVisible().catch(() => false)) {
+            await chooseActionByTestId(
+              page,
+              `actions-element-${data.SCML.title}`,
+              `unarchive-element-${data.SCML.title}`
+            )
+            await expect(archiveBadge).not.toBeAttached()
+          }
+        }
+
+        if ((await archiveSwitch.getAttribute('aria-checked')) === 'true') {
+          await archiveSwitch.click()
+        }
+      }
+
+      await expect(element).toBeVisible()
     })
 
     test('Cleanup: Delete the created question again and verify deletion', async ({

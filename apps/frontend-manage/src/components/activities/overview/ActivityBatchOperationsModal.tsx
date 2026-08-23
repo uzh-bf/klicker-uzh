@@ -1,33 +1,31 @@
+import { useMutation, useQuery } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   ApplyActivityBatchOperationsDocument,
   GetActiveUserCoursesDocument,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-//           : null,
-//       course: selectedActions.course ?? undefined,
-//       liveQuizPoints: selectedActions.liveQuizPoints ?? undefined,
-//     },
-//   })ops'
-import { useMutation, useQuery } from '@apollo/client'
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { isShallowEqual } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import ActivityBatchDeletionConfirmationModal from './batchOperations/ActivityBatchDeletionConfirmationModal'
 import ActivityBatchOperationsInfo from './batchOperations/ActivityBatchOperationsInfo'
 import ActivityCourseCard from './batchOperations/ActivityCourseCard'
+import ActivityDeletionCard from './batchOperations/ActivityDeletionCard'
 import ActivityLiveQuizPointsCard from './batchOperations/ActivityLiveQuizPointsCard'
 import ActivityMultiplierCard from './batchOperations/ActivityMultiplierCard'
 import SelectedActivitiesList from './batchOperations/SelectedActivitiesList'
 import {
-  ActivityBatchOperationActions,
+  type ActivityBatchOperationActions,
   INITIAL_ACTIVITY_BATCH_OPERATIONS,
 } from './batchOperations/types'
+import useActivityBatchDeletion from './batchOperations/useActivityBatchDeletion'
 
 function ActivityBatchOperationsModal({
   selectedActivities,
@@ -41,15 +39,12 @@ function ActivityBatchOperationsModal({
   refetchActivities: () => Promise<void>
 }) {
   const t = useTranslations()
-  const [affectedActivities, setAffectedActivities] = useState(
-    selectedActivities.map((activity) => ({
-      ...activity,
-      actionsApplied: true,
-      reasons: [] as string[],
-    }))
-  )
   const [selectedActions, setSelectedActions] =
     useState<ActivityBatchOperationActions>(INITIAL_ACTIVITY_BATCH_OPERATIONS)
+  const [deletionConfirmationOpen, setDeletionConfirmationOpen] =
+    useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const deleteActivitiesBatch = useActivityBatchDeletion()
 
   // database mutation to execute activity batch operations
   const [applyActivityBatchOperations, { loading: applying }] = useMutation(
@@ -61,155 +56,185 @@ function ActivityBatchOperationsModal({
     { fetchPolicy: 'network-only' }
   )
 
-  // whenever the applied filters change, update the affected activities
-  useEffect(() => {
-    const updatedAffectedActivities = selectedActivities.map((activity) => {
-      let actionsApplied = true
-      const reasons: string[] = []
+  // whenever the applied filters change, derive the affected activities
+  const affectedActivities = useMemo(
+    () =>
+      selectedActivities.map((activity) => {
+        let actionsApplied = true
+        const reasons: string[] = []
 
-      // only allow batch operations on draft or scheduled activities
-      if (
-        activity.status !== PublicationStatus.Draft &&
-        activity.status !== PublicationStatus.Scheduled
-      ) {
-        actionsApplied = false
-        reasons.push(t('manage.activities.batchInvalidStatus'))
-      }
-
-      // insufficient permissions - all operations require write permissions
-      if (!activity.isEditor) {
-        actionsApplied = false
-        reasons.push(t('manage.activities.batchNeedEditorPermissions'))
-      }
-
-      // multiplier modification with course modification at the same time (selected course settings apply)
-      if (
-        typeof selectedActions.multiplier !== 'undefined' &&
-        selectedActions.multiplier !== null &&
-        selectedActions.course?.id &&
-        !selectedActions.course.isAssessmentEnabled &&
-        !selectedActions.course.isGamificationEnabled
-      ) {
-        actionsApplied = false
-        reasons.push(
-          t('manage.activities.batchMultiplierRequiresGamificationOrAssessment')
-        )
-      }
-
-      // if the course assignment is not modified, the assigned course settings
-      else if (
-        typeof selectedActions.multiplier !== 'undefined' &&
-        selectedActions.multiplier !== null &&
-        !selectedActions.course?.id &&
-        (!activity.courseId ||
-          (!activity.isGamificationEnabled && !activity.isAssessmentEnabled))
-      ) {
-        actionsApplied = false
-        reasons.push(
-          t('manage.activities.batchMultiplierRequiresGamificationOrAssessment')
-        )
-      }
-
-      // course assignment change
-      if (selectedActions.course?.id) {
-        // assessment activities can only be removed from assessment courses by course admins
+        // only allow batch operations on draft or scheduled activities
         if (
-          activity.isAssessmentEnabled &&
-          !activity.isActivityReviewer &&
-          selectedActions.course.id !== activity.courseId
+          activity.status !== PublicationStatus.Draft &&
+          activity.status !== PublicationStatus.Scheduled
         ) {
           actionsApplied = false
-          reasons.push(t('manage.activities.batchAssessmentRemovalAdminOnly'))
+          reasons.push(t('manage.activities.batchInvalidStatus'))
         }
 
-        // group activities can only be assigned to courses with groups enabled
-        if (
-          activity.type === ActivityType.GroupActivity &&
-          !selectedActions.course.isGroupCreationEnabled
-        ) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.activities.batchGroupActivityRequiresGroupsEnabled')
-          )
-        }
-
-        // for group activities, verify that the start date is after the group formation deadline
-        if (
-          activity.type === ActivityType.GroupActivity &&
-          selectedActions.course.groupDeadlineDate
-        ) {
-          const activityStart = dayjs(activity.scheduledStartAt)
-          const groupFormationDeadline = dayjs(
-            selectedActions.course.groupDeadlineDate
-          )
-
-          if (activityStart.isBefore(groupFormationDeadline)) {
+        if (selectedActions.deleteActivities) {
+          if (!activity.isManager) {
             actionsApplied = false
-            reasons.push(
-              t('manage.activities.batchGroupActivityRequiresFinalizedGroups')
-            )
+            reasons.push(t('manage.activities.batchNeedManagerPermissions'))
           }
-        }
-
-        // scheduled practice quizzes can only be assigned to courses where the scheduled start date lies within the course duration
-        if (
-          activity.type === ActivityType.PracticeQuiz &&
-          activity.automaticPublicationAt &&
-          dayjs(activity.automaticPublicationAt).isAfter(dayjs()) &&
-          (dayjs(activity.automaticPublicationAt).isBefore(
-            dayjs(selectedActions.course.startDate)
-          ) ||
-            dayjs(activity.automaticPublicationAt).isAfter(
-              dayjs(selectedActions.course.endDate)
-            ))
-        ) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.activities.batchPracticeQuizScheduledWithinCourse')
-          )
-        }
-
-        // for microlearnings and group activities, verify start/end dates lie within course dates
-        if (
-          activity.type === ActivityType.MicroLearning ||
-          activity.type === ActivityType.GroupActivity
-        ) {
-          const activityStart = dayjs(activity.scheduledStartAt)
-          const activityEnd = dayjs(activity.scheduledEndAt)
-          const courseStart = dayjs(selectedActions.course.startDate)
-          const courseEnd = dayjs(selectedActions.course.endDate)
 
           if (
-            activityStart.isBefore(courseStart) ||
-            activityEnd.isAfter(courseEnd)
+            activity.type === ActivityType.LiveQuiz &&
+            activity.isAssessmentEnabled &&
+            !activity.isActivityReviewer
           ) {
             actionsApplied = false
-            reasons.push(t('manage.activities.batchActivityDatesOutsideCourse'))
+            reasons.push(
+              t('manage.activities.batchAssessmentDeletionAdminOnly')
+            )
+          }
+
+          return {
+            ...activity,
+            actionsApplied,
+            reasons,
           }
         }
-      }
 
-      // live quiz points modification
-      if (
-        typeof selectedActions.liveQuizPoints !== 'undefined' &&
-        (activity.type !== ActivityType.LiveQuiz ||
-          (!selectedActions.course?.id &&
-            !activity.isGamificationEnabled &&
-            !activity.isAssessmentEnabled))
-      ) {
-        actionsApplied = false
-        reasons.push(t('manage.activities.batchPointsOnlyLiveQuiz'))
-      }
+        // insufficient permissions - all operations require write permissions
+        if (!activity.isEditor) {
+          actionsApplied = false
+          reasons.push(t('manage.activities.batchNeedEditorPermissions'))
+        }
 
-      return {
-        ...activity,
-        actionsApplied,
-        reasons,
-      }
-    })
+        // multiplier modification with course modification at the same time (selected course settings apply)
+        if (
+          typeof selectedActions.multiplier !== 'undefined' &&
+          selectedActions.multiplier !== null &&
+          selectedActions.course?.id &&
+          !selectedActions.course.isAssessmentEnabled &&
+          !selectedActions.course.isGamificationEnabled
+        ) {
+          actionsApplied = false
+          reasons.push(
+            t(
+              'manage.activities.batchMultiplierRequiresGamificationOrAssessment'
+            )
+          )
+        }
 
-    setAffectedActivities(updatedAffectedActivities)
-  }, [selectedActivities, selectedActions])
+        // if the course assignment is not modified, the assigned course settings
+        else if (
+          typeof selectedActions.multiplier !== 'undefined' &&
+          selectedActions.multiplier !== null &&
+          !selectedActions.course?.id &&
+          (!activity.courseId ||
+            (!activity.isGamificationEnabled && !activity.isAssessmentEnabled))
+        ) {
+          actionsApplied = false
+          reasons.push(
+            t(
+              'manage.activities.batchMultiplierRequiresGamificationOrAssessment'
+            )
+          )
+        }
+
+        // course assignment change
+        if (selectedActions.course?.id) {
+          // assessment activities can only be removed from assessment courses by course admins
+          if (
+            activity.isAssessmentEnabled &&
+            !activity.isActivityReviewer &&
+            selectedActions.course.id !== activity.courseId
+          ) {
+            actionsApplied = false
+            reasons.push(t('manage.activities.batchAssessmentRemovalAdminOnly'))
+          }
+
+          // group activities can only be assigned to courses with groups enabled
+          if (
+            activity.type === ActivityType.GroupActivity &&
+            !selectedActions.course.isGroupCreationEnabled
+          ) {
+            actionsApplied = false
+            reasons.push(
+              t('manage.activities.batchGroupActivityRequiresGroupsEnabled')
+            )
+          }
+
+          // for group activities, verify that the start date is after the group formation deadline
+          if (
+            activity.type === ActivityType.GroupActivity &&
+            selectedActions.course.groupDeadlineDate
+          ) {
+            const activityStart = dayjs(activity.scheduledStartAt)
+            const groupFormationDeadline = dayjs(
+              selectedActions.course.groupDeadlineDate
+            )
+
+            if (activityStart.isBefore(groupFormationDeadline)) {
+              actionsApplied = false
+              reasons.push(
+                t('manage.activities.batchGroupActivityRequiresFinalizedGroups')
+              )
+            }
+          }
+
+          // scheduled practice quizzes can only be assigned to courses where the scheduled start date lies within the course duration
+          if (
+            activity.type === ActivityType.PracticeQuiz &&
+            activity.automaticPublicationAt &&
+            dayjs(activity.automaticPublicationAt).isAfter(dayjs()) &&
+            (dayjs(activity.automaticPublicationAt).isBefore(
+              dayjs(selectedActions.course.startDate)
+            ) ||
+              dayjs(activity.automaticPublicationAt).isAfter(
+                dayjs(selectedActions.course.endDate)
+              ))
+          ) {
+            actionsApplied = false
+            reasons.push(
+              t('manage.activities.batchPracticeQuizScheduledWithinCourse')
+            )
+          }
+
+          // for microlearnings and group activities, verify start/end dates lie within course dates
+          if (
+            activity.type === ActivityType.MicroLearning ||
+            activity.type === ActivityType.GroupActivity
+          ) {
+            const activityStart = dayjs(activity.scheduledStartAt)
+            const activityEnd = dayjs(activity.scheduledEndAt)
+            const courseStart = dayjs(selectedActions.course.startDate)
+            const courseEnd = dayjs(selectedActions.course.endDate)
+
+            if (
+              activityStart.isBefore(courseStart) ||
+              activityEnd.isAfter(courseEnd)
+            ) {
+              actionsApplied = false
+              reasons.push(
+                t('manage.activities.batchActivityDatesOutsideCourse')
+              )
+            }
+          }
+        }
+
+        // live quiz points modification
+        if (
+          typeof selectedActions.liveQuizPoints !== 'undefined' &&
+          (activity.type !== ActivityType.LiveQuiz ||
+            (!selectedActions.course?.id &&
+              !activity.isGamificationEnabled &&
+              !activity.isAssessmentEnabled))
+        ) {
+          actionsApplied = false
+          reasons.push(t('manage.activities.batchPointsOnlyLiveQuiz'))
+        }
+
+        return {
+          ...activity,
+          actionsApplied,
+          reasons,
+        }
+      }),
+    [selectedActivities, selectedActions, t]
+  )
 
   // if the course changes to a non-gamified non-assessment course, no points are awarded
   // -> multiplier and live quiz points settings need to be blocked
@@ -227,10 +252,92 @@ function ActivityBatchOperationsModal({
     }
   }, [selectedActions.course])
 
-  const numOfUpdatedActivities = useMemo(() => {
+  const numOfAffectedActivities = useMemo(() => {
     return affectedActivities.filter((activity) => activity.actionsApplied)
       .length
   }, [affectedActivities])
+
+  const activitiesToDelete = useMemo(
+    () =>
+      selectedActions.deleteActivities
+        ? affectedActivities.filter((activity) => activity.actionsApplied)
+        : [],
+    [affectedActivities, selectedActions.deleteActivities]
+  )
+
+  async function executeBatchDeletion() {
+    setDeleting(true)
+
+    try {
+      const outcomes = await deleteActivitiesBatch(activitiesToDelete)
+      const deletedCount = outcomes.filter(
+        (outcome) => outcome.status === 'deleted'
+      ).length
+      const uncertainCount = outcomes.filter(
+        (outcome) => outcome.status === 'uncertain'
+      ).length
+
+      if (deletedCount > 0 || uncertainCount > 0) {
+        resetSelectedActivities()
+      }
+
+      try {
+        await refetchActivities()
+      } catch (error) {
+        console.error(error)
+      }
+
+      if (uncertainCount > 0) {
+        toast({
+          type: 'warning',
+          message: t('manage.activities.batchDeletionUncertain'),
+          options: { duration: 5000 },
+        })
+      } else if (deletedCount === activitiesToDelete.length) {
+        toast({
+          type: 'success',
+          message: t('manage.activities.batchDeletionSuccess'),
+          options: { duration: 3000 },
+        })
+      } else if (deletedCount > 0) {
+        toast({
+          type: 'warning',
+          message: t('manage.activities.batchDeletionPartialSuccess'),
+          options: { duration: 4500 },
+        })
+      } else {
+        toast({
+          type: 'error',
+          message: t('manage.activities.batchDeletionFailed'),
+          options: { duration: 5000 },
+        })
+      }
+
+      setDeleting(false)
+      if (deletedCount > 0 || uncertainCount > 0) {
+        onClose()
+      }
+    } catch (error) {
+      console.error(error)
+      setDeleting(false)
+      toast({
+        type: 'error',
+        message: t('manage.activities.batchDeletionFailed'),
+        options: { duration: 5000 },
+      })
+    }
+  }
+
+  if (deletionConfirmationOpen) {
+    return (
+      <ActivityBatchDeletionConfirmationModal
+        count={activitiesToDelete.length}
+        deleting={deleting}
+        onClose={() => setDeletionConfirmationOpen(false)}
+        onDelete={executeBatchDeletion}
+      />
+    )
+  }
 
   return (
     <Modal
@@ -264,7 +371,13 @@ function ActivityBatchOperationsModal({
           </div>
 
           <div className="mt-2 flex flex-col gap-3">
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <fieldset
+              disabled={selectedActions.deleteActivities}
+              className={twMerge(
+                'grid grid-cols-1 gap-3 lg:grid-cols-2',
+                selectedActions.deleteActivities && 'opacity-50'
+              )}
+            >
               <ActivityMultiplierCard
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
@@ -278,33 +391,47 @@ function ActivityBatchOperationsModal({
                 selectedActions={selectedActions}
                 setSelectedActions={setSelectedActions}
               />
-            </div>
+            </fieldset>
+            <ActivityDeletionCard
+              selectedActions={selectedActions}
+              setSelectedActions={setSelectedActions}
+            />
             <div className="flex flex-row items-center gap-5 self-end">
               <span
                 className={twMerge(
                   'text-sm text-green-700',
-                  numOfUpdatedActivities === 0 && 'text-red-600'
+                  numOfAffectedActivities === 0 && 'text-red-600'
                 )}
               >
                 <FontAwesomeIcon
-                  icon={numOfUpdatedActivities === 0 ? faX : faCheck}
+                  icon={numOfAffectedActivities === 0 ? faX : faCheck}
                   className="mr-1.5"
                 />
-                {numOfUpdatedActivities === 0
-                  ? t('manage.activities.noActivitiesWillBeUpdated')
-                  : numOfUpdatedActivities === selectedActivities.length
-                    ? t('manage.activities.nActivitiesWillBeUpdated', {
-                        number: numOfUpdatedActivities,
+                {selectedActions.deleteActivities
+                  ? numOfAffectedActivities === 0
+                    ? t('manage.activities.noActivitiesWillBeDeleted')
+                    : t('manage.activities.nActivitiesWillBeDeleted', {
+                        number:
+                          numOfAffectedActivities === selectedActivities.length
+                            ? numOfAffectedActivities
+                            : `${numOfAffectedActivities}/${selectedActivities.length}`,
                       })
+                  : numOfAffectedActivities === 0
+                    ? t('manage.activities.noActivitiesWillBeUpdated')
                     : t('manage.activities.nActivitiesWillBeUpdated', {
-                        number: `${numOfUpdatedActivities}/${selectedActivities.length}`,
+                        number:
+                          numOfAffectedActivities === selectedActivities.length
+                            ? numOfAffectedActivities
+                            : `${numOfAffectedActivities}/${selectedActivities.length}`,
                       })}
               </span>
               <Button
-                primary
+                primary={!selectedActions.deleteActivities}
+                destructive={selectedActions.deleteActivities}
                 disabled={
                   applying ||
-                  numOfUpdatedActivities === 0 ||
+                  deleting ||
+                  numOfAffectedActivities === 0 ||
                   isShallowEqual(
                     selectedActions,
                     INITIAL_ACTIVITY_BATCH_OPERATIONS
@@ -312,6 +439,11 @@ function ActivityBatchOperationsModal({
                   (selectedActions.course && !selectedActions.course.id)
                 }
                 onClick={async () => {
+                  if (selectedActions.deleteActivities) {
+                    setDeletionConfirmationOpen(true)
+                    return
+                  }
+
                   try {
                     const { data: res } = await applyActivityBatchOperations({
                       variables: {
@@ -336,7 +468,7 @@ function ActivityBatchOperationsModal({
 
                     if (
                       res?.applyActivityBatchOperations ===
-                      numOfUpdatedActivities
+                      numOfAffectedActivities
                     ) {
                       resetSelectedActivities()
                       await refetchActivities()
@@ -376,7 +508,9 @@ function ActivityBatchOperationsModal({
                 className={{ root: 'h-9' }}
                 data={{ cy: 'apply-batch-operations' }}
               >
-                {t('shared.generic.apply')}
+                {selectedActions.deleteActivities
+                  ? t('shared.generic.delete')
+                  : t('shared.generic.apply')}
               </Button>
             </div>
           </div>

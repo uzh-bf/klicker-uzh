@@ -1,14 +1,21 @@
+import { useMutation } from '@apollo/client'
 import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArchive,
   faComment,
+  faInbox,
   faPencil,
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { Element } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApplyElementBatchOperationsDocument,
+  type Element,
+} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo } from 'react'
-import { ActivityAction } from '../activities/actions/useAvailableActions'
+import { type Dispatch, type SetStateAction, useCallback, useMemo } from 'react'
+import type { ActivityAction } from '../activities/actions/useAvailableActions'
 
 function useElementActions({
   element,
@@ -20,6 +27,7 @@ function useElementActions({
   setRemovalModalOpen,
   setActivityLogOpen,
   setSharingModalOpen,
+  refetchElements,
 }: {
   element: Element
   disabled: boolean
@@ -30,8 +38,68 @@ function useElementActions({
   setRemovalModalOpen: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
   setSharingModalOpen: Dispatch<SetStateAction<boolean>>
+  refetchElements: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
+  const isArchived = element.isArchived ?? false
+  const [applyElementBatchOperations, { loading: updatingArchiveState }] =
+    useMutation(ApplyElementBatchOperationsDocument)
+
+  const updateArchiveState = useCallback(async () => {
+    let result: 'success' | 'failure' | 'uncertain' = 'failure'
+
+    try {
+      const { data } = await applyElementBatchOperations({
+        variables: {
+          elementIds: [element.id],
+          archive: !isArchived,
+          unarchive: isArchived,
+          updateInstances: false,
+          updateTemplateInstances: false,
+        },
+      })
+      result = data?.applyElementBatchOperations === 1 ? 'success' : 'failure'
+    } catch (error) {
+      console.error(error)
+      result = 'uncertain'
+    }
+
+    let refreshFailed = false
+    try {
+      await refetchElements()
+    } catch (error) {
+      console.error(error)
+      refreshFailed = true
+    }
+
+    if (result === 'success' && !refreshFailed) {
+      toast({
+        type: 'success',
+        message: isArchived
+          ? t('manage.questionPool.elementRestoredSuccessfully')
+          : t('manage.questionPool.elementArchivedSuccessfully'),
+        options: { duration: 3000 },
+      })
+    } else if (result === 'success') {
+      toast({
+        type: 'warning',
+        message: t('manage.questionPool.elementArchiveRefreshFailed'),
+        options: { duration: 5000 },
+      })
+    } else if (result === 'uncertain') {
+      toast({
+        type: 'warning',
+        message: t('manage.questionPool.elementArchiveActionUncertain'),
+        options: { duration: 5000 },
+      })
+    } else {
+      toast({
+        type: 'error',
+        message: t('manage.questionPool.elementArchiveActionFailed'),
+        options: { duration: 5000 },
+      })
+    }
+  }, [applyElementBatchOperations, element.id, isArchived, refetchElements, t])
 
   const actions = useMemo(
     () => [
@@ -93,10 +161,23 @@ function useElementActions({
         className: 'text-red-600 hover:text-red-600',
         data: { cy: `delete-element-${element.name}` },
       },
+      {
+        id: 'archiveElement',
+        label: isArchived
+          ? t('manage.questionPool.restoreFromArchive')
+          : t('manage.questionPool.moveToArchive'),
+        icon: isArchived ? faInbox : faArchive,
+        onClick: updateArchiveState,
+        disabled: disabled || updatingArchiveState,
+        data: {
+          cy: `${isArchived ? 'unarchive' : 'archive'}-element-${element.name}`,
+        },
+      },
     ],
     [
       t,
       element,
+      isArchived,
       disabled,
       setShowRecoveryPrompt,
       setModificationModalOpen,
@@ -105,6 +186,8 @@ function useElementActions({
       setRemovalModalOpen,
       setActivityLogOpen,
       setSharingModalOpen,
+      updatingArchiveState,
+      updateArchiveState,
     ]
   )
 
