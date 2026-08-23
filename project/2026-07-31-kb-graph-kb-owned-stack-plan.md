@@ -541,3 +541,19 @@ it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
   sequential. The seven-changed-path/four-conflict distinction is recorded
   above. No merge, push, PR mutation, deployment, or sibling worktree mutation
   occurred during this planning checkpoint.
+- 2026-08-23: Corrective commits `4319bb4b3` and `7c2763742` close the two
+  code findings from the final-package review. Graph and maintenance rotation
+  now uses page-aligned starts, so non-multiple totals do not lose the wrapped
+  portion of a 32-row window; graph-monitor and maintenance tests cover totals
+  33 and 65. The development graph loader now uses a literal package
+  specifier, and a direct Node 24 development import reaches the expected
+  `EMPTY` publication error instead of failing module resolution. Exact Node 24
+  focused Hatchet tests pass 99/99, chat typecheck passes, and the full Node 24
+  production build passes 25/25 tasks. The host pre-push hook remains unusable
+  for this branch because the host runs Node 26 while the repository pins Node
+  24; the equivalent container build is the supported evidence. Exact
+  authenticated browser screenshots remain open: the branch-local namespaced
+  route could not be reconciled because the shared route ledger/TLS probe
+  reports `curl (60) SSL certificate problem: out of memory`, so no browser
+  success or screenshot is claimed. Runtime teardown remains required after
+  the final runtime-dependent checks.
