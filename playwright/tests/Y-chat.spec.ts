@@ -2459,7 +2459,7 @@ test.describe('Chatbot Source Citations', () => {
     ).toContainText('[9]')
   })
 
-  test('Clicking a citation scrolls to its source without navigating or changing the URL hash', async ({
+  test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({
     page,
   }) => {
     const messageId = '4a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
@@ -2481,16 +2481,15 @@ test.describe('Chatbot Source Citations', () => {
           content: [
             docQueryPart({
               toolCallId: 'call-1',
-              sources: [
-                {
-                  file_name: 'Reference.pdf',
-                  source_url: 'https://example.com/reference.pdf',
-                  source_type: 'document',
-                  page_number: 1,
-                },
-              ],
+              sources: Array.from({ length: 12 }, (_, index) => ({
+                file_name:
+                  index === 6 ? 'Reference.pdf' : `Reference ${index + 1}.pdf`,
+                source_url: `https://example.com/reference-${index + 1}.pdf`,
+                source_type: 'document',
+                page_number: index + 1,
+              })),
             }),
-            { type: 'text', text: `As shown in [1].\n\n${longAnswer}` },
+            { type: 'text', text: `As shown in [7].\n\n${longAnswer}` },
           ],
         },
       ],
@@ -2502,7 +2501,7 @@ test.describe('Chatbot Source Citations', () => {
     // URL change the router had already queued.
     await expect(page).toHaveURL(/\/threads\//)
     const citation = page.getByTestId('chat-citation')
-    const source = page.locator(`#src-${messageId}-1`)
+    const source = page.locator(`#src-${messageId}-7`)
     await expect(citation).toBeVisible()
     await expect(source).toBeVisible()
 
@@ -2516,6 +2515,10 @@ test.describe('Chatbot Source Citations', () => {
     const urlBefore = page.url()
     const hashBefore = await page.evaluate(() => window.location.hash)
 
+    await citation.hover()
+    await expect(
+      page.getByRole('tooltip').filter({ hasText: 'Go to source' })
+    ).toBeVisible()
     await citation.click()
 
     await expect(source).toBeInViewport()
@@ -2601,7 +2604,7 @@ test.describe('Chatbot Source Citations', () => {
     ).join('\n\n')
     await mockChatStream(page, {
       textChunks: [
-        `Live answer citing [1].\n\n${streamedParagraphs}`,
+        `Live answer citing [7].\n\n${streamedParagraphs}`,
         '\n\nThe final paragraph also cites [2].',
       ],
       chunkDelayMs: 20,
@@ -2706,20 +2709,24 @@ test.describe('Chatbot Source Citations', () => {
     const citations = page.getByTestId('chat-citation')
     await expect(citations).toHaveCount(2)
     await expect(citations.nth(0)).toHaveAccessibleName(
-      'Source 1: Live Alpha.pdf'
+      'Source 7: Live Source 7.pdf'
     )
     await expect(citations.nth(1)).toHaveAccessibleName(
       'Source 2: Live Beta.pdf'
     )
 
-    const firstSource = page.getByTestId('chat-source-card').first()
+    const citedSource = page.getByTestId('chat-source-card').nth(6)
     await citations.nth(0).scrollIntoViewIfNeeded()
     await expect(citations.nth(0)).toBeInViewport()
-    await expect(firstSource).not.toBeInViewport()
+    await expect(citedSource).not.toBeInViewport()
 
+    await citations.nth(0).hover()
+    await expect(
+      page.getByRole('tooltip').filter({ hasText: 'Go to source' })
+    ).toBeVisible()
     await citations.nth(0).click()
 
-    await expect(firstSource).toBeInViewport()
+    await expect(citedSource).toBeInViewport()
   })
 
   test('Composer hint is visible in standalone mode and hidden when embedded', async ({
