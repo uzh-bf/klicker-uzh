@@ -186,11 +186,14 @@ export function useDictation(): DictationValue {
 
     // Calling the on-device availability probe below terminates the whole
     // renderer in headless Chromium builds that ship the JS interface
-    // without the media service binder (bad Mojo message, IPC reason 123),
-    // so a browser-provided recognition object is never probed under
-    // automation (navigator.webdriver); test polyfills are exempt because
-    // they own their availability answer. Real browsers keep the probe.
-    if (navigator.webdriver === true && !constructor.available) {
+    // (including its static available() method) without the media service
+    // binder (bad Mojo message, IPC reason 123), so under automation the
+    // probe runs only when an E2E polyfill installed its own constructor,
+    // identified by the window.__dictationFake marker it sets; real
+    // browsers never set webdriver and always keep the eager probe.
+    const isE2EPolyfill =
+      typeof window !== 'undefined' && '__dictationFake' in window
+    if (navigator.webdriver === true && !isE2EPolyfill) {
       dispatch({ type: 'capability', status: 'unsupported' })
       return
     }
