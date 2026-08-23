@@ -178,6 +178,16 @@ export function useDictation(): DictationValue {
       return
     }
 
+    // Calling the on-device availability probe below terminates the whole
+    // renderer in headless Chromium builds that ship the JS interface
+    // without the media service binder (bad Mojo message, IPC reason 123),
+    // so automation contexts never probe and simply report no dictation
+    // support; real browsers keep the eager probe unchanged.
+    if (navigator.webdriver === true) {
+      dispatch({ type: 'capability', status: 'unsupported' })
+      return
+    }
+
     const constructor = getSpeechRecognitionConstructor()
     if (!constructor) {
       dispatch({ type: 'capability', status: 'unsupported' })
