@@ -211,6 +211,11 @@ lecturer-demo work.
   `project/_local/reviews/2026-08-23-chatbot-k6-final-review.md`. Final PR CI
   on `274f50dde` passed all non-skipped checks; filtered jobs were skipped only
   after their status gates passed.
-- Remaining: update the whole-branch PR description. Live login,
-  chatbot/provider traffic, merge, deployment, and lecturer communication
-  remain withheld.
+- S14: complete — the whole-branch PR description was updated and read back on
+  PR #5478. It covers the five-path diff, 671 substantive script lines, all
+  meaningful branch slices, security/privacy boundaries, current-head static
+  evidence, Sol's final review, and the withheld live-runtime gate. CI on the
+  latest published head `ec66a2e34` passed all non-skipped checks; filtered jobs
+  were skipped only after their status gates passed.
+- Remaining: live login, chatbot/provider traffic, merge, deployment, and
+  lecturer communication remain withheld.
