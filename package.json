@@ -63,6 +63,7 @@
     "dev:playwright": "./util/_run_with_infisical.sh --env dev-playwright bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run dev:test --concurrency 30",
     "dev:prepare-prod": "./util/_prepare_local_prod.sh",
     "dev:raw": "turbo run dev --concurrency 30",
+    "eval:klicker": "./util/_run_klicker_eval.sh",
     "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "format:check": "biome format . && prettier --check \"**/*.{md,mdx,yaml,yml}\" playwright/ --config .prettierrc.mjs",
     "knip": "knip",

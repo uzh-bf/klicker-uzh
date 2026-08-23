@@ -1,5 +1,8 @@
 # LiteLLM Proxy Configuration
 
+litellm_settings:
+  drop_params: true
+
 model_list:
   # This mirrors the deployed Klicker Auto V2 policy while keeping local model
   # names and the generic upstream boundary. The chat registry maps its `auto`
