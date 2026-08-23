@@ -47,7 +47,11 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
-      args: ['--lang=en-US'],
+      // CI-only renderer crashes hit the first heavy chat render while
+      // resource telemetry shows no memory pressure; the GPU/SwiftShader
+      // compositor path is the remaining suspect, so force software raster
+      // without the GPU process (run 32643406987 evidence).
+      args: ['--lang=en-US', '--disable-gpu'],
     },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent
