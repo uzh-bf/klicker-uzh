@@ -2136,6 +2136,7 @@ export type Mutation = {
   createParticipantAccount?: Maybe<ParticipantTokenData>;
   createParticipantGroup?: Maybe<ParticipantGroup>;
   createPracticeQuiz?: Maybe<ActivityInfo>;
+  createProviderBinding: Scalars['Boolean']['output'];
   createUserGroup?: Maybe<UserGroup>;
   createUserLogin?: Maybe<UserLogin>;
   deactivateLiveQuizBlock?: Maybe<Scalars['Boolean']['output']>;
@@ -2215,6 +2216,7 @@ export type Mutation = {
   publishMicroLearning?: Maybe<MicroLearning>;
   publishPracticeQuiz?: Maybe<PracticeQuiz>;
   rateElement?: Maybe<ElementFeedback>;
+  registerProviderCredential?: Maybe<ProviderCredentialProjection>;
   removeCatalogObjectAssignment: Scalars['Boolean']['output'];
   removeObject?: Maybe<Scalars['String']['output']>;
   removeUserFromGroup: Scalars['Boolean']['output'];
@@ -2226,8 +2228,11 @@ export type Mutation = {
   resolveFeedback?: Maybe<Feedback>;
   respondToElementStack?: Maybe<StackFeedback>;
   respondToFeedback?: Maybe<Feedback>;
+  resumeProviderCredential?: Maybe<ProviderCredentialProjection>;
   revokeAssessmentReport: CourseAssessmentReportRecord;
   revokeObjectAccess?: Maybe<Scalars['Int']['output']>;
+  revokeProviderCredential?: Maybe<ProviderCredentialProjection>;
+  rotateProviderCredential?: Maybe<ProviderCredentialProjection>;
   scheduleLiveQuiz?: Maybe<LiveQuizMeta>;
   sendMagicLink?: Maybe<Scalars['Boolean']['output']>;
   setActivityReviewStatus?: Maybe<ReviewStatus>;
@@ -2238,6 +2243,7 @@ export type Mutation = {
   startLiveQuiz?: Maybe<LiveQuizMeta>;
   submitGroupActivityDecisions?: Maybe<Scalars['Int']['output']>;
   subscribeToPush?: Maybe<Participation>;
+  suspendProviderCredential?: Maybe<ProviderCredentialProjection>;
   toggleArchiveCourse?: Maybe<Course>;
   transferGroupOwnership: Scalars['Boolean']['output'];
   transferObjectOwnership?: Maybe<PermissionInfo>;
@@ -2255,6 +2261,7 @@ export type Mutation = {
   updateUserLogin?: Maybe<UserLogin>;
   updateWeeklyTimelineEntriesCourse?: Maybe<Scalars['Boolean']['output']>;
   upvoteFeedback?: Maybe<Feedback>;
+  validateProviderCredential?: Maybe<ProviderCredentialProjection>;
   voteFeedbackResponse?: Maybe<FeedbackResponse>;
 };
 
@@ -2619,6 +2626,15 @@ export type MutationCreatePracticeQuizArgs = {
   order: ElementOrderType;
   resetTimeDays: Scalars['Int']['input'];
   stacks: Array<ElementStackInput>;
+};
+
+
+export type MutationCreateProviderBindingArgs = {
+  aggregateQuotaLimit: Scalars['Float']['input'];
+  allowedModelAlias: Scalars['String']['input'];
+  chatbotId: Scalars['String']['input'];
+  credentialId: Scalars['String']['input'];
+  participantQuotaLimit: Scalars['Float']['input'];
 };
 
 
@@ -3142,6 +3158,12 @@ export type MutationRateElementArgs = {
 };
 
 
+export type MutationRegisterProviderCredentialArgs = {
+  profileKey: Scalars['String']['input'];
+  secret: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveCatalogObjectAssignmentArgs = {
   assignmentId: Scalars['Int']['input'];
 };
@@ -3212,6 +3234,11 @@ export type MutationRespondToFeedbackArgs = {
 };
 
 
+export type MutationResumeProviderCredentialArgs = {
+  credentialId: Scalars['String']['input'];
+};
+
+
 export type MutationRevokeAssessmentReportArgs = {
   id: Scalars['String']['input'];
 };
@@ -3221,6 +3248,17 @@ export type MutationRevokeObjectAccessArgs = {
   objectId: Scalars['String']['input'];
   objectType: ObjectType;
   permissionId: Scalars['Int']['input'];
+};
+
+
+export type MutationRevokeProviderCredentialArgs = {
+  credentialId: Scalars['String']['input'];
+};
+
+
+export type MutationRotateProviderCredentialArgs = {
+  credentialId: Scalars['String']['input'];
+  secret: Scalars['String']['input'];
 };
 
 
@@ -3286,6 +3324,11 @@ export type MutationSubmitGroupActivityDecisionsArgs = {
 export type MutationSubscribeToPushArgs = {
   courseId: Scalars['String']['input'];
   subscriptionObject: SubscriptionObjectInput;
+};
+
+
+export type MutationSuspendProviderCredentialArgs = {
+  credentialId: Scalars['String']['input'];
 };
 
 
@@ -3398,6 +3441,11 @@ export type MutationUpdateWeeklyTimelineEntriesCourseArgs = {
 export type MutationUpvoteFeedbackArgs = {
   feedbackId: Scalars['Int']['input'];
   increment: Scalars['Int']['input'];
+};
+
+
+export type MutationValidateProviderCredentialArgs = {
+  credentialId: Scalars['String']['input'];
 };
 
 
@@ -3824,6 +3872,41 @@ export type PracticeQuiz = {
   updatedAt?: Maybe<Scalars['Date']['output']>;
 };
 
+export type ProviderCredentialBindingProjection = {
+  __typename?: 'ProviderCredentialBindingProjection';
+  aggregateQuotaLimit: Scalars['String']['output'];
+  allowedModelAlias: Scalars['String']['output'];
+  chatbotId: Scalars['String']['output'];
+  currentNoticeVersion: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
+  participantQuotaLimit: Scalars['String']['output'];
+};
+
+export type ProviderCredentialProjection = {
+  __typename?: 'ProviderCredentialProjection';
+  bindings: Array<ProviderCredentialBindingProjection>;
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['ID']['output'];
+  profileKey: Scalars['String']['output'];
+  profileVersion: Scalars['Int']['output'];
+  safeFingerprint?: Maybe<Scalars['String']['output']>;
+  status: ProviderCredentialStatus;
+  updatedAt: Scalars['Date']['output'];
+  validatedModelAlias?: Maybe<Scalars['String']['output']>;
+  vaultSecretName: Scalars['String']['output'];
+  vaultSecretVersion: Scalars['Int']['output'];
+};
+
+export enum ProviderCredentialStatus {
+  Active = 'ACTIVE',
+  Deleted = 'DELETED',
+  DeletionPending = 'DELETION_PENDING',
+  PendingValidation = 'PENDING_VALIDATION',
+  Revoked = 'REVOKED',
+  Suspended = 'SUSPENDED'
+}
+
 export type PublicAssessmentReportCourse = {
   __typename?: 'PublicAssessmentReportCourse';
   displayName: Scalars['String']['output'];
@@ -3940,6 +4023,7 @@ export type Query = {
   getObjectActivity?: Maybe<Array<ActivityLogEntry>>;
   getObjectPermissions?: Maybe<PermissionsList>;
   getOutdatedElementInstances?: Maybe<Array<ElementInstanceVersionInfo>>;
+  getOwnerProviderCredentials?: Maybe<Array<ProviderCredentialProjection>>;
   getParticipation?: Maybe<Participation>;
   getPracticeCourses?: Maybe<Array<Course>>;
   getPracticeQuizEvaluation?: Maybe<ActivityEvaluation>;

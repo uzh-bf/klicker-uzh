@@ -274,6 +274,7 @@ model ProviderCredential {
 
   bindings      ChatbotProviderBinding[]
   usageAccounts ByokUsageAccount[]
+  outboxEvents ProviderCredentialOutbox[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -378,5 +379,27 @@ model TraceDeletionJob {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([terminalState])
+}
+
+model ProviderCredentialOutbox {
+  id String @id @default(uuid()) @db.Uuid
+
+  credential ProviderCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  credentialId String @db.Uuid
+
+  // Durable lifecycle events for gateway sync; payloads carry safe metadata
+  // only (status, vault handle facts, binding state). No secret material.
+  eventType String
+  payload Json
+
+  processedAt DateTime?
+  attempts Int @default(0)
+  terminalState String @default("PENDING") // PENDING | PROCESSED | FAILED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([credentialId, terminalState])
   @@index([terminalState])
 }

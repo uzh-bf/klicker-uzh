@@ -5,6 +5,7 @@ import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operation
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
+import { providerCredentialIngress } from './providerCredentialIngress.js'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
@@ -174,6 +175,8 @@ function prepareApp({
     maskedErrors: !process.env.DEBUG,
     graphqlEndpoint: '/api/graphql',
   })
+
+  app.post('/api/provider-credentials/secret', providerCredentialIngress)
 
   app.use('/healthz', function (req, res) {
     res.send('OK')

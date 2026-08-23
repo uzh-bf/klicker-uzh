@@ -1966,6 +1966,7 @@ type Mutation {
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
+  createProviderBinding(aggregateQuotaLimit: Float!, allowedModelAlias: String!, chatbotId: String!, credentialId: String!, participantQuotaLimit: Float!): Boolean!
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
@@ -2045,6 +2046,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  registerProviderCredential(profileKey: String!, secret: String!): ProviderCredentialProjection
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -2056,8 +2058,11 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
+  resumeProviderCredential(credentialId: String!): ProviderCredentialProjection
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  revokeProviderCredential(credentialId: String!): ProviderCredentialProjection
+  rotateProviderCredential(credentialId: String!, secret: String!): ProviderCredentialProjection
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -2068,6 +2073,7 @@ type Mutation {
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
+  suspendProviderCredential(credentialId: String!): ProviderCredentialProjection
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
   transferGroupOwnership(id: Int!, newOwnerId: String!): Boolean!
   transferObjectOwnership(objectId: String!, objectType: ObjectType!, shortnameOrEmail: String!): PermissionInfo
@@ -2085,6 +2091,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  validateProviderCredential(credentialId: String!): ProviderCredentialProjection
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -2477,6 +2484,39 @@ type PracticeQuiz {
   updatedAt: Date
 }
 
+type ProviderCredentialBindingProjection {
+  aggregateQuotaLimit: String!
+  allowedModelAlias: String!
+  chatbotId: String!
+  currentNoticeVersion: Int!
+  id: ID!
+  isActive: Boolean!
+  participantQuotaLimit: String!
+}
+
+type ProviderCredentialProjection {
+  bindings: [ProviderCredentialBindingProjection!]!
+  createdAt: Date!
+  id: ID!
+  profileKey: String!
+  profileVersion: Int!
+  safeFingerprint: String
+  status: ProviderCredentialStatus!
+  updatedAt: Date!
+  validatedModelAlias: String
+  vaultSecretName: String!
+  vaultSecretVersion: Int!
+}
+
+enum ProviderCredentialStatus {
+  ACTIVE
+  DELETED
+  DELETION_PENDING
+  PENDING_VALIDATION
+  REVOKED
+  SUSPENDED
+}
+
 type PublicAssessmentReportCourse {
   displayName: String!
   name: String!
@@ -2587,6 +2627,7 @@ type Query {
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
   getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
+  getOwnerProviderCredentials: [ProviderCredentialProjection!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
