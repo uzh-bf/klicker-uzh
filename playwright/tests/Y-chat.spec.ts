@@ -192,13 +192,16 @@ async function visitChat(page: Page) {
     waitUntil: 'domcontentloaded',
   })
   // The loading skeleton clears once hydration completes; on a heavily
-  // loaded CI runner that can stall, so one reload recovers it instead of
-  // failing every assertion that follows.
+  // loaded CI runner that can stall. A full navigation recovers it instead
+  // of failing every assertion that follows; `reload` would throw when the
+  // crashed renderer cannot be revived (observed as a whole-shard cascade).
   const skeleton = page.getByTestId('chat-loading')
   try {
     await expect(skeleton).toHaveCount(0)
   } catch {
-    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
     await expect(skeleton).toHaveCount(0)
   }
 }

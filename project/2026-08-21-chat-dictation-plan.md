@@ -308,6 +308,15 @@ Date: 2026-08-21. Branch `feat/chat-dictation`, worktree
   never finishes hydrating under CI load, so `visitChat` falls back to one
   reload when the skeleton has not cleared. Chat typecheck, unit tests, lint,
   and formatting pass locally. Merge remains withheld.
+- 2026-08-23 — Round 4 rerun of the failed shard (run 32604558704, attempt 2)
+  reproduced the crash cascade: all 80 failures are Y-chat tests hitting
+  `page.reload: Page crashed` at the `visitChat` recovery line, while the
+  other seven shards and every non-Y-chat test on this shard pass. The same
+  shard file set passed on another branch minutes later, so the trigger is
+  runner-load renderer crashes amplified by `page.reload`, which throws when
+  the renderer is dead. The recovery now performs a full `goto` instead of
+  `reload`; Playwright can navigate to a crashed page but cannot reload it.
+  Chat-side checks stay green locally. Merge remains withheld.
 
 ## Pause and finish boundary
 
