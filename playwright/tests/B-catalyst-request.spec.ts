@@ -30,11 +30,9 @@ test.describe('Catalyst access request flow', () => {
     // Fill in valid values
     await page
       .getByTestId('catalyst-request-institution')
-      .locator('input')
       .fill('Synthetic University')
     await page
       .getByTestId('catalyst-request-use-case')
-      .locator('textarea')
       .fill(
         'Evaluating KlickerUZH Catalyst features for one synthetic pilot course.'
       )
