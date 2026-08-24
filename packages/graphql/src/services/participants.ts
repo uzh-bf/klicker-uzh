@@ -12,6 +12,7 @@ import {
   getStudyStreakResponsesRemainingTodayForParticipations,
   reconcileStudyStreak,
   type StudyStreakStatusParticipation,
+  zurichDate,
 } from './studyStreak.js'
 
 dayjs.extend(isoWeek)
@@ -193,6 +194,7 @@ export async function getParticipations(
   }: { endpoint?: string | null; assessmentOnly?: boolean | null },
   ctx: ContextWithUser
 ) {
+  const today = zurichDate(new Date())
   const streakParticipations = assessmentOnly
     ? []
     : await ctx.prisma.participation.findMany({
@@ -204,16 +206,36 @@ export async function getParticipations(
             isAssessmentEnabled: false,
           },
         },
-        select: { courseId: true },
+        select: {
+          courseId: true,
+          studyStreakLastProcessedDate: true,
+          course: {
+            select: {
+              startDate: true,
+              endDate: true,
+            },
+          },
+        },
       })
 
   await Promise.all(
-    streakParticipations.map(({ courseId }) =>
-      reconcileStudyStreak(
-        { prisma: ctx.prisma },
-        { courseId, participantId: ctx.user.sub }
+    streakParticipations
+      .filter(({ course, studyStreakLastProcessedDate }) => {
+        const courseStart = zurichDate(course.startDate)
+        const courseEnd = zurichDate(course.endDate)
+        const lastProcessed = studyStreakLastProcessedDate
+          ? zurichDate(studyStreakLastProcessedDate)
+          : null
+
+        if (today < courseStart) return false
+        return today <= courseEnd || !lastProcessed || lastProcessed < courseEnd
+      })
+      .map(({ courseId }) =>
+        reconcileStudyStreak(
+          { prisma: ctx.prisma },
+          { courseId, participantId: ctx.user.sub }
+        )
       )
-    )
   )
 
   const participant = await ctx.prisma.participant.findUnique({

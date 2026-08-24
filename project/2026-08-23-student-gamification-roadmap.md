@@ -754,10 +754,22 @@ Append entries; do not rewrite history.
   the no-freeze warning. The PWA uses a new versioned participation operation
   containing the existing course fields plus the existing streak status fields;
   the deployed `Participations` operation and its hash remain unchanged. No
-  database, service, or migration change was added. English and German copy,
+  database schema or migration change was added; the existing participation
+  read path now reconciles eligible home rows before returning them. English
+  and German copy,
   focused GraphQL/PWA checks, and formatting pass. The authenticated browser
   pass shows the Testkurs home card with dates, the fire/current-streak
   indicator, and the start prompt; screenshot: `/private/tmp/gamification-home-streak-motivation.png`.
 - 2026-08-24 — Final review correction: the start prompt now uses the
   read-side remaining-response count, so partial progress toward the first
   qualified day is shown accurately in English and German.
+- 2026-08-24 — Final review corrections for home-read consistency and query
+  shape: eligible active gamified participations are reconciled before the
+  home rows are loaded, and today's response rows for all returned
+  participations are read once and reduced by participation ID. The existing
+  per-participation GraphQL fallback remains for callers outside the home
+  list. No schema or migration change was needed.
+- 2026-08-24 — Browser proof was repeated after the backend correction in the
+  local linked runtime. The authenticated Testkurs home card returned the
+  Swiss date range, fire/current-streak indicator, and exact start prompt from
+  the same home read; screenshot: `/private/tmp/gamification-home-streak-motivation-after-backend.png`.
