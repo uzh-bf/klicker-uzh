@@ -70,7 +70,7 @@ The approved `klicker-dev` operator profile authenticated successfully. It has n
 
 ## Reconciliation
 
-- W1 (STG) is `live_proven`: the only available demo chatbot is Informatik und Wirtschaft, and its anonymous plus authenticated evidence passed.
+- W1 (STG) is `live_proven` for Informatik und Wirtschaft: its anonymous plus authenticated evidence passed. RadioSurfVet was provisioned later and has readiness-only verification without new traffic in this roadmap.
 - W2 (PRD) is `live_proven`: both approved chatbots passed their bounded anonymous checks and one authenticated Tutor turn each, with the required disclaimer acceptance and 15-second spacing.
 - Delivery state: the parent k6 suite and this follow-up's documentation, login guidance, disclaimer helper, and roadmap are merged to `v3` through PR [#5506](https://github.com/uzh-bf/klicker-uzh/pull/5506). The obsolete temporary bridge scripts were removed before publication.
 - Next W-item: none. This roadmap is closed. Any new STG RadioSurfVet provisioning, sustained load, quality evaluation, reingestion, or lecturer-facing example collection requires a new roadmap and its own approval gates.
