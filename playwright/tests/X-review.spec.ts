@@ -2566,9 +2566,14 @@ test.describe
     await page.getByTestId('delete-activities-checkbox').click()
 
     await expect(page.getByTestId('multiplier-checkbox')).toBeDisabled()
-    await expect(
-      page.getByText(`${activitiesToDelete.length} activities will be deleted`)
-    ).toBeVisible()
+    const deletionCountMessage =
+      messages.manage.activities.nActivitiesWillBeDeleted.replace(
+        '{number, plural, =1 {# activity will be deleted} other {# activities will be deleted}}',
+        `${activitiesToDelete.length} ${
+          activitiesToDelete.length === 1 ? 'activity' : 'activities'
+        } will be deleted`
+      )
+    await expect(page.getByText(deletionCountMessage)).toBeVisible()
 
     for (const title of activitiesToDelete) {
       await expect(
