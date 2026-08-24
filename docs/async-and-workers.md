@@ -88,6 +88,8 @@ mirrors the remaining retention; if the info key is already missing, the
 tracking key receives a one-day safety expiry. The keys also remain under the
 existing per-instance wildcard
 (`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
+Cleanup-retention failures are logged and propagated so the mutation reports a
+failure and the caller can retry the cleanup.
 
 Deployment ordering matters: deploy GraphQL before new response ingress, drain
 old response-processor replicas before initializing processed counters, and then

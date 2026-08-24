@@ -2172,6 +2172,7 @@ export async function endLiveQuiz(
         `Failed to clean up response tracking keys for live quiz ${id}:`,
         trackingError
       )
+      throw trackingError
     }
 
     await sendTeamsNotification({

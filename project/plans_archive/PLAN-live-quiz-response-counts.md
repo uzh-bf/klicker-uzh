@@ -1,5 +1,10 @@
 # Live Quiz Per-Element Response Counts
 
+> Historical archive: this original set-cardinality plan is retained for
+> provenance only. The approved 2026-08-24 numeric-counter and bounded
+> replay-claim redesign in `project/2026-08-05-live-quiz-response-counts/`
+> supersedes its implementation details.
+
 ## Goal
 
 Report received and processed response totals for each `ElementInstance` in the

@@ -155,6 +155,19 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
       )
 
+      const activeInfoKey = `${prefix}:active-info`
+      const activeReceivedCountKey = `${prefix}:active-received-count`
+      await redis.hset(activeInfoKey, 'id', 'synthetic')
+      await redis.eval(
+        LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
+        2,
+        activeReceivedCountKey,
+        activeInfoKey,
+        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      )
+      expect(await redis.get(activeReceivedCountKey)).toBe('1')
+      expect(await redis.ttl(activeReceivedCountKey)).toBe(-1)
+
       const errorClaimKey = `${prefix}:error-processed`
       const errorCountKey = `${prefix}:error-processed-count`
       const errorResultsKey = `${prefix}:error-results`
@@ -214,6 +227,8 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         `${prefix}:missing-processed`,
         `${prefix}:missing-processed-count`,
         `${prefix}:received-count`,
+        `${prefix}:active-info`,
+        `${prefix}:active-received-count`,
         `${prefix}:error-processed`,
         `${prefix}:error-processed-count`,
         `${prefix}:error-results`,

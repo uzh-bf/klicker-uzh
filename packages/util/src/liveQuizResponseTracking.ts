@@ -110,24 +110,22 @@ return cjson.encode({
 // policy are updated together. Each accepted request is a separate event.
 export const LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT = `
 local instanceInfoTtl = redis.call('TTL', KEYS[2])
-local trackingTtl = tonumber(ARGV[1])
-
-if instanceInfoTtl >= 0 and instanceInfoTtl < trackingTtl then
-  trackingTtl = instanceInfoTtl
-end
-if trackingTtl < 1 then
-  trackingTtl = 1
-end
-
 local currentCount = redis.call('GET', KEYS[1])
 local nextCount = 1
 if currentCount then
   nextCount = tonumber(currentCount) + 1
 end
 
--- SET with EX commits the value and its retention together. A malformed
--- existing counter fails before this write and cannot create an unexpired key.
-redis.call('SET', KEYS[1], nextCount, 'EX', trackingTtl)
+-- SET with EX commits the value and its retention together. Active instance
+-- info without an expiry keeps the counter persistent until cleanup starts.
+if instanceInfoTtl >= 0 then
+  local trackingTtl = math.max(math.min(instanceInfoTtl, tonumber(ARGV[1])), 1)
+  redis.call('SET', KEYS[1], nextCount, 'EX', trackingTtl)
+elseif instanceInfoTtl == -2 then
+  redis.call('SET', KEYS[1], nextCount, 'EX', tonumber(ARGV[1]))
+else
+  redis.call('SET', KEYS[1], nextCount)
+end
 
 return instanceInfoTtl
 `.trim()

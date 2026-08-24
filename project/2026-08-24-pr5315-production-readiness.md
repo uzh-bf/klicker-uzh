@@ -10,7 +10,7 @@ fixes cover regular and assessment response processing, replay safety, cockpit
 count degradation, response-tracking cleanup, and cockpit icon alignment.
 
 The local audit branch was refreshed against the current `origin/v3` at
-`e906f9b3da150c39cc6c3d9f650a19fb74fc190f` before this verification. It also
+`09257efb71027d478ed2c418fd007a60900b34ea` before this verification. It also
 contains the approved counter and replay-claim redesign described below.
 No remote merge, deployment, or production-data access was performed.
 
