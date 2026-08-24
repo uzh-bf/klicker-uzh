@@ -1,28 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
-  const makeClient = () => {
-    const queue: unknown[] = []
-    const chainable: any = new Proxy(
-      {},
-      {
-        get(_target, prop: string) {
-          if (prop === 'exec') {
-            return (...args: unknown[]) => {
-              const execFn =
-                (chainable as any).__execImpl ?? (() => Promise.resolve([]))
-              return execFn(...args)
-            }
-          }
-          return (...args: unknown[]) => {
-            queue.push({ cmd: prop, args })
-            return chainable
-          }
-        },
+  const TRANSACTION_COMMANDS = [
+    'hincrby',
+    'hset',
+    'sadd',
+    'srem',
+    'expire',
+    'del',
+    'unlink',
+    'zincrby',
+    'zadd',
+    'lpush',
+    'rpush',
+  ] as const
+
+  const makeTransaction = () => {
+    const queue: { cmd: string; args: unknown[] }[] = []
+    const transaction: Record<string, unknown> = {}
+    for (const cmd of TRANSACTION_COMMANDS) {
+      transaction[cmd] = (...args: unknown[]) => {
+        queue.push({ cmd, args })
+        return transaction
       }
-    )
-    ;(chainable as any).__queue = queue
-    return chainable
+    }
+    transaction.exec = () =>
+      (
+        (transaction.__execImpl as () => Promise<unknown[]>) ??
+        (() => Promise.resolve(queue.map(() => [null, 1])))
+      )()
+    transaction.discard = () => transaction
+    transaction.__queue = queue
+    return transaction
   }
 
   const regularClient = {
@@ -33,15 +42,18 @@ const hoisted = vi.hoisted(() => {
     multi: vi.fn(),
   }
 
-  return { makeClient, regularClient }
+  return { makeTransaction, regularClient }
 })
 
-vi.mock('../redis.js', () => ({
+vi.mock('../../redis.js', () => ({
   getRedis: () => hoisted.regularClient,
 }))
 
-import { processResponseMessage } from '../processors/processor.js'
-import type { Context, DurableContext } from '@hatchet-dev/typescript-sdk/index.js'
+import type {
+  Context,
+  DurableContext,
+} from '@hatchet-dev/typescript-sdk/index.js'
+import { processResponseMessage } from '../processor.js'
 
 function createContext() {
   return {
@@ -83,14 +95,7 @@ function setupHappyPath(client: typeof hoisted.regularClient) {
   })
   client.sismember.mockResolvedValue(0)
   client.eval.mockResolvedValue(86400)
-  const transaction = hoisted.makeClient()
-  transaction.__execImpl = () =>
-    Promise.resolve(
-      Array.from({ length: (transaction.__queue as unknown[]).length }, () => [
-        null,
-        1,
-      ])
-    )
+  const transaction = hoisted.makeTransaction()
   client.multi.mockReturnValue(transaction)
   return transaction
 }
@@ -103,7 +108,10 @@ describe('processResponseMessage atomicity', () => {
   it('aggregates inside a MULTI transaction with the processed marker as final command', async () => {
     const transaction = setupHappyPath(hoisted.regularClient)
 
-    const result = await processResponseMessage(createMessage(), createContext())
+    const result = await processResponseMessage(
+      createMessage(),
+      createContext()
+    )
 
     expect(result).toEqual({ status: 200 })
     expect(hoisted.regularClient.multi).toHaveBeenCalled()
@@ -134,8 +142,9 @@ describe('processResponseMessage atomicity', () => {
 
   it('logs and accepts per-command MULTI errors instead of triggering a Hatchet retry', async () => {
     setupHappyPath(hoisted.regularClient)
+    const ctx = createContext()
     hoisted.regularClient.multi.mockImplementation(() => {
-      const transaction = hoisted.makeClient()
+      const transaction = hoisted.makeTransaction()
       transaction.__execImpl = () =>
         Promise.resolve([
           [null, 1],
@@ -143,7 +152,6 @@ describe('processResponseMessage atomicity', () => {
         ])
       return transaction
     })
-    const ctx = createContext()
 
     const result = await processResponseMessage(createMessage(), ctx)
 
@@ -156,8 +164,9 @@ describe('processResponseMessage atomicity', () => {
   it('throws on connection-level MULTI failures so safe retries can happen', async () => {
     setupHappyPath(hoisted.regularClient)
     hoisted.regularClient.multi.mockImplementation(() => {
-      const transaction = hoisted.makeClient()
-      transaction.__execImpl = () => Promise.reject(new Error('connection down'))
+      const transaction = hoisted.makeTransaction()
+      transaction.__execImpl = () =>
+        Promise.reject(new Error('connection down'))
       return transaction
     })
 

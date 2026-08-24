@@ -22,8 +22,8 @@ import {
   LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '@klicker-uzh/util'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
 import {
@@ -123,27 +123,6 @@ export async function processAssessmentResponse(
     blockClosedAt,
   } = instanceInfo
 
-  // replay guard: the processed tracking set doubles as an exactly-once marker
-  // so Hatchet retries after a success-crash become clean no-ops
-  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
-    liveQuizId: message.liveQuizId,
-    instanceId: message.instanceId,
-    status: 'processed',
-  })
-  if (
-    await redisExec.sismember(
-      processedResponseTrackingKey,
-      message.correlationId
-    )
-  ) {
-    ctx.logger.info('Assessment response already processed, skipping', {
-      correlationId: message.correlationId,
-      liveQuizId: message.liveQuizId,
-      instanceId: message.instanceId,
-    })
-    return { status: 200 }
-  }
-
   // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
   if (!type || !courseId || !sessionBlockId) {
     throw new NonRetryableError(
@@ -191,7 +170,7 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions = undefined
+  let parsedSolutions: unknown
   try {
     if (solutions) {
       parsedSolutions = JSON.parse(solutions)
@@ -506,6 +485,22 @@ export async function aggregateAssessmentResponses(
     xpAwarded,
     response,
   } = message
+
+  // replay guard: the processed tracking set doubles as an exactly-once marker
+  // so Hatchet retries after a success-crash become clean no-ops
+  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+    liveQuizId,
+    instanceId,
+    status: 'processed',
+  })
+  if (await redisExec.sismember(processedResponseTrackingKey, correlationId)) {
+    ctx.logger.info('Assessment response already processed, skipping', {
+      correlationId,
+      liveQuizId,
+      instanceId,
+    })
+    return { status: 200 }
+  }
 
   // set up redis MULTI transaction for atomic execution so partial
   // application cannot happen and the processed-marker SADD below commits

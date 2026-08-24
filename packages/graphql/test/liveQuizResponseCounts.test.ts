@@ -1,12 +1,12 @@
+import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   ElementBlockStatus,
   ElementType,
-  PublicationStatus,
   type PrismaClient,
+  PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import { getLiveQuizResponseTrackingKey } from '@klicker-uzh/util'
-import type { EventEmitter } from 'node:events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getCockpitQuiz } from '../src/services/liveQuizzes.js'
 import {
@@ -214,13 +214,21 @@ describe('live quiz cockpit response counts', () => {
       },
     })
 
-    // force every SCARD in the count pipeline to fail while the rest of the
-    // cockpit data path stays intact
-    const originalScard = userOneCtx.redisExec.scard.bind(
-      userOneCtx.redisExec
-    )
-    userOneCtx.redisExec.scard = () =>
-      Promise.reject(new Error('redis connection lost'))
+    // Fail only the response-count pipeline while leaving the participant
+    // pipeline in the cockpit data path intact.
+    const originalPipelineMethod = userOneCtx.redisExec.pipeline
+    const originalPipeline = originalPipelineMethod.bind(userOneCtx.redisExec)
+    let failNextPipeline = true
+    userOneCtx.redisExec.pipeline = ((
+      ...args: Parameters<typeof originalPipeline>
+    ) => {
+      const pipeline = originalPipeline(...args)
+      if (failNextPipeline) {
+        failNextPipeline = false
+        pipeline.exec = () => Promise.reject(new Error('redis connection lost'))
+      }
+      return pipeline
+    }) as typeof originalPipelineMethod
 
     try {
       const cockpitQuiz = await getCockpitQuiz({ id: quiz.id }, userOneCtx)
@@ -234,7 +242,7 @@ describe('live quiz cockpit response counts', () => {
         }
       }
     } finally {
-      userOneCtx.redisExec.scard = originalScard
+      userOneCtx.redisExec.pipeline = originalPipelineMethod
     }
   })
 })

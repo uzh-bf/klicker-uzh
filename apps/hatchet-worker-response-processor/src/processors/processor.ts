@@ -19,8 +19,8 @@ import {
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 import type { ChainableCommander } from 'ioredis'
 import { getRedis } from '../redis.js'
 import {
@@ -69,10 +69,12 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti: ChainableCommander
-  // MULTI transaction: atomic execution so partial application cannot happen
-  // and the processed-marker SADD below commits together with the increments
-  redisMulti = redisExec.multi()
+  let redisMulti: ChainableCommander | undefined
+  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+    status: 'processed',
+  })
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -165,12 +167,9 @@ export async function processResponseMessage(
 
     // replay guard: the processed tracking set doubles as an exactly-once marker
     // so Hatchet retries after a success-crash become clean no-ops
-    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
-      liveQuizId: message.sessionId,
-      instanceId: message.instanceId,
-      status: 'processed',
-    })
-    if (await redisExec.sismember(processedResponseTrackingKey, message.messageId)) {
+    if (
+      await redisExec.sismember(processedResponseTrackingKey, message.messageId)
+    ) {
       ctx.logger.info('Response already processed, skipping', {
         messageId: message.messageId,
         sessionId: message.sessionId,
@@ -199,7 +198,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions: unknown
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -249,6 +248,11 @@ export async function processResponseMessage(
     let pointsAwarded: number | string = 0
     let xpAwarded: number = 0
 
+    // MULTI transaction: atomic execution so partial application cannot happen
+    // and the processed-marker SADD below commits together with the increments
+    const transaction = redisExec.multi()
+    redisMulti = transaction
+
     switch (type) {
       case 'SC':
       case 'MC':
@@ -270,14 +274,14 @@ export async function processResponseMessage(
         response.choices
           .filter((choice) => choice.selected)
           .forEach((choice) => {
-            redisMulti.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+            transaction.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
           })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -319,7 +323,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisMulti: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -349,18 +353,18 @@ export async function processResponseMessage(
         const MD5 = createHash('md5')
         MD5.update(response.value)
         const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
+        transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+        transaction.hset(
           `${instanceKey}:responseHashes`,
           responseHash,
           response.value
         )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -396,7 +400,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisMulti: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -427,18 +431,18 @@ export async function processResponseMessage(
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
+        transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+        transaction.hset(
           `${instanceKey}:responseHashes`,
           responseHash,
           cleanResponseValue
         )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -474,7 +478,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisMulti: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -510,14 +514,14 @@ export async function processResponseMessage(
             return
           }
 
-          redisMulti.hincrby(`${instanceKey}:results`, String(answerId), 1)
+          transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
         })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -557,7 +561,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisMulti: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -601,8 +605,8 @@ export async function processResponseMessage(
                 const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
 
                 // add the response hash / valid combination and/or increment the corresponding count
-                redisMulti.hincrby(`${instanceKey}:results`, combinedHash, 1)
-                redisMulti.hset(
+                transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
+                transaction.hset(
                   `${instanceKey}:responseHashes`,
                   combinedHash,
                   String(criterionResponse)
@@ -613,12 +617,12 @@ export async function processResponseMessage(
         })
 
         // increment participant count
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -658,7 +662,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisMulti: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -672,7 +676,7 @@ export async function processResponseMessage(
       }
       case 'CONTENT': {
         // increase number of participants on element (do not award points / ... for content elements)
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
         break
       }
     }
@@ -690,6 +694,10 @@ export async function processResponseMessage(
   }
 
   try {
+    if (!redisMulti) {
+      throw new Error('Redis transaction was not initialized')
+    }
+
     // final command: the exactly-once marker commits atomically with the
     // increments it guards, so a retried task short-circuits at the guard
     redisMulti.sadd(processedResponseTrackingKey, message.messageId)

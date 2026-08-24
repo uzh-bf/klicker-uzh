@@ -995,6 +995,7 @@ export async function getCockpitQuiz(
     number,
     { received: number; processed: number }
   >()
+  let responseCountsUnavailable = false
   const startedInstances = liveQuiz.blocks.flatMap((block) =>
     block.status === DB.ElementBlockStatus.SCHEDULED ? [] : block.elements
   )
@@ -1048,6 +1049,7 @@ export async function getCockpitQuiz(
         })
       })
     } catch (error) {
+      responseCountsUnavailable = true
       console.error(
         'Failed to load live quiz response counts, degrading to null:',
         error
@@ -1103,7 +1105,8 @@ export async function getCockpitQuiz(
         numOfParticipants: blockParticipants[block.id],
         elements: block.elements.map((instance) => {
           const counts =
-            block.status === DB.ElementBlockStatus.SCHEDULED
+            block.status === DB.ElementBlockStatus.SCHEDULED ||
+            responseCountsUnavailable
               ? null
               : (responseCounts.get(instance.id) ?? {
                   received: 0,
