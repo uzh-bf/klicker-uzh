@@ -22,6 +22,7 @@ function makeDb() {
     providerCredential: [] as Row[],
     byokUsageAccount: [] as Row[],
     byokCapability: [] as Row[],
+    providerProfile: [] as Row[],
   }
   let idc = 0
   const nid = () => {
@@ -58,9 +59,15 @@ function makeDb() {
           (r) => r.id === where.id
         )
         if (row && row.credentialId) {
-          row.credential =
+          const cred =
             tables.providerCredential.find((c) => c.id === row.credentialId) ??
             null
+          if (cred && cred.profileId) {
+            cred.profile =
+              tables.providerProfile.find((pr) => pr.id === cred.profileId) ??
+              null
+          }
+          row.credential = cred
         }
         return row
       },
@@ -166,6 +173,22 @@ function makeDb() {
 
   // Seed helpers
   function seedCredential(status = 'ACTIVE') {
+    if (tables.providerProfile.length === 0) {
+      tables.providerProfile.push({
+        id: 'profile-1',
+        key: 'uzh-azure-openai',
+        version: 1,
+      })
+    }
+    // Ensure a providerProfile exists for the credential to reference
+    if (!tables.providerProfile) tables.providerProfile = []
+    if (tables.providerProfile.length === 0) {
+      tables.providerProfile.push({
+        id: 'profile-1',
+        key: 'uzh-azure-openai',
+        version: 1,
+      })
+    }
     const cred = {
       id: nid(),
       ownerId: 'owner-1',

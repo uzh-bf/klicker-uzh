@@ -48,7 +48,7 @@ export async function reserveCapability(
     async (tx) => {
       const binding = await tx.chatbotProviderBinding.findUnique({
         where: { id: input.bindingId },
-        include: { credential: true },
+        include: { credential: { include: { profile: true } } },
       })
 
       if (!binding || !binding.isActive) {
@@ -63,9 +63,11 @@ export async function reserveCapability(
       // Aggregate cap: sum of reservedAmount across all usage accounts.
       const aggregate = await tx.byokUsageAccount.aggregate({
         where: { bindingId: input.bindingId },
-        _sum: { reservedAmount: true },
+        _sum: { reservedAmount: true, usedAmount: true },
       })
-      const aggTotal = aggregate._sum.reservedAmount ?? new Prisma.Decimal(0)
+      const aggTotal = (
+        aggregate._sum.reservedAmount ?? new Prisma.Decimal(0)
+      ).plus(aggregate._sum.usedAmount ?? new Prisma.Decimal(0))
       if (aggTotal.plus(cost).gt(binding.aggregateQuotaLimit)) {
         return { ok: false as const, reason: 'AGGREGATE_CAP_EXCEEDED' }
       }
@@ -76,9 +78,11 @@ export async function reserveCapability(
           bindingId: input.bindingId,
           participantId: input.participantId,
         },
-        _sum: { reservedAmount: true },
+        _sum: { reservedAmount: true, usedAmount: true },
       })
-      const partTotal = partAgg._sum.reservedAmount ?? new Prisma.Decimal(0)
+      const partTotal = (
+        partAgg._sum.reservedAmount ?? new Prisma.Decimal(0)
+      ).plus(partAgg._sum.usedAmount ?? new Prisma.Decimal(0))
       if (partTotal.plus(cost).gt(binding.participantQuotaLimit)) {
         return { ok: false as const, reason: 'PARTICIPANT_CAP_EXCEEDED' }
       }
@@ -98,7 +102,11 @@ async function createReservedRows(
     id: string
     ownerId: string
     allowedModelAlias: string
-    credential: { id: string; vaultSecretVersion: number }
+    credential: {
+      id: string
+      vaultSecretVersion: number
+      profile: { key: string }
+    }
   },
   input: ByokReservationInput,
   cost: Prisma.Decimal
@@ -120,7 +128,7 @@ async function createReservedRows(
     data: {
       ownerId: binding.ownerId,
       chatbotId: input.chatbotId,
-      profileKey: '',
+      profileKey: binding.credential.profile.key,
       allowedModelAlias: binding.allowedModelAlias,
       vaultSecretVersion: binding.credential.vaultSecretVersion,
       status: 'ISSUED',
