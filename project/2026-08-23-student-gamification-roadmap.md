@@ -773,3 +773,8 @@ Append entries; do not rewrite history.
   local linked runtime. The authenticated Testkurs home card returned the
   Swiss date range, fire/current-streak indicator, and exact start prompt from
   the same home read; screenshot: `/private/tmp/gamification-home-streak-motivation-after-backend.png`.
+- 2026-08-24 — Final Sol review passed the integrated home-screen package at
+  `9d21a24a0`. It found no actionable change-introduced issues after verifying
+  the self-only opt-in gates, Prisma-only batched response read, reconciliation
+  ordering, finalized-course guard, persisted-query artifacts, focused tests,
+  GraphQL/PWA checks, and the post-backend browser evidence.
