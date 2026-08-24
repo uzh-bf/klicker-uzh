@@ -3,18 +3,15 @@
 ## Identity and status
 
 - Date: 2026-08-23
- - Status: implementation complete on branch `rs/gamification-achievement-receipts`,
-   pushed to origin at commit `88481842f`. All slices (S1 nearby leaderboard,
-   S2 private Study streaks, S3 achievement catalog hygiene and receipts) are
-   delivered, verified, and reviewed. See the Progress section for evidence.
+- Status: S4 PWA presentation correction in progress on branch
+  `rs/gamification-achievement-receipts`. S1 nearby leaderboard, S2 private
+  Study streaks, and S3 achievement catalog hygiene and receipts are delivered,
+  verified, and reviewed. See the Progress section for evidence.
 - Repository: `uzh-bf/klicker-uzh`
-- Authoritative remote base checked: `origin/v3` at
-  `35142c81acb89740949e2a499f5d2081a122feee`
+- Authoritative remote base checked: `origin/v3` at `4ef202492`
 - Roadmap worktree: branch `rs/gamification-roadmap` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
-- Worktree base: `ee5712399fcda479422a61b78004a1cb3b0636e9`, two commits
-  behind the remote. The intervening chatbot load-test and staging-promotion
-  changes do not touch the gamification seams. Rebase before implementation.
+- The worktree was rebased onto the fresh `origin/v3` before the S4 changes.
  - Delivery layer: local commits and push on `rs/gamification-achievement-receipts`.
    Pull request, merge, ClickUp reconciliation, deployment, and live-data actions
    remain separate authority boundaries.
@@ -251,6 +248,7 @@ repository’s stacked-change workflow before creating branches or pull requests
 | S1 | Nearby course and rolling leaderboard context | None | API and browser behavior proven |
 | S2 | Complete private Study streak: state, response integration, self API, card, notices, and focused E2E | Participation fields and justified response indexes | Migration, concurrency, API, and browser behavior proven |
 | S3 | Complete achievement improvement: catalog, acknowledgement API, receipt UI, and integrated package proof | Two additive achievement fields | Existing awards preserved; receipt and whole package proven |
+| S4 | Correct the PWA presentation of the existing Study streak and course dates | None | Streak is prominent above leaderboards; home cards show dates and opted-in streaks |
 
 Suggested branches and pull-request titles:
 
@@ -298,6 +296,7 @@ separate read-only roles.
 | S1 | Simplifier plus slice review for ranking/privacy behavior |
 | S2 | Simplifier plus one slice review covering migration, data integrity, privacy, concurrency, and accessibility |
 | S3 | Simplifier plus one slice review covering historical data, authorization, and accessibility; integrated final-reviewer after top-tip verification |
+| S4 | Simplifier plus integrated final-reviewer covering responsive layout, locale-aware dates, icon meaning, and opt-in visibility |
 
 ## S1 — Nearby leaderboard context
 
@@ -707,3 +706,21 @@ Append entries; do not rewrite history.
   /tmp/streak-card-evidence.png showing the streak card rendering correctly
   for testuser2 in Testkurs. Final review report:
   project/_local/reviews/2026-08-24-gamification-final-review.md.
+- 2026-08-24 — S4 PWA presentation correction implemented on the rebased
+  `rs/gamification-achievement-receipts` branch after the requested Sol design
+  review. The existing private streak state now renders in a full-width card
+  above the individual and group leaderboards, with fire and freeze icons plus
+  visible text. The student home course cards now show localized start and end
+  dates and show the fire/current-streak indicator only for opted-in
+  participants in gamified courses. No Prisma schema, service, or new product
+  primitive was added; the home query reuses existing Participation fields and
+  the GraphQL operation artifacts were regenerated.
+- 2026-08-24 — The S4 browser pass proved the Testkurs flow in English at
+  desktop and mobile widths and in German at mobile width. It also proved the
+  home course cards, no horizontal overflow, full-width streak placement,
+  visible freeze treatment, and the absence of a streak indicator on the
+  non-opted-in Assessment Course. Focused `frontend-pwa` typecheck passed after
+  the GraphQL package rebuild. Screenshots are retained at
+  `/private/tmp/gamification-home-en-full.png`,
+  `/private/tmp/gamification-course-en-desktop.png`, and
+  `/private/tmp/gamification-course-en-mobile.png`.

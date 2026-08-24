@@ -1,8 +1,8 @@
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faCheck, faFire } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import dayjs from 'dayjs'
-import utc from 'dayjs/plugin/utc'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
 
@@ -14,21 +14,26 @@ interface CourseElementProps {
     endDate: string
     isSubscribed: boolean
     displayName: string
+    isGamificationEnabled: boolean
+    isLeaderboardParticipant: boolean
+    studyStreakCurrent: number
   }
   pushDisabled?: boolean
   onSubscribeClick?: (subscribed: boolean, courseId: string) => void
 }
 
-function CourseElement({
-  disabled,
-  course,
-  pushDisabled,
-  onSubscribeClick,
-}: CourseElementProps) {
-  dayjs.extend(utc)
+function CourseElement({ disabled, course }: CourseElementProps) {
+  const locale = useLocale()
   const t = useTranslations()
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
+  const formatDate = (date: string) =>
+    new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'Europe/Zurich',
+    }).format(new Date(date))
 
   return (
     <div key={course.id} className="flex w-full flex-row items-stretch">
@@ -48,17 +53,31 @@ function CourseElement({
       >
         <div>
           <div>{course.displayName}</div>
-          <div className="flex flex-row items-end justify-between">
-            <div className="text-xs">
-              {isFuture &&
-                t('shared.generic.startAt', {
-                  time: dayjs(course.startDate).local().format('DD.MM.YYYY'),
-                })}
-              {isPast &&
-                t('shared.generic.finishedAt', {
-                  time: dayjs(course.endDate).local().format('DD.MM.YYYY'),
-                })}
+          <div className="flex flex-col gap-0.5 text-xs text-slate-600">
+            <div>
+              {t('shared.generic.startAt', {
+                time: formatDate(course.startDate),
+              })}
             </div>
+            <div>
+              {t('shared.generic.endAt', {
+                time: formatDate(course.endDate),
+              })}
+            </div>
+            {course.isGamificationEnabled &&
+              course.isLeaderboardParticipant && (
+                <div
+                  className="mt-1 flex items-center gap-1 font-medium text-orange-700"
+                  data-cy={`course-study-streak-${course.id}`}
+                >
+                  <FontAwesomeIcon icon={faFire} aria-hidden="true" />
+                  <span>
+                    {t('pwa.general.studyStreakDays', {
+                      current: course.studyStreakCurrent,
+                    })}
+                  </span>
+                </div>
+              )}
           </div>
         </div>
       </LinkButton>
