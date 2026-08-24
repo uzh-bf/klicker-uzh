@@ -303,6 +303,10 @@ describe('PRD direct-Chat canary receipt and output boundaries', () => {
     try {
       const store = createReceiptStore(path)
       const receipt = initialReceipt('run-1', { ...ids }, { ...provenance })
+      expect(receipt).toMatchObject({
+        receiptVersion: 4,
+        workflow: 'prd_direct_chat_canary',
+      })
       await store.write(receipt)
       await expect(store.read()).resolves.toEqual(receipt)
       await expect(readFile(path, 'utf8')).resolves.not.toContain(
@@ -432,7 +436,7 @@ describe('PRD direct-Chat canary receipt and output boundaries', () => {
     }
   })
 
-  test('rejects historical version 2 receipts as non-executable', async () => {
+  test('rejects historical and mismatched receipt discriminators', async () => {
     const directory = await mkdtemp(
       join(tmpdir(), 'direct-chat-canary-receipt-v2-')
     )
@@ -443,14 +447,35 @@ describe('PRD direct-Chat canary receipt and output boundaries', () => {
         { ...ids },
         { ...provenance }
       )
-      await writeFile(
-        path,
-        `${JSON.stringify({ ...receipt, receiptVersion: 2 })}\n`,
-        'utf8'
-      )
-      await expect(createReceiptStore(path).read()).rejects.toThrow(
-        'only receipt version 4 is executable'
-      )
+      const versionTwo = { ...receipt, receiptVersion: 2 }
+      const versionThree = JSON.parse(JSON.stringify(receipt)) as Record<
+        string,
+        unknown
+      >
+      delete versionThree.workflow
+      versionThree.receiptVersion = 3
+      versionThree.wItem = 'W5e'
+      const missingWorkflow = JSON.parse(JSON.stringify(receipt)) as Record<
+        string,
+        unknown
+      >
+      delete missingWorkflow.workflow
+      const mismatchedWorkflow = {
+        ...receipt,
+        workflow: 'other_workflow',
+      }
+
+      for (const invalidReceipt of [
+        versionTwo,
+        versionThree,
+        missingWorkflow,
+        mismatchedWorkflow,
+      ]) {
+        await writeFile(path, `${JSON.stringify(invalidReceipt)}\n`, 'utf8')
+        await expect(createReceiptStore(path).read()).rejects.toThrow(
+          'only receipt version 4 is executable'
+        )
+      }
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
