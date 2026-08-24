@@ -613,6 +613,9 @@ test.describe('Chatbot Messaging Interface', () => {
     await cancelButton.focus()
     await page.keyboard.press('Enter')
 
+    // No manual stream release: aborting the request must itself break the
+    // mock stream (the mock honors init.signal like a real fetch) — that is
+    // exactly the product behavior under test.
     await expect(cancelButton).toHaveAttribute('aria-hidden', 'true')
     await expect(cancelButton).toHaveAttribute('inert', '')
     await expect(cancelButton).toHaveAttribute('tabindex', '-1')
@@ -1655,6 +1658,16 @@ test.describe('Chatbot Settings Panel', () => {
     await page.keyboard.press('Enter')
     const explainerOption = page.getByTestId('chat-mode-option-explainer')
     await expect(explainerOption).toBeVisible()
+
+    // Radix moves item highlight asynchronously (positioned auto-focus on
+    // open, then a deferred focusFirst after ArrowDown): synchronize on
+    // data-highlighted before each keypress so Enter commits the intended
+    // option instead of racing the still-focused checked item.
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
+      'data-highlighted',
+      ''
+    )
+
     await page.keyboard.press('ArrowDown')
     await expect(explainerOption).toHaveAttribute('data-highlighted', '')
     await page.keyboard.press('Enter')
@@ -2839,28 +2852,40 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.getByTestId('chat-composer-attachment')).toBeVisible()
 
     const viewport = page.getByTestId('chat-thread-viewport')
+
+    // Scroll instantly (bypassing the viewport's scroll-smooth behavior) so
+    // the measurement reads the settled position, not mid-animation.
     await viewport.evaluate((element) => {
+      element.style.scrollBehavior = 'auto'
       element.scrollTop = element.scrollHeight
+      element.style.scrollBehavior = ''
     })
 
-    const lastSource = page.getByTestId('chat-source-card').last()
-    const composer = page.getByTestId('chat-composer')
-    await expect(lastSource).toBeVisible()
-    await expect(composer).toBeVisible()
-    // The transcript uses smooth scrolling, so wait for the requested bottom
-    // position to settle before comparing the two boxes.
-    await expect
-      .poll(async () => {
-        const [lastSourceBox, composerBox] = await Promise.all([
-          lastSource.boundingBox(),
-          composer.boundingBox(),
-        ])
-
-        if (!lastSourceBox || !composerBox) return false
-
-        return lastSourceBox.y + lastSourceBox.height <= composerBox.y - 8
-      })
-      .toBe(true)
+    // Assert against the scroller fold, not only the composer box:
+    // boundingBox() reports layout rects across clip boundaries, so a card
+    // scrolled out of the viewport can numerically intersect the composer
+    // band. Fully scrolled down, the last source card must sit above the
+    // scroller's bottom edge, and the scroller itself must end above the
+    // expanded composer. The second check catches an accidental overlay even
+    // when the source card happens to remain above the viewport fold.
+    await expect(async () => {
+      const lastSource = page.getByTestId('chat-source-card').last()
+      await expect(lastSource).toBeVisible()
+      const [lastSourceBox, viewportBox, composerBox] = await Promise.all([
+        lastSource.boundingBox(),
+        viewport.boundingBox(),
+        page.getByTestId('chat-composer').boundingBox(),
+      ])
+      expect(lastSourceBox).not.toBeNull()
+      expect(viewportBox).not.toBeNull()
+      expect(composerBox).not.toBeNull()
+      expect(lastSourceBox!.y + lastSourceBox!.height).toBeLessThanOrEqual(
+        viewportBox!.y + viewportBox!.height - 8
+      )
+      expect(viewportBox!.y + viewportBox!.height).toBeLessThanOrEqual(
+        composerBox!.y + 1
+      )
+    }).toPass()
 
     const screenshotPath = testInfo.outputPath(
       'mobile-sources-and-composer.png'

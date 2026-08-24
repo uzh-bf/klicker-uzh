@@ -70,7 +70,12 @@ compact dropdown, and keep the composer from covering mobile content.
   only its heading, `requires-action` remains nonterminal, mode descriptions
   are programmatically associated, and keyboard stop/mode regressions were
   added.
-- 2026-08-23: Local browser screenshots and the focused Playwright execution
-  remain pending because this checkout has no running Chat stack; the only
-  active Devrouter environment belongs to another branch and was deliberately
-  left untouched.
+- 2026-08-24: Reconciled the readiness fixes onto the current PR head. The
+  Playwright TypeScript check passed, the Chat production build passed, and the
+  focused R1/R2/R3 Playwright run passed 3/3 against that build. After review
+  strengthened the R3 overlap guard to measure the composer boundary, its
+  focused production-server check passed 1/1. The deliberate stream-release
+  regression test also passed. The Devrouter Turbopack dev path still serves
+  the loading shell without hydrating in this environment, so the browser
+  evidence uses the successful production server; no product code was
+  changed.
