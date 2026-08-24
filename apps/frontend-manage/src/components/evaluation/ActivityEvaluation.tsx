@@ -18,7 +18,7 @@ import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
@@ -102,7 +102,7 @@ function ActivityEvaluation({
     setActiveInstance,
     setActiveStack,
     questionIx: router.query.questionIx as string | null,
-    results: instanceResults,
+    stacks,
     showLeaderboard: router.query.leaderboard === 'true',
     type,
   })
@@ -122,6 +122,19 @@ function ActivityEvaluation({
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
+
+  useEffect(() => {
+    if (
+      type === 'LiveQuiz' &&
+      activeInstance === -1 &&
+      typeof activeStack === 'number'
+    ) {
+      const firstInstance = stackInstanceMap[activeStack]?.[0]
+      if (firstInstance) {
+        setActiveInstance(firstInstance.value)
+      }
+    }
+  }, [activeInstance, activeStack, stackInstanceMap, type])
 
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({

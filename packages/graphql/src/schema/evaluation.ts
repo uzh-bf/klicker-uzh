@@ -45,6 +45,7 @@ export interface IStackEvaluation {
   stackDescription?: string | null
   stackOrder: number
   stackActive: boolean
+  instanceCount: number
   instances: IElementInstanceEvaluation[]
   status?: DB.ElementBlockStatus | null
   expiresAt?: Date | null
@@ -288,6 +289,7 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
     stackActive: t.exposeBoolean('stackActive'),
+    instanceCount: t.exposeInt('instanceCount'),
     status: t.expose('status', {
       type: ElementBlockStatus,
       nullable: true,

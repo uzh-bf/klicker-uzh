@@ -3824,18 +3824,26 @@ function computeInstanceEvaluation({
   return undefined
 }
 
-export function computeStackEvaluation(
-  stacks: (
-    | (DB.ElementStack & { elements: DB.ElementInstance[]; active?: boolean })
-    | (DB.ElementBlock & { elements: DB.ElementInstance[]; active?: boolean })
-  )[]
-) {
+type EvaluationStack =
+  | (DB.ElementStack & {
+      elements: DB.ElementInstance[]
+      active?: boolean
+      evaluationInstanceCount?: number
+    })
+  | (DB.ElementBlock & {
+      elements: DB.ElementInstance[]
+      active?: boolean
+      evaluationInstanceCount?: number
+    })
+
+export function computeStackEvaluation(stacks: EvaluationStack[]) {
   return stacks.map((stack) => ({
     stackId: stack.id!,
     stackName: 'displayName' in stack ? stack.displayName : null,
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
     stackActive: stack.active ?? false,
+    instanceCount: stack.evaluationInstanceCount ?? stack.elements.length,
     status: 'status' in stack ? stack.status : null,
     expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
     closedAt: 'closedAt' in stack ? stack.closedAt : null,

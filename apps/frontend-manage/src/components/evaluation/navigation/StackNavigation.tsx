@@ -81,9 +81,7 @@ function StackNavigation({
   const selectStack = (stackIndex: number) => {
     setActiveStack(stackIndex)
     const firstInstance = stackInstanceMap[stackIndex]?.[0]
-    if (firstInstance) {
-      setActiveInstance(firstInstance.value)
-    }
+    setActiveInstance(firstInstance?.value ?? -1)
   }
 
   return (

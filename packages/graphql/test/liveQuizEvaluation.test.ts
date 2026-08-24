@@ -187,6 +187,7 @@ describe('Unit tests for live quiz evaluation service', () => {
     // scheduled block must carry empty instances so solutions are not leaked
     const scheduledRes = results[0]!
     expect(scheduledRes.status).toEqual(ElementBlockStatus.SCHEDULED)
+    expect(scheduledRes.instanceCount).toBe(1)
     expect(scheduledRes.instances).toEqual([])
 
     // executed block must carry full instances

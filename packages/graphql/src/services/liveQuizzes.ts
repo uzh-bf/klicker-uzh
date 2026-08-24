@@ -2304,7 +2304,11 @@ export async function getLiveQuizEvaluation(
       return { ...activeBlockWithResults, active: true }
     }
     if (block.status !== DB.ElementBlockStatus.EXECUTED) {
-      return { ...block, elements: [] }
+      return {
+        ...block,
+        elements: [],
+        evaluationInstanceCount: block.elements.length,
+      }
     }
     return block
   })
