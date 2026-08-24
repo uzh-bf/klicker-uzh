@@ -42,7 +42,7 @@ async function expectFlaggedControl(
     if (unavailableReason) {
       await locator.hover()
       await expect(page.getByRole('tooltip')).toContainText(unavailableReason)
-      await page.mouse.move(0, 0)
+      await page.keyboard.press('Escape')
       await expect(page.getByRole('tooltip')).not.toBeVisible()
     }
   }
