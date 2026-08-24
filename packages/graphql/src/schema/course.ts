@@ -2,6 +2,10 @@ import type * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
+  COURSE_DUPLICATION_JOB_STATUS_VALUES,
+  type CourseDuplicationJobStatus as CourseDuplicationJobStatusValue,
+} from '../services/courseDuplication.js'
+import {
   ActivityInfo,
   type IActivityInfo,
   type IReducedActivityInfo,
@@ -27,13 +31,13 @@ import { type IUser, LocaleType, UserRef } from './user.js'
 export const CourseDuplicationJobStatus = builder.enumType(
   'CourseDuplicationJobStatus',
   {
-    values: ['COMPLETED', 'FAILED', 'PENDING', 'RUNNING'] as const,
+    values: COURSE_DUPLICATION_JOB_STATUS_VALUES,
   }
 )
 
 export interface ICourseDuplicationStatus {
   id: string
-  status: 'COMPLETED' | 'FAILED' | 'PENDING' | 'RUNNING'
+  status: CourseDuplicationJobStatusValue
   sourceCourseId: string
   sourceCourseName: string
   targetCourseName: string

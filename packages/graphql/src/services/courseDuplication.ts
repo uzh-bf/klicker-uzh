@@ -37,6 +37,12 @@ const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
 // The worker refreshes this key while an attempt is alive; stale normalization
 // must never fail a job whose lease is still being renewed.
 const COURSE_DUPLICATION_HEARTBEAT_TTL_SECONDS = 120
+export const COURSE_DUPLICATION_JOB_STATUS_VALUES = [
+  'COMPLETED',
+  'FAILED',
+  'PENDING',
+  'RUNNING',
+] as const
 const COURSE_DUPLICATION_STATUS_KEY_PREFIX = 'course-duplication:job'
 const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
@@ -47,10 +53,7 @@ function courseDuplicationPartialFailure(message: string) {
 }
 
 export type CourseDuplicationJobStatus =
-  | 'COMPLETED'
-  | 'FAILED'
-  | 'PENDING'
-  | 'RUNNING'
+  (typeof COURSE_DUPLICATION_JOB_STATUS_VALUES)[number]
 
 export type CourseDuplicationErrorType = 'access' | 'generic' | 'partial'
 
@@ -177,6 +180,7 @@ function getCourseDuplicationJobErrorType(
 ): CourseDuplicationErrorType {
   const code = getGraphQLErrorCode(error)
   if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) return 'partial'
+  if (code === 'FORBIDDEN') return 'access'
 
   const message = getErrorMessage(error).toLowerCase()
   if (message.includes('not all')) return 'partial'
@@ -240,9 +244,9 @@ async function getCourseDuplicationJob(redis: Redis, jobId: string) {
   )
 }
 
-// Terminal records no longer need the mutation payload or identity fields;
-// stripping them keeps user data (notificationEmail rides in args) out of
-// Redis for the remainder of the record's 24-hour TTL.
+// Terminal records no longer need the mutation payload or execution context;
+// stripping args keeps user data (notificationEmail rides in args) out of
+// Redis while retaining userId for status-read authorization.
 function serializeCourseDuplicationJob(job: CourseDuplicationJob): string {
   if (!isTerminalCourseDuplicationStatus(job.status)) {
     return JSON.stringify(job)
@@ -259,7 +263,11 @@ function serializeCourseDuplicationJob(job: CourseDuplicationJob): string {
     errorMessage: job.errorMessage,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
-  } satisfies CourseDuplicationStatus)
+    userId: job.userId,
+  } satisfies Pick<
+    CourseDuplicationJob,
+    keyof CourseDuplicationStatus | 'userId'
+  >)
 }
 
 async function persistCourseDuplicationJob(

@@ -82,6 +82,7 @@ const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
 const COURSE_DUPLICATION_STORAGE_KEY = 'course-duplication-job-ids'
 const COURSE_DUPLICATION_POLL_INTERVAL = 5000
 const COURSE_DUPLICATION_STATUS_BATCH_SIZE = 50
+const COURSE_DUPLICATION_HANDLED_TERMINAL_JOB_LIMIT = 100
 
 function getCourseDuplicationGroupSize(
   value: number | string | null | undefined,
@@ -382,6 +383,17 @@ export function CourseDuplicationProvider({
         if (handledTerminalJobIdsRef.current.has(job.id)) continue
 
         handledTerminalJobIdsRef.current.add(job.id)
+        if (
+          handledTerminalJobIdsRef.current.size >
+          COURSE_DUPLICATION_HANDLED_TERMINAL_JOB_LIMIT
+        ) {
+          const oldestJobId = handledTerminalJobIdsRef.current
+            .values()
+            .next().value
+          if (oldestJobId) {
+            handledTerminalJobIdsRef.current.delete(oldestJobId)
+          }
+        }
         removeJobId(job.id)
 
         if (
@@ -405,7 +417,14 @@ export function CourseDuplicationProvider({
               },
             },
           })
-          void client.refetchQueries({ include: [GetUserCoursesDocument] })
+          void client
+            .refetchQueries({ include: [GetUserCoursesDocument] })
+            .catch((error) =>
+              console.error(
+                'Failed to refetch courses after duplication',
+                error
+              )
+            )
         } else {
           toast({
             type: 'error',
@@ -550,7 +569,11 @@ export function CourseDuplicationProvider({
           return true
         }
 
-        onError('access')
+        onError(
+          result.errors?.[0]
+            ? getCourseDuplicationErrorType(result.errors[0])
+            : 'generic'
+        )
       } catch (error) {
         onError(getCourseDuplicationErrorType(error))
         console.error(error)

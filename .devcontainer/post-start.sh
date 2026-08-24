@@ -136,26 +136,30 @@ fi
 manage_probe_deadline=$((SECONDS + 60))
 manage_list_ready=false
 manage_course_ready=false
+probe_manage_route() {
+  curl "${MANAGE_CURL_CA[@]}" --fail --location --silent --show-error \
+    --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
+    "$1" || true
+}
+
+manage_list_probe='000 0'
+manage_course_probe='000 0'
 while (( SECONDS < manage_probe_deadline )); do
   if [[ "$manage_list_ready" == false ]]; then
-    manage_status=$(curl "${MANAGE_CURL_CA[@]}" --silent --show-error \
-      --max-time 5 --output /dev/null --write-out '%{http_code}' \
-      "${APP_ORIGIN_MANAGE}/courses" || true)
-    [[ "$manage_status" =~ ^[23][0-9][0-9]$ ]] && manage_list_ready=true
+    manage_list_probe=$(probe_manage_route "${APP_ORIGIN_MANAGE}/courses")
+    [[ "$manage_list_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_list_ready=true
   fi
   if [[ "$manage_course_ready" == false ]]; then
     manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
-    manage_course_status=$(curl "${MANAGE_CURL_CA[@]}" --silent --show-error \
-      --max-time 5 --output /dev/null --write-out '%{http_code}' \
-      "$manage_course_path" || true)
-    [[ "$manage_course_status" =~ ^[23][0-9][0-9]$ ]] && manage_course_ready=true
+    manage_course_probe=$(probe_manage_route "$manage_course_path")
+    [[ "$manage_course_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_course_ready=true
   fi
   [[ "$manage_list_ready" == true && "$manage_course_ready" == true ]] && break
   sleep 1
 done
 
 if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
-  echo '[post-start] WARN: Manage course-route warm-up did not finish; leaving readiness to devrouter.' >&2
+  echo "[post-start] WARN: Manage course-route warm-up did not finish; list=${manage_list_probe} (${APP_ORIGIN_MANAGE}/courses), course=${manage_course_probe} (${manage_course_path}); leaving readiness to devrouter." >&2
 fi
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then

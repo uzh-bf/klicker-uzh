@@ -713,21 +713,25 @@ function CourseDuplicationModal({
           if (submitInFlightRef.current) return
 
           submitInFlightRef.current = true
+          let errorReported = false
           try {
-            await onSubmit(values, (errorType) =>
+            await onSubmit(values, (errorType) => {
+              errorReported = true
               toast({
                 type: 'error',
                 message: getCourseDuplicationErrorMessage(t, errorType),
                 options: { duration: 6000 },
               })
-            )
+            })
           } catch (error) {
             console.error(error)
-            toast({
-              type: 'error',
-              message: getCourseDuplicationErrorMessage(t),
-              options: { duration: 6000 },
-            })
+            if (!errorReported) {
+              toast({
+                type: 'error',
+                message: getCourseDuplicationErrorMessage(t, 'generic'),
+                options: { duration: 6000 },
+              })
+            }
           } finally {
             submitInFlightRef.current = false
           }
