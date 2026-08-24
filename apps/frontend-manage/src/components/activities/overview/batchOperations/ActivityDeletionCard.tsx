@@ -10,10 +10,7 @@ import {
 import { useTranslations } from 'next-intl'
 import type { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
-import {
-  type ActivityBatchOperationActions,
-  INITIAL_ACTIVITY_BATCH_OPERATIONS,
-} from './types'
+import { type ActivityBatchOperationActions } from './types'
 
 function ActivityDeletionCard({
   selectedActions,
@@ -47,7 +44,7 @@ function ActivityDeletionCard({
             checked={selectedActions.deleteActivities}
             onCheck={() => {
               setSelectedActions((prev) => ({
-                ...INITIAL_ACTIVITY_BATCH_OPERATIONS,
+                ...prev,
                 deleteActivities: !prev.deleteActivities,
               }))
             }}

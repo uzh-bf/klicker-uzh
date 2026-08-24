@@ -269,6 +269,36 @@ function ActivityBatchOperationsModal({
     [affectedActivities, selectedActions.deleteActivities]
   )
 
+  function getActivityCountMessage() {
+    if (selectedActions.deleteActivities) {
+      if (numOfAffectedActivities === 0) {
+        return t('manage.activities.noActivitiesWillBeDeleted')
+      }
+
+      if (numOfAffectedActivities === selectedActivities.length) {
+        return t('manage.activities.nActivitiesWillBeDeleted', {
+          number: numOfAffectedActivities,
+        })
+      }
+
+      return t('manage.activities.nOfMActivitiesWillBeDeleted', {
+        affected: numOfAffectedActivities,
+        total: selectedActivities.length,
+      })
+    }
+
+    if (numOfAffectedActivities === 0) {
+      return t('manage.activities.noActivitiesWillBeUpdated')
+    }
+
+    const number =
+      numOfAffectedActivities === selectedActivities.length
+        ? numOfAffectedActivities
+        : `${numOfAffectedActivities}/${selectedActivities.length}`
+
+    return t('manage.activities.nActivitiesWillBeUpdated', { number })
+  }
+
   async function executeBatchDeletion() {
     setDeleting(true)
     setDeletionProgress({ completed: 0, total: activitiesToDelete.length })
@@ -424,25 +454,7 @@ function ActivityBatchOperationsModal({
                   icon={numOfAffectedActivities === 0 ? faX : faCheck}
                   className="mr-1.5"
                 />
-                {selectedActions.deleteActivities
-                  ? numOfAffectedActivities === 0
-                    ? t('manage.activities.noActivitiesWillBeDeleted')
-                    : numOfAffectedActivities === selectedActivities.length
-                      ? t('manage.activities.nActivitiesWillBeDeleted', {
-                          number: numOfAffectedActivities,
-                        })
-                      : t('manage.activities.nOfMActivitiesWillBeDeleted', {
-                          affected: numOfAffectedActivities,
-                          total: selectedActivities.length,
-                        })
-                  : numOfAffectedActivities === 0
-                    ? t('manage.activities.noActivitiesWillBeUpdated')
-                    : t('manage.activities.nActivitiesWillBeUpdated', {
-                        number:
-                          numOfAffectedActivities === selectedActivities.length
-                            ? numOfAffectedActivities
-                            : `${numOfAffectedActivities}/${selectedActivities.length}`,
-                      })}
+                {getActivityCountMessage()}
               </span>
               <Button
                 primary={!selectedActions.deleteActivities}
