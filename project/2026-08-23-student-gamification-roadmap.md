@@ -3,8 +3,10 @@
 ## Identity and status
 
 - Date: 2026-08-23
-- Status: decision-complete draft awaiting execution approval; implementation
-  has not started.
+ - Status: implementation complete on branch `rs/gamification-achievement-receipts`,
+   pushed to origin at commit `88481842f`. All slices (S1 nearby leaderboard,
+   S2 private Study streaks, S3 achievement catalog hygiene and receipts) are
+   delivered, verified, and reviewed. See the Progress section for evidence.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: `origin/v3` at
   `35142c81acb89740949e2a499f5d2081a122feee`
@@ -13,9 +15,9 @@
 - Worktree base: `ee5712399fcda479422a61b78004a1cb3b0636e9`, two commits
   behind the remote. The intervening chatbot load-test and staging-promotion
   changes do not touch the gamification seams. Rebase before implementation.
-- Delivery layer: roadmap only. No roadmap commit, push, pull request, ClickUp
-  mutation, implementation, database, deployment, or live-data action has been
-  performed.
+ - Delivery layer: local commits and push on `rs/gamification-achievement-receipts`.
+   Pull request, merge, ClickUp reconciliation, deployment, and live-data actions
+   remain separate authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
 
 Read these sources before starting:
