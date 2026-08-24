@@ -43,8 +43,8 @@ accounts with one inactive matching participation each. The shared
   with independent readback. No publication or provider call.
 - `Pause`: stop on missing/ambiguous/archived targets, SSO-backed dedicated
   accounts, active off-target participation that cannot be safely reconciled,
-  missing password mappings, operator permission gaps, test skips, or any
-  unexpected production drift.
+  missing password mappings, operator permission gaps, schema migration drift,
+  test skips, or any unexpected production drift.
 
 ## Design
 
@@ -116,7 +116,15 @@ fail-closed paths.
   cleans only participant IDs created by the current run. The suite covers
   committed repair of existing manual targets as well as replay no-op behavior.
 - PRD target rows and existing account shape were inspected read-only. The
-  values-free PRD dry-run now resolves all three targets and reports the two
+  values-free PRD dry-run resolved all three targets and reported the two
   existing dedicated accounts plus the missing Culture account without writes.
-  No PRD database, Infisical, provider, lecturer, deployment, or cluster write
-  has occurred.
+- After the approved exact Infisical scope was added, all three missing
+  password names were created with random values; no value was read back or
+  exposed. The subsequent PRD apply stopped inside the transaction because
+  the live schema lacks `Participation.assessmentGivenName`, from pending
+  migration `20260820130856_assessment_participation_eduid_identity`.
+  Migration status also reports pending
+  `20260821150000_participant_invitation_course_history`. Independent
+  values-free readback confirms the two existing accounts remain unchanged,
+  their target participations remain inactive, and the Culture account is
+  still absent; no PRD database rows were committed.
