@@ -4425,4 +4425,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       missingId: 'Object ID is missing. comments cannot be displayed.',
     },
   },
+  byok: {
+    notice: {
+      title: 'Provider Notice',
+      intro:
+        'This chatbot uses your own API key. Before you continue, please review how your data is processed:',
+      decline: 'Decline',
+      acknowledge: 'I understand, continue',
+    },
+    quota: {
+      remaining: 'Remaining BYOK quota',
+      used: 'Used',
+      error: 'Your own-key request failed. No credits were charged.',
+    },
+  },
 }

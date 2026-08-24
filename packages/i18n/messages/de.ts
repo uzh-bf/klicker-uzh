@@ -4500,4 +4500,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       missingId: 'Objekt-ID fehlt. Kommentare kann nicht angezeigt werden.',
     },
   },
+  byok: {
+    notice: {
+      title: 'Anbieter-Hinweis',
+      intro:
+        'Dieser Chatbot verwendet Ihren eigenen API-Schlüssel. Bitte prüfen Sie vor dem Fortfahren, wie Ihre Daten verarbeitet werden:',
+      decline: 'Abbrechen',
+      acknowledge: 'Ich verstehe, weiterfahren',
+    },
+    quota: {
+      remaining: 'Verbleibendes BYOK-Guthaben',
+      used: 'Verwendet',
+      error:
+        'Die Anfrage mit Ihrem eigenen Schlüssel ist fehlgeschlagen. Es wurden keine Credits belastet.',
+    },
+  },
 }
