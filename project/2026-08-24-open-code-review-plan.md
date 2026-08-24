@@ -70,7 +70,7 @@
 
 ## Progress
 
-- Status: final review found and the main session is correcting two issues: an ineffective reasoning override and Dependabot secret-path failures.
-- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, and bounded slice review.
-- Remaining: verify the correction, rerun the risk review, run final review, and complete close-out verification.
+- Status: correction committed and risk-reviewed with `PASS`; final integrated review pending.
+- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, bounded slice review, and correction review.
+- Remaining: run final review and complete close-out verification.
 - Delivery: local commit only; live activation is pending.
