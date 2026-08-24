@@ -6,7 +6,7 @@
 
 ## Context
 
-Staging pulls the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (currently `v3-ai`). A rebuild therefore leaves the rendered manifest byte-identical, ArgoCD detects no drift, and the new image sits in the registry until somebody restarts the pods by hand. Staging is the canary for everything merged since the prd-pinned tag, so "merged but not running" is the failure mode that matters most: [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303) was a regression that only production's tag pin had shielded, and it stayed unrolled on stg after merge with nothing signalling that.
+Staging pulls the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (the committed values currently use `v3-ai`; unset defaults to `v3`). A rebuild therefore leaves the rendered manifest byte-identical, ArgoCD detects no drift, and the new image sits in the registry until somebody restarts the pods by hand. Staging is the canary for everything merged since the prd-pinned tag, so "merged but not running" is the failure mode that matters most: [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303) was a regression that only production's tag pin had shielded, and it stayed unrolled on stg after merge with nothing signalling that.
 
 The deployment values and promotion PR remain on `v3`; the promotion workflow follows successful image builds from the selected source branch and updates the values' image tags automatically.
 

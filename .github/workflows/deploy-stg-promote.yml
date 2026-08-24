@@ -17,7 +17,7 @@ name: Promote to stg
 # gate would wait forever for a run that is never going to happen.
 #
 # The selected source branch is the repository variable `STG_SOURCE_BRANCH`. It falls
-# back to `v3-ai` until the variable is created. The branch name must also be a valid
+# back to `v3` until the variable is created. The branch name must also be a valid
 # Docker tag because the stg build workflows publish branch-name tags.
 
 on:
@@ -68,7 +68,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'push' &&
        (github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH ||
-        (vars.STG_SOURCE_BRANCH == '' && github.event.workflow_run.head_branch == 'v3-ai')) &&
+        (vars.STG_SOURCE_BRANCH == '' && github.event.workflow_run.head_branch == 'v3')) &&
        github.event.workflow_run.conclusion == 'success')
     # Workflow-level concurrency is branch-specific so skipped, non-selected
     # completions do not occupy the selected branch's pending slot. This job-level
@@ -100,7 +100,7 @@ jobs:
         env:
           WR_SHA: ${{ github.event.workflow_run.head_sha }}
           IN_SHA: ${{ github.event.inputs.sha }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3-ai' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
         run: |
           set -euo pipefail
           if [[ ! "${SOURCE_BRANCH}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -126,7 +126,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.target.outputs.sha }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3-ai' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
         run: |
           set -euo pipefail
           # Matched per workflow *file* via `.path`. Check-runs cannot be used: all 13
@@ -177,7 +177,7 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         env:
           SHA: ${{ steps.target.outputs.sha }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3-ai' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
         run: |
           set -euo pipefail
           F=deploy/env-uzh-stg/values.yaml
@@ -223,7 +223,7 @@ jobs:
         if: steps.gate.outputs.go == 'true' && steps.guard.outputs.go == 'true'
         env:
           SHA: ${{ steps.target.outputs.sha }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3-ai' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
         run: |
           set -euo pipefail
           F=deploy/env-uzh-stg/values.yaml
