@@ -133,6 +133,7 @@ function ActivityEvaluation({
   useEffect(() => {
     if (
       type === 'LiveQuiz' &&
+      typeof router.query.questionIx !== 'string' &&
       activeInstance === -1 &&
       typeof activeStack === 'number'
     ) {
@@ -141,7 +142,13 @@ function ActivityEvaluation({
         setActiveInstance(firstInstance.value)
       }
     }
-  }, [activeInstance, activeStack, stackInstanceMap, type])
+  }, [
+    activeInstance,
+    activeStack,
+    router.query.questionIx,
+    stackInstanceMap,
+    type,
+  ])
 
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({

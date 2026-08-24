@@ -325,7 +325,7 @@ describe('Unit tests for live quiz evaluation service', () => {
     utilMocks.getCachedBlockResults.mockResolvedValue({
       instanceResults: {
         [activeInstance.id]: {
-          anonymousResults: { total: 5 },
+          anonymousResults: { choices: { 0: 5, 1: 0 }, total: 5 },
         },
       },
     })
@@ -346,6 +346,11 @@ describe('Unit tests for live quiz evaluation service', () => {
 
     // First block should be marked active: true
     expect(results[0]!.stackActive).toBe(true)
+    expect(results[0]!.instances).toHaveLength(1)
+    expect(results[0]!.instances[0]).toMatchObject({
+      id: activeInstance.id,
+      results: { totalAnswers: 5, anonymousAnswers: 5 },
+    })
     expect(results[1]!.stackActive).toBe(false)
   })
 })
