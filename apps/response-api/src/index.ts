@@ -189,6 +189,10 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
         instanceInfoKey,
         member: message.messageId,
       })
+    } else {
+      console.warn(
+        `Instance info key missing, skipping received-response tracking for live quiz ${liveQuizId}, instance ${instanceId}, message ${message.messageId}`
+      )
     }
   } catch (error) {
     console.error(

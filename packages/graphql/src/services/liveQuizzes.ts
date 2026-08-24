@@ -1000,49 +1000,59 @@ export async function getCockpitQuiz(
   )
 
   if (startedInstances.length > 0) {
-    const responseCountPipeline = redis.pipeline()
-    startedInstances.forEach((instance) => {
-      responseCountPipeline.scard(
-        getLiveQuizResponseTrackingKey({
-          liveQuizId: id,
-          instanceId: instance.id,
-          status: 'received',
-        })
-      )
-      responseCountPipeline.scard(
-        getLiveQuizResponseTrackingKey({
-          liveQuizId: id,
-          instanceId: instance.id,
-          status: 'processed',
-        })
-      )
-    })
-
-    const responseCountResults = await responseCountPipeline.exec()
-    if (!responseCountResults) {
-      throw new Error(`Failed to load response counts for live quiz ${id}`)
-    }
-
-    startedInstances.forEach((instance, index) => {
-      const receivedResult = responseCountResults[index * 2]
-      const processedResult = responseCountResults[index * 2 + 1]
-
-      if (!receivedResult || receivedResult[0]) {
-        throw (
-          receivedResult?.[0] ?? new Error('Missing received response count')
+    // best-effort: count resolution failures must degrade to absent counts
+    // (rendered as null by the mapping below), never fail the cockpit query
+    try {
+      const responseCountPipeline = redis.pipeline()
+      startedInstances.forEach((instance) => {
+        responseCountPipeline.scard(
+          getLiveQuizResponseTrackingKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+            status: 'received',
+          })
         )
-      }
-      if (!processedResult || processedResult[0]) {
-        throw (
-          processedResult?.[0] ?? new Error('Missing processed response count')
+        responseCountPipeline.scard(
+          getLiveQuizResponseTrackingKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+            status: 'processed',
+          })
         )
-      }
-
-      responseCounts.set(instance.id, {
-        received: Number(receivedResult[1] ?? 0),
-        processed: Number(processedResult[1] ?? 0),
       })
-    })
+
+      const responseCountResults = await responseCountPipeline.exec()
+      if (!responseCountResults) {
+        throw new Error(`Failed to load response counts for live quiz ${id}`)
+      }
+
+      startedInstances.forEach((instance, index) => {
+        const receivedResult = responseCountResults[index * 2]
+        const processedResult = responseCountResults[index * 2 + 1]
+
+        if (!receivedResult || receivedResult[0]) {
+          throw (
+            receivedResult?.[0] ?? new Error('Missing received response count')
+          )
+        }
+        if (!processedResult || processedResult[0]) {
+          throw (
+            processedResult?.[0] ??
+            new Error('Missing processed response count')
+          )
+        }
+
+        responseCounts.set(instance.id, {
+          received: Number(receivedResult[1] ?? 0),
+          processed: Number(processedResult[1] ?? 0),
+        })
+      })
+    } catch (error) {
+      console.error(
+        'Failed to load live quiz response counts, degrading to null:',
+        error
+      )
+    }
   }
 
   // number of participants per block
@@ -2024,6 +2034,26 @@ export async function endLiveQuiz(
         finishedAt: new Date(),
       },
     })
+
+    // unlink response-tracking keys: without this, sets from blocks that were
+    // still open at quiz end persist indefinitely (the Lua script mirrors the
+    // info key's TTL, which is absent while a block stays open). Best-effort:
+    // a failed sweep must not fail ending the quiz.
+    try {
+      const trackingKeys = await redis.keys(`lq:${id}:*:responses:*`)
+      if (trackingKeys.length > 0) {
+        const pipe = redis.multi()
+        for (const key of trackingKeys) {
+          pipe.unlink(key)
+        }
+        await pipe.exec()
+      }
+    } catch (trackingError) {
+      console.error(
+        `Failed to clean up response tracking keys for live quiz ${id}:`,
+        trackingError
+      )
+    }
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',

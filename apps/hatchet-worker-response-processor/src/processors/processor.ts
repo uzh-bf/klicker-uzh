@@ -70,8 +70,9 @@ export async function processResponseMessage(
   }
 
   let redisMulti: ChainableCommander
-  // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  // MULTI transaction: atomic execution so partial application cannot happen
+  // and the processed-marker SADD below commits together with the increments
+  redisMulti = redisExec.multi()
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -161,6 +162,22 @@ export async function processResponseMessage(
       sessionId: message.sessionId,
       instanceId: message.instanceId,
     })
+
+    // replay guard: the processed tracking set doubles as an exactly-once marker
+    // so Hatchet retries after a success-crash become clean no-ops
+    const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+      status: 'processed',
+    })
+    if (await redisExec.sismember(processedResponseTrackingKey, message.messageId)) {
+      ctx.logger.info('Response already processed, skipping', {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
+      return { status: 200 }
+    }
 
     const {
       type,
@@ -673,6 +690,10 @@ export async function processResponseMessage(
   }
 
   try {
+    // final command: the exactly-once marker commits atomically with the
+    // increments it guards, so a retried task short-circuits at the guard
+    redisMulti.sadd(processedResponseTrackingKey, message.messageId)
+
     const aggregationResults = await redisMulti.exec()
     if (aggregationResults === null) {
       throw new Error('Redis results aggregation returned no results')
@@ -682,17 +703,21 @@ export async function processResponseMessage(
       error ? [error] : []
     )
     if (aggregationErrors.length > 0) {
-      throw new Error(
-        `Redis results aggregation commands failed: ${aggregationErrors.join('; ')}`
+      // MULTI does not roll back on per-command runtime errors, so the
+      // marker may have applied and a retry would be a no-op or corrupting;
+      // these are persistent conditions (WRONGTYPE/OOM) retrying cannot fix,
+      // therefore log and accept instead of triggering another replay
+      ctx.logger.error(
+        `Redis results aggregation commands failed (accepting partial application): ${aggregationErrors.join('; ')}` +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
       )
     }
 
     try {
-      const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
-        liveQuizId: message.sessionId,
-        instanceId: message.instanceId,
-        status: 'processed',
-      })
       const instanceInfoTtl = await redisExec.eval(
         LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
         2,

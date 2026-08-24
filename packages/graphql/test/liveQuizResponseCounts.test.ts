@@ -187,4 +187,54 @@ describe('live quiz cockpit response counts', () => {
       numOfResponsesProcessed: null,
     })
   })
+
+  it('degrades to null counts instead of failing when the count pipeline errors', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC1.id)
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [{ id: SC.id, type: ElementType.SC }],
+        status: PublicationStatus.PUBLISHED,
+      },
+      userOneCtx
+    )
+    liveQuizId = quiz.id
+
+    const blocks = await prisma.elementBlock.findMany({
+      where: { liveQuizId: quiz.id },
+      include: { elements: true },
+      orderBy: { order: 'asc' },
+    })
+    const activeBlock = blocks[0]!
+    await prisma.elementBlock.update({
+      where: { id: activeBlock.id },
+      data: {
+        status: ElementBlockStatus.ACTIVE,
+        activeInLiveQuiz: { connect: { id: quiz.id } },
+      },
+    })
+
+    // force every SCARD in the count pipeline to fail while the rest of the
+    // cockpit data path stays intact
+    const originalScard = userOneCtx.redisExec.scard.bind(
+      userOneCtx.redisExec
+    )
+    userOneCtx.redisExec.scard = () =>
+      Promise.reject(new Error('redis connection lost'))
+
+    try {
+      const cockpitQuiz = await getCockpitQuiz({ id: quiz.id }, userOneCtx)
+
+      expect(cockpitQuiz).not.toBeNull()
+      expect(cockpitQuiz!.id).toBe(quiz.id)
+      for (const block of cockpitQuiz!.blocks) {
+        for (const element of block.elements) {
+          expect(element.numOfResponsesReceived).toBeNull()
+          expect(element.numOfResponsesProcessed).toBeNull()
+        }
+      }
+    } finally {
+      userOneCtx.redisExec.scard = originalScard
+    }
+  })
 })
