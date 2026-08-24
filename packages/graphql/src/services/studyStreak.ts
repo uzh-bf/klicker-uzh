@@ -68,6 +68,12 @@ export function applyMissedDate(
     return { ...state, lastProcessedDate: dateStr }
   }
 
+  // A second missed weekday breaks the streak but does not consume another
+  // freeze for the same gap.
+  if (missedActiveDays(state.lastQualifiedDate, dateStr) > 0) {
+    return { ...state, current: 0, lastProcessedDate: dateStr }
+  }
+
   if (state.freezeBalance > 0) {
     return {
       ...state,
@@ -108,7 +114,7 @@ export function applyQualifiedDate(
   const missed = previousProcessedDate
     ? missedActiveDays(previousProcessedDate, dateStr)
     : 0
-  const freezesUsed = Math.min(missed, state.freezeBalance)
+  const freezesUsed = missed > 0 && state.freezeBalance > 0 ? 1 : 0
   const uncoveredBreaks = missed - freezesUsed
   const nextCurrent = uncoveredBreaks > 0 ? 1 : state.current + 1
 
