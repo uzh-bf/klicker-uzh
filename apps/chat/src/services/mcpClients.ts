@@ -39,6 +39,10 @@ export interface MCPServerWithConfig {
   config: MCPConfigSettings
 }
 
+export interface MCPRequestOptions {
+  requestTimeoutMs?: number
+}
+
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
     .update(rawName)
@@ -198,12 +202,17 @@ async function createAuthHeaders(
 export async function createMCPClient(
   server: MCPServerConfig,
   chatbotId: string,
-  participantId = '',
-  authMode: AuthMode
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
+
+  const participantId =
+    typeof participantIdOrOptions === 'string' ? participantIdOrOptions : ''
+  const options =
+    typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions
 
   try {
     const headers = await createAuthHeaders(
@@ -216,7 +225,13 @@ export async function createMCPClient(
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
       {
-        requestInit: { headers },
+        requestInit: {
+          headers,
+          redirect: 'error',
+          ...(options.requestTimeoutMs
+            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+            : {}),
+        },
       }
     )
 
@@ -261,8 +276,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
   chatbotId: string,
-  participantId: string,
-  authMode: AuthMode
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -293,7 +308,7 @@ async function loadServerTools(
     const client = await createMCPClient(
       server,
       chatbotId,
-      participantId,
+      participantIdOrOptions,
       authMode
     )
     const rawTools = await client.tools()
@@ -358,8 +373,8 @@ async function loadServerTools(
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
   chatbotId: string,
-  participantId = '',
-  authMode: AuthMode
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -382,7 +397,7 @@ export async function getAggregatedMCPTools(
       const serverTools = await loadServerTools(
         serverWithConfig,
         chatbotId,
-        participantId,
+        participantIdOrOptions,
         authMode
       )
       const runtimePolicy = parseMCPRuntimePolicy(

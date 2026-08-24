@@ -1,9 +1,4 @@
-import { useSuspenseQuery } from '@apollo/client'
-import {
-  ActivityType,
-  UserProfileDocument,
-} from '@klicker-uzh/graphql/dist/ops'
-
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import {
   faChalkboardUser,
   faGraduationCap,
@@ -20,8 +15,6 @@ interface CreationButtonsProps {
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const t = useTranslations()
 
-  const { data } = useSuspenseQuery(UserProfileDocument)
-
   return (
     <div className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2">
       <CreationButton
@@ -33,8 +26,6 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         data={{ cy: 'create-live-quiz' }}
       />
       <CreationButton
-        isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicrolearning')}
         onClick={() => {
@@ -43,8 +34,6 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
-        isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
         icon={faGraduationCap}
         text={t('manage.questionPool.createPracticeQuiz')}
         onClick={() => {
@@ -53,8 +42,6 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
-        isCatalystRequired
-        disabled={!data?.userProfile?.catalyst}
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
         onClick={() => {

@@ -23,13 +23,13 @@ function applyFrameAncestorsCSP(response: NextResponse) {
 // `getChatGuestSecret()` HMAC fallback from ltiGuest.ts via Web Crypto.
 let cachedDerivedSecret: string | null = null
 
-async function getChatGuestSecretForMiddleware(): Promise<string | null> {
+async function getChatGuestSecretForProxy(): Promise<string | null> {
   if (process.env.APP_CHAT_GUEST_SECRET) {
     return process.env.APP_CHAT_GUEST_SECRET
   }
 
   // Mirror `getChatGuestSecret()` in `lib/server/ltiGuest.ts`: in production,
-  // refuse the APP_SECRET-derived fallback. Otherwise the middleware would
+  // refuse the APP_SECRET-derived fallback. Otherwise the proxy would
   // accept guest tokens the server signer will not produce (and vice versa).
   if (process.env.NODE_ENV === 'production') {
     return null
@@ -59,10 +59,8 @@ async function getChatGuestSecretForMiddleware(): Promise<string | null> {
   return cachedDerivedSecret
 }
 
-async function verifyChatGuestTokenInMiddleware(
-  token: string
-): Promise<boolean> {
-  const secret = await getChatGuestSecretForMiddleware()
+async function verifyChatGuestTokenInProxy(token: string): Promise<boolean> {
+  const secret = await getChatGuestSecretForProxy()
   if (!secret) return false
   try {
     const result = await jwtVerify(token, new TextEncoder().encode(secret))
@@ -75,7 +73,7 @@ async function verifyChatGuestTokenInMiddleware(
   }
 }
 
-async function verifyPwaEmbedTokenInMiddleware({
+async function verifyPwaEmbedTokenInProxy({
   chatbotId,
   token,
 }: {
@@ -110,7 +108,7 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   return applyFrameAncestorsCSP(NextResponse.redirect(noLoginUrl))
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (
@@ -145,7 +143,7 @@ export async function middleware(request: NextRequest) {
   let hadGuestToken = false
   if (chatGuestToken) {
     hadGuestToken = true
-    if (await verifyChatGuestTokenInMiddleware(chatGuestToken)) {
+    if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
       return applyFrameAncestorsCSP(NextResponse.next())
     }
     // Invalid guest token → fall through to participant_token.
@@ -157,7 +155,7 @@ export async function middleware(request: NextRequest) {
     extractBearerToken(request.headers.get('authorization'))
   if (pwaEmbedToken) {
     if (
-      await verifyPwaEmbedTokenInMiddleware({
+      await verifyPwaEmbedTokenInProxy({
         chatbotId: pathSegments[0],
         token: pwaEmbedToken,
       })
@@ -194,7 +192,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // The Manage chat route owns a streaming 16 MiB request limit. Excluding it
-  // here prevents Next.js middleware from first cloning and buffering the body
+  // here prevents Next.js proxy from first cloning and buffering the body
   // (10 MiB by default), which would both truncate supported requests and
   // defeat the route's bounded streaming reader.
   matcher: ['/((?!api/manage/chat$).*)'],
