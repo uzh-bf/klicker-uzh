@@ -5139,6 +5139,7 @@ export async function enableGamification(
         courseId,
         isActive: true,
         studyStreakTrackingStartedAt: null,
+        course: { isAssessmentEnabled: false },
       },
       data: { studyStreakTrackingStartedAt: trackingStartedAt },
     })

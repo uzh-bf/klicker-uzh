@@ -31,6 +31,10 @@ function prismaDate(dateStr: string): Date {
   return dayjs.utc(dateStr).startOf('day').toDate()
 }
 
+function zurichDayStart(dateStr: string): Date {
+  return dayjs.tz(dateStr, COURSE_TIMEZONE).startOf('day').toDate()
+}
+
 function isWeekend(dateStr: string): boolean {
   const dow = dayjs.tz(dateStr, COURSE_TIMEZONE).day()
   return dow === 0 || dow === 6
@@ -166,19 +170,19 @@ export async function getStudyStreakResponsesToday(
   const today = zurichDate(new Date())
   const courseStart = zurichDate(participation.course.startDate)
   const courseEnd = zurichDate(participation.course.endDate)
-  if (today < courseStart || today > courseEnd) return null
+  if (today < courseStart || today > courseEnd || isWeekend(today)) return null
 
-  const todayStart = dayjs.tz(today, COURSE_TIMEZONE).startOf('day').toDate()
+  const todayStart = zurichDayStart(today)
   const tomorrowStart = dayjs
     .tz(today, COURSE_TIMEZONE)
     .add(1, 'day')
     .startOf('day')
     .toDate()
 
-  return deps.prisma.questionResponseDetail.count({
+  return deps.prisma.questionResponse.count({
     where: {
       participationId: participation.id,
-      createdAt: {
+      lastAnsweredAt: {
         gte:
           participation.studyStreakTrackingStartedAt > todayStart
             ? participation.studyStreakTrackingStartedAt
@@ -245,12 +249,34 @@ export async function reconcileStudyStreak(
             const courseEnd = zurichDate(participation.course.endDate)
             const effectiveStart =
               trackingStart > courseStart ? trackingStart : courseStart
+            const today = zurichDate(new Date())
+            const todayStart = zurichDayStart(today)
+            const tomorrowStart = dayjs
+              .tz(today, COURSE_TIMEZONE)
+              .add(1, 'day')
+              .startOf('day')
+              .toDate()
+            const lastProcessedDate = participation.studyStreakLastProcessedDate
+              ? zurichDate(participation.studyStreakLastProcessedDate)
+              : null
+            const repairStart = lastProcessedDate
+              ? dayjs
+                  .tz(lastProcessedDate, COURSE_TIMEZONE)
+                  .add(1, 'day')
+                  .startOf('day')
+                  .toDate()
+              : participation.studyStreakTrackingStartedAt
+            const detailStart =
+              repairStart > participation.studyStreakTrackingStartedAt
+                ? repairStart
+                : participation.studyStreakTrackingStartedAt
 
             const detailResponses = await tx.questionResponseDetail.findMany({
               where: {
                 participationId: participation.id,
                 createdAt: {
-                  gte: participation.studyStreakTrackingStartedAt,
+                  gte: detailStart,
+                  lt: todayStart,
                 },
                 OR: [
                   { practiceQuizId: { not: null } },
@@ -260,29 +286,60 @@ export async function reconcileStudyStreak(
                   elementType: { not: DB.ElementType.CONTENT },
                 },
               },
-              select: { createdAt: true },
+              select: { createdAt: true, elementInstanceId: true },
               orderBy: { createdAt: 'asc' },
             })
 
-            const responsesByDate = new Map<string, number>()
+            const responsesByDate = new Map<string, Set<number>>()
             for (const response of detailResponses) {
               const responseDate = zurichDate(response.createdAt)
               if (responseDate < effectiveStart || responseDate > courseEnd) {
                 continue
               }
-              responsesByDate.set(
-                responseDate,
-                (responsesByDate.get(responseDate) ?? 0) + 1
-              )
+              const instances =
+                responsesByDate.get(responseDate) ?? new Set<number>()
+              instances.add(response.elementInstanceId)
+              responsesByDate.set(responseDate, instances)
             }
 
             const qualifiedDates = [...responsesByDate.entries()]
               .filter(
-                ([, responseCount]) =>
-                  responseCount >= QUALIFIED_RESPONSES_PER_DAY
+                ([, instances]) => instances.size >= QUALIFIED_RESPONSES_PER_DAY
               )
               .map(([responseDate]) => responseDate)
               .sort((left, right) => left.localeCompare(right))
+
+            if (
+              today >= courseStart &&
+              today <= courseEnd &&
+              !isWeekend(today)
+            ) {
+              const currentDayResponseCount = await tx.questionResponse.count({
+                where: {
+                  participationId: participation.id,
+                  lastAnsweredAt: {
+                    gte:
+                      participation.studyStreakTrackingStartedAt > todayStart
+                        ? participation.studyStreakTrackingStartedAt
+                        : todayStart,
+                    lt: tomorrowStart,
+                  },
+                  OR: [
+                    { practiceQuizId: { not: null } },
+                    { microLearningId: { not: null } },
+                  ],
+                  elementInstance: {
+                    elementType: { not: DB.ElementType.CONTENT },
+                  },
+                },
+              })
+
+              if (currentDayResponseCount >= QUALIFIED_RESPONSES_PER_DAY) {
+                qualifiedDates.push(today)
+              }
+            }
+
+            qualifiedDates.sort((left, right) => left.localeCompare(right))
 
             let state: StreakState = {
               current: participation.studyStreakCurrent,
@@ -300,6 +357,24 @@ export async function reconcileStudyStreak(
 
             for (const responseDate of qualifiedDates) {
               state = applyQualifiedDate(state, responseDate)
+            }
+
+            const processingThrough =
+              today > courseEnd
+                ? courseEnd
+                : today >= courseStart
+                  ? dayjs
+                      .tz(today, COURSE_TIMEZONE)
+                      .subtract(1, 'day')
+                      .format('YYYY-MM-DD')
+                  : null
+            if (
+              processingThrough &&
+              processingThrough >= effectiveStart &&
+              (!state.lastProcessedDate ||
+                processingThrough > state.lastProcessedDate)
+            ) {
+              state.lastProcessedDate = processingThrough
             }
 
             await tx.participation.update({

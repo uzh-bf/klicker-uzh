@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   applyQualifiedDate,
   FREEZE_BALANCE_MAX,
   FREEZE_EARN_THRESHOLD,
+  getStudyStreakResponsesToday,
   QUALIFIED_RESPONSES_PER_DAY,
 } from '../src/services/studyStreak.js'
 
@@ -14,6 +15,22 @@ const initialState = (): Parameters<typeof applyQualifiedDate>[0] => ({
   qualifiedDaysSinceFreeze: 0,
   lastQualifiedDate: null,
   lastProcessedDate: null,
+})
+
+const activeParticipation = {
+  id: 1,
+  isActive: true,
+  studyStreakTrackingStartedAt: new Date('2026-08-01T00:00:00.000Z'),
+  course: {
+    startDate: new Date('2026-01-01T00:00:00.000Z'),
+    endDate: new Date('2026-12-31T00:00:00.000Z'),
+    isGamificationEnabled: true,
+    isAssessmentEnabled: false,
+  },
+}
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('constants', () => {
@@ -110,5 +127,52 @@ describe('applyQualifiedDate', () => {
     const atMax = { ...initialState(), freezeBalance: FREEZE_BALANCE_MAX }
     const result = applyQualifiedDate(atMax, '2026-08-24')
     expect(result.freezeBalance).toBe(FREEZE_BALANCE_MAX)
+  })
+})
+
+describe('getStudyStreakResponsesToday', () => {
+  it('counts distinct aggregate responses rather than response attempts', async () => {
+    vi.setSystemTime(new Date('2026-08-24T12:00:00.000Z')) // Monday
+    const count = vi.fn().mockResolvedValue(3)
+    const prisma = {
+      participation: {
+        findUnique: vi.fn().mockResolvedValue(activeParticipation),
+      },
+      questionResponse: { count },
+    } as never
+
+    await expect(
+      getStudyStreakResponsesToday(
+        { prisma },
+        { courseId: 'course-id', participantId: 'participant-id' }
+      )
+    ).resolves.toBe(3)
+
+    expect(count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        participationId: activeParticipation.id,
+        lastAnsweredAt: expect.any(Object),
+      }),
+    })
+    expect(count.mock.calls.at(0)?.[0]?.where).not.toHaveProperty('createdAt')
+  })
+
+  it('does not expose a daily goal on neutral weekends', async () => {
+    vi.setSystemTime(new Date('2026-08-29T12:00:00.000Z')) // Saturday
+    const count = vi.fn().mockResolvedValue(3)
+    const prisma = {
+      participation: {
+        findUnique: vi.fn().mockResolvedValue(activeParticipation),
+      },
+      questionResponse: { count },
+    } as never
+
+    await expect(
+      getStudyStreakResponsesToday(
+        { prisma },
+        { courseId: 'course-id', participantId: 'participant-id' }
+      )
+    ).resolves.toBeNull()
+    expect(count).not.toHaveBeenCalled()
   })
 })

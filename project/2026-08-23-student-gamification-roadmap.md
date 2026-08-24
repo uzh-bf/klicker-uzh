@@ -742,3 +742,9 @@ Append entries; do not rewrite history.
   self-scoped progress exposes the remaining eligible responses for today. The
   PWA now shows this progress while practicing and refreshes it after each
   successful submission.
+- 2026-08-24 — Follow-up correction for existing opted-in participants:
+  current-day progress now uses distinct `QuestionResponse` aggregate rows,
+  overdue repair is bounded and deduplicates detail rows by question instance,
+  weekends remain neutral, assessment courses stay excluded, and rollout uses
+  the inclusive Zurich calendar-day end boundary. The focused streak tests now
+  cover aggregate progress and weekend neutrality.
