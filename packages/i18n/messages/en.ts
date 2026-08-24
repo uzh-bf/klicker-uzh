@@ -1516,6 +1516,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      catalystRequired:
+        'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
       elementPreviewRedirect: 'Open preview in a new tab',
       elementTypeDescription: 'Type',
