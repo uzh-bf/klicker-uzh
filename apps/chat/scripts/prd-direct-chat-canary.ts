@@ -910,7 +910,9 @@ async function runProof(
         requestTimeoutMs: REQUEST_TIMEOUT_MS,
       })
     )
-    const names = Object.keys(tools).sort()
+    const names = Object.keys(tools).sort((left, right) =>
+      left.localeCompare(right)
+    )
     const inventory = classifyExpectedToolInventory(names)
     result.toolCount = inventory.toolCount
     result.pairCount = inventory.pairCount
@@ -987,8 +989,7 @@ async function runProof(
         ? 'passed'
         : 'failed'
     return result
-  } catch (error) {
-    void error
+  } catch {
     return result
   }
 }
@@ -1003,6 +1004,126 @@ type RunOptions = {
   fetchImpl: typeof fetch
   runProofImpl: typeof runProof
   isInterrupted: () => boolean
+}
+
+type CanaryAttemptResult = {
+  fixtureState?: FixtureState
+  failure?: unknown
+  failureCategory?: DirectChatCanaryFailureCategory
+}
+
+async function executeCanaryPhases(
+  options: RunOptions,
+  fixture: FixtureIds
+): Promise<CanaryAttemptResult> {
+  let fixtureState: FixtureState | undefined
+  let currentPhase: DirectChatCanaryFailureCategory = 'reachability_failed'
+  try {
+    assertNotInterrupted(options)
+    await assertCandidateReachable(options, fixture.chatbotId)
+    currentPhase = 'fixture_create_failed'
+    options.receipt = updatedReceipt(options.receipt, {
+      fixtureOperation: { operation: 'create', status: 'running' },
+    })
+    await options.store.write(options.receipt)
+    fixtureState = await createFixture(options)
+    if (!fixtureState.receiptPersisted) {
+      fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
+    }
+    currentPhase = 'switch_failed'
+    await switchFixture(options, fixtureState)
+    currentPhase = 'proof_failed'
+    await runLiveProof(options, fixtureState)
+    return { fixtureState }
+  } catch (error) {
+    options.receipt = updatedReceipt(options.receipt, {
+      fixtureOperation:
+        options.receipt.fixtureOperation.status === 'running'
+          ? {
+              operation: options.receipt.fixtureOperation.operation,
+              status: 'failed',
+            }
+          : options.receipt.fixtureOperation,
+    })
+    return { fixtureState, failure: error, failureCategory: currentPhase }
+  }
+}
+
+async function cleanUpCanaryAttempt(
+  options: RunOptions,
+  fixtureState: FixtureState
+): Promise<CanaryAttemptResult> {
+  try {
+    await attemptCleanup(options, fixtureState)
+    return {}
+  } catch (cleanupError) {
+    options.receipt = updatedReceipt(options.receipt, {
+      state: 'recovery_required',
+      fixtureOperation: { operation: 'cleanup', status: 'failed' },
+    })
+    try {
+      await options.store.write(options.receipt)
+    } catch {
+      // Keep the bounded result available even if receipt storage is the
+      // cleanup failure.
+    }
+    return {
+      failure: cleanupError,
+      failureCategory: 'cleanup_failed',
+    }
+  }
+}
+
+async function recordCanaryFailure(
+  options: RunOptions,
+  fixtureState: FixtureState | undefined,
+  failureCategory: DirectChatCanaryFailureCategory
+): Promise<void> {
+  let diagnosticBase = options.receipt
+  if (fixtureState && !fixtureState.receiptPersisted) {
+    try {
+      const durable = await options.store.read()
+      if (durable) {
+        diagnosticBase = updatedReceipt(durable, {
+          cleanup: options.receipt.cleanup,
+          fixtureOperation: options.receipt.fixtureOperation,
+        })
+      }
+    } catch {
+      // Keep the in-memory bounded result when the receipt is unreadable.
+    }
+  }
+  const diagnostic = updatedReceipt(diagnosticBase, {
+    failure: { category: failureCategory },
+  })
+  try {
+    await options.store.write(diagnostic)
+    options.receipt = diagnostic
+  } catch {
+    // Keep the safe output category even when its durable update fails.
+  }
+}
+
+async function finalizeCanaryAttempt(
+  options: RunOptions,
+  attempt: CanaryAttemptResult
+): Promise<CanaryAttemptResult> {
+  let result = attempt
+  if (attempt.fixtureState) {
+    const cleanupResult = await cleanUpCanaryAttempt(
+      options,
+      attempt.fixtureState
+    )
+    if (cleanupResult.failureCategory) result = { ...attempt, ...cleanupResult }
+  }
+  if (result.failureCategory) {
+    await recordCanaryFailure(
+      options,
+      result.fixtureState,
+      result.failureCategory
+    )
+  }
+  return result
 }
 
 function assertNotInterrupted(options: RunOptions): void {
@@ -1760,7 +1881,8 @@ export async function runDirectChatCanaryTransaction(
   )
   const receiptPath = requiredEnv('RECEIPT_PATH')
   const bearer = requiredEnv('DOC_QUERY_JWT_TOKEN_KLICKER')
-  void requiredEnv('APP_SECRET')
+  const appSecretLength = requiredEnv('APP_SECRET').length
+  if (appSecretLength === 0) fail('ENV_REQUIRED', 'APP_SECRET is required')
   const provenance: DirectChatCanaryReceipt['provenance'] = {
     klickerSourceSha: requiredEnv('KLICKER_SOURCE_SHA'),
     chatImageDigest: requiredEnv('CHAT_IMAGE_DIGEST'),
@@ -1807,84 +1929,11 @@ export async function runDirectChatCanaryTransaction(
   process.on('SIGINT', signalHandler)
   process.on('SIGTERM', signalHandler)
   try {
-    let fixtureState: FixtureState | undefined
-    let failure: unknown
-    let failureCategory: DirectChatCanaryFailureCategory | undefined
-    let currentPhase: DirectChatCanaryFailureCategory = 'reachability_failed'
-    try {
-      assertNotInterrupted(options)
-      await assertCandidateReachable(options, fixture.chatbotId)
-      currentPhase = 'fixture_create_failed'
-      options.receipt = updatedReceipt(options.receipt, {
-        fixtureOperation: { operation: 'create', status: 'running' },
-      })
-      await store.write(options.receipt)
-      fixtureState = await createFixture(options)
-      if (!fixtureState.receiptPersisted) {
-        fail('RECEIPT_WRITE_FAILED', 'prepared receipt could not be persisted')
-      }
-      currentPhase = 'switch_failed'
-      await switchFixture(options, fixtureState)
-      currentPhase = 'proof_failed'
-      await runLiveProof(options, fixtureState)
-    } catch (error) {
-      failure = error
-      failureCategory = currentPhase
-      options.receipt = updatedReceipt(options.receipt, {
-        fixtureOperation:
-          options.receipt.fixtureOperation.status === 'running'
-            ? {
-                operation: options.receipt.fixtureOperation.operation,
-                status: 'failed',
-              }
-            : options.receipt.fixtureOperation,
-      })
-    } finally {
-      if (fixtureState) {
-        try {
-          await attemptCleanup(options, fixtureState)
-        } catch (cleanupError) {
-          failure = cleanupError
-          failureCategory = 'cleanup_failed'
-          options.receipt = updatedReceipt(options.receipt, {
-            state: 'recovery_required',
-            fixtureOperation: { operation: 'cleanup', status: 'failed' },
-          })
-          try {
-            await store.write(options.receipt)
-          } catch {
-            // The bounded result remains available even if receipt storage is
-            // the cleanup failure.
-          }
-        }
-      }
-      if (failureCategory) {
-        let diagnosticBase = options.receipt
-        if (fixtureState && !fixtureState.receiptPersisted) {
-          try {
-            const durable = await store.read()
-            if (durable) {
-              diagnosticBase = updatedReceipt(durable, {
-                cleanup: options.receipt.cleanup,
-                fixtureOperation: options.receipt.fixtureOperation,
-              })
-            }
-          } catch {
-            // Keep the in-memory bounded result when the receipt is unreadable.
-          }
-        }
-        const diagnostic = updatedReceipt(diagnosticBase, {
-          failure: { category: failureCategory },
-        })
-        try {
-          await store.write(diagnostic)
-          options.receipt = diagnostic
-        } catch {
-          // Keep the safe output category even when its durable update fails.
-        }
-      }
-      receipt = options.receipt
-    }
+    const attempt = await executeCanaryPhases(options, fixture)
+    const finalized = await finalizeCanaryAttempt(options, attempt)
+    const failure = finalized.failure
+    const failureCategory = finalized.failureCategory
+    receipt = options.receipt
     if (failure) {
       process.stdout.write(
         `${JSON.stringify(safeResult(receipt, failure, failureCategory))}\n`

@@ -362,8 +362,8 @@ function jsonEqual(left: JsonState, right: JsonState): boolean {
       )
     )
   }
-  const leftKeys = Object.keys(left).sort()
-  const rightKeys = Object.keys(right).sort()
+  const leftKeys = Object.keys(left).sort((a, b) => a.localeCompare(b))
+  const rightKeys = Object.keys(right).sort((a, b) => a.localeCompare(b))
   if (leftKeys.length !== rightKeys.length) return false
   return leftKeys.every(
     (key, index) =>
