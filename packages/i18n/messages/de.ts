@@ -2026,12 +2026,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementArchivedSuccessfully: 'Das Element wurde ins Archiv verschoben.',
       elementRestoredSuccessfully:
         'Das Element wurde aus dem Archiv wiederhergestellt.',
+      elementArchiveActionUnchanged:
+        'Das Element befand sich bereits im gewünschten Archivstatus.',
       elementArchiveActionFailed:
         'Der Archivstatus des Elements konnte nicht geändert werden.',
       elementArchiveActionUncertain:
         'Der Archivstatus konnte nicht bestätigt werden. Prüfen Sie die Elementliste, bevor Sie es erneut versuchen.',
       elementArchiveRefreshFailed:
-        'Der Archivstatus wurde geändert, aber die Elementliste konnte nicht aktualisiert werden. Laden Sie die Seite neu, um den aktuellen Status anzuzeigen.',
+        'Der Archivstatus konnte nicht bestätigt werden, weil die Elementliste nicht aktualisiert werden konnte. Laden Sie die Seite neu, um den aktuellen Status anzuzeigen.',
       showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showFeedbacksExplanationTooltip:

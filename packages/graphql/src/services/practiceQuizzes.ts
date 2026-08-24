@@ -630,7 +630,7 @@ export async function deletePracticeQuiz(
   {
     id,
     onlyIfUnpublished = false,
-  }: { id: string; onlyIfUnpublished?: boolean | null },
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({

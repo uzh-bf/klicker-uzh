@@ -467,6 +467,37 @@ describe('Integration tests for batch operations on activities', () => {
     })
   })
 
+  it('guards group activity hard deletion with an instance predicate', async () => {
+    const groupActivityDeleteMany = vi.fn().mockResolvedValue({ count: 1 })
+    const groupActivityCtx = {
+      prisma: {
+        groupActivity: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'group-activity-id',
+            status: PublicationStatus.PUBLISHED,
+            scheduledPublicationTaskId: null,
+            scheduledCompletionTaskId: null,
+            activityInstances: [],
+            stacks: [],
+          }),
+          deleteMany: groupActivityDeleteMany,
+        },
+      },
+      emitter: new EventEmitter(),
+    } as unknown as ContextWithUser
+
+    await expect(
+      deleteGroupActivity({ id: 'group-activity-id' }, groupActivityCtx)
+    ).resolves.toMatchObject({ id: 'group-activity-id' })
+
+    expect(groupActivityDeleteMany).toHaveBeenCalledWith({
+      where: {
+        id: 'group-activity-id',
+        activityInstances: { none: {} },
+      },
+    })
+  })
+
   it('Verify that the case of missing activity ids and a wrong courseId are handled correctly', async () => {
     // seed a course
     const course = await seedCourse({ ownerId: userTwoCtx.user.sub }, prisma)

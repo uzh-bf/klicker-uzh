@@ -13,6 +13,7 @@ const DELETE_CONCURRENCY = 5
 export type ActivityBatchDeletionOutcome = {
   activity: ActivityInfo
   status: 'deleted' | 'failed' | 'uncertain'
+  failureReason?: 'request-failed'
 }
 
 export type ActivityBatchDeletionProgress = {
@@ -58,6 +59,28 @@ function useActivityBatchDeletion() {
     return false
   }
 
+  async function deleteActivityWithOutcome(
+    activity: ActivityInfo
+  ): Promise<ActivityBatchDeletionOutcome> {
+    try {
+      const deleted = await deleteActivity(activity)
+      return {
+        activity,
+        status: deleted ? 'deleted' : 'failed',
+      }
+    } catch {
+      console.error('Batch activity deletion failed', {
+        activityId: activity.id,
+        activityType: activity.type,
+      })
+      return {
+        activity,
+        status: 'uncertain',
+        failureReason: 'request-failed',
+      }
+    }
+  }
+
   return async function deleteActivitiesBatch(
     activities: ActivityInfo[],
     onProgress?: (progress: ActivityBatchDeletionProgress) => void
@@ -65,32 +88,29 @@ function useActivityBatchDeletion() {
     const outcomes: ActivityBatchDeletionOutcome[] = []
     onProgress?.({ completed: 0, total: activities.length })
 
-    for (
-      let index = 0;
-      index < activities.length;
-      index += DELETE_CONCURRENCY
-    ) {
-      const chunk = activities.slice(index, index + DELETE_CONCURRENCY)
-      const chunkOutcomes = await Promise.all(
-        chunk.map(async (activity) => {
-          try {
-            const deleted = await deleteActivity(activity)
-            return {
-              activity,
-              status: deleted ? ('deleted' as const) : ('failed' as const),
-            }
-          } catch (error) {
-            console.error(error)
-            return {
-              activity,
-              status: 'uncertain' as const,
-            }
-          }
-        })
-      )
-      outcomes.push(...chunkOutcomes)
-      onProgress?.({ completed: outcomes.length, total: activities.length })
+    let nextIndex = 0
+    let completed = 0
+
+    async function processNext(): Promise<void> {
+      while (nextIndex < activities.length) {
+        const index = nextIndex
+        const activity = activities[index]
+        nextIndex += 1
+
+        if (!activity) continue
+
+        outcomes[index] = await deleteActivityWithOutcome(activity)
+        completed += 1
+        onProgress?.({ completed, total: activities.length })
+      }
     }
+
+    await Promise.all(
+      Array.from(
+        { length: Math.min(DELETE_CONCURRENCY, activities.length) },
+        () => processNext()
+      )
+    )
 
     return outcomes
   }

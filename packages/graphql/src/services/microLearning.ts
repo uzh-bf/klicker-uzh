@@ -742,7 +742,7 @@ export async function deleteMicroLearning(
   {
     id,
     onlyIfUnpublished = false,
-  }: { id: string; onlyIfUnpublished?: boolean | null },
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({

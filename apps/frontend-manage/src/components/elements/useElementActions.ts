@@ -61,7 +61,7 @@ function useElementActions({
     setArchiveStateBusy(true)
 
     try {
-      let result: 'success' | 'failure' | 'uncertain'
+      let result: 'success' | 'unchanged' | 'failure' | 'uncertain'
 
       try {
         const { data } = await applyElementBatchOperations({
@@ -73,7 +73,13 @@ function useElementActions({
             updateTemplateInstances: false,
           },
         })
-        result = data?.applyElementBatchOperations === 1 ? 'success' : 'failure'
+        const updatedCount = data?.applyElementBatchOperations
+        result =
+          updatedCount === 1
+            ? 'success'
+            : updatedCount === 0
+              ? 'unchanged'
+              : 'failure'
       } catch (error) {
         console.error(error)
         result = 'uncertain'
@@ -87,15 +93,18 @@ function useElementActions({
         refreshFailed = true
       }
 
-      if (result === 'success' && !refreshFailed) {
+      if ((result === 'success' || result === 'unchanged') && !refreshFailed) {
         toast({
           type: 'success',
-          message: isArchived
-            ? t('manage.questionPool.elementRestoredSuccessfully')
-            : t('manage.questionPool.elementArchivedSuccessfully'),
+          message:
+            result === 'unchanged'
+              ? t('manage.questionPool.elementArchiveActionUnchanged')
+              : isArchived
+                ? t('manage.questionPool.elementRestoredSuccessfully')
+                : t('manage.questionPool.elementArchivedSuccessfully'),
           options: { duration: 3000 },
         })
-      } else if (result === 'success') {
+      } else if (result === 'success' || result === 'unchanged') {
         toast({
           type: 'warning',
           message: t('manage.questionPool.elementArchiveRefreshFailed'),

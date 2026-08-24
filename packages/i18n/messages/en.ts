@@ -2012,12 +2012,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       restoreFromArchive: 'Restore from archive',
       elementArchivedSuccessfully: 'The element was moved to the archive.',
       elementRestoredSuccessfully: 'The element was restored from the archive.',
+      elementArchiveActionUnchanged:
+        'The element was already in the requested archive state.',
       elementArchiveActionFailed:
         'The archive state of the element could not be changed.',
       elementArchiveActionUncertain:
         'The archive state could not be confirmed. Please check the element list before trying again.',
       elementArchiveRefreshFailed:
-        'The archive state was changed, but the element list could not be refreshed. Reload the page to see the current state.',
+        'The archive state could not be confirmed because the element list could not be refreshed. Reload the page to see the current state.',
       showFeedbacksExplanation: 'Show answer feedbacks & explanation',
       showExplanation: 'Show explanation',
       showFeedbacksExplanationTooltip:
