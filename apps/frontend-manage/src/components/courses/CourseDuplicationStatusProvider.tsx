@@ -232,7 +232,6 @@ function CourseDuplicationStatusDropdown({
 
   return (
     <div
-      aria-live="polite"
       className="fixed right-4 bottom-4 z-30 max-w-[calc(100vw-2rem)]"
       data-cy="course-duplication-loading"
       role="status"

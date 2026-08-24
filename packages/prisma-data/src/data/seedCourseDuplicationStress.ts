@@ -110,23 +110,25 @@ async function seedCourseDuplicationStress() {
     (_, index) => activityId(index)
   )
 
-  for (const [index, id] of expectedActivityIds.entries()) {
-    const name = `Duplication stress activity ${index + 1}`
-    const data = {
-      name,
-      displayName: name,
-      description: 'Empty development stress-test activity.',
-      ownerId: USER_ID_TEST,
-      courseId: COURSE_ID_DUPLICATION_STRESS,
-      status: Prisma.PublicationStatus.DRAFT,
-      isDeleted: false,
-    }
-    await prisma.liveQuiz.upsert({
-      where: { id },
-      create: { id, ...data },
-      update: data,
+  await Promise.all(
+    expectedActivityIds.map(async (id, index) => {
+      const name = `Duplication stress activity ${index + 1}`
+      const data = {
+        name,
+        displayName: name,
+        description: 'Empty development stress-test activity.',
+        ownerId: USER_ID_TEST,
+        courseId: COURSE_ID_DUPLICATION_STRESS,
+        status: Prisma.PublicationStatus.DRAFT,
+        isDeleted: false,
+      }
+      await prisma.liveQuiz.upsert({
+        where: { id },
+        create: { id, ...data },
+        update: data,
+      })
     })
-  }
+  )
 
   await recomputeDerivedPermissions(
     { courseId: COURSE_ID_DUPLICATION_STRESS, userId: USER_ID_TEST },

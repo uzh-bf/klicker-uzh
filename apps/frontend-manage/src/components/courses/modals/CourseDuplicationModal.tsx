@@ -807,7 +807,7 @@ function CourseDuplicationModal({
                   <CourseDuplicationProgress />
                 </div>
               )}
-              <fieldset disabled={submitDisabled} className="contents">
+              <fieldset disabled={submitDisabled}>
                 <div className="flex flex-col gap-2">
                   <CourseInformationFields />
                   <div className="mt-2 flex flex-col gap-6">
