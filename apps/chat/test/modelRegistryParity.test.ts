@@ -27,6 +27,7 @@ type ParityModel = {
   usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
   usageClass: 'BASE' | 'ADVANCED'
+  cost: { input: number; output: number }
 }
 
 function byId(models: readonly ParityModel[]) {
@@ -35,6 +36,35 @@ function byId(models: readonly ParityModel[]) {
 
 function fallbackIds(models: readonly ParityModel[]) {
   return models.filter((model) => model.fallback).map((model) => model.id)
+}
+
+function baseModelIds(models: readonly ParityModel[]) {
+  return models
+    .filter((model) => model.usageClass === 'BASE')
+    .map((model) => model.id)
+}
+
+function costsById(models: readonly ParityModel[]) {
+  return Object.fromEntries(
+    models.map((model) => [model.id, model.cost] as const)
+  )
+}
+
+const expectedDefaultCosts = {
+  auto: { input: 1, output: 5 },
+  'gpt-5.6-luna': { input: 0.2, output: 1.2 },
+  'gpt-4.1': { input: 2, output: 8 },
+  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
+}
+
+const expectedDeployedCosts = {
+  auto: { input: 1, output: 5 },
+  'gpt-5.6-luna': { input: 0.2, output: 1.2 },
+  'gpt-4.1': { input: 2, output: 8 },
+  'gpt-5.1': { input: 1.25, output: 10 },
+  'gpt-5.4': { input: 2.5, output: 15 },
+  'gpt-5.5': { input: 5, output: 30 },
+  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
 }
 
 const chatModels: ParityModel[] = DEFAULT_MODEL_REGISTRY
@@ -80,6 +110,7 @@ describe('default chat model registry parity', () => {
   test('both registries designate the same fallback model', () => {
     expect(fallbackIds(chatModels)).toHaveLength(1)
     expect(fallbackIds(backendModels)).toEqual(fallbackIds(chatModels))
+    expect(fallbackIds(chatModels)).toEqual(['gpt-5.6-luna'])
   })
 
   test('every model carries the same explicit usage class in both copies', () => {
@@ -88,6 +119,13 @@ describe('default chat model registry parity', () => {
       expect(backendById.get(model.id)?.usageClass).toBe(model.usageClass)
     }
     expect(chatModels.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
+    expect(baseModelIds(chatModels)).toEqual(['gpt-5.6-luna'])
+    expect(baseModelIds(backendModels)).toEqual(['gpt-5.6-luna'])
+  })
+
+  test('every model carries the same verified input and output cost', () => {
+    expect(costsById(chatModels)).toEqual(expectedDefaultCosts)
+    expect(costsById(backendModels)).toEqual(expectedDefaultCosts)
   })
 })
 
@@ -149,8 +187,35 @@ describe('deployed chat model registry parity (values.yaml)', () => {
           `missing backend entry for ${model.id}`
         ).toBeDefined()
         expect(backendModel?.usageClass).toBe(model.usageClass)
+        expect(backendModel?.fallback).toBe(model.fallback)
+        expect(backendModel?.cost).toEqual(model.cost)
       }
       expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
+      expect(baseModelIds(chat)).toEqual(['gpt-5.6-luna'])
+      expect(fallbackIds(chat)).toEqual(['gpt-5.6-luna'])
+      expect(costsById(chat)).toEqual(expectedDeployedCosts)
     })
   }
+
+  test('staging and production expose the same accounting policy', () => {
+    const [staging, production] = deployed
+    expect(staging).toBeDefined()
+    expect(production).toBeDefined()
+
+    expect(
+      staging!.chat.map(({ id, usageClass, fallback, cost }) => ({
+        id,
+        usageClass,
+        fallback,
+        cost,
+      }))
+    ).toEqual(
+      production!.chat.map(({ id, usageClass, fallback, cost }) => ({
+        id,
+        usageClass,
+        fallback,
+        cost,
+      }))
+    )
+  })
 })

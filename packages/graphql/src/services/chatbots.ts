@@ -4,6 +4,8 @@ import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
+const BASE_MODEL_ID = 'gpt-5.6-luna'
+
 const chatModelSchema = z
   .object({
     id: z.string().min(1),
@@ -50,6 +52,25 @@ const chatModelRegistrySchema = z
         })
       }
     }
+
+    const baseModels = models.filter((model) => model.usageClass === 'BASE')
+    if (baseModels.length !== 1 || baseModels[0]?.id !== BASE_MODEL_ID) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Model "${BASE_MODEL_ID}" must be the registry's only BASE model.`,
+      })
+    }
+
+    const baseModelIndex = models.findIndex(
+      (model) => model.id === BASE_MODEL_ID
+    )
+    if (baseModelIndex >= 0 && !models[baseModelIndex]?.fallback) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [baseModelIndex, 'fallback'],
+        message: `Model "${BASE_MODEL_ID}" must be a participant-credit fallback.`,
+      })
+    }
   })
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
@@ -84,20 +105,20 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportedReasoningEfforts: [],
     usageClass: 'ADVANCED',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 1.0, output: 5.0 },
   },
   {
     id: 'gpt-5.6-luna',
     deploymentId: 'gpt-5.6-luna',
     name: 'GPT-5.6 Luna',
     description: 'OpenAI reasoning model',
-    fallback: false,
+    fallback: true,
     supportsReasoning: true,
     usesResponsesApi: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
-    usageClass: 'ADVANCED',
+    usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 0.2, output: 1.2 },
   },
   {
     id: 'gpt-4.1',
@@ -108,7 +129,7 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
-    usageClass: 'BASE',
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -117,11 +138,11 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     deploymentId: 'gpt-4.1-mini',
     name: 'GPT-4.1 Mini',
     description: 'Small OpenAI model',
-    fallback: true,
+    fallback: false,
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
-    usageClass: 'BASE',
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },

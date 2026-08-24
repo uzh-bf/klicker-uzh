@@ -181,7 +181,7 @@ function chatbot(overrides: Record<string, unknown> = {}) {
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
     modelSelection: true,
-    allowedModelIds: ['gpt-4.1', 'gpt-4.1-mini'],
+    allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
     allowedReasoningEffortsByModel: null,
     openaiApiKey: null,
     openaiBaseUrl: null,
@@ -376,7 +376,10 @@ describe('account usage chat route', () => {
     mocks.isChatAccountUsageAvailable.mockResolvedValueOnce(false)
 
     const response = await POST(
-      createRequest({ images: ['data:image/png;base64,AAAA'] }),
+      createRequest({
+        selectedModel: 'gpt-5.6-luna',
+        images: ['data:image/png;base64,AAAA'],
+      }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
     )
 
@@ -394,15 +397,14 @@ describe('account usage chat route', () => {
   test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
-        allowedModelIds: ['gpt-5.6-luna', 'gpt-4.1-mini'],
+        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
       })
     )
     mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
-    const response = await POST(
-      createRequest({ selectedModel: 'gpt-5.6-luna' }),
-      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
-    )
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
 
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toEqual({
@@ -423,7 +425,7 @@ describe('account usage chat route', () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         modelSelection: false,
-        allowedModelIds: ['auto', 'gpt-4.1-mini'],
+        allowedModelIds: ['auto', 'gpt-5.6-luna'],
       })
     )
     mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
@@ -446,15 +448,14 @@ describe('account usage chat route', () => {
   test('does not use another class when the ADVANCED account budget is unavailable', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
-        allowedModelIds: ['gpt-5.6-luna', 'gpt-4.1-mini'],
+        allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
       })
     )
     mocks.isChatAccountUsageAvailable.mockResolvedValueOnce(false)
 
-    const response = await POST(
-      createRequest({ selectedModel: 'gpt-5.6-luna' }),
-      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
-    )
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
 
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toMatchObject({
@@ -463,7 +464,7 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  test('denies a same-class fallback omitted from the chatbot allow-list', async () => {
+  test('does not cross to BASE when no ADVANCED fallback is allow-listed', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({ allowedModelIds: ['gpt-4.1'] })
     )
@@ -475,18 +476,16 @@ describe('account usage chat route', () => {
 
     expect(response.status).toBe(403)
     await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_BASE',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
     })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  test('finalizes a same-class fallback once and returns the rounded amount', async () => {
-    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
-    mocks.getUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
-
-    const response = await POST(createRequest(), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
-    })
+  test('finalizes the sole BASE model once and returns the rounded amount', async () => {
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
     expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
@@ -510,8 +509,8 @@ describe('account usage chat route', () => {
         threadId: 'thread-1',
         assistantMessageId: 'assistant-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
-        modelId: 'gpt-4.1-mini',
-        rawCreditsUsed: 0.000012,
+        modelId: 'gpt-5.6-luna',
+        rawCreditsUsed: 0.000008,
       })
     )
     expect(mocks.finalizeChatTurn.mock.calls[0][0]).not.toHaveProperty(
@@ -521,7 +520,7 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).toHaveBeenCalledWith(
       'participant-1',
       'chatbot-1',
-      0.000012
+      0.000008
     )
 
     expect(
@@ -533,8 +532,8 @@ describe('account usage chat route', () => {
         },
       })
     ).toMatchObject({
-      modelId: 'gpt-4.1-mini',
-      creditsUsed: 0.000012,
+      modelId: 'gpt-5.6-luna',
+      creditsUsed: 0.000008,
     })
   })
 
