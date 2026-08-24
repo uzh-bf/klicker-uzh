@@ -314,13 +314,14 @@ function ActivityBatchOperationsModal({
       const uncertainCount = outcomes.filter(
         (outcome) => outcome.status === 'uncertain'
       ).length
+      const hadOutcome = deletedCount > 0 || uncertainCount > 0
 
-      if (deletedCount > 0 || uncertainCount > 0) {
+      if (hadOutcome) {
         resetSelectedActivities()
       }
 
       let refreshFailed = false
-      if (deletedCount > 0 || uncertainCount > 0) {
+      if (hadOutcome) {
         try {
           await refetchActivities()
         } catch (error) {

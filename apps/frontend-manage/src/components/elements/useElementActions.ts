@@ -18,6 +18,7 @@ import {
   type Dispatch,
   type SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -53,6 +54,13 @@ function useElementActions({
     useMutation(ApplyElementBatchOperationsDocument)
   const [archiveStateBusy, setArchiveStateBusy] = useState(false)
   const archiveStateBusyRef = useRef(false)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   const updateArchiveState = useCallback(async () => {
     if (archiveStateBusyRef.current) return
@@ -85,6 +93,8 @@ function useElementActions({
         result = 'uncertain'
       }
 
+      // The server may have applied an uncertain request, so refresh before
+      // showing the warning and let the UI reflect the confirmed server state.
       let refreshFailed = false
       try {
         await refetchElements()
@@ -125,7 +135,7 @@ function useElementActions({
       }
     } finally {
       archiveStateBusyRef.current = false
-      setArchiveStateBusy(false)
+      if (isMountedRef.current) setArchiveStateBusy(false)
     }
   }, [applyElementBatchOperations, element.id, isArchived, refetchElements, t])
 
