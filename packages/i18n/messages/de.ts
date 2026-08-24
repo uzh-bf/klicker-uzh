@@ -725,6 +725,12 @@ export default {
         'Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.',
       image:
         'Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
+      video: 'Binden Sie ein YouTube- oder Kaltura-Video ein.',
+      videoUrl: 'YouTube- oder Kaltura-URL',
+      videoUrlPlaceholder: 'YouTube- oder Kaltura-Video-URL einfügen',
+      videoUrlInvalid:
+        'Geben Sie eine gültige YouTube- oder Kaltura-Video-URL ein.',
+      insertVideo: 'Video einfügen',
       latex:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
@@ -1405,6 +1411,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       identitySourceLabel: 'Verifizierte Identitätsquelle',
       identitySourceCourseInvitation:
         'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Erreicht',
       availablePointsLabel: 'Verfügbar',
       performanceInsightsTitle: 'Peer-Vergleich',
@@ -1444,6 +1451,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
+      studentNameLabel: 'Name der studierenden Person',
+      studentEmailAddressLabel: 'E-Mail-Adresse',
+      matriculationNumberLabel: 'Matrikelnummer',
       studentEmailLabel: 'Studierende/r',
       pointsSummaryLabel: 'Punkteübersicht',
       yourScoreLabel: 'Du',
@@ -1699,8 +1709,71 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
+      participantInvitationsDescription:
+        'Laden Sie Teilnehmende zu diesem Assessment-Kurs ein und verfolgen Sie, ob die Einladung angenommen wurde.',
+      invitationBackToCourse: 'Zurück zum Kurs',
+      invitationImportTitle: 'Einladungen importieren',
+      invitationImportDescription:
+        'Wählen Sie eine CSV-Datei mit den E-Mail-Adressen und Matrikelnummern der Teilnehmenden. Die Datei wird in Ihrem Browser verarbeitet, bevor die Einladungen übermittelt werden.',
+      invitationAffiliationWarning:
+        'Verwenden Sie genau die E-Mail-Adresse, die in der Swiss Edu-ID als verifizierte Hochschulzugehörigkeit hinterlegt ist (z. B. eine @uzh.ch-Adresse). Private E-Mail-Adressen können bei der Anmeldung möglicherweise nicht zugeordnet werden.',
+      invitationDownloadTemplate: 'CSV-Vorlage herunterladen',
+      invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
+      invitationCsvHeaders:
+        'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
+      invitationCsvReady:
+        '{count, plural, one {# Zeile ist für den Import bereit} other {# Zeilen sind für den Import bereit}}',
+      invitationSelectCsv: 'CSV-Datei auswählen',
+      invitationImportButton:
+        '{count, plural, one {# Einladung importieren} other {# Einladungen importieren}}',
+      invitationCsvMissingHeaders:
+        'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
+      invitationCsvInvalidHeaders:
+        'Die CSV-Datei muss genau eine email-Spalte und eine matriculationNumber-Spalte enthalten.',
+      invitationCsvInvalidRows:
+        'Jede CSV-Zeile muss gleich viele Spalten wie die Kopfzeile enthalten.',
+      invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
+      invitationCsvParseError:
+        'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',
+      invitationCsvTooLarge:
+        'Die CSV-Datei ist zu gross. Wählen Sie eine Datei mit höchstens 1 MB.',
+      invitationCsvTooManyRows:
+        'Die CSV-Datei enthält mehr als {count} Teilnehmendenzeilen. Teilen Sie sie in kleinere Dateien auf.',
+      invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
+      invitationImportFailed:
+        'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
+      invitationImportInvalidEmail: 'Ungültiges E-Mail-Format',
+      invitationImportSummary:
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
+      invitationListTitle: 'Einladungen',
+      invitationListDescription:
+        'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
+      invitationCount:
+        '{count, plural, one {# Einladung} other {# Einladungen}}',
+      invitationEmail: 'E-Mail',
+      invitationMatriculationNumber: 'Matrikelnummer',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Eingeladen',
+      invitationActions: 'Aktionen',
+      invitationStatusPending: 'Ausstehend',
+      invitationStatusAccepted: 'Angenommen',
+      invitationDeleteLabel: 'Ausstehende Einladung für {email} löschen',
+      invitationDeleteTitle: 'Ausstehende Einladung löschen',
+      invitationDeleteDescription:
+        'Möchten Sie die ausstehende Einladung für {email} löschen? Die teilnehmende Person kann sie danach nicht mehr annehmen.',
+      invitationDeleteSuccess: 'Die ausstehende Einladung wurde gelöscht.',
+      invitationDeleteFailed:
+        'Die ausstehende Einladung konnte nicht gelöscht werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
+      invitationEmpty: 'Es wurden noch keine Einladungen erstellt.',
+      invitationLoadingError:
+        'Die Teilnehmendeneinladungen konnten nicht geladen werden. Prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       liveQuizStudentResultsTitle: 'Studierendenresultate',
       liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentGivenNameColumn: 'Vorname der studierenden Person',
+      liveQuizStudentSurnameColumn: 'Nachname der studierenden Person',
+      liveQuizStudentMatriculationNumberColumn:
+        'Matrikelnummer der studierenden Person',
       liveQuizStudentResultsEmpty:
         'Es sind noch keine Studierendenresultate vorhanden.',
       errorLoadingLiveQuizResults:
@@ -1800,6 +1873,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
       survey:
         'Wir möchten gerne wissen, was Sie über KlickerUZH und unsere zukünftigen Pläne denken! Bitte geben Sie uns Ihr Feedback in einer <link>kurzen Umfrage (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Catalyst-Zugang anfragen',
+        subtitle:
+          'Beschreiben Sie Ihren Anwendungsfall und wir melden uns bei Ihnen.',
+        explanation:
+          'Ihre Anfrage geht an klicker@df.uzh.ch. Wir antworten auf die E-Mail-Adresse Ihres Kontos und verwenden Ihre Daten ausschliesslich zur Bearbeitung dieser Anfrage.',
+        institution: 'Institution',
+        institutionRequired: 'Bitte geben Sie Ihre Institution ein.',
+        institutionMin: 'Bitte geben Sie mindestens 2 Zeichen ein.',
+        institutionMax: 'Bitte geben Sie höchstens 160 Zeichen ein.',
+        useCase: 'Geplante Verwendung',
+        useCaseRequired: 'Bitte beschreiben Sie die geplante Verwendung.',
+        useCaseMin: 'Bitte geben Sie mindestens 20 Zeichen ein.',
+        useCaseMax: 'Bitte geben Sie höchstens 2000 Zeichen ein.',
+        submit: 'Anfrage senden',
+      },
     },
     login: {
       lecturerLogin: 'Login Dozierende',
@@ -3316,6 +3405,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
       appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',

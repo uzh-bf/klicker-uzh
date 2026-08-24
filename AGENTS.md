@@ -222,6 +222,21 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Students: `testuser1`-`testuser50`, password `abcdabcd` (enrolled in "Testkurs")
 - Additional: `testuser51`-`testuser52` exist but are not enrolled in any course by default
 
+### Authenticated load-test login
+
+- Keep participant credential values only in Infisical. Do not put them in this file, repository files, command arguments, logs, or chat.
+- The approved operator profile is `klicker-dev`; it intentionally maps to Infisical project `klicker-uzh-dev` in environment `dev`. Inject the allowlisted names directly into the child process:
+
+  ```bash
+  rs-infisical-operator --profile klicker-dev run \
+    --map KLICKER_TESTSTUDENT_USERNAME=KLICKER_PARTICIPANT_USERNAME_OR_EMAIL \
+    --map KLICKER_TESTSTUDENT_PASSWORD=KLICKER_PARTICIPANT_PASSWORD \
+    -- k6 run util/load-test/chatbot-auth.js
+  ```
+
+- Set the target-specific `KLICKER_BASE_URL` and `KLICKER_API_URL` in the child environment. Normal login also requires `KLICKER_ALLOW_LOGIN=true`; PRD additionally requires `KLICKER_ALLOW_PRODUCTION=true`.
+- Use `KLICKER_PARTICIPANT_TOKEN` instead when an already-issued token is supplied. Never print or persist either the token or the injected credential values.
+
 ## Code Conventions
 
 - **TypeScript strict mode** everywhere
@@ -255,7 +270,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Engineering Wiki
 
-[docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The optional OKF index and log files are omitted because they duplicate directory discovery and Git history.
+[docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are intentionally absent and must never be created or restored because they duplicate directory discovery and Git history.
 
 Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
@@ -268,6 +283,20 @@ Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and 
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
 
 <!-- devrouter -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in ClickUp, reached through the `clickup_*` MCP tools; GitHub Issues are not used. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles keep their default names and are applied as ClickUp tags. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one shared `CONTEXT.md` at the root plus `docs/adr/`, with no context map. See `docs/agents/domain.md`.
 
 ## devrouter
 

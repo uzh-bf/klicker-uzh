@@ -8,6 +8,7 @@ import {
   faMessage,
   faPencil,
   faShare,
+  faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -245,6 +246,17 @@ function CourseOverviewHeader({
       : []),
     ...(course.isAssessmentEnabled && course.isManager
       ? [
+          {
+            id: 'assessment-course-participant-invitations',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faUserPlus} className="h-4 w-4" />,
+              t('manage.course.participantInvitations')
+            ),
+            onClick: () => {
+              router.push(`/courses/${course.id}/assessment/invitations`)
+            },
+            data: { cy: 'assessment-course-participant-invitations' },
+          },
           {
             id: 'assessment-course-point-corrections',
             label: courseActionMenuLabel(

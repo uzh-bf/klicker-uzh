@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-17'
+timestamp: '2026-08-22'
 tags:
   - architecture
   - frontend
@@ -100,6 +100,23 @@ configuration initializes an empty payload without a network request. The
 browser adapter disables GrowthBook auto-experiments, visual changes, JavaScript
 injection, and URL redirects; this foundation evaluates feature flags only.
 
+All five deployed Next.js images are build-time ready for browser adoption:
+`auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa`
+(including the assessment build). Their Dockerfiles accept the two GrowthBook
+variables above, and their staging/production workflows pass environment-specific
+GitHub Actions repository variables:
+
+| Deployment | Public SDK host variable              | Public SDK client-key variable          |
+| ---------- | ------------------------------------- | --------------------------------------- |
+| staging    | `NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG` | `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG` |
+| production | `NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD` | `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD` |
+
+Configure these as GitHub Actions **variables**, not secrets. They are
+non-sensitive SDK connection values that Next.js embeds into public browser
+assets; GitHub documents variables as the store for non-sensitive configuration
+and warns that they are not masked. Missing variables still produce a valid
+image, but the browser adapter performs no SDK request and keeps flags off.
+
 ## Node.js adoption
 
 The adopting service maps server-only variables into one process-level client:
@@ -134,6 +151,56 @@ to distinguish staging from production because both normally run with
 `NODE_ENV=production`. An adopting service must register `GROWTHBOOK_ENV` in
 `turbo.json`.
 
+The v3 chart makes the Kubernetes-deployed Node workloads configuration-ready:
+
+- `GROWTHBOOK_ENV` comes from `global.deploymentEnvironment`; the checked-in
+  environment values set it to `staging` or `production`.
+- backend GraphQL, OLAT API, LTI, both response APIs, and all three Hatchet
+  worker Deployments optionally import
+  `<rendered-chart-fullname>-secret-growthbook`.
+- that externally provisioned Secret contains exactly
+  `GROWTHBOOK_API_HOST` (the reachable internal SDK/proxy endpoint) and
+  `GROWTHBOOK_CLIENT_KEY` (the environment's server SDK connection key).
+
+The Secret is deliberately optional at the Kubernetes reference boundary.
+This matches the adapter's fail-closed contract and lets the chart render and
+pods start before an environment is provisioned. Provision or update it before
+enabling the first backend flag, then restart the affected workloads so
+environment-variable values are re-read. Secrets remain external to this
+public repository; never add their values to Helm files or documentation.
+
+Auth and Chat receive the public browser configuration only. If either hybrid
+Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
+to that Deployment in the same change that initializes the Node adapter.
+
+## Management API readiness
+
+SDK evaluation and GrowthBook administration use separate trust boundaries. A
+future Klicker administration surface may use GrowthBook's REST API to create a
+draft feature revision, change a rule, or publish an approved revision. The v3
+chart reserves these server-only variables for that integration:
+
+- `GROWTHBOOK_MANAGEMENT_API_URL`: GrowthBook REST API base URL, including the
+  `/api` path where applicable;
+- `GROWTHBOOK_MANAGEMENT_API_KEY`: write-capable GrowthBook Personal Access
+  Token or Secret Access Token sent as a bearer credential.
+
+The primary backend GraphQL Deployment optionally imports those exact keys from
+`<rendered-chart-fullname>-secret-growthbook-management`. It is the only
+workload with the management Secret because a future Manage UI should terminate
+at an authenticated GraphQL mutation. Evaluator-only APIs and workers continue
+to receive only the read-only SDK connection. The management variables are
+registered with Turborepo but have no consumer yet; the Secret may remain absent
+until an administration feature is implemented.
+
+Never pass the management key to `NodeFeatureFlagClient`, a frontend image
+build, or a `NEXT_PUBLIC_*` variable. A future consumer must use GrowthBook's
+draft/revision and publish workflow, enforce an explicit Klicker administrative
+authorization scope, record an audit trail, and handle retries without making a
+student-facing domain mutation depend on GrowthBook availability. If another
+workload becomes the control-plane owner, mount the management Secret there in
+the same reviewed change rather than broadening it preemptively.
+
 ## Failure and rollout behavior
 
 - Missing host or client key performs no fetch and evaluates boolean flags
@@ -146,8 +213,9 @@ to distinguish staging from production because both normally run with
   unusable cache stays on the false fallback.
 - `initialize()` reports whether the SDK loaded successfully; application
   startup must not depend on a true result.
-- Feature definitions and targeting rules are managed in GrowthBook, not by a
-  Klicker management-API key or a database migration.
+- Feature definitions and targeting rules are managed in GrowthBook. Ordinary
+  SDK evaluation never uses the optional management API key; only a future,
+  explicitly authorized control-plane integration may do so.
 - Remote evaluation is the upgrade path when a future flag's rules or
   attributes are too sensitive for browser evaluation.
 
@@ -168,6 +236,28 @@ to distinguish staging from production because both normally run with
 5. Cover fallback, enabled, disabled, and per-user targeting where relevant.
 6. Document whether the flag hides, disables, or changes behavior and reiterate
    that it is not an authorization boundary.
+
+## Deployment setup checklist
+
+1. Create one browser SDK connection and one server SDK connection for each
+   GrowthBook deployment environment. Record their SDK client keys (`sdk-*`)
+   separately from any management credential.
+2. Add the four public values in the GitHub repository settings using the exact
+   variable names in the browser table above.
+3. Provision the shared external Kubernetes Secret in staging and production
+   with the two exact Node keys documented above. Resolve its final name by
+   rendering the chart for that environment; do not guess the Helm fullname.
+4. If a GrowthBook administration feature is introduced, provision the separate
+   management Secret with the exact URL/key names documented above. Prefer a
+   narrowly scoped Personal Access Token and do not add these keys to the shared
+   evaluator Secret.
+5. Confirm the public GrowthBook endpoint allows the real Klicker browser
+   origins and the internal endpoint is reachable from the target namespace.
+6. Build/deploy with no active flag first. Inspect a frontend bundle/runtime
+   request and a backend pod's variable names without printing credential
+   values, then enable the first flag in staging.
+
+GitHub reference: [Variables](https://docs.github.com/en/actions/concepts/workflows-and-actions/variables).
 
 The architectural rationale is recorded in
 [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).

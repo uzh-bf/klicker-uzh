@@ -17,14 +17,20 @@ const KALTURA_EMBED =
 const CUSTOM_KALTURA_EMBED =
   'https://api.cast.switch.ch/p/123/embedPlaykitJs/uiconf_id/987654/partner_id/123' +
   '?iframeembed=true&playerId=kaltura_player&entry_id=0_um01ms1s'
+const YOUTUBE_URL = `https://www.youtube.com/watch?v=${YOUTUBE_ID}`
+const KALTURA_URL =
+  'https://uzh.mediaspace.cast.switch.ch/media/10+Untersuchung+Kopf+beim+Hund/0_ipqc15ga/124135'
+const CUSTOM_KALTURA_URL =
+  'https://api.cast.switch.ch/p/123/embedPlaykitJs/uiconf_id/987654' +
+  '?iframeembed=true&entry_id=0_um01ms1s'
 const VIDEO_MARKDOWN = [
-  `[video](https://www.youtube.com/watch?v=${YOUTUBE_ID})`,
+  `[video](${YOUTUBE_URL})`,
   '. It should render a responsive player wrapper with the YouTube iframe.',
   'Embed a Kaltura video using the hosted portal URL layout',
-  '[embed](https://uzh.mediaspace.cast.switch.ch/media/10+Untersuchung+Kopf+beim+Hund/0_ipqc15ga/124135)',
+  `[embed](${KALTURA_URL})`,
   '. It should resolve the entryId and render the Kaltura player iframe.',
   'Embed a Kaltura video using the raw embed code iframe URL',
-  '[video](https://api.cast.switch.ch/p/123/embedPlaykitJs/uiconf_id/987654?iframeembed=true&entry_id=0_um01ms1s)',
+  `[video](${CUSTOM_KALTURA_URL})`,
   '. It should preserve the correct uiConfId and render the player.',
   'Ensure other link configurations, e.g.,',
   `[YouTube link](https://www.youtube.com/watch?v=${YOUTUBE_ID})`,
@@ -45,7 +51,28 @@ test.describe('Markdown video embeds', () => {
     await page.getByTestId('create-question').click()
 
     const editor = page.getByTestId('insert-question-text')
-    await editor.fill(VIDEO_MARKDOWN)
+    const videoInputTrigger = page.getByTestId('open-video-embed-input')
+
+    await videoInputTrigger.click()
+    const videoUrlInput = page.getByTestId('video-embed-url')
+    await videoUrlInput.fill('https://example.com/not-a-video')
+    await page.getByTestId('insert-video-embed').click()
+    await expect(videoUrlInput).toHaveAttribute('aria-invalid', 'true')
+
+    await videoUrlInput.fill(YOUTUBE_URL)
+    await videoUrlInput.press('Enter')
+    await expect(videoUrlInput).not.toBeAttached()
+
+    for (const url of [KALTURA_URL, CUSTOM_KALTURA_URL]) {
+      await videoInputTrigger.click()
+      await page.getByTestId('video-embed-url').fill(url)
+      await page.getByTestId('insert-video-embed').click()
+      await expect(page.getByTestId('video-embed-url')).not.toBeAttached()
+    }
+
+    await editor.press('End')
+    await editor.press('Enter')
+    await editor.type(`[YouTube link](${YOUTUBE_URL})`)
     await expect(editor).toContainText('YouTube link')
 
     const preview = page.getByTestId('student-element-preview')

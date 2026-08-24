@@ -15,6 +15,9 @@ securityContext: {}
 # back to the chart appVersion), so the migrator always follows the app release. Each
 # env therefore pins only the repository. A tag with no matching migrator image makes
 # the hook fail and blocks the whole sync — see docs/data-and-migrations.md.
+# The hook-delete-policy uses only BeforeHookCreation: successful Jobs persist
+# until the next sync so ArgoCD can settle their finalizers without racing the
+# running sync (upstream argo-cd#24187 / #27507).
 migrator:
   enabled: true
   image:
@@ -64,6 +67,7 @@ vapid:
   privateKey: ''
 
 global:
+  deploymentEnvironment: development
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''

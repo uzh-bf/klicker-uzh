@@ -31,6 +31,11 @@ mutation's returned count is reported without silent truncation. Runtime
 failures after earlier per-record commits are not an atomicity guarantee of
 the existing batch contract.
 
+Assessment participant invitations are a bounded exception: the Manage page
+offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
+200 data rows before submission, and must verify page totals and page-one reset
+after import or deletion.
+
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 
 For OpenAI-compatible chat stream changes, run

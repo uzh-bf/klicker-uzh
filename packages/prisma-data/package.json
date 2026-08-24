@@ -8,6 +8,7 @@
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "@pothos/plugin-prisma": "~4.10.0",
+    "@prisma/adapter-pg": "~7.8.0",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/bcryptjs": "^2.4.6",
@@ -33,6 +34,7 @@
     "turndown": "~7.2.4",
     "typescript": "~6.0.3",
     "uuid": "~10.0.0",
+    "vitest": "~3.2.4",
     "xml2js": "~0.6.2"
   },
   "scripts": {
@@ -55,7 +57,8 @@
     "seed:qa": "ENV=development ../../util/_run_with_infisical.sh --env stg tsx src/data/seedTEST.ts",
     "seed:raw": "ENV=development run-s --npm-path pnpm seed:test seed:assessment-course",
     "seed:raw:course-awards": "tsx src/data/seedCourseAwards.ts",
-    "seed:test": "ENV=development tsx src/data/seedTEST.ts"
+    "seed:test": "ENV=development tsx src/data/seedTEST.ts",
+    "test": "vitest run"
   },
   "engines": {
     "node": "=24"

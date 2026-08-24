@@ -719,6 +719,11 @@ export default {
         'This option creates an unnumbered list. To create new points, simply insert a new line after an existing element. To return to standard text, press this button again.',
       image:
         'Select this setting to include an image. Use the same syntax to include formulas in answer options.',
+      video: 'Embed a YouTube or Kaltura video.',
+      videoUrl: 'YouTube or Kaltura URL',
+      videoUrlPlaceholder: 'Paste a YouTube or Kaltura video URL',
+      videoUrlInvalid: 'Enter a valid YouTube or Kaltura video URL.',
+      insertVideo: 'Insert video',
       latex:
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
@@ -1400,6 +1405,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       identitySourceLabel: 'Verified identity source',
       identitySourceCourseInvitation:
         'Accepted assessment-course invitation email',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Achieved',
       availablePointsLabel: 'Available',
       performanceInsightsTitle: 'Peer comparison',
@@ -1439,6 +1445,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
+      studentNameLabel: 'Student name',
+      studentEmailAddressLabel: 'Email address',
+      matriculationNumberLabel: 'Matriculation number',
       studentEmailLabel: 'Student',
       pointsSummaryLabel: 'Points Summary',
       yourScoreLabel: 'You',
@@ -1692,8 +1701,70 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     assessment: {
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant invitations',
+      participantInvitationsDescription:
+        'Invite participants to this assessment course and track whether they have accepted their invitation.',
+      invitationBackToCourse: 'Back to course',
+      invitationImportTitle: 'Import invitations',
+      invitationImportDescription:
+        'Select a CSV file containing the participant email addresses and matriculation numbers. The file is parsed in your browser before the invitations are submitted.',
+      invitationAffiliationWarning:
+        'Use the exact email address listed as a verified Swiss Edu-ID affiliation (for example, an @uzh.ch address). Personal email addresses may not be matched when the participant signs in.',
+      invitationDownloadTemplate: 'Download CSV template',
+      invitationCsvPrompt: 'Select a participant CSV file',
+      invitationCsvHeaders:
+        'Required headers: email and matriculationNumber (comma or semicolon separated).',
+      invitationCsvReady:
+        '{count, plural, one {# row ready to import} other {# rows ready to import}}',
+      invitationSelectCsv: 'Select CSV file',
+      invitationImportButton:
+        '{count, plural, one {Import # invitation} other {Import # invitations}}',
+      invitationCsvMissingHeaders:
+        'The CSV must contain email and matriculationNumber columns.',
+      invitationCsvInvalidHeaders:
+        'The CSV must contain exactly one email column and one matriculationNumber column.',
+      invitationCsvInvalidRows:
+        'Every CSV row must contain the same number of columns as the header.',
+      invitationCsvEmpty: 'The CSV does not contain any participant rows.',
+      invitationCsvParseError:
+        'The CSV could not be read. Check its format and try again.',
+      invitationCsvTooLarge:
+        'The CSV file is too large. Choose a file no larger than 1 MB.',
+      invitationCsvTooManyRows:
+        'The CSV contains more than {count} participant rows. Split it into smaller files.',
+      invitationImportCompleted: 'The invitation import has completed.',
+      invitationImportFailed:
+        'The invitations could not be imported. Please try again.',
+      invitationImportInvalidEmail: 'Invalid email format',
+      invitationImportSummary:
+        'Processed {total, plural, one {# row} other {# rows}}: {created} pending, {accepted} accepted, {duplicates} already present, {errors, plural, one {# error} other {# errors}}.',
+      invitationListTitle: 'Invitations',
+      invitationListDescription:
+        'Accepted invitations remain visible as a record. Pending invitations can be deleted.',
+      invitationCount:
+        '{count, plural, one {# invitation} other {# invitations}}',
+      invitationEmail: 'Email',
+      invitationMatriculationNumber: 'Matriculation number',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Invited',
+      invitationActions: 'Actions',
+      invitationStatusPending: 'Pending',
+      invitationStatusAccepted: 'Accepted',
+      invitationDeleteLabel: 'Delete pending invitation for {email}',
+      invitationDeleteTitle: 'Delete pending invitation',
+      invitationDeleteDescription:
+        'Delete the pending invitation for {email}? The participant will no longer be able to accept it.',
+      invitationDeleteSuccess: 'The pending invitation has been deleted.',
+      invitationDeleteFailed:
+        'The pending invitation could not be deleted. Refresh the page and try again.',
+      invitationEmpty: 'No participant invitations have been created yet.',
+      invitationLoadingError:
+        'The participant invitations could not be loaded. Check your permissions and try again.',
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentGivenNameColumn: 'Student given name',
+      liveQuizStudentSurnameColumn: 'Student surname',
+      liveQuizStudentMatriculationNumberColumn: 'Student matriculation number',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',
@@ -1791,6 +1862,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       githubRepositoryDesc: 'Source code of the open-source project',
       survey:
         'We would like to know what you think about KlickerUZH and our future plans! Please give us your feedback in a <link>short survey (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Request Catalyst Access',
+        subtitle: 'Tell us about your use case and we will get back to you.',
+        explanation:
+          'Send your request to klicker@df.uzh.ch. We will reply to your account email and use your data only to process this request.',
+        institution: 'Institution',
+        institutionRequired: 'Please enter your institution.',
+        institutionMin: 'Please enter at least 2 characters.',
+        institutionMax: 'Please enter at most 160 characters.',
+        useCase: 'Intended Use',
+        useCaseRequired: 'Please describe your intended use.',
+        useCaseMin: 'Please enter at least 20 characters.',
+        useCaseMax: 'Please enter at most 2000 characters.',
+        submit: 'Send Request',
+      },
     },
     login: {
       lecturerLogin: 'Login Lecturers',
@@ -3260,6 +3346,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant Invitations',
       appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',

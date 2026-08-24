@@ -1,5 +1,7 @@
+import { LECTURER_ID } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
+import { createQuestionSC } from '../util/fixtures/elements.js'
 
 async function expectAllResultsLoaded(page: import('@playwright/test').Page) {
   const summary = page.getByText(/Showing 1 to \d+ of \d+ results/)
@@ -21,7 +23,17 @@ test.describe('Show all pagination option', () => {
 
   test('supports all and explicit batch selection for elements and activities', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    // Pagination is only rendered when the list contains an element. The
+    // Playwright seed intentionally creates no elements, so arrange one here.
+    await createQuestionSC({
+      name: `Pagination Test Question ${testInfo.retry}`,
+      content: 'Synthetic pagination test content.',
+      choices: [{ value: 'Correct' }, { value: 'Incorrect' }],
+      userId: LECTURER_ID,
+    })
+    await page.reload()
+
     await expect(page.getByTestId('pagination-page-size')).toBeVisible()
 
     await selectOption(page, '[data-cy="pagination-page-size"]', 'all')

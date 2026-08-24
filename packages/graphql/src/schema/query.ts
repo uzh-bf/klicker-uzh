@@ -1,6 +1,6 @@
-import { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
@@ -12,6 +12,7 @@ import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -85,6 +86,7 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
+import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -96,9 +98,9 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  ChatModelCapability,
   Chatbot,
   ChatbotPublic,
+  ChatModelCapability,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -956,6 +958,35 @@ export const Query = builder.queryType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
+      }),
+
+      assessmentParticipantInvitations: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentParticipantInvitationPage,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          numEntries: t.arg.int({
+            required: false,
+            validate: {
+              min: 1,
+              max: ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_PAGE_SIZE,
+            },
+          }),
+          offset: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await ParticipantInvitationService.getAssessmentParticipantInvitationPage(
+              args,
+              ctx
+            )
           }
         ),
       }),

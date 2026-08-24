@@ -6,8 +6,9 @@
  * course editing/archiving, deletion, and course sharing permissions.
  */
 
-import { PermissionLevel } from '@klicker-uzh/prisma/client'
+import { InvitationStatus, PermissionLevel } from '@klicker-uzh/prisma/client'
 import { type Page } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import {
   chooseActivityAction,
   chooseCourseAction,
@@ -51,11 +52,13 @@ import {
   createLiveQuiz as createLiveQuizActivity,
   createMicroLearning as createMicroLearningActivity,
   createPracticeQuiz as createPracticeQuizActivity,
+  selectOption,
 } from '../util/fixtures/activities.js'
 import {
   attachCourseCompetencyTree,
   createCourseDuplicationFailureFixture,
   createCourseRecord,
+  createParticipantInvitationRecord,
   createDeletedCourseActivities,
   deleteCourseWithActivitiesByName,
   deleteLiveQuizDirectPermission,
@@ -2316,6 +2319,253 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId(`element-item-${DELETION.qTitle}`)
     ).not.toBeVisible()
+  })
+})
+
+// ===========================================================================
+// Part 4b: Assessment participant invitations
+// ===========================================================================
+test.describe('Part 4b: Assessment participant invitations', () => {
+  test('Imports participant invitations and deletes pending invitations', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Course'
+    const acceptedEmail = 'accepted-assessment-invitation@example.org'
+    const pendingEmail = 'pending-assessment-invitation@example.org'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+    await createParticipantInvitationRecord({
+      courseId: course.id,
+      email: acceptedEmail,
+      matriculationNumber: '11-111-111',
+      status: InvitationStatus.ACCEPTED,
+      participantUsername: STUDENT_USERNAME,
+    })
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(
+        page.getByRole('heading', {
+          name: messages.manage.assessment.participantInvitations,
+          level: 1,
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('assessment-invitations-affiliation-warning')
+      ).toContainText(messages.manage.assessment.invitationAffiliationWarning)
+
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByTestId('assessment-invitations-download-template').click()
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toBe(
+        'assessment-participant-invitations-template.csv'
+      )
+      const downloadPath = await download.path()
+      if (!downloadPath) throw new Error('CSV template download has no path')
+      expect(await readFile(downloadPath, 'utf8')).toBe(
+        'email,matriculationNumber\r\n'
+      )
+
+      const acceptedRow = page.getByRole('row').filter({
+        hasText: acceptedEmail,
+      })
+      await expect(acceptedRow).toContainText(
+        messages.manage.assessment.invitationStatusAccepted
+      )
+      await expect(acceptedRow.getByRole('button')).toHaveCount(0)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'invalid-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('email\ninvalid@example.org'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvMissingHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'duplicate-headers.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,e-mail,matriculationNumber\nfirst@example.org,second@example.org,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidHeaders)
+
+      await csvInput.setInputFiles({
+        name: 'uneven-rows.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\ninvalid@example.org,12-345-678,unexpected'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvInvalidRows)
+
+      await csvInput.setInputFiles({
+        name: 'malformed-quotes.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          'email,matriculationNumber\n"invalid@example.org"unexpected,12-345-678'
+        ),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvParseError)
+
+      await csvInput.setInputFiles({
+        name: 'assessment-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
+          `\uFEFFemail;matriculationNumber;note\n"${pendingEmail}";12-345-678;"quoted ""note"""\nnot-an-email;98-765-432;invalid`
+        ),
+      })
+      await expect(page.getByText('2 rows ready to import')).toBeVisible()
+      await page.getByTestId('assessment-invitations-import').click()
+
+      const importResult = page.getByTestId(
+        'assessment-invitations-import-result'
+      )
+      await expect(importResult).toContainText('1 pending')
+      await expect(importResult).toContainText('1 error')
+      await expect(importResult).toContainText(
+        messages.manage.assessment.invitationImportInvalidEmail
+      )
+      await expect(importResult).toContainText('not-an-email')
+
+      const pendingRow = page.getByRole('row').filter({ hasText: pendingEmail })
+      await expect(pendingRow).toContainText('12-345-678')
+      await expect(pendingRow).toContainText(
+        messages.manage.assessment.invitationStatusPending
+      )
+      await pendingRow.getByRole('button').click()
+      await expect(page.getByRole('dialog')).toContainText(pendingEmail)
+      await page.getByTestId('assessment-invitation-confirm-delete').click()
+      await expect(pendingRow).not.toBeAttached()
+      await expect(acceptedRow).toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
+  })
+
+  test('Paginates invitation history and rejects oversized CSV imports', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const courseName = 'Assessment Participant Invitation Capacity Course'
+    const startDate = new Date()
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
+
+    await deleteCourseWithActivitiesByName({
+      courseName,
+      ownerId: LECTURER_ID,
+    })
+    const course = await createCourseRecord({
+      name: courseName,
+      displayName: courseName,
+      notificationEmail: LECTURER_EMAIL,
+      startDate,
+      endDate,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: false,
+    })
+
+    for (let index = 0; index < 51; index++) {
+      await createParticipantInvitationRecord({
+        courseId: course.id,
+        email: `capacity-${index}@example.org`,
+        matriculationNumber: `${String(index).padStart(2, '0')}-123-456`,
+      })
+    }
+
+    try {
+      await loginLecturer()
+      await openCourseInManage(page, courseName)
+      await chooseCourseAction(
+        page,
+        'assessment-course-participant-invitations'
+      )
+
+      await expect(page.getByText('51 invitations')).toBeVisible()
+      await expect(page.getByTestId('pagination-page-size')).toContainText(
+        '50 entries per page'
+      )
+      await expect(page.getByTestId('pagination-page-size-all')).toHaveCount(0)
+
+      await selectOption(page, '[data-cy="pagination-page-size"]', '10')
+      await expect(page.getByTestId('pagination-page-2')).toBeVisible()
+      await page.getByTestId('pagination-page-2').click()
+      await expect(
+        page.getByText(/Showing 11 to 20 of 51 results/)
+      ).toBeVisible()
+      await expect(page.getByRole('row')).toHaveCount(11)
+
+      const csvInput = page.getByTestId('assessment-invitations-csv-input')
+      await csvInput.setInputFiles({
+        name: 'oversized-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.alloc(1024 * 1024 + 1, 'a'),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(messages.manage.assessment.invitationCsvTooLarge)
+
+      const rows = Array.from(
+        { length: 201 },
+        (_, index) => `capacity-import-${index}@example.org,${index}-123-456`
+      ).join('\n')
+      await csvInput.setInputFiles({
+        name: 'too-many-invitations.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(`email,matriculationNumber\n${rows}`),
+      })
+      await expect(
+        page.getByTestId('assessment-invitations-csv-error')
+      ).toContainText(
+        messages.manage.assessment.invitationCsvTooManyRows.replace(
+          '{count}',
+          '200'
+        )
+      )
+      await expect(
+        page.getByTestId('assessment-invitations-import')
+      ).not.toBeVisible()
+    } finally {
+      await deleteCourseWithActivitiesByName({
+        courseName,
+        ownerId: LECTURER_ID,
+      })
+    }
   })
 })
 
