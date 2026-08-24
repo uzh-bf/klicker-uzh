@@ -25,9 +25,16 @@ import {
 import {
   Badge,
   Button,
-  H3,
+  H2,
   Modal,
   SelectField,
+  ShadcnTable,
+  ShadcnTableBody,
+  ShadcnTableCaption,
+  ShadcnTableCell,
+  ShadcnTableHead,
+  ShadcnTableHeader,
+  ShadcnTableRow,
   Skeleton,
   TextField,
   UserNotification,
@@ -881,7 +888,7 @@ function KnowledgeBaseResourceList({
   return (
     <section className="mt-8" data-cy="kb-resource-list">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <H3>{t('kb.resourcesTitle')}</H3>
+        <H2>{t('kb.resourcesTitle')}</H2>
         {selectedIds.size > 0 ? (
           <Button
             destructive
@@ -1017,57 +1024,94 @@ function KnowledgeBaseResourceList({
         </div>
       ) : (
         <>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+          <div className="mt-4 text-sm text-slate-600">
             <p aria-live="polite" data-cy="kb-resource-result-count">
               {t('kb.resourceResultCount', {
                 count: connection?.totalCount ?? 0,
               })}
             </p>
-            <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded px-2 focus-within:outline-2 focus-within:outline-offset-2">
-              <input
-                type="checkbox"
-                checked={allPageSelected}
-                onChange={togglePageSelection}
-                className="h-4 w-4"
-                data-cy="select-kb-resource-page"
-              />
-              {t('kb.selectAllPage')}
-            </label>
           </div>
-          <ul className="mt-3 space-y-3">
-            {resources.map((resource) => {
-              const active = isActiveResource(resource)
-              return (
-                <li
-                  key={resource.id}
-                  className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-                  data-cy={`kb-resource-row-${resource.id}`}
+          <ShadcnTable
+            className="mt-3 table-fixed"
+            aria-label={t('kb.resourcesTitle')}
+          >
+            <ShadcnTableCaption className="sr-only">
+              {t('kb.resourcesTitle')}
+            </ShadcnTableCaption>
+            <ShadcnTableHeader className="bg-slate-50">
+              <ShadcnTableRow>
+                <ShadcnTableHead className="w-10 px-2" scope="col">
+                  <label className="flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2">
+                    <span className="sr-only">{t('kb.selectAllPage')}</span>
+                    <input
+                      type="checkbox"
+                      checked={allPageSelected}
+                      onChange={togglePageSelection}
+                      className="h-4 w-4"
+                      data-cy="select-kb-resource-page"
+                    />
+                  </label>
+                </ShadcnTableHead>
+                <ShadcnTableHead scope="col">
+                  {t('kb.resourceColumn')}
+                </ShadcnTableHead>
+                <ShadcnTableHead
+                  className="hidden whitespace-normal sm:table-cell"
+                  scope="col"
                 >
-                  <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-                    <label
-                      className={`flex h-10 w-10 items-center justify-center rounded ${
-                        active
-                          ? 'cursor-not-allowed opacity-50'
-                          : 'cursor-pointer'
-                      }`}
-                    >
-                      <span className="sr-only">
-                        {t('kb.selectResource', { title: resource.title })}
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(resource.id)}
-                        disabled={
-                          active ||
-                          (!selectedIds.has(resource.id) &&
-                            selectedIds.size >= MAX_BULK_SELECTION)
-                        }
-                        onChange={() => toggleSelection(resource.id)}
-                        className="h-4 w-4"
-                        data-cy={`select-kb-resource-${resource.id}`}
-                      />
-                    </label>
-                    <div className="min-w-0">
+                  {t('kb.sourceType')}
+                </ShadcnTableHead>
+                <ShadcnTableHead scope="col">
+                  {t('kb.operationStatus')}
+                </ShadcnTableHead>
+                <ShadcnTableHead
+                  className="hidden whitespace-normal md:table-cell"
+                  scope="col"
+                >
+                  {t('kb.servingStatus')}
+                </ShadcnTableHead>
+                <ShadcnTableHead
+                  className="hidden whitespace-normal lg:table-cell"
+                  scope="col"
+                >
+                  {t('kb.updatedAtLabel')}
+                </ShadcnTableHead>
+                <ShadcnTableHead className="w-24" scope="col">
+                  <span className="sr-only">{t('kb.resourceActions')}</span>
+                </ShadcnTableHead>
+              </ShadcnTableRow>
+            </ShadcnTableHeader>
+            <ShadcnTableBody>
+              {resources.map((resource) => {
+                const active = isActiveResource(resource)
+                return (
+                  <ShadcnTableRow
+                    key={resource.id}
+                    className="bg-white"
+                    data-cy={`kb-resource-row-${resource.id}`}
+                  >
+                    <ShadcnTableCell className="w-10 px-2 align-top">
+                      <label
+                        className={`flex min-h-10 cursor-pointer items-center justify-center rounded focus-within:outline-2 focus-within:outline-offset-2 ${active ? 'cursor-not-allowed opacity-50' : ''}`}
+                      >
+                        <span className="sr-only">
+                          {t('kb.selectResource', { title: resource.title })}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(resource.id)}
+                          disabled={
+                            active ||
+                            (!selectedIds.has(resource.id) &&
+                              selectedIds.size >= MAX_BULK_SELECTION)
+                          }
+                          onChange={() => toggleSelection(resource.id)}
+                          className="h-4 w-4"
+                          data-cy={`select-kb-resource-${resource.id}`}
+                        />
+                      </label>
+                    </ShadcnTableCell>
+                    <ShadcnTableCell className="whitespace-normal align-top">
                       <div className="flex min-w-0 items-start gap-3">
                         <FontAwesomeIcon
                           icon={
@@ -1079,105 +1123,140 @@ function KnowledgeBaseResourceList({
                           aria-hidden="true"
                         />
                         <div className="min-w-0">
-                          <div className="truncate font-medium">
+                          <div className="break-words font-medium">
                             {resource.title}
                           </div>
-                          <div className="mt-1 break-all text-sm text-slate-600">
+                          <div className="mt-1 break-all text-xs text-slate-600">
+                            <span className="sm:hidden">
+                              {resource.type === KbResourceType.Blob
+                                ? t('kb.typeFile')
+                                : t('kb.typeUrl')}{' '}
+                              ·{' '}
+                            </span>
                             {resource.type === KbResourceType.Blob
                               ? formatFileSize(resource.sizeBytes)
                               : getUrlHost(resource.sourceUrl)}
                           </div>
+                          <time
+                            dateTime={new Date(
+                              resource.updatedAt
+                            ).toISOString()}
+                            className="mt-1 block text-xs text-slate-500 lg:hidden"
+                          >
+                            {t('kb.updatedAt', {
+                              date: format.dateTime(
+                                new Date(resource.updatedAt),
+                                {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                }
+                              ),
+                            })}
+                          </time>
                         </div>
                       </div>
+                    </ShadcnTableCell>
+                    <ShadcnTableCell className="hidden whitespace-normal align-top sm:table-cell">
+                      <Badge variant="outline">
+                        {resource.type === KbResourceType.Blob
+                          ? t('kb.typeFile')
+                          : t('kb.typeUrl')}
+                      </Badge>
+                    </ShadcnTableCell>
+                    <ShadcnTableCell
+                      className="whitespace-normal align-top"
+                      aria-live="polite"
+                      aria-atomic="true"
+                    >
                       <div
-                        className="mt-4 grid gap-3 sm:grid-cols-2"
-                        aria-live="polite"
-                        aria-atomic="true"
+                        className="flex flex-wrap items-center gap-2 text-sm text-slate-600"
+                        data-cy={`kb-resource-operation-${resource.id}`}
                       >
-                        <div
-                          className="rounded-md bg-slate-50 p-3"
-                          data-cy={`kb-resource-operation-${resource.id}`}
-                        >
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {t('kb.operationStatus')}
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                            {renderStatus(resource)}
-                            <span>
-                              {t('kb.version', {
-                                version: resource.resourceVersion,
-                              })}
-                            </span>
-                          </div>
-                          {resource.latestIngestionRun ? (
-                            <RunStatusMessage
-                              status={resource.latestIngestionRun.status}
-                              errorCode={resource.latestIngestionRun.errorCode}
-                              className="mt-2 text-sm text-slate-600"
-                              dataCy={`kb-resource-status-message-${resource.id}`}
-                            />
-                          ) : null}
-                          <OperationProgress resource={resource} />
-                        </div>
-                        <div
-                          className="rounded-md bg-slate-50 p-3"
-                          data-cy={`kb-resource-serving-${resource.id}`}
-                        >
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            {t('kb.servingStatus')}
-                          </div>
-                          <div className="mt-2 text-sm font-medium text-slate-800">
-                            <ResourceServingStatus resource={resource} />
-                          </div>
-                          {resource.ingestedAt ? (
-                            <div className="mt-1 text-sm text-slate-600">
-                              {t('kb.servingSince', {
-                                date: format.dateTime(
-                                  new Date(resource.ingestedAt),
-                                  {
-                                    dateStyle: 'medium',
-                                    timeStyle: 'short',
-                                  }
-                                ),
-                              })}
-                            </div>
-                          ) : null}
-                        </div>
+                        {renderStatus(resource)}
+                        <span>
+                          {t('kb.version', {
+                            version: resource.resourceVersion,
+                          })}
+                        </span>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap lg:self-start">
-                      <Button
-                        onClick={() => setInspectorId(resource.id)}
-                        data={{ cy: `inspect-kb-resource-${resource.id}` }}
-                        className={{ root: 'w-full sm:w-auto' }}
+                      {resource.latestIngestionRun ? (
+                        <RunStatusMessage
+                          status={resource.latestIngestionRun.status}
+                          errorCode={resource.latestIngestionRun.errorCode}
+                          className="mt-1 text-sm text-slate-600"
+                          dataCy={`kb-resource-status-message-${resource.id}`}
+                        />
+                      ) : null}
+                      <OperationProgress resource={resource} />
+                      <div className="mt-1 text-xs text-slate-600 md:hidden">
+                        <span className="font-medium">
+                          {t('kb.servingStatus')}:
+                        </span>{' '}
+                        <ResourceServingStatus resource={resource} />
+                      </div>
+                    </ShadcnTableCell>
+                    <ShadcnTableCell
+                      className="hidden whitespace-normal align-top md:table-cell"
+                      data-cy={`kb-resource-serving-${resource.id}`}
+                    >
+                      <div className="text-sm font-medium text-slate-800">
+                        <ResourceServingStatus resource={resource} />
+                      </div>
+                      {resource.ingestedAt ? (
+                        <div className="mt-1 text-sm text-slate-600">
+                          {t('kb.servingSince', {
+                            date: format.dateTime(
+                              new Date(resource.ingestedAt),
+                              {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              }
+                            ),
+                          })}
+                        </div>
+                      ) : null}
+                    </ShadcnTableCell>
+                    <ShadcnTableCell className="hidden whitespace-normal align-top text-sm text-slate-600 lg:table-cell">
+                      <time
+                        dateTime={new Date(resource.updatedAt).toISOString()}
                       >
-                        <Button.Label>{t('kb.inspectResource')}</Button.Label>
-                      </Button>
-                      <Button
-                        destructive
-                        disabled={active || ingestingId !== null}
-                        onClick={() => setDeletionTarget(resource)}
-                        data={{ cy: `delete-kb-resource-${resource.id}` }}
-                        className={{ root: 'w-full sm:w-auto' }}
-                      >
-                        <Button.Label>
-                          {t('shared.generic.delete')}
-                        </Button.Label>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-3 text-sm text-slate-500">
-                    {t('kb.updatedAt', {
-                      date: format.dateTime(new Date(resource.updatedAt), {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      }),
-                    })}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                        {format.dateTime(new Date(resource.updatedAt), {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </time>
+                    </ShadcnTableCell>
+                    <ShadcnTableCell className="w-24 whitespace-normal align-top">
+                      <div className="grid gap-2 sm:flex sm:flex-wrap">
+                        <Button
+                          onClick={() => setInspectorId(resource.id)}
+                          data={{ cy: `inspect-kb-resource-${resource.id}` }}
+                          className={{
+                            root: 'w-full min-w-0 px-2 text-xs sm:w-auto sm:px-3 sm:text-sm',
+                          }}
+                        >
+                          <Button.Label>{t('kb.inspectResource')}</Button.Label>
+                        </Button>
+                        <Button
+                          destructive
+                          disabled={active || ingestingId !== null}
+                          onClick={() => setDeletionTarget(resource)}
+                          data={{ cy: `delete-kb-resource-${resource.id}` }}
+                          className={{
+                            root: 'w-full min-w-0 px-2 text-xs sm:w-auto sm:px-3 sm:text-sm',
+                          }}
+                        >
+                          <Button.Label>
+                            {t('shared.generic.delete')}
+                          </Button.Label>
+                        </Button>
+                      </div>
+                    </ShadcnTableCell>
+                  </ShadcnTableRow>
+                )
+              })}
+            </ShadcnTableBody>
+          </ShadcnTable>
           {connection?.pageInfo.hasNextPage ? (
             <div className="mt-5 flex justify-center">
               <Button

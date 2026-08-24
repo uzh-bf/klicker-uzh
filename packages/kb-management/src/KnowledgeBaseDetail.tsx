@@ -24,27 +24,29 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
       <main
         className="mx-auto w-full max-w-5xl space-y-4"
         data-cy="knowledge-base-detail-loading"
-        role="status"
-        aria-label={t('shared.generic.loading')}
+        aria-busy="true"
       >
-        <Skeleton
-          className="h-10 w-1/2 motion-reduce:animate-none"
-          aria-hidden="true"
-        />
-        <div className="grid gap-4 md:grid-cols-2">
+        <H1>{t('kb.detailFallbackTitle')}</H1>
+        <div role="status" aria-label={t('shared.generic.loading')}>
           <Skeleton
-            className="h-48 w-full motion-reduce:animate-none"
+            className="h-10 w-1/2 motion-reduce:animate-none"
             aria-hidden="true"
           />
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Skeleton
+              className="h-48 w-full motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            <Skeleton
+              className="h-48 w-full motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+          </div>
           <Skeleton
-            className="h-48 w-full motion-reduce:animate-none"
+            className="mt-4 h-28 w-full motion-reduce:animate-none"
             aria-hidden="true"
           />
         </div>
-        <Skeleton
-          className="h-28 w-full motion-reduce:animate-none"
-          aria-hidden="true"
-        />
       </main>
     )
   }
@@ -52,6 +54,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   if (error || !data?.getKb) {
     return (
       <main className="mx-auto w-full max-w-5xl">
+        <H1>{t('kb.detailFallbackTitle')}</H1>
         <UserNotification
           type="error"
           message={
@@ -104,12 +107,12 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
           aria-labelledby="kb-metrics-title"
           data-cy="kb-metrics"
         >
-          <h3
+          <h2
             id="kb-metrics-title"
             className="text-lg font-semibold text-slate-900"
           >
             {t('kb.metricsTitle')}
-          </h3>
+          </h2>
           <dl className="mt-3 grid gap-x-6 gap-y-1 border-y border-slate-200 bg-white sm:grid-cols-2 xl:grid-cols-4">
             <div className="min-w-0 py-3">
               <dt className="text-sm text-slate-600">
