@@ -14,8 +14,11 @@ metadata:
     app.kubernetes.io/component: migrate
   annotations:
     argocd.argoproj.io/hook: PreSync
-    # Keep a failed Job around for debugging; delete it on success and before the next run.
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    # Keep the Job around after success so ArgoCD can still read its status and
+    # update its finalizer without racing the running sync (upstream issues
+    # #24187 / #27507). BeforeHookCreation removes the previous Job when the
+    # next sync starts, which is the only cleanup point that does not deadlock.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   backoffLimit: {{ .Values.migrator.backoffLimit }}
