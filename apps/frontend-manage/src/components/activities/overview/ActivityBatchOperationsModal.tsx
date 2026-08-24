@@ -320,11 +320,13 @@ function ActivityBatchOperationsModal({
       }
 
       let refreshFailed = false
-      try {
-        await refetchActivities()
-      } catch (error) {
-        console.error(error)
-        refreshFailed = true
+      if (deletedCount > 0 || uncertainCount > 0) {
+        try {
+          await refetchActivities()
+        } catch (error) {
+          console.error(error)
+          refreshFailed = true
+        }
       }
 
       if (refreshFailed) {
