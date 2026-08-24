@@ -367,14 +367,22 @@ policy itself is proven by registry tests and the producing runtime.
   lint tasks; only the unrelated analytics lint stopped because uv selected
   CPython 3.14 and the container has no C compiler for pandas 2.2.2.
 - 2026-08-24: the exact runtime workspace
-  `feat-chatbot-lecturer-config-pha` is running at the worktree Chat route with
+  `feat-chatbot-lecturer-config-pha` ran at the worktree Chat route with
   the existing external OpenRouter boundary. After rehoming the production
   Chat `.next` output to `/tmp/u4-chat-next-after-build-20260824`, restarting
   the managed app process with a non-secret local LiteLLM client marker, and
   provisioning positive BASE and ADVANCED budgets only for the seeded local
-  synthetic account, the Codex in-app Browser shows GPT-5.6 Luna selected and
-  completed the synthetic `U4_LUNA_OK` turn. The validated tab and exact
-  runtime remain open under the user's keep-running lease.
-- 2026-08-24: final integrated Ox Alpha review, branch push, fifth draft PR,
-  stack append, and current-head CI observation remain pending. No merge,
-  deployment, ready marking, or cleanup has occurred.
+  synthetic account, the Codex in-app Browser showed GPT-5.6 Luna selected and
+  completed the synthetic `U4_LUNA_OK` turn. The user also validated the
+  lecturer Settings page with visible Base and Advanced cards and enabled
+  monthly-budget inputs for that synthetic account.
+- 2026-08-24: the integrated Ox Alpha review returned `ACCEPT`. The branch was
+  published at `9c238e530` as draft PR #5524, the fifth stack layer above
+  #5490. Exact-head CI completed with 10 passed, 9 intentionally skipped, no
+  failure, and no pending job.
+- 2026-08-24: after the user completed Browser validation, the exact DevPod
+  `feat-chatbot-lecturer-config-pha` was stopped and its four routes were
+  released; provider state is `Stopped` and exact route count is zero. U4 has
+  reached its approved terminal condition. PR #5524 remains draft; ready
+  marking, merge, deployment, live traffic, PR closure, worktree cleanup, and
+  deletion remain withheld.
