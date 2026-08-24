@@ -612,12 +612,6 @@ test.describe('Chatbot Messaging Interface', () => {
 
     await cancelButton.focus()
     await page.keyboard.press('Enter')
-    await page.evaluate(() => {
-      const state = window as typeof window & {
-        __releaseMockChatStream?: () => void
-      }
-      state.__releaseMockChatStream?.()
-    })
 
     await expect(cancelButton).toHaveAttribute('aria-hidden', 'true')
     await expect(cancelButton).toHaveAttribute('inert', '')
@@ -1659,7 +1653,10 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(switcher).toBeFocused()
 
     await page.keyboard.press('Enter')
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await expect(explainerOption).toBeVisible()
     await page.keyboard.press('ArrowDown')
+    await expect(explainerOption).toHaveAttribute('data-highlighted', '')
     await page.keyboard.press('Enter')
     await expect(switcher).toContainText('Explainer')
     await expect(switcher).toBeFocused()
@@ -2835,15 +2832,20 @@ test.describe('Chatbot Source Citations', () => {
     const composer = page.getByTestId('chat-composer')
     await expect(lastSource).toBeVisible()
     await expect(composer).toBeVisible()
-    const [lastSourceBox, composerBox] = await Promise.all([
-      lastSource.boundingBox(),
-      composer.boundingBox(),
-    ])
-    expect(lastSourceBox).not.toBeNull()
-    expect(composerBox).not.toBeNull()
-    expect(lastSourceBox!.y + lastSourceBox!.height).toBeLessThanOrEqual(
-      composerBox!.y - 8
-    )
+    // The transcript uses smooth scrolling, so wait for the requested bottom
+    // position to settle before comparing the two boxes.
+    await expect
+      .poll(async () => {
+        const [lastSourceBox, composerBox] = await Promise.all([
+          lastSource.boundingBox(),
+          composer.boundingBox(),
+        ])
+
+        if (!lastSourceBox || !composerBox) return false
+
+        return lastSourceBox.y + lastSourceBox.height <= composerBox.y - 8
+      })
+      .toBe(true)
   })
 
   test('Assistant message caption exposes a parseable ISO timestamp', async ({
