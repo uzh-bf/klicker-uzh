@@ -15,6 +15,15 @@ type AuditLogMessage = Record<string, string | undefined> & {
 
 type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
 
+function isAuditLogMessage(input: unknown): input is AuditLogMessage {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    typeof (input as { info?: unknown }).info === 'string'
+  )
+}
+
 export function prepareHatchetTasks({
   hatchet,
   pubSub,
@@ -53,11 +62,17 @@ export function prepareHatchetTasks({
     fn: (input: AuditLogInput, ctx) => {
       // GraphQL task calls use the declared envelope; event producers send the
       // audit message directly.
-      const messageInput = (input as { message?: unknown }).message
-      const message: AuditLogMessage =
-        typeof messageInput === 'object' && messageInput !== null
-          ? (messageInput as AuditLogMessage)
-          : (input as AuditLogMessage)
+      const messageInput =
+        input !== null && typeof input === 'object'
+          ? (input as { message?: unknown }).message
+          : undefined
+      const message = isAuditLogMessage(messageInput)
+        ? messageInput
+        : isAuditLogMessage(input)
+          ? input
+          : (() => {
+              throw new Error('Invalid audit log message input')
+            })()
       const { info, ...args } = message
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
