@@ -13,7 +13,7 @@ function applyFrameAncestorsCSP(response: NextResponse) {
   return response
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (
@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
   return applyFrameAncestorsCSP(NextResponse.next())
 }
 
-// Paths that should be protected by this middleware
+// Paths that should be protected by this proxy
 export const config = {
   matcher: ['/:path*'],
 }
