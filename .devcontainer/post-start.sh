@@ -110,15 +110,14 @@ done
     # The helper has stopped any previous owned group before this command
     # starts, so clearing the generated Manage route manifest is safe here.
     for attempt in $(seq 1 30); do
-      rm -rf apps/frontend-manage/.next/dev || true
-      if [ ! -e apps/frontend-manage/.next/dev ]; then
+      rm -rf /workspaces/klicker-uzh/apps/frontend-manage/.next/dev || true
+      if [ ! -e /workspaces/klicker-uzh/apps/frontend-manage/.next/dev ]; then
         break
       fi
       sleep 1
     done
-    if [ -e apps/frontend-manage/.next/dev ]; then
-      echo "[post-start] ERROR: Could not clear the generated Manage route manifest." >&2
-      exit 1
+    if [ -e /workspaces/klicker-uzh/apps/frontend-manage/.next/dev ]; then
+      echo "[post-start] WARN: Could not clear the generated Manage route manifest; continuing with the existing dev process." >&2
     fi
     exec pnpm run dev:container
   '

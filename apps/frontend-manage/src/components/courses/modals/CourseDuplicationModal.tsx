@@ -721,6 +721,13 @@ function CourseDuplicationModal({
                 options: { duration: 6000 },
               })
             )
+          } catch (error) {
+            console.error(error)
+            toast({
+              type: 'error',
+              message: getCourseDuplicationErrorMessage(t),
+              options: { duration: 6000 },
+            })
           } finally {
             submitInFlightRef.current = false
           }

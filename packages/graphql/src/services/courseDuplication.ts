@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import * as DB from '@klicker-uzh/prisma/client'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
@@ -1487,7 +1487,7 @@ async function assertCourseDuplicationActivityAccess({
 
   if (
     selection.shouldDuplicateGroupActivities &&
-    oldCourse.groupActivities.some((activity) => activity.stacks.length === 0)
+    oldCourse.groupActivities.some((activity) => activity.stacks.length !== 1)
   ) {
     throw courseDuplicationPartialFailure(
       'Not all group activities could be duplicated'
