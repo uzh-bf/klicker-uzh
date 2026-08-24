@@ -38,11 +38,44 @@ test.describe('Catalyst access request flow', () => {
       )
     await expect(submitButton).toBeEnabled()
 
+    // Email delivery is an external side effect, so mock the successful
+    // mutation response in this browser test.
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      const postData = request.postData()
+      const operationName = postData
+        ? (JSON.parse(postData) as { operationName?: string }).operationName
+        : undefined
+
+      if (
+        request.method() === 'POST' &&
+        operationName === 'MRequestCatalystAccess'
+      ) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: { requestCatalystAccess: true } }),
+        })
+        return
+      }
+
+      await route.continue()
+    })
+
     // Submit once and verify exactly one mutation is sent (no double-click)
     const mutationCount = 1
     let sentCount = 0
     page.on('request', (req) => {
-      if (req.postData()?.includes('requestCatalystAccess')) {
+      if (req.method() !== 'POST' || !req.url().endsWith('/api/graphql')) {
+        return
+      }
+
+      const postData = req.postData()
+      const operationName = postData
+        ? (JSON.parse(postData) as { operationName?: string }).operationName
+        : undefined
+
+      if (operationName === 'MRequestCatalystAccess') {
         sentCount++
       }
     })
