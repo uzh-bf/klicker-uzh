@@ -839,6 +839,11 @@ Other participants will only see your public **participant profile**, including 
       studyStreakNotDoneToday:
         'Answer 5 questions today to keep your streak going!',
       studyStreakDoneToday: 'Nice work — your streak is secured for today.',
+      studyStreakKeepGoing:
+        'Keep it going — {remaining, plural, one {# question} other {# questions}} left today.',
+      studyStreakNoFreezes:
+        'Your streak is at risk — {remaining, plural, one {# question} other {# questions}} left today and no freezes available.',
+      studyStreakStart: 'Start your streak today — answer 5 questions.',
       studyStreakProgress:
         'Streak: {current, plural, one {# day} other {# days}} · {remaining, plural, one {# response left today} other {# responses left today}}',
       studyStreakGoalReached:

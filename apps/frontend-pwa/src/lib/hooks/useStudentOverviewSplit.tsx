@@ -18,6 +18,9 @@ type LocalCourseType = {
   endDate: string
   isGamificationEnabled: boolean
   studyStreakCurrent: number
+  studyStreakQualifiedToday: boolean
+  studyStreakResponsesRemainingToday?: number | null
+  studyStreakFreezeBalance: number
 }
 
 type LocalLiveQuizType = Pick<LiveQuiz, 'id' | 'displayName'> & {
@@ -41,6 +44,9 @@ function useStudentOverviewSplit({
     | 'id'
     | 'isActive'
     | 'studyStreakCurrent'
+    | 'studyStreakQualifiedToday'
+    | 'studyStreakResponsesRemainingToday'
+    | 'studyStreakFreezeBalance'
     | 'completedMicroLearnings'
     | 'subscriptions'
   > & {
@@ -96,6 +102,12 @@ function useStudentOverviewSplit({
                     participation.course?.isGamificationEnabled,
                   isLeaderboardParticipant: participation.isActive,
                   studyStreakCurrent: participation.studyStreakCurrent,
+                  studyStreakQualifiedToday:
+                    participation.studyStreakQualifiedToday,
+                  studyStreakResponsesRemainingToday:
+                    participation.studyStreakResponsesRemainingToday,
+                  studyStreakFreezeBalance:
+                    participation.studyStreakFreezeBalance,
                   isSubscribed:
                     (participation.subscriptions &&
                       participation.subscriptions.length > 0) ??
@@ -115,6 +127,12 @@ function useStudentOverviewSplit({
                   participation.course?.isGamificationEnabled,
                 isLeaderboardParticipant: participation.isActive,
                 studyStreakCurrent: participation.studyStreakCurrent,
+                studyStreakQualifiedToday:
+                  participation.studyStreakQualifiedToday,
+                studyStreakResponsesRemainingToday:
+                  participation.studyStreakResponsesRemainingToday,
+                studyStreakFreezeBalance:
+                  participation.studyStreakFreezeBalance,
                 isSubscribed:
                   (participation.subscriptions &&
                     participation.subscriptions.length > 0) ??

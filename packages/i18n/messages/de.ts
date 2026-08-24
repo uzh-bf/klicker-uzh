@@ -847,6 +847,11 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Beantworte heute 5 Fragen, um deine Serie zu halten!',
       studyStreakDoneToday:
         'Super gemacht – deine Serie ist für heute gesichert.',
+      studyStreakKeepGoing:
+        'Weiter so – noch {remaining, plural, one {# Frage} other {# Fragen}} heute.',
+      studyStreakNoFreezes:
+        'Deine Serie ist in Gefahr – noch {remaining, plural, one {# Frage} other {# Fragen}} heute und keine Pausen verfügbar.',
+      studyStreakStart: 'Starte heute eine Serie – beantworte 5 Fragen.',
       studyStreakProgress:
         'Serie: {current, plural, one {# Tag} other {# Tage}} · Noch {remaining, plural, one {# Antwort} other {# Antworten}} heute',
       studyStreakGoalReached:

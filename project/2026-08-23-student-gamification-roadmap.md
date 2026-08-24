@@ -748,3 +748,13 @@ Append entries; do not rewrite history.
   weekends remain neutral, assessment courses stay excluded, and rollout uses
   the inclusive Zurich calendar-day end boundary. The focused streak tests now
   cover aggregate progress and weekend neutrality.
+- 2026-08-24 — Home-screen streak motivation implemented: opted-in gamified
+  course rows now show contextual secured, at-risk, keep-going, or start copy
+  below the existing Swiss-formatted course dates, with a snowflake icon for
+  the no-freeze warning. The PWA uses a new versioned participation operation
+  containing the existing course fields plus the existing streak status fields;
+  the deployed `Participations` operation and its hash remain unchanged. No
+  database, service, or migration change was added. English and German copy,
+  focused GraphQL/PWA checks, and formatting pass. The authenticated browser
+  pass shows the Testkurs home card with dates, the fire/current-streak
+  indicator, and the start prompt; screenshot: `/private/tmp/gamification-home-streak-motivation.png`.

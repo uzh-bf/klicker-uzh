@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-08-24'
 tags:
   - backend
   - prisma
@@ -30,6 +30,8 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 ### Private Study streaks
 
 Each active `Participation` also carries a **private Study streak**, visible only to the student (`studyStreakCurrent`, `studyStreakLongest`, `studyStreakFreezeBalance`, plus bookkeeping columns; see ADR 0009). A qualified day means five or more eligible responses (PracticeQuiz or MicroLearning) on one Europe/Zurich weekday within course bounds. Content views do not count. Weekends are neutral: they neither advance nor break the streak and never consume a freeze. The first missed active weekday in a gap may consume one available freeze; a second consecutive missed weekday resets the current streak without consuming another freeze (start balance two, maximum three, earn one after seven further qualified days); an uncovered break resets the current streak. Reconciliation runs fail-open after each response batch commits in a serializable Prisma transaction and groups existing `QuestionResponseDetail` rows by Zurich date, so a streak failure never affects grading or XP. Joining the leaderboard starts tracking; a one-time rollout migration initializes already-active leaderboard participations in enabled, non-assessment courses at rollout time without backfilling earlier responses. Course overview and participation reads reconcile the private state before returning it. Leaving resets current/progress but preserves longest and balance; rejoining restarts from zero with no backfill.
+
+On the PWA home screen, the fire/current-streak indicator and contextual status are shown only for gamified participations with `isActive`; this presentation reuses the existing read-side fields and adds no streak state.
 
 ### Assessment participant invitations
 
