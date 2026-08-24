@@ -51,26 +51,34 @@ function zurichDayStart(date: Date): Date {
   return new Date(utcMidnight - offset)
 }
 
+async function initializeActiveStudyStreaks(
+  tx: PrismaMigrationClient
+): Promise<void> {
+  const trackingStartedAt = new Date()
+  const trackingDayStart = zurichDayStart(trackingStartedAt)
+
+  await tx.participation.updateMany({
+    where: {
+      isActive: true,
+      studyStreakTrackingStartedAt: null,
+      course: {
+        isGamificationEnabled: true,
+        isAssessmentEnabled: false,
+        endDate: { gte: trackingDayStart },
+      },
+    },
+    data: { studyStreakTrackingStartedAt: trackingStartedAt },
+  })
+}
+
 const migrations: Migration[] = [
   {
     id: '20260824_initialize_active_study_streaks',
-    migrate: async (tx) => {
-      const trackingStartedAt = new Date()
-      const trackingDayStart = zurichDayStart(trackingStartedAt)
-
-      await tx.participation.updateMany({
-        where: {
-          isActive: true,
-          studyStreakTrackingStartedAt: null,
-          course: {
-            isGamificationEnabled: true,
-            isAssessmentEnabled: false,
-            endDate: { gte: trackingDayStart },
-          },
-        },
-        data: { studyStreakTrackingStartedAt: trackingStartedAt },
-      })
-    },
+    migrate: initializeActiveStudyStreaks,
+  },
+  {
+    id: '20260824_repair_active_study_streaks',
+    migrate: initializeActiveStudyStreaks,
   },
 ]
 

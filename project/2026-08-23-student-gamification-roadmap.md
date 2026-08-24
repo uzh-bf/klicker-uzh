@@ -778,3 +778,13 @@ Append entries; do not rewrite history.
   the self-only opt-in gates, Prisma-only batched response read, reconciliation
   ordering, finalized-course guard, persisted-query artifacts, focused tests,
   GraphQL/PWA checks, and the post-backend browser evidence.
+- 2026-08-24 — Local verification found that the one-time boot migration had
+  already been recorded before the development seed recreated Testkurs
+  participations, leaving 49 of 50 active seeded participants without a streak
+  tracking timestamp. The repair uses a second Prisma boot migration plus an
+  idempotent Testkurs seed update for new and existing active participations;
+  it still starts tracking at repair/seed time and does not backfill responses.
+  A browser pass with a previously uninitialized seeded student then showed
+  `Streak: 0 days · 5 responses left today`, decremented after each response,
+  reached `Daily goal reached · Streak: 1 day` after the fifth response, and
+  refreshed both home and course pages to one day.
