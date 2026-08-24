@@ -86,8 +86,11 @@ function KnowledgeBaseAddResourceModal({
   }, [mode])
 
   const handleResourceCreated = async () => {
-    await onResourceCreated()
-    closeModal()
+    try {
+      await onResourceCreated()
+    } finally {
+      closeModal()
+    }
   }
 
   const isChooser = mode === 'chooser'

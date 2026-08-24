@@ -110,18 +110,26 @@ test.describe('Knowledge base management workspace', () => {
       ).toContainText(/Ingest|Verarbeiten/)
       await page.getByTestId('done-kb-resource-inspector').click()
 
-      await page.setViewportSize({ width: 390, height: 844 })
-      await expect
-        .poll(() =>
-          page.evaluate(
-            () => document.documentElement.scrollWidth <= window.innerWidth
-          )
-        )
-        .toBe(true)
+      await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
-        path: testInfo.outputPath('kb-management-en-mobile.png'),
+        path: testInfo.outputPath('kb-management-en-desktop.png'),
         fullPage: true,
       })
+
+      for (const width of [390, 320]) {
+        await page.setViewportSize({ width, height: 844 })
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth
+            )
+          )
+          .toBe(true)
+        await page.screenshot({
+          path: testInfo.outputPath(`kb-management-en-${width}.png`),
+          fullPage: true,
+        })
+      }
 
       await page.goto(`${manageUrl}/de${detailPath}`)
       await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
