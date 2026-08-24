@@ -80,8 +80,23 @@ function ActivityActions({
                 {action.label}
               </div>
             ),
-            onClick: action.onClick,
+            onClick: (event: React.MouseEvent) => {
+              if (action.disabled) {
+                event.preventDefault()
+                event.stopPropagation()
+                return
+              }
+
+              action.onClick(event)
+            },
             data: action.data,
+            className: {
+              // Disabled Radix menu items ignore pointer input by default. Keep
+              // explanatory tooltips hoverable while preserving inert clicks.
+              item: action.tooltip
+                ? 'data-disabled:pointer-events-auto'
+                : undefined,
+            },
           })
         )}
         trigger={<FontAwesomeIcon icon={faEllipsis} />}
