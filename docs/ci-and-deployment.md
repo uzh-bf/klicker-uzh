@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-22'
+timestamp: '2026-08-24'
 tags:
   - ci
   - deployment
@@ -37,14 +37,17 @@ Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile
 The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require both AMD and ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
 
 The same five images receive browser GrowthBook configuration at build time.
-Staging workflows use the repository variables
+Staging workflows use the environment-scoped variables
 `NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG` and
 `NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG`; production workflows use the matching
-`_PRD` names. These values are deliberately GitHub Actions variables rather than
-secrets because every `NEXT_PUBLIC_*` value is embedded in public browser
-assets. The Dockerfiles declare and export matching build arguments before the
-Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
-operator contract.
+`_PRD` names. Every ARM and AMD build job references the `Growthbook` GitHub
+Actions environment with deployment creation disabled, which exposes the
+environment variables without recording image builds as deployments. These
+values are deliberately variables rather than secrets because every
+`NEXT_PUBLIC_*` value is embedded in public browser assets. The Dockerfiles
+declare and export matching build arguments before the Next build. See
+[Feature Flags](./feature-flags.md) for the complete runtime and operator
+contract.
 
 ## Release flow
 

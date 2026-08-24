@@ -16,6 +16,9 @@ jobs:
   build-arm:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
+    environment:
+      name: Growthbook
+      deployment: false
     permissions:
       contents: read
       packages: write
@@ -65,6 +68,9 @@ jobs:
   build-amd:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    environment:
+      name: Growthbook
+      deployment: false
     permissions:
       contents: read
       packages: write

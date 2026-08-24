@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-22'
+timestamp: '2026-08-24'
 tags:
   - architecture
   - frontend
@@ -104,7 +104,7 @@ All five deployed Next.js images are build-time ready for browser adoption:
 `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa`
 (including the assessment build). Their Dockerfiles accept the two GrowthBook
 variables above, and their staging/production workflows pass environment-specific
-GitHub Actions repository variables:
+variables from the `Growthbook` GitHub Actions environment:
 
 | Deployment | Public SDK host variable              | Public SDK client-key variable          |
 | ---------- | ------------------------------------- | --------------------------------------- |
@@ -114,7 +114,9 @@ GitHub Actions repository variables:
 Configure these as GitHub Actions **variables**, not secrets. They are
 non-sensitive SDK connection values that Next.js embeds into public browser
 assets; GitHub documents variables as the store for non-sensitive configuration
-and warns that they are not masked. Missing variables still produce a valid
+and warns that they are not masked. Every ARM and AMD image-build job references
+the environment with `deployment: false`, retaining variable access without
+creating deployment-history entries. Missing variables still produce a valid
 image, but the browser adapter performs no SDK request and keeps flags off.
 
 ## Node.js adoption
