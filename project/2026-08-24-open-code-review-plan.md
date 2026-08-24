@@ -70,7 +70,7 @@
 
 ## Progress
 
-- Status: correction committed and risk-reviewed with `PASS`; final integrated review pending.
-- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, bounded slice review, and correction review.
-- Remaining: run final review and complete close-out verification.
+- Status: final integrated review passed; local preparation is complete.
+- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, bounded slice review, correction review, and final review.
+- Remaining: merge to `v3`, add the repository secret, and activate the workflow when explicitly approved.
 - Delivery: local commit only; live activation is pending.
