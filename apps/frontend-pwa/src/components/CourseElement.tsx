@@ -2,7 +2,7 @@ import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faCheck, faFire } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import dayjs from 'dayjs'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import LinkButton from './common/LinkButton'
 
@@ -23,12 +23,11 @@ interface CourseElementProps {
 }
 
 function CourseElement({ disabled, course }: CourseElementProps) {
-  const locale = useLocale()
   const t = useTranslations()
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
   const isPast = dayjs().isAfter(course.endDate)
   const formatDate = (date: string) =>
-    new Intl.DateTimeFormat(locale, {
+    new Intl.DateTimeFormat('de-CH', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -51,34 +50,26 @@ function CourseElement({ disabled, course }: CourseElementProps) {
         href={disabled ? '' : `/course/${course.id}`}
         data={{ cy: `course-button-${course.displayName}` }}
       >
-        <div>
-          <div>{course.displayName}</div>
-          <div className="flex flex-col gap-0.5 text-xs text-slate-600">
-            <div>
-              {t('shared.generic.startAt', {
-                time: formatDate(course.startDate),
-              })}
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div>{course.displayName}</div>
+            <div className="whitespace-nowrap text-xs text-slate-500">
+              {formatDate(course.startDate)} - {formatDate(course.endDate)}
             </div>
-            <div>
-              {t('shared.generic.endAt', {
-                time: formatDate(course.endDate),
-              })}
-            </div>
-            {course.isGamificationEnabled &&
-              course.isLeaderboardParticipant && (
-                <div
-                  className="mt-1 flex items-center gap-1 font-medium text-orange-700"
-                  data-cy={`course-study-streak-${course.id}`}
-                >
-                  <FontAwesomeIcon icon={faFire} aria-hidden="true" />
-                  <span>
-                    {t('pwa.general.studyStreakDays', {
-                      current: course.studyStreakCurrent,
-                    })}
-                  </span>
-                </div>
-              )}
           </div>
+          {course.isGamificationEnabled && course.isLeaderboardParticipant && (
+            <div
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap font-medium text-orange-700"
+              data-cy={`course-study-streak-${course.id}`}
+            >
+              <FontAwesomeIcon icon={faFire} aria-hidden="true" />
+              <span>
+                {t('pwa.general.studyStreakDays', {
+                  current: course.studyStreakCurrent,
+                })}
+              </span>
+            </div>
+          )}
         </div>
       </LinkButton>
       {/* // TODO: re-introduce icon for push notifications once they have been fixed */}
