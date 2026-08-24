@@ -25,8 +25,9 @@ uncrowned regardless of Catalyst entitlement.
   wizard layout, or any concern outside this package's approved seams.
 - Do not add dependencies, component-test infrastructure, forced clicks, waits,
   or locator workarounds for the resolved wizard/library overlap.
-- Do not change devrouter, devcontainer, local-origin, environment, or Turborepo
-  routing configuration.
+- Except for the official devrouter 0.0.37 consumer version pin and generated
+  guidance prerequisite, do not change devrouter, devcontainer, local-origin,
+  environment, application routes, or Turborepo routing configuration.
 - Do not push, create or update a PR, submit a stack, merge, deploy, write live
   state or secrets, change cluster state, clean up worktrees or branches, or
   delete runtime data.
@@ -45,6 +46,10 @@ uncrowned regardless of Catalyst entitlement.
 - This alternate-review authorization covers replacement S1, S2, and the
   integrated final review. It changes no runtime, browser, routing, lifecycle,
   publication, or cleanup boundary.
+- The user's current explicit authority additionally covers the official
+  devrouter 0.0.37 shared-readiness consumer prerequisite, canonical exact W2
+  revalidation, and the final non-destructive exact-runtime stop. It does not
+  authorize manual route, TLS, or certificate changes.
 - Pause conditions: the Ox Alpha route fails terminally; an authorized alternate
   reviewer is unavailable after a configured-role failure; a material review
   finding remains unresolved; devrouter cannot prove the exact checkout and
@@ -61,8 +66,10 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current base:
-  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee` (`origin/v3`, which accepts
-  ADR-0037).
+  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee` (the ADR-0037-bearing branch
+  base). The latest fetched `origin/v3` is
+  `09257efb71027d478ed2c418fd007a60900b34ea`; its two newer deployment/release
+  commits do not overlap this package, and no rebase is authorized here.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -185,8 +192,8 @@ Accepted findings:
 - Preserve upstream free-user coverage of all four wizards and extend it for
   four descriptions/links, enabled buttons for free and Catalyst users, and
   absence of Catalyst signaling.
-- Treat the current devrouter route-lock identity error as a proof blocker, not
-  permission to use localhost or modify routing configuration.
+- Treat canonical exact-checkout HTTPS readiness failure as a proof blocker,
+  not permission to use localhost or modify routing configuration.
 
 Historical disposition: the earlier planner rejected rebasing the separate
 recovery branch. The accepted material-change planner later approved this
@@ -337,13 +344,13 @@ records verified behavior and introduces no executable risk.
 
 Runtime contract:
 
-- Use the already-running exact checkout runtime and run repository checks with
-  its exact-path `devrouter exec` form. Do not start, stop, repair, or
-  reconfigure the runtime.
-- Run repository checks through
-  `devrouter exec <absolute-checkout-path> -- ...` inside the exact DevPod.
-  Do not use host pnpm, bare DevPod/Docker lifecycle commands, manual routes,
-  localhost fixed ports, or another checkout's runtime.
+- The official devrouter 0.0.37 consumer version pin and generated guidance are
+  the only authorized configuration changes. This prerequisite commit does not
+  start or stop the currently stopped exact runtime.
+- Subsequent canonical exact-checkout verification may use `devrouter ensure`
+  and exact-path `devrouter exec`, followed by a non-destructive exact
+  `devrouter stop`. Do not use bare DevPod/Docker lifecycle commands, manual
+  routes, localhost fixed ports, or another checkout's runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
@@ -414,19 +421,26 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Status: replacement S1 through S3 and the bounded correction are committed
   and statically verified. Final package readiness is blocked on exact-runtime
   evidence; no verified code defect remains.
+- Current authority and prerequisite: the user explicitly authorized the
+  official devrouter 0.0.37 shared-readiness consumer adaptation and exact W2
+  revalidation. This commit pins 0.0.37 and refreshes only the official
+  generated guidance; it does not mutate runtime, routes, TLS, or certificates.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
-  Catalyst signaling requirements; no new worktree and no runtime/config/routing
-  changes occurred.
-- Freshness rebase: authoritative `origin/v3` is
+  Catalyst signaling requirements. No new worktree or runtime/routing change
+  occurred; the official 0.0.37 pin and generated guidance are the sole
+  consumer-configuration exception.
+- Historical freshness rebase: the then-authoritative `origin/v3` was
   `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`. Its only changes from the prior
-  base are `.github/workflows/check-ocr-review.yml` and
+  base were `.github/workflows/check-ocr-review.yml` and
   `project/2026-08-24-open-code-review-plan.md`, with no W2 overlap. Host
   `git rebase --autostash origin/v3` completed without conflicts and reapplied
   only this plan edit. Range-diff
   `d8e964c28..5e59aa60 ae9bc7ea5..f574eb3dc` shows all six patches equivalent.
   The plan-only review-disposition commit left the branch 7 ahead and 0 behind;
-  this S3 commit adds only the two owned documentation paths.
+  the current fetch found `origin/v3` at `09257efb7`, with only two newer,
+  non-overlapping deployment/release commits. This consumer commit began 12
+  ahead and 2 behind; no rebase, pull, or merge occurred.
 - Review gate: independent Luna simplification and separate Sol correctness/risk
   re-reviews accepted rewritten replacement S1 range
   `11c523c4e..ae8ed5a15` with zero remaining findings. The equivalent
@@ -483,6 +497,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   had 755 DNS SANs and already contained the ten exact W2 hostnames, while the
   global route state contained 458 running routes. SAN and route scale are a
   plausible shared TLS cause, not a proven root cause.
+- Tight synthetic reproduction: a CA-validated 755-SAN certificate fails with
+  curl error 60 while OpenSSL accepts it; pinning the exact served leaf returns
+  HTTP 204. Devrouter 0.0.37 addresses that HTTPS readiness path. It does not
+  prune SANs: 295 SANs were stale relative to active routes, so append-only SAN
+  growth remains an unresolved concern rather than a claimed fixed cause.
+- Devrouter 0.0.37 static verification: installed and local repo versions both
+  resolved to 0.0.37 with no next upgrade target; `devrouter doctor --json` and
+  `devrouter repo devcontainer verify --json` passed without starting the
+  runtime. Repository Prettier and `git diff --check` passed for the owned
+  consumer and plan changes.
 - Runtime proof status: no fancy-domain browser matrix or focused B, O, or P
   test ran. No localhost or fixed-port browser fallback and no manual route,
   certificate, runtime, or configuration change, repair, or workaround
@@ -510,12 +534,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed with 154 tests in 3 files; correction-specific B collection passed with
   8 tests. Base-to-head `git diff --check`, commit hooks, staged scope, and
   secret, credential, sensitive-URL, and personal-data audits passed.
-- Remaining: exact-domain browser/E2E evidence, blocked pending separate
-  explicit authority for broader shared devrouter TLS or route repair.
+- Remaining: canonical exact ensure and exact-domain browser/E2E evidence under
+  the newly explicit authority. Broader manual route, TLS, certificate, or
+  SAN-pruning work remains withheld.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: stop at the genuine runtime blocker. Under separate explicit
-  authority, diagnose and repair the shared devrouter TLS or route layer, rerun
-  the canonical exact-checkout ensure, then run the plan's bilingual desktop,
-  narrow, and keyboard browser matrix plus the focused B, O, and P specs and
-  record the evidence.
+- Next action: with doctor/static verification complete, rerun canonical exact
+  ensure, execute the bilingual desktop, narrow, and keyboard fancy-domain
+  browser matrix plus the focused B, O, and P specs, record the evidence, then
+  stop and verify the exact runtime non-destructively.
