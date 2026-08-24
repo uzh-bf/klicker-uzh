@@ -621,9 +621,9 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(sendButton).toHaveAttribute('aria-hidden', 'false')
     await expect(sendButton).not.toHaveAttribute('inert', '')
     await expect(sendButton).toHaveAttribute('tabindex', '0')
-    await expect(page.getByTestId('chat-run-status')).toHaveText(
-      'Answer stopped.'
-    )
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).not.toContainText('and should not land.')
   })
 
   test('Streaming hides incomplete LaTeX until the formula closes', async ({
@@ -2183,7 +2183,8 @@ test.describe('Chatbot Source Citations', () => {
 
   test('Sources section renders one card per unique source in first-appearance order with a count heading', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
     const messageId = '4a1b2c3d-0001-4a91-8f6c-2b7d1e5a9c40'
     await seedThread(participantId, {
       title: 'Sources order',
@@ -2241,6 +2242,20 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.locator(`#src-${messageId}-3`)).toContainText(
       'Gamma Notes.pdf'
     )
+
+    const modeSwitcher = page.getByTestId('chat-mode-switcher')
+    await modeSwitcher.click()
+    await expect(page.getByTestId('chat-mode-option-explainer')).toBeVisible()
+
+    const screenshotPath = testInfo.outputPath('desktop-mode-and-sources.png')
+    await page.screenshot({
+      path: screenshotPath,
+      animations: 'disabled',
+    })
+    await testInfo.attach('Desktop mode dropdown and source grid', {
+      path: screenshotPath,
+      contentType: 'image/png',
+    })
   })
 
   test('Source details stay in hover and focus previews for cards and citations', async ({
@@ -2768,7 +2783,7 @@ test.describe('Chatbot Source Citations', () => {
 
   test('Mobile header and sources stay clear of the expanded composer', async ({
     page,
-  }) => {
+  }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 })
     const thread = await seedThread(participantId, {
       title: 'Mobile source layout',
@@ -2846,6 +2861,18 @@ test.describe('Chatbot Source Citations', () => {
         return lastSourceBox.y + lastSourceBox.height <= composerBox.y - 8
       })
       .toBe(true)
+
+    const screenshotPath = testInfo.outputPath(
+      'mobile-sources-and-composer.png'
+    )
+    await page.screenshot({
+      path: screenshotPath,
+      animations: 'disabled',
+    })
+    await testInfo.attach('Mobile sources and expanded composer', {
+      path: screenshotPath,
+      contentType: 'image/png',
+    })
   })
 
   test('Assistant message caption exposes a parseable ISO timestamp', async ({
