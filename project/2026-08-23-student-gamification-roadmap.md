@@ -683,6 +683,11 @@ Append entries; do not rewrite history.
   commands, complete test obligations, and the ended-course null projection.
   The final re-review returned `DONE`. The roadmap is approval-ready and
   implementation remains **not started**.
+- 2026-08-24 — Catalog correction on `rs/gamification-achievement-receipts`:
+  live quiz podium places (Champion, Vice-Champion, Vice-Vice-Champion) were
+  already auto-awarded in `liveQuizzes.ts`, and Explorer is granted manually.
+  Both are now included in the discoverable catalog alongside Dream Team and
+  Team Spirit (`ACHIEVEMENT_AWARD_PATHS = [2, 5, 6, 7, 8, 9]`).
 - 2026-08-24 — Package complete on `rs/gamification-achievement-receipts`
   through commit `355759370`. S2 private Study streaks landed in
   `5ca259911` (ADR 0009, state machine + reconciliation + course-overview

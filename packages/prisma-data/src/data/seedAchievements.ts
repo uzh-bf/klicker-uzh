@@ -35,10 +35,13 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
   return achievements
 }
 
-// Achievements with an implemented award path (group activity grading in
-// packages/graphql/src/services/groups.ts); all others are seeded as not
-// discoverable until their award logic ships (gamification roadmap).
-const ACHIEVEMENT_AWARD_PATHS = [8, 9]
+// Achievements that are earnable: live quiz podium places (Champion,
+// Vice-Champion, Vice-Vice-Champion in packages/graphql/src/services/
+// liveQuizzes.ts), group activity awards (Dream Team and Team Spirit in
+// packages/graphql/src/services/groups.ts), and Explorer (historically
+// granted manually by staff). All others are seeded as not discoverable
+// until their award logic ships (gamification roadmap).
+const ACHIEVEMENT_AWARD_PATHS = [2, 5, 6, 7, 8, 9]
 
 // const prismaClient = new Prisma.PrismaClient()
 // await seedAchievements(prismaClient)
