@@ -303,7 +303,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -380,7 +380,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -458,7 +458,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -541,7 +541,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -642,7 +642,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hset(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp

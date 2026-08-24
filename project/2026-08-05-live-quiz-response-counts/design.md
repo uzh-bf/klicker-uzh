@@ -29,7 +29,9 @@ event to Hatchet. Tracking is best-effort so an unavailable metric store never
 rejects a participant response; such a failure can temporarily undercount
 received responses. During the key-shape transition, the cockpit also includes
 the legacy received-set cardinality, so old and new ingress instances remain
-visible without writing new unbounded sets.
+visible without writing new unbounded sets. Assessment admission continues to
+use its existing participant and database uniqueness boundary, while this
+metric counts accepted transport events before that downstream boundary.
 
 `numOfResponsesProcessed` is the number of response events whose complete Redis
 aggregation command batch succeeded. For regular quizzes, the atomic processing
@@ -37,7 +39,9 @@ script claims a bounded replay identifier, applies the result commands, and
 increments the numeric processed counter only when no command reports an error.
 Assessment aggregation uses the same contract. A partial command failure keeps
 the replay claim but does not increment the processed counter, because replaying
-could duplicate commands that already applied.
+could duplicate commands that already applied. Tracking-command failures are
+logged separately as best-effort metric errors; the aggregation claim remains
+authoritative once result commands have been attempted.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,

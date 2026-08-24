@@ -23,6 +23,9 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
   element instance.
 - `numOfResponsesProcessed` counts response events incorporated into live
   results.
+- Assessment duplicate admission remains governed by the existing participant
+  and database uniqueness checks. The received metric intentionally counts
+  accepted transport events before that downstream boundary.
 - Keep the existing `numOfParticipants` field and behavior unchanged.
 - Use numeric Redis counters for reporting. Use the processed set only as a
   bounded replay claim, not as the processed count.
