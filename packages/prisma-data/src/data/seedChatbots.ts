@@ -1,5 +1,6 @@
-import * as Prisma from '@klicker-uzh/prisma/client'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'node:fs'
+import { ensureChatbotPromptCatalog } from '@klicker-uzh/prisma'
+import type * as Prisma from '@klicker-uzh/prisma/client'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -81,6 +82,16 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       disclaimerId: testDisclaimer.id,
       status: 'PUBLISHED', // seeded bot is live for participants
     },
+  })
+
+  // Catalog rows for the seeded modes (ADR 0037): the seed text is the same
+  // authored content the JSON projection carries, so initialization is an
+  // idempotent no-op on reseed and fails loudly if the texts ever drift.
+  await prisma.$transaction(async (tx) => {
+    await ensureChatbotPromptCatalog(tx, CHATBOT_ID_TEST, [
+      { key: 'tutor', prompt: tutorPrompt },
+      { key: 'explainer', prompt: explainerPrompt },
+    ])
   })
 
   return {

@@ -1,4 +1,5 @@
 import { type Page } from '@playwright/test'
+import { ensureChatbotPromptCatalog } from '@klicker-uzh/prisma'
 import * as jose from 'jose'
 import { randomUUID } from 'node:crypto'
 import { getPrisma } from '../global-setup.js'
@@ -97,6 +98,14 @@ export async function ensureChatbotSeeded() {
       disclaimerId: DISCLAIMER_ID,
       status: 'PUBLISHED',
     },
+  })
+
+  // Catalog rows for the two seeded modes (ADR 0037); idempotent on reseed.
+  await prisma.$transaction(async (tx) => {
+    await ensureChatbotPromptCatalog(tx, CHATBOT_ID, [
+      { key: 'tutor', prompt: 'You are a helpful tutor.' },
+      { key: 'explainer', prompt: 'You are an expert explainer.' },
+    ])
   })
 }
 

@@ -638,5 +638,21 @@ adapted.
   explicit tutor preserved, empty non-tutor mode snapshots empty string, effective
   count 0, historical messages null). docs/domain-model.md and the data-model skill
   updated. Prisma package check, Chat app typecheck, and Biome pass on touched files.
+- 2026-08-23 (S2, verified): transactional catalog service added at
+  packages/prisma/src/chatbotPromptCatalog.ts (ensureChatbotPromptCatalog:
+  chatbot-row lock, version-1 creation with active pointer, disagreement
+  throws, idempotent no-op on exact text match). createChatbot now wraps
+  bot creation + tutor catalog init in one $transaction. Development seed
+  and Playwright fixture initialize their configured modes through the same
+  transactional service. Added values-free dry-run-by-default audit script
+  (2026-08-23_audit_prompt_catalog.ts) that initializes only wholly missing
+  catalogs from the deterministic legacy projection under --apply. Checks
+  pass: Prisma check, GraphQL check, Prisma Data check:data/check:scripts,
+  Biome on touched files, Playwright tsc, and Prettier on playwright/util.
+  Audit smoke test on disposable Postgres (s2-audit-pg, port 55432): full
+  182-migration chain applied including prompt-catalog migration; synthetic
+  null-JSON bot reports MISSING_CATALOG mode_count=1 with zero initialization
+  in dry-run; --apply creates tutor version 1 at 2155 bytes with active
+  pointer set; rerun reports summary_missing_catalog=0 and no new versions.
 - Current boundary: waiting for Gate 1 approval of this plan. No implementation
   file, branch base, remote branch, PR, deployment, or live data has changed.
