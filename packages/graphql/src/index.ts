@@ -39,7 +39,10 @@ import './schema/subscription.js'
 //   })
 // }
 
-import { handleProcessCourseDuplication } from './services/courseDuplication.js'
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from './services/courseDuplication.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
@@ -85,4 +88,5 @@ export const handlers: HatchetHandlers = {
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
   handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
 }

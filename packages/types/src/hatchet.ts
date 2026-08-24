@@ -96,6 +96,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleSweepStaleCourseDuplications: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -143,6 +148,10 @@ export interface PreparedHatchetTasks {
   >
   processCourseDuplication: TaskWorkflowDeclaration<
     { jobId: string },
+    { success: boolean }
+  >
+  sweepStaleCourseDuplications: TaskWorkflowDeclaration<
+    Record<string, never>,
     { success: boolean }
   >
 }

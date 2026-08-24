@@ -285,6 +285,12 @@ export async function testInitialization(
         return { success: true }
       },
     }),
+    sweepStaleCourseDuplications: hatchet.task({
+      name: 'sweep-stale-course-duplication',
+      fn: async () => {
+        return { success: true }
+      },
+    }),
   }
   hatchetCtx.tasks = tasks
 

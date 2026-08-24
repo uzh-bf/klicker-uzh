@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
@@ -27,9 +28,15 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
-const COURSE_DUPLICATION_STALE_AFTER_MS = 30 * 60 * 1000
+// Must exceed the worst legitimate retry chain: a 15-minute execution
+// timeout plus three retries with backoff leaves roughly an hour of
+// legitimate runtime before a job may be declared stale.
+const COURSE_DUPLICATION_STALE_AFTER_MS = 75 * 60 * 1000
 const COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
+// The worker refreshes this key while an attempt is alive; stale normalization
+// must never fail a job whose lease is still being renewed.
+const COURSE_DUPLICATION_HEARTBEAT_TTL_SECONDS = 120
 const COURSE_DUPLICATION_STATUS_KEY_PREFIX = 'course-duplication:job'
 const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
@@ -89,7 +96,7 @@ interface CourseDuplicationJob extends CourseDuplicationStatus {
   userScope: DB.UserLoginScope
   catalystInstitutional: boolean
   catalystIndividual: boolean
-  args: CourseDuplicationJobArgs
+  args?: CourseDuplicationJobArgs
 }
 
 function getCourseDuplicationStatusKey(jobId: string) {
@@ -108,6 +115,24 @@ function getCourseDuplicationSourceLockKey({
 
 function getCourseDuplicationProcessLockKey(jobId: string) {
   return `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:${jobId}:processing`
+}
+
+function getCourseDuplicationHeartbeatKey(jobId: string) {
+  return `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:${jobId}:heartbeat`
+}
+
+async function renewCourseDuplicationHeartbeat(redis: Redis, jobId: string) {
+  const set = await redis.set(
+    getCourseDuplicationHeartbeatKey(jobId),
+    '1',
+    'EX',
+    COURSE_DUPLICATION_HEARTBEAT_TTL_SECONDS
+  )
+  return set === 'OK'
+}
+
+async function hasFreshCourseDuplicationHeartbeat(redis: Redis, jobId: string) {
+  return (await redis.get(getCourseDuplicationHeartbeatKey(jobId))) === '1'
 }
 
 function isTerminalCourseDuplicationStatus(status: CourseDuplicationJobStatus) {
@@ -192,14 +217,16 @@ function parseCourseDuplicationJob(
       ...parsedJob,
       createdAt: parseCourseDuplicationDate(parsedJob.createdAt),
       updatedAt: parseCourseDuplicationDate(parsedJob.updatedAt),
-      args: {
-        ...parsedJob.args,
-        startDate: parseCourseDuplicationDate(parsedJob.args.startDate),
-        endDate: parseCourseDuplicationDate(parsedJob.args.endDate),
-        groupDeadlineDate: parseCourseDuplicationDate(
-          parsedJob.args.groupDeadlineDate
-        ),
-      },
+      args: parsedJob.args
+        ? {
+            ...parsedJob.args,
+            startDate: parseCourseDuplicationDate(parsedJob.args.startDate),
+            endDate: parseCourseDuplicationDate(parsedJob.args.endDate),
+            groupDeadlineDate: parseCourseDuplicationDate(
+              parsedJob.args.groupDeadlineDate
+            ),
+          }
+        : undefined,
     } satisfies CourseDuplicationJob
   } catch (error) {
     console.error('Failed to parse course duplication job status:', error)
@@ -213,13 +240,35 @@ async function getCourseDuplicationJob(redis: Redis, jobId: string) {
   )
 }
 
+// Terminal records no longer need the mutation payload or identity fields;
+// stripping them keeps user data (notificationEmail rides in args) out of
+// Redis for the remainder of the record's 24-hour TTL.
+function serializeCourseDuplicationJob(job: CourseDuplicationJob): string {
+  if (!isTerminalCourseDuplicationStatus(job.status)) {
+    return JSON.stringify(job)
+  }
+
+  return JSON.stringify({
+    id: job.id,
+    status: job.status,
+    sourceCourseId: job.sourceCourseId,
+    sourceCourseName: job.sourceCourseName,
+    targetCourseName: job.targetCourseName,
+    createdCourseId: job.createdCourseId,
+    errorType: job.errorType,
+    errorMessage: job.errorMessage,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+  } satisfies CourseDuplicationStatus)
+}
+
 async function persistCourseDuplicationJob(
   redis: Redis,
   job: CourseDuplicationJob
 ) {
   await redis.set(
     getCourseDuplicationStatusKey(job.id),
-    JSON.stringify(job),
+    serializeCourseDuplicationJob(job),
     'EX',
     COURSE_DUPLICATION_STATUS_TTL_SECONDS
   )
@@ -335,17 +384,42 @@ function getPublicCourseDuplicationStatus(
   }
 }
 
+// A live attempt refreshes the heartbeat key, so staleness alone must not
+// fail a job: require both an old updatedAt and an expired heartbeat. Before
+// declaring failure, reconcile against Postgres - the copied course carries
+// the job id as its primary key, so a committed row means the copy succeeded
+// even when its COMPLETED status write was lost.
 async function normalizeStaleCourseDuplicationJob(
   redis: Redis,
+  prisma: PrismaClient,
   job: CourseDuplicationJob
 ) {
   if (
     isTerminalCourseDuplicationStatus(job.status) ||
-    Date.now() - job.updatedAt.getTime() < COURSE_DUPLICATION_STALE_AFTER_MS
+    Date.now() - job.updatedAt.getTime() < COURSE_DUPLICATION_STALE_AFTER_MS ||
+    (await hasFreshCourseDuplicationHeartbeat(redis, job.id))
   ) {
     return job
   }
 
+  const committedCourse = await prisma.course.findUnique({
+    where: { id: job.id },
+    select: { id: true },
+  })
+
+  if (committedCourse) {
+    console.warn(
+      `Course duplication job ${job.id} went stale but its course is committed; marking COMPLETED.`
+    )
+    return await updateCourseDuplicationJob(redis, job, {
+      status: 'COMPLETED',
+      createdCourseId: committedCourse.id,
+    })
+  }
+
+  console.warn(
+    `Course duplication job ${job.id} went stale without a heartbeat; marking FAILED.`
+  )
   return await updateCourseDuplicationJob(redis, job, {
     status: 'FAILED',
     errorType: 'generic',
@@ -366,13 +440,23 @@ export async function startCourseDuplication(
     ],
     ctx
   )
-  if (!hasDuplicationAccess) return null
+  if (!hasDuplicationAccess) {
+    console.warn(
+      `Course duplication denied: user ${ctx.user.sub} lacks ADMIN access to course ${args.sourceCourseId}.`
+    )
+    return null
+  }
 
   const sourceCourse = await ctx.prisma.course.findUnique({
     where: { id: args.sourceCourseId },
     select: { name: true },
   })
-  if (!sourceCourse) return null
+  if (!sourceCourse) {
+    console.warn(
+      `Course duplication denied: source course ${args.sourceCourseId} no longer exists.`
+    )
+    return null
+  }
 
   const lockKey = getCourseDuplicationSourceLockKey({
     sourceCourseId: args.sourceCourseId,
@@ -386,6 +470,7 @@ export async function startCourseDuplication(
   if (existingJob && !isTerminalCourseDuplicationStatus(existingJob.status)) {
     const normalizedExistingJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
+      ctx.prisma,
       existingJob
     )
 
@@ -490,6 +575,7 @@ export async function getCourseDuplicationStatuses(
 
     const normalizedJob = await normalizeStaleCourseDuplicationJob(
       ctx.redisExec,
+      ctx.prisma,
       job
     )
     statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
@@ -517,6 +603,14 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       return true
     }
 
+    if (!pendingJob.args) {
+      executionCtx.logger.warn(
+        `Course duplication job ${jobId} has no stored arguments; cannot process.`
+      )
+      return false
+    }
+    const duplicationArgs = pendingJob.args
+
     const processLockKey = getCourseDuplicationProcessLockKey(pendingJob.id)
     const processLockValue = randomUUID()
     const processLockAcquired = await redis.set(
@@ -531,6 +625,8 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       throw new Error('Course duplication job is already being processed')
     }
 
+    await renewCourseDuplicationHeartbeat(redis, jobId)
+
     const processLockRenewal = setInterval(() => {
       void renewCourseDuplicationProcessLock(
         redis,
@@ -539,6 +635,11 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       ).catch((error) => {
         executionCtx.logger.warn(
           `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
+        )
+      })
+      void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
+        executionCtx.logger.warn(
+          `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
         )
       })
     }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
@@ -564,7 +665,7 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       job = await updateCourseDuplicationJob(redis, job, { status: 'RUNNING' })
 
       const duplicatedCourse = await duplicateCourse(
-        { ...job.args, courseId: job.id },
+        { ...duplicationArgs, courseId: job.id },
         {
           prisma: globalCtx.prisma,
           redisExec: globalCtx.redisExec,
@@ -629,6 +730,54 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
         processLockValue
       )
     }
+  }
+
+export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepStaleCourseDuplications'] =
+  async (_, globalCtx, executionCtx) => {
+    const redis = globalCtx.redisExec
+    let cursor = '0'
+    let scannedJobs = 0
+    let normalizedJobs = 0
+
+    do {
+      const [nextCursor, keys] = await redis.scan(
+        cursor,
+        'MATCH',
+        `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:*`,
+        'COUNT',
+        100
+      )
+      cursor = nextCursor
+
+      for (const key of keys) {
+        // Skip lease and heartbeat keys sharing the status-key prefix.
+        if (key.endsWith(':processing') || key.endsWith(':heartbeat')) {
+          continue
+        }
+
+        const job = parseCourseDuplicationJob(await redis.get(key))
+        if (!job || isTerminalCourseDuplicationStatus(job.status)) continue
+
+        scannedJobs += 1
+        const normalizedJob = await normalizeStaleCourseDuplicationJob(
+          redis,
+          globalCtx.prisma,
+          job
+        )
+
+        if (isTerminalCourseDuplicationStatus(normalizedJob.status)) {
+          normalizedJobs += 1
+        }
+      }
+    } while (cursor !== '0')
+
+    if (scannedJobs > 0) {
+      executionCtx.logger.info(
+        `Course duplication sweep inspected ${scannedJobs} non-terminal jobs and normalized ${normalizedJobs}.`
+      )
+    }
+
+    return true
   }
 
 type CourseDuplicationPermissionTarget =

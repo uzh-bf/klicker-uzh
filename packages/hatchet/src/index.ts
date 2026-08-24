@@ -314,6 +314,22 @@ export function prepareHatchetTasks({
     },
   })
 
+  const sweepStaleCourseDuplications = hatchet.task({
+    name: 'sweep-stale-course-duplications',
+    retries: 0,
+    onCrons: [
+      '*/5 * * * *', // every 5 minutes (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleSweepStaleCourseDuplications(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   const tasks = {
     updateGroupAverageScores,
     runningRandomGroupAssignments,
@@ -330,6 +346,7 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
     processCourseDuplication,
+    sweepStaleCourseDuplications,
   }
 
   Object.assign(globalContext.tasks, tasks)
