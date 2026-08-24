@@ -120,11 +120,12 @@ fail-closed paths.
   existing dedicated accounts plus the missing Culture account without writes.
 - After the approved exact Infisical scope was added, all three missing
   password names were created with random values; no value was read back or
-  exposed. The subsequent PRD apply stopped inside the transaction because
-  the live schema lacks `Participation.assessmentGivenName`, from pending
-  migration `20260820130856_assessment_participation_eduid_identity`.
-  Migration status also reports pending
-  `20260821150000_participant_invitation_course_history`. Independent
-  values-free readback confirms the two existing accounts remain unchanged,
-  their target participations remain inactive, and the Culture account is
-  still absent; no PRD database rows were committed.
+  exposed. The first PRD apply stopped inside the transaction because the live
+  schema lacks `Participation.assessmentGivenName`, from pending migration
+  `20260820130856_assessment_participation_eduid_identity`. Migration status
+  also reported pending `20260821150000_participant_invitation_course_history`.
+  The seeder was narrowed to select only alpha.70-stable participation fields,
+  so it no longer requires those later columns. The approved PRD apply then
+  completed and values-free readback confirmed all three accounts are active,
+  private, manual accounts with participation active only in their assigned
+  course.

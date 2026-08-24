@@ -327,6 +327,11 @@ async function reconcileParticipant(
         isActive: true,
       },
       update: { isActive: true },
+      select: {
+        courseId: true,
+        participantId: true,
+        isActive: true,
+      },
     })
   }
 }
