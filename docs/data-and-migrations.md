@@ -146,18 +146,18 @@ history entry carries them:
 ```bash
 rs-infisical-operator --profile klicker-prd run \
   --map DATABASE_URL=DATABASE_URL \
-  -- pnpm --filter @klicker-uzh/prisma-data exec tsx src/scripts/2026-08-24_seed_demo_participants.ts
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants
 
 rs-infisical-operator --profile klicker-prd run \
   --map DATABASE_URL=DATABASE_URL \
-  -- pnpm --filter @klicker-uzh/prisma-data exec tsx src/scripts/2026-08-24_seed_demo_participants.ts --readback
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --readback
 
 rs-infisical-operator --profile klicker-prd run \
   --map DATABASE_URL=DATABASE_URL \
   --map KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD=KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD \
   --map KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD=KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD \
   --map KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD=KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD \
-  -- pnpm --filter @klicker-uzh/prisma-data exec tsx src/scripts/2026-08-24_seed_demo_participants.ts --apply
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --apply
 ```
 
 The password names need exact read and write permission in that profile before

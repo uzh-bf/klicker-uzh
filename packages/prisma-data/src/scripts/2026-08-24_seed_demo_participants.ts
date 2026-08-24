@@ -218,6 +218,42 @@ async function printState(
   }
 }
 
+async function verifyReadbackState(
+  client: Pick<DB.PrismaClient, 'participant'>,
+  targets: Array<ResolvedTarget>
+) {
+  for (const target of targets) {
+    const participant = await getParticipantState(client, target.username)
+    assertParticipantScope(target, participant)
+    if (!participant) {
+      throw new SeedError(`missing_on_readback_${target.label}`)
+    }
+
+    const state = getStateBooleans(target, participant)
+    const activeOnlyInTarget =
+      state.targetParticipationActive && !state.activeOffTargetParticipation
+
+    console.log(
+      [
+        `target=${target.label}`,
+        `accountActive=${state.accountActive}`,
+        `accountPrivate=${state.accountPrivate}`,
+        `accountManual=${state.accountManual}`,
+        `activeOnlyInTarget=${activeOnlyInTarget}`,
+      ].join(' ')
+    )
+
+    if (
+      !state.accountActive ||
+      !state.accountPrivate ||
+      !state.accountManual ||
+      !activeOnlyInTarget
+    ) {
+      throw new SeedError(`readback_invariant_${target.label}`)
+    }
+  }
+}
+
 async function reconcileParticipant(
   client: Pick<DB.PrismaClient, 'participant' | 'participation'>,
   target: ResolvedTarget,
@@ -347,8 +383,14 @@ async function run() {
 
   const targets = await resolveTargets(prisma)
 
-  if (mode !== 'apply') {
+  if (mode === 'dry-run') {
     await printState(prisma, targets)
+    console.log(`mode=${mode} writes=false`)
+    return
+  }
+
+  if (mode === 'readback') {
+    await verifyReadbackState(prisma, targets)
     console.log(`mode=${mode} writes=false`)
     return
   }
@@ -383,6 +425,11 @@ try {
     console.error('status=failed code=unexpected_error')
   }
   process.exitCode = 1
-} finally {
+}
+
+try {
   await prisma.$disconnect()
+} catch {
+  console.error('status=failed code=disconnect_error')
+  process.exitCode = 1
 }

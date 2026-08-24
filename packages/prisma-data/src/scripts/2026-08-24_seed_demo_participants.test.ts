@@ -137,11 +137,8 @@ const runFailingScript = (
       })
     ).toBe(0)
 
-    const readback = runScript(['--readback'])
-    expect(readback).toContain('mode=readback writes=false')
-    expect(USERNAMES.some((username) => readback.includes(username))).toBe(
-      false
-    )
+    const readback = runFailingScript(['--readback'])
+    expect(readback).toContain('status=failed code=missing_on_readback_IuW')
     expect(
       await prisma.participant.count({
         where: { username: { in: USERNAMES } },
@@ -161,6 +158,12 @@ const runFailingScript = (
     expect(
       Object.values(PASSWORDS).some((password) => first.includes(password))
     ).toBe(false)
+
+    const readback = runScript(['--readback'])
+    expect(readback).toContain('mode=readback writes=false')
+    expect(USERNAMES.some((username) => readback.includes(username))).toBe(
+      false
+    )
 
     const before = await prisma.participant.findMany({
       where: { username: { in: USERNAMES.slice(0, 3) } },
@@ -300,5 +303,71 @@ const runFailingScript = (
         where: { username: { in: USERNAMES } },
       })
     ).toBe(0)
+  })
+
+  it('rejects conflicting modes without touching the database', async () => {
+    await prisma.participant.deleteMany({
+      where: { username: { in: USERNAMES } },
+    })
+
+    const output = runFailingScript(['--apply', '--readback'])
+    expect(output).toContain('status=failed code=conflicting_mode')
+    expect(
+      await prisma.participant.count({
+        where: { username: { in: USERNAMES } },
+      })
+    ).toBe(0)
+  })
+
+  it('fails closed when a target course is archived', async () => {
+    await prisma.participant.deleteMany({
+      where: { username: { in: USERNAMES } },
+    })
+    const iuwCourseId = courseIds.get('testkurs IuW')!
+    await prisma.course.update({
+      where: { id: iuwCourseId },
+      data: { isArchived: true },
+    })
+
+    const output = runFailingScript([])
+    expect(output).toContain('status=failed code=target_resolution_IuW')
+    expect(
+      await prisma.participant.count({
+        where: { username: { in: USERNAMES } },
+      })
+    ).toBe(0)
+
+    await prisma.course.update({
+      where: { id: iuwCourseId },
+      data: { isArchived: false },
+    })
+  })
+
+  it('does not alter the shared teststudent account', async () => {
+    await prisma.participant.deleteMany({
+      where: { username: { in: USERNAMES } },
+    })
+    const sharedPassword = await bcrypt.hash('local-only-shared-password', 12)
+    const shared = await prisma.participant.create({
+      data: {
+        username: 'teststudent',
+        password: sharedPassword,
+        isActive: false,
+        isProfilePublic: true,
+      },
+      select: { id: true },
+    })
+
+    runScript([APPLY_FLAG], ['IuW', 'RadioSurfVet', 'Culture'])
+
+    const sharedAfter = await prisma.participant.findUnique({
+      where: { id: shared.id },
+      select: { password: true, isActive: true, isProfilePublic: true },
+    })
+    expect(sharedAfter).toEqual({
+      password: sharedPassword,
+      isActive: false,
+      isProfilePublic: true,
+    })
   })
 })
