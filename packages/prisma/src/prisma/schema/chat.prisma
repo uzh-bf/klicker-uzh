@@ -1,3 +1,11 @@
+enum ByokCapabilityStatus {
+  RESERVED
+  ISSUED
+  CONSUMED
+  EXPIRED
+  CANCELLED
+}
+
 enum ProviderCredentialStatus {
   PENDING_VALIDATION
   ACTIVE
@@ -275,6 +283,7 @@ model ProviderCredential {
   bindings      ChatbotProviderBinding[]
   usageAccounts ByokUsageAccount[]
   outboxEvents ProviderCredentialOutbox[]
+  capabilities  ByokCapability[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -306,6 +315,7 @@ model ChatbotProviderBinding {
   acknowledgements  ProviderNoticeAcknowledgement[]
   traceDeletionJobs TraceDeletionJob[]
   usageAccounts     ByokUsageAccount[]
+  capabilities      ByokCapability[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -353,11 +363,46 @@ model ByokUsageAccount {
 
   requestTraceId String? // Langfuse/OTel trace id for deletion selection
 
+  capability ByokCapability?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([credentialId, isSettled])
   @@index([participantId])
+}
+
+model ByokCapability {
+  id String @id @default(uuid()) @db.Uuid
+
+  status ByokCapabilityStatus @default(RESERVED)
+
+  // Full authorization scope stored server-side; never returned to callers.
+  ownerId            String @db.Uuid
+  chatbotId          String @db.Uuid
+  profileKey         String
+  allowedModelAlias  String
+  vaultSecretVersion Int
+
+  // Only the SHA-256 hash of the opaque bearer is persisted. The raw token
+  // is returned exactly once at issue time and never stored or logged.
+  bearerHash String @unique
+
+  expiresAt  DateTime
+  consumedAt DateTime?
+
+  credential   ProviderCredential     @relation(fields: [credentialId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  credentialId String                 @db.Uuid
+  binding      ChatbotProviderBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bindingId    String                 @db.Uuid
+  usageAccount ByokUsageAccount       @relation(fields: [usageAccountId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  usageAccountId String               @db.Uuid @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, expiresAt])
+  @@index([ownerId])
 }
 
 model TraceDeletionJob {
