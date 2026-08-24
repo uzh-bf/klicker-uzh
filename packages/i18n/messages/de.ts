@@ -851,7 +851,8 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Weiter so – noch {remaining, plural, one {# Frage} other {# Fragen}} heute.',
       studyStreakNoFreezes:
         'Deine Serie ist in Gefahr – noch {remaining, plural, one {# Frage} other {# Fragen}} heute und keine Pausen verfügbar.',
-      studyStreakStart: 'Starte heute eine Serie – beantworte 5 Fragen.',
+      studyStreakStart:
+        'Starte heute eine Serie – beantworte noch {remaining, plural, one {# Frage} other {# Fragen}}.',
       studyStreakProgress:
         'Serie: {current, plural, one {# Tag} other {# Tage}} · Noch {remaining, plural, one {# Antwort} other {# Antworten}} heute',
       studyStreakGoalReached:

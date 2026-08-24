@@ -119,7 +119,10 @@ function CourseElement({ disabled, course }: CourseElementProps) {
                 t('pwa.general.studyStreakKeepGoing', {
                   remaining: remainingValue,
                 })}
-              {streakStatus === 'start' && t('pwa.general.studyStreakStart')}
+              {streakStatus === 'start' &&
+                t('pwa.general.studyStreakStart', {
+                  remaining: remainingValue,
+                })}
             </span>
           </div>
         )}

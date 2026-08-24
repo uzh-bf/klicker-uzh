@@ -758,3 +758,6 @@ Append entries; do not rewrite history.
   focused GraphQL/PWA checks, and formatting pass. The authenticated browser
   pass shows the Testkurs home card with dates, the fire/current-streak
   indicator, and the start prompt; screenshot: `/private/tmp/gamification-home-streak-motivation.png`.
+- 2026-08-24 — Final review correction: the start prompt now uses the
+  read-side remaining-response count, so partial progress toward the first
+  qualified day is shown accurately in English and German.
