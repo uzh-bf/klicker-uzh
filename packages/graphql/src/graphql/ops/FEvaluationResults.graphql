@@ -9,6 +9,7 @@ fragment EvaluationResults on ActivityEvaluation {
     # live quiz specific information
     status
     expiresAt
+    closedAt
     timeLimit
 
     instances {

@@ -18,11 +18,12 @@ import { useRouter } from 'next/router'
 import Rank1Img from 'public/img/rank1.svg'
 import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
-import { useEffect, useReducer, useState } from 'react'
+import { useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
+import BlockStatusIndicator from './BlockStatusIndicator'
 import EvaluationFooter from './EvaluationFooter'
 import EvaluationUnavailableNotification from './EvaluationUnavailableNotification'
 import EvaluationConfusion from './feedbacks/EvaluationConfusion'
@@ -103,7 +104,6 @@ function ActivityEvaluation({
     questionIx: router.query.questionIx as string | null,
     results: instanceResults,
     showLeaderboard: router.query.leaderboard === 'true',
-    missingInstanceResults: instanceResults.length === 0,
     type,
   })
 
@@ -122,24 +122,6 @@ function ActivityEvaluation({
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
   const stackInstanceMap = useStackInstanceMap({ stacks })
-
-  useEffect(() => {
-    if (
-      type === 'LiveQuiz' &&
-      activeStack === 0 &&
-      stacks[0]?.instances.length === 0
-    ) {
-      const firstStackWithInstances = stacks.findIndex(
-        (stack) => stack.instances.length > 0
-      )
-      if (firstStackWithInstances > 0) {
-        setActiveStack(firstStackWithInstances)
-        setActiveInstance(
-          stackInstanceMap[firstStackWithInstances]?.[0]?.value ?? 0
-        )
-      }
-    }
-  }, [activeStack, stackInstanceMap, stacks, type])
 
   // update the chart type as soon as the active instance changes
   useChartTypeUpdate({
@@ -188,13 +170,26 @@ function ActivityEvaluation({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {evaluationUnavailable ? (
-          <EvaluationUnavailableNotification
-            courseName={courseName}
-            activityName={activityName}
-            activityId={activityId}
-            activityType={activityType}
-            activityStatus={activityStatus}
-          />
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            {type === 'LiveQuiz' &&
+              typeof activeStack === 'number' &&
+              stacks[activeStack]?.status && (
+                <div className="absolute bottom-4 left-4 z-10">
+                  <BlockStatusIndicator
+                    status={stacks[activeStack].status}
+                    lastRefetchTime={lastRefetchTime}
+                    closedAt={stacks[activeStack].closedAt}
+                  />
+                </div>
+              )}
+            <EvaluationUnavailableNotification
+              courseName={courseName}
+              activityName={activityName}
+              activityId={activityId}
+              activityType={activityType}
+              activityStatus={activityStatus}
+            />
+          </div>
         ) : (
           <>
             {instanceResults.length > 0 && typeof activeStack === 'number' && (

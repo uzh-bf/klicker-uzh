@@ -3838,6 +3838,7 @@ export function computeStackEvaluation(
     stackActive: stack.active ?? false,
     status: 'status' in stack ? stack.status : null,
     expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    closedAt: 'closedAt' in stack ? stack.closedAt : null,
     timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))

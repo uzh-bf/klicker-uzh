@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
@@ -23,17 +23,15 @@ function LiveQuizEvaluation() {
     },
     pollInterval: 5000,
     skip: !router.query.id,
+    onCompleted: (result) => {
+      if (result.liveQuizEvaluation) {
+        setLastRefetchTime(new Date())
+      }
+    },
     onError: () => {
       router.push('/404')
     },
   })
-
-  // Track last refetch time for status indicator
-  useEffect(() => {
-    if (data?.liveQuizEvaluation) {
-      setLastRefetchTime(new Date())
-    }
-  }, [data])
 
   if (loading) {
     return <Loader />

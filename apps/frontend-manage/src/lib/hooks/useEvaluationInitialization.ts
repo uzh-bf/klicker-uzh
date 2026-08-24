@@ -8,7 +8,6 @@ function useEvaluationInitialization({
   questionIx,
   results,
   showLeaderboard,
-  missingInstanceResults,
   type,
 }: {
   setActiveInstance: Dispatch<SetStateAction<number>>
@@ -18,7 +17,6 @@ function useEvaluationInitialization({
   questionIx?: string | null
   results: (ElementInstanceEvaluation & { stackIx: number })[]
   showLeaderboard?: boolean
-  missingInstanceResults?: boolean
   type: ActivityEvaluationType
 }) {
   useEffect(() => {
@@ -27,12 +25,12 @@ function useEvaluationInitialization({
       if (typeof questionIx === 'string' && questionIx !== null) {
         setActiveInstance(parseInt(questionIx))
         setActiveStack(results[parseInt(questionIx)]?.stackIx ?? 0)
-      } else if (showLeaderboard || missingInstanceResults) {
+      } else if (showLeaderboard) {
         setActiveStack('leaderboard')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, results, questionIx, showLeaderboard, missingInstanceResults])
+  }, [type, results, questionIx, showLeaderboard])
 
   return null
 }

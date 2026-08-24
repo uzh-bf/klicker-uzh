@@ -2877,6 +2877,7 @@ enum SortByType {
 }
 
 type StackEvaluation {
+  closedAt: Date
   expiresAt: Date
   instances: [ElementInstanceEvaluation!]!
   stackActive: Boolean!

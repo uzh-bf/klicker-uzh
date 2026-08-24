@@ -8,14 +8,14 @@ import { twMerge } from 'tailwind-merge'
 interface BlockStatusIndicatorProps {
   status: ElementBlockStatus
   lastRefetchTime?: Date
-  expiresAt?: string | null
+  closedAt?: string | null
   className?: string
 }
 
 function BlockStatusIndicator({
   status,
   lastRefetchTime,
-  expiresAt,
+  closedAt,
   className,
 }: BlockStatusIndicatorProps) {
   const t = useTranslations()
@@ -54,10 +54,10 @@ function BlockStatusIndicator({
             <div className="font-semibold">
               {t('manage.evaluation.instanceExecuted')}
             </div>
-            {expiresAt && (
+            {closedAt && (
               <div className="mt-1 text-xs text-gray-600">
                 {t('manage.evaluation.instanceExecutionDate')}:{' '}
-                {formatter.dateTime(new Date(expiresAt), {
+                {formatter.dateTime(new Date(closedAt), {
                   dateStyle: 'medium',
                   timeStyle: 'short',
                 })}

@@ -108,7 +108,7 @@ function ElementEvaluation({
             <BlockStatusIndicator
               status={currentStack.status}
               lastRefetchTime={lastRefetchTime}
-              expiresAt={currentStack.expiresAt}
+              closedAt={currentStack.closedAt}
             />
           </div>
         )}
@@ -166,7 +166,16 @@ function ElementEvaluation({
   }
 
   return (
-    <div className={twMerge('flex h-full flex-col', className)}>
+    <div className={twMerge('relative flex h-full flex-col', className)}>
+      {type === 'LiveQuiz' && currentStack.status && (
+        <div className="absolute bottom-4 left-4 z-10">
+          <BlockStatusIndicator
+            status={currentStack.status}
+            lastRefetchTime={lastRefetchTime}
+            closedAt={currentStack.closedAt}
+          />
+        </div>
+      )}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {(currentInstance.__typename === 'ChoicesActivityEvaluationData' ||
           currentInstance.__typename === 'NumericalActivityEvaluationData' ||
@@ -185,15 +194,6 @@ function ElementEvaluation({
               />
             </div>
             <div className="relative min-h-0 flex-1">
-              {type === 'LiveQuiz' && currentStack.status && (
-                <div className="absolute bottom-4 left-4">
-                  <BlockStatusIndicator
-                    status={currentStack.status}
-                    lastRefetchTime={lastRefetchTime}
-                    expiresAt={currentStack.expiresAt}
-                  />
-                </div>
-              )}
               {currentInstance.__typename ===
                 'ChoicesActivityEvaluationData' && (
                 <ChoicesEvaluation
