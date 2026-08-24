@@ -222,6 +222,21 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Students: `testuser1`-`testuser50`, password `abcdabcd` (enrolled in "Testkurs")
 - Additional: `testuser51`-`testuser52` exist but are not enrolled in any course by default
 
+### Authenticated load-test login
+
+- Keep participant credential values only in Infisical. Do not put them in this file, repository files, command arguments, logs, or chat.
+- The approved runtime profile is `klicker-dev` (project `klicker-uzh-dev`, environment `dev`). Inject the allowlisted names directly into the child process:
+
+  ```bash
+  rs-infisical-operator --profile klicker-dev run \
+    --map KLICKER_TESTSTUDENT_USERNAME=KLICKER_PARTICIPANT_USERNAME_OR_EMAIL \
+    --map KLICKER_TESTSTUDENT_PASSWORD=KLICKER_PARTICIPANT_PASSWORD \
+    -- k6 run util/load-test/chatbot-auth.js
+  ```
+
+- Set the target-specific `KLICKER_BASE_URL` and `KLICKER_API_URL` in the child environment. Normal login also requires `KLICKER_ALLOW_LOGIN=true`; PRD additionally requires `KLICKER_ALLOW_PRODUCTION=true`.
+- Use `KLICKER_PARTICIPANT_TOKEN` instead when an already-issued token is supplied. Never print or persist either the token or the injected credential values.
+
 ## Code Conventions
 
 - **TypeScript strict mode** everywhere
