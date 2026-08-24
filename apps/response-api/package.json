@@ -34,6 +34,8 @@
     "dev:offline": "pnpm run dev",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file=.env src/index.ts",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file=.env src/index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "test:run": "tsx --test test/*.test.ts",
     "start:test": "node --env-file=.env dist/index.js"
   },
   "engines": {

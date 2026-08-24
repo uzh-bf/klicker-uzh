@@ -41,7 +41,8 @@ No remote merge, deployment, or production-data access was performed.
 - Cockpit status, participant, external-link, and response-count icons use fixed
   inline or flex boxes so their optical alignment is stable.
 - The response API records when received-response tracking is skipped because
-  the instance-info key is missing.
+  the instance-info key is missing; repeated end calls retry failed retention,
+  and assessment cleanup propagates Redis failures for Hatchet retry.
 
 ## Local evidence
 
@@ -54,6 +55,7 @@ No remote merge, deployment, or production-data access was performed.
 | Cockpit Redis fault-injection test | Passed; a failed count pipeline returned the cockpit with `null` response counts |
 | GraphQL code generation | Passed; generated output was unchanged |
 | GraphQL typecheck | Passed |
+| Response-api ingress tracking tests | Passed; 3 direct tests cover missing-instance skips, active-instance increments, and invalid tracking responses |
 | Syncpack check | Passed |
 | Repository build | Passed; 23 of 23 Turbo tasks succeeded |
 | Redis integration contract test | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, and partial command errors retained the claim without incrementing the processed counter |

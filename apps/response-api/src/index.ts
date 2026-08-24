@@ -1,16 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import {
-  getLiveQuizInstanceInfoKey,
-  getLiveQuizResponseCountKey,
-  type JWTPayload,
-  LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
-  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
-  verifyJWT,
-} from '@klicker-uzh/util'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
+import { trackLiveQuizResponseIfActive } from './responseTracking.js'
 
 const redis = new Redis({
   family: 4,
@@ -33,28 +27,6 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean)
-
-async function trackLiveQuizResponse({
-  redisClient,
-  countKey,
-  instanceInfoKey,
-}: {
-  redisClient: Redis
-  countKey: string
-  instanceInfoKey: string
-}) {
-  const instanceInfoTtl = await redisClient.eval(
-    LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
-    2,
-    countKey,
-    instanceInfoKey,
-    String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
-  )
-
-  if (!Number.isInteger(Number(instanceInfoTtl))) {
-    throw new Error('Live quiz response tracking returned an invalid TTL')
-  }
-}
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
@@ -169,23 +141,12 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   }
 
   try {
-    const instanceInfoKey = getLiveQuizInstanceInfoKey({
+    const tracked = await trackLiveQuizResponseIfActive({
+      redisClient: redis,
       liveQuizId: String(liveQuizId),
       instanceId,
     })
-    const instanceInfoExists = await redis.exists(instanceInfoKey)
-
-    if (instanceInfoExists === 1) {
-      await trackLiveQuizResponse({
-        redisClient: redis,
-        countKey: getLiveQuizResponseCountKey({
-          liveQuizId: String(liveQuizId),
-          instanceId,
-          status: 'received',
-        }),
-        instanceInfoKey,
-      })
-    } else {
+    if (!tracked) {
       console.warn(
         `Instance info key missing, skipping received-response tracking for live quiz ${liveQuizId}, instance ${instanceId}, message ${message.messageId}`
       )
@@ -369,22 +330,13 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
-  const instanceInfoKey = getLiveQuizInstanceInfoKey({
-    liveQuizId: String(liveQuizId),
-    instanceId,
-  })
   try {
-    if ((await assessmentRedis.exists(instanceInfoKey)) === 1) {
-      await trackLiveQuizResponse({
-        redisClient: assessmentRedis,
-        countKey: getLiveQuizResponseCountKey({
-          liveQuizId: String(liveQuizId),
-          instanceId,
-          status: 'received',
-        }),
-        instanceInfoKey,
-      })
-    } else {
+    const tracked = await trackLiveQuizResponseIfActive({
+      redisClient: assessmentRedis,
+      liveQuizId: String(liveQuizId),
+      instanceId,
+    })
+    if (!tracked) {
       console.warn(
         `Instance info key missing, skipping received-assessment tracking for live quiz ${liveQuizId}, instance ${instanceId}, correlation ${correlationId}`
       )

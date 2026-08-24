@@ -1641,6 +1641,63 @@ async function removeCacheEntriesBlock({
   }
 }
 
+async function startLiveQuizResponseTrackingRetention({
+  liveQuizId,
+  blocks,
+  redis,
+}: {
+  liveQuizId: string
+  blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+  redis: Redis
+}) {
+  const instanceInfoKeys = blocks.flatMap((block) =>
+    block.elements.map((instance) =>
+      getLiveQuizInstanceInfoKey({
+        liveQuizId,
+        instanceId: instance.id,
+      })
+    )
+  )
+  if (instanceInfoKeys.length > 0) {
+    const instanceInfoExpiry = redis.multi()
+    for (const key of instanceInfoKeys) {
+      instanceInfoExpiry.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+    }
+    const expiryResults = await instanceInfoExpiry.exec()
+    if (expiryResults === null) {
+      throw new Error('Redis returned no instance-info expiry results')
+    }
+    const expiryErrors = expiryResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (expiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start instance-info retention: ${expiryErrors.join('; ')}`
+      )
+    }
+  }
+
+  const trackingKeys = await redis.keys(`lq:${liveQuizId}:*:responses:*`)
+  if (trackingKeys.length > 0) {
+    const pipe = redis.multi()
+    for (const key of trackingKeys) {
+      pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+    }
+    const trackingExpiryResults = await pipe.exec()
+    if (trackingExpiryResults === null) {
+      throw new Error('Redis returned no response-tracking expiry results')
+    }
+    const trackingExpiryErrors = trackingExpiryResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (trackingExpiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start response-tracking retention: ${trackingExpiryErrors.join('; ')}`
+      )
+    }
+  }
+}
+
 function aggregateLiveQuizResponses({
   responses,
   elementData,
@@ -1840,7 +1897,32 @@ export async function endLiveQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = quiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   if (quiz.status === DB.PublicationStatus.ENDED) {
+    try {
+      // An earlier end attempt may have persisted ENDED before retention failed.
+      // Re-run retention on repeated calls so the caller can recover from a
+      // transient Redis failure without repeating end-of-quiz side effects.
+      await startLiveQuizResponseTrackingRetention({
+        liveQuizId: id,
+        blocks: quiz.blocks,
+        redis,
+      })
+    } catch (error) {
+      console.error(
+        `Failed to clean up response tracking keys for live quiz ${id}:`,
+        error
+      )
+      await sendTeamsNotification({
+        scope: 'graphql/endLiveQuiz',
+        text: `ERROR - failed to finish retention for ended live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      })
+      throw error
+    }
     return quiz
   }
   if (
@@ -1849,11 +1931,6 @@ export async function endLiveQuiz(
   ) {
     return null
   }
-
-  // depending on the quiz assessment setting, select the corresponding redis instance
-  const redis = quiz.isAssessmentEnabled
-    ? ctx.redisAssessmentExec
-    : ctx.redisExec
 
   // update course leaderboard and participant XP
   try {
@@ -2117,63 +2194,11 @@ export async function endLiveQuiz(
     // Start retention on instance-info keys before expiring response-tracking
     // keys. A late response can recreate a tracking key after this sweep, and
     // the tracking scripts will then mirror the bounded info-key TTL.
-    try {
-      const instanceInfoKeys = quiz.blocks.flatMap((block) =>
-        block.elements.map((instance) =>
-          getLiveQuizInstanceInfoKey({
-            liveQuizId: id,
-            instanceId: instance.id,
-          })
-        )
-      )
-      if (instanceInfoKeys.length > 0) {
-        const instanceInfoExpiry = redis.multi()
-        for (const key of instanceInfoKeys) {
-          instanceInfoExpiry.expire(
-            key,
-            LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
-          )
-        }
-        const expiryResults = await instanceInfoExpiry.exec()
-        if (expiryResults === null) {
-          throw new Error('Redis returned no instance-info expiry results')
-        }
-        const expiryErrors = expiryResults.flatMap(([error]) =>
-          error ? [error] : []
-        )
-        if (expiryErrors.length > 0) {
-          throw new Error(
-            `Failed to start instance-info retention: ${expiryErrors.join('; ')}`
-          )
-        }
-      }
-
-      const trackingKeys = await redis.keys(`lq:${id}:*:responses:*`)
-      if (trackingKeys.length > 0) {
-        const pipe = redis.multi()
-        for (const key of trackingKeys) {
-          pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
-        }
-        const trackingExpiryResults = await pipe.exec()
-        if (trackingExpiryResults === null) {
-          throw new Error('Redis returned no response-tracking expiry results')
-        }
-        const trackingExpiryErrors = trackingExpiryResults.flatMap(([error]) =>
-          error ? [error] : []
-        )
-        if (trackingExpiryErrors.length > 0) {
-          throw new Error(
-            `Failed to start response-tracking retention: ${trackingExpiryErrors.join('; ')}`
-          )
-        }
-      }
-    } catch (trackingError) {
-      console.error(
-        `Failed to clean up response tracking keys for live quiz ${id}:`,
-        trackingError
-      )
-      throw trackingError
-    }
+    await startLiveQuizResponseTrackingRetention({
+      liveQuizId: id,
+      blocks: quiz.blocks,
+      redis,
+    })
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
@@ -3614,6 +3639,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         executionCtx.logger.error(
           `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
         )
+        throw error
       }
 
       return true
@@ -3689,6 +3715,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       executionCtx.logger.error(
         `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
       )
+      throw error
     }
 
     executionCtx.logger.info(
