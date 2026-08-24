@@ -605,3 +605,19 @@ it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
   the equivalent Node 24 container checks passed. Browser screenshots remain
   unavailable under the documented TLS/browser restriction. No push, PR
   merge, close, deploy, or sibling worktree mutation occurred.
+- 2026-08-24: Sol's final review identified four GrowthBook/ADR findings as
+  target-owned baseline concerns: they are present on `origin/v3-ai` but are
+  outside the `origin/v3-ai..HEAD` PR diff, so this reconciliation made no
+  sibling or target-branch changes for them. The review also found one actual
+  conflict-loss omission; the Prisma seed-reconciliation test row is restored
+  in the verification skill. PR-owned graph corrections are committed in
+  `c92d89cb9`: timed-out provider operations remain counted until their
+  underlying promises settle, and `127.example.com` is rejected as a fake
+  loopback host while real loopback literals remain available for local use.
+  The Hatchet package check and complete package suite pass (101/101), the
+  focused regression suite passes, and repository formatting plus diff checks
+  pass. The restarted runtime hit the existing TLS/route-readiness
+  `curl (60) ... out of memory` limitation and the shared lifecycle lock
+  prevented `devrouter exec`; equivalent checks ran directly through the
+  already-running task DevPod. No push, PR merge, close, deploy, or sibling
+  worktree mutation occurred.
