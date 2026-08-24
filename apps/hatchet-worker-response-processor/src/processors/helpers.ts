@@ -15,7 +15,6 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import type { ChainableCommander } from 'ioredis'
 import {
   DEFAULT_CORRECT_POINTS,
   DEFAULT_POINTS,
@@ -23,8 +22,40 @@ import {
   TIME_TO_ZERO_BONUS,
 } from '../constants.js'
 
+export type RedisCommand = [string, ...Array<string | number>]
+
+export interface RedisCommandCollector {
+  commands: RedisCommand[]
+  hincrby(
+    key: string,
+    field: string,
+    increment: number | string
+  ): RedisCommandCollector
+  hset(
+    key: string,
+    field: string,
+    value: number | string
+  ): RedisCommandCollector
+}
+
+export function createRedisCommandCollector(): RedisCommandCollector {
+  const collector: RedisCommandCollector = {
+    commands: [],
+    hincrby(key, field, increment) {
+      this.commands.push(['HINCRBY', key, field, increment])
+      return this
+    },
+    hset(key, field, value) {
+      this.commands.push(['HSET', key, field, value])
+      return this
+    },
+  }
+
+  return collector
+}
+
 export function updateLeaderboards({
-  redisMulti,
+  redisCommands,
   participantId,
   participantRole,
   liveQuizKey,
@@ -32,7 +63,7 @@ export function updateLeaderboards({
   pointsAwarded,
   xpAwarded,
 }: {
-  redisMulti: ChainableCommander
+  redisCommands: RedisCommandCollector
   participantId: string
   participantRole: string
   liveQuizKey: string
@@ -43,21 +74,21 @@ export function updateLeaderboards({
   // depending on the participant account type (permanent student account or
   // temporary pseudonym), set the correct points / experience points
   if (participantRole === 'PARTICIPANT') {
-    redisMulti.hincrby(
+    redisCommands.hincrby(
       `${liveQuizKey}:b:${sessionBlockId}:lb`,
       participantId,
       pointsAwarded
     )
-    redisMulti.hincrby(`${liveQuizKey}:lb`, participantId, pointsAwarded)
-    redisMulti.hincrby(`${liveQuizKey}:xp`, participantId, xpAwarded)
+    redisCommands.hincrby(`${liveQuizKey}:lb`, participantId, pointsAwarded)
+    redisCommands.hincrby(`${liveQuizKey}:xp`, participantId, xpAwarded)
   } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
     // temporary participants are only granted points, xp cannot be collected
-    redisMulti.hincrby(
+    redisCommands.hincrby(
       `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
       participantId,
       pointsAwarded
     )
-    redisMulti.hincrby(
+    redisCommands.hincrby(
       `${liveQuizKey}:lbTemporary`,
       participantId,
       pointsAwarded

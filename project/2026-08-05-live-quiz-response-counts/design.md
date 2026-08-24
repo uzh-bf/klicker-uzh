@@ -32,9 +32,10 @@ received-but-not-processed work.
 
 `numOfResponsesProcessed` is the number of response events successfully
 incorporated into live results. For regular quizzes, this happens after the
-response processor's Redis result pipeline succeeds. For assessment quizzes,
-it happens after the assessment aggregation task succeeds, not merely after the
-response row is stored.
+response processor's atomic Redis processing script claims the marker and
+applies the result commands. For assessment quizzes, it happens after the
+assessment aggregation task succeeds, not merely after the response row is
+stored.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
@@ -54,17 +55,22 @@ regular-versus-assessment Redis selection as the existing execution data:
 - the regular response `messageId` or assessment `correlationId` as the set
   member.
 
-Redis set cardinality supplies the count. `SADD` makes repeated task execution
-idempotent for reporting, unlike integer increments. The new keys remain under
-the existing `lq:<quiz-id>:i:<instance-id>:*` namespace. They stay persistent
-while the instance is active. Block closure starts one-day retention on the
-canonical instance-info key before scanning the instance namespace; each
-tracking write atomically reads that TTL, adds its member, and mirrors remaining
-retention. A missing info key applies the same one-day safety retention.
+Redis set cardinality supplies the count. The response processor builds the
+aggregation commands without sending them, then one Redis script claims the
+processed member before applying those commands with `redis.pcall`. This keeps
+concurrent or retried execution from applying non-idempotent scoring, results,
+or leaderboard updates twice, including when a successful Redis reply is lost.
+The new keys remain under the existing `lq:<quiz-id>:i:<instance-id>:*`
+namespace. They stay persistent while the instance is active. Block closure
+starts one-day retention on the canonical instance-info key before scanning the
+instance namespace; each tracking write atomically reads that TTL, adds its
+member, and mirrors remaining retention. A missing info key applies the same
+one-day safety retention.
 
-Received and processed marker failures are logged without changing response
-ingress, aggregation, scoring, or retry behavior. In particular, a failed
-processed marker cannot retry already-applied non-idempotent aggregation.
+Received-marker failures remain best effort at ingress. Processing-script
+command errors are logged and accepted after the processed marker is claimed;
+connection-level script failures throw so Hatchet can retry safely, while
+tracking-retention errors are logged without replaying applied aggregation.
 
 ### Cockpit query
 
@@ -137,9 +143,10 @@ not change leaderboard data.
 - A received-marker Redis failure is logged and ingress continues; operational
   counts can therefore undercount during a tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
-- A processing or aggregation failure does not add the processed marker.
-- A processed-marker Redis failure is logged after aggregation succeeds and
-  does not fail the worker or replay scoring and leaderboard updates.
+- A processing-script command error is logged after the processed marker is
+  claimed and does not trigger a retry that could replay partial aggregation.
+- A connection-level processing-script failure throws so Hatchet can retry; if
+  Redis completed the script, the marker makes that retry a no-op.
 - Worker retries do not increase either count for the same tracking identifier.
 - Duplicate standard submissions can legitimately increase received without
   processed because regular-response deduplication currently happens in the
@@ -151,9 +158,9 @@ not change leaderboard data.
 1. Add focused tests for the element-level query behavior: scheduled element
    fields are `null`, started elements with no submissions report zero, and each
    instance receives only its own counts.
-2. Verify regular and assessment processors add processed markers only after
-   their final result aggregation succeeds and do not retry aggregation when a
-   best-effort marker write fails.
+2. Verify regular and assessment processors claim processed markers inside the
+   atomic processing script, apply each aggregation command once, accept and
+   log per-command errors, and retry connection-level script failures safely.
 3. Regenerate GraphQL operations and verify the generated schema, operation
    types, and persisted-operation manifests are committed.
 4. Extend the existing Playwright live quiz workflow to assert that the lecturer

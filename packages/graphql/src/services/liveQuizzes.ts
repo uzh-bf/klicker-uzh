@@ -2038,11 +2038,40 @@ export async function endLiveQuiz(
       },
     })
 
-    // unlink response-tracking keys: without this, sets from blocks that were
-    // still open at quiz end persist indefinitely (the Lua script mirrors the
-    // info key's TTL, which is absent while a block stays open). Best-effort:
-    // a failed sweep must not fail ending the quiz.
+    // Start retention on instance-info keys before unlinking response-tracking
+    // keys. A late response can recreate a tracking key after this sweep, and
+    // the tracking script will then mirror the bounded info-key TTL.
     try {
+      const instanceInfoKeys = quiz.blocks.flatMap((block) =>
+        block.elements.map((instance) =>
+          getLiveQuizInstanceInfoKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+      )
+      if (instanceInfoKeys.length > 0) {
+        const instanceInfoExpiry = redis.multi()
+        for (const key of instanceInfoKeys) {
+          instanceInfoExpiry.expire(
+            key,
+            LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+          )
+        }
+        const expiryResults = await instanceInfoExpiry.exec()
+        if (expiryResults === null) {
+          throw new Error('Redis returned no instance-info expiry results')
+        }
+        const expiryErrors = expiryResults.flatMap(([error]) =>
+          error ? [error] : []
+        )
+        if (expiryErrors.length > 0) {
+          throw new Error(
+            `Failed to start instance-info retention: ${expiryErrors.join('; ')}`
+          )
+        }
+      }
+
       const trackingKeys = await redis.keys(`lq:${id}:*:responses:*`)
       if (trackingKeys.length > 0) {
         const pipe = redis.multi()

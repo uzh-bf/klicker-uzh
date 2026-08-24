@@ -15,15 +15,15 @@ import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
   type JWTPayload,
-  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'node:assert'
 import { createHash } from 'node:crypto'
-import type { ChainableCommander } from 'ioredis'
 import { getRedis } from '../redis.js'
 import {
+  createRedisCommandCollector,
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
   getFreeTextQuestionPoints,
@@ -69,12 +69,12 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti: ChainableCommander | undefined
   const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
     liveQuizId: message.sessionId,
     instanceId: message.instanceId,
     status: 'processed',
   })
+  const transaction = createRedisCommandCollector()
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -248,11 +248,8 @@ export async function processResponseMessage(
     let pointsAwarded: number | string = 0
     let xpAwarded: number = 0
 
-    // MULTI transaction: atomic execution so partial application cannot happen
-    // and the processed-marker SADD below commits together with the increments
-    const transaction = redisExec.multi()
-    redisMulti = transaction
-
+    // Collect commands locally; the processing script claims the marker and
+    // applies this batch atomically after response validation completes.
     switch (type) {
       case 'SC':
       case 'MC':
@@ -323,7 +320,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti: transaction,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -400,7 +397,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti: transaction,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -478,7 +475,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti: transaction,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -561,7 +558,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti: transaction,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -662,7 +659,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti: transaction,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -689,34 +686,48 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
     return { status: 500 }
   }
 
   try {
-    if (!redisMulti) {
-      throw new Error('Redis transaction was not initialized')
+    const processingResult = JSON.parse(
+      String(
+        await redisExec.eval(
+          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+          2,
+          processedResponseTrackingKey,
+          getLiveQuizInstanceInfoKey({
+            liveQuizId: message.sessionId,
+            instanceId: message.instanceId,
+          }),
+          message.messageId,
+          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+          JSON.stringify(transaction.commands)
+        )
+      )
+    ) as {
+      status: 'already_processed' | 'processed'
+      commandErrors?: string[]
+      trackingErrors?: string[]
     }
 
-    // final command: the exactly-once marker commits atomically with the
-    // increments it guards, so a retried task short-circuits at the guard
-    redisMulti.sadd(processedResponseTrackingKey, message.messageId)
-
-    const aggregationResults = await redisMulti.exec()
-    if (aggregationResults === null) {
-      throw new Error('Redis results aggregation returned no results')
+    if (processingResult.status === 'already_processed') {
+      ctx.logger.info('Response already processed, skipping', {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
+      return { status: 200 }
+    }
+    if (processingResult.status !== 'processed') {
+      throw new Error('Redis response processing returned an invalid status')
     }
 
-    const aggregationErrors = aggregationResults.flatMap(([error]) =>
-      error ? [error] : []
-    )
-    if (aggregationErrors.length > 0) {
-      // MULTI does not roll back on per-command runtime errors, so the
-      // marker may have applied and a retry would be a no-op or corrupting;
-      // these are persistent conditions (WRONGTYPE/OOM) retrying cannot fix,
-      // therefore log and accept instead of triggering another replay
+    if (processingResult.commandErrors?.length) {
+      // The script does not roll back per-command runtime errors, so the
+      // marker prevents a retry from applying a partial result a second time.
       ctx.logger.error(
-        `Redis results aggregation commands failed (accepting partial application): ${aggregationErrors.join('; ')}` +
+        `Redis results aggregation commands failed (accepting partial application): ${processingResult.commandErrors.join('; ')}` +
           JSON.stringify({
             messageId: message.messageId,
             sessionId: message.sessionId,
@@ -725,27 +736,9 @@ export async function processResponseMessage(
       )
     }
 
-    try {
-      const instanceInfoTtl = await redisExec.eval(
-        LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
-        2,
-        processedResponseTrackingKey,
-        getLiveQuizInstanceInfoKey({
-          liveQuizId: message.sessionId,
-          instanceId: message.instanceId,
-        }),
-        message.messageId,
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
-      )
-
-      if (!Number.isInteger(Number(instanceInfoTtl))) {
-        throw new Error(
-          'Redis processed-response tracking returned invalid TTL'
-        )
-      }
-    } catch (trackingError) {
+    if (processingResult.trackingErrors?.length) {
       ctx.logger.error(
-        `Failed to track processed response: ${String(trackingError)} ` +
+        `Failed to track processed response: ${processingResult.trackingErrors.join('; ')} ` +
           JSON.stringify({
             messageId: message.messageId,
             sessionId: message.sessionId,
@@ -769,7 +762,6 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }

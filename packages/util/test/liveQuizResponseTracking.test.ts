@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
+  LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '../src/liveQuizResponseTracking.js'
@@ -37,6 +38,15 @@ describe('live quiz response tracking', () => {
     expect(LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT).toContain(
       "redis.call('TTL', KEYS[2])"
     )
+  })
+
+  it('claims processing before applying commands in one atomic script', () => {
+    expect(LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT).toContain(
+      "redis.call('SISMEMBER'"
+    )
+    expect(LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT).toContain("redis.call('SADD'")
+    expect(LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT).toContain('redis.pcall')
+    expect(LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT).toContain('commandErrors')
   })
 
   it('keeps closed tracking sets for at most one day', () => {

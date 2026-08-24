@@ -45,11 +45,13 @@ check. Set membership makes both counts idempotent across Hatchet retries
 The response API attempts to add the received member before enqueueing a known
 instance. Tracking is best-effort: a tracking failure is logged but does not
 reject or delay the participant response.
-The standard response processor adds the matching processed member only after
-the Redis pipeline that updates live results succeeds; assessment mode does the
-same in `aggregateAssessmentResponses`, not when the database row is first
-stored. In both paths, processed tracking is also best-effort, so a metric-write
-failure cannot retry already-applied scoring, results, or leaderboard updates
+The standard response processor and assessment aggregation both build their
+Redis commands locally, then run one atomic processing script. The script
+claims the processed member before applying the commands, captures command
+errors with `redis.pcall`, and mirrors instance-info retention. A retry after a
+lost Redis reply therefore sees the marker and cannot apply scoring, results,
+or leaderboard updates a second time. A connection-level script failure still
+throws so Hatchet can retry; tracking-retention errors are logged as best effort
 (`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`
 and
 `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`).

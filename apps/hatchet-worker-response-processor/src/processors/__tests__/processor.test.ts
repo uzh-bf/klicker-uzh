@@ -1,48 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
-  const TRANSACTION_COMMANDS = [
-    'hincrby',
-    'hset',
-    'sadd',
-    'srem',
-    'expire',
-    'del',
-    'unlink',
-    'zincrby',
-    'zadd',
-    'lpush',
-    'rpush',
-  ] as const
-
-  const makeTransaction = () => {
-    const queue: { cmd: string; args: unknown[] }[] = []
-    const transaction: Record<string, unknown> = {}
-    for (const cmd of TRANSACTION_COMMANDS) {
-      transaction[cmd] = (...args: unknown[]) => {
-        queue.push({ cmd, args })
-        return transaction
-      }
-    }
-    transaction.exec = () =>
-      (
-        (transaction.__execImpl as () => Promise<unknown[]>) ??
-        (() => Promise.resolve(queue.map(() => [null, 1])))
-      )()
-    transaction.discard = () => transaction
-    transaction.__queue = queue
-    return transaction
-  }
-
   const regularClient = {
     hgetall: vi.fn(),
     hexists: vi.fn(),
     sismember: vi.fn(),
     eval: vi.fn(),
-    multi: vi.fn(),
   }
 
-  return { makeTransaction, regularClient }
+  return { regularClient }
 })
 
 vi.mock('../../redis.js', () => ({
@@ -94,10 +60,13 @@ function setupHappyPath(client: typeof hoisted.regularClient) {
     firstResponseReceivedAt: '',
   })
   client.sismember.mockResolvedValue(0)
-  client.eval.mockResolvedValue(86400)
-  const transaction = hoisted.makeTransaction()
-  client.multi.mockReturnValue(transaction)
-  return transaction
+  client.eval.mockResolvedValue(
+    JSON.stringify({
+      status: 'processed',
+      commandErrors: [],
+      trackingErrors: [],
+    })
+  )
 }
 
 describe('processResponseMessage atomicity', () => {
@@ -105,8 +74,8 @@ describe('processResponseMessage atomicity', () => {
     vi.clearAllMocks()
   })
 
-  it('aggregates inside a MULTI transaction with the processed marker as final command', async () => {
-    const transaction = setupHappyPath(hoisted.regularClient)
+  it('uses the atomic processing script before applying aggregation commands', async () => {
+    setupHappyPath(hoisted.regularClient)
 
     const result = await processResponseMessage(
       createMessage(),
@@ -114,14 +83,19 @@ describe('processResponseMessage atomicity', () => {
     )
 
     expect(result).toEqual({ status: 200 })
-    expect(hoisted.regularClient.multi).toHaveBeenCalled()
-    const queue = transaction.__queue as { cmd: string; args: unknown[] }[]
-    expect(queue[queue.length - 1]).toEqual({
-      cmd: 'sadd',
-      args: ['lq:quiz-1:i:inst-1:responses:processed', 'msg-1'],
-    })
-    expect(queue.some((entry) => entry.cmd === 'hincrby')).toBe(true)
-    expect(hoisted.regularClient.eval).toHaveBeenCalled()
+    expect(hoisted.regularClient.eval).toHaveBeenCalledWith(
+      expect.stringContaining("redis.call('SISMEMBER'"),
+      2,
+      'lq:quiz-1:i:inst-1:responses:processed',
+      'lq:quiz-1:i:inst-1:info',
+      'msg-1',
+      '86400',
+      expect.any(String)
+    )
+    const commandList = JSON.parse(
+      hoisted.regularClient.eval.mock.calls[0]![6] as string
+    ) as string[][]
+    expect(commandList.some(([command]) => command === 'HINCRBY')).toBe(true)
   })
 
   it('short-circuits replays via the processed-set guard without re-executing aggregation', async () => {
@@ -132,7 +106,6 @@ describe('processResponseMessage atomicity', () => {
     const result = await processResponseMessage(createMessage(), ctx)
 
     expect(result).toEqual({ status: 200 })
-    expect(hoisted.regularClient.multi).not.toHaveBeenCalled()
     expect(hoisted.regularClient.eval).not.toHaveBeenCalled()
     expect(ctx.logger.info).toHaveBeenCalledWith(
       'Response already processed, skipping',
@@ -140,18 +113,16 @@ describe('processResponseMessage atomicity', () => {
     )
   })
 
-  it('logs and accepts per-command MULTI errors instead of triggering a Hatchet retry', async () => {
+  it('logs and accepts per-command processing errors instead of triggering a Hatchet retry', async () => {
     setupHappyPath(hoisted.regularClient)
     const ctx = createContext()
-    hoisted.regularClient.multi.mockImplementation(() => {
-      const transaction = hoisted.makeTransaction()
-      transaction.__execImpl = () =>
-        Promise.resolve([
-          [null, 1],
-          [new Error('WRONGTYPE Operation against a key'), null],
-        ])
-      return transaction
-    })
+    hoisted.regularClient.eval.mockResolvedValue(
+      JSON.stringify({
+        status: 'processed',
+        commandErrors: ['WRONGTYPE Operation against a key'],
+        trackingErrors: [],
+      })
+    )
 
     const result = await processResponseMessage(createMessage(), ctx)
 
@@ -161,17 +132,28 @@ describe('processResponseMessage atomicity', () => {
     )
   })
 
-  it('throws on connection-level MULTI failures so safe retries can happen', async () => {
+  it('throws on connection-level processing failures so safe retries can happen', async () => {
     setupHappyPath(hoisted.regularClient)
-    hoisted.regularClient.multi.mockImplementation(() => {
-      const transaction = hoisted.makeTransaction()
-      transaction.__execImpl = () =>
-        Promise.reject(new Error('connection down'))
-      return transaction
-    })
+    hoisted.regularClient.eval.mockRejectedValue(new Error('connection down'))
 
     await expect(
       processResponseMessage(createMessage(), createContext())
     ).rejects.toThrow('Redis transaction failed')
+  })
+
+  it('accepts the atomic processing script replay result', async () => {
+    setupHappyPath(hoisted.regularClient)
+    hoisted.regularClient.eval.mockResolvedValue(
+      JSON.stringify({ status: 'already_processed' })
+    )
+    const ctx = createContext()
+
+    const result = await processResponseMessage(createMessage(), ctx)
+
+    expect(result).toEqual({ status: 200 })
+    expect(ctx.logger.info).toHaveBeenCalledWith(
+      'Response already processed, skipping',
+      expect.objectContaining({ messageId: 'msg-1' })
+    )
   })
 })

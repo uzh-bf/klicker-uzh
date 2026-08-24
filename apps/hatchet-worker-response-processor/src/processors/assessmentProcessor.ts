@@ -19,7 +19,7 @@ import type {
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizResponseTrackingKey,
-  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'node:assert'
@@ -27,6 +27,7 @@ import { createHash } from 'node:crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
 import {
+  createRedisCommandCollector,
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
   getFreeTextQuestionPointsDetails,
@@ -502,10 +503,9 @@ export async function aggregateAssessmentResponses(
     return { status: 200 }
   }
 
-  // set up redis MULTI transaction for atomic execution so partial
-  // application cannot happen and the processed-marker SADD below commits
-  // together with the increments
-  const redis = redisExec.multi()
+  // Collect commands locally; the processing script claims the marker and
+  // applies this batch atomically.
+  const transaction = createRedisCommandCollector()
 
   // compose cache keys
   const liveQuizKey = `lq:${liveQuizId}`
@@ -514,7 +514,7 @@ export async function aggregateAssessmentResponses(
   // for gamified live quizzes, update the leaderboard and the participant xp
   if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
     updateLeaderboards({
-      redisMulti: redis,
+      redisCommands: transaction,
       participantId,
       participantRole: UserRole.PARTICIPANT,
       liveQuizKey,
@@ -533,9 +533,9 @@ export async function aggregateAssessmentResponses(
       response
         .choices!.filter((choice) => choice.selected)
         .forEach((choice) => {
-          redis.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+          transaction.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
         })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -543,9 +543,13 @@ export async function aggregateAssessmentResponses(
       const MD5 = createHash('md5')
       MD5.update(response.value!)
       const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(`${instanceKey}:responseHashes`, responseHash, response.value!)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+      transaction.hset(
+        `${instanceKey}:responseHashes`,
+        responseHash,
+        response.value!
+      )
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -554,13 +558,13 @@ export async function aggregateAssessmentResponses(
       const MD5 = createHash('md5')
       MD5.update(cleanResponseValue)
       const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(
+      transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+      transaction.hset(
         `${instanceKey}:responseHashes`,
         responseHash,
         cleanResponseValue
       )
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -574,9 +578,9 @@ export async function aggregateAssessmentResponses(
           return // skipped input fields should not be considered
         }
 
-        redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
+        transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
       })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -599,8 +603,8 @@ export async function aggregateAssessmentResponses(
               const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
 
               // add the response hash / valid combination and/or increment the corresponding count
-              redis.hincrby(`${instanceKey}:results`, combinedHash, 1)
-              redis.hset(
+              transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
+              transaction.hset(
                 `${instanceKey}:responseHashes`,
                 combinedHash,
                 String(criterionResponse)
@@ -609,37 +613,51 @@ export async function aggregateAssessmentResponses(
           )
         })
       })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
     case ElementType.CONTENT: {
       // increase number of participants on element (do not award points / ... for content elements)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
   }
 
   try {
-    // final command: the exactly-once marker commits atomically with the
-    // increments it guards, so a retried task short-circuits at the guard
-    redis.sadd(processedResponseTrackingKey, correlationId)
-
-    const aggregationResults = await redis.exec()
-    if (aggregationResults === null) {
-      throw new Error('Redis results aggregation returned no results')
+    const processingResult = JSON.parse(
+      String(
+        await redisExec.eval(
+          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+          2,
+          processedResponseTrackingKey,
+          getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
+          correlationId,
+          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+          JSON.stringify(transaction.commands)
+        )
+      )
+    ) as {
+      status: 'already_processed' | 'processed'
+      commandErrors?: string[]
+      trackingErrors?: string[]
     }
 
-    const aggregationErrors = aggregationResults.flatMap(([error]) =>
-      error ? [error] : []
-    )
-    if (aggregationErrors.length > 0) {
-      // MULTI does not roll back on per-command runtime errors, so the
-      // marker may have applied and a retry would be a no-op or corrupting;
-      // these are persistent conditions (WRONGTYPE/OOM) retrying cannot fix,
-      // therefore log and accept instead of triggering another replay
+    if (processingResult.status === 'already_processed') {
+      ctx.logger.info('Assessment response already processed, skipping', {
+        correlationId,
+        liveQuizId,
+        instanceId,
+      })
+      return { status: 200 }
+    }
+    if (processingResult.status !== 'processed') {
+      throw new Error('Redis response processing returned an invalid status')
+    }
+
+    if (processingResult.commandErrors?.length) {
       ctx.logger.error(
-        `Redis results aggregation commands failed (accepting partial application): ${aggregationErrors.join('; ')}` +
+        `Redis results aggregation commands failed (accepting partial application): ${processingResult.commandErrors.join('; ')}` +
           JSON.stringify({
             correlationId: message.correlationId,
             liveQuizId: message.liveQuizId,
@@ -648,24 +666,9 @@ export async function aggregateAssessmentResponses(
       )
     }
 
-    try {
-      const instanceInfoTtl = await redisExec.eval(
-        LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
-        2,
-        processedResponseTrackingKey,
-        getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
-        correlationId,
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
-      )
-
-      if (!Number.isInteger(Number(instanceInfoTtl))) {
-        throw new Error(
-          'Redis processed-response tracking returned invalid TTL'
-        )
-      }
-    } catch (trackingError) {
+    if (processingResult.trackingErrors?.length) {
       ctx.logger.error(
-        `Failed to track processed assessment response: ${String(trackingError)} ` +
+        `Failed to track processed assessment response: ${processingResult.trackingErrors.join('; ')} ` +
           JSON.stringify({ correlationId, liveQuizId, instanceId })
       )
     }
@@ -685,7 +688,6 @@ export async function aggregateAssessmentResponses(
           instanceId: message.instanceId,
         })
     )
-    redis.discard()
     throw new Error(
       `Redis pipeline for results aggregation failed ${String(e)}`
     )

@@ -65,8 +65,11 @@ function LiveQuizBlock({
           'flex min-w-max flex-row items-center justify-between text-gray-700'
         )}
       >
-        <div className="mr-2">
-          <FontAwesomeIcon icon={ICON_MAP[block.status]} />
+        <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+          <FontAwesomeIcon
+            icon={ICON_MAP[block.status]}
+            className="block h-3.5 w-3.5"
+          />
         </div>
         {typeof block.numOfParticipants !== 'undefined' &&
         block.numOfParticipants !== null ? (
@@ -77,7 +80,10 @@ function LiveQuizBlock({
               })}
             </span>
             <span className="ml-1">{` - ${block.numOfParticipants}`}</span>
-            <FontAwesomeIcon icon={faUserGroup} className="ml-1 w-4" />
+            <FontAwesomeIcon
+              icon={faUserGroup}
+              className="ml-1 block h-3 w-3 shrink-0"
+            />
           </div>
         ) : (
           <div>{t('shared.generic.blockN', { number: block.order! + 1 })}</div>
@@ -120,34 +126,40 @@ function LiveQuizBlock({
               >
                 {instance.elementData!.name}{' '}
                 <FontAwesomeIcon
-                  className="ml-1 text-xs"
+                  className="ml-1 inline-block h-3 w-3 align-middle"
                   icon={faExternalLink}
                 />
               </Link>
               {hasResponseCounts ? (
                 <span
                   aria-label={responseCountLabel}
-                  className="inline-flex items-center justify-end gap-1 whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5 text-xs text-gray-700 tabular-nums"
+                  className="inline-flex h-5 items-center justify-end gap-1 whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5 text-xs leading-none text-gray-700 tabular-nums"
                   data-cy={`live-quiz-response-counts-${instance.id}`}
                   role="img"
                   title={responseCountLabel}
                 >
-                  <FontAwesomeIcon
-                    aria-hidden="true"
-                    className="w-3 text-gray-500"
-                    icon={faInbox}
-                  />
+                  <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center">
+                    <FontAwesomeIcon
+                      aria-hidden="true"
+                      className="block h-3 w-3 text-gray-500"
+                      icon={faInbox}
+                    />
+                  </span>
                   <span aria-hidden="true">{numOfResponsesReceived}</span>
-                  <FontAwesomeIcon
-                    aria-hidden="true"
-                    className="mx-0.5 w-2 text-gray-400"
-                    icon={faArrowRight}
-                  />
-                  <FontAwesomeIcon
-                    aria-hidden="true"
-                    className="w-3 text-gray-500"
-                    icon={faCheckDouble}
-                  />
+                  <span className="mx-0.5 inline-flex h-3 w-3 shrink-0 items-center justify-center">
+                    <FontAwesomeIcon
+                      aria-hidden="true"
+                      className="block h-2.5 w-2.5 text-gray-400"
+                      icon={faArrowRight}
+                    />
+                  </span>
+                  <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center">
+                    <FontAwesomeIcon
+                      aria-hidden="true"
+                      className="block h-3 w-3 text-gray-500"
+                      icon={faCheckDouble}
+                    />
+                  </span>
                   <span aria-hidden="true">{numOfResponsesProcessed}</span>
                 </span>
               ) : (
