@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-22'
+timestamp: '2026-08-24'
 tags:
   - ci
   - deployment
@@ -54,7 +54,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating `v3` tag, so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (currently `v3-ai`), so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The in-repo staging values and promotion PR remain on `v3`; the promotion workflow aligns the image tags with the selected branch. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY` for a future authenticated control-plane integration. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
@@ -71,18 +71,19 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 
 **ArgoCD auto-syncs on git change** (prune + selfHeal, app `app-klicker`), but only when the _rendered manifest_ differs. Two things therefore do **not** trigger a sync, and both have bitten us:
 
-- **A rebuilt floating tag.** stg pulls `:v3`, so a new image leaves the Deployment spec byte-identical. `pullPolicy: Always` means a restart _would_ pick it up, but nothing asks for a restart.
+- **A rebuilt floating tag.** stg pulls the selected source tag (currently `:v3-ai`), so a new image leaves the Deployment spec byte-identical. `pullPolicy: Always` means a restart _would_ pick it up, but nothing asks for a restart.
 - **A hook-only change.** ArgoCD excludes hook manifests from the OutOfSync comparison, so a commit touching only the PreSync migration Job shows as "Synced" at the new revision with the hook never executed (this is why the hook in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) needed one manual sync to fire the first time).
 
 The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. It appears 15 times in `deploy/env-uzh-stg/values.yaml` and zero times in prd, which needs no such trigger because its pinned tags change on every release.
 
-`.github/workflows/deploy-stg-promote.yml` writes the built commit's short SHA into all 15, once **every** `v3_*-stg.yml` image build has succeeded for that commit — so a rollout can never start against a half-published `:v3`, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 8 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
+`.github/workflows/deploy-stg-promote.yml` reads `STG_SOURCE_BRANCH`, aligns all 15 image tags with that branch, and writes the built commit's short SHA once **every** `v3_*-stg.yml` image build for the selected commit has succeeded — so a rollout can never start against a half-published source tag, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 8 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
 
-Three operational notes.
+Operational notes.
 
+- The active source is controlled by the repository variable `STG_SOURCE_BRANCH`; it currently falls back to `v3-ai` when unset. To switch staging to another supported `v3*` branch, change that variable only. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
 - It needs `secrets.STG_PROMOTE_TOKEN`, an **admin-owned PAT** with `contents: write` + `pull-requests: write`. Two independent reasons it cannot be the default `GITHUB_TOKEN` or a plain App token: a PR opened with `GITHUB_TOKEN` does not trigger workflows, so its required checks never report and auto-merge never fires; and `v3`'s push restrictions carry an _empty_ user/team/app allowlist, which only repository admins bypass.
 - Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all 13 images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
-- The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and `:v3` then holds the later images. Immutable per-commit tags are the fix if that ever matters.
+- The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and the selected source tag then holds the later images. Immutable per-commit tags are the fix if that ever matters.
 
 Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
 

@@ -230,7 +230,7 @@ Companion: [WIKI_BOOTSTRAP_BRINGUP.md](WIKI_BOOTSTRAP_BRINGUP.md) (Phase 0 envir
 
 ### Deploy
 - Helm chart `deploy/charts/klicker-uzh-v3/` (Chart.yaml name still `klicker-uzh-v2`, version stale). Per-service ConfigMaps/Deployments/Ingresses/hpa/pdb/priorities.
-- env-uzh-stg values: `*.klicker.stg.df-app.ch`, worker tag `v3` floating, `rollout.klicker.uzh.ch/release` pod annotation per release. env-uzh-prd: `*.klicker.uzh.ch`, pinned tags (alpha.62 at head), replicaCount 2.
+- env-uzh-stg values: `*.klicker.stg.df-app.ch`, selected source tag (currently `v3-ai`) floating, `rollout.klicker.uzh.ch/release` pod annotation per release. env-uzh-prd: `*.klicker.uzh.ch`, pinned tags (alpha.62 at head), replicaCount 2.
 - NO ArgoCD/Flux manifests in repo. Deployments carry `reloader.stakater.com/auto: "true"` (deployment-app.yaml:9 et al.). Deploy = helm-upgrade driven externally (mechanism not in repo — open question). `deploy/scripts/rollout.sh` = manual `kubectl rollout restart` (legacy namespace `klicker-v2-qa`).
 - `deploy/compose*` = self-hoster examples (v2-era).
 

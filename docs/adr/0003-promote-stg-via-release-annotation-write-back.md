@@ -6,7 +6,9 @@
 
 ## Context
 
-Staging pulls the floating `v3` image tag. A rebuild therefore leaves the rendered manifest byte-identical, ArgoCD detects no drift, and the new image sits in the registry until somebody restarts the pods by hand. Staging is the canary for everything merged since the prd-pinned tag, so "merged but not running" is the failure mode that matters most: [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303) was a regression that only production's tag pin had shielded, and it stayed unrolled on stg after merge with nothing signalling that.
+Staging pulls the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (currently `v3-ai`). A rebuild therefore leaves the rendered manifest byte-identical, ArgoCD detects no drift, and the new image sits in the registry until somebody restarts the pods by hand. Staging is the canary for everything merged since the prd-pinned tag, so "merged but not running" is the failure mode that matters most: [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303) was a regression that only production's tag pin had shielded, and it stayed unrolled on stg after merge with nothing signalling that.
+
+The deployment values and promotion PR remain on `v3`; the promotion workflow follows successful image builds from the selected source branch and updates the values' image tags automatically.
 
 The same blind spot already bit the PreSync migration hook of [ADR-0001](./0001-automate-db-migrations-via-argocd-presync-hook.md): ArgoCD excludes hook manifests from the OutOfSync comparison, so the hook only ran after a manual sync.
 
@@ -16,7 +18,7 @@ The same blind spot already bit the PreSync migration hook of [ADR-0001](./0001-
 
 Automate that annotation. `.github/workflows/deploy-stg-promote.yml` writes the built commit's short SHA into all 15 occurrences, which changes the pod template and so produces a genuine ArgoCD sync: PreSync migration hook first, then the pods roll.
 
-Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for that commit, with the required set derived from the workflow files present in the checkout rather than a hardcoded list. `skipped` is not treated as success. A rollout therefore cannot start against a half-published or stale `:v3`, and cannot run migrations from a stale migrator image.
+Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for the selected source commit, with the required set derived from the workflow files present in the checkout rather than a hardcoded list. `skipped` is not treated as success. A rollout therefore cannot start against a half-published or stale source tag, and cannot run migrations from a stale migrator image.
 
 The workflow publishes as an **auto-merging pull request**, not a direct push.
 
@@ -40,10 +42,10 @@ The required set is derived from the `v3_*-stg.yml` files, which includes `v3_an
 
 Two repository settings are load-bearing and recorded nowhere else: `squash_merge_commit_title` must remain `PR_TITLE` so the `[skip ci]` marker reaches the squash commit, and auto-merge must stay enabled. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so a flipped setting degrades to wasted rebuilds rather than an unbounded promotion loop.
 
-All 15 components roll on every merge to `v3`, including the Hatchet workers. The workers' SDK drains in-flight tasks on `SIGTERM` and their tasks declare retries, but the chart sets no `terminationGracePeriodSeconds` and no `preStop`, and both worker Dockerfiles use shell-form `CMD`, so signal delivery is not guaranteed. This is pre-existing and applies equally to every manual sync today; automation only changes how often it happens. Hardening it is tracked separately.
+All 15 components roll on every promoted commit from the selected source branch, including the Hatchet workers. The workers' SDK drains in-flight tasks on `SIGTERM` and their tasks declare retries, but the chart sets no `terminationGracePeriodSeconds` and no `preStop`, and both worker Dockerfiles use shell-form `CMD`, so signal delivery is not guaranteed. This is pre-existing and applies equally to every manual sync today; automation only changes how often it happens. Hardening it is tracked separately.
 
 A failed migration now blocks the entire staging rollout automatically rather than only when someone syncs by hand. That is the intended behaviour from ADR-0001, but it makes a bad migration a stop-the-world event on stg.
 
-The annotation records which commit **triggered** the rollout, not which bits are in the image. Two merges minutes apart cancel the first build and `:v3` then holds the later images. Immutable per-commit image tags would close that gap and are the natural successor to this decision.
+The annotation records which commit **triggered** the rollout, not which bits are in the image. Two merges minutes apart cancel the first build and the selected source tag then holds the later images. Immutable per-commit image tags would close that gap and are the natural successor to this decision.
 
 Turning it off is `gh workflow disable "Promote to stg"`: no commit, effective immediately, and the failure mode is the status quo ante — staging simply stops updating itself.
