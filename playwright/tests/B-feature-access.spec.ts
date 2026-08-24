@@ -38,17 +38,25 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expect(page.getByTestId('homepage')).toBeVisible()
   })
 
-  test('Test that all standard creation buttons are enabled for free users', async ({
+  test('Test that all standard creation buttons open for free users', async ({
     page,
     loginFreeUser,
   }) => {
     await loginFreeUser()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    await expect(page.getByTestId('create-live-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
-    await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
+    for (const [button, firstStep] of [
+      ['create-live-quiz', 'insert-live-quiz-name'],
+      ['create-practice-quiz', 'insert-practice-quiz-name'],
+      ['create-microlearning', 'insert-microlearning-name'],
+      ['create-group-activity', 'insert-groupactivity-name'],
+    ]) {
+      await expect(page.getByTestId(button)).not.toBeDisabled()
+      await page.getByTestId(button).click()
+      await expect(page.getByTestId(firstStep)).toBeVisible()
+      await page.getByTestId('cancel-activity-creation').click()
+      await expect(page.getByTestId(button)).toBeVisible()
+    }
   })
 
   test('Test that all standard creation buttons are enabled for catalyst users', async ({

@@ -215,7 +215,7 @@ describe('Standard authorization for the activity lifecycle', () => {
 
     const unexpectedFields = Object.keys(runtimeFields).filter(
       (field) =>
-        /^(create|edit|extend|publish|unpublish|open|end|delete|gradeGroupActivitySubmission|finalizeGroupActivityGrading)(PracticeQuiz|MicroLearning|GroupActivity)$/.test(
+        /^((create|edit|extend|publish|unpublish|open|end|delete)(PracticeQuiz|MicroLearning|GroupActivity)|gradeGroupActivitySubmission|finalizeGroupActivityGrading)$/.test(
           field
         ) &&
         !activityLifecycleFields.includes(
