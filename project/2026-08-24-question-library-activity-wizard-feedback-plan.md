@@ -403,9 +403,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
   changes occurred.
 - Blockers: fancy-domain/browser proof remains blocked by the known devrouter
-  lifecycle-lock identity issue. Configured Gemini S1 reviewers failed pre-work
-  with HTTP 402. Generic continuity reports exist only for superseded S1 and do
-  not validate this replacement.
+  lifecycle-lock identity issue. Fresh configured native simplifier and
+  slice-reviewer attempts for replacement S1 both failed before work with
+  provider HTTP 402. The approved no-substitution review gate therefore blocks
+  S2. Generic continuity reports exist only for superseded S1 and do not
+  validate this replacement.
 - Current S1 evidence: four canonical rich descriptions with exact links added
   below each standard creation button; each button uses `aria-describedby` to
   its distinct `description-<data-cy>` region; all click paths remain enabled;

@@ -78,6 +78,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     for (const activity of standardActivityDescriptions) {
       await expect(page.getByTestId(activity.button)).not.toBeDisabled()
       await expect(page.getByTestId(activity.description)).toBeVisible()
+      await expect(page.getByTestId(activity.description)).toContainText(
+        activity.text
+      )
       await expect(
         page.getByTestId(activity.description).getByRole('link')
       ).toHaveAttribute('href', activity.href)
@@ -114,6 +117,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     for (const activity of standardActivityDescriptions) {
       await expect(page.getByTestId(activity.button)).not.toBeDisabled()
       await expect(page.getByTestId(activity.description)).toBeVisible()
+      await expect(page.getByTestId(activity.description)).toContainText(
+        activity.text
+      )
       await expect(
         page.getByTestId(activity.description).getByRole('link')
       ).toHaveAttribute('href', activity.href)
