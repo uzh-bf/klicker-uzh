@@ -2053,6 +2053,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback

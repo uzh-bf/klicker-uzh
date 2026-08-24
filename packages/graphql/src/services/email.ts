@@ -80,11 +80,13 @@ export async function sendEmail({
   subject,
   text,
   html,
+  replyTo,
 }: {
   to: string
   subject: string
   text: string
   html: string
+  replyTo?: string
 }) {
   const transport = await createTransport()
 
@@ -97,6 +99,7 @@ export async function sendEmail({
       subject,
       text,
       html,
+      ...(replyTo ? { replyTo } : {}),
     })
   } catch (e) {
     console.error('Error sending email: ', e)
