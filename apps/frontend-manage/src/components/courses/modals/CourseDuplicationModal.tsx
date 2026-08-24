@@ -807,217 +807,227 @@ function CourseDuplicationModal({
                   <CourseDuplicationProgress />
                 </div>
               )}
-              <div className="flex flex-col gap-2">
-                <CourseInformationFields />
-                <div className="mt-2 flex flex-col gap-6">
-                  <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
-                    <FormikNativeDateInput
-                      required
-                      name="startDate"
-                      label={t('manage.courseList.startDate')}
-                      tooltip={t('manage.courseList.startDateTooltip')}
-                      data={{ cy: 'course-start-date' }}
-                      onDateChange={updateDatesFromStartDate}
-                    />
-                    <div className="flex flex-col">
+              <fieldset disabled={submitDisabled} className="contents">
+                <div className="flex flex-col gap-2">
+                  <CourseInformationFields />
+                  <div className="mt-2 flex flex-col gap-6">
+                    <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                       <FormikNativeDateInput
                         required
-                        name="endDate"
-                        label={t('manage.courseList.endDate')}
-                        tooltip={
-                          t('manage.courseList.endDateTooltip') +
-                          ' ' +
-                          t(
-                            'manage.courseList.courseDatesForCourseDuplicationTooltip'
-                          )
-                        }
-                        data={{ cy: 'course-end-date' }}
-                        onDateChange={updateDatesFromEndDate}
+                        name="startDate"
+                        label={t('manage.courseList.startDate')}
+                        tooltip={t('manage.courseList.startDateTooltip')}
+                        data={{ cy: 'course-start-date' }}
+                        onDateChange={updateDatesFromStartDate}
                       />
-                      <span className="text-uzh-darkgreen-100 mt-1 w-full">
-                        {t('manage.courseList.fixedDateInterval', {
-                          years: courseDuration.years,
-                          months: courseDuration.months,
-                          days: courseDuration.days,
-                        })}
-                      </span>
+                      <div className="flex flex-col">
+                        <FormikNativeDateInput
+                          required
+                          name="endDate"
+                          label={t('manage.courseList.endDate')}
+                          tooltip={
+                            t('manage.courseList.endDateTooltip') +
+                            ' ' +
+                            t(
+                              'manage.courseList.courseDatesForCourseDuplicationTooltip'
+                            )
+                          }
+                          data={{ cy: 'course-end-date' }}
+                          onDateChange={updateDatesFromEndDate}
+                        />
+                        <span className="text-uzh-darkgreen-100 mt-1 w-full">
+                          {t('manage.courseList.fixedDateInterval', {
+                            years: courseDuration.years,
+                            months: courseDuration.months,
+                            days: courseDuration.days,
+                          })}
+                        </span>
+                      </div>
+
+                      <FormikNativeColorInput
+                        required
+                        name="color"
+                        label={t('manage.courseList.courseColor')}
+                        dataColor={{ cy: 'course-color-trigger' }}
+                        dataHex={{ cy: 'course-color-hex-input' }}
+                      />
+                      <FormikNativeSelect
+                        required
+                        name="language"
+                        label={t('shared.generic.language')}
+                        tooltip={t('manage.courseList.languageTooltip')}
+                        items={Object.values(LocaleType).map((locale) => ({
+                          value: locale,
+                          label: t(`shared.generic.${locale}`),
+                        }))}
+                        data={{ cy: 'course-language' }}
+                      />
+                      <FormikTextField
+                        required
+                        name="notificationEmail"
+                        label={t('manage.courseList.notificationEmail')}
+                        placeholder={t(
+                          'manage.courseList.notificationEmailPlaceholder'
+                        )}
+                        tooltip={t(
+                          'manage.courseList.notificationEmailTooltip'
+                        )}
+                        className={{
+                          field: 'w-96',
+                        }}
+                        data={{ cy: 'course-notification-email' }}
+                      />
                     </div>
 
-                    <FormikNativeColorInput
-                      required
-                      name="color"
-                      label={t('manage.courseList.courseColor')}
-                      dataColor={{ cy: 'course-color-trigger' }}
-                      dataHex={{ cy: 'course-color-hex-input' }}
-                    />
-                    <FormikNativeSelect
-                      required
-                      name="language"
-                      label={t('shared.generic.language')}
-                      tooltip={t('manage.courseList.languageTooltip')}
-                      items={Object.values(LocaleType).map((locale) => ({
-                        value: locale,
-                        label: t(`shared.generic.${locale}`),
-                      }))}
-                      data={{ cy: 'course-language' }}
-                    />
-                    <FormikTextField
-                      required
-                      name="notificationEmail"
-                      label={t('manage.courseList.notificationEmail')}
-                      placeholder={t(
-                        'manage.courseList.notificationEmailPlaceholder'
-                      )}
-                      tooltip={t('manage.courseList.notificationEmailTooltip')}
-                      className={{
-                        field: 'w-96',
-                      }}
-                      data={{ cy: 'course-notification-email' }}
-                    />
+                    <div>
+                      <H3>{t('shared.generic.groups')}</H3>
+                      <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
+                        <FormikNativeSwitch
+                          required
+                          disabled={!values.isGamificationEnabled}
+                          name="isGroupCreationEnabled"
+                          label={t('manage.courseList.groupCreationEnabled')}
+                          tooltip={
+                            values.isGamificationEnabled
+                              ? t(
+                                  'manage.courseList.groupCreationEnabledTooltip'
+                                )
+                              : t(
+                                  'manage.courseList.groupCreationDisabledTooltip'
+                                )
+                          }
+                          data={{ cy: 'course-group-creation' }}
+                          onCheckedChange={updateGroupCreation}
+                        />
+                      </div>
+                      {values.isGamificationEnabled &&
+                        values.isGroupCreationEnabled && (
+                          <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
+                            <FormikNativeDateInput
+                              required
+                              name="groupCreationDeadline"
+                              label={t(
+                                'manage.courseList.groupCreationDeadline'
+                              )}
+                              tooltip={
+                                t(
+                                  'manage.courseList.groupCreationDeadlineTooltip'
+                                ) +
+                                ' ' +
+                                t(
+                                  'manage.courseList.groupCreationDeadlineForCourseDuplicationTooltip'
+                                )
+                              }
+                              data={{ cy: 'group-creation-deadline' }}
+                            />
+                            <FormikNumberField
+                              name="maxGroupSize"
+                              label={t('manage.courseList.maxGroupSize')}
+                              tooltip={t(
+                                'manage.courseList.maxGroupSizeTooltip'
+                              )}
+                              data={{ cy: 'max-group-size' }}
+                              className={{ root: 'max-w-52' }}
+                              required
+                            />
+                            <FormikNumberField
+                              name="preferredGroupSize"
+                              label={t('manage.courseList.preferredGroupSize')}
+                              tooltip={t(
+                                'manage.courseList.preferredGroupSizeTooltip'
+                              )}
+                              data={{ cy: 'preferred-group-size' }}
+                              className={{ root: 'max-w-52' }}
+                              required
+                            />
+                          </div>
+                        )}
+                    </div>
                   </div>
-
-                  <div>
-                    <H3>{t('shared.generic.groups')}</H3>
-                    <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
+                </div>
+                <div className="mt-6 flex flex-col">
+                  <H3>{`${t('shared.generic.activities')}`}</H3>
+                  <div data-cy="course-duplication-copy-info">
+                    <UserNotification type="info" className={{ root: 'mb-3' }}>
+                      {t('manage.courseList.courseDuplicationCopyInfo')}
+                    </UserNotification>
+                  </div>
+                  <div className="flex flex-col md:grid md:grid-cols-3">
+                    <FormikNativeSwitch
+                      required
+                      name="copyLiveQuizzes"
+                      label={t('shared.generic.liveQuizzes')}
+                      tooltip={t('manage.courseList.copyLiveQuizzesTooltip')}
+                      data={{ cy: 'course-live-quizzes' }}
+                    />
+                    <div className="md:col-span-2">
                       <FormikNativeSwitch
                         required
-                        disabled={!values.isGamificationEnabled}
-                        name="isGroupCreationEnabled"
-                        label={t('manage.courseList.groupCreationEnabled')}
-                        tooltip={
-                          values.isGamificationEnabled
-                            ? t('manage.courseList.groupCreationEnabledTooltip')
-                            : t(
-                                'manage.courseList.groupCreationDisabledTooltip'
-                              )
-                        }
-                        data={{ cy: 'course-group-creation' }}
-                        onCheckedChange={updateGroupCreation}
+                        name="copyPracticeQuizzes"
+                        label={t('shared.generic.practiceQuizzes')}
+                        tooltip={t(
+                          'manage.courseList.copyPracticeQuizzesTooltip'
+                        )}
+                        data={{ cy: 'course-practice-quizzes' }}
                       />
                     </div>
-                    {values.isGamificationEnabled &&
-                      values.isGroupCreationEnabled && (
-                        <div className="flex flex-col gap-2 md:mt-3 md:grid md:grid-cols-3">
-                          <FormikNativeDateInput
-                            required
-                            name="groupCreationDeadline"
-                            label={t('manage.courseList.groupCreationDeadline')}
-                            tooltip={
-                              t(
-                                'manage.courseList.groupCreationDeadlineTooltip'
-                              ) +
-                              ' ' +
-                              t(
-                                'manage.courseList.groupCreationDeadlineForCourseDuplicationTooltip'
-                              )
-                            }
-                            data={{ cy: 'group-creation-deadline' }}
-                          />
-                          <FormikNumberField
-                            name="maxGroupSize"
-                            label={t('manage.courseList.maxGroupSize')}
-                            tooltip={t('manage.courseList.maxGroupSizeTooltip')}
-                            data={{ cy: 'max-group-size' }}
-                            className={{ root: 'max-w-52' }}
-                            required
-                          />
-                          <FormikNumberField
-                            name="preferredGroupSize"
-                            label={t('manage.courseList.preferredGroupSize')}
-                            tooltip={t(
-                              'manage.courseList.preferredGroupSizeTooltip'
-                            )}
-                            data={{ cy: 'preferred-group-size' }}
-                            className={{ root: 'max-w-52' }}
-                            required
-                          />
-                        </div>
-                      )}
+                    <FormikNativeSwitch
+                      required
+                      name="copyMicroLearnings"
+                      label={t('shared.generic.microlearnings')}
+                      tooltip={t('manage.courseList.copyMicroLearningsTooltip')}
+                      data={{ cy: 'course-microlearnings' }}
+                    />
+                    <div className="md:col-span-2">
+                      <FormikNativeSwitch
+                        required
+                        disabled={!values.isGroupCreationEnabled}
+                        name="copyGroupActivities"
+                        label={t('shared.generic.groupActivities')}
+                        tooltip={t(
+                          'manage.courseList.copyGroupActivitiesTooltip'
+                        )}
+                        data={{ cy: 'course-group-activities' }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-6 flex flex-col">
-                <H3>{`${t('shared.generic.activities')}`}</H3>
-                <div data-cy="course-duplication-copy-info">
-                  <UserNotification type="info" className={{ root: 'mb-3' }}>
-                    {t('manage.courseList.courseDuplicationCopyInfo')}
+                {infoNotifications.length > 0 && (
+                  <UserNotification type="info" className={{ root: 'mt-2' }}>
+                    <ul className="pl-3">
+                      {infoNotifications.map((message) => (
+                        <li className="list-disc" key={message}>
+                          {message}
+                        </li>
+                      ))}
+                    </ul>
                   </UserNotification>
-                </div>
-                <div className="flex flex-col md:grid md:grid-cols-3">
-                  <FormikNativeSwitch
-                    required
-                    name="copyLiveQuizzes"
-                    label={t('shared.generic.liveQuizzes')}
-                    tooltip={t('manage.courseList.copyLiveQuizzesTooltip')}
-                    data={{ cy: 'course-live-quizzes' }}
-                  />
-                  <div className="md:col-span-2">
-                    <FormikNativeSwitch
-                      required
-                      name="copyPracticeQuizzes"
-                      label={t('shared.generic.practiceQuizzes')}
-                      tooltip={t(
-                        'manage.courseList.copyPracticeQuizzesTooltip'
-                      )}
-                      data={{ cy: 'course-practice-quizzes' }}
-                    />
-                  </div>
-                  <FormikNativeSwitch
-                    required
-                    name="copyMicroLearnings"
-                    label={t('shared.generic.microlearnings')}
-                    tooltip={t('manage.courseList.copyMicroLearningsTooltip')}
-                    data={{ cy: 'course-microlearnings' }}
-                  />
-                  <div className="md:col-span-2">
-                    <FormikNativeSwitch
-                      required
-                      disabled={!values.isGroupCreationEnabled}
-                      name="copyGroupActivities"
-                      label={t('shared.generic.groupActivities')}
-                      tooltip={t(
-                        'manage.courseList.copyGroupActivitiesTooltip'
-                      )}
-                      data={{ cy: 'course-group-activities' }}
-                    />
-                  </div>
-                </div>
-              </div>
-              {infoNotifications.length > 0 && (
-                <UserNotification type="info" className={{ root: 'mt-2' }}>
-                  <ul className="pl-3">
-                    {infoNotifications.map((message) => (
-                      <li className="list-disc" key={message}>
-                        {message}
-                      </li>
-                    ))}
-                  </ul>
-                </UserNotification>
-              )}
+                )}
 
-              {warningNotifications.length > 0 && (
-                <UserNotification type="warning" className={{ root: 'mt-2' }}>
-                  <ul className="pl-3">
-                    {warningNotifications.map((message) => (
-                      <li className="list-disc" key={message}>
-                        {message}
-                      </li>
-                    ))}
-                  </ul>
-                </UserNotification>
-              )}
+                {warningNotifications.length > 0 && (
+                  <UserNotification type="warning" className={{ root: 'mt-2' }}>
+                    <ul className="pl-3">
+                      {warningNotifications.map((message) => (
+                        <li className="list-disc" key={message}>
+                          {message}
+                        </li>
+                      ))}
+                    </ul>
+                  </UserNotification>
+                )}
 
-              <Button
-                primary
-                className={{ root: 'float-right mt-3' }}
-                data={{ cy: 'manipulate-course-submit' }}
-                disabled={!isValid || submitDisabled}
-                loading={submitDisabled}
-                type="submit"
-              >
-                <Button.Icon icon={faCopy} loading={submitDisabled} />
-                <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
-              </Button>
+                <Button
+                  primary
+                  className={{ root: 'float-right mt-3' }}
+                  data={{ cy: 'manipulate-course-submit' }}
+                  disabled={!isValid || submitDisabled}
+                  loading={submitDisabled}
+                  type="submit"
+                >
+                  <Button.Icon icon={faCopy} loading={submitDisabled} />
+                  <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
+                </Button>
+              </fieldset>
             </Form>
           )
         }}
