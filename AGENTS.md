@@ -195,7 +195,7 @@ This adds one classifier request and, for semantic matching, one embedding
 request to the same external OpenRouter data boundary. It therefore adds local
 latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
 upstream failure. Separately, when Chat credits reach zero, Chat selects
-`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+`gpt-5.6-luna` before calling LiteLLM and bypasses Auto Mode.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;

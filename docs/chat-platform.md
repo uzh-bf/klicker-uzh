@@ -126,9 +126,19 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
 the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
 `auto` is invariantly `ADVANCED` (both consumers reject any other class for
-it); reasoning-tier models are `ADVANCED`, standard small models are `BASE`.
+it). GPT-5.6 Luna is the only `BASE` model and the participant-credit fallback;
+every other current model is `ADVANCED`. Both consumers reject external
+registries that violate that invariant.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
+
+Registry costs use Azure Global Standard short-context USD prices per one
+million input and output tokens, verified on 2026-08-24. The schema does not
+model cached-input, cache-write, or long-context rates. Auto uses the accepted
+rounded accounting rate of 1 input / 5 output from an observed 90% Luna and 10%
+Sol generation mix; the exact weighted rate is 0.68 input / 4.08 output.
+Classifier and embedding overhead remain outside the registry's selected-model
+token fields.
 
 The account usage foundation stores one row per owner + usage class + Zurich
 calendar month in `ChatAccountUsage` (`packages/prisma/src/prisma/schema/chat.prisma`):
@@ -179,8 +189,10 @@ only in-repo record of its tier map is the comment above `modelRegistry` in
 configuration lives in the external AI deployment repository's
 `litellm/config.yaml` and **cannot be verified from this repository** — treat
 the values.yaml comment as the best available record and confirm against the
-deployment before making a routing claim. The deployed registry exposes no
-direct GPT-5.6 picker option; the router's tier targets are internal.
+deployment before making a routing claim. The deployed registry also exposes
+direct `gpt-5.6-luna` through the existing
+`klickeruzh/azure/gpt-5.6-luna` alias; the router's effort targets remain
+internal.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -282,7 +294,7 @@ allocation, and participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` (default
-  `gpt-4.1-mini`) only when that model is marked as fallback, shares the
+  `gpt-5.6-luna`) only when that model is marked as fallback, shares the
   selected usage class, and appears in the chatbot's explicit
   `allowedModelIds`. It stops when no allowed fallback exists in that class.
   Audit configured chatbot allow-lists with
@@ -640,7 +652,7 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — both expose `gpt-5.6-luna`, while deployments additionally offer GPT-5.1, GPT-5.4, GPT-5.5, and effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse

@@ -41,9 +41,19 @@ approval remains a separate lifecycle decision; it does not serve as a usage
 funding or per-model approval.
 
 Usage is tracked in two explicit model classes. Registry entries are classified
-as `BASE` or `ADVANCED`; `Auto` is `ADVANCED` for the MVP until every routed
-billable step can be attributed. Fallbacks stay within the selected class, and
-the service never silently switches classes when a class is exhausted.
+as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
+participant-credit fallback. Every other current registry entry, including
+`Auto`, is `ADVANCED`. Participant-credit fallbacks stay within the selected
+class, and the service never silently switches classes when a class is
+exhausted. This is distinct from provider-level LiteLLM fallbacks, which do not
+change the selected registry entry or its usage class.
+
+Registry costs use Azure Global Standard short-context USD prices per one
+million input and output tokens, verified on 2026-08-24. The registry cannot
+represent cached-input, cache-write, or long-context rates. `Auto` therefore
+uses the accepted rounded accounting rate of 1 input / 5 output, based on the
+observed 90% Luna and 10% Sol generation mix whose exact weighted rate is 0.68
+input / 4.08 output. Classifier and embedding overhead are not represented.
 
 The lecturer defines one account-wide monthly budget for each class. Each
 configured limit persists until the lecturer changes it; only the used-credit
@@ -72,6 +82,10 @@ messages and participant credits remain legacy analytics.
 - Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
   and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
+- Both registry consumers reject configurations that do not make GPT-5.6 Luna
+  the sole `BASE` model and participant-credit fallback. CI pins registry
+  class, fallback, and accounting-rate parity across built-in, staging, and
+  production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.
 - Class-specific exhaustion does not disable the other class or trigger a
