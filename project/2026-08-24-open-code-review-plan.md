@@ -68,7 +68,7 @@
 
 ## Progress
 
-- Status: plan reviewed; implementation pending.
-- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review.
-- Remaining: create workflow, verify, run slice review, commit, run final review.
+- Status: implementation committed and slice-reviewed with `PASS_WITH_CONCERNS`; final integrated review pending.
+- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, and slice review.
+- Remaining: run final review and complete close-out verification.
 - Delivery: local commit only; live activation is pending.
