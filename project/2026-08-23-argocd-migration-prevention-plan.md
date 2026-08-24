@@ -39,7 +39,7 @@ operators act from the wiki, not tribal memory.
   removal upstream (argo-cd issues 24187 and 27507); keeping the succeeded Job
   until the next sync preserves logs and removes the immediate-deadlock
   surface. Failed jobs were already kept.
-- Current template keeps failed Jobs and deletes succeeded ones
+- Before this change, the template kept failed Jobs and deleted succeeded ones
   (BeforeHookCreation,HookSucceeded), TTL unset by default,
   activeDeadlineSeconds: 600.
 - Docs already state "Nothing alerts on hook failure"; update after the
