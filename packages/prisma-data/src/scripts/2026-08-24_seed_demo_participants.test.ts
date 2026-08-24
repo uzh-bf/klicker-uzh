@@ -7,6 +7,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL
 const DISPOSABLE_DATABASE_MARKER = '1'
+const REQUIRE_DISPOSABLE_DATABASE =
+  process.env.TEST_DATABASE_DISPOSABLE_REQUIRED === '1'
 const APPLY_FLAG = '--apply'
 const SCRIPT_DIRECTORY = fileURLToPath(new URL('.', import.meta.url))
 const USERNAMES = [
@@ -42,6 +44,10 @@ const isDisposableDatabase = (databaseUrl: string | undefined) => {
   } catch {
     return false
   }
+}
+
+if (REQUIRE_DISPOSABLE_DATABASE && !isDisposableDatabase(DATABASE_URL)) {
+  throw new Error('disposable_test_database_required')
 }
 
 const runScript = (
@@ -259,6 +265,113 @@ testDescribe('seed demo participants', () => {
         1
       )
     }
+  }, 30_000)
+
+  it('repairs existing manual target accounts and replays as a no-op', async () => {
+    await cleanupCreatedParticipants()
+    const iuwCourseId = courseIds.get('testkurs IuW')!
+    const rsvCourseId = courseIds.get('testkurs RadioSurfVet')!
+    const cultureCourseId = courseIds.get('KlickerUZH Demo Copy')!
+    const initialPassword = await bcrypt.hash(
+      'local-only-existing-password',
+      12
+    )
+
+    const [iuw, rsv] = await Promise.all([
+      prisma.participant.create({
+        data: {
+          email: 'existing-iuw@local.invalid',
+          username: 'teststudent-iuw',
+          password: initialPassword,
+          isActive: false,
+          isProfilePublic: true,
+          participations: {
+            create: [
+              { courseId: iuwCourseId, isActive: false },
+              { courseId: cultureCourseId, isActive: true },
+            ],
+          },
+        },
+        select: { id: true },
+      }),
+      prisma.participant.create({
+        data: {
+          email: 'existing-rsv@local.invalid',
+          username: 'teststudent-rsv',
+          password: initialPassword,
+          isActive: false,
+          isProfilePublic: true,
+          participations: {
+            create: [
+              { courseId: rsvCourseId, isActive: false },
+              { courseId: cultureCourseId, isActive: true },
+            ],
+          },
+        },
+        select: { id: true },
+      }),
+    ])
+
+    const first = runScript([APPLY_FLAG], ['IuW', 'RadioSurfVet', 'Culture'])
+    expect(first).toContain('mode=apply writes=true')
+
+    const repaired = await prisma.participant.findMany({
+      where: { id: { in: [iuw.id, rsv.id] } },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+        isActive: true,
+        isProfilePublic: true,
+        participations: {
+          select: { courseId: true, isActive: true },
+          orderBy: { courseId: 'asc' },
+        },
+      },
+      orderBy: { id: 'asc' },
+    })
+    expect(repaired).toHaveLength(2)
+    for (const participant of repaired) {
+      const expectedPassword =
+        participant.username === 'teststudent-iuw'
+          ? PASSWORDS.IuW
+          : PASSWORDS.RadioSurfVet
+      expect(await bcrypt.compare(expectedPassword, participant.password)).toBe(
+        true
+      )
+      expect(participant.email).toBe(
+        participant.username === 'teststudent-iuw'
+          ? 'existing-iuw@local.invalid'
+          : 'existing-rsv@local.invalid'
+      )
+      expect(participant.isActive).toBe(true)
+      expect(participant.isProfilePublic).toBe(false)
+      expect(participant.participations.filter((p) => p.isActive)).toHaveLength(
+        1
+      )
+    }
+
+    const beforeReplay = repaired
+    const replay = runScript([APPLY_FLAG], ['IuW', 'RadioSurfVet', 'Culture'])
+    expect(replay).toContain('mode=apply writes=true')
+    const afterReplay = await prisma.participant.findMany({
+      where: { id: { in: [iuw.id, rsv.id] } },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        password: true,
+        isActive: true,
+        isProfilePublic: true,
+        participations: {
+          select: { courseId: true, isActive: true },
+          orderBy: { courseId: 'asc' },
+        },
+      },
+      orderBy: { id: 'asc' },
+    })
+    expect(afterReplay).toEqual(beforeReplay)
   }, 30_000)
 
   it('rolls back all account changes when an SSO collision is present', async () => {

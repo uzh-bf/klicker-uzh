@@ -79,8 +79,10 @@ application password check, or persisted anywhere else.
 
 1. **Plan and branch** — fresh `v3` task worktree; commit this plan first.
 2. **Participant reconciler** — add the Prisma script, focused tests, and the
-   package entry point. Run the focused suite against an isolated disposable
-   database, not the normal development or PRD database.
+   package entry point. Run `pnpm --filter @klicker-uzh/prisma-data
+   test:demo-participants` against an isolated disposable database; the command
+   fails closed when its marker or local-host guard is absent. Never use the
+   normal development or PRD database.
 3. **Operator documentation** — document dry-run/apply/readback, target map,
    secret names, and values-free output in `docs/data-and-migrations.md`.
 4. **PRD operation** — verify operator status and permissions, request exact
@@ -108,9 +110,11 @@ fail-closed paths.
   tests, including readback failure, archived-target refusal, conflicting-mode
   refusal, shared-account preservation, atomic rollback, and replay no-op.
 - The focused suite is fail-closed unless `TEST_DATABASE_DISPOSABLE=1` is set
-  and the test URL points to a local/DevPod PostgreSQL host. Its fixture also
-  refuses pre-existing owner or participant rows and cleans only participant
-  IDs created by the current run.
+  and the test URL points to a local/DevPod PostgreSQL host. Its dedicated
+  package command additionally requires that guard and exits non-zero when it
+  is missing. The fixture refuses pre-existing owner or participant rows and
+  cleans only participant IDs created by the current run. The suite covers
+  committed repair of existing manual targets as well as replay no-op behavior.
 - PRD target rows and existing account shape were inspected read-only. No PRD
   database, Infisical, provider, lecturer, deployment, or cluster write has
   occurred.
