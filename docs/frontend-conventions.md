@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-23'
+timestamp: '2026-08-24'
 tags:
   - frontend
 ---
@@ -64,6 +64,12 @@ contract is unchanged.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
 - **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
+
+### Domain-specific creation actions
+
+- Show visible linked explanations before users commit to a domain-specific creation choice. Keep links outside buttons and associate each explanation programmatically with its button (`apps/frontend-manage/src/components/activities/creation/CreationButton.tsx:CreationButton`, `apps/frontend-manage/src/components/activities/creation/SuspendedCreationButtons.tsx:SuspendedCreationButtons`).
+- Use ICU `one`/`other` variants for count-bearing action labels, based on the displayed count. Give semantically distinct actions separate outcome-specific `data-cy` selectors (`apps/frontend-manage/src/components/activities/creation/AddStackButton.tsx:AddStackButton`).
+- When a disabled final action has a recoverable reason, show that reason nearby and associate it through `aria-describedby` (`apps/frontend-manage/src/components/activities/creation/WizardNavigation.tsx:WizardNavigation`, `apps/frontend-manage/src/components/activities/creation/liveQuiz/LiveQuizQuestionsStep.tsx:LiveQuizQuestionsStep`). This is a local activity-wizard convention, not a general tooltip or validation abstraction.
 
 ## Markdown and Video Embeds
 

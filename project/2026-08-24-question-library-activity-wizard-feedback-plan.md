@@ -411,10 +411,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S2 is committed as
-  `f574eb3dc53c0e9ef1ae9a95c7d28962949fdf9c`; the working tree was clean after
-  the commit. This documentation-only correction resolves the verified stale
-  Progress finding, and reviewer readback remains pending.
+- Status: replacement S2 is fully statically accepted. This commit records the
+  completed S3 documentation; integrated final review and fancy-domain/browser
+  proof have not passed.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -426,7 +425,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `git rebase --autostash origin/v3` completed without conflicts and reapplied
   only this plan edit. Range-diff
   `d8e964c28..5e59aa60 ae9bc7ea5..f574eb3dc` shows all six patches equivalent.
-  The branch is 6 ahead and 0 behind, with only this plan correction modified.
+  The plan-only review-disposition commit left the branch 7 ahead and 0 behind;
+  this S3 commit adds only the two owned documentation paths.
 - Review gate: independent Luna simplification and separate Sol correctness/risk
   re-reviews accepted rewritten replacement S1 range
   `11c523c4e..ae8ed5a15` with zero remaining findings. The equivalent
@@ -455,8 +455,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   blocker and reported this stale Progress state as a P3 finding. Luna found no
   implementation or simplification issue and blocked only because Progress
   incorrectly called the S2 commit pending. This plan-only correction resolves
-  that workflow finding without changing the reviewed implementation; its
-  reviewer readback has not yet passed.
+  that workflow finding without changing the reviewed implementation. Luna and
+  Sol accepted the plan-only readback with no findings, so S2 is fully statically
+  accepted.
 - S2 checks: repository Biome formatting on the six owned source/locale files
   passed with no fixes needed; Prettier write on the two owned specs passed;
   `pnpm --filter @klicker-uzh/frontend-manage check` passed;
@@ -472,11 +473,14 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Blockers: fancy-domain/browser proof remains blocked because the exact fancy
   routes remain unavailable. No localhost, fixed-port, runtime, config, routing,
   or host-tooling fallback was used.
-- Remaining: reviewer readback of this plan-only S2 disposition, narrowed S3,
-  preferred configured or authorized Sol integrated final review,
+- Current S3 evidence: the frontend conventions now record the verified
+  activity-creation guidance, count-label, outcome-selector, and recoverable
+  disabled-reason patterns with current symbol citations. Exact-container
+  Prettier, current-source symbol citation checks, the two-file scope audit, and
+  `git diff --check` passed.
+- Remaining: preferred configured or authorized Sol integrated final review,
   fancy-domain/browser proof, and final Progress evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: obtain reviewer readback of this plan-only disposition, then
-  proceed to narrowed S3 if accepted without changing the browser/runtime
-  boundary.
+- Next action: obtain the integrated final review without changing the
+  browser/runtime boundary.
