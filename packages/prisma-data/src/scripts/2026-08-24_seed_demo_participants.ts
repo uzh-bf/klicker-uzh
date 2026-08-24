@@ -36,7 +36,6 @@ type Target = (typeof TARGETS)[number]
 
 type ResolvedTarget = Target & {
   courseId: string
-  chatbotId: string
 }
 
 type ParticipantState = {
@@ -134,7 +133,6 @@ async function resolveTargets(
     resolved.push({
       ...target,
       courseId: courses[0]!.id,
-      chatbotId: courses[0]!.chatbots[0]!.id,
     })
   }
 

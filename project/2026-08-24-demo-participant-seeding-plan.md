@@ -106,7 +106,7 @@ fail-closed paths.
   unrelated commit `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`, the task branch
   was rebased onto that exact fetched head before the final review.
 - The reconciler, package command, focused tests, operator documentation, and
-  this plan are committed locally. The disposable task runtime suite passes 14
+  this plan are committed locally. The disposable task runtime suite passes 9
   tests, including readback failure, archived-target refusal, conflicting-mode
   refusal, shared-account preservation, atomic rollback, and replay no-op.
 - The focused suite is fail-closed unless `TEST_DATABASE_DISPOSABLE=1` is set
