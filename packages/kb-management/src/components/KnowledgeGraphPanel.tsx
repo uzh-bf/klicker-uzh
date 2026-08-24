@@ -24,7 +24,7 @@ import {
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import { Badge, Button, H3, SelectField, Switch } from '@uzh-bf/design-system'
+import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useMemo, useState } from 'react'
@@ -206,19 +206,14 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
   )
 }
 
-function KnowledgeGraphPanel({
-  kbId,
-  compact = false,
-}: {
-  kbId: string
-  compact?: boolean
-}) {
+function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const format = useFormatter()
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
   const [operationError, setOperationError] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
     GetKbKnowledgeGraphConfigDocument,
     {
@@ -292,6 +287,20 @@ function KnowledgeGraphPanel({
     released: t('kb.graphCostStatusReleased'),
     needsHumanReview: t('kb.graphCostStatusNeedsHumanReview'),
   }
+  const graphSummary =
+    loading && data === undefined
+      ? t('kb.graphLoading')
+      : error || config === undefined
+        ? t('kb.graphLoadError')
+        : [
+            `${t('kb.graphStatusLabel')}: ${statusLabel(config.status, statusLabels)}`,
+            config.isStale && hasPublishedGraph ? t('kb.graphStale') : null,
+            config.costStatus === KbGraphCostStatus.NeedsHumanReview
+              ? costStatusLabel(config.costStatus, costStatusLabels)
+              : null,
+          ]
+            .filter((value): value is string => Boolean(value))
+            .join(' · ')
 
   const handleRebuild = async () => {
     if (isRebuilding || isActive || !config?.isEnabled) return
@@ -324,230 +333,241 @@ function KnowledgeGraphPanel({
   }
 
   return (
-    <section
-      className={
-        compact
-          ? 'mt-3 space-y-4'
-          : 'mt-6 space-y-4 border-t border-gray-200 pt-6'
-      }
-      data-cy="kb-knowledge-graph-panel"
+    <details
+      className="mt-4"
+      data-cy="kb-graph-settings"
+      onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
     >
-      <div>
-        {!compact ? <H3>{t('kb.graphTitle')}</H3> : null}
-        <p
-          className={
-            compact ? 'text-sm text-slate-600' : 'mt-1 text-sm text-slate-600'
-          }
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
+        <span
+          className="font-semibold text-slate-900"
+          role="heading"
+          aria-level={2}
         >
-          {t('kb.graphDescription')}
-        </p>
-      </div>
+          {t('kb.graphTitle')}
+        </span>
+        <span
+          className="text-sm text-slate-600"
+          aria-live="polite"
+          data-cy="kb-graph-summary-status"
+        >
+          {graphSummary}
+        </span>
+        <span className="text-sm font-medium text-primary-100">
+          {t('kb.configure')}
+        </span>
+      </summary>
+      <section className="mt-3 space-y-4" data-cy="kb-knowledge-graph-panel">
+        <p className="text-sm text-slate-600">{t('kb.graphDescription')}</p>
 
-      {loading && data === undefined ? (
-        <p className="text-sm text-slate-600" role="status">
-          {t('kb.graphLoading')}
-        </p>
-      ) : error || config === undefined ? (
-        <div
-          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
-          role="alert"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span>{t('kb.graphLoadError')}</span>
-            <Button
-              onClick={() => void refetch()}
-              data={{ cy: 'kb-knowledge-graph-config-retry' }}
-            >
-              <Button.Label>{t('kb.graphRetry')}</Button.Label>
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <Switch
-              size="sm"
-              label={t('kb.graphEnableLabel')}
-              className={{ label: 'min-w-0 whitespace-normal' }}
-              checked={config.isEnabled}
-              onCheckedChange={(enabled) => void handleEnabledChange(enabled)}
-              disabled={isTogglingEnabled}
-              data={{ cy: 'kb-knowledge-graph-enabled' }}
-            />
-            <p className="mt-2 text-xs text-slate-500">
-              {config.isEnabled
-                ? t('kb.graphEnabledDescription')
-                : t('kb.graphDisabledDescription')}
-            </p>
-            {!config.costConfigurationReady ? (
-              <p
-                className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
-                data-cy="kb-knowledge-graph-cost-unconfigured"
-              >
-                {t('kb.graphCostUnavailable')}
-              </p>
-            ) : null}
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-              <SelectField
-                label={t('kb.graphQualityTierLabel')}
-                items={tierItems}
-                value={selectedTier}
-                onChange={(value) =>
-                  setSelectedTier(value as KbGraphQualityTier)
-                }
-                disabled={
-                  isActive ||
-                  isRebuilding ||
-                  !config.isEnabled ||
-                  !config.costConfigurationReady
-                }
-                data={{ cy: 'kb-knowledge-graph-quality-tier' }}
-              />
+        {loading && data === undefined ? (
+          <p className="text-sm text-slate-600" role="status">
+            {t('kb.graphLoading')}
+          </p>
+        ) : error || config === undefined ? (
+          <div
+            className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
+            role="alert"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{t('kb.graphLoadError')}</span>
               <Button
-                primary
-                loading={isRebuilding}
-                disabled={
-                  isActive ||
-                  !config.isEnabled ||
-                  !config.costConfigurationReady
-                }
-                onClick={() => void handleRebuild()}
-                data={{ cy: 'kb-knowledge-graph-rebuild' }}
+                onClick={() => void refetch()}
+                data={{ cy: 'kb-knowledge-graph-config-retry' }}
               >
-                <Button.Label>
-                  {hasPublishedGraph
-                    ? t('kb.graphRebuild')
-                    : t('kb.graphBuild')}
-                </Button.Label>
+                <Button.Label>{t('kb.graphRetry')}</Button.Label>
               </Button>
             </div>
-            <p className="mt-3 text-xs text-slate-500">
-              {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
-            </p>
-            <div
-              className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
-              data-cy="kb-knowledge-graph-cost"
-            >
-              <p>
-                <span className="font-semibold">
-                  {t('kb.graphBillingLabel')}:
-                </span>{' '}
-                {formattedBillingLabel}
+          </div>
+        ) : (
+          <>
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <Switch
+                size="sm"
+                label={t('kb.graphEnableLabel')}
+                className={{ label: 'min-w-0 whitespace-normal' }}
+                checked={config.isEnabled}
+                onCheckedChange={(enabled) => void handleEnabledChange(enabled)}
+                disabled={isTogglingEnabled}
+                data={{ cy: 'kb-knowledge-graph-enabled' }}
+              />
+              <p className="mt-2 text-xs text-slate-500">
+                {config.isEnabled
+                  ? t('kb.graphEnabledDescription')
+                  : t('kb.graphDisabledDescription')}
               </p>
-              <p>
-                <span className="font-semibold">
-                  {t('kb.graphRemainingQuota')}:
-                </span>{' '}
-                {formatMinorUnits(
-                  format,
-                  config.remainingSemesterQuotaMinorUnits,
-                  config.quotaCurrency
-                )}
-              </p>
-              <p>
-                <span className="font-semibold">
-                  {t('kb.graphWorstCaseBalance')}:
-                </span>{' '}
-                {formatMinorUnits(
-                  format,
-                  config.worstCaseRemainingMinorUnits,
-                  config.quotaCurrency
-                )}
-              </p>
-              <p>
-                <span className="font-semibold">{t('kb.graphMaxCost')}:</span>{' '}
-                {formatMinorUnits(
-                  format,
-                  config.maxCostMinorUnits,
-                  config.quotaCurrency
-                )}
-              </p>
-              {config.costStatus ? (
-                <p>
-                  <span className="font-semibold">
-                    {t('kb.graphCostStatus')}:
-                  </span>{' '}
-                  {costStatusLabel(config.costStatus, costStatusLabels)}
+              {!config.costConfigurationReady ? (
+                <p
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  data-cy="kb-knowledge-graph-cost-unconfigured"
+                >
+                  {t('kb.graphCostUnavailable')}
                 </p>
               ) : null}
-              {config.actualCostMinorUnits != null ? (
-                <p data-cy="kb-knowledge-graph-actual-cost">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <SelectField
+                  label={t('kb.graphQualityTierLabel')}
+                  items={tierItems}
+                  value={selectedTier}
+                  onChange={(value) =>
+                    setSelectedTier(value as KbGraphQualityTier)
+                  }
+                  disabled={
+                    isActive ||
+                    isRebuilding ||
+                    !config.isEnabled ||
+                    !config.costConfigurationReady
+                  }
+                  data={{ cy: 'kb-knowledge-graph-quality-tier' }}
+                />
+                <Button
+                  primary
+                  loading={isRebuilding}
+                  disabled={
+                    isActive ||
+                    !config.isEnabled ||
+                    !config.costConfigurationReady
+                  }
+                  onClick={() => void handleRebuild()}
+                  data={{ cy: 'kb-knowledge-graph-rebuild' }}
+                >
+                  <Button.Label>
+                    {hasPublishedGraph
+                      ? t('kb.graphRebuild')
+                      : t('kb.graphBuild')}
+                  </Button.Label>
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
+              </p>
+              <div
+                className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
+                data-cy="kb-knowledge-graph-cost"
+              >
+                <p>
                   <span className="font-semibold">
-                    {t('kb.graphActualCost')}:
+                    {t('kb.graphBillingLabel')}:
+                  </span>{' '}
+                  {formattedBillingLabel}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphRemainingQuota')}:
                   </span>{' '}
                   {formatMinorUnits(
                     format,
-                    config.actualCostMinorUnits,
-                    config.costCurrency
+                    config.remainingSemesterQuotaMinorUnits,
+                    config.quotaCurrency
                   )}
                 </p>
-              ) : null}
-            </div>
-            {config.actualRequestCount != null ? (
-              <p
-                className="mt-2 text-xs text-slate-500"
-                data-cy="kb-knowledge-graph-actual-usage"
-              >
-                {t('kb.graphActualUsage', {
-                  requests: config.actualRequestCount,
-                  inputTokens: config.actualInputTokens ?? 0,
-                  outputTokens: config.actualOutputTokens ?? 0,
-                  embeddingTokens: config.actualEmbeddingTokens ?? 0,
-                })}
-              </p>
-            ) : null}
-            <div
-              className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm"
-              aria-live="polite"
-              aria-atomic="true"
-              data-cy="kb-knowledge-graph-status"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-900">
-                  {t('kb.graphStatusLabel')}:
-                </span>
-                <Badge variant="outline">
-                  {statusLabel(config.status, statusLabels)}
-                </Badge>
-                {config.isStale && hasPublishedGraph ? (
-                  <Badge variant="outline">{t('kb.graphStale')}</Badge>
+                <p>
+                  <span className="font-semibold">
+                    {t('kb.graphWorstCaseBalance')}:
+                  </span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.worstCaseRemainingMinorUnits,
+                    config.quotaCurrency
+                  )}
+                </p>
+                <p>
+                  <span className="font-semibold">{t('kb.graphMaxCost')}:</span>{' '}
+                  {formatMinorUnits(
+                    format,
+                    config.maxCostMinorUnits,
+                    config.quotaCurrency
+                  )}
+                </p>
+                {config.costStatus ? (
+                  <p>
+                    <span className="font-semibold">
+                      {t('kb.graphCostStatus')}:
+                    </span>{' '}
+                    {costStatusLabel(config.costStatus, costStatusLabels)}
+                  </p>
+                ) : null}
+                {config.actualCostMinorUnits != null ? (
+                  <p data-cy="kb-knowledge-graph-actual-cost">
+                    <span className="font-semibold">
+                      {t('kb.graphActualCost')}:
+                    </span>{' '}
+                    {formatMinorUnits(
+                      format,
+                      config.actualCostMinorUnits,
+                      config.costCurrency
+                    )}
+                  </p>
                 ) : null}
               </div>
-              {config.buildId ? (
-                <p className="break-all text-xs text-slate-500">
-                  {t('kb.graphBuildId', { buildId: config.buildId })}
+              {config.actualRequestCount != null ? (
+                <p
+                  className="mt-2 text-xs text-slate-500"
+                  data-cy="kb-knowledge-graph-actual-usage"
+                >
+                  {t('kb.graphActualUsage', {
+                    requests: config.actualRequestCount,
+                    inputTokens: config.actualInputTokens ?? 0,
+                    outputTokens: config.actualOutputTokens ?? 0,
+                    embeddingTokens: config.actualEmbeddingTokens ?? 0,
+                  })}
                 </p>
               ) : null}
-            </div>
-          </div>
-
-          {operationError ? (
-            <p
-              className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
-              role="alert"
-            >
-              {operationError}
-            </p>
-          ) : null}
-
-          <div>
-            <h4 className="mb-2 font-semibold text-slate-900">
-              {t('kb.graphPreviewTitle')}
-            </h4>
-            {hasPublishedGraph ? (
-              <KnowledgeGraphPreview kbId={kbId} />
-            ) : (
               <div
-                className="rounded-lg border border-dashed border-slate-400 bg-slate-50 p-6 text-center text-sm text-slate-600"
-                data-cy="kb-knowledge-graph-preview-unavailable"
+                className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm"
+                aria-live="polite"
+                aria-atomic="true"
+                data-cy="kb-knowledge-graph-status"
               >
-                {t('kb.graphPreviewUnavailable')}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-slate-900">
+                    {t('kb.graphStatusLabel')}:
+                  </span>
+                  <Badge variant="outline">
+                    {statusLabel(config.status, statusLabels)}
+                  </Badge>
+                  {config.isStale && hasPublishedGraph ? (
+                    <Badge variant="outline">{t('kb.graphStale')}</Badge>
+                  ) : null}
+                </div>
+                {config.buildId ? (
+                  <p className="break-all text-xs text-slate-500">
+                    {t('kb.graphBuildId', { buildId: config.buildId })}
+                  </p>
+                ) : null}
               </div>
-            )}
-          </div>
-        </>
-      )}
-    </section>
+            </div>
+
+            {operationError ? (
+              <p
+                className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-950"
+                role="alert"
+              >
+                {operationError}
+              </p>
+            ) : null}
+
+            {detailsOpen ? (
+              <div>
+                <h3 className="mb-2 font-semibold text-slate-900">
+                  {t('kb.graphPreviewTitle')}
+                </h3>
+                {hasPublishedGraph ? (
+                  <KnowledgeGraphPreview kbId={kbId} />
+                ) : (
+                  <div
+                    className="rounded-lg border border-dashed border-slate-400 bg-slate-50 p-6 text-center text-sm text-slate-600"
+                    data-cy="kb-knowledge-graph-preview-unavailable"
+                  >
+                    {t('kb.graphPreviewUnavailable')}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </>
+        )}
+      </section>
+    </details>
   )
 }
 

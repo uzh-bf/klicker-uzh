@@ -1578,6 +1578,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     addDocumentDescription: 'Upload a PDF, TXT or Markdown file.',
     addVideo: 'Video',
     comingSoon: 'Coming soon',
+    configure: 'Configure',
     backToResourceTypes: 'Back',
     noResourceResults: 'No resources match these filters.',
     resourceResultCount:

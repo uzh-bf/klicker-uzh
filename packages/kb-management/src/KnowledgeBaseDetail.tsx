@@ -195,34 +195,8 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
           setAddResourceOpen(true)
         }}
       />
-      <details className="mt-6" data-cy="kb-chatbot-settings">
-        <summary className="cursor-pointer rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
-          <span
-            className="font-semibold text-slate-900"
-            role="heading"
-            aria-level={2}
-          >
-            {t('kb.chatbotsTitle')}
-          </span>
-        </summary>
-        <KnowledgeBaseChatbotBindings
-          kbId={kbId}
-          compact
-          onChanged={refreshMetrics}
-        />
-      </details>
-      <details className="mt-4" data-cy="kb-graph-settings">
-        <summary className="cursor-pointer rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
-          <span
-            className="font-semibold text-slate-900"
-            role="heading"
-            aria-level={2}
-          >
-            {t('kb.graphTitle')}
-          </span>
-        </summary>
-        <KnowledgeGraphPanel kbId={kbId} compact />
-      </details>
+      <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
+      <KnowledgeGraphPanel kbId={kbId} />
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}

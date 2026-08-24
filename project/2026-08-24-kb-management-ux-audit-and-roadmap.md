@@ -311,7 +311,8 @@ Pause before implementation or between slices for a material product/API decisio
 - [x] S2 metadata table implemented locally: the resource cards are now a semantic design-system table with responsive metadata, server-backed filters/search/load-more/polling, selection, inspector, deletion, and ingestion behavior preserved. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [x] S3 unified add-resource chooser implemented locally: one `+` action opens a KB-local chooser for Website and Document, Video is disabled as coming soon, existing BLOB/URL mutations remain in explicit forms, and the old empty-state links/direct form stack are removed. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [x] S3 accessibility correction completed after review: the chooser now associates its description, traps Tab locally, and restores focus to the exact `+ Add resource` trigger after close. No shared modal change was required.
-- [ ] S4 secondary configuration and integrated browser proof.
+- [x] S4 secondary configuration implemented locally: chatbot and graph configuration own collapsed disclosures with explicit Configure affordances; graph status, stale, and human-review states remain in the summary, and the expensive graph preview mounts only after expansion. Existing queries, polling, mutations, pointers, and lifecycle contracts are unchanged. The focused Playwright spec covers the English/German workspace, chooser keyboard path, table metadata, and mobile overflow.
+- [ ] S5 integrated browser proof, documentation review, and final package review.
 
 ## Verification plan for implementation
 
