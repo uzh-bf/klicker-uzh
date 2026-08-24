@@ -222,21 +222,19 @@ model FreeTextAttempt {
   @@index([evaluationStatus, updatedAt])
 }
 
-model ParticipantSemanticEvaluationConsent {
+// Append-only consent ledger: every accept/decline appends a row so the
+// demonstrable-consent history survives decision flips and participant deletion
+// (the participantId column intentionally carries no foreign key).
+model FreeTextConsentEvent {
   id Int @id @default(autoincrement())
 
   disclosureVersion String
   decision          SemanticEvaluationConsentDecision
   decidedAt         DateTime                          @default(now())
 
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
+  participantId String @db.Uuid
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([participantId, disclosureVersion])
-  @@index([disclosureVersion, decision])
+  @@index([participantId, disclosureVersion, decidedAt])
 }
 
 model LiveQuizResponse {

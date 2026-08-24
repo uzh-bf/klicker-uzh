@@ -75,7 +75,6 @@ model Participant {
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
   freeTextPracticeCycles          FreeTextPracticeCycle[]
-  semanticEvaluationConsents      ParticipantSemanticEvaluationConsent[]
   liveQuizResponses               LiveQuizResponse[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]

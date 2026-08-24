@@ -69,17 +69,18 @@ CREATE TABLE "FreeTextAttempt" (
 );
 
 -- CreateTable
-CREATE TABLE "ParticipantSemanticEvaluationConsent" (
+CREATE TABLE "FreeTextConsentEvent" (
     "id" SERIAL NOT NULL,
     "disclosureVersion" TEXT NOT NULL,
     "decision" "SemanticEvaluationConsentDecision" NOT NULL,
     "decidedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "participantId" UUID NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ParticipantSemanticEvaluationConsent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "FreeTextConsentEvent_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE INDEX "FreeTextConsentEvent_participantId_disclosu_idx" ON "FreeTextConsentEvent"("participantId", "disclosureVersion", "decidedAt");
 
 -- CreateIndex
 CREATE INDEX "FreeTextPracticeCycle_participantId_practiceQuizId_idx" ON "FreeTextPracticeCycle"("participantId", "practiceQuizId");
@@ -102,12 +103,6 @@ CREATE UNIQUE INDEX "FreeTextAttempt_cycleId_ordinal_key" ON "FreeTextAttempt"("
 -- CreateIndex
 CREATE UNIQUE INDEX "FreeTextAttempt_cycleId_clientSubmissionId_key" ON "FreeTextAttempt"("cycleId", "clientSubmissionId");
 
--- CreateIndex
-CREATE INDEX "ParticipantSemanticEvaluationConsent_disclosureVersion_deci_idx" ON "ParticipantSemanticEvaluationConsent"("disclosureVersion", "decision");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ParticipantSemanticEvaluationConsent_participantId_disclosu_key" ON "ParticipantSemanticEvaluationConsent"("participantId", "disclosureVersion");
-
 -- AddForeignKey
 ALTER TABLE "FreeTextPracticeCycle" ADD CONSTRAINT "FreeTextPracticeCycle_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -125,6 +120,3 @@ ALTER TABLE "FreeTextAttempt" ADD CONSTRAINT "FreeTextAttempt_cycleId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "FreeTextAttempt" ADD CONSTRAINT "FreeTextAttempt_questionResponseDetailId_fkey" FOREIGN KEY ("questionResponseDetailId") REFERENCES "QuestionResponseDetail"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ParticipantSemanticEvaluationConsent" ADD CONSTRAINT "ParticipantSemanticEvaluationConsent_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
