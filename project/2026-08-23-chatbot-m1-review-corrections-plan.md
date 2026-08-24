@@ -402,3 +402,22 @@ and Phase 5 proceed without another approval.
   transactions recorded the accepted local heads without claiming publication,
   ready state, or CI. The final prepublication lease and pull-request topology
   gate is next.
+- 2026-08-24: The final Phase 0 `d64425db2`, U1 `a92006db8`, U2 `09ec9948d`,
+  and U3 `9ce1a684d` implementation heads were atomically force-with-lease
+  published from their frozen leases. A redundant forbidden `docs/log/`
+  evidence file was removed before publication; the dedicated removed-artifact
+  check, the 23/23 pre-push build, and current-head repository check pass. PRs
+  #5460, #5475, #5480, and #5490 are open, ready, mergeable, and use the
+  intended bases. Their terminal exact-head CI counts are respectively 44
+  passed plus the A5 historical GitGuardian finding, 45 passed after one
+  unchanged-head rerun of unrelated duplicate Case Study fixtures, 39 passed,
+  and 43 passed, with zero pending. All four PR descriptions were refreshed and
+  read back from GitHub.
+- 2026-08-24: The pre-write Phase 5 scan found and reconciled two stale roadmap
+  phrases with settled A6: configured limits persist until an authorized owner
+  changes them, while only used credits reset monthly. Corrected-candidate Ox
+  Alpha response `resp_11ea371920ab4d91a757a82b4c95eb48` returned `PR_READY` /
+  `ACCEPT` and supersedes invalid empty response
+  `resp_cde7d3b38a884f32a747422e3c4db98e`. The sole roadmap compare-and-swap
+  transaction succeeded. M1-R1 has achieved `pr_ready`; merge, deployment,
+  live traffic, PR closure, cleanup, and deletion remain withheld.

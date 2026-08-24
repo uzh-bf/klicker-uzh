@@ -69,9 +69,11 @@ execution:
 - Registry entries carry the explicit usage class `BASE` or `ADVANCED`.
   `Auto` is `ADVANCED` for the MVP. Fallback stays within the selected class.
 - The lecturer defines one account-wide monthly budget for each class. Both
-  budgets belong to the chatbot owner's account and reset at the start of the
-  calendar month in `Europe/Zurich`. Store usage as `Decimal(18,6)` credits;
-  the atomic charge persistence is the single six-decimal rounding boundary.
+  configured limits belong to the chatbot owner's account and persist until
+  an authorized owner changes them. Only used credits reset to zero at the
+  start of each calendar month in `Europe/Zurich`. Store usage as
+  `Decimal(18,6)` credits; the atomic charge persistence is the single
+  six-decimal rounding boundary.
 - The manage surface has exactly two lanes named **base model usage** and
   **advanced model usage**. Each lane shows configured budget, used credits,
   remaining credits, and reset date.
@@ -696,6 +698,7 @@ The next session should perform these actions in order:
 | 2026-08-24 | M1-R1 / U1 — effective usage-month foundation | Serialized Phase 5 accepted required `reviewed` delivery at local head `e82c84011`, directly on accepted Phase 0 `69455376c`. The shared resolver carries the latest configured class budget into a later injected Zurich month with zero used credits, preserves an exact current row, rejects future or cross-owner/class data, and keeps source and analytics Prisma comments identical. Review response `resp_61d2d0332cac45979c192632f5777db8` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; U1 simplification, data-integrity, focused database, and integrated reviews all pass. The published U1 head remains `b29c628ed`, so no remote delivery is claimed. | Reconcile U2 against accepted U1, then continue the serialized Phase 5 sequence. Atomic publication, ready evidence, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-24 | M1-R1 / U2 — rollover-safe runtime charging | Serialized Phase 5 accepted required `reviewed` delivery at local head `ef7704660`, directly on accepted U1 `e82c84011`. Runtime precheck now consumes the shared effective month, finalization atomically materializes and charges the carried budget, and only a newly created finalization may deduct participant credits. Review response `resp_747176da75f6405f8991551cb21b395f` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; focused route, 9/9 PostgreSQL integration, simplifier, risk, and integrated reviews pass. The published U2 head remains `930f92746`, so no remote delivery is claimed. | Reconcile U3 against accepted U2, then close the prepublication serialized Phase 5 sequence. Atomic publication, ready evidence, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-24 | M1-R1 / U3 — persistent lecturer usage lanes | Serialized Phase 5 accepted required `reviewed` delivery at local head `6453a94ce`, directly on accepted U2 `ef7704660`. Both fixed GraphQL lanes now project the shared effective month, later configured values supersede carry-forward, and the lecturer wiki matches the runtime contract. Review response `resp_89beb21605714ab7b73fe13b4ccac8a7` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; corrected risk rereview, 15/15 focused tests, patch-equivalent bilingual desktop/mobile browser proof, integrated Ox Alpha `PASS`, and stopped-runtime proof all stand. The published U3 head remains `d386d1644`, so no remote delivery is claimed. | Commit the four serialized Phase 5 results on U3, re-read current `v3`, frozen leases, pull-request bases, and ready states, then perform the authorized atomic force-with-lease publication only if every identity remains exact. Merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-24 | M1-R1 — ready-for-review publication | Corrected-candidate serialized Phase 5 response `resp_11ea371920ab4d91a757a82b4c95eb48` routed to `stealth/ox-alpha` at maximum effort and returned `PR_READY` / `ACCEPT`, superseding the invalid empty response `resp_cde7d3b38a884f32a747422e3c4db98e`. The corrected implementation heads before this roadmap-only evidence commit are Phase 0 `d64425db2`, U1 `a92006db8`, U2 `09ec9948d`, and U3 `9ce1a684d`, atomically force-with-lease published on `v3` `b02c0c436`. PRs #5460, #5475, #5480, and #5490 are open, ready, and mergeable. Exact-head CI is terminal with Phase 0 at 44 passed plus the A5-preserved historical GitGuardian finding, U1 at 45 passed after one exact unchanged-head retry of unrelated duplicate Case Study fixtures, U2 at 39 passed, U3 at 43 passed, and zero pending. The redundant forbidden `docs/log/` evidence file was removed before publication; the removed-artifact check, 23/23 build, review chain, and stopped-runtime proof pass. | M1-R1 has achieved `pr_ready`. Await separate merge authorization; deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 
 ## Glossary
 
@@ -707,8 +710,8 @@ The next session should perform these actions in order:
   who covers usage.
 - **Base model usage** and **advanced model usage**: the two visible UI lanes;
   the base contribution remains hidden and advanced receives no contribution.
-- **Monthly usage budget**: lecturer-defined account-wide budget for one class,
-  reset monthly.
+- **Monthly usage budget**: lecturer-defined account-wide limit for one class
+  that persists until changed; its used-credit counter resets monthly.
 - **Participant usage credits**: existing per-participant/per-chatbot legacy
   allowance, separate from account budgets.
 - **Test thread**: lecturer-owned private conversation, excluded from student
