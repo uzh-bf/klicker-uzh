@@ -60,8 +60,8 @@ describe('chat engine contract', () => {
       generation: {
         ...conformanceRequest.generation,
         credentialMode: {
-          mode: 'request' as const,
-          providerBaseUrl: 'https://openrouter.ai/api/v1',
+          mode: 'gateway' as const,
+          gatewayOrigin: 'https://openrouter.ai/api/v1',
         },
       },
     }
@@ -84,8 +84,8 @@ describe('chat engine contract', () => {
         generation: {
           ...requestMode.generation,
           credentialMode: {
-            mode: 'request',
-            providerBaseUrl: 'https://openrouter.ai/api/v1?key=embedded',
+            mode: 'gateway',
+            gatewayOrigin: 'https://openrouter.ai/api/v1?key=embedded',
           },
         },
       }).success

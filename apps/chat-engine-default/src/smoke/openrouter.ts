@@ -53,8 +53,8 @@ async function main() {
       modelId,
       deploymentId,
       credentialMode: {
-        mode: 'request' as const,
-        providerBaseUrl,
+        mode: 'gateway' as const,
+        gatewayOrigin: providerBaseUrl,
       },
     },
     messages: [

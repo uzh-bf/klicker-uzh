@@ -335,8 +335,8 @@ describe('chat-api Slice 2 tracer', () => {
       expect.objectContaining({
         generation: expect.objectContaining({
           credentialMode: {
-            mode: 'request',
-            providerBaseUrl: 'https://provider.example.test/v1',
+            mode: 'gateway',
+            gatewayOrigin: 'https://provider.example.test/v1',
           },
         }),
       }),

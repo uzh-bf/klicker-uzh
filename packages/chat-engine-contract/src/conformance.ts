@@ -220,7 +220,7 @@ export async function runChatEngineConformanceSuite(
   await expectRejected(
     { ...shared, request: options.requestCredentialRequest },
     400,
-    'Request credential mode without Provider-Authorization'
+    'Gateway credential mode without Provider-Authorization'
   )
   const requestCredential = await runChatEngineConformance({
     ...shared,

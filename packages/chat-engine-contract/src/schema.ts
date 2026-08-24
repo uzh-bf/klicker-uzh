@@ -134,10 +134,10 @@ export const approvedToolSchema = z
   })
   .strict()
 
-const requestCredentialModeSchema = z
+const gatewayCredentialModeSchema = z
   .object({
-    mode: z.literal('request'),
-    providerBaseUrl: providerBaseUrlSchema,
+    mode: z.literal('gateway'),
+    gatewayOrigin: providerBaseUrlSchema,
   })
   .strict()
 
@@ -156,7 +156,7 @@ export const resolvedGenerationSchema = z
     reasoningSummary: z.enum(['auto', 'none']),
     responseStorage: z.boolean(),
     credentialMode: z.discriminatedUnion('mode', [
-      requestCredentialModeSchema,
+      gatewayCredentialModeSchema,
       deploymentCredentialModeSchema,
     ]),
   })
@@ -479,7 +479,7 @@ export const engineManifestSchema = z
       })
       .strict(),
     providerCredentialModes: z.tuple([
-      z.literal('request'),
+      z.literal('gateway'),
       z.literal('deployment'),
     ]),
     limits: z
@@ -522,7 +522,7 @@ export function validateProviderCredentialHeaders(
 ): { ok: true; providerApiKey?: string } | { ok: false; message: string } {
   const providerAuthorization = headers.get('provider-authorization')
 
-  if (generation.credentialMode.mode === 'request') {
+  if (generation.credentialMode.mode === 'gateway') {
     if (!providerAuthorization?.startsWith('Bearer ')) {
       return {
         ok: false,

@@ -68,7 +68,7 @@ const DEFAULT_MANIFEST: EngineManifest = engineManifestSchema.parse({
     tools: true,
     cancellation: true,
   },
-  providerCredentialModes: ['request', 'deployment'],
+  providerCredentialModes: ['gateway', 'deployment'],
   limits: {
     maxMessages: 100,
     maxTools: 64,
@@ -333,16 +333,16 @@ function resolveProviderKey(
       error: credentials.message,
     } as const
   }
-  if (generation.credentialMode.mode === 'request') {
+  if (generation.credentialMode.mode === 'gateway') {
     if (
       !providerOriginIsAllowed(
-        generation.credentialMode.providerBaseUrl,
+        generation.credentialMode.gatewayOrigin,
         options.providerAllowedOrigins ?? new Set()
       )
     ) {
       return {
         code: 'PROVIDER_ORIGIN_NOT_ALLOWED',
-        error: 'Request provider origin is not allowed.',
+        error: 'Gateway origin is not allowed.',
       } as const
     }
     return { providerApiKey: credentials.providerApiKey! } as const
