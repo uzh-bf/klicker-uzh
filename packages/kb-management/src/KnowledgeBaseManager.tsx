@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  H2,
+  H1,
   H3,
   Skeleton,
   TextField,
@@ -62,9 +62,9 @@ function KnowledgeBaseManager() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl" data-cy="knowledge-base-list">
+    <main className="mx-auto w-full max-w-5xl" data-cy="knowledge-base-list">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <H2>{t('kb.title')}</H2>
+        <H1>{t('kb.title')}</H1>
         <Button
           primary
           onClick={() => setCreateOpen(true)}
@@ -215,7 +215,7 @@ function KnowledgeBaseManager() {
           onDeleted={() => refetch()}
         />
       ) : null}
-    </div>
+    </main>
   )
 }
 

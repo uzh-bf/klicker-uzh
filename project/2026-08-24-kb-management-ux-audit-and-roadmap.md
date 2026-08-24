@@ -266,12 +266,14 @@ Approval ratifies R0 and the named S1–S5 local work only; it does not authoriz
 
 | Slice | Owner | Dependency | Acceptance |
 | --- | --- | --- | --- |
-| S1 Resource-first page shell | KB implementation executor | R0 contract | Existing four metrics are compacted; Resources precedes configuration; KB-local H1/main; existing creation forms remain reachable until S3. |
+| S1 Resource-first page shell | Main session | R0 contract | Existing four metrics are compacted; Resources precedes configuration; KB-local H1/main; existing creation forms remain reachable until S3. |
 | S2 Metadata table | KB implementation executor | S1 | Semantic responsive table preserves server search, cursor load-more, polling, selection, inspector, and actions. |
 | S3 Unified add-resource chooser | KB implementation executor | S2 | One `+`; Website and Document use existing mutations; duplicate forms/links are removed only after the chooser works; Video is announced unavailable; creation remains explicit `ADDED` until ingestion. |
 | S4 Secondary configuration | Main session | S1–S3 | Chatbot/graph summaries reduce clutter without changing graph polling, pointers, publication rules, or ledger lifecycle. |
 | S5 Integrated proof and docs | Main session | S1–S4 | Focused Playwright checks, mandatory browser evidence, package checks, final review, wiki/skill updates, and a clean scoped diff. |
 | X1/X2 follow-ups | Separate authorized task | Independent contracts | Manage shell/shared modal or API/media-type changes are planned and verified separately. |
+
+Execution-tier skip reason for S1: main retains this slice because it spans the catalog/detail semantic shell and the detail-section ordering that S2/S3 must integrate against; delegating it would add coupling at the critical path.
 
 ### Target files and documentation
 
@@ -305,6 +307,10 @@ Pause before implementation or between slices for a material product/API decisio
 - [x] Planner review completed; scope, existing contracts, table primitive, sequencing, evidence traceability, and execution boundaries corrected.
 - [x] Independent Sol final review completed after corrections; roadmap approved with no remaining concerns.
 - [x] User approved the KB-local redesign package and implementation goal; S1 is next.
+- [x] S1 resource-first shell implemented locally: KB catalog/detail use semantic `main`/`H1` landmarks, metrics are compact metadata, and Resources precedes creation/configuration. `@klicker-uzh/kb-management` check and targeted formatting pass.
+- [ ] S2 metadata table.
+- [ ] S3 unified add-resource chooser.
+- [ ] S4 secondary configuration and integrated browser proof.
 
 ## Verification plan for implementation
 
