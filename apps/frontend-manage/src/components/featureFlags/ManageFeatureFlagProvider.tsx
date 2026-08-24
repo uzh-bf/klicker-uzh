@@ -5,6 +5,7 @@ import {
   FeatureFlagProvider,
 } from '@klicker-uzh/feature-flags/react'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useRouter } from 'next/router'
 import { type ReactNode, useMemo } from 'react'
 
 interface ManageFeatureFlagProviderProps {
@@ -20,8 +21,15 @@ const config = {
 function ManageFeatureFlagProvider({
   children,
 }: ManageFeatureFlagProviderProps) {
+  const router = useRouter()
+  const skipUserProfile =
+    router.pathname === '/quizzes/[id]/evaluation' &&
+    (!router.isReady || router.query.hmac !== undefined)
   const { data } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-and-network',
+    // HMAC evaluation links are public. An identity query on those links would
+    // trigger Apollo's global Unauthorized redirect before the page can load.
+    skip: skipUserProfile,
   })
   const user = data?.userProfile
   const userId = user?.id

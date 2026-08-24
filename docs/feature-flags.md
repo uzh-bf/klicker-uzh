@@ -31,6 +31,8 @@ Manage mounts the browser provider at the application root with anonymous
 attributes, then updates it after `QUserProfile` resolves to target the
 authenticated lecturer by stable `User.id`, role, actor type, and environment.
 This keeps full-screen routes such as activity evaluations inside the provider.
+Public live-quiz evaluation links with an HMAC stay anonymous and skip the
+profile lookup so Apollo's Unauthorized handler cannot redirect them to login.
 The former `User.publicPreview` field is no longer selected by that operation
 and is not authoritative for learning analytics. The Prisma and public GraphQL
 fields remain available for other consumers and a later cleanup.
