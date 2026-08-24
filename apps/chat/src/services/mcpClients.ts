@@ -37,6 +37,10 @@ export interface MCPServerWithConfig {
   config: MCPConfigSettings
 }
 
+export interface MCPRequestOptions {
+  requestTimeoutMs?: number
+}
+
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
     .update(rawName)
@@ -180,7 +184,8 @@ function createAuthHeaders(
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
@@ -192,7 +197,13 @@ export async function createMCPClient(
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
       {
-        requestInit: { headers },
+        requestInit: {
+          headers,
+          redirect: 'error',
+          ...(options.requestTimeoutMs
+            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+            : {}),
+        },
       }
     )
 
@@ -236,7 +247,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -264,7 +276,7 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(server, chatbotId)
+    const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -326,7 +338,8 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -349,7 +362,11 @@ export async function getAggregatedMCPTools(
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
       )
-      const serverTools = await loadServerTools(serverWithConfig, chatbotId)
+      const serverTools = await loadServerTools(
+        serverWithConfig,
+        chatbotId,
+        options
+      )
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
