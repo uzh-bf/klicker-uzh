@@ -1902,6 +1902,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emailUpdatesTooltip:
         'Diese Einstellung beeinflusst die E-Mails, die Sie in Verbindung mit KlickerUZH erhalten. E-Mails zu wichtigen Releases werden immer an Ihre Edu-ID E-Mail-Adresse gesendet (ca. 2x pro Jahr), häufigere Projekt-Updates (z.B. zu Beta-Tests oder Umfragen) können hier aktiviert oder deaktiviert werden.',
       changePassword: 'Passwort ändern',
+      providerCredentials: {
+        title: 'KI-Anbieter-Zugangsdaten',
+        addCredential: 'Zugangsdaten hinzufügen',
+        secretLabel: 'API-Schlüssel',
+        secretPlaceholder: 'Fügen Sie Ihren API-Schlüssel hier ein',
+        secretNote:
+          'Ihr Schlüssel wird direkt an unseren sicheren Speicher übermittelt und nie wieder angezeigt. Er wird ausschliesslich für Ihre eigenen KI-Anfragen verwendet.',
+        submitSecret: 'Registrieren',
+        registerFailed:
+          'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        registerSuccess: 'Zugangsdaten erfolgreich registriert.',
+        noCredentials: 'Keine KI-Anbieter-Zugangsdaten registriert.',
+        fingerprint: 'Fingerabdruck',
+        model: 'Modell',
+        suspend: 'Aussetzen',
+        resume: 'Fortsetzen',
+        revoke: 'Widerrufen',
+        actionFailed: 'Aktion fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      },
       changeDelegatedLoginPassword: 'Passwort des delegierten Logins ändern',
       changeDelegatedLoginPasswordMessage:
         'Hier können Sie das Passwort des gewählten delegierten Logins ändern. Bitte beachten Sie, dass das Passwort nur einmalig angezeigt wird, bitte notieren Sie es sich daher vor dem Bestätigen.',

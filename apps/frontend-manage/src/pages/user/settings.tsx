@@ -10,6 +10,7 @@ import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettin
 import EmailSetting from '../../components/user/EmailSetting'
 import LanguageSetting from '../../components/user/LanguageSetting'
 import ShortnameSetting from '../../components/user/ShortnameSetting'
+import ProviderCredentialSettings from '../../components/user/ProviderCredentialSettings'
 
 function Settings() {
   const t = useTranslations()
@@ -33,6 +34,8 @@ function Settings() {
         <Suspense fallback={<Loader />}>
           <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />
         </Suspense>
+
+        <ProviderCredentialSettings />
       </div>
     </Layout>
   )
