@@ -409,10 +409,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 through S3 is committed and statically verified. This
-  correction commit applies all code and documentation P3 findings from the
-  integrated reviews; reviewer readback and fancy-domain/browser proof have not
-  passed.
+- Status: replacement S1 through S3 and the bounded correction are committed
+  and statically verified. Final package readiness is blocked on exact-runtime
+  evidence; no verified code defect remains.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -469,33 +468,33 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   reported only existing findings on unchanged legacy lines in
   `AddStackButton`, `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no
   unrelated line was changed or suppressed.
-- Blockers: fancy-domain/browser proof remains blocked because the exact fancy
-  routes remain unavailable. No localhost, fixed-port, runtime, config, routing,
-  or host-tooling fallback was used.
+- Exact runtime evidence:
+  `https://manage.klicker.rs-ux-review-question-library.localhost` returns 404;
+  `https://api.klicker.rs-ux-review-question-library.localhost` returns 404; and
+  the filtered devrouter route list for `rs-ux-review-question-library` is `[]`.
+  No localhost or fixed-port fallback and no runtime, config, or route start,
+  repair, or workaround occurred. Browser/E2E execution has therefore not
+  passed.
 - Current S3 evidence: the frontend conventions now record the verified
   activity-creation guidance, count-label, outcome-selector, and recoverable
   disabled-reason patterns with current symbol citations. Exact-container
   Prettier, current-source symbol citation checks, the two-file scope audit, and
   `git diff --check` passed.
-- Integrated review disposition: Luna found no code defect and accepted with two
-  non-blocking P3 maintainability findings: duplicated activity-description
-  assertions and an orphaned duplicate risk fragment. Sol found no code defect
-  but requires the known P1 exact fancy-domain browser/E2E evidence plus the P3
-  inaccurate catalog portfolio row and duplicate risk fragment. This commit
-  extracts the duplicated assertions into one typed file-local helper, drives
-  the free-user click/cancel loop from the same activity table, corrects the
-  catalog row, and removes only the duplicate fragment. Reviewer readback of
-  these corrections remains pending; exact-route browser evidence remains
-  blocked without a runtime or routing workaround.
-- Correction checks: exact-checkout Prettier for
-  `B-feature-access.spec.ts` and this plan passed;
-  `pnpm --filter @klicker-uzh/playwright check` passed; focused Playwright
-  collection for `B-feature-access.spec.ts` passed with 8 tests listed;
-  `git diff --check` passed; and the scope audit found exactly the two owned
-  correction files.
-- Remaining: integrated reviewer readback, fancy-domain/browser proof, and final
-  Progress evidence.
+- Integrated review disposition: the independent Luna maintainability and Sol
+  final correctness/risk correction readbacks both reported no P0-P3 correction
+  findings and ACCEPTED the correction. Both found no verified code defect and
+  classify final package readiness as BLOCKED ON EXACT-RUNTIME EVIDENCE.
+- Final exact-checkout checks: Prettier passed for the B, O, and P specs,
+  `docs/frontend-conventions.md`, and this plan. Biome format passed for all 8
+  changed TS/TSX/i18n files with no fixes. The frontend-manage check and
+  Playwright check passed. Playwright collection for the B, O, and P specs
+  passed with 154 tests in 3 files; correction-specific B collection passed with
+  8 tests. Base-to-head `git diff --check`, commit hooks, staged scope, and
+  secret, credential, sensitive-URL, and personal-data audits passed.
+- Remaining: exact-runtime route restoration and browser/E2E evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: obtain reviewer readback without changing the browser/runtime
-  boundary.
+- Next action: under separate explicit runtime authority, restore only the exact
+  namespaced W2 devrouter routes, run the plan's bilingual desktop, narrow, and
+  keyboard browser matrix plus the focused B, O, and P specs, then record the
+  evidence. Until then, stop at the genuine runtime blocker.
