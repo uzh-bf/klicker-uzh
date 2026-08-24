@@ -2,7 +2,15 @@
 
 ## Verdict
 
-**not-ready**. The audit found one confirmed blocker: the new batch path relies on a client-side draft/scheduled snapshot, while three reused server deletion services can hard-delete a record after it becomes published when it has no responses or instances. A scheduled activity can therefore become participant-visible during the confirmation window and still be permanently deleted. Major recovery, retry, reconciliation, cleanup, and rollback-control gaps remain. Remote CI is green for the current PR head, but it does not cover the publication race or the unavailable production recovery evidence.
+**not-ready**. The original backend publication-status race is remediated in commit `6ad0c3bcc`, with local service and package checks passing. The audit's major recovery, retry, reconciliation, cleanup, rollback-control, observability, and capacity gaps remain, so this update does not declare the PR merge-ready. Remote CI and the required review gates for the new head remain pending.
+
+## Remediation update — 2026-08-24
+
+- The three batch deletion operations now send a literal `onlyIfUnpublished: true` guard. The existing ordinary deletion operations remain unchanged.
+- The practice-quiz, microlearning, and group-activity services perform one status-predicated delete for the guarded path, requiring `DRAFT` or `SCHEDULED`. A Prisma `P2025` caused by a publication transition returns `null`; other database errors still propagate. The ordinary deletion path retains its previous behavior.
+- The focused regression covers published activities, the guarded status predicate, `P2025` handling, and the unchanged ordinary practice-quiz deletion behavior.
+- Local verification passed: GraphQL typecheck, the focused activity-batch test with 13 tests, Manage typecheck, Manage lint with 25 pre-existing warnings and no errors, and the GraphQL package build. The root build was attempted in the exact DevPod but terminated with exit 137 during the frontend-PWA build after 20 of 23 tasks completed; full-build evidence is therefore unavailable.
+- The overall verdict remains **not-ready** because the retry/response-loss, refetch reconciliation, cleanup and permission propagation, emergency-disable, observability, capacity, and recovery findings remain unresolved.
 
 ## Prior gates
 
