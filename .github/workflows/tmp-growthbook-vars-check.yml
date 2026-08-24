@@ -1,0 +1,18 @@
+name: Temporary GrowthBook variable presence check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report whether the GrowthBook build variables resolve
+        run: |
+          echo "API_HOST_STG present: ${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG != '' }}"
+          echo "API_HOST_PRD present: ${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD != '' }}"
+          echo "CLIENT_KEY_STG present: ${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG != '' }}"
+          echo "CLIENT_KEY_PRD present: ${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD != '' }}"
