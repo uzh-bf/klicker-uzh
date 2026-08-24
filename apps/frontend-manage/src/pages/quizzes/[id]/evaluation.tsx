@@ -1,11 +1,11 @@
-import { useQuery } from '@apollo/client'
+import { NetworkStatus, useQuery } from '@apollo/client'
 import {
   ActivityType,
   GetLiveQuizEvaluationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
@@ -16,24 +16,29 @@ function LiveQuizEvaluation() {
   )
 
   // fetch evaluation data
-  const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {
-    variables: {
-      id: router.query.id as string,
-      hmac: router.query.hmac as string,
-    },
-    pollInterval: 5000,
-    skip: !router.query.id,
-    onCompleted: (result) => {
-      if (result.liveQuizEvaluation) {
-        setLastRefetchTime(new Date())
-      }
-    },
-    onError: () => {
-      router.push('/404')
-    },
-  })
+  const { data, loading, networkStatus } = useQuery(
+    GetLiveQuizEvaluationDocument,
+    {
+      variables: {
+        id: router.query.id as string,
+        hmac: router.query.hmac as string,
+      },
+      pollInterval: 5000,
+      notifyOnNetworkStatusChange: true,
+      skip: !router.query.id,
+      onError: () => {
+        router.push('/404')
+      },
+    }
+  )
 
-  if (loading) {
+  useEffect(() => {
+    if (networkStatus === NetworkStatus.ready && data?.liveQuizEvaluation) {
+      setLastRefetchTime(new Date())
+    }
+  }, [data?.liveQuizEvaluation, networkStatus])
+
+  if (loading && !data?.liveQuizEvaluation) {
     return <Loader />
   }
 

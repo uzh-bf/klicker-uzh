@@ -20,7 +20,9 @@ import Rank2Img from 'public/img/rank2.svg'
 import Rank3Img from 'public/img/rank3.svg'
 import { useEffect, useReducer, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useEvaluationInitialization from '../../lib/hooks/useEvaluationInitialization'
+import useEvaluationInitialization, {
+  getEvaluationQuestionLocation,
+} from '../../lib/hooks/useEvaluationInitialization'
 import useEvaluationSettingsInitialization from '../../lib/hooks/useEvaluationSettingsInitialization'
 import ElementEvaluation from './ElementEvaluation'
 import BlockStatusIndicator from './BlockStatusIndicator'
@@ -98,6 +100,11 @@ function ActivityEvaluation({
   )
 
   // automatically switch to correct instance
+  const questionLocation = getEvaluationQuestionLocation(
+    router.query.questionIx as string | null,
+    stacks
+  )
+
   useEvaluationInitialization({
     setActiveInstance,
     setActiveStack,
@@ -112,8 +119,8 @@ function ActivityEvaluation({
     setShowSolution,
     setShowExplanation,
     paramsLoaded:
-      typeof router.query.questionIx !== 'undefined' &&
-      parseInt(router.query.questionIx as string) === activeInstance,
+      questionLocation?.stackIx === activeStack &&
+      questionLocation?.instanceIx === activeInstance,
     showSolution: router.query.showSolution === 'true',
     showExplanation: router.query.showExplanation === 'true',
     activeInstance,

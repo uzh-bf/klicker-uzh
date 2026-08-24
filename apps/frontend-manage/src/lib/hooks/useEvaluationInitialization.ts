@@ -2,6 +2,38 @@ import { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
 
+export function getEvaluationQuestionLocation(
+  questionIx: string | null | undefined,
+  stacks: StackEvaluation[]
+) {
+  if (typeof questionIx !== 'string') return null
+
+  const questionIndex = Number.parseInt(questionIx, 10)
+  if (!Number.isInteger(questionIndex) || questionIndex < 0) return null
+
+  let questionOffset = 0
+  let resultOffset = 0
+
+  for (const [stackIx, stack] of stacks.entries()) {
+    const instanceCount = stack.instanceCount ?? stack.instances.length
+    if (questionIndex < questionOffset + instanceCount) {
+      const localInstanceIx = questionIndex - questionOffset
+      return {
+        stackIx,
+        instanceIx:
+          localInstanceIx < stack.instances.length
+            ? resultOffset + localInstanceIx
+            : -1,
+      }
+    }
+
+    questionOffset += instanceCount
+    resultOffset += stack.instances.length
+  }
+
+  return null
+}
+
 function useEvaluationInitialization({
   setActiveInstance,
   setActiveStack,
@@ -23,29 +55,14 @@ function useEvaluationInitialization({
     // initialize evaluation with correct element / leaderboard / confusion for live quiz
     if (type === 'LiveQuiz') {
       if (typeof questionIx === 'string' && questionIx !== null) {
-        const questionIndex = Number.parseInt(questionIx, 10)
-        let questionOffset = 0
-        let resultOffset = 0
-
-        for (const [stackIx, stack] of stacks.entries()) {
-          const instanceCount = stack.instanceCount ?? stack.instances.length
-          if (questionIndex < questionOffset + instanceCount) {
-            const localInstanceIx = questionIndex - questionOffset
-            setActiveStack(stackIx)
-            setActiveInstance(
-              localInstanceIx < stack.instances.length
-                ? resultOffset + localInstanceIx
-                : -1
-            )
-            return
-          }
-
-          questionOffset += instanceCount
-          resultOffset += stack.instances.length
+        const location = getEvaluationQuestionLocation(questionIx, stacks)
+        if (location) {
+          setActiveStack(location.stackIx)
+          setActiveInstance(location.instanceIx)
+        } else {
+          setActiveInstance(-1)
+          setActiveStack(0)
         }
-
-        setActiveInstance(-1)
-        setActiveStack(0)
       } else if (showLeaderboard) {
         setActiveStack('leaderboard')
       }
