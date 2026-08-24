@@ -370,3 +370,35 @@ and Phase 5 proceed without another approval.
   schema sync and the focused 15-test file pass again in Node 24. The current
   immutable heads are Phase 0 `a02d9a803`, U1 `8f6dca149`, U2 `8bd456f89`, and
   U3 `4a9fd5c76` before this progress update; S4 Ox Alpha review is next.
+- 2026-08-24: The U3 Ox Alpha simplifier passed. Its risk review found one stale
+  runtime paragraph in `docs/chat-platform.md`; the owning U3 commit was amended
+  and the corrected rereview passed with only the documented non-blocking
+  mixed-snapshot advisory. The complete pre-rebase matrix then passed 40/40
+  non-analytics checks and lints, 371 Chat tests with 9 skips, the 9-test Chat
+  PostgreSQL file, formatting across 1,722 files, the 23/23 production build,
+  and Playwright discovery of 874 tests. Root `check:all` reproduced only the
+  known analytics image exception: Python 3.14 selected pandas 2.2.2 for a
+  source build, but the image has no C compiler.
+- 2026-08-24: A fresh remote read moved the base to `b02c0c436`. The final
+  recascade produced Phase 0 `69455376c`, U1 `e82c84011`, U2 `ef7704660`, and
+  U3 `6453a94ce`. Range-diff proves 63 of 64 commits patch-identical; the sole
+  changed commit has an identical non-lockfile code patch and only a
+  base-context lockfile regeneration. Node 24 accepted the frozen offline
+  lockfile without mutation, Prisma source and analytics schemas are in sync,
+  Syncpack and Chat, GraphQL, and Manage checks pass, and the focused suites
+  pass 15/15 and 9/9. Integrated review response
+  `resp_de3e5510b95543f38665a76d7deb80c2` routed to `stealth/ox-alpha` at
+  maximum effort and returned `PASS` / `DONE_WITH_CONCERNS` with no required
+  finding. The exact DevPod is stopped and has zero routes. S6 serialized
+  Phase 5 reconciliation is next; no branch, pull-request, merge, deployment,
+  live, closure, cleanup, or deletion mutation has occurred in this step.
+- 2026-08-24: Serialized Phase 5 accepted required prepublication `reviewed`
+  delivery in dependency order for Phase 0, U1, U2, and U3. The exact Ox Alpha
+  responses are `resp_060d827c10fe4c05a63071821dbfb66a`,
+  `resp_61d2d0332cac45979c192632f5777db8`,
+  `resp_747176da75f6405f8991551cb21b395f`, and
+  `resp_89beb21605714ab7b73fe13b4ccac8a7`; every response returned `REVIEWED` /
+  `ACCEPT` with no scope drift or open question. Four compare-and-swap roadmap
+  transactions recorded the accepted local heads without claiming publication,
+  ready state, or CI. The final prepublication lease and pull-request topology
+  gate is next.
