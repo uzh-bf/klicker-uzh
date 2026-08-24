@@ -28,6 +28,7 @@ import {
   FREEZE_BALANCE_MAX,
   FREEZE_EARN_THRESHOLD,
   getStudyStreakResponsesToday,
+  getStudyStreakResponsesRemainingTodayForParticipations,
   QUALIFIED_RESPONSES_PER_DAY,
   reconcileStudyStreak,
 } from '../src/services/studyStreak.js'
@@ -200,6 +201,63 @@ describe('getStudyStreakResponsesToday', () => {
       )
     ).resolves.toBeNull()
     expect(count).not.toHaveBeenCalled()
+  })
+})
+
+describe('getStudyStreakResponsesRemainingTodayForParticipations', () => {
+  it('counts all eligible participations with one response read', async () => {
+    vi.setSystemTime(new Date('2026-08-24T12:00:00.000Z'))
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        participationId: 1,
+        lastAnsweredAt: new Date('2026-08-24T10:00:00.000Z'),
+      },
+      {
+        participationId: 1,
+        lastAnsweredAt: new Date('2026-08-24T11:00:00.000Z'),
+      },
+      {
+        participationId: 2,
+        lastAnsweredAt: new Date('2026-08-24T11:00:00.000Z'),
+      },
+      {
+        participationId: 3,
+        lastAnsweredAt: new Date('2026-08-24T11:00:00.000Z'),
+      },
+    ])
+    const prisma = {
+      questionResponse: { findMany },
+    } as never
+    const participations = [
+      {
+        ...activeParticipation,
+        id: 1,
+      },
+      {
+        ...activeParticipation,
+        id: 2,
+        studyStreakTrackingStartedAt: new Date('2026-08-24T10:30:00.000Z'),
+      },
+      {
+        ...activeParticipation,
+        id: 3,
+        isActive: false,
+      },
+    ]
+
+    await expect(
+      getStudyStreakResponsesRemainingTodayForParticipations(
+        { prisma },
+        participations
+      )
+    ).resolves.toEqual(
+      new Map([
+        [1, 3],
+        [2, 4],
+        [3, null],
+      ])
+    )
+    expect(findMany).toHaveBeenCalledTimes(1)
   })
 })
 

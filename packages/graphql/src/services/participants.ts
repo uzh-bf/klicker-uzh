@@ -8,7 +8,11 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { reconcileStudyStreak } from './studyStreak.js'
+import {
+  getStudyStreakResponsesRemainingTodayForParticipations,
+  reconcileStudyStreak,
+  type StudyStreakStatusParticipation,
+} from './studyStreak.js'
 
 dayjs.extend(isoWeek)
 
@@ -189,6 +193,29 @@ export async function getParticipations(
   }: { endpoint?: string | null; assessmentOnly?: boolean | null },
   ctx: ContextWithUser
 ) {
+  const streakParticipations = assessmentOnly
+    ? []
+    : await ctx.prisma.participation.findMany({
+        where: {
+          participantId: ctx.user.sub,
+          isActive: true,
+          course: {
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+          },
+        },
+        select: { courseId: true },
+      })
+
+  await Promise.all(
+    streakParticipations.map(({ courseId }) =>
+      reconcileStudyStreak(
+        { prisma: ctx.prisma },
+        { courseId, participantId: ctx.user.sub }
+      )
+    )
+  )
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -224,7 +251,17 @@ export async function getParticipations(
 
   if (!participant) return []
 
-  return participant.participations
+  const remainingByParticipation =
+    await getStudyStreakResponsesRemainingTodayForParticipations(
+      { prisma: ctx.prisma },
+      participant.participations as StudyStreakStatusParticipation[]
+    )
+
+  return participant.participations.map((participation) => ({
+    ...participation,
+    studyStreakResponsesRemainingToday:
+      remainingByParticipation.get(participation.id) ?? null,
+  }))
 }
 
 export async function getParticipation(

@@ -266,6 +266,7 @@ export interface IParticipation extends DB.Participation {
   subscriptions?: DB.PushSubscription[]
   course?: ICourse
   participant?: IParticipant
+  studyStreakResponsesRemainingToday?: number | null
 }
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
@@ -288,6 +289,10 @@ export const Participation = ParticipationRef.implement({
           ctx.user.sub !== parent.participantId
         ) {
           return null
+        }
+
+        if (parent.studyStreakResponsesRemainingToday !== undefined) {
+          return parent.studyStreakResponsesRemainingToday
         }
 
         const responsesToday = await getStudyStreakResponsesToday(

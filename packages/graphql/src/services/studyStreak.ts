@@ -161,6 +161,116 @@ interface ReconcileInput {
   participantId: string
 }
 
+export type StudyStreakStatusParticipation = Pick<
+  DB.Participation,
+  'id' | 'isActive' | 'studyStreakTrackingStartedAt'
+> & {
+  course: Pick<
+    DB.Course,
+    'startDate' | 'endDate' | 'isGamificationEnabled' | 'isAssessmentEnabled'
+  >
+}
+
+/**
+ * Resolve today's remaining response goals for a set of self participations
+ * with one response read. The tracking start can differ per participation, so
+ * the final lower-bound check stays in TypeScript after the Prisma read.
+ */
+export async function getStudyStreakResponsesRemainingTodayForParticipations(
+  deps: ReconcileDeps,
+  participations: StudyStreakStatusParticipation[]
+): Promise<Map<number, number | null>> {
+  const remainingByParticipation = new Map<number, number | null>(
+    participations.map(({ id }) => [id, null])
+  )
+  const today = zurichDate(new Date())
+
+  if (isWeekend(today)) return remainingByParticipation
+
+  const todayStart = zurichDayStart(today)
+  const tomorrowStart = dayjs
+    .tz(today, COURSE_TIMEZONE)
+    .add(1, 'day')
+    .startOf('day')
+    .toDate()
+  const eligibleParticipations = participations.filter((participation) => {
+    if (
+      !participation.isActive ||
+      !participation.studyStreakTrackingStartedAt ||
+      !participation.course.isGamificationEnabled ||
+      participation.course.isAssessmentEnabled
+    ) {
+      return false
+    }
+
+    const startDate = zurichDate(participation.course.startDate)
+    const endDate = zurichDate(participation.course.endDate)
+    return today >= startDate && today <= endDate
+  })
+
+  if (eligibleParticipations.length === 0) return remainingByParticipation
+
+  const responseRows = await deps.prisma.questionResponse.findMany({
+    where: {
+      participationId: {
+        in: eligibleParticipations.map(({ id }) => id),
+      },
+      lastAnsweredAt: {
+        gte: todayStart,
+        lt: tomorrowStart,
+      },
+      OR: [
+        { practiceQuizId: { not: null } },
+        { microLearningId: { not: null } },
+      ],
+      elementInstance: {
+        elementType: { not: DB.ElementType.CONTENT },
+      },
+    },
+    select: {
+      participationId: true,
+      lastAnsweredAt: true,
+    },
+  })
+
+  const trackingStartByParticipation = new Map(
+    eligibleParticipations.map((participation) => [
+      participation.id,
+      participation.studyStreakTrackingStartedAt!,
+    ])
+  )
+  const responseCountByParticipation = new Map<number, number>()
+
+  for (const response of responseRows) {
+    if (
+      !response.lastAnsweredAt ||
+      response.lastAnsweredAt <
+        (trackingStartByParticipation.get(response.participationId) ??
+          todayStart)
+    ) {
+      continue
+    }
+
+    responseCountByParticipation.set(
+      response.participationId,
+      (responseCountByParticipation.get(response.participationId) ?? 0) + 1
+    )
+  }
+
+  for (const participation of eligibleParticipations) {
+    remainingByParticipation.set(
+      participation.id,
+      Math.max(
+        0,
+        QUALIFIED_RESPONSES_PER_DAY -
+          (responseCountByParticipation.get(participation.id) ?? 0)
+      )
+    )
+  }
+
+  return remainingByParticipation
+}
+
 /**
  * Count the eligible answers submitted today for a self-scoped participation.
  * Content views deliberately do not count toward the daily streak goal.
