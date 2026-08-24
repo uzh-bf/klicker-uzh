@@ -4,6 +4,7 @@ import {
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
+import { getNextResetTime } from '@/src/utils/creditPeriods'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -24,6 +25,7 @@ export async function GET(
     courseId: true,
     allowedModelIds: true,
     allowedReasoningEffortsByModel: true,
+    creditResetPeriod: true,
   })
   if ('response' in chatbotResult) {
     return chatbotResult.response
@@ -58,8 +60,17 @@ export async function GET(
       })
     )
 
+    // Resolve the refill moment server-side: the period maths lives here, and
+    // sending an absolute timestamp lets the client render it in the reader's
+    // own timezone instead of exposing the UTC period boundaries.
+    const nextResetAt =
+      getNextResetTime(
+        chatbotResult.chatbot.creditResetPeriod
+      )?.toISOString() ?? null
+
     return NextResponse.json({
       ...credits,
+      nextResetAt,
       availableModels,
       automaticModelId: getAutomaticModelId(
         credits,

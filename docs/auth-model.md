@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-07-10'
+timestamp: '2026-08-04'
 tags:
   - backend
   - auth
@@ -25,8 +25,10 @@ A `Bearer` authorization header is always the final fallback (assessment live-qu
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:
 
-- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope includes `https://login.eduid.ch/authz/User.Read`. Without Edu-ID credentials (typical local dev), this provider is absent — use delegated login.
+- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). Without Edu-ID credentials (typical local dev), this provider is absent — use delegated login.
 - **Delegated login** (`CredentialsProvider`) — authenticates against `User.shortname` + a `UserLogin` record. Each `UserLogin` carries a `UserLoginScope` that ends up as `token.scope` in the JWT callback: the ladder `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY` is enforced field-by-field in the API layer ([three-layer auth](./graphql-api-layer.md)). Edu-ID logins get scope `EDUID`.
+
+Both edu-ID providers set `idToken: true`, which makes NextAuth build the profile from the ID token alone and never call the UserInfo endpoint. Whether a given attribute reaches the ID token is a per-claim setting in the AAI Resource Registry, not something this repository controls, and edu-ID does not advertise `claims_parameter_supported`, so the `claims` request parameter in the provider config is not honoured — the requested scopes plus the Resource Registry settings decide everything. Set `EDUID_FETCH_USERINFO=true` to additionally call UserInfo and merge its claims over the ID token ones, which makes the Resource Registry's ID-token settings irrelevant; the flag defaults to off.
 
 The NextAuth cookie domain is derived by stripping the first subdomain label from the auth URL, so the session cookie is shared across `*.klicker.com`-style app domains. The **Catalyst** flag is computed from Edu-ID affiliations (`packages/util/src/auth.ts:reduceCatalyst` — any `uzh.ch`/`usz.ch` affiliation).
 
@@ -49,9 +51,13 @@ Note the account-duplication trap: participant emails are only unique per auth m
 Manage and PWA login pages treat return targets as untrusted input:
 
 - Manage preserves the current path when an authenticated query fails (`apps/frontend-manage/src/components/Layout.tsx:Layout`). Its login page resolves `redirect_to` against `NEXT_PUBLIC_MANAGE_URL` and accepts only that exact origin. External or malformed targets fall back to the manage root before the page redirects to the auth app (`apps/frontend-manage/src/pages/login.tsx:getServerSideProps`).
-- PWA login accepts paths on the exact `NEXT_PUBLIC_PWA_URL` origin and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the PWA root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Local PWA targets use the Next router; chat targets use a full browser navigation after password login (`apps/frontend-pwa/src/pages/login.tsx:Login`). Assessment mode requires `NEXT_PUBLIC_PWA_URL` and resolves Auth return targets against that configured origin rather than the request `Host`.
+- PWA login accepts paths on the exact origin the build is served from and normalizes them to relative navigation. It also accepts the exact `NEXT_PUBLIC_CHAT_URL` origin because chat login must return to a different app. Every other origin and malformed value falls back to the app root (`apps/frontend-pwa/src/pages/login.tsx:getSafeRedirectPath`). Local PWA targets use the Next router; chat targets use a full browser navigation after password login (`apps/frontend-pwa/src/pages/login.tsx:Login`).
 
-The chat login-required page validates its own return target against `NEXT_PUBLIC_CHAT_URL` before passing an absolute URL to the PWA (`apps/chat/src/app/noLogin/page.tsx:getChatRedirectUrl`). Assessment login receives the same sanitized PWA target through the auth app.
+**The anchoring origin is build-specific.** The regular build anchors on `NEXT_PUBLIC_PWA_URL`, the assessment build on `NEXT_PUBLIC_ASSESSMENT_URL`, and either falls back to the request `Host` when its variable is unset (`apps/frontend-pwa/src/pages/login.tsx:getServerSideProps`). Anchoring assessment mode on `NEXT_PUBLIC_PWA_URL` is a regression, not a shortcut: the two builds run on separate origins with separate sessions, and the regular PWA offers no Edu-ID login, so students sent there after Edu-ID cannot sign in at all. The Next.js 16 upgrade (#5166) introduced exactly that regression on `v3`; production never shipped it, because prd stayed pinned to a pre-#5166 tag while staging floats `v3`.
+
+The chat login-required page validates its own return target against `NEXT_PUBLIC_CHAT_URL` before passing an absolute URL to the PWA (`apps/chat/src/app/noLogin/page.tsx:getChatRedirectUrl`). That page always routes through `NEXT_PUBLIC_PWA_URL/login`, so a chat target never reaches the assessment build.
+
+**The PWA-side sanitizer is not the only gate.** The auth app independently validates the `/student` `redirectTo` against `AUTH_STUDENT_ALLOWED_HOSTS` and returns `400 Invalid redirect URL` for anything outside it (`apps/auth/src/middleware.ts`). That second gate is what keeps the request-`Host` fallback above safe, and it is also what a `400` from `/student` means: the target origin is missing from that env var (`assessment.klicker.stg.df-app.ch` on stg, `assessment.klicker.uzh.ch` on prd).
 
 ## Where authorization happens
 

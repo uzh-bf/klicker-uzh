@@ -50,6 +50,7 @@ export const ElementBlockInput = ElementBlockInputRef.implement({
   fields: (t) => ({
     order: t.int({ required: true }),
     timeLimit: t.int({ required: false }),
+    randomSelection: t.int({ required: false }),
     elements: t.field({ type: [ElementInstanceInput], required: true }),
   }),
 })

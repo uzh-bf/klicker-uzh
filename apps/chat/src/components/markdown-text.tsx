@@ -1,28 +1,54 @@
 'use client'
 
 import '@assistant-ui/react-markdown/styles/dot.css'
-import rehypeKatex from 'rehype-katex'
-import remarkMath from 'remark-math'
 
+import { useMessagePartText } from '@assistant-ui/react'
 import {
-  CodeHeaderProps,
+  type CodeHeaderProps,
   MarkdownTextPrimitive,
   unstable_memoizeMarkdownComponents as memoizeMarkdownComponents,
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
-import { FC, memo, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { type FC, memo, useCallback, useState } from 'react'
+import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 
+import {
+  parseCitationHref,
+  remarkCitationMarkers,
+} from '../lib/markdown/remarkCitationMarkers'
+import {
+  hideIncompleteMath,
+  inspectStreamingMath,
+} from '../lib/markdown/streamingMath'
 import { cn } from '../lib/utils/ui'
+import { CitationChip } from './citation-chip'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
+// Stable module-scope reference: recreating this array on every render would
+// defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
+const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
+const rehypePlugins = [rehypeKatex]
+
 const MarkdownTextImpl = () => {
+  const { text, status } = useMessagePartText()
+  const isRunning = status.type === 'running'
+  const { hasMathOpener } = inspectStreamingMath(text)
+  const preprocess = useCallback(
+    (input: string) =>
+      normalizeCustomMathTags(isRunning ? hideIncompleteMath(input) : input),
+    [isRunning]
+  )
+
   return (
     <MarkdownTextPrimitive
-      remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeKatex]}
-      preprocess={normalizeCustomMathTags}
+      remarkPlugins={remarkPlugins}
+      rehypePlugins={rehypePlugins}
+      preprocess={preprocess}
+      smooth={isRunning && !hasMathOpener}
       className="aui-md"
       components={defaultComponents}
     />
@@ -32,6 +58,7 @@ const MarkdownTextImpl = () => {
 export const MarkdownText = memo(MarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
+  const t = useTranslations()
   const { isCopied, copyToClipboard } = useCopyToClipboard()
   const onCopy = () => {
     if (!code || isCopied) return
@@ -49,10 +76,10 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
           >
             {!isCopied && <CopyIcon />}
             {isCopied && <CheckIcon />}
-            <span className="sr-only">Copy</span>
+            <span className="sr-only">{t('chat.markdown.copyCode')}</span>
           </button>
         </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
+        <TooltipContent>{t('chat.markdown.copyCode')}</TooltipContent>
       </Tooltip>
     </div>
   )
@@ -78,55 +105,63 @@ const useCopyToClipboard = ({
 }
 
 const defaultComponents = memoizeMarkdownComponents({
+  // Shift Markdown headings down one level because the chatbot shell owns the
+  // page's h1. The smaller scale keeps answer structure readable without
+  // making a chat bubble look like a document title page.
   h1: ({ className, ...props }) => (
-    <h1
+    <h2
       className={cn(
-        'mb-8 scroll-m-20 text-4xl font-extrabold tracking-tight last:mb-0',
+        'mb-4 scroll-m-20 text-2xl font-extrabold tracking-tight text-pretty last:mb-0 sm:text-3xl',
         className
       )}
       {...props}
     />
   ),
   h2: ({ className, ...props }) => (
-    <h2
+    <h3
       className={cn(
-        'mb-4 mt-8 scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-2xl',
         className
       )}
       {...props}
     />
   ),
   h3: ({ className, ...props }) => (
-    <h3
+    <h4
       className={cn(
-        'mb-4 mt-6 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-3 mt-5 scroll-m-20 text-lg font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-xl',
         className
       )}
       {...props}
     />
   ),
   h4: ({ className, ...props }) => (
-    <h4
+    <h5
       className={cn(
-        'mb-4 mt-6 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0',
+        'mb-3 mt-4 scroll-m-20 text-base font-semibold tracking-tight text-pretty first:mt-0 last:mb-0 sm:text-lg',
         className
       )}
       {...props}
     />
   ),
   h5: ({ className, ...props }) => (
-    <h5
+    <h6
       className={cn(
-        'my-4 text-lg font-semibold first:mt-0 last:mb-0',
+        'my-3 text-[15px] font-semibold text-pretty first:mt-0 last:mb-0 sm:text-base',
         className
       )}
       {...props}
     />
   ),
   h6: ({ className, ...props }) => (
-    <h6
-      className={cn('my-4 font-semibold first:mt-0 last:mb-0', className)}
+    <div
       {...props}
+      role="heading"
+      aria-level={7}
+      className={cn(
+        'my-3 text-sm font-semibold text-pretty first:mt-0 last:mb-0',
+        className
+      )}
     />
   ),
   p: ({ className, ...props }) => (
@@ -135,20 +170,33 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        'text-primary font-medium underline underline-offset-4',
-        className
-      )}
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    />
-  ),
+  a: ({ className, href, ...props }) => {
+    const citationIndex = parseCitationHref(href)
+    if (citationIndex !== null) return <CitationChip index={citationIndex} />
+
+    return (
+      <a
+        className={cn(
+          'text-primary font-medium underline underline-offset-4',
+          className
+        )}
+        target="_blank"
+        rel="noopener noreferrer"
+        href={href}
+        {...props}
+      />
+    )
+  },
+  // Styled as a soft amber info callout (e.g. a model-emitted "Hinweis" note),
+  // not a plain citation-style quote: rounded block, amber left accent, and
+  // `break-words` so long tokens (URLs) wrap instead of overflowing on
+  // mobile widths.
   blockquote: ({ className, ...props }) => (
     <blockquote
-      className={cn('border-l-2 pl-6 italic', className)}
+      className={cn(
+        'my-5 break-words rounded-md border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-amber-900',
+        className
+      )}
       {...props}
     />
   ),
@@ -168,13 +216,12 @@ const defaultComponents = memoizeMarkdownComponents({
     <hr className={cn('my-5 border-b', className)} {...props} />
   ),
   table: ({ className, ...props }) => (
-    <table
-      className={cn(
-        'my-5 w-full border-separate border-spacing-0 overflow-y-auto',
-        className
-      )}
-      {...props}
-    />
+    <div className="my-5 overflow-x-auto">
+      <table
+        className={cn('w-full border-separate border-spacing-0', className)}
+        {...props}
+      />
+    </div>
   ),
   th: ({ className, ...props }) => (
     <th
@@ -236,10 +283,11 @@ const defaultComponents = memoizeMarkdownComponents({
 export function normalizeCustomMathTags(input: string): string {
   return (
     input
-      // Convert [/math]...[/math] to $$...$$
+      // Keep display-math fences on their own lines so multiline formulas
+      // cannot consume the Markdown that follows them.
       .replace(
         /\[\/math\]([\s\S]*?)\[\/math\]/g,
-        (_, content) => `$$${content.trim()}$$`
+        (_, content) => `\n\n$$\n${content.trim()}\n$$\n\n`
       )
       // Convert [/inline]...[/inline] to $...$
       .replace(
@@ -254,7 +302,7 @@ export function normalizeCustomMathTags(input: string): string {
       // Convert \[ ... \] to $$...$$ (block math) - handles both single and double backslashes
       .replace(
         /\\{1,2}\[([\s\S]*?)\\{1,2}\]/g,
-        (_, content) => `$$${content.trim()}$$`
+        (_, content) => `\n\n$$\n${content.trim()}\n$$\n\n`
       )
   )
 }

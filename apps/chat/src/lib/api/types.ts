@@ -1,4 +1,8 @@
-import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
+import {
+  ExtendedThreadMessageLike,
+  MessageRating,
+  Thread,
+} from '../../stores/chatStore'
 import { sortAttachmentsByPosition } from '../attachments/attachmentState'
 import { type ReasoningEffort } from '../config/reasoning'
 
@@ -18,6 +22,7 @@ export interface ApiThread {
   title?: string
   createdAt: string
   updatedAt: string
+  lastChatMode?: string | null
 }
 
 /**
@@ -35,7 +40,22 @@ export type ApiContentPart =
         content?: Array<{ text: string; type: string }>
         isError?: boolean
       }
+      /**
+       * Top-level mirror of `result.isError`, populated by
+       * `convertApiMessageToMessage`. assistant-ui's `ToolCallMessagePart`
+       * reads `isError` as a sibling of `result`, not nested inside it (MCP
+       * tool results nest it under `result` per the MCP `CallToolResult`
+       * shape), so this field is what the `ToolFallback` error chip
+       * actually consumes.
+       */
+      isError?: boolean
     }
+  /**
+   * Named data marker persisted with the message (e.g. `chat-stopped` on a
+   * turn the participant aborted). Carries no user-facing strings; the
+   * client renders any notice from its own translations keyed on `name`.
+   */
+  | { type: 'data'; name: string; data?: unknown }
 
 export interface ApiHydratedImageAttachment {
   id: string
@@ -70,6 +90,7 @@ export interface ApiMessage {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  rating?: MessageRating | null
   imageAttachments?: ApiImageAttachment[]
   parentId?: string | null
   createdAt: string
@@ -142,6 +163,7 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   isRunning: false,
   createdAt: new Date(apiThread.createdAt),
   updatedAt: new Date(apiThread.updatedAt),
+  lastChatMode: apiThread.lastChatMode ?? null,
 })
 
 /**
@@ -173,6 +195,10 @@ export const convertApiMessageToMessage = (
         toolName: item.toolName,
         args: item.args,
         result: item.result,
+        // MCP tool results nest `isError` inside `result`; surface it at the
+        // top level too since that's where assistant-ui's ToolCallMessagePart
+        // (and our ToolFallback) reads it from.
+        isError: item.result?.isError ?? item.isError,
       }
     }
     // fallback for unknown types
@@ -199,6 +225,7 @@ export const convertApiMessageToMessage = (
     reasoningEffort: apiMessage.reasoningEffort ?? null,
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
+    rating: apiMessage.rating ?? null,
     imageAttachments: sortAttachmentsByPosition(
       apiMessage.imageAttachments ?? []
     ),

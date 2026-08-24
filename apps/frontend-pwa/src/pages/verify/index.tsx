@@ -4,6 +4,7 @@ import {
   isScoreInHistogramBin,
 } from '@components/insights/assessmentResults/histogram'
 import {
+  AssessmentReportIdentitySource,
   AssessmentReportVerificationStatus,
   QGetVerifiableCredentialDocument,
   type QGetVerifiableCredentialQuery,
@@ -11,10 +12,10 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import type { GetServerSidePropsContext } from 'next'
-import { useLocale, useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useState, type ReactNode } from 'react'
 
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/
 const REPORT_TIME_ZONE = 'Europe/Zurich'
@@ -182,6 +183,22 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
         </p>
       </div>
 
+      <div className="mt-5" aria-hidden="true">
+        <div className="relative h-3 rounded-full bg-slate-200">
+          <div
+            className="absolute -top-1 h-5 w-1 rounded-full bg-uzh-blue"
+            style={{
+              left: `clamp(2px, ${Math.min(Math.max(comparison.percentile, 0), 100)}%, calc(100% - 2px))`,
+              transform: 'translateX(-50%)',
+            }}
+          />
+        </div>
+        <div className="mt-1 flex justify-between text-xs text-slate-600">
+          <span>0</span>
+          <span>100</span>
+        </div>
+      </div>
+
       <div
         className="mt-5 flex h-56 items-end gap-1 border-b border-l border-slate-400 px-2 pt-6"
         role="img"
@@ -208,10 +225,7 @@ function Comparison({ snapshot }: { snapshot: Snapshot }) {
             <div
               key={`${bin.binStart}-${bin.binEnd}`}
               className="flex h-full min-w-0 flex-col justify-end text-center"
-              style={{
-                flexGrow: widthRatio,
-                flexBasis: 0,
-              }}
+              style={{ flexGrow: widthRatio, flexBasis: 0 }}
             >
               <span className="mb-1 text-xs font-semibold tabular-nums">
                 {bin.count}
@@ -288,7 +302,10 @@ function ActiveVerification({ verification }: { verification: Verification }) {
     )
   }
 
-  const identitySourceLabel = t('pwa.assessment.identitySourceCourseInvitation')
+  const identitySourceLabel =
+    snapshot.subject.source === AssessmentReportIdentitySource.SwitchEduid
+      ? t('pwa.assessment.identitySourceEduId')
+      : t('pwa.assessment.identitySourceCourseInvitation')
 
   return (
     <>
@@ -315,12 +332,16 @@ function ActiveVerification({ verification }: { verification: Verification }) {
           <dd className="min-w-0 break-words border-b border-slate-200 px-3 py-2 sm:border-b-0">
             {snapshot.course.name}
           </dd>
-          <dt className="bg-slate-100 px-3 py-2 font-semibold">
-            {t('pwa.assessment.studentEmailLabel')}
-          </dt>
-          <dd className="break-all border-b border-slate-200 px-3 py-2 sm:border-b-0">
-            {snapshot.subject.email}
-          </dd>
+          {snapshot.subject.name ? (
+            <>
+              <dt className="bg-slate-100 px-3 py-2 font-semibold">
+                {t('pwa.assessment.studentNameLabel')}
+              </dt>
+              <dd className="break-words border-b border-slate-200 px-3 py-2 sm:border-b-0">
+                {snapshot.subject.name}
+              </dd>
+            </>
+          ) : null}
           <dt className="bg-slate-100 px-3 py-2 font-semibold">
             {t('pwa.assessment.identitySourceLabel')}
           </dt>
@@ -391,7 +412,7 @@ export default function VerifyAssessmentReportPage() {
   }, [verify])
 
   const verification = data?.assessmentReportVerification
-  let content
+  let content: ReactNode
   if (tokenState === 'reading' || (tokenState === 'ready' && loading)) {
     content = (
       <div className="flex min-h-64 items-center justify-center" role="status">

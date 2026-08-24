@@ -12,6 +12,9 @@ query GetAssessmentResultsLiveQuiz($liveQuizId: String!) {
     studentResults {
       participantId
       participantEmail
+      assessmentGivenName
+      assessmentSurname
+      assessmentMatriculationNumber
       basePoints
       correctnessPoints
       bonusPoints

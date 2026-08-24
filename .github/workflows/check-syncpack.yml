@@ -28,17 +28,22 @@ jobs:
         with:
           pattern: '^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|\.github/workflows/check-syncpack\.yml|\.github/actions/changed-paths/|.*/package\.json)'
 
-      - name: Define node version
-        if: steps.filter.outputs.should_run == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-
       - uses: pnpm/action-setup@v4
         if: steps.filter.outputs.should_run == 'true'
         with:
           version: 11.5.0
-          run_install: true
+
+      - name: Define node version with pnpm cache
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm install --frozen-lockfile
 
       - name: Check the syncpack conformity of all packages and apps
         if: steps.filter.outputs.should_run == 'true'

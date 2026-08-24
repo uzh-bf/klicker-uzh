@@ -32,14 +32,13 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
-## Seeds — three independent paths
+## Seeds — two independent paths
 
 A fixture needed by tests must be added to EACH consumer:
 
 | Consumer             | Seed location                                                           |
 | -------------------- | ----------------------------------------------------------------------- |
 | Dev / manual testing | `packages/prisma-data/src/data/seedTEST.ts` (+ topic modules alongside) |
-| Cypress              | `seedDatabase()` task in `cypress/cypress.config.ts`                    |
 | Playwright           | `seedDatabase()` in `playwright/global-setup.ts`                        |
 
 Prisma 7 reset/migrate commands do not seed automatically. The legacy host uses `pnpm run prisma:setup`; the self-contained DevPod uses the raw reset/push/Prisma Data seed sequence in `.devcontainer/post-create.sh`. Both are explicit and **destructive** — apply `klicker-environment-doctor` check 8 first.

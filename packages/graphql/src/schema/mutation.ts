@@ -12,6 +12,7 @@ import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -61,6 +62,11 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  AssessmentParticipantInvitation,
+  AssessmentParticipantInvitationInput,
+  CreateAssessmentParticipantInvitationsPayload,
+} from './participantInvitation.js'
+import {
   ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
@@ -79,6 +85,7 @@ import {
   ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
+  ElementBatchSharingResult,
   ObjectAccess,
   ObjectType,
   PermissionInfo,
@@ -644,7 +651,10 @@ export const Mutation = builder.mutationType({
       deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: { id: t.arg.string({ required: true }) },
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
@@ -1271,6 +1281,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      shareElementsBatch: t.withAuth(asUserFullAccess).field({
+        type: ElementBatchSharingResult,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          shortnameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.shareElementsBatch(args, ctx)
+        },
+      }),
+
       applyActivityBatchOperations: t.withAuth(asUserFullAccess).int({
         args: {
           activityIds: t.arg.stringList({ required: true }),
@@ -1343,9 +1366,18 @@ export const Mutation = builder.mutationType({
             validate: { email: true },
           }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          sourceCourseId: t.arg.string({ required: false }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
-          return await CourseService.createCourse(args, ctx)
+          if (!args.sourceCourseId) {
+            return await CourseService.createCourse(args, ctx)
+          } else {
+            return await CourseService.duplicateCourse(args, ctx)
+          }
         },
       }),
 
@@ -1463,6 +1495,56 @@ export const Mutation = builder.mutationType({
           }
         ),
       }),
+
+      createAssessmentParticipantInvitations: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: CreateAssessmentParticipantInvitationsPayload,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitations: t.arg({
+              type: [AssessmentParticipantInvitationInput],
+              required: true,
+              validate: {
+                minLength: 1,
+                maxLength:
+                  ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
+              },
+            }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.createAssessmentParticipantInvitations(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
+
+      deletePendingAssessmentParticipantInvitation: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: AssessmentParticipantInvitation,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitationId: t.arg.int({ required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.deletePendingAssessmentParticipantInvitation(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
       correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({
         nullable: true,

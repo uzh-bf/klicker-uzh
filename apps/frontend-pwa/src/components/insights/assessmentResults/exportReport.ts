@@ -10,7 +10,9 @@ export interface ExportReportTexts {
   timeZone: string
   course: string
   courseReference: string
-  student: string
+  studentName: string
+  studentEmail: string
+  matriculationNumber: string
   identitySource: string
   pointsSummary: string
   achieved: string
@@ -22,6 +24,7 @@ export interface ExportReportTexts {
   comparisonTitle: string
   percentileText: string
   percentileExplanation: string
+  cohortSizeText: string
   histogramTitle: string
   histogramDescription: string
   histogramUserRange: string
@@ -38,8 +41,8 @@ export interface ExportReportTexts {
 }
 
 export interface AssessmentReportArtifact {
-  filename: string
   url: string
+  html: string
 }
 
 const REPORT_TIME_ZONE = 'Europe/Zurich'
@@ -66,21 +69,23 @@ function formatNumber(value: number, locale: string) {
 
 function createHistogramSvg({
   histogram,
+  percentile,
   totalPoints,
   availableTotalPoints,
   texts,
   locale,
 }: {
   histogram: NonNullable<AssessmentReportSnapshot['comparison']>['histogram']
+  percentile: number
   totalPoints: number
   availableTotalPoints: number
   texts: ExportReportTexts
   locale: string
 }) {
   const width = 640
-  const height = 300
+  const height = 360
   const top = 36
-  const bottom = 58
+  const bottom = 90
   const left = 52
   const right = 20
   const plotWidth = width - left - right
@@ -124,7 +129,7 @@ function createHistogramSvg({
       )}`
       return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" />
         <text x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle" font-weight="600">${bin.count}</text>
-        <text x="${x + barWidth / 2}" y="${top + plotHeight + 20}" text-anchor="middle" font-size="10">${escapeHtml(range)}</text>
+        <text x="${x + barWidth / 2}" y="${top + plotHeight + 18}" text-anchor="middle" font-size="10">${escapeHtml(range)}</text>
         ${
           isUserBin
             ? `<text x="${x + barWidth / 2}" y="${y - 22}" text-anchor="middle" fill="#0028a5" font-weight="700">${escapeHtml(texts.yourScore)}</text>`
@@ -132,6 +137,18 @@ function createHistogramSvg({
         }`
     })
     .join('')
+
+  const percentileRadius = 5
+  const percentileX =
+    left +
+    percentileRadius +
+    (Math.min(Math.max(percentile, 0), 100) / 100) *
+      (plotWidth - percentileRadius * 2)
+  const percentileRulerY = height - 42
+  const percentileRuler = `<line x1="${left}" y1="${percentileRulerY}" x2="${width - right}" y2="${percentileRulerY}" stroke="#0028a5" stroke-width="2" />
+    <circle cx="${percentileX}" cy="${percentileRulerY}" r="5" fill="#0028a5" />
+    <text x="${left}" y="${percentileRulerY + 16}" text-anchor="start" font-size="10">0</text>
+    <text x="${width - right}" y="${percentileRulerY + 16}" text-anchor="end" font-size="10">100</text>`
 
   const accessibleDescription = [
     texts.histogramDescription,
@@ -144,8 +161,9 @@ function createHistogramSvg({
     <g fill="#333" font-family="Arial, sans-serif" font-size="11">
       ${grid}
       <line x1="${left}" y1="${top + plotHeight}" x2="${width - right}" y2="${top + plotHeight}" stroke="#666" />
+      ${percentileRuler}
       ${bars}
-      <text x="${left + plotWidth / 2}" y="${height - 8}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
+      <text x="${left + plotWidth / 2}" y="${height - 58}" text-anchor="middle">${escapeHtml(texts.scoreRange)}</text>
       <text x="14" y="${top + plotHeight / 2}" text-anchor="middle" transform="rotate(-90 14 ${top + plotHeight / 2})">${escapeHtml(texts.participantCount)}</text>
     </g>
   </svg>`
@@ -213,6 +231,10 @@ export function createAssessmentReport({
     timeStyle: 'short',
     timeZone: REPORT_TIME_ZONE,
   }).format(new Date(issuedAt))
+  const studentName = [snapshot.subject.givenName, snapshot.subject.surname]
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+  const matriculationNumber = snapshot.subject.matriculationNumber
   const resultRows = [
     [
       texts.basePoints,
@@ -247,10 +269,12 @@ export function createAssessmentReport({
   const comparison = snapshot.comparison
     ? `<p class="percentile">${escapeHtml(texts.percentileText)}</p>
        <p>${escapeHtml(texts.percentileExplanation)}</p>
+       <p>${escapeHtml(texts.cohortSizeText)}</p>
        <h3>${escapeHtml(texts.histogramTitle)}</h3>
        <p>${escapeHtml(texts.histogramDescription)}</p>
        <div class="chart">${createHistogramSvg({
          histogram: snapshot.comparison.histogram,
+         percentile: snapshot.comparison.percentile,
          totalPoints: snapshot.results.totalPoints,
          availableTotalPoints: snapshot.results.availableTotalPoints,
          texts,
@@ -276,9 +300,9 @@ export function createAssessmentReport({
     .brand { display: flex; align-items: center; gap: 20px; }
     .brand img { display: block; width: 184px; height: auto; }
     .product { border-left: 1px solid #b3b3b3; padding-left: 20px; font-size: 18px; font-weight: 700; }
-    h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 20px; }
-    h3 { margin: 24px 0 8px; font-size: 17px; }
+    h1 { margin: 0; font-size: 22px; line-height: 1.15; }
+    h2 { margin: 34px 0 12px; border-bottom: 1px solid #b3b3b3; padding-bottom: 7px; color: #0028a5; font-size: 18px; }
+    h3 { margin: 24px 0 8px; font-size: 15px; }
     p { margin: 8px 0; }
     .issued { margin-top: 6px; color: #555; text-align: right; }
     dl { display: grid; grid-template-columns: minmax(150px, 1fr) 2fr; margin: 20px 0 0; border-top: 1px solid #d6d6d6; }
@@ -301,7 +325,36 @@ export function createAssessmentReport({
     .verification a { color: #0028a5; overflow-wrap: anywhere; }
     .privacy { margin-top: 28px; border-left: 4px solid #007a92; padding-left: 14px; color: #444; }
     @media (max-width: 680px) { main { padding: 24px; } header { align-items: flex-start; flex-direction: column; } .issued { text-align: left; } dl { grid-template-columns: 1fr; } dt { border-bottom: 0; } .verification { grid-template-columns: 1fr; } }
-    @media print { main { max-width: none; padding: 0; } .chart, .verification { break-inside: avoid; } }
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { font-size: 12px; line-height: 1.3; }
+      main { max-width: none; margin: 0; padding: 0; font-size: 12px; line-height: 1.3; }
+      header { gap: 12px; border-bottom-width: 2px; padding-bottom: 8px; }
+      .brand { gap: 8px; }
+      .brand img { width: 130px; }
+      .product { padding-left: 8px; font-size: 12px; }
+      h1 { font-size: 16px; }
+      h2 { margin: 10px 0 5px; padding-bottom: 3px; font-size: 13px; }
+      h3 { margin: 8px 0 4px; font-size: 12px; }
+      p { margin: 4px 0; }
+      .issued { margin-top: 3px; font-size: 9px; }
+      dl { grid-template-columns: 140px 1fr; margin-top: 10px; }
+      dt, dd { padding: 4px 7px; }
+      table { margin-top: 5px; }
+      th, td { padding: 3px 7px; }
+      .percentile { padding: 5px 8px; font-size: 12px; }
+      .chart { overflow: visible; }
+      .chart svg { min-width: 0; width: 100%; max-width: 420px; max-height: 58mm; height: auto; margin: 0 auto; }
+      .histogram-table { margin-top: 2px; font-size: 7px; line-height: 1.1; }
+      .histogram-table th, .histogram-table td { padding: 1px 3px; }
+      .verification { grid-template-columns: 72px 1fr; gap: 10px; margin-top: 10px; border-width: 1px; padding: 6px 0; }
+      .verification img { width: 72px; height: 72px; }
+      .verification h2 { margin: 0 0 3px; }
+      .privacy { margin-top: 8px; border-left-width: 2px; padding-left: 8px; font-size: 9px; }
+      .privacy h3 { font-size: 10px; }
+      .chart, .verification, .pdf-avoid { break-inside: avoid; }
+    }
+
   </style>
 </head>
 <body>
@@ -320,11 +373,13 @@ export function createAssessmentReport({
   <dl>
     <dt>${escapeHtml(texts.course)}</dt><dd>${escapeHtml(snapshot.course.displayName)}</dd>
     <dt>${escapeHtml(texts.courseReference)}</dt><dd>${escapeHtml(snapshot.course.name)}</dd>
-    <dt>${escapeHtml(texts.student)}</dt><dd>${escapeHtml(snapshot.subject.email)}</dd>
+    ${studentName ? `<dt>${escapeHtml(texts.studentName)}</dt><dd>${escapeHtml(studentName)}</dd>` : ''}
+    <dt>${escapeHtml(texts.studentEmail)}</dt><dd>${escapeHtml(snapshot.subject.email)}</dd>
+    ${matriculationNumber ? `<dt>${escapeHtml(texts.matriculationNumber)}</dt><dd>${escapeHtml(matriculationNumber)}</dd>` : ''}
     <dt>${escapeHtml(texts.identitySource)}</dt><dd>${escapeHtml(identitySourceLabel)}</dd>
   </dl>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.pointsSummary)}</h2>
     <table class="results-table">
       <thead><tr><th></th><th>${escapeHtml(texts.achieved)}</th><th>${escapeHtml(texts.available)}</th></tr></thead>
@@ -332,12 +387,12 @@ export function createAssessmentReport({
     </table>
   </section>
 
-  <section>
+    <section class="pdf-avoid">
     <h2>${escapeHtml(texts.comparisonTitle)}</h2>
     ${comparison}
   </section>
 
-  <section class="verification">
+    <section class="verification pdf-avoid">
     <img src="${escapeHtml(qrCodeDataUrl)}" alt="${escapeHtml(texts.verificationQrAlt)}" />
     <div>
       <h2>${escapeHtml(texts.verificationTitle)}</h2>
@@ -355,13 +410,9 @@ export function createAssessmentReport({
 </html>`
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const filename = snapshot.course.displayName
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/gi, '_')
-    .replace(/^_+|_+$/g, '')
 
   return {
-    filename: `KlickerUZH_Assessment_Report_${filename || 'Course'}.html`,
     url: URL.createObjectURL(blob),
+    html,
   }
 }

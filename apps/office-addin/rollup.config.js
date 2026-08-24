@@ -1,6 +1,6 @@
+import fs from 'node:fs'
 import terser from '@rollup/plugin-terser'
 import typescript from '@rollup/plugin-typescript'
-import fs from 'node:fs'
 import { defineConfig } from 'rollup'
 import serve from 'rollup-plugin-serve'
 
@@ -82,6 +82,10 @@ async function createConfig() {
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
       officeAddinPlugin(),
       !isDev && terser(),

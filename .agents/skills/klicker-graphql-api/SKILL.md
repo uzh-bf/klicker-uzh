@@ -18,7 +18,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
      // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asUserWithCatalyst | asAdmin
      nullable: true,
      type: Course,
-     args: { id: t.arg.string({ required: true }) },
+     args: {
+       id: t.arg.string({ required: true }),
+       deleteDraftActivities: t.arg.boolean(),
+     },
      resolve: withPermission(
        (args) => ({ courseId: args.id }), // -> PermissionCheck key for the target object
        DB.PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
@@ -28,6 +31,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    ```
 
    Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that.
+
+   Multi-object batch fields are the deliberate exception: `withPermission`
+   accepts one object selector and can only return one nullable field. Protect
+   the batch with the appropriate `t.withAuth(...)` scope, then have the service
+   load a bounded set of unique objects, check every object's permission, and
+   return explicit per-object outcomes. Never infer permission for the whole
+   batch from one selected object.
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
@@ -39,8 +49,18 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
    Commit the regenerated `src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json` **with** the change. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
 
+   For rolling-deployment compatibility, do not mutate an operation document
+   already used by a deployed frontend when adding fields or variables. Add a
+   newly named operation for the updated client and retain the original file so
+   its persisted hash remains in `server.json`.
+
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+
+For pagination changes, test both finite `take`/`skip` values and omitted
+values in the service, and verify that the generated operation variables and
+public schema make the arguments optional. Do not emulate an unbounded query
+with a large numeric limit.
 
 ## Subscriptions (extra steps)
 

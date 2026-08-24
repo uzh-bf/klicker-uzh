@@ -14,8 +14,8 @@ query GetUserElements(
   $sortByType: SortByType!
   $sortByAsc: Boolean!
   $showArchived: Boolean!
-  $numEntries: Int!
-  $offset: Int!
+  $numEntries: Int
+  $offset: Int
 ) {
   userElements(
     status: $status

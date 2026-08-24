@@ -13,6 +13,9 @@ export * from './elements.js'
 // export everything from the email module
 export * from './email.js'
 
+// export everything from the identity module
+export * from './identity.js'
+
 // export everything from the jwt module
 export * from './jwt.js'
 
