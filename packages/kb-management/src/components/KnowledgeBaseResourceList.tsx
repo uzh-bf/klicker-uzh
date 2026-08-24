@@ -8,6 +8,7 @@ import {
 } from '@apollo/client'
 import {
   faFileLines,
+  faEllipsisVertical,
   faLink,
   faPlus,
   faSpinner,
@@ -26,6 +27,7 @@ import {
 import {
   Badge,
   Button,
+  Dropdown,
   H2,
   Modal,
   SelectField,
@@ -1229,29 +1231,49 @@ function KnowledgeBaseResourceList({
                       </time>
                     </ShadcnTableCell>
                     <ShadcnTableCell className="w-24 whitespace-normal align-top">
-                      <div className="grid gap-2 sm:flex sm:flex-wrap">
+                      <div className="flex items-center justify-end gap-2">
                         <Button
                           onClick={() => setInspectorId(resource.id)}
                           data={{ cy: `inspect-kb-resource-${resource.id}` }}
                           className={{
-                            root: 'w-full min-w-0 px-2 text-xs sm:w-auto sm:px-3 sm:text-sm',
+                            root: 'min-w-0 px-2 text-xs sm:px-3 sm:text-sm',
                           }}
                         >
                           <Button.Label>{t('kb.inspectResource')}</Button.Label>
                         </Button>
-                        <Button
-                          destructive
-                          disabled={active || ingestingId !== null}
-                          onClick={() => setDeletionTarget(resource)}
-                          data={{ cy: `delete-kb-resource-${resource.id}` }}
-                          className={{
-                            root: 'w-full min-w-0 px-2 text-xs sm:w-auto sm:px-3 sm:text-sm',
+                        <Dropdown
+                          align="end"
+                          items={[
+                            {
+                              id: `delete-kb-resource-${resource.id}`,
+                              disabled: active || ingestingId !== null,
+                              label: t('shared.generic.delete'),
+                              onClick: () => setDeletionTarget(resource),
+                              data: {
+                                cy: `delete-kb-resource-${resource.id}`,
+                              },
+                            },
+                          ]}
+                          trigger={
+                            <>
+                              <FontAwesomeIcon
+                                icon={faEllipsisVertical}
+                                aria-hidden="true"
+                              />
+                              <span className="sr-only">
+                                {t('kb.resourceActions')}
+                              </span>
+                            </>
+                          }
+                          data={{
+                            cy: `kb-resource-actions-${resource.id}`,
                           }}
-                        >
-                          <Button.Label>
-                            {t('shared.generic.delete')}
-                          </Button.Label>
-                        </Button>
+                          className={{
+                            trigger:
+                              'h-8 w-8 border-none bg-transparent p-0 text-slate-600',
+                            item: 'py-0.5 text-sm',
+                          }}
+                        />
                       </div>
                     </ShadcnTableCell>
                   </ShadcnTableRow>

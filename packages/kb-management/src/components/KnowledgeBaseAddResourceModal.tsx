@@ -19,10 +19,16 @@ function KnowledgeBaseAddResourceModal({
 }) {
   const t = useTranslations()
   const [mode, setMode] = useState<AddResourceMode>('chooser')
+  const [uploadingDocument, setUploadingDocument] = useState(false)
 
-  const handleClose = () => {
+  const closeModal = () => {
     onClose()
     window.requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  const handleClose = () => {
+    if (uploadingDocument) return
+    closeModal()
   }
 
   useEffect(() => {
@@ -81,7 +87,7 @@ function KnowledgeBaseAddResourceModal({
 
   const handleResourceCreated = async () => {
     await onResourceCreated()
-    handleClose()
+    closeModal()
   }
 
   const isChooser = mode === 'chooser'
@@ -90,6 +96,8 @@ function KnowledgeBaseAddResourceModal({
     <Modal
       open
       onClose={handleClose}
+      escapeDisabled={uploadingDocument}
+      hideCloseButton={uploadingDocument}
       title={
         isChooser
           ? t('kb.addResourceTitle')
@@ -97,13 +105,8 @@ function KnowledgeBaseAddResourceModal({
             ? t('kb.addWebsite')
             : t('kb.addDocument')
       }
-      secondaryLabel={
-        isChooser ? t('shared.generic.close') : t('kb.backToResourceTypes')
-      }
-      onSecondaryAction={() => {
-        if (isChooser) handleClose()
-        else setMode('chooser')
-      }}
+      secondaryLabel={isChooser ? undefined : t('kb.backToResourceTypes')}
+      onSecondaryAction={isChooser ? undefined : () => setMode('chooser')}
       dataContent={{ cy: 'kb-add-resource-modal' }}
       dataCloseButton={{ cy: 'close-kb-add-resource-modal' }}
       dataSecondaryAction={{ cy: 'back-kb-add-resource' }}
@@ -171,6 +174,7 @@ function KnowledgeBaseAddResourceModal({
         <KnowledgeBaseFileDropzone
           kbId={kbId}
           embedded
+          onUploadStateChange={setUploadingDocument}
           onResourceCreated={handleResourceCreated}
         />
       )}

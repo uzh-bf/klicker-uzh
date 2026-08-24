@@ -73,7 +73,7 @@ test.describe('Knowledge base management workspace', () => {
       await expect(page.getByTestId('kb-url-title')).toBeFocused()
       await page.getByTestId('back-kb-add-resource').click()
       await expect(page.getByTestId('choose-kb-resource-website')).toBeFocused()
-      await page.getByTestId('back-kb-add-resource').click()
+      await page.getByTestId('close-kb-add-resource-modal').click()
       await expect(modal).toBeHidden()
       await expect(page.getByTestId('add-kb-resource')).toBeFocused()
 
@@ -100,6 +100,15 @@ test.describe('Knowledge base management workspace', () => {
         hasText: resourceTitle,
       })
       await expect(resourceRow).toBeVisible()
+      await expect(
+        resourceRow.locator('[data-cy^="kb-resource-status-"]')
+      ).toContainText(/Added|Hinzugefügt/)
+      await resourceRow.getByTestId(/inspect-kb-resource-/).click()
+      await expect(page.getByTestId('kb-resource-inspector')).toBeVisible()
+      await expect(
+        page.getByTestId('ingest-kb-resource-inspector')
+      ).toContainText(/Ingest|Verarbeiten/)
+      await page.getByTestId('done-kb-resource-inspector').click()
 
       await page.setViewportSize({ width: 390, height: 844 })
       await expect
@@ -135,9 +144,8 @@ test.describe('Knowledge base management workspace', () => {
           .getByRole('row')
           .filter({ hasText: resourceTitle })
         if (await resourceRow.count()) {
-          await resourceRow
-            .getByRole('button', { name: /Delete|Löschen/ })
-            .click()
+          await resourceRow.getByTestId(/kb-resource-actions-/).click()
+          await page.getByTestId(/delete-kb-resource-/).click()
           await page.getByTestId('confirm-delete-kb-resource').click()
           await expect(resourceRow).toHaveCount(0)
         }

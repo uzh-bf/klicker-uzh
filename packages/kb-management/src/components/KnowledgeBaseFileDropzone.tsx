@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H3, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
@@ -25,16 +25,22 @@ const ACCEPTED_FILES = {
 function KnowledgeBaseFileDropzone({
   kbId,
   embedded = false,
+  onUploadStateChange,
   onResourceCreated,
 }: {
   kbId: string
   embedded?: boolean
+  onUploadStateChange?: (uploading: boolean) => void
   onResourceCreated: () => Promise<unknown>
 }) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
   const [requestUpload] = useMutation(RequestKbFileUploadDocument)
   const [confirmUpload] = useMutation(ConfirmKbFileUploadDocument)
+
+  useEffect(() => {
+    onUploadStateChange?.(uploading)
+  }, [onUploadStateChange, uploading])
 
   const uploadFile = async (files: File[]) => {
     const file = files[0]
