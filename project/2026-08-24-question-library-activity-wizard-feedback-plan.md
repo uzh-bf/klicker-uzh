@@ -36,13 +36,21 @@ uncrowned regardless of Catalyst entitlement.
 - Current authority is this explicitly approved replacement execution in the
   existing checkout.
 - Ox Alpha owns replacement S1, plan `Progress`, repository-native checks,
-  local commits, integration, and required native review gates. Native
-  specialists are review gates, not slice owners.
-- Pause conditions: the Ox Alpha route fails terminally; a required native
-  reviewer is unavailable; devrouter cannot prove the exact checkout and fancy
-  domains; acceptance needs a file outside owned seams; or implementation would
-  change a product, data, security, architecture, entitlement, routing, or
-  release contract.
+  local commits, integration, and required review gates. Configured native
+  specialist roles remain preferred and are review gates, not slice owners.
+- The user's 2026-08-24 ruling authorizes independent read-only alternate review
+  agents when those configured roles are unavailable: Luna for simplification
+  and a separate Sol agent for correctness, risk, and integrated final review.
+  Reviewers remain independent of Ox Alpha execution.
+- This alternate-review authorization covers replacement S1, S2, and the
+  integrated final review. It changes no runtime, browser, routing, lifecycle,
+  publication, or cleanup boundary.
+- Pause conditions: the Ox Alpha route fails terminally; an authorized alternate
+  reviewer is unavailable after a configured-role failure; a material review
+  finding remains unresolved; devrouter cannot prove the exact checkout and
+  fancy domains; acceptance needs a file outside owned seams; or implementation
+  would change a product, data, security, architecture, entitlement, routing,
+  or release contract.
 
 ## Plan identity
 
@@ -196,7 +204,7 @@ Historical planner provenance: original native planner task
 | Activity guidance | Replacement S1 | Ox Alpha, sole writer | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
 | Count and validation feedback | Replacement S2 | Ox Alpha, sole writer | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused flow checks; browser proof remains gated. |
 | Durable convention | Replacement S3 | Ox Alpha, sole writer | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
-| Reviews | replacement S1, S2, final | configured native specialists, review gates only | immutable commits | Findings are verified and dispositioned independently of Ox Alpha. |
+| Reviews | replacement S1, S2, final | configured native specialists preferred; authorized Luna simplification and separate Sol correctness/risk/final alternates when unavailable | immutable commits | Read-only findings are verified and dispositioned independently of Ox Alpha; unavailable alternates or unresolved material findings stop progression. |
 
 No parallel implementation writer is permitted because both UI slices share
 activity creation, Playwright coverage, and the same exact runtime.
@@ -251,9 +259,11 @@ Implementation and acceptance:
 - Commit: `enhance(manage): explain activity creation choices`.
 
 Post-slice gate: run the configured native simplifier and slice reviewer over
-the immutable replacement-S1 range when available. Apply only verified findings;
-record unavailable reviewers as blockers rather than substituting another
-provider silently.
+the immutable replacement-S1 range when available. If either configured role is
+unavailable, use an independent Luna alternate for simplification and a separate
+Sol alternate for correctness and risk under the user's 2026-08-24 ruling.
+Apply only verified findings; unavailable alternates or unresolved material
+findings stop progression.
 
 ### Replacement S2 — correct selection labels and explain disabled Create
 
@@ -291,10 +301,12 @@ Implementation and acceptance:
 - Commit: `fix(manage): clarify activity wizard actions`.
 
 Post-slice gate: run the configured native simplifier and slice reviewer in
-parallel over the immutable replacement-S2 range. Lenses are exact count
-semantics, shared
-navigation compatibility, accessibility association, Formik/Yup preservation,
-test stability, and strict scope.
+parallel over the immutable replacement-S2 range. If either configured role is
+unavailable, use an independent Luna alternate for simplification and a separate
+Sol alternate for correctness and risk. Lenses are exact count semantics,
+shared navigation compatibility, accessibility association, Formik/Yup
+preservation, test stability, and strict scope. Unavailable alternates or
+unresolved material findings stop progression.
 
 ### Replacement S3 — record the reusable frontend convention
 
@@ -358,14 +370,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Integrated review and delivery
 
-- After all slice commits and fresh verification, dispatch one configured
-  native `final-reviewer` over the complete committed package range when
-  available.
+- After all slice commits and fresh verification, dispatch the configured native
+  `final-reviewer` over the complete committed package range when available. If
+  that role is unavailable, use an independent Sol alternate under the user's
+  2026-08-24 ruling.
 - Review lenses: correctness, plan compliance, user workflow, bilingual i18n,
   accessibility, shared navigation compatibility, test sufficiency,
   maintainability, bounded frontend security, and diff scope.
 - Verify every finding before applying it. One integrated correction round is
-  available; rerun every materially affected check.
+  available; rerun every materially affected check. An unavailable Sol
+  alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, blocked browser/runtime proof, and remaining withheld
   actions. No push, PR, merge, deploy, cleanup, or deletion follows without
@@ -397,7 +411,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 implemented and committed; S2/S3 remain after it.
+- Status: replacement S1 implemented and committed; authorized alternate S1
+  review is next; S2/S3 remain after it.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -405,9 +420,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Blockers: fancy-domain/browser proof remains blocked by the known devrouter
   lifecycle-lock identity issue. Fresh configured native simplifier and
   slice-reviewer attempts for replacement S1 both failed before work with
-  provider HTTP 402. The approved no-substitution review gate therefore blocks
-  S2. Generic continuity reports exist only for superseded S1 and do not
-  validate this replacement.
+  provider HTTP 402. The user's 2026-08-24 ruling authorizes an independent Luna
+  simplification alternate and a separate Sol correctness/risk alternate for
+  replacement S1, S2, and integrated final review. S2 remains blocked until the
+  S1 alternates complete and all material findings are resolved. Generic
+  continuity reports exist only for superseded S1 and do not validate this
+  replacement.
 - Current S1 evidence: four canonical rich descriptions with exact links added
   below each standard creation button; each button uses `aria-describedby` to
   its distinct `description-<data-cy>` region; all click paths remain enabled;
@@ -419,10 +437,13 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed through the exact container. A mistaken repo-wide Biome run touched
   unrelated tracked files; all were restored to committed state before staging,
   and only the three owned files plus this Progress update are in scope now.
-- Remaining: native simplifier/slice review when available, S2, narrowed S3,
-  integrated review when available, fancy-domain/browser proof behind the
-  lifecycle-lock gate, and final Progress evidence.
+- Remaining: preferred configured or authorized alternate S1 reviews, S2,
+  narrowed S3, preferred configured or authorized Sol integrated final review,
+  fancy-domain/browser proof behind the lifecycle-lock gate, and final Progress
+  evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: run available native reviews over the committed S1 range, then
-  proceed to replacement S2 without runtime/browser/publication actions.
+- Next action: run the authorized independent Luna simplification and separate
+  Sol correctness/risk reviews over the committed S1 range, resolve material
+  findings, then proceed to replacement S2 without changing any
+  runtime/browser/publication boundary.
