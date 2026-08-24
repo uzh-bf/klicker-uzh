@@ -654,5 +654,26 @@ adapted.
   null-JSON bot reports MISSING_CATALOG mode_count=1 with zero initialization
   in dry-run; --apply creates tutor version 1 at 2155 bytes with active
   pointer set; rerun reports summary_missing_catalog=0 and no new versions.
+- 2026-08-24 (P1 review + fixes): configured simplifier and slice-reviewer
+  children failed terminally with OpenRouter 402 credit exhaustion (same
+  combo route); recorded trusted GPT-5.6 Sol high-effort fallbacks preserving
+  read-only/scope contracts. Simplifier returned DONE_WITH_CONCERNS with two
+  behavior-preserving net reductions (projection consolidation into shared
+  module; remove unnecessary orderBy/take on single-row create). Slice
+  reviewer returned CHANGES_REQUESTED: audit script skipped existing-catalog
+  validation and hardcoded zero disagreements; ChatbotMode lacked a delete
+  guard allowing partial-lineage loss; missing active pointer accepted as
+  idempotent no-op; seed/Playwright JSON/catalog writes were not atomic or
+  description-parity; --apply accepted malformed mode entries. All five
+  findings verified and fixed: added chatbotPromptProjection.ts shared
+  deterministic projection, extended audit to validate every existing
+  catalog against the projection plus cross-lineage reference check,
+  fail-closed on missing active version, made seed/fixture writes atomic
+  with description parity, added migration 20260823181000 mode-delete guard
+  matching the version-guard chatbot-existence pattern. Disposable Postgres
+  regression proof: direct mode deletion rejected; owning-chatbot cascade
+  succeeds; null active pointer reported as MISSING_ACTIVE_VERSION;
+  healthy catalog reruns clean. Full check suite passes (Prisma, GraphQL,
+  Prisma Data, Playwright tsc/Prettier, Biome).
 - Current boundary: waiting for Gate 1 approval of this plan. No implementation
   file, branch base, remote branch, PR, deployment, or live data has changed.

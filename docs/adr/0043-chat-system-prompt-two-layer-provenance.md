@@ -34,7 +34,9 @@ instructions.
   `ChatbotModePromptVersion` (append-only authored text, dense per-mode
   version numbers), and `ChatbotEffectiveSystemPrompt` (exact final text keyed
   by SHA-256). Database triggers reject updates to immutable fields and direct
-  deletes; lineage disappears only with the owning chatbot cascade.
+  deletes; lineage disappears only with the owning chatbot cascade. Mode
+  deletion itself is blocked outright; a future lifecycle migration may
+  relax this if a supported mode-retirement flow needs it.
 - Every assistant message records a nullable `effectiveSystemPromptId`.
   Null means unknown (historical messages) and is never inferred. New assistant
   writes resolve provenance before generation and persist it with the turn

@@ -49,7 +49,10 @@ export async function ensureChatbotPromptCatalog(
             create: { version: 1, authoredPrompt: mode.prompt },
           },
         },
-        include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+        select: {
+          id: true,
+          versions: { select: { id: true } },
+        },
       })
       await tx.chatbotMode.update({
         where: { id: created.id },
@@ -63,6 +66,9 @@ export async function ensureChatbotPromptCatalog(
       throw new Error(
         `PROMPT_CATALOG_DISAGREEMENT mode=${mode.key} existing_len=${activeText.length} incoming_len=${mode.prompt.length}`
       )
+    }
+    if (activeText == null) {
+      throw new Error(`PROMPT_CATALOG_MISSING_ACTIVE_VERSION mode=${mode.key}`)
     }
   }
 }

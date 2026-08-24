@@ -4,6 +4,7 @@
     "src/client.ts",
     "src/chatbotPromptCatalog.ts",
     "src/chatbotPromptDefaults.ts",
+    "src/chatbotPromptProjection.ts",
     "src/prisma/client/**/*.ts"
   ],
   "compilerOptions": {
