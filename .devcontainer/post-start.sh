@@ -101,10 +101,13 @@ done
 # Run every routed app plus both Hatchet workers without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
+RUNTIME_FINGERPRINT="$(bash ./util/dev-runtime.sh fingerprint)"
+RUNTIME_GENERATION="$(bash ./util/dev-runtime.sh generation)"
 "$DEVROUTER_PROCESS_HELPER" ensure \
   --name klicker-dev \
   --match 'turbo run dev' \
   --log /tmp/dev.log \
+  -- bash ./util/dev-runtime.sh start "$RUNTIME_FINGERPRINT" "$RUNTIME_GENERATION" \
   -- pnpm run dev:container
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then

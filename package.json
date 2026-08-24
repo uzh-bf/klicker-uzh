@@ -100,6 +100,7 @@
     "syncpack:mismatches": "syncpack list-mismatches",
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
+    "test:dev-runtime": "bash ./util/test-dev-runtime.sh",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm --filter @klicker-uzh/playwright test:run",
     "test:watch": "run-p --npm-path pnpm test dev:playwright"
