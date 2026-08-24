@@ -149,21 +149,10 @@ function ActivityEvaluation({
     setChartType,
   })
 
-  if (
+  const evaluationUnavailable =
     typeof activeStack === 'number' &&
     (stacks[activeStack]?.instances.length === 0 ||
       typeof instanceResults[activeInstance] === 'undefined')
-  ) {
-    return (
-      <EvaluationUnavailableNotification
-        courseName={courseName}
-        activityName={activityName}
-        activityId={activityId}
-        activityType={activityType}
-        activityStatus={activityStatus}
-      />
-    )
-  }
 
   return (
     <>
@@ -198,142 +187,158 @@ function ActivityEvaluation({
       )}
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {instanceResults.length > 0 && typeof activeStack === 'number' && (
-          <ElementEvaluation
-            requireShowResultsConfirmation={
-              hideActiveBlockResults && stacks[activeStack].stackActive
-            }
-            isStackActive={stacks[activeStack]?.stackActive ?? false}
-            currentInstance={instanceResults[activeInstance]}
-            currentStack={stacks[activeStack]}
-            activeInstance={activeInstance}
-            activeStack={activeStack}
-            courseLanguage={courseLanguage}
-            courseId={courseId}
+        {evaluationUnavailable ? (
+          <EvaluationUnavailableNotification
             courseName={courseName}
             activityName={activityName}
             activityId={activityId}
             activityType={activityType}
             activityStatus={activityStatus}
-            isAssessmentEnabled={isAssessmentEnabled ?? false}
-            pinCode={pinCode}
-            textSize={textSize}
-            chartType={chartType}
-            showSolution={
-              instanceResults[activeInstance]?.hasSampleSolution
-                ? showSolution
-                : false
-            }
-            showExplanation={
-              instanceResults[activeInstance]?.explanation &&
-              instanceResults[activeInstance]?.explanation !== '' &&
-              !instanceResults[activeInstance]?.explanation.match(
-                /^(<br>(\n)*)$/g
-              )
-                ? showExplanation
-                : false
-            }
-            type={type}
-            lastRefetchTime={lastRefetchTime}
           />
+        ) : (
+          <>
+            {instanceResults.length > 0 && typeof activeStack === 'number' && (
+              <ElementEvaluation
+                requireShowResultsConfirmation={
+                  hideActiveBlockResults && stacks[activeStack].stackActive
+                }
+                isStackActive={stacks[activeStack]?.stackActive ?? false}
+                currentInstance={instanceResults[activeInstance]}
+                currentStack={stacks[activeStack]}
+                activeInstance={activeInstance}
+                activeStack={activeStack}
+                courseLanguage={courseLanguage}
+                courseId={courseId}
+                courseName={courseName}
+                activityName={activityName}
+                activityId={activityId}
+                activityType={activityType}
+                activityStatus={activityStatus}
+                isAssessmentEnabled={isAssessmentEnabled ?? false}
+                pinCode={pinCode}
+                textSize={textSize}
+                chartType={chartType}
+                showSolution={
+                  instanceResults[activeInstance]?.hasSampleSolution
+                    ? showSolution
+                    : false
+                }
+                showExplanation={
+                  instanceResults[activeInstance]?.explanation &&
+                  instanceResults[activeInstance]?.explanation !== '' &&
+                  !instanceResults[activeInstance]?.explanation.match(
+                    /^(<br>(\n)*)$/g
+                  )
+                    ? showExplanation
+                    : false
+                }
+                type={type}
+                lastRefetchTime={lastRefetchTime}
+              />
+            )}
+            {type === 'LiveQuiz' &&
+              leaderboard !== null &&
+              activeStack === 'leaderboard' && (
+                <div className="overflow-y-auto">
+                  <div className="border-t p-4">
+                    <div className="mx-auto max-w-2xl text-xl">
+                      {leaderboard && leaderboard.length > 0 ? (
+                        <Leaderboard
+                          leaderboard={leaderboard ?? []}
+                          podiumImgSrc={{
+                            rank1: Rank1Img,
+                            rank2: Rank2Img,
+                            rank3: Rank3Img,
+                          }}
+                        />
+                      ) : (
+                        <UserNotification
+                          className={{ message: 'text-lg' }}
+                          type="warning"
+                          message={t('manage.evaluation.noSignedInStudents')}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            {type === 'LiveQuiz' &&
+              feedbacks !== null &&
+              activeStack === 'feedbacks' && (
+                <div className="overflow-y-auto print:overflow-y-visible">
+                  <div className="p-4">
+                    <div className="mx-auto max-w-5xl text-xl">
+                      {feedbacks && feedbacks.length > 0 ? (
+                        <EvaluationFeedbacks
+                          feedbacks={feedbacks}
+                          liveQuizName={activityName}
+                        />
+                      ) : (
+                        <UserNotification
+                          className={{ message: 'text-lg' }}
+                          type="warning"
+                          message={t('manage.evaluation.noFeedbacksYet')}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            {type === 'LiveQuiz' &&
+              confusionFeedbacks !== null &&
+              activeStack === 'confusion' && (
+                <div className="overflow-y-auto">
+                  <div className="border-t p-4">
+                    <div className="mx-auto max-w-5xl text-xl">
+                      {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
+                        <EvaluationConfusion confusionTS={confusionFeedbacks} />
+                      ) : (
+                        <UserNotification
+                          className={{ message: 'text-lg' }}
+                          type="warning"
+                          message={t(
+                            'manage.evaluation.noConfusionFeedbacksYet'
+                          )}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+          </>
         )}
-        {type === 'LiveQuiz' &&
-          leaderboard !== null &&
-          activeStack === 'leaderboard' && (
-            <div className="overflow-y-auto">
-              <div className="border-t p-4">
-                <div className="mx-auto max-w-2xl text-xl">
-                  {leaderboard && leaderboard.length > 0 ? (
-                    <Leaderboard
-                      leaderboard={leaderboard ?? []}
-                      podiumImgSrc={{
-                        rank1: Rank1Img,
-                        rank2: Rank2Img,
-                        rank3: Rank3Img,
-                      }}
-                    />
-                  ) : (
-                    <UserNotification
-                      className={{ message: 'text-lg' }}
-                      type="warning"
-                      message={t('manage.evaluation.noSignedInStudents')}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        {type === 'LiveQuiz' &&
-          feedbacks !== null &&
-          activeStack === 'feedbacks' && (
-            <div className="overflow-y-auto print:overflow-y-visible">
-              <div className="p-4">
-                <div className="mx-auto max-w-5xl text-xl">
-                  {feedbacks && feedbacks.length > 0 ? (
-                    <EvaluationFeedbacks
-                      feedbacks={feedbacks}
-                      liveQuizName={activityName}
-                    />
-                  ) : (
-                    <UserNotification
-                      className={{ message: 'text-lg' }}
-                      type="warning"
-                      message={t('manage.evaluation.noFeedbacksYet')}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        {type === 'LiveQuiz' &&
-          confusionFeedbacks !== null &&
-          activeStack === 'confusion' && (
-            <div className="overflow-y-auto">
-              <div className="border-t p-4">
-                <div className="mx-auto max-w-5xl text-xl">
-                  {confusionFeedbacks && confusionFeedbacks.length > 0 ? (
-                    <EvaluationConfusion confusionTS={confusionFeedbacks} />
-                  ) : (
-                    <UserNotification
-                      className={{ message: 'text-lg' }}
-                      type="warning"
-                      message={t('manage.evaluation.noConfusionFeedbacksYet')}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
       </div>
 
-      <div
-        className={twMerge(
-          'z-20 h-max flex-none',
-          (activeStack === 'feedbacks' ||
-            activeStack === 'confusion' ||
-            activeStack === 'leaderboard') &&
-            'h-[2.3rem]'
-        )}
-      >
-        <EvaluationFooter
-          type={type}
-          activeStack={activeStack}
-          isStackActive={
-            typeof activeStack === 'number'
-              ? (stacks[activeStack]?.stackActive ?? false)
-              : false
-          }
-          textSize={textSize}
-          setTextSize={setTextSize}
-          showSolution={showSolution}
-          setShowSolution={setShowSolution}
-          showExplanation={showExplanation}
-          setShowExplanation={setShowExplanation}
-          chartType={chartType}
-          setChartType={setChartType}
-          currentInstance={instanceResults[activeInstance]}
-        />
-      </div>
+      {!evaluationUnavailable && (
+        <div
+          className={twMerge(
+            'z-20 h-max flex-none',
+            (activeStack === 'feedbacks' ||
+              activeStack === 'confusion' ||
+              activeStack === 'leaderboard') &&
+              'h-[2.3rem]'
+          )}
+        >
+          <EvaluationFooter
+            type={type}
+            activeStack={activeStack}
+            isStackActive={
+              typeof activeStack === 'number'
+                ? (stacks[activeStack]?.stackActive ?? false)
+                : false
+            }
+            textSize={textSize}
+            setTextSize={setTextSize}
+            showSolution={showSolution}
+            setShowSolution={setShowSolution}
+            showExplanation={showExplanation}
+            setShowExplanation={setShowExplanation}
+            chartType={chartType}
+            setChartType={setChartType}
+            currentInstance={instanceResults[activeInstance]}
+          />
+        </div>
+      )}
     </>
   )
 }
