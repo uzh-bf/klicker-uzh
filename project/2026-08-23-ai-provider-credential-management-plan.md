@@ -579,8 +579,8 @@ flowchart TD
 
 ## Progress
 
-- **Status:** Stack 1 complete through K4; remaining slices D1, I1, C1, and final integration review.
-- **Active slice:** none; clean checkpoint after K4 commit.
+- **Status:** Stack 1 complete through K4; Stack 2 in progress: D1 complete, I1 complete; remaining C1 and final integration review.
+- **Active slice:** C1 (Catalyst stateless gateway transport) is next per plan order.
 - **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26 (PASS-WITH-NOTES); K4 UI 39a45a106.
 - **K4 verification summary:** tsc typecheck passes across all 26 packages; format:check passes; gitleaks clean; pre-commit hooks passed. Browser verification completed via agent-browser: component renders on /user/settings with Add Credential toggle, password-masked input, disabled Register until input, registration error path confirmed with synthetic key in EN and DE locales, keyboard Tab navigation functional. Screenshots saved at /tmp/k4-{settings,register,error}-en.png and k4-settings-de.png. No secret value appears in any response or storage.
 - **Review reports location:** project/_local/reviews/2026-08-24-k{2,3}-slice-review.md and -simplifier.md (local-only, gitignored).
@@ -589,3 +589,5 @@ flowchart TD
 - **Unresolved required gates:** D1/I1 contracts before gateway finalization; institutional trace governance; any external delivery or runtime authority.
 - **Delivery layer:** local verified commits only; push/PR/merge/deploy withheld.
 - **Next action:** begin D1 per plan definition; requires fresh context for contract-heavy work.
+- **D1 completed:** 93a09254 on rs/byok-isolated-litellm in ai/deployment worktree trees/rs/byok-isolated-litellm. 124 litellm tests pass; both validators green; negative tests prove database_url/success_callback violations rejected; callback check tightened to forbid all callback vectors. Review: PASS-WITH-NOTES at project/_local/ within the deployment worktree.
+- **I1 completed:** dea37145 on rs/byok-gateway-vault in df-cloud worktree trees/rs/byok-gateway-vault (base 17141b28 = origin/stg head). Infra script 72 pass / 0 fail; klicker suite 27 pass / 0 fail; tsc clean both packages; prettier clean; gitleaks staged scan clean. Known unrelated pre-existing failure on pristine origin/stg: db-credentials-v2 single-writer guard. Authoritative preview deferred pending push authorization.
