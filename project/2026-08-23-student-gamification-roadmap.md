@@ -3,10 +3,11 @@
 ## Identity and status
 
 - Date: 2026-08-23
-- Status: S4 PWA presentation correction in progress on branch
-  `rs/gamification-achievement-receipts`. S1 nearby leaderboard, S2 private
-  Study streaks, and S3 achievement catalog hygiene and receipts are delivered,
-  verified, and reviewed. See the Progress section for evidence.
+- Status: S4 PWA presentation correction implemented and locally verified on
+  branch `rs/gamification-achievement-receipts`. The S4 presentation passes
+  review; the integrated final review found follow-up blockers in pre-existing
+  S2/S3 behavior, so the full package is not marked complete. See Progress and
+  the review artifact for evidence.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: `origin/v3` at `4ef202492`
 - Roadmap worktree: branch `rs/gamification-roadmap` at
@@ -724,3 +725,13 @@ Append entries; do not rewrite history.
   `/private/tmp/gamification-home-en-full.png`,
   `/private/tmp/gamification-course-en-desktop.png`, and
   `/private/tmp/gamification-course-en-mobile.png`.
+- 2026-08-24 — The integrated Sol review passed the S4 presentation itself,
+  but identified eight pre-existing S2/S3 findings covering rollout
+  initialization, distinct response counting, missed-day reconciliation,
+  freeze transitions, achievement receipt lifecycle, public receipt metadata,
+  opt-in notices, and participant identifiers in logs. These are recorded in
+  `project/_local/reviews/2026-08-24-gamification-s4-final-review.md` and are
+  not caused by the S4 UI diff. The configured simplifier route was unavailable
+  because its provider returned a terminal HTTP 402 budget error; no fallback
+  role was substituted. The branch remains locally committed but not marked
+  package-complete until those separate findings are dispositioned.
