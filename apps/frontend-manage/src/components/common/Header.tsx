@@ -14,8 +14,11 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Navigation,
+  type NavigationDropdownItemProps,
   type NavigationItemProps,
   type NavigationMenuItemProps,
+  type NavigationSubmenuProps,
+  Tooltip,
 } from '@uzh-bf/design-system'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -158,55 +161,63 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
         content: 'flex flex-col gap-0.5',
       },
     },
-    {
-      type: 'dropdown',
-      key: 'analytics-menubar-item',
-      label: t('manage.general.analytics'),
-      icon: faBolt,
-      disabled: !learningAnalyticsEnabled,
-      active: router.pathname.includes('/analytics'),
-      elements: [
-        ...(courses?.slice(0, 5).map((course) => ({
-          key: `course-analytics-${course.id}`,
-          type: 'submenu',
-          label: course.name,
-          data: { cy: `course-analytics-menu-${course.name}` },
-          options: [
-            {
-              key: `activity-dashboard-${course.name}`,
-              type: 'link',
-              label: t('manage.analytics.activity'),
-              onClick: () => router.push(`/analytics/${course.id}/activity`),
-            },
-            {
-              key: `progress-dashboard-${course.name}`,
-              type: 'link',
-              label: t('manage.analytics.performance'),
-              onClick: () => router.push(`/analytics/${course.id}/performance`),
-            },
-            {
-              key: `quiz-dashboard-${course.name}`,
-              type: 'link',
-              label: t('manage.analytics.quizzes'),
-              onClick: () => router.push(`/analytics/${course.id}/quizzes`),
-            },
-          ],
-        })) ?? []),
+  ]
+
+  const analyticsElements: NavigationDropdownItemProps['elements'] = [
+    ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
+      key: `course-analytics-${course.id}`,
+      type: 'submenu',
+      label: course.name,
+      data: { cy: `course-analytics-menu-${course.name}` },
+      options: [
         {
-          key: 'analytics-all-courses-separator',
-          type: 'separator',
+          key: `activity-dashboard-${course.name}`,
+          type: 'link',
+          label: t('manage.analytics.activity'),
+          onClick: () => router.push(`/analytics/${course.id}/activity`),
         },
         {
-          key: 'analytics-all-courses',
+          key: `progress-dashboard-${course.name}`,
           type: 'link',
-          label: t('manage.analytics.olderCourses'),
-          onClick: () => router.push('/analytics'),
+          label: t('manage.analytics.performance'),
+          onClick: () => router.push(`/analytics/${course.id}/performance`),
+        },
+        {
+          key: `quiz-dashboard-${course.name}`,
+          type: 'link',
+          label: t('manage.analytics.quizzes'),
+          onClick: () => router.push(`/analytics/${course.id}/quizzes`),
         },
       ],
-      data: { cy: 'analytics' },
-      className: { icon: 'text-orange-400' },
-    } as NavigationItemProps,
+    })) ?? []),
+    {
+      key: 'analytics-all-courses-separator',
+      type: 'separator',
+    },
+    {
+      key: 'analytics-all-courses',
+      type: 'link',
+      label: t('manage.analytics.olderCourses'),
+      onClick: () => router.push('/analytics'),
+    },
   ]
+  const analyticsNavigation: NavigationDropdownItemProps = {
+    type: 'dropdown',
+    key: 'analytics-menubar-item',
+    label: t('manage.general.analytics'),
+    icon: faBolt,
+    disabled: !learningAnalyticsEnabled,
+    active: router.pathname.includes('/analytics'),
+    elements: analyticsElements,
+    data: { cy: 'analytics' },
+    className: { icon: 'text-orange-400' },
+  }
+  const analyticsMenu = (
+    <Navigation
+      items={[analyticsNavigation]}
+      className={{ root: 'shadow-none' }}
+    />
+  )
 
   const rightNavigation: NavigationItemProps[] = [
     {
@@ -304,6 +315,18 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
+          {learningAnalyticsEnabled ? (
+            analyticsMenu
+          ) : (
+            <Tooltip
+              tooltip={t('manage.analytics.featureUnavailable')}
+              delay={0}
+              dataContent={{ cy: 'analytics-disabled-reason' }}
+              className={{ tooltip: 'z-30' }}
+            >
+              {analyticsMenu}
+            </Tooltip>
+          )}
         </div>
         <Navigation
           items={rightNavigation}

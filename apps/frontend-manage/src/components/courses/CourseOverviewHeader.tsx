@@ -241,6 +241,9 @@ function CourseOverviewHeader({
         window.open(`/analytics/${course.id}/activity`, '_blank')
       },
       disabled: !learningAnalyticsEnabled,
+      tooltip: !learningAnalyticsEnabled
+        ? t('manage.analytics.featureUnavailable')
+        : undefined,
       data: { cy: 'course-learning-analytics-link' },
     },
     ...(course.isAssessmentEnabled && course.isManager

@@ -1,7 +1,7 @@
 import { faPieChart } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import type { StackEvaluation } from '@klicker-uzh/graphql/dist/ops'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type {
   ActiveStackType,
@@ -58,6 +58,20 @@ function EvaluationNavigation({
     numOfInstances,
   })
 
+  const analyticsButton = (
+    <Button
+      disabled={!learningAnalyticsEnabled}
+      className={{ root: 'h-8 py-0' }}
+      onClick={() =>
+        window.open(`/analytics/${courseId}/quizzes/${activityId}`, '_blank')
+      }
+      data={{ cy: 'quiz-analytics' }}
+    >
+      <Button.Icon icon={faPieChart} />
+      <Button.Label>{t('manage.analytics.quizAnalytics')}</Button.Label>
+    </Button>
+  )
+
   return (
     <div className="flex w-full flex-row justify-between border-b-2 border-solid bg-white px-3 print:hidden">
       {typeof activeStack === 'number' ? (
@@ -73,20 +87,17 @@ function EvaluationNavigation({
       )}
       <div className="flex flex-row items-center gap-4">
         {type === 'Asynchronous' ? (
-          <Button
-            disabled={!learningAnalyticsEnabled}
-            className={{ root: 'h-8 py-0' }}
-            onClick={() =>
-              window.open(
-                `/analytics/${courseId}/quizzes/${activityId}`,
-                '_blank'
-              )
-            }
-            data={{ cy: 'quiz-analytics' }}
-          >
-            <Button.Icon icon={faPieChart} />
-            <Button.Label>{t('manage.analytics.quizAnalytics')}</Button.Label>
-          </Button>
+          learningAnalyticsEnabled ? (
+            analyticsButton
+          ) : (
+            <Tooltip
+              tooltip={t('manage.analytics.featureUnavailable')}
+              delay={0}
+              dataContent={{ cy: 'quiz-analytics-disabled-reason' }}
+            >
+              {analyticsButton}
+            </Tooltip>
+          )
         ) : null}
         <StackNavigation
           stacks={stacks}

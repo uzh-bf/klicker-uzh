@@ -153,6 +153,9 @@ function usePracticeQuizActions({
             `/analytics/${practiceQuiz.courseId}/quizzes/${practiceQuiz.id}`
           ),
         disabled: !learningAnalyticsEnabled,
+        tooltip: !learningAnalyticsEnabled
+          ? t('manage.analytics.featureUnavailable')
+          : undefined,
         data: {
           cy: `open-analytics-practice-quiz-${practiceQuiz.name}`,
         },

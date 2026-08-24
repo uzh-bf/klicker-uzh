@@ -1,7 +1,7 @@
 import { faEllipsis, faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { ActivityType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown } from '@uzh-bf/design-system'
+import { Button, Dropdown, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { ActivityAction } from '../actions/useAvailableActions'
 
@@ -30,10 +30,11 @@ function ActivityActions({
   return (
     <div className="-mr-1 flex flex-row items-end gap-1">
       {availableActions.slice(0, 1).map((action) => {
-        return (
+        const actionKey = `activity-${activityType}-${activityId}-${action.id}`
+        const button = (
           <Button
             basic
-            key={`activity-${activityType}-${activityId}-${action.id}`}
+            key={actionKey}
             disabled={action.disabled}
             onClick={action.onClick}
             className={{
@@ -45,6 +46,19 @@ function ActivityActions({
             <Button.Label>{action.label}</Button.Label>
           </Button>
         )
+
+        return action.tooltip ? (
+          <Tooltip
+            key={actionKey}
+            tooltip={action.tooltip}
+            delay={0}
+            className={{ tooltip: 'z-30' }}
+          >
+            {button}
+          </Tooltip>
+        ) : (
+          button
+        )
       })}
 
       <Dropdown
@@ -52,6 +66,7 @@ function ActivityActions({
           (action) => ({
             id: action.id,
             disabled: action.disabled,
+            tooltip: action.tooltip,
             label: (
               <div
                 className={`flex items-center rounded px-1.5 py-0.5 ${

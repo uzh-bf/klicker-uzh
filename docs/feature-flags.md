@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-23'
+timestamp: '2026-08-24'
 tags:
   - architecture
   - frontend
@@ -26,6 +26,10 @@ initialize GrowthBook only when they adopt their first flag.
 | Key                  | Consumer           | Fallback | Disabled behavior                                    |
 | -------------------- | ------------------ | -------- | ---------------------------------------------------- |
 | `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
+
+Disabled analytics controls explain that the feature is not yet available for
+the current account. This keeps a deliberately staged rollout distinguishable
+from a broken control without implying that lecturers can enable it themselves.
 
 Manage mounts the browser provider at the application root with anonymous
 attributes, then updates it after `QUserProfile` resolves to target the
@@ -114,12 +118,15 @@ attributes when they become available:
 ```
 
 `packages/feature-flags/src/react.tsx:FeatureFlagProvider` creates one client
-per provider mount, applies new attributes without recreating it, and dedupes
-initialization under React Strict Mode. It loads the feature payload once; a
-flag change is picked up on the next provider mount or page reload. Missing
-configuration initializes an empty payload without a network request. The
-browser adapter disables GrowthBook auto-experiments, visual changes, JavaScript
-injection, and URL redirects; this foundation evaluates feature flags only.
+per provider mount, applies new attributes through the browser adapter's
+sanitizer without recreating it, and dedupes initialization under React Strict
+Mode. It loads the feature payload once; a flag change is picked up on the next
+provider mount or page reload. Missing configuration initializes an empty
+payload without a network request and emits a credential-free browser warning.
+Failed SDK initialization emits the same class of safe warning while retaining
+false fallbacks. The browser adapter disables GrowthBook auto-experiments,
+visual changes, JavaScript injection, and URL redirects; this foundation
+evaluates feature flags only.
 
 All five deployed Next.js images are build-time ready for browser adoption:
 `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa`

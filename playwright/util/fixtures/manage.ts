@@ -25,12 +25,24 @@ export type ValidateFeatureAvailabilityOptions = {
   privatePreview: boolean
 }
 
-async function expectFlaggedControl(locator: Locator, enabled: boolean) {
+const LEARNING_ANALYTICS_UNAVAILABLE =
+  'Learning analytics are not available for your account yet.'
+
+async function expectFlaggedControl(
+  page: Page,
+  locator: Locator,
+  enabled: boolean,
+  unavailableReason?: string
+) {
   await expect(locator).toBeVisible()
   if (enabled) {
     await expect(locator).toBeEnabled()
   } else {
     await expect(locator).toBeDisabled()
+    if (unavailableReason) {
+      await locator.hover()
+      await expect(page.getByRole('tooltip')).toContainText(unavailableReason)
+    }
   }
 }
 
@@ -138,8 +150,10 @@ export async function validateFeatureAvailabilityFixture(
 ) {
   // analytics nav item
   await expectFlaggedControl(
+    page,
     page.getByTestId('analytics'),
-    options.learningAnalytics
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
   )
 
   // course learning analytics link
@@ -149,7 +163,12 @@ export async function validateFeatureAvailabilityFixture(
   const courseLearningAnalytics = page.getByTestId(
     'course-learning-analytics-link'
   )
-  await expectFlaggedControl(courseLearningAnalytics, options.learningAnalytics)
+  await expectFlaggedControl(
+    page,
+    courseLearningAnalytics,
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
+  )
   await page.keyboard.press('Escape')
 
   // sharing buttons per activity type (private preview only)
@@ -191,8 +210,10 @@ export async function validateFeatureAvailabilityFixture(
     page.getByTestId(`view-activity-log-${SEED.microlearning}`)
   ).toBeVisible()
   await expectFlaggedControl(
+    page,
     page.getByTestId(microLearningAnalytics),
-    options.learningAnalytics
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
   )
   if (options.privatePreview) {
     await expect(
@@ -218,8 +239,10 @@ export async function validateFeatureAvailabilityFixture(
     page.getByTestId(`view-activity-log-${SEED.practiceQuiz}`)
   ).toBeVisible()
   await expectFlaggedControl(
+    page,
     page.getByTestId(practiceQuizAnalytics),
-    options.learningAnalytics
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
   )
   if (options.privatePreview) {
     await expect(
@@ -264,8 +287,10 @@ export async function validateFeatureAvailabilityFixture(
   const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
   await page.goto(`${manageUrl}/microLearning/${microLearning.id}/evaluation`)
   await expectFlaggedControl(
+    page,
     page.getByTestId('quiz-analytics'),
-    options.learningAnalytics
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
   )
 }
 

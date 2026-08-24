@@ -189,6 +189,9 @@ function useMicroLearningActions({
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
           ),
         disabled: !learningAnalyticsEnabled,
+        tooltip: !learningAnalyticsEnabled
+          ? t('manage.analytics.featureUnavailable')
+          : undefined,
         data: {
           cy: `open-analytics-microlearning-${microLearning.name}`,
         },
