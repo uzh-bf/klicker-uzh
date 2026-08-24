@@ -338,7 +338,7 @@ function Index() {
           />
         </div>
 
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1.5">
@@ -394,13 +394,13 @@ function Index() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {!dataElements || loadingElements ? (
-                <div className="flex h-full items-center justify-center">
-                  <Loader />
-                </div>
-              ) : (
-                <>
+            {!dataElements || loadingElements ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader />
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
@@ -439,22 +439,22 @@ function Index() {
                       await refetchElements()
                     }}
                   />
+                </div>
 
-                  {elements.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfElements}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      showAll
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {elements.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfElements}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    showAll
+                    className="flex-none"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
