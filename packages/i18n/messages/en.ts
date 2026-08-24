@@ -1830,6 +1830,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       githubRepositoryDesc: 'Source code of the open-source project',
       survey:
         'We would like to know what you think about KlickerUZH and our future plans! Please give us your feedback in a <link>short survey (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Request Catalyst Access',
+        subtitle: 'Tell us about your use case and we will get back to you.',
+        explanation:
+          'Send your request to klicker@df.uzh.ch. We will reply to your account email and use your data only to process this request.',
+        institution: 'Institution',
+        institutionRequired: 'Please enter your institution.',
+        institutionMin: 'Please enter at least 2 characters.',
+        institutionMax: 'Please enter at most 160 characters.',
+        useCase: 'Intended Use',
+        useCaseRequired: 'Please describe your intended use.',
+        useCaseMin: 'Please enter at least 20 characters.',
+        useCaseMax: 'Please enter at most 2000 characters.',
+        submit: 'Send Request',
+      },
     },
     login: {
       lecturerLogin: 'Login Lecturers',
