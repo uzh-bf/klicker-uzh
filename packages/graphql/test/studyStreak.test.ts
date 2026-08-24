@@ -29,6 +29,7 @@ import {
   FREEZE_EARN_THRESHOLD,
   getStudyStreakResponsesToday,
   QUALIFIED_RESPONSES_PER_DAY,
+  reconcileStudyStreak,
 } from '../src/services/studyStreak.js'
 
 const initialState = (): Parameters<typeof applyQualifiedDate>[0] => ({
@@ -213,6 +214,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
     let participationId: number
     let practiceQuizId: string
     let fifthInstanceId: number
+    let instanceIds: number[] = []
 
     beforeAll(async () => {
       prisma = prismaClient
@@ -314,6 +316,7 @@ describe.skipIf(!process.env.DATABASE_URL)(
         orderBy: { order: 'asc' },
       })
       const instances = stacks.map((stack) => stack.elements[0]!)
+      instanceIds = instances.map(({ id }) => id)
       fifthInstanceId = instances[4]!.id
       const answeredAt = new Date('2026-08-24T12:00:00.000Z')
       const emptyResponse = {} as SingleQuestionResponse
@@ -388,6 +391,74 @@ describe.skipIf(!process.env.DATABASE_URL)(
       await expect(
         getStudyStreakResponsesToday({ prisma }, { courseId, participantId })
       ).resolves.toBe(5)
+    })
+
+    it('reconciles overdue details once and consumes one freeze for one missed weekday', async () => {
+      vi.setSystemTime(new Date('2026-08-26T12:00:00.000Z'))
+      const answeredAt = new Date('2026-08-24T12:00:00.000Z')
+      const emptyResponse = {} as SingleQuestionResponse
+
+      await prisma.questionResponseDetail.createMany({
+        data: instanceIds.slice(0, 5).map((elementInstanceId, index) => ({
+          score: 0,
+          timeSpent: 1,
+          response: emptyResponse,
+          participantId,
+          participationId,
+          elementInstanceId,
+          practiceQuizId,
+          createdAt: new Date(answeredAt.getTime() + index * 1000),
+        })),
+      })
+      await prisma.questionResponseDetail.create({
+        data: {
+          score: 0,
+          timeSpent: 1,
+          response: emptyResponse,
+          participantId,
+          participationId,
+          elementInstanceId: instanceIds[0]!,
+          practiceQuizId,
+          createdAt: new Date(answeredAt.getTime() + 5000),
+        },
+      })
+
+      await reconcileStudyStreak({ prisma }, { courseId, participantId })
+      const afterFirstReconciliation = await prisma.participation.findUnique({
+        where: { id: participationId },
+        select: {
+          studyStreakCurrent: true,
+          studyStreakLongest: true,
+          studyStreakFreezeBalance: true,
+          studyStreakQualifiedDaysSinceFreeze: true,
+          studyStreakLastQualifiedDate: true,
+          studyStreakLastProcessedDate: true,
+        },
+      })
+
+      expect(afterFirstReconciliation).toMatchObject({
+        studyStreakCurrent: 1,
+        studyStreakLongest: 1,
+        studyStreakFreezeBalance: 1,
+        studyStreakQualifiedDaysSinceFreeze: 1,
+        studyStreakLastQualifiedDate: new Date('2026-08-24T00:00:00.000Z'),
+        studyStreakLastProcessedDate: new Date('2026-08-25T00:00:00.000Z'),
+      })
+
+      await reconcileStudyStreak({ prisma }, { courseId, participantId })
+      const afterSecondReconciliation = await prisma.participation.findUnique({
+        where: { id: participationId },
+        select: {
+          studyStreakCurrent: true,
+          studyStreakLongest: true,
+          studyStreakFreezeBalance: true,
+          studyStreakQualifiedDaysSinceFreeze: true,
+          studyStreakLastQualifiedDate: true,
+          studyStreakLastProcessedDate: true,
+        },
+      })
+
+      expect(afterSecondReconciliation).toEqual(afterFirstReconciliation)
     })
   }
 )
