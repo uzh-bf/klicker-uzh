@@ -142,28 +142,34 @@
 
 ## Progress
 
-- Status: both slices are implemented and verified; final commit, committed-head
-  reconciliation, and exact runtime shutdown remain.
-- Completed: fresh remote/worktree audit, root-cause evidence, plan commit,
-  deterministic runtime commit, semantic readiness and repair implementation,
-  focused contract tests, integrated main-session correctness/maintainability/
-  shell-safety review, repository quality gate, production build, and exact
-  runtime recovery proofs.
-- Latest evidence: warm `devrouter ensure` reused PID 4989; a deliberate scoped
-  Chat repair replaced it with PID 7372, removed the generated marker, consumed
-  the one-shot request, and restored `401 application/json`. The full quality
-  gate passed after provisioning the image-pinned Python 3.12 interpreter in
-  the verification container. The 23-task production build passed, and the
-  following ensure used its one recreate budget and restored the same Chat
-  contract.
-- Remaining: commit Slice 2, reconcile and recheck the committed head, stop the
-  exact source-path runtime, prove its provider state and routes are absent,
-  then record terminal progress.
+- Status: terminal. Both slices are locally committed and verified, and the
+  exact runtime has been stopped without deleting its data.
+- Completed: fresh remote/worktree audit, root-cause evidence, all three planned
+  local commits, focused contract tests, integrated main-session correctness/
+  maintainability/shell-safety review, repository quality gate, production
+  build, committed-head reconciliation, exact runtime recovery proofs, and
+  runtime release.
+- Latest runtime evidence: warm `devrouter ensure` reused PID 4989; a deliberate
+  scoped Chat repair replaced it with PID 7372, removed the generated marker,
+  consumed the one-shot request, and restored `401 application/json`. The
+  committed implementation head then started as PID 4786 and passed the same
+  semantic Chat check. The full quality gate passed after provisioning the
+  image-pinned Python 3.12 interpreter in the verification container, and the
+  23-task production build passed.
+- Lifecycle evidence: `devrouter stop` reported that it stopped DevPod
+  `rs-dev-runtime-cache-self-heal` and freed all ten workspace routes. DevPod
+  reports provider state `Stopped`; direct Docker and devrouter-state searches
+  find no active container or route-state entry for the exact workspace. The
+  aggregate `devrouter ls` command currently fails before listing because it
+  cannot determine the host route-lock process identity, so that command is not
+  counted as positive evidence.
+- Remaining: none within the authorized local scope. Push and PR creation remain
+  withheld.
 - Required delivery layer: verified local committed branch.
-- Achieved delivery layer: isolated branch with the plan and Slice 1 committed;
-  verified Slice 2 is pending its local commit.
+- Achieved delivery layer: isolated, verified local branch with the plan and
+  both implementation slices committed.
 - Review limitation: required specialist roles are unavailable in this side
   conversation. The completed main-session review found no outstanding issue;
   no child review is claimed.
-- Next action: commit Slice 2, verify the committed head, then stop and prove
-  release of the exact runtime.
+- Next action: none. Publishing the branch and creating or updating a PR require
+  separate authorization.
