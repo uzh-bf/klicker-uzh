@@ -306,10 +306,11 @@ Pause before implementation or between slices for a material product/API decisio
 - [x] Independent Sol UX audit completed; strengths, findings, and roadmap corrections integrated.
 - [x] Planner review completed; scope, existing contracts, table primitive, sequencing, evidence traceability, and execution boundaries corrected.
 - [x] Independent Sol final review completed after corrections; roadmap approved with no remaining concerns.
-- [x] User approved the KB-local redesign package and implementation goal; S3 is next after S1/S2.
+- [x] User approved the KB-local redesign package and implementation goal; local execution is authorized through S5.
 - [x] S1 resource-first shell implemented locally: KB catalog/detail use semantic `main`/`H1` landmarks, metrics are compact metadata, and Resources precedes creation/configuration. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [x] S2 metadata table implemented locally: the resource cards are now a semantic design-system table with responsive metadata, server-backed filters/search/load-more/polling, selection, inspector, deletion, and ingestion behavior preserved. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [x] S3 unified add-resource chooser implemented locally: one `+` action opens a KB-local chooser for Website and Document, Video is disabled as coming soon, existing BLOB/URL mutations remain in explicit forms, and the old empty-state links/direct form stack are removed. `@klicker-uzh/kb-management` check and targeted formatting pass.
+- [x] S3 accessibility correction completed after review: the chooser now associates its description, traps Tab locally, and restores focus to the exact `+ Add resource` trigger after close. No shared modal change was required.
 - [ ] S4 secondary configuration and integrated browser proof.
 
 ## Verification plan for implementation

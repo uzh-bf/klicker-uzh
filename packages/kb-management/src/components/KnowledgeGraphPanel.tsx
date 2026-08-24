@@ -206,7 +206,13 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
   )
 }
 
-function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
+function KnowledgeGraphPanel({
+  kbId,
+  compact = false,
+}: {
+  kbId: string
+  compact?: boolean
+}) {
   const t = useTranslations()
   const format = useFormatter()
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
@@ -319,12 +325,20 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
 
   return (
     <section
-      className="mt-6 space-y-4 border-t border-gray-200 pt-6"
+      className={
+        compact
+          ? 'mt-3 space-y-4'
+          : 'mt-6 space-y-4 border-t border-gray-200 pt-6'
+      }
       data-cy="kb-knowledge-graph-panel"
     >
       <div>
-        <H3>{t('kb.graphTitle')}</H3>
-        <p className="mt-1 text-sm text-slate-600">
+        {!compact ? <H3>{t('kb.graphTitle')}</H3> : null}
+        <p
+          className={
+            compact ? 'text-sm text-slate-600' : 'mt-1 text-sm text-slate-600'
+          }
+        >
           {t('kb.graphDescription')}
         </p>
       </div>

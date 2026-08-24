@@ -3,7 +3,7 @@ import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
@@ -15,6 +15,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
   const [addResourceOpen, setAddResourceOpen] = useState(false)
+  const addResourceTriggerRef = useRef<HTMLElement | null>(null)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
   })
@@ -189,13 +190,43 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
-        onAddResource={() => setAddResourceOpen(true)}
+        onAddResource={(trigger) => {
+          addResourceTriggerRef.current = trigger
+          setAddResourceOpen(true)
+        }}
       />
-      <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
-      <KnowledgeGraphPanel kbId={kbId} />
+      <details className="mt-6" data-cy="kb-chatbot-settings">
+        <summary className="cursor-pointer rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
+          <span
+            className="font-semibold text-slate-900"
+            role="heading"
+            aria-level={2}
+          >
+            {t('kb.chatbotsTitle')}
+          </span>
+        </summary>
+        <KnowledgeBaseChatbotBindings
+          kbId={kbId}
+          compact
+          onChanged={refreshMetrics}
+        />
+      </details>
+      <details className="mt-4" data-cy="kb-graph-settings">
+        <summary className="cursor-pointer rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
+          <span
+            className="font-semibold text-slate-900"
+            role="heading"
+            aria-level={2}
+          >
+            {t('kb.graphTitle')}
+          </span>
+        </summary>
+        <KnowledgeGraphPanel kbId={kbId} compact />
+      </details>
       {addResourceOpen ? (
         <KnowledgeBaseAddResourceModal
           kbId={kbId}
+          triggerRef={addResourceTriggerRef}
           onClose={() => setAddResourceOpen(false)}
           onResourceCreated={handleResourceCreated}
         />

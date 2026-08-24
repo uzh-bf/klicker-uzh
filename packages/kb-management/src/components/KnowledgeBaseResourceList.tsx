@@ -318,7 +318,7 @@ function KnowledgeBaseResourceList({
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
-  onAddResource: () => void
+  onAddResource: (trigger: HTMLElement) => void
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -895,7 +895,9 @@ function KnowledgeBaseResourceList({
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             primary
-            onClick={onAddResource}
+            onClick={(event) => {
+              if (event) onAddResource(event.currentTarget)
+            }}
             data={{ cy: 'add-kb-resource' }}
           >
             <Button.Icon icon={faPlus} />

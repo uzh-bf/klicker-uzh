@@ -19,9 +19,11 @@ import { refreshAfterMutation } from '../refreshAfterMutation'
 
 function KnowledgeBaseChatbotBindings({
   kbId,
+  compact = false,
   onChanged,
 }: {
   kbId: string
+  compact?: boolean
   onChanged: () => Promise<unknown>
 }) {
   const t = useTranslations()
@@ -95,11 +97,19 @@ function KnowledgeBaseChatbotBindings({
 
   return (
     <section
-      className="mt-6 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+      className={
+        compact
+          ? 'mt-3'
+          : 'mt-6 rounded-md border border-slate-200 bg-white p-4 shadow-sm'
+      }
       data-cy="kb-chatbot-bindings"
     >
-      <H3>{t('kb.chatbotsTitle')}</H3>
-      <p className="mt-1 text-sm text-slate-600">
+      {!compact ? <H3>{t('kb.chatbotsTitle')}</H3> : null}
+      <p
+        className={
+          compact ? 'text-sm text-slate-600' : 'mt-1 text-sm text-slate-600'
+        }
+      >
         {t('kb.chatbotsDescription')}
       </p>
 
