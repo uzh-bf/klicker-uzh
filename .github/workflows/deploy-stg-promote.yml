@@ -70,6 +70,12 @@ jobs:
        (github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH ||
         (vars.STG_SOURCE_BRANCH == '' && github.event.workflow_run.head_branch == 'v3-ai')) &&
        github.event.workflow_run.conclusion == 'success')
+    # Workflow-level concurrency is branch-specific so skipped, non-selected
+    # completions do not occupy the selected branch's pending slot. This job-level
+    # lock still serializes every real writer, including manual dispatches.
+    concurrency:
+      group: promote-stg-writer
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -177,6 +183,14 @@ jobs:
           F=deploy/env-uzh-stg/values.yaml
           git merge-base --is-ancestor "$SHA" "origin/${SOURCE_BRANCH}" \
             || { echo "::error::$SHA is not an ancestor of origin/${SOURCE_BRANCH}"; exit 1; }
+
+          TOTAL_TAGS=$(awk '$1 == "tag:" { count++ } END { print count + 0 }' "$F")
+          SOURCE_TAGS=$(awk -v source="$SOURCE_BRANCH" \
+            '$1 == "tag:" && $2 == source { count++ } END { print count + 0 }' "$F")
+          if [ "$TOTAL_TAGS" -ne 15 ] || [ "$SOURCE_TAGS" -ne "$TOTAL_TAGS" ]; then
+            echo "::notice::staging source tag is changing to ${SOURCE_BRANCH}"
+            echo "go=true" >>"$GITHUB_OUTPUT"; exit 0
+          fi
 
           # Never promote a promotion. The `[skip ci]` marker in the PR title normally
           # stops the squash-merge from rebuilding and re-firing this workflow, but that
