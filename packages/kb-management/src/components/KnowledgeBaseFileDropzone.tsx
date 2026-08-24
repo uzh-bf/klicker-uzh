@@ -24,9 +24,11 @@ const ACCEPTED_FILES = {
 
 function KnowledgeBaseFileDropzone({
   kbId,
+  embedded = false,
   onResourceCreated,
 }: {
   kbId: string
+  embedded?: boolean
   onResourceCreated: () => Promise<unknown>
 }) {
   const t = useTranslations()
@@ -112,13 +114,9 @@ function KnowledgeBaseFileDropzone({
       toast({ type: 'error', message: t('kb.fileRejected') }),
   })
 
-  return (
-    <section
-      id="kb-file-upload"
-      tabIndex={-1}
-      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <H3>{t('kb.fileUploadTitle')}</H3>
+  const content = (
+    <>
+      {!embedded ? <H3>{t('kb.fileUploadTitle')}</H3> : null}
       <p className="mt-1 text-sm text-slate-600">
         {t('kb.fileUploadDescription')}
       </p>
@@ -143,6 +141,18 @@ function KnowledgeBaseFileDropzone({
           {t('kb.fileUploadFormats')}
         </span>
       </div>
+    </>
+  )
+
+  return embedded ? (
+    <div data-cy="kb-file-upload-form">{content}</div>
+  ) : (
+    <section
+      id="kb-file-upload"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      {content}
     </section>
   )
 }

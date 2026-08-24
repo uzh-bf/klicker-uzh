@@ -9,6 +9,7 @@ import {
 import {
   faFileLines,
   faLink,
+  faPlus,
   faSpinner,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -312,10 +313,12 @@ function KnowledgeBaseResourceList({
   kbId,
   refreshKey,
   onMetricsChanged,
+  onAddResource,
 }: {
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
+  onAddResource: () => void
 }) {
   const t = useTranslations()
   const format = useFormatter()
@@ -889,17 +892,27 @@ function KnowledgeBaseResourceList({
     <section className="mt-8" data-cy="kb-resource-list">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <H2>{t('kb.resourcesTitle')}</H2>
-        {selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
-            destructive
-            onClick={() => setBulkDeletionOpen(true)}
-            data={{ cy: 'delete-selected-kb-resources' }}
+            primary
+            onClick={onAddResource}
+            data={{ cy: 'add-kb-resource' }}
           >
-            <Button.Label>
-              {t('kb.bulkDelete', { count: selectedIds.size })}
-            </Button.Label>
+            <Button.Icon icon={faPlus} />
+            <Button.Label>{t('kb.addResource')}</Button.Label>
           </Button>
-        ) : null}
+          {selectedIds.size > 0 ? (
+            <Button
+              destructive
+              onClick={() => setBulkDeletionOpen(true)}
+              data={{ cy: 'delete-selected-kb-resources' }}
+            >
+              <Button.Label>
+                {t('kb.bulkDelete', { count: selectedIds.size })}
+              </Button.Label>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[minmax(0,1fr)_12rem_12rem]">
@@ -1004,22 +1017,9 @@ function KnowledgeBaseResourceList({
               : t('kb.noResources')}
           </p>
           {!deferredSearch && !typeFilter && !statusFilter ? (
-            <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
-              <a
-                href="#kb-file-upload"
-                className="bg-primary-100 hover:bg-primary-80 inline-flex min-h-10 w-full items-center justify-center rounded-md px-4 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2 sm:w-auto"
-                data-cy="kb-empty-upload-resource"
-              >
-                {t('kb.fileUploadTitle')}
-              </a>
-              <a
-                href="#kb-link-form"
-                className="text-primary-100 border-primary-100 hover:bg-uzh-blue-20 inline-flex min-h-10 w-full items-center justify-center rounded-md border px-4 py-2 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 sm:w-auto"
-                data-cy="kb-empty-add-link"
-              >
-                {t('kb.linkTitle')}
-              </a>
-            </div>
+            <p className="mt-2 text-sm text-slate-500">
+              {t('kb.emptyResourceHint')}
+            </p>
           ) : null}
         </div>
       ) : (

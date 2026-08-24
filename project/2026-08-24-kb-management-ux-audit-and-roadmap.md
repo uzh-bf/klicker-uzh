@@ -309,7 +309,7 @@ Pause before implementation or between slices for a material product/API decisio
 - [x] User approved the KB-local redesign package and implementation goal; S3 is next after S1/S2.
 - [x] S1 resource-first shell implemented locally: KB catalog/detail use semantic `main`/`H1` landmarks, metrics are compact metadata, and Resources precedes creation/configuration. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [x] S2 metadata table implemented locally: the resource cards are now a semantic design-system table with responsive metadata, server-backed filters/search/load-more/polling, selection, inspector, deletion, and ingestion behavior preserved. `@klicker-uzh/kb-management` check and targeted formatting pass.
-- [ ] S3 unified add-resource chooser.
+- [x] S3 unified add-resource chooser implemented locally: one `+` action opens a KB-local chooser for Website and Document, Video is disabled as coming soon, existing BLOB/URL mutations remain in explicit forms, and the old empty-state links/direct form stack are removed. `@klicker-uzh/kb-management` check and targeted formatting pass.
 - [ ] S4 secondary configuration and integrated browser proof.
 
 ## Verification plan for implementation

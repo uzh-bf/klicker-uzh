@@ -1579,6 +1579,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     filterAll: 'Alle',
     typeFile: 'Datei',
     typeUrl: 'Link',
+    addResource: 'Ressource hinzufügen',
+    addResourceTitle: 'Ressource hinzufügen',
+    addResourceDescription:
+      'Wählen Sie, wie Sie diese Ressource hinzufügen möchten.',
+    addWebsite: 'Website',
+    addWebsiteDescription: 'Eine Website-URL zur Verarbeitung registrieren.',
+    addDocument: 'Dokument',
+    addDocumentDescription: 'Eine PDF-, TXT- oder Markdown-Datei hochladen.',
+    addVideo: 'Video',
+    comingSoon: 'Demnächst verfügbar',
+    backToResourceTypes: 'Zurück',
     noResourceResults: 'Keine Ressourcen entsprechen diesen Filtern.',
     resourceResultCount:
       '{count, plural, =0 {Keine Ressourcen} one {# Ressource} other {# Ressourcen}}',
@@ -1586,6 +1597,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
+    emptyResourceHint:
+      'Verwenden Sie oben «Ressource hinzufügen», um eine Website oder ein Dokument hinzuzufügen.',
     updatedAtLabel: 'Aktualisiert',
     updatedAt: 'Aktualisiert {date}',
     statusAdded: 'Hinzugefügt',

@@ -4,10 +4,9 @@ import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React, { useState } from 'react'
+import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
-import KnowledgeBaseFileDropzone from './components/KnowledgeBaseFileDropzone'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
-import KnowledgeBaseUrlForm from './components/KnowledgeBaseUrlForm'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
 
@@ -15,6 +14,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const format = useFormatter()
   const [resourceRefreshKey, setResourceRefreshKey] = useState(0)
+  const [addResourceOpen, setAddResourceOpen] = useState(false)
   const { data, loading, error, refetch } = useQuery(GetKbDocument, {
     variables: { id: kbId },
   })
@@ -189,19 +189,17 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
         kbId={kbId}
         refreshKey={resourceRefreshKey}
         onMetricsChanged={refreshMetrics}
+        onAddResource={() => setAddResourceOpen(true)}
       />
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <KnowledgeBaseFileDropzone
-          kbId={kbId}
-          onResourceCreated={handleResourceCreated}
-        />
-        <KnowledgeBaseUrlForm
-          kbId={kbId}
-          onResourceCreated={handleResourceCreated}
-        />
-      </div>
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
       <KnowledgeGraphPanel kbId={kbId} />
+      {addResourceOpen ? (
+        <KnowledgeBaseAddResourceModal
+          kbId={kbId}
+          onClose={() => setAddResourceOpen(false)}
+          onResourceCreated={handleResourceCreated}
+        />
+      ) : null}
     </main>
   )
 }
