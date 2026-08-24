@@ -14,7 +14,14 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { type Dispatch, type SetStateAction, useCallback, useMemo } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { ActivityAction } from '../activities/actions/useAvailableActions'
 
 function useElementActions({
@@ -42,62 +49,74 @@ function useElementActions({
 }): ActivityAction[] {
   const t = useTranslations()
   const isArchived = element.isArchived ?? false
-  const [applyElementBatchOperations, { loading: updatingArchiveState }] =
+  const [applyElementBatchOperations, { loading: updatingArchiveMutation }] =
     useMutation(ApplyElementBatchOperationsDocument)
+  const [archiveStateBusy, setArchiveStateBusy] = useState(false)
+  const archiveStateBusyRef = useRef(false)
 
   const updateArchiveState = useCallback(async () => {
-    let result: 'success' | 'failure' | 'uncertain'
+    if (archiveStateBusyRef.current) return
+
+    archiveStateBusyRef.current = true
+    setArchiveStateBusy(true)
 
     try {
-      const { data } = await applyElementBatchOperations({
-        variables: {
-          elementIds: [element.id],
-          archive: !isArchived,
-          unarchive: isArchived,
-          updateInstances: false,
-          updateTemplateInstances: false,
-        },
-      })
-      result = data?.applyElementBatchOperations === 1 ? 'success' : 'failure'
-    } catch (error) {
-      console.error(error)
-      result = 'uncertain'
-    }
+      let result: 'success' | 'failure' | 'uncertain'
 
-    let refreshFailed = false
-    try {
-      await refetchElements()
-    } catch (error) {
-      console.error(error)
-      refreshFailed = true
-    }
+      try {
+        const { data } = await applyElementBatchOperations({
+          variables: {
+            elementIds: [element.id],
+            archive: !isArchived,
+            unarchive: isArchived,
+            updateInstances: false,
+            updateTemplateInstances: false,
+          },
+        })
+        result = data?.applyElementBatchOperations === 1 ? 'success' : 'failure'
+      } catch (error) {
+        console.error(error)
+        result = 'uncertain'
+      }
 
-    if (result === 'success' && !refreshFailed) {
-      toast({
-        type: 'success',
-        message: isArchived
-          ? t('manage.questionPool.elementRestoredSuccessfully')
-          : t('manage.questionPool.elementArchivedSuccessfully'),
-        options: { duration: 3000 },
-      })
-    } else if (result === 'success') {
-      toast({
-        type: 'warning',
-        message: t('manage.questionPool.elementArchiveRefreshFailed'),
-        options: { duration: 5000 },
-      })
-    } else if (result === 'uncertain') {
-      toast({
-        type: 'warning',
-        message: t('manage.questionPool.elementArchiveActionUncertain'),
-        options: { duration: 5000 },
-      })
-    } else {
-      toast({
-        type: 'error',
-        message: t('manage.questionPool.elementArchiveActionFailed'),
-        options: { duration: 5000 },
-      })
+      let refreshFailed = false
+      try {
+        await refetchElements()
+      } catch (error) {
+        console.error(error)
+        refreshFailed = true
+      }
+
+      if (result === 'success' && !refreshFailed) {
+        toast({
+          type: 'success',
+          message: isArchived
+            ? t('manage.questionPool.elementRestoredSuccessfully')
+            : t('manage.questionPool.elementArchivedSuccessfully'),
+          options: { duration: 3000 },
+        })
+      } else if (result === 'success') {
+        toast({
+          type: 'warning',
+          message: t('manage.questionPool.elementArchiveRefreshFailed'),
+          options: { duration: 5000 },
+        })
+      } else if (result === 'uncertain') {
+        toast({
+          type: 'warning',
+          message: t('manage.questionPool.elementArchiveActionUncertain'),
+          options: { duration: 5000 },
+        })
+      } else {
+        toast({
+          type: 'error',
+          message: t('manage.questionPool.elementArchiveActionFailed'),
+          options: { duration: 5000 },
+        })
+      }
+    } finally {
+      archiveStateBusyRef.current = false
+      setArchiveStateBusy(false)
     }
   }, [applyElementBatchOperations, element.id, isArchived, refetchElements, t])
 
@@ -168,7 +187,7 @@ function useElementActions({
           : t('manage.questionPool.moveToArchive'),
         icon: isArchived ? faInbox : faArchive,
         onClick: updateArchiveState,
-        disabled: disabled || updatingArchiveState,
+        disabled: disabled || updatingArchiveMutation || archiveStateBusy,
         data: {
           cy: `${isArchived ? 'unarchive' : 'archive'}-element-${element.name}`,
         },
@@ -186,7 +205,8 @@ function useElementActions({
       setRemovalModalOpen,
       setActivityLogOpen,
       setSharingModalOpen,
-      updatingArchiveState,
+      updatingArchiveMutation,
+      archiveStateBusy,
       updateArchiveState,
     ]
   )
