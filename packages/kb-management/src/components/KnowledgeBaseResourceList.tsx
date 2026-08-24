@@ -1,14 +1,14 @@
 import {
+  type ApolloQueryResult,
   NetworkStatus,
   useApolloClient,
   useLazyQuery,
   useMutation,
   useQuery,
-  type ApolloQueryResult,
 } from '@apollo/client'
 import {
-  faFileLines,
   faEllipsisVertical,
+  faFileLines,
   faLink,
   faPlus,
   faSpinner,
@@ -17,12 +17,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetKbResourceIngestionRunsDocument,
   GetKbResourcesDocument,
+  type GetKbResourcesQuery,
+  type GetKbResourcesQueryVariables,
   IngestKbResourceDocument,
   KbIngestionStatus,
   KbResourceStatus,
   KbResourceType,
-  type GetKbResourcesQuery,
-  type GetKbResourcesQueryVariables,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Badge,
@@ -40,8 +40,8 @@ import {
   ShadcnTableRow,
   Skeleton,
   TextField,
-  UserNotification,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import React, {

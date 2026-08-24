@@ -69,7 +69,7 @@ function KnowledgeBaseAddResourceModal({
 
     document.addEventListener('keydown', handleKeyDown, true)
     return () => document.removeEventListener('keydown', handleKeyDown, true)
-  }, [mode])
+  }, [])
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
