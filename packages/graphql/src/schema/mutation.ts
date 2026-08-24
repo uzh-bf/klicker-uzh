@@ -121,6 +121,7 @@ export const Mutation = builder.mutationType({
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
 
     return {
@@ -3126,10 +3127,10 @@ export const Mutation = builder.mutationType({
       }),
       // #endregion
 
-      // ----- USER WITH CATALYST -----
+      // ----- USER WITH STANDARD ACTIVITY ACCESS -----
       // #region
       createPracticeQuiz: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3155,7 +3156,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editPracticeQuiz: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3186,7 +3187,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3206,7 +3207,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3234,7 +3235,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3252,7 +3253,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3267,7 +3268,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3288,7 +3289,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3314,7 +3315,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3332,7 +3333,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishPracticeQuiz: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3350,7 +3351,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3365,7 +3366,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishPracticeQuiz: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3380,7 +3381,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3398,7 +3399,7 @@ export const Mutation = builder.mutationType({
         }),
 
       deletePracticeQuiz: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3413,7 +3414,7 @@ export const Mutation = builder.mutationType({
         }),
 
       deleteMicroLearning: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3428,7 +3429,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3443,7 +3444,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3458,7 +3459,7 @@ export const Mutation = builder.mutationType({
         }),
 
       openGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3473,7 +3474,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3488,7 +3489,7 @@ export const Mutation = builder.mutationType({
         }),
 
       deleteGroupActivity: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3503,7 +3504,7 @@ export const Mutation = builder.mutationType({
         }),
 
       gradeGroupActivitySubmission: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivityInstance,
@@ -3525,7 +3526,7 @@ export const Mutation = builder.mutationType({
         }),
 
       finalizeGroupActivityGrading: t
-        .withAuth(asUserFullAccess)
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
