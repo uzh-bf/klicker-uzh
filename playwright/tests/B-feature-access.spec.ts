@@ -75,6 +75,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginFreeUser()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    const choiceRegion = page.getByTestId('activity-creation-choices')
+
     for (const activity of standardActivityDescriptions) {
       await expect(page.getByTestId(activity.button)).not.toBeDisabled()
       await expect(page.getByTestId(activity.description)).toBeVisible()
@@ -84,6 +86,12 @@ test.describe('Tests the availability of standard activity creation formats', ()
       await expect(
         page.getByTestId(activity.description).getByRole('link')
       ).toHaveAttribute('href', activity.href)
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveAttribute('target', '_blank')
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveClass(/underline/)
       const describedBy = await page
         .getByTestId(activity.button)
         .getAttribute('aria-describedby')
@@ -92,6 +100,11 @@ test.describe('Tests the availability of standard activity creation formats', ()
         /catalyst/i
       )
     }
+
+    await expect(choiceRegion).not.toContainText(/catalyst/i)
+    await expect(choiceRegion.locator('a[href*="catalyst" i]')).toHaveCount(0)
+    await expect(choiceRegion.locator('[data-cy*="catalyst" i]')).toHaveCount(0)
+    await expect(choiceRegion.locator('[data-icon="crown"]')).toHaveCount(0)
 
     for (const [button, firstStep] of [
       ['create-live-quiz', 'insert-live-quiz-name'],
@@ -114,6 +127,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    const choiceRegion = page.getByTestId('activity-creation-choices')
+
     for (const activity of standardActivityDescriptions) {
       await expect(page.getByTestId(activity.button)).not.toBeDisabled()
       await expect(page.getByTestId(activity.description)).toBeVisible()
@@ -123,6 +138,12 @@ test.describe('Tests the availability of standard activity creation formats', ()
       await expect(
         page.getByTestId(activity.description).getByRole('link')
       ).toHaveAttribute('href', activity.href)
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveAttribute('target', '_blank')
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveClass(/underline/)
       const describedBy = await page
         .getByTestId(activity.button)
         .getAttribute('aria-describedby')
@@ -131,6 +152,11 @@ test.describe('Tests the availability of standard activity creation formats', ()
         /catalyst/i
       )
     }
+
+    await expect(choiceRegion).not.toContainText(/catalyst/i)
+    await expect(choiceRegion.locator('a[href*="catalyst" i]')).toHaveCount(0)
+    await expect(choiceRegion.locator('[data-cy*="catalyst" i]')).toHaveCount(0)
+    await expect(choiceRegion.locator('[data-icon="crown"]')).toHaveCount(0)
   })
 
   test('Verify that learning analytics and private preview features are available for lecturer', async ({

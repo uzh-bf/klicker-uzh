@@ -411,8 +411,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 implemented and committed; authorized alternate S1
-  review is next; S2/S3 remain after it.
+- Status: replacement S1 review correction committed; alternate S1 re-review is
+  next; S2/S3 remain blocked pending it.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -437,13 +437,23 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed through the exact container. A mistaken repo-wide Biome run touched
   unrelated tracked files; all were restored to committed state before staging,
   and only the three owned files plus this Progress update are in scope now.
+- Alternate S1 review disposition: the Luna simplification and separate Sol
+  correctness/risk reviews reported the missing description `data-cy` hook,
+  canonical link target/style drift, and incomplete whole-region negative
+  coverage for Catalyst signaling and crowns. The main orchestrator verified
+  all findings against current source and accepted them. The bounded correction
+  preserves the description ARIA ids, adds matching description hooks and one
+  choice-region hook, restores canonical link behavior/presentation, and
+  protects the reviewed contracts in both account states. Luna/Sol re-review is
+  pending; S2 cannot start until it completes without unresolved material
+  findings.
 - Remaining: preferred configured or authorized alternate S1 reviews, S2,
   narrowed S3, preferred configured or authorized Sol integrated final review,
   fancy-domain/browser proof behind the lifecycle-lock gate, and final Progress
   evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: run the authorized independent Luna simplification and separate
-  Sol correctness/risk reviews over the committed S1 range, resolve material
-  findings, then proceed to replacement S2 without changing any
-  runtime/browser/publication boundary.
+- Next action: re-run the authorized independent Luna simplification and
+  separate Sol correctness/risk reviews over the corrected committed S1 range,
+  resolve any material findings, then proceed to replacement S2 without
+  changing any runtime/browser/publication boundary.

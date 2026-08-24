@@ -16,7 +16,10 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
   const t = useTranslations()
 
   return (
-    <div className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2">
+    <div
+      className="grid gap-1 pb-4 md:grid-cols-4 md:gap-2"
+      data-cy="activity-creation-choices"
+    >
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
@@ -25,7 +28,12 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         }}
         description={t.rich('manage.activityWizard.liveQuizUseCase', {
           link: (chunks) => (
-            <a href="https://www.klicker.uzh.ch/use_cases/live_quiz/">
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
+              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
+              target="_blank"
+              className="underline"
+            >
               {chunks}
             </a>
           ),
@@ -40,7 +48,12 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         }}
         description={t.rich('manage.activityWizard.microlearningUseCase', {
           link: (chunks) => (
-            <a href="https://www.klicker.uzh.ch/use_cases/microlearning/">
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/microlearning/"
+              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
+              target="_blank"
+              className="underline"
+            >
               {chunks}
             </a>
           ),
@@ -55,7 +68,12 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         }}
         description={t.rich('manage.activityWizard.practiceQuizUseCase', {
           link: (chunks) => (
-            <a href="https://www.klicker.uzh.ch/use_cases/practice_quiz/">
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/practice_quiz/"
+              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
+              target="_blank"
+              className="underline"
+            >
               {chunks}
             </a>
           ),
@@ -70,7 +88,12 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         }}
         description={t.rich('manage.activityWizard.groupActivityUseCase', {
           link: (chunks) => (
-            <a href="https://www.klicker.uzh.ch/use_cases/group_activity/">
+            <a
+              href="https://www.klicker.uzh.ch/use_cases/group_activity/"
+              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
+              target="_blank"
+              className="underline"
+            >
               {chunks}
             </a>
           ),

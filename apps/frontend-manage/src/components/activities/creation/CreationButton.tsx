@@ -63,7 +63,7 @@ function CreationButton({
     <div className="flex flex-col gap-1">
       {button}
       {description && describedById ? (
-        <div id={describedById} className="text-sm">
+        <div id={describedById} data-cy={describedById} className="text-sm">
           {description}
         </div>
       ) : null}
