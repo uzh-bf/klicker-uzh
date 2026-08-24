@@ -3177,7 +3177,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           if (operationName === 'StartCourseDuplication') {
             const jobId = startCount === 0 ? firstJobId : secondJobId
             startCount += 1
-            return new Response(
+            return new window.Response(
               JSON.stringify({
                 data: {
                   startCourseDuplication: makeJob(
@@ -3209,7 +3209,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
             const statuses = requestedIds.includes(firstJobId)
               ? [makeJob(firstJobId, 'source-a', 'Copy A')]
               : []
-            return new Response(
+            return new window.Response(
               JSON.stringify({ data: { courseDuplicationStatuses: statuses } }),
               { headers: { 'Content-Type': 'application/json' } }
             )
@@ -3382,7 +3382,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
 
           if (!isStatusPoll) return originalFetch(input, init)
 
-          return new Response(
+          return new window.Response(
             JSON.stringify({
               data: {
                 courseDuplicationStatuses: jobs.map((job) => ({
@@ -3568,7 +3568,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           ).__duplicationBatchSizes ??= [])
           batchSizes.push(requestedIds.length)
 
-          return new Response(
+          return new window.Response(
             JSON.stringify({
               data: {
                 courseDuplicationStatuses: jobs
