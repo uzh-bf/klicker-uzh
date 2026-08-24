@@ -116,7 +116,8 @@ function makeDb() {
         return row
       },
     },
-    $transaction: async (fn: (db: unknown) => unknown, _opts?: unknown) => fn(db),
+    $transaction: async (fn: (db: unknown) => unknown, _opts?: unknown) =>
+      fn(db),
   }
 
   function seed() {

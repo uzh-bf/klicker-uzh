@@ -19,11 +19,9 @@ export async function providerCredentialIngress(req: Request, res: Response) {
     return
   }
 
-  let userId: string | null = null
   try {
     const payload = await verifyJWT(token, process.env.APP_SECRET as string)
     if (payload.role !== 'USER') throw new Error('wrong role')
-    userId = payload.sub as string
   } catch {
     res.status(401).json({ error: 'Unauthorized' })
     return

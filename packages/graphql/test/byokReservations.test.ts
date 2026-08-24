@@ -160,7 +160,7 @@ function makeDb() {
     // Serialized transaction: queues callbacks so concurrent callers see
     // each other's writes, matching PostgreSQL serializable behavior.
     ...(() => {
-      let txQueue = Promise.resolve()
+      let txQueue: Promise<unknown> = Promise.resolve()
       return {
         $transaction: async (fn: (db: unknown) => unknown, _opts?: unknown) => {
           const result = txQueue.then(() => fn(db))
