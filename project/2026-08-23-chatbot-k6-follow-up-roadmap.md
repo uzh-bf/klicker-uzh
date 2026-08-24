@@ -62,7 +62,7 @@ W1 failure stops W2. Without PRD approval, W2 remains `delivery_pending` and is 
 | Environment | Chatbot | Identifier | Read-only state |
 | --- | --- | --- | --- |
 | STG | Informatik und Wirtschaft | `bd9ef6ed-27cd-47d1-bb65-b2b852f54fa1` | Authenticated preflight passed and one Tutor turn was verified persisted; bounded anonymous result was 98/98 with zero dropped iterations |
-| STG | RadioSurfVet | Not present in the STG database | Read-only Prisma query found no matching chatbot; W1 was accepted with Informatik und Wirtschaft as the sole available STG demo chatbot |
+| STG | RadioSurfVet | `66390140-2f5c-46e1-a8f4-cd466b7b4d86` | Later approved provisioning added the chatbot; read-only verification found course, disclaimer, enabled Tutor/Explainer MCP bindings, and auto-only model selection |
 | PRD | Informatik und Wirtschaft | `fd497bb5-a261-5045-b77f-7038ee7e3d32` | Bounded anonymous checks passed; one Tutor turn passed all three checks after one disclaimer acceptance |
 | PRD | RadioSurfVet | `b80da3f7-b958-5a80-9c2f-7f254b7b3ecc` | One focused reachability check passed; one Tutor turn passed all three checks after one disclaimer acceptance |
 
@@ -72,7 +72,7 @@ The approved `klicker-dev` operator profile authenticated successfully. It has n
 
 - W1 (STG) is `live_proven`: the only available demo chatbot is Informatik und Wirtschaft, and its anonymous plus authenticated evidence passed.
 - W2 (PRD) is `live_proven`: both approved chatbots passed their bounded anonymous checks and one authenticated Tutor turn each, with the required disclaimer acceptance and 15-second spacing.
-- Delivery state: the parent k6 suite is merged and promoted through the existing `v3` delivery path. This follow-up's roadmap and three auxiliary bridge/disclaimer scripts are local, uncommitted run artifacts; they are not part of the parent suite's release diff and are not published by this reconciliation.
+- Delivery state: the parent k6 suite and this follow-up's documentation, login guidance, disclaimer helper, and roadmap are merged to `v3` through PR [#5506](https://github.com/uzh-bf/klicker-uzh/pull/5506). The obsolete temporary bridge scripts were removed before publication.
 - Next W-item: none. This roadmap is closed. Any new STG RadioSurfVet provisioning, sustained load, quality evaluation, reingestion, or lecturer-facing example collection requires a new roadmap and its own approval gates.
 
 ## Explicitly not selected
@@ -92,3 +92,4 @@ A sustained or higher-volume load campaign, model-quality evaluation, reingestio
 - 2026-08-23: user authorized one values-free DB read of the STG PIN. Read-only Prisma query against the STG backend-graphql pod returned zero chatbots matching RadioSurfVet/Radio/Surf/Vet; only Informatik und Wirtschaft exists among demo chatbots. The STG RadioSurfVet chatbot does not exist in this database. W1 is therefore complete with Informatik und Wirtschaft as the sole available demo chatbot; the missing-chatbot finding replaces the PIN blocker. No writes, deployments, or cluster mutations occurred.
 - 2026-08-23: user approved the PRD live run (W2). First IuW Tutor attempt returned HTTP 404; source inspection traced this to a missing disclaimer acceptance row for the teststudent. A values-free disclaimer-acceptance helper was added and used once per chatbot before retrying. After acceptance, both Tutor turns passed all three checks (IuW 11.62 s, RSV 11.72 s) with 15-second spacing, no retries, no extra turns. All evidence values-free.
 - 2026-08-23: Phase 5 reconciliation completed. Remote `v3` currently resolves to `2c225da0` via `git ls-remote`; the worktree fetch was blocked by an unwritable `.git/worktrees/chatbot-k6-load-test/FETCH_HEAD`, so the local tracking ref was not treated as current. W1 and W2 are both `live_proven`; the parent suite remains delivered through its existing merge/promotion path. The roadmap and three auxiliary scripts remain local and uncommitted; no push, merge, deployment, or cleanup occurred. No next W-item is named; the roadmap is closed.
+- 2026-08-24: post-publication reconciliation completed after PR #5506 merged. Remote `v3` resolves to `b02c0c43` via `git ls-remote`. Read-only STG Prisma verification found both demo chatbots ready: Informatik und Wirtschaft and later-provisioned RadioSurfVet each have an active course, disclaimer, enabled Tutor and Explainer MCP bindings, and auto-only model selection. This closes the earlier missing-STG-chatbot finding without new traffic.
