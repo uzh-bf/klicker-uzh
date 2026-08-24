@@ -33,7 +33,9 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
   and cleanup logic applies.
 - Do not change Prisma, response validation rules, scoring, XP, leaderboards,
   cockpit polling, or subscription behavior.
-- Add no dependencies.
+- Add no runtime dependencies. The response processor adds the repository's
+  existing Vitest version as a test-only dependency so its focused contract
+  tests run in isolation.
 - Add English and German messages and a stable `data-cy` selector per element.
 - Update the engineering wiki in the same pull request.
 - Target `v3` with one ordinary draft pull request.
