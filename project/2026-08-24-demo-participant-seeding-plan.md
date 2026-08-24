@@ -87,6 +87,10 @@ application password check, or persisted anywhere else.
    allowlist approval, generate missing password secrets, run the production
    dry-run, then apply once and read back account/participation invariants.
 
+The password variables are intentionally not added to `turbo.json` global
+environment inputs. That would propagate credential values to every Turbo
+task; the documented direct operator child keeps them scoped to this script.
+
 Test obligations cover exact target resolution, no-write dry-run/readback,
 atomic rollback, account creation and reconciliation, shared-account
 protection, replay no-op behavior, and missing-password/SSO/flag/target
