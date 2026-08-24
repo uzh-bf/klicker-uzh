@@ -28,15 +28,18 @@ must use seeded or synthetic content only.
 
 ## Guidance
 
-1. Resolve the exact checkout path and use the restricted
-   `rs-infisical-operator` profile when one is configured. Check `status` and
-   `permissions` without reading values, then map
+1. Run Infisical authentication and injection from a host shell outside the
+   Codex sandbox. Do not run Infisical inside `devrouter exec`, the DevPod, or
+   a container. Resolve the exact checkout path and use the restricted
+   `rs-infisical-operator` profile. Check `status` and `permissions` without
+   reading values, then map
    `OPENROUTER_API_KEY` to `UPSTREAM_OPENAI_API_KEY` while setting the fixed
    `UPSTREAM_OPENAI_BASE_URL` value for the child `devrouter ensure` command
    ([AGENTS.md:143](../../../AGENTS.md#L143)).
-2. If no operator profile exists, use the project-scoped `infisical run`
-   command only for a throwaway local prototype. A valid local Infisical login
-   is required; do not put credentials in chat, files, arguments, or logs.
+2. If the host-side operator profile or login is missing, stop and complete
+   the operator setup outside the sandbox. Do not substitute raw
+   `infisical run`, and do not put credentials in chat, files, arguments, or
+   logs.
 3. If LiteLLM already runs, stop the exact checkout before injecting the key
    again. `ensure` reconciles the workspace but does not replace environment
    variables inside an existing service container:
@@ -67,10 +70,11 @@ an authenticated empty thread proves only the local application boundary. The
 synthetic model/tool smoke is the evidence that the local Chat request reaches
 LiteLLM and the configured upstream path.
 
-When Infisical reports that no valid login session exists, stop at secret
-authentication. It is an environment-setup blocker, not evidence that the
-OpenRouter key is invalid or that Chat is broken. Authenticate locally, then
-repeat the exact stop, injected start, presence check, and synthetic smoke.
+When the host-side operator reports that no valid login session exists, stop at
+secret authentication. It is an environment-setup blocker, not evidence that
+the OpenRouter key is invalid or that Chat is broken. Complete the operator
+setup outside the sandbox, then repeat the exact stop, injected start, presence
+check, and synthetic smoke.
 
 ## When to Apply
 

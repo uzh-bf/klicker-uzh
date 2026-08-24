@@ -140,9 +140,11 @@ The same command starts and proves primary and linked checkouts. Use `devrouter 
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**OpenRouter-backed local chat:** Inject the upstream key only at runtime, never
-into a file or the shell history. Prefer the restricted operator when a local
-profile is configured:
+**OpenRouter-backed local chat:** Infisical authentication and secret injection
+must run from a host shell outside the Codex sandbox. Do not run Infisical
+inside `devrouter exec`, the DevPod, or a container. Use the restricted
+`rs-infisical-operator` as the only repository-supported injection path. Inject
+the upstream key only at runtime, never into a file or the shell history:
 
 ```bash
 rs-infisical-operator --profile <profile> status
@@ -153,16 +155,9 @@ rs-infisical-operator --profile <profile> run \
   devrouter ensure <checkout-path> --json
 ```
 
-For a throwaway local prototype without an operator profile, the sanctioned
-fallback is the project-scoped command below. It still requires a local
-Infisical login and must not be used to persist or print the key:
-
-```bash
-infisical run \
-  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
-  -- env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  devrouter ensure <checkout-path> --json
-```
+If the host-side operator profile or login is missing, stop and complete the
+operator setup outside the sandbox. Do not substitute raw `infisical run`,
+copy the key into a file, or pass it through chat, arguments, or logs.
 
 If LiteLLM is already running without those variables, stop the exact linked
 checkout with `devrouter stop <checkout-path>` and rerun the injection command;
