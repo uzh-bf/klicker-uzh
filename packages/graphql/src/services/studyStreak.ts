@@ -201,7 +201,7 @@ export async function reconcileStudyStreak(
                   responseCount >= QUALIFIED_RESPONSES_PER_DAY
               )
               .map(([responseDate]) => responseDate)
-              .sort()
+              .sort((left, right) => left.localeCompare(right))
 
             let state: StreakState = {
               current: participation.studyStreakCurrent,

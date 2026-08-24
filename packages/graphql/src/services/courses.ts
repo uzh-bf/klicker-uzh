@@ -132,7 +132,7 @@ export async function joinCourseLeaderboard(
     },
     select: { isActive: true },
   })
-  const wasInactive = !existingParticipation || !existingParticipation.isActive
+  const wasInactive = !existingParticipation?.isActive
 
   const participation = await ctx.prisma.participation.upsert({
     where: {

@@ -3162,6 +3162,37 @@ export interface RespondToElementStackInput {
   isOwner?: boolean
 }
 
+async function shouldSkipElementStackResponse(
+  stackId: number,
+  isOwner: boolean | undefined,
+  ctx: Context
+): Promise<boolean> {
+  const participantId = ctx.user?.sub
+  if (!participantId || ctx.user?.role !== DB.UserRole.PARTICIPANT || isOwner) {
+    return false
+  }
+
+  const stack = await ctx.prisma.elementStack.findUnique({
+    where: { id: stackId },
+    include: {
+      microLearning: true,
+      elements: {
+        include: {
+          responses: {
+            where: { participantId },
+          },
+        },
+      },
+    },
+  })
+
+  return Boolean(
+    stack?.microLearning &&
+      (stack.elements.some((element) => element.responses.length > 0) ||
+        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
+  )
+}
+
 export async function respondToElementStack(
   {
     stackId,
@@ -3173,31 +3204,8 @@ export async function respondToElementStack(
   ctx: Context
 ) {
   // if the element stack is part of a microlearning and the student has already responses to it, ignore this submission
-  if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
-    const stack = await ctx.prisma.elementStack.findUnique({
-      where: { id: stackId },
-      include: {
-        microLearning: true,
-        elements: {
-          include: {
-            responses: {
-              where: {
-                participantId: ctx.user.sub,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (
-      !isOwner &&
-      stack?.microLearning &&
-      (stack.elements.some((element) => element.responses.length > 0) ||
-        dayjs().isAfter(dayjs(stack.microLearning.scheduledEndAt)))
-    ) {
-      return null
-    }
+  if (await shouldSkipElementStackResponse(stackId, isOwner, ctx)) {
+    return null
   }
 
   let stackScore: number | undefined = undefined
