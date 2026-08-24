@@ -2,9 +2,9 @@
 
 Decisions grilled and settled 2026-08-20. Rationale lives in the ADRs — this
 document sequences the work and fixes the v1 scope; it does not restate the
-why. Companion decisions from the same session that are feedback- rather than
-configuration-shaped (thumbs reason tags, milestone lecturer feedback form)
-are listed in phase 3.
+why. Companion decisions from the same session that are feedback-related rather
+than configuration-shaped (thumbs reason tags, milestone lecturer feedback
+form) are listed in phase 2.
 
 Governing ADRs: [0019](../docs/adr/0019-chatbot-config-postgresql-authoritative.md)
 (config store), [0020](../docs/adr/0020-two-tier-chatbot-approval.md)
@@ -34,8 +34,7 @@ Governing ADRs: [0019](../docs/adr/0019-chatbot-config-postgresql-authoritative.
 | Name, description, avatar, course binding | Edit freely | — |
 | Standard-mode persona fields (course name, subject domain, language, scope note) | Edit freely | — |
 | Mode toggles (min 1 active) | Edit freely | — |
-| Few-shot examples (capped, fixed tags) | Edit freely | — |
-| Knowledge sources (upload / re-ingest / delete) | Edit freely (phase 4) | — |
+| Knowledge sources (upload / re-ingest / delete) | Edit freely (phase 3) | — |
 | Participant usage-credit configuration | Propose | Approved with publication request; separate from account-wide usage budgets |
 | Model allowlist / reasoning efforts | Edit freely within the shared account AI authorization and monthly budgets | — |
 | Custom mode (name, description, persona text) | Author freely pre-publication | Reviewed at publication; edits on a live bot re-enter review |
@@ -62,12 +61,12 @@ Everything else hangs off this; it is backend-only and shippable without UI.
   `requestChatbotPublication`, admin `approveChatbotPublication` /
   `rejectChatbotPublication`.
 - Prompt **compile seam** preserving today's replacement behavior in Phase 0;
-  later phases add scaffolding, standard-mode fields, examples, and
-  custom-mode persona text according to ADR 0021. Characterization tests keep
+  later phases add scaffolding, standard-mode fields, and custom-mode persona
+  text according to ADR 0021. Characterization tests keep
   this first extraction behavior-preserving.
-- Approval operations v1 is ops-shaped: status flips via script/Prisma Studio;
-  ops watches `PENDING_APPROVAL` manually. Team notification and the admin
-  queue UI are deferred to later phases.
+- GraphQL mutations are the sole authoritative mechanism for lifecycle
+  transitions. The manage and admin UIs are deferred; ops watches
+  `PENDING_APPROVAL` manually in Phase 0.
 
 ### Approved usage-funding MVP (implementation follow-up)
 
@@ -95,44 +94,30 @@ Everything else hangs off this; it is backend-only and shippable without UI.
   from the lecturer's own courses), initial mode set. Knowledge attaches later
   on its own tab.
 - Detail page reorganized into tabs (mockup-inspired): Overview, Persona &
-  modes, Knowledge (status-only until phase 4), Limits & model (existing
+  modes, Knowledge (status-only until phase 3), Limits & model (existing
   controls), Access/publication.
 - Standard-mode persona fields editable per mode; mode toggles with min-1
   enforcement.
 - Lecturer test chat: "Open test chat" via the existing embed mode with a
-  test-thread flag on `ChatThread` — excluded from student-facing analytics,
-  ratable, and the later capture source for examples. Unpublished bots are
-  reachable only this way.
+  test-thread flag on `ChatThread`. Test threads are excluded from
+  student-facing analytics and ratings. Unpublished bots are reachable only
+  through this owner-authenticated path.
 - In-app publication request form (flips to `PENDING_APPROVAL`); rejected
   state shows the reviewer comment.
 
-## Phase 2 — examples studio (v1-minimal)
-
-The primary self-service steering lever (ADR 0021).
-
-- `ChatbotExample` model: chatbot + mode scoped, student-turn text, ideal
-  reply text, optional source reference, fixed tag enum (`HINT_NOT_ANSWER`,
-  `WRONG_ANSWER_RECOVERY`, `OFF_TOPIC_REDIRECT`, `CITATION_STYLE`), order,
-  in-prompt flag. Hard cap: 4 in-prompt, ~1k token budget shown in UI.
-- Manual add + capture-from-chat, sourcing **only the lecturer's own test
-  threads** (consistent with ADR 0022).
-- Compile step injects in-prompt examples per mode.
-- Explicitly out: compare sets, re-run-against-bot, import/export — that is
-  the phase-7 eval harness.
-
-## Phase 3 — overview KPIs and the feedback loop
+## Phase 2 — overview KPIs and the feedback loop
 
 - Overview tab shows DB aggregates only (ADR 0022): conversations/messages
   over time, thumbs ratio, reason-tag counts, credits consumed, per-source
-  ingest status (once phase 4 lands).
-- Thumbs-down reason tag for students (same vocabulary as example tags plus
-  `SOURCE_MISSING`): migrates the `rating` column to a small feedback table —
+  ingest status (once phase 3 lands).
+- Thumbs-down reason tag for students (including `SOURCE_MISSING`): migrates
+  the `rating` column to a small feedback table —
   supersedes part of ADR 0002; record that supersession when implementing.
 - Milestone lecturer product-feedback form (1 week after publication and after
   ~100 student messages), pre-filled with the bot's aggregates; hosted form →
   ClickUp for the beta, embedded later only if the question set stabilizes.
 
-## Phase 4 — knowledge self-service
+## Phase 3 — knowledge self-service
 
 Mandatory for beta scale; dependent on the KB service (kb-poc line) exposing
 upload + per-source status + delete over HTTP. Assumption from the grill: that
@@ -143,28 +128,28 @@ verify first; if not, the API work joins this phase.
   `Ready` / `Processing` / `Stale` status.
 - Chunking, graph, and retrieval parameters are never exposed.
 
-## Phase 5 — custom modes
+## Phase 4 — custom modes
 
 - Author name, description, persona text; compiled as a layer (ADR 0021),
   cap 2 per bot.
 - New/edited custom modes on a published bot re-enter review (ADR 0020);
   pre-publication they are freely editable and testable in the test chat.
 
-## Phase 6 — admin approval queue
+## Phase 5 — admin approval queue
 
 - Admin-only manage page listing pending account approvals, publication
   requests, and custom-mode reviews with approve/reject + comment. Promote
   early if beta volume reaches double-digit bots per semester — the
   rejected-with-comment loop needs a surface lecturers can see.
 
-## Phase 7 and later (explicitly deferred)
+## Phase 6 and later (explicitly deferred)
 
-- Eval harness: compare sets, re-run examples against the bot, starter-question
-  smoke tests as per-course eval sets (pairs with deepeval plans).
+- Eval harness: starter-question smoke tests as per-course eval sets (pairs
+  with deepeval plans).
 - Draft/publish snapshots for editing live bots (only if live-editing pain
   materializes; ADR 0020 consequence).
-- Structured persona fields beyond the four (only if example steering proves
-  insufficient).
+- Structured persona fields beyond the four (only if the existing persona
+  controls prove insufficient).
 - Aggregate topics / any student-content exposure — learning-analytics track
   governance only (ADR 0022, learning-analytics ADR 0005).
 - Embedded live-preview pane inside manage (test chat via embed mode covers
@@ -194,8 +179,6 @@ Usage and funding terms are defined in the repository [CONTEXT.md](../CONTEXT.md
 - **Scaffolding**: The non-removable platform prompt base (citations,
   grounding, safety, stance) that lecturer content layers onto. _Avoid_: base
   prompt.
-- **Example**: A tagged student-turn/ideal-reply pair steering a mode, capped
-  in count and tokens. _Avoid_: few-shot, exemplar.
 - **Test thread**: A lecturer-owned conversation with their own (possibly
-  unpublished) bot, excluded from student-facing analytics and the only
-  capture source for examples. _Avoid_: preview chat.
+  unpublished) bot, excluded from student-facing analytics. _Avoid_: preview
+  chat.

@@ -25,7 +25,8 @@ per-edit:
    not creation.
 2. **Per-chatbot publication**: each chatbot is created and configured
    self-service in a non-published state, in which only the owning lecturer
-   can use it. Going live requires an in-app publication request on the bot
+   can manage and configure it; it cannot be used or previewed. Going live
+   requires an in-app publication request on the bot
    (use case, expected student count, proposed participant usage-credit
    configuration) that the team approves or rejects with a comment. This
    legacy per-chatbot allowance is separate from, and does not approve, the
@@ -63,10 +64,11 @@ messages and participant credits remain legacy analytics.
 
 ## Consequences
 
-- The team reviews each bot exactly once before it meets students, at the
-  moment its real configuration and stated use case are visible together.
-- Post-publication edits to non-gated knobs (examples, knowledge, standard-mode
-  fields, and model choices within the account authorization) take effect
+- The team reviews each publication request before the bot meets students, at
+  the moment its real configuration and stated use case are visible together.
+  A rejected resubmission receives a new review.
+- Post-publication edits to non-gated knobs (knowledge, standard-mode fields,
+  and model choices within the account authorization) take effect
   without another approval; this bounded risk is accepted.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.

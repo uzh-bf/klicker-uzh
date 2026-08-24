@@ -1495,9 +1495,18 @@ export const Mutation = builder.mutationType({
           type: Chatbot,
           args: {
             id: t.arg.string({ required: true }),
-            useCase: t.arg.string({ required: true }),
-            expectedStudentCount: t.arg.int({ required: true }),
-            proposedCredits: t.arg.int({ required: true }),
+            useCase: t.arg.string({
+              required: true,
+              validate: { minLength: 1, maxLength: 2000 },
+            }),
+            expectedStudentCount: t.arg.int({
+              required: true,
+              validate: { min: 1 },
+            }),
+            proposedCredits: t.arg.int({
+              required: true,
+              validate: { min: 1 },
+            }),
           },
           resolve: async (_, args, ctx) => {
             return await ChatbotsService.requestChatbotPublication(args, ctx)

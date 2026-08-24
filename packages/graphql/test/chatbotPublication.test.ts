@@ -128,6 +128,78 @@ describe('Integration tests for the chatbot publication workflow', () => {
       expect(result?.reviewComment).toBeNull()
     })
 
+    it('allows only one concurrent request to move a bot into review', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      let initialReads = 0
+      let releaseInitialReads!: () => void
+      const initialReadsReady = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve
+      })
+      const chatbotDelegate = userOneCtx.prisma.chatbot
+      const gatedChatbotDelegate = new Proxy(chatbotDelegate, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver)
+          if (property !== 'findFirst') {
+            return typeof value === 'function' ? value.bind(target) : value
+          }
+
+          const findFirst = target.findFirst.bind(target)
+          return async (
+            ...args: Parameters<typeof chatbotDelegate.findFirst>
+          ) => {
+            const result = await findFirst(...args)
+            initialReads += 1
+            if (initialReads === 2) releaseInitialReads()
+            await initialReadsReady
+            return result
+          }
+        },
+      })
+      const gatedPrisma = new Proxy(userOneCtx.prisma, {
+        get(target, property, receiver) {
+          if (property === 'chatbot') return gatedChatbotDelegate
+          return Reflect.get(target, property, receiver)
+        },
+      })
+      const gatedCtx = { ...userOneCtx, prisma: gatedPrisma }
+
+      const results = await Promise.allSettled([
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 10,
+            proposedCredits: 5,
+          },
+          gatedCtx
+        ),
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 10,
+            proposedCredits: 5,
+          },
+          gatedCtx
+        ),
+      ])
+
+      expect(
+        results.filter((result) => result.status === 'fulfilled')
+      ).toHaveLength(1)
+      expect(
+        results.find((result) => result.status === 'rejected')?.reason.message
+      ).toContain('status or account capability changed concurrently')
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true },
+        })
+      ).resolves.toMatchObject({ status: ChatbotStatus.PENDING_APPROVAL })
+    })
+
     it('rejects a request from a non-requestable status (PUBLISHED)', async () => {
       await enablePublishing()
       const bot = await seedChatbot(ChatbotStatus.PUBLISHED)

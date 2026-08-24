@@ -671,8 +671,15 @@ export async function requestChatbotPublication(
     )
   }
 
-  const updated = await ctx.prisma.chatbot.update({
-    where: { id: chatbot.id },
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      ownerId: ctx.user.sub,
+      status: {
+        in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
+      },
+      owner: { aiChatbotPublishingEnabled: true },
+    },
     data: {
       status: DB.ChatbotStatus.PENDING_APPROVAL,
       publicationUseCase: args.useCase,
@@ -685,6 +692,16 @@ export async function requestChatbotPublication(
       creditResetAmount: args.proposedCredits,
       creditMaxCredits: args.proposedCredits,
     },
+  })
+
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot publication request could not be completed because its status or account capability changed concurrently'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
     select: {
       ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },

@@ -92,7 +92,7 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   // Drop the guard-only status field unless the caller explicitly selected it,
   // so routes that serialize the chatbot wholesale (e.g. GET /api/chatbots/:id)
   // never expose owner-only lifecycle metadata on a participant surface (F7).
-  if (!('status' in select)) {
+  if (select.status !== true) {
     delete (row as Record<string, unknown>).status
   }
 

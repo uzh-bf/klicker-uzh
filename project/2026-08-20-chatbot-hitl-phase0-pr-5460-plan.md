@@ -173,18 +173,20 @@ No separate tasks; nothing crosses a boundary warranting one.
 - **S2 — createChatbot + updateChatbot + owner-type exposure.** Pothos: expose
   `status` + publication fields on the **owner-facing** Chatbot type only
   (getChatbotsInfo shape), never the participant course-chatbot type (F7).
-  `createChatbot(name, description?, avatar?, courseId)` — `asUserWithCatalyst`,
+  `createChatbot(name, description?, avatar?, courseId)` —
+  `asUserWithCatalyst` + `FULL_ACCESS`,
   service verifies the course is owned by ctx user, sets owner=ctx user,
   status=DRAFT, tutor-only default (no `initialModes` in Phase 0, F7).
-  `updateChatbot(id, free knobs)` — `asUserWithCatalyst` + service ownership
-  filter. Codegen. Acceptance: service tests (create/update happy-path +
-  non-owner rejection); codegen + typecheck green.
+  `updateChatbot(id, free knobs)` — `asUserWithCatalyst` + `FULL_ACCESS` +
+  service ownership filter. Codegen. Acceptance: service tests (create/update
+  happy-path + non-owner rejection); codegen + typecheck green.
   Commit: `feat(graphql): lecturer chatbot create and update`.
   Risk: public contract + authz → slice-reviewer.
 
 - **S3 — Publication workflow.** `requestChatbotPublication(id, useCase,
-  expectedStudentCount, proposedCredits)` — `asUserWithCatalyst` + service
-  ownership + **DB-row capability check** (`aiChatbotPublishingEnabled`); source
+  expectedStudentCount, proposedCredits)` — `asUserWithCatalyst` +
+  `FULL_ACCESS` + service ownership + **DB-row capability check**
+  (`aiChatbotPublishingEnabled`); source
   states **DRAFT and REJECTED** → PENDING_APPROVAL, clearing `reviewComment`,
   writing publication + credit columns (F5, D2). Admin
   `approveChatbotPublication(id)` (PENDING→PUBLISHED, set publishedAt) and
@@ -294,12 +296,12 @@ No separate tasks; nothing crosses a boundary warranting one.
   (not folded into phase 0) because it edits already-reviewed S2 code for a
   behavior-preserving DRY win — own micro-refactor or follow-up.
 - Carry to S4 (S3 LOW findings): gate participant access on `status ===
-  'PUBLISHED'`, never `publishedAt != null` (TOCTOU); credit path must not
-  assume `proposedCredits > 0` (no validation in phase 0).
-- Dependency: ADR 0020 and ADRs 0019–0022 were folded into this branch by merge
-  commit `1fd19330f`, so the former [PR #5453](https://github.com/uzh-bf/klicker-uzh/pull/5453)
-  merge-order dependency is resolved. Closing #5453 remains a separate,
-  explicitly authorized repository action.
+  'PUBLISHED'`, never `publishedAt != null` (TOCTOU).
+- Validation now rejects empty or overlong use cases and non-positive student
+  counts or proposed credits at the GraphQL boundary.
+- ADR 0020 and ADRs 0019–0022 are folded into this branch's ancestry; the
+  former ADR merge-order note is resolved. Closing the related documentation
+  work remains a separate, explicitly authorized repository action.
 - Base drift (checked 2026-08-20, session resume): branch is 4 behind / 8 ahead
   of `origin/v3` (the resume hook's "62 behind origin/dev" is a false alarm —
   `dev` is an unrelated long-lived line, not this branch's base). The 4 new v3
@@ -439,6 +441,11 @@ No separate tasks; nothing crosses a boundary warranting one.
   DB — reseed (`prisma-data seed:raw`) before S4 browser smoke.
 
 ## MR/PR evidence expected
+
+### Progress — 2026-08-24
+
+The bottom layer was rebased onto `v3`, and the verified review fixes were
+applied. This note does not claim a push or CI result.
 
 - GraphQL service-test output (transitions + authz + capability).
 - Migration diff + existing-row backfill proof; `prisma generate` clean.

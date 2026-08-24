@@ -47,6 +47,24 @@ describe('getChatbotOr404 publication gate', () => {
     )
   })
 
+  test('does not return guard-only status when the caller disables status', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+
+    const result = await getChatbotOr404(VALID_ID, {
+      courseId: true,
+      status: false,
+    })
+
+    expect('chatbot' in result).toBe(true)
+    if ('chatbot' in result) {
+      expect(result.chatbot).toMatchObject({ courseId: 'course-1' })
+      expect(result.chatbot).not.toHaveProperty('status')
+    }
+  })
+
   // Every non-PUBLISHED lifecycle state must 404 exactly like a missing bot, so
   // a participant can never confirm that a draft/in-review/paused bot exists.
   test.each([
