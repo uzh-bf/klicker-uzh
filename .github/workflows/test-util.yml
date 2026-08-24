@@ -15,6 +15,16 @@ jobs:
   test-util:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     permissions:
       contents: read
       packages: write
@@ -52,6 +62,10 @@ jobs:
       - name: Test util package
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
+        env:
+          LIVE_QUIZ_REDIS_INTEGRATION: 'true'
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
         run: |
           cd packages/util
           pnpm run test

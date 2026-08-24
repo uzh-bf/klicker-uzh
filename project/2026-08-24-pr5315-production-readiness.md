@@ -10,9 +10,12 @@ fixes cover regular and assessment response processing, replay safety, cockpit
 count degradation, response-tracking cleanup, and cockpit icon alignment.
 
 The implementation changes verified here are committed at
-`1f0a92c36bbc758f5c34aa3eb59e81e4d5577149` on branch `audit-pr5315-fixes`,
-based on the current `origin/v3`. This report is updated in the subsequent
-documentation commit.
+`1f0a92c36bbc758f5c34aa3eb59e81e4d5577149` on branch `audit-pr5315-fixes`.
+The final freshness merge is `214d6c2bd3fb299dfdb063fcf78048ea1d80cde0`,
+which incorporates `origin/v3` at `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`.
+It changed no in-scope application implementation paths. The application
+checks below were completed before that merge; the Redis integration contract
+test and its CI service were added and passed afterward.
 No push, merge, deployment, or production-data access was performed.
 
 ## Changes verified
@@ -47,6 +50,7 @@ No push, merge, deployment, or production-data access was performed.
 | GraphQL typecheck | Passed |
 | Syncpack check | Passed |
 | Repository build | Passed; 23 of 23 Turbo tasks succeeded |
+| Redis integration contract test | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, active and bounded retention mirrored TTLs, missing-info retention was one day, and per-command errors retained the marker |
 | Redis processing-script smoke test | Passed; sequential replay produced one aggregation, and a missing instance-info key applied the one-day tracking TTL |
 | Browser verification | The manage cockpit route passed locally with delegated lecturer login before the final icon patch; the seeded live quiz rendered its blocks and activation controls, and activating the first block completed the local active-block lifecycle. A post-patch icon capture was blocked by the local Chrome session. |
 | Diff whitespace check | Passed |

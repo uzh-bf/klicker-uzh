@@ -64,7 +64,10 @@ scheduled elements have no counts
 The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, failed, or untracked responses. Tracking does not change the
-response pipeline's existing validation or result-aggregation retry behavior.
+response pipeline's validation semantics. Result aggregation now uses the
+processed marker as an exactly-once replay guard: after the marker is claimed,
+a retry is a no-op, and per-command Redis errors are logged and accepted rather
+than replayed.
 
 Tracking sets stay persistent while their element instance is active, matching
 the rest of the live execution cache. When a block closes, cleanup first starts
