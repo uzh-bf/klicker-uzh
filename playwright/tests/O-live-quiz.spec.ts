@@ -58,6 +58,21 @@ function readFixture(name: string) {
   )
 }
 
+async function selectActivityElements(page: Page, elementNames: string[]) {
+  const search = page.getByTestId('elements-search-input')
+
+  for (const elementName of elementNames) {
+    await search.clear()
+    await search.fill(elementName)
+    await page.keyboard.press('Enter')
+    const checkbox = page.getByTestId(`element-checkbox-${elementName}`)
+    await expect(checkbox).toBeVisible()
+    await checkbox.check()
+  }
+
+  await search.clear()
+}
+
 let page: Page
 const aliases = new Map<string, unknown>()
 const data = Object.assign(
@@ -1992,12 +2007,61 @@ test.describe.serial('Different live-quiz workflows', () => {
       'have.length',
       1
     )
-    await page.getByTestId('drop-elements-add-block').click()
+
+    await selectActivityElements(page, [data.SC.title])
+    await expect(page.getByTestId('add-selection-to-one-block')).toHaveText(
+      'Add 1 block with 1 element'
+    )
+    await expect(
+      page.getByTestId('create-one-block-per-selected-element')
+    ).toHaveText('Add 1 block with 1 element')
+    await expect(
+      page.getByTestId('add-selection-to-existing-container')
+    ).toHaveText('Add 1 element')
+    await page.getByTestId('add-selection-to-existing-container').click()
+    await expect(page.getByTestId('element-0-block-0')).toContainText(
+      data.SC.title.substring(0, 20)
+    )
+    await page.getByTestId('remove-element-0-block-0').click()
+
+    await selectActivityElements(page, [data.SC.title, data.SCML.title])
+    await expect(page.getByTestId('add-selection-to-one-block')).toHaveText(
+      'Add 1 block with 2 elements'
+    )
+    await expect(
+      page.getByTestId('create-one-block-per-selected-element')
+    ).toHaveText('Add 2 blocks with 1 element each')
+    await expect(
+      page.getByTestId('add-selection-to-existing-container').first()
+    ).toHaveText('Add 2 elements')
+    await page.getByTestId('add-selection-to-one-block').click()
     await expectByAssertion(
       page.getByTestId('block-container-header'),
       'have.length',
       2
     )
+    await expect(page.getByTestId('element-0-block-1')).toContainText(
+      data.SC.title.substring(0, 20)
+    )
+    await expect(page.getByTestId('element-1-block-1')).toContainText(
+      data.SCML.title.substring(0, 20)
+    )
+    await page.getByTestId('delete-block-1').click()
+
+    await selectActivityElements(page, [data.SC.title, data.SCML.title])
+    await page.getByTestId('create-one-block-per-selected-element').click()
+    await expectByAssertion(
+      page.getByTestId('block-container-header'),
+      'have.length',
+      3
+    )
+    await expect(page.getByTestId('element-0-block-1')).toContainText(
+      data.SC.title.substring(0, 20)
+    )
+    await expect(page.getByTestId('element-0-block-2')).toContainText(
+      data.SCML.title.substring(0, 20)
+    )
+    await page.getByTestId('delete-block-2').click()
     await page.getByTestId('delete-block-1').click()
     await expectByAssertion(
       page.getByTestId('block-container-header'),
@@ -2274,17 +2338,64 @@ test.describe.serial('Different live-quiz workflows', () => {
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
+      'aria-describedby',
+      'activity-creation-disabled-reason'
+    )
     await page.getByTestId('delete-block-0').click()
     await expectByAssertion(
       page.getByTestId('next-or-submit'),
       'not.be.disabled'
     )
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveCount(0)
+    await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
+      'aria-describedby'
+    )
     await page.getByTestId('drop-elements-add-block').click()
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
+      'aria-describedby',
+      'activity-creation-disabled-reason'
+    )
     await createStacks(page, {
       stacks: [{ elements: [data.SC.title] }, { elements: [data.SCML.title] }],
       type: 'block',
     })
+    await expectByAssertion(
+      page.getByTestId('next-or-submit'),
+      'not.be.disabled'
+    )
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveCount(0)
+    await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
+      'aria-describedby'
+    )
+    await page.getByTestId('drop-elements-add-block').click()
+    await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
+      'aria-describedby',
+      'activity-creation-disabled-reason'
+    )
+    await page.getByTestId('delete-block-2').click()
+    await expectByAssertion(
+      page.getByTestId('next-or-submit'),
+      'not.be.disabled'
+    )
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveCount(0)
     await page.getByTestId('move-block-1-left').click()
     await expectByAssertion(page.getByTestId('element-0-block-0'), 'exist')
     await expectByAssertion(

@@ -5,6 +5,7 @@ import {
   GetOutdatedElementInstancesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { FieldArray, Form, Formik } from 'formik'
+import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AddStackButton from '../AddStackButton'
@@ -36,6 +37,8 @@ function LiveQuizQuestionsStep({
   selection,
   resetSelection,
 }: LiveQuizQuestionsStepProps) {
+  const t = useTranslations()
+
   // get all instances of elements alongside with the included element version
   const instanceVersionMap = useMemo(
     () =>
@@ -131,6 +134,12 @@ function LiveQuizQuestionsStep({
               activeStep={activeStep}
               lastStep={activeStep === stepValidity.length - 1}
               continueDisabled={continueDisabled}
+              disabledReason={
+                values.blocks.length > 0 &&
+                values.blocks.some((block) => block.elements.length === 0)
+                  ? t('manage.activityWizard.minOneElementPerBlock')
+                  : undefined
+              }
               onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />

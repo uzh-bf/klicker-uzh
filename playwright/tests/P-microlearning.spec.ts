@@ -54,6 +54,21 @@ function readFixture(name: string) {
   )
 }
 
+async function selectActivityElements(page: Page, elementNames: string[]) {
+  const search = page.getByTestId('elements-search-input')
+
+  for (const elementName of elementNames) {
+    await search.clear()
+    await search.fill(elementName)
+    await page.keyboard.press('Enter')
+    const checkbox = page.getByTestId(`element-checkbox-${elementName}`)
+    await expect(checkbox).toBeVisible()
+    await checkbox.check()
+  }
+
+  await search.clear()
+}
+
 let page: Page
 const aliases = new Map<string, unknown>()
 const data = Object.assign(
@@ -1568,6 +1583,57 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('next-or-submit').click()
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
+
+    await selectActivityElements(page, [data.SCML.title])
+    await expect(page.getByTestId('add-selection-to-one-stack')).toHaveText(
+      'Add 1 stack with 1 element'
+    )
+    await expect(
+      page.getByTestId('create-one-stack-per-selected-element')
+    ).toHaveText('Add 1 stack with 1 element')
+    await expect(
+      page.getByTestId('add-selection-to-existing-container')
+    ).toHaveText('Add 1 element')
+    await page.getByTestId('add-selection-to-existing-container').click()
+    await expect(page.getByTestId('element-0-stack-0')).toContainText(
+      data.SCML.title.substring(0, 20)
+    )
+    await page.getByTestId('remove-element-0-stack-0').click()
+
+    await selectActivityElements(page, [data.SCML.title, data.FTML.title])
+    await expect(page.getByTestId('add-selection-to-one-stack')).toHaveText(
+      'Add 1 stack with 2 elements'
+    )
+    await expect(
+      page.getByTestId('create-one-stack-per-selected-element')
+    ).toHaveText('Add 2 stacks with 1 element each')
+    await expect(
+      page.getByTestId('add-selection-to-existing-container').first()
+    ).toHaveText('Add 2 elements')
+    await page.getByTestId('add-selection-to-one-stack').click()
+    await expect(page.getByTestId('stack-container-header')).toHaveCount(2)
+    await expect(page.getByTestId('element-0-stack-1')).toContainText(
+      data.SCML.title.substring(0, 20)
+    )
+    await expect(page.getByTestId('element-1-stack-1')).toContainText(
+      data.FTML.title.substring(0, 20)
+    )
+    await page.getByTestId('delete-stack').last().click()
+    await expect(page.getByTestId('stack-container-header')).toHaveCount(1)
+
+    await selectActivityElements(page, [data.SCML.title, data.FTML.title])
+    await page.getByTestId('create-one-stack-per-selected-element').click()
+    await expect(page.getByTestId('stack-container-header')).toHaveCount(3)
+    await expect(page.getByTestId('element-0-stack-1')).toContainText(
+      data.SCML.title.substring(0, 20)
+    )
+    await expect(page.getByTestId('element-0-stack-2')).toContainText(
+      data.FTML.title.substring(0, 20)
+    )
+    await page.getByTestId('delete-stack').last().click()
+    await page.getByTestId('delete-stack').last().click()
+    await expect(page.getByTestId('stack-container-header')).toHaveCount(1)
+
     await createStacks(page, {
       stacks: [
         // FT questions should also be accepted without sample solution

@@ -411,21 +411,17 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 review correction committed; alternate S1 re-review is
-  next; S2/S3 remain blocked pending it.
+- Status: replacement S2 is implemented; its focused exact-container checks and
+  final formatting passed. The commit and S2 reviews remain pending.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
   changes occurred.
-- Blockers: fancy-domain/browser proof remains blocked by the known devrouter
-  lifecycle-lock identity issue. Fresh configured native simplifier and
-  slice-reviewer attempts for replacement S1 both failed before work with
-  provider HTTP 402. The user's 2026-08-24 ruling authorizes an independent Luna
-  simplification alternate and a separate Sol correctness/risk alternate for
-  replacement S1, S2, and integrated final review. S2 remains blocked until the
-  S1 alternates complete and all material findings are resolved. Generic
-  continuity reports exist only for superseded S1 and do not validate this
-  replacement.
+- Review gate: independent Luna simplification and separate Sol correctness/risk
+  re-reviews accepted replacement S1 range `cdebb6543..d052e445e` with zero
+  remaining findings. The user's 2026-08-24 alternate-review authorization also
+  covers S2 and integrated final review when the configured native roles remain
+  unavailable.
 - Current S1 evidence: four canonical rich descriptions with exact links added
   below each standard creation button; each button uses `aria-describedby` to
   its distinct `description-<data-cy>` region; all click paths remain enabled;
@@ -434,26 +430,35 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   description/link/enabled/no-Catalyst-signaling assertions for free and
   lecturer/Catalyst checks. Prettier, package-scoped Biome,
   frontend-manage check, Playwright TypeScript check, and `git diff --check`
-  passed through the exact container. A mistaken repo-wide Biome run touched
-  unrelated tracked files; all were restored to committed state before staging,
-  and only the three owned files plus this Progress update are in scope now.
-- Alternate S1 review disposition: the Luna simplification and separate Sol
-  correctness/risk reviews reported the missing description `data-cy` hook,
-  canonical link target/style drift, and incomplete whole-region negative
-  coverage for Catalyst signaling and crowns. The main orchestrator verified
-  all findings against current source and accepted them. The bounded correction
-  preserves the description ARIA ids, adds matching description hooks and one
-  choice-region hook, restores canonical link behavior/presentation, and
-  protects the reviewed contracts in both account states. Luna/Sol re-review is
-  pending; S2 cannot start until it completes without unresolved material
-  findings.
-- Remaining: preferred configured or authorized alternate S1 reviews, S2,
-  narrowed S3, preferred configured or authorized Sol integrated final review,
-  fancy-domain/browser proof behind the lifecycle-lock gate, and final Progress
+  passed through the exact container.
+- Current S2 evidence: the five selection-count labels now use paired EN/DE ICU
+  `one`/`other` wording; the one-container, one-container-per-element, and
+  existing-container actions have stable outcome-specific selectors; and the
+  live-quiz Create action exposes the existing empty-block reason through an
+  adjacent, programmatically associated description without changing validity
+  or submission behavior. Existing O live-quiz and P microlearning journeys now
+  protect singular/plural labels, distinct outcomes, the zero-block exception,
+  recovery, reappearance, and unchanged Create enabled/disabled states.
+- S2 checks: repository Biome formatting on the six owned source/locale files
+  passed with no fixes needed; Prettier write on the two owned specs passed;
+  `pnpm --filter @klicker-uzh/frontend-manage check` passed;
+  `pnpm --filter @klicker-uzh/playwright check` passed; focused Playwright
+  collection for `O-live-quiz.spec.ts` and `P-microlearning.spec.ts` passed with
+  146 tests listed; and `git diff --check` passed before those steps. Final
+  Prettier for both specs and this plan passed, followed by a fresh
+  `git diff --check`. A separate Biome lint/check diagnostic reported only
+  existing findings on unchanged legacy lines in `AddStackButton`,
+  `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no unrelated line was
+  changed or suppressed.
+- Blockers: fancy-domain/browser proof remains blocked because the exact fancy
+  routes remain unavailable. No localhost, fixed-port, runtime, config, routing,
+  or host-tooling fallback was used.
+- Remaining: replacement S2 commit, preferred configured or authorized
+  alternate S2 reviews, narrowed S3, preferred configured or authorized Sol
+  integrated final review, fancy-domain/browser proof, and final Progress
   evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: re-run the authorized independent Luna simplification and
-  separate Sol correctness/risk reviews over the corrected committed S1 range,
-  resolve any material findings, then proceed to replacement S2 without
-  changing any runtime/browser/publication boundary.
+- Next action: commit the audited replacement S2 patch, then dispatch its
+  read-only reviews without starting S3 or changing the browser/runtime
+  boundary.

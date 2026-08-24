@@ -14,9 +14,12 @@ interface WizardNavigationProps {
   activeStep: number
   lastStep: boolean
   continueDisabled: boolean
+  disabledReason?: string
   onPrevStep?: () => void
   onCloseWizard: () => void
 }
+
+const disabledReasonId = 'activity-creation-disabled-reason'
 
 function WizardNavigation({
   editMode,
@@ -25,6 +28,7 @@ function WizardNavigation({
   activeStep,
   lastStep,
   continueDisabled,
+  disabledReason,
   onPrevStep,
   onCloseWizard,
 }: WizardNavigationProps) {
@@ -58,26 +62,40 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
-      <Button
-        primary={lastStep}
-        disabled={!stepValidity[activeStep] || continueDisabled}
-        loading={isSubmitting}
-        type="submit"
-        data={{ cy: 'next-or-submit' }}
-        className={{ root: 'h-8 w-max' }}
-      >
-        <Button.Icon
-          icon={lastStep ? faSave : faArrowRight}
+      <div className="flex flex-col items-end gap-1">
+        {lastStep && disabledReason && (
+          <div
+            id={disabledReasonId}
+            className="text-sm text-red-600"
+            data-cy={disabledReasonId}
+          >
+            {disabledReason}
+          </div>
+        )}
+        <Button
+          primary={lastStep}
+          disabled={!stepValidity[activeStep] || continueDisabled}
           loading={isSubmitting}
-        />
-        <Button.Label>
-          {lastStep
-            ? editMode
-              ? t('shared.generic.save')
-              : t('shared.generic.create')
-            : t('shared.generic.continue')}
-        </Button.Label>
-      </Button>
+          type="submit"
+          data={{ cy: 'next-or-submit' }}
+          className={{ root: 'h-8 w-max' }}
+          aria-describedby={
+            lastStep && disabledReason ? disabledReasonId : undefined
+          }
+        >
+          <Button.Icon
+            icon={lastStep ? faSave : faArrowRight}
+            loading={isSubmitting}
+          />
+          <Button.Label>
+            {lastStep
+              ? editMode
+                ? t('shared.generic.save')
+                : t('shared.generic.create')
+              : t('shared.generic.continue')}
+          </Button.Label>
+        </Button>
+      </div>
     </div>
   )
 }
