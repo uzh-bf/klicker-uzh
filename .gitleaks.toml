@@ -26,4 +26,7 @@ paths = [
   # them keeps a local `gitleaks dir` on a built tree quiet.
   '''(^|/)\.next/''',
   '''(^|/)dist/''',
+  # AI credential gateway tests use deterministic synthetic secret values
+  # (test-secret-value-N); they are fixtures, never real credentials.
+  '''apps/ai-credential-gateway/test/gateway[.]test[.]ts$''',
 ]

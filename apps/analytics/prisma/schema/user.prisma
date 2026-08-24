@@ -126,7 +126,9 @@ model User {
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]
   chatbotDisclaimers         ChatbotDisclaimer[]
-  revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
+  providerCredentials        ProviderCredential[]
+  providerBindings           ChatbotProviderBinding[]
+  revokedVerificationRecords VerifiableCredential[]   @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

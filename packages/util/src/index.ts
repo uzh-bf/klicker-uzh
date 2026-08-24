@@ -27,3 +27,6 @@ export * from './crypto.js'
 
 // export everything from the identity module
 export * from './identity.js'
+
+// export provider profile manifests shared across product and gateway seams
+export * from './providerProfiles.js'

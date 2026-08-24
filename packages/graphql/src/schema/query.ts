@@ -18,6 +18,8 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as ProviderCredentialsService from '../services/providerCredentials.js'
+import { ProviderCredentialProjection } from './providerCredentials.js'
 import * as TemplateService from '../services/templates.js'
 import {
   ActivityDetails,
@@ -2149,6 +2151,14 @@ export const Query = builder.queryType({
         type: [CatalogSelectionObject],
         resolve: async (_, __, ctx) => {
           return await SharingService.getCatalogElements(ctx)
+        },
+      }),
+
+      getOwnerProviderCredentials: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ProviderCredentialProjection],
+        resolve: async (_, __, ctx) => {
+          return await ProviderCredentialsService.getOwnerCredentials(ctx)
         },
       }),
 

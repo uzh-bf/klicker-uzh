@@ -84,3 +84,4 @@ export const handlers: HatchetHandlers = {
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
 }
+import './schema/providerCredentials.js'

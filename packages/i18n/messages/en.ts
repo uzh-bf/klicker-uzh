@@ -1896,6 +1896,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
       newPassword: 'New Password',
+      providerCredentials: {
+        title: 'AI Provider Credentials',
+        addCredential: 'Add Credential',
+        secretLabel: 'API Key',
+        secretPlaceholder: 'Paste your API key here',
+        secretNote:
+          'Your key is sent directly to our secure storage and is never displayed again. It is used only for your own AI requests.',
+        submitSecret: 'Register',
+        registerFailed: 'Registration failed. Please try again.',
+        registerSuccess: 'Credential registered successfully.',
+        noCredentials: 'No AI provider credentials registered.',
+        fingerprint: 'Fingerprint',
+        model: 'Model',
+        suspend: 'Suspend',
+        resume: 'Resume',
+        revoke: 'Revoke',
+        actionFailed: 'Action failed. Please try again.',
+      },
       changePassword: 'Change Password',
       changeDelegatedLoginPassword: 'Change delegated login password',
       changeDelegatedLoginPasswordMessage:
@@ -4410,6 +4428,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       send: 'Send',
       sending: 'Sending...',
       missingId: 'Object ID is missing. comments cannot be displayed.',
+    },
+  },
+  byok: {
+    notice: {
+      title: 'Provider Notice',
+      intro:
+        'This chatbot uses your own API key. Before you continue, please review how your data is processed:',
+      decline: 'Decline',
+      acknowledge: 'I understand, continue',
+    },
+    quota: {
+      remaining: 'Remaining BYOK quota',
+      used: 'Used',
+      error: 'Your own-key request failed. No credits were charged.',
     },
   },
 }

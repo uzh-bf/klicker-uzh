@@ -4,6 +4,8 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ProviderCredentialsService from '../services/providerCredentials.js'
+import { ProviderCredentialProjection } from './providerCredentials.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -3576,6 +3578,96 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // Provider credential lifecycle (K2)
+      registerProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: {
+          profileKey: t.arg.string({ required: true }),
+          secret: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.registerCredential(args, ctx)
+        },
+      }),
+
+      validateProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: { credentialId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.validateCredential(
+            args.credentialId,
+            ctx
+          )
+        },
+      }),
+
+      suspendProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: { credentialId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.suspendCredential(
+            args.credentialId,
+            ctx
+          )
+        },
+      }),
+
+      resumeProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: { credentialId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.resumeCredential(
+            args.credentialId,
+            ctx
+          )
+        },
+      }),
+
+      revokeProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: { credentialId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.revokeCredential(
+            args.credentialId,
+            ctx
+          )
+        },
+      }),
+
+      rotateProviderCredential: t.withAuth(asUser).field({
+        nullable: true,
+        type: ProviderCredentialProjection,
+        args: {
+          credentialId: t.arg.string({ required: true }),
+          secret: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ProviderCredentialsService.rotateCredential(args, ctx)
+        },
+      }),
+
+      createProviderBinding: t.withAuth(asUser).boolean({
+        nullable: false,
+        args: {
+          credentialId: t.arg.string({ required: true }),
+          chatbotId: t.arg.string({ required: true }),
+          allowedModelAlias: t.arg.string({ required: true }),
+          participantQuotaLimit: t.arg.float({ required: true }),
+          aggregateQuotaLimit: t.arg.float({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const binding = await ProviderCredentialsService.createBinding(
+            args,
+            ctx
+          )
+          return !!binding
+        },
+      }),
       // #endregion
     }
   },

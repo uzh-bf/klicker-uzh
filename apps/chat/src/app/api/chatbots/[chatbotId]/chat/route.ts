@@ -1,11 +1,31 @@
+import { prisma } from '@klicker-uzh/prisma'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import {
+  buildByokModel,
+  reserveByokCapability,
+  resolveActiveByokBinding,
+  settleByokUsage,
+} from '@/src/lib/server/byokGateway'
+import { getModel } from '@/src/lib/server/chatModelCredentials'
 import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
@@ -19,13 +39,12 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
@@ -33,23 +52,6 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -81,88 +83,6 @@ const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
-
-type ModelRouting = {
-  source: 'custom' | 'default'
-  hasCustomKey: boolean
-  baseUrl: string | undefined
-}
-
-function getOpenAIModel(
-  provider: ReturnType<typeof createOpenAI>,
-  modelConfig: ChatModelConfig
-) {
-  return modelConfig.usesResponsesApi
-    ? provider.responses(modelConfig.deploymentId)
-    : provider.chat(modelConfig.deploymentId)
-}
-
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
-  // Use per-chatbot configuration if available
-  const hasCustomKey =
-    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
-  const hasCustomBaseUrl =
-    typeof chatbot.openaiBaseUrl === 'string' &&
-    chatbot.openaiBaseUrl.length > 0
-  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
-
-  if (hasCustomConfig) {
-    let apiKey: string | undefined
-    if (hasCustomKey) {
-      try {
-        apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
-        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
-      }
-    } else {
-      apiKey = process.env.OPENAI_API_KEY
-    }
-    const baseUrl = hasCustomBaseUrl
-      ? chatbot.openaiBaseUrl!
-      : process.env.OPENAI_BASE_URL
-
-    const routing: ModelRouting = {
-      source: 'custom',
-      hasCustomKey,
-      baseUrl,
-    }
-
-    return {
-      model: getOpenAIModel(
-        createOpenAI({
-          baseURL: baseUrl,
-          apiKey: apiKey || 'no-key',
-          fetch: createOpenAIFetch('custom'),
-        }),
-        modelConfig
-      ),
-      routing,
-    }
-  }
-
-  // Default: route through OpenAI-compatible endpoint
-  const routing: ModelRouting = {
-    source: 'default',
-    hasCustomKey: false,
-    baseUrl: process.env.OPENAI_BASE_URL,
-  }
-
-  return {
-    model: getOpenAIModel(
-      createOpenAI({
-        baseURL: process.env.OPENAI_BASE_URL,
-        apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: createOpenAIFetch('default'),
-      }),
-      modelConfig
-    ),
-    routing,
-  }
-}
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -918,7 +838,61 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const { model, routing } = getModel(chatbot, selectedModelConfig)
+  // BYOK funding source: if this chatbot has an active provider binding and
+  // the selected model matches the bound alias, route through the gateway.
+  // Otherwise use platform credentials. Default-off: no binding means platform.
+  const byokBinding = await resolveActiveByokBinding(chatbotId)
+  const isByokRequest =
+    byokBinding !== null &&
+    byokBinding.allowedModelAlias === selectedModelConfig.deploymentId
+
+  let byokTokenId: string | null = null
+  // Type matches getModel's return; resolved below via platform or BYOK path.
+  let model: Parameters<typeof streamText>[0]['model']
+
+  let routing: {
+    source: 'custom' | 'default' | 'byok'
+    hasCustomKey: boolean
+    baseUrl?: string
+  }
+
+  if (isByokRequest && byokBinding) {
+    // Reserve before dispatch; a failed reservation surfaces a stable error
+    // instead of silently falling back to platform credits.
+    const reserveResult = await reserveByokCapability(
+      {
+        bindingId: byokBinding.bindingId,
+        chatbotId,
+        participantId,
+        estimatedCost: '0', // estimated cost is refined at settlement time
+      },
+      { prisma, user: { sub: chatbot.ownerId } }
+    )
+    if (!reserveResult.ok) {
+      return NextResponse.json(
+        { error: 'BYOK quota exceeded', code: reserveResult.reason },
+        { status: 429 }
+      )
+    }
+    byokTokenId = reserveResult.tokenId
+
+    const gatewayOrigin =
+      process.env.BYOK_GATEWAY_ORIGIN ?? 'http://localhost:4000'
+    model = buildByokModel({
+      gatewayOrigin,
+      capabilityToken: reserveResult.token,
+      modelAlias: byokBinding.allowedModelAlias,
+    })
+    routing = {
+      source: 'byok',
+      hasCustomKey: false,
+      baseUrl: gatewayOrigin + '/v1',
+    }
+  } else {
+    const result = getModel(chatbot, selectedModelConfig)
+    model = result.model
+    routing = result.routing as typeof routing
+  }
   const promptCacheRequest =
     routing.source === 'default'
       ? await buildPromptCacheRequest({

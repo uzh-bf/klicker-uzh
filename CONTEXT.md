@@ -140,3 +140,40 @@ and is enforced field-by-field in the API layer.
   results. Editing the source element bumps that element's version and flags
   the instance as outdated; it never rewrites what participants already saw or
   answered.
+
+## AI provider credentials
+
+**Provider profile**: A platform-governed description of one supported AI
+provider boundary. It fixes the provider, approved endpoint, available model
+deployments, pricing source, data-processing facts, and notice version. A user
+cannot supply an arbitrary provider URL.
+
+**Provider credential**: A user-owned credential record whose secret value is
+held only by the AI Credential Gateway in the tenant's Azure Key Vault. Product
+state stores an opaque vault handle and safe lifecycle metadata, never the raw
+secret.
+
+**Credential binding**: The explicit authorization to use one provider
+credential for one chatbot. It names the allowed model policy, participant
+delegation, BYOK usage budget, and provider notice. Future capabilities may
+define their own binding only when a concrete consumer requires it.
+A reusable provider credential is inert until it has an active binding.
+
+**AI Credential Gateway**: The internal service that owns provider-credential
+registration, validation, rotation, revocation, vault access, request
+authorization, and forwarding. It is not a browser-facing secret store and it
+does not make product ownership decisions.
+
+**BYOK usage**: AI usage charged to a provider credential supplied by a user or
+institution. It has its own quota and estimated currency cost and never falls
+back to teaching-center-funded usage.
+
+**Credential-closed Auto**: Automatic model routing that is available only
+when the bound provider credential has been validated for every active Auto
+target. A partial target set disables Auto instead of silently changing its
+behavior or funding source.
+
+**Provider notice**: The versioned, factual description of the provider and its
+data-processing boundary shown before first use. A participant acknowledges the
+current version; acknowledgement is neither consent, a waiver, nor the legal
+basis for processing.
