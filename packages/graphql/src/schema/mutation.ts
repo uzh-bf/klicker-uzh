@@ -3128,366 +3128,416 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
-      createPracticeQuiz: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({
-            type: [ElementStackInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          order: t.arg({
-            type: ElementOrderType,
-            required: true,
-          }),
-          resetTimeDays: t.arg.int({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
-        },
-      }),
-
-      editPracticeQuiz: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({
-            type: [ElementStackInput],
-            required: true,
-          }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          order: t.arg({
-            type: ElementOrderType,
-            required: true,
-          }),
-          resetTimeDays: t.arg.int({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ practiceQuizId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
+      createPracticeQuiz: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve: async (_, args, ctx) => {
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
-          }
-        ),
-      }),
+          },
+        }),
 
-      createMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({ required: true, type: [ElementStackInput] }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await MicroLearningService.manipulateMicroLearning(args, ctx)
-        },
-      }),
+      editPracticeQuiz: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            order: t.arg({
+              type: ElementOrderType,
+              required: true,
+            }),
+            resetTimeDays: t.arg.int({ required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
+            }
+          ),
+        }),
 
-      editMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          stacks: t.arg({ required: true, type: [ElementStackInput] }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
+      createMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({ required: true, type: [ElementStackInput] }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve: async (_, args, ctx) => {
             return await MicroLearningService.manipulateMicroLearning(args, ctx)
-          }
-        ),
-      }),
+          },
+        }),
 
-      extendMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: MicroLearning,
-        args: {
-          id: t.arg.string({ required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await MicroLearningService.extendMicroLearning(args, ctx)
-          }
-        ),
-      }),
+      editMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({ required: true, type: [ElementStackInput] }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.manipulateMicroLearning(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
-      endMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: MicroLearning,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await MicroLearningService.endMicroLearning(args, ctx)
-          }
-        ),
-      }),
+      extendMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.extendMicroLearning(args, ctx)
+            }
+          ),
+        }),
 
-      createGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
-          stack: t.arg({ required: true, type: ElementStackInput }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await GroupService.manipulateGroupActivity(args, ctx)
-        },
-      }),
+      endMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.endMicroLearning(args, ctx)
+            }
+          ),
+        }),
 
-      editGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: ActivityInfo,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          courseId: t.arg.string({ required: true }),
-          multiplier: t.arg.int({ required: true }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
-          stack: t.arg({ required: true, type: ElementStackInput }),
-        },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
+      createGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve: async (_, args, ctx) => {
             return await GroupService.manipulateGroupActivity(args, ctx)
-          }
-        ),
-      }),
+          },
+        }),
 
-      extendGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: {
-          id: t.arg.string({ required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.extendGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      editGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+            multiplier: t.arg.int({ required: true }),
+            startDate: t.arg({ type: 'Date', required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+            clues: t.arg({ required: true, type: [GroupActivityClueInput] }),
+            stack: t.arg({ required: true, type: ElementStackInput }),
+          },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await GroupService.manipulateGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      publishPracticeQuiz: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PracticeQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-          availableFrom: t.arg({ type: 'Date', required: false }),
-        },
-        resolve: withPermission(
-          (args) => ({ practiceQuizId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await PracticeQuizService.publishPracticeQuiz(args, ctx)
-          }
-        ),
-      }),
+      extendGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: {
+            id: t.arg.string({ required: true }),
+            endDate: t.arg({ type: 'Date', required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.extendGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      publishMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: MicroLearning,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await MicroLearningService.publishMicroLearning(args, ctx)
-          }
-        ),
-      }),
+      publishPracticeQuiz: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: {
+            id: t.arg.string({ required: true }),
+            availableFrom: t.arg({ type: 'Date', required: false }),
+          },
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.publishPracticeQuiz(args, ctx)
+            }
+          ),
+        }),
 
-      unpublishPracticeQuiz: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PracticeQuiz,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ practiceQuizId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await PracticeQuizService.unpublishPracticeQuiz(args, ctx)
-          }
-        ),
-      }),
+      publishMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.publishMicroLearning(args, ctx)
+            }
+          ),
+        }),
 
-      unpublishMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: MicroLearning,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await MicroLearningService.unpublishMicroLearning(args, ctx)
-          }
-        ),
-      }),
+      unpublishPracticeQuiz: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.unpublishPracticeQuiz(args, ctx)
+            }
+          ),
+        }),
 
-      deletePracticeQuiz: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: PracticeQuiz,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ practiceQuizId: args.id }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await PracticeQuizService.deletePracticeQuiz(args, ctx)
-          }
-        ),
-      }),
+      unpublishMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await MicroLearningService.unpublishMicroLearning(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
-      deleteMicroLearning: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: MicroLearning,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ microLearningId: args.id }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await MicroLearningService.deleteMicroLearning(args, ctx)
-          }
-        ),
-      }),
+      deletePracticeQuiz: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: PracticeQuiz,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ practiceQuizId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await PracticeQuizService.deletePracticeQuiz(args, ctx)
+            }
+          ),
+        }),
 
-      publishGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.publishGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      deleteMicroLearning: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: MicroLearning,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ microLearningId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await MicroLearningService.deleteMicroLearning(args, ctx)
+            }
+          ),
+        }),
 
-      unpublishGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.unpublishGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      publishGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.publishGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      openGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.openGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      unpublishGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.unpublishGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      endGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.endGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      openGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.openGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      deleteGroupActivity: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await GroupService.deleteGroupActivity(args, ctx)
-          }
-        ),
-      }),
+      endGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.endGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      gradeGroupActivitySubmission: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivityInstance,
-        args: {
-          id: t.arg.int({ required: true }),
-          groupActivityId: t.arg.string({ required: true }),
-          gradingDecisions: t.arg({
-            type: GroupActivityGradingInput,
-            required: true,
-          }),
-        },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.groupActivityId }),
-          DB.PermissionLevel.EXECUTE,
-          async (_, args, ctx) => {
-            return await GroupService.gradeGroupActivitySubmission(args, ctx)
-          }
-        ),
-      }),
+      deleteGroupActivity: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await GroupService.deleteGroupActivity(args, ctx)
+            }
+          ),
+        }),
 
-      finalizeGroupActivityGrading: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: GroupActivity,
-        args: { id: t.arg.string({ required: true }) },
-        resolve: withPermission(
-          (args) => ({ groupActivityId: args.id }),
-          DB.PermissionLevel.WRITE,
-          async (_, args, ctx) => {
-            return await GroupService.finalizeGroupActivityGrading(args, ctx)
-          }
-        ),
-      }),
+      gradeGroupActivitySubmission: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivityInstance,
+          args: {
+            id: t.arg.int({ required: true }),
+            groupActivityId: t.arg.string({ required: true }),
+            gradingDecisions: t.arg({
+              type: GroupActivityGradingInput,
+              required: true,
+            }),
+          },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.groupActivityId }),
+            DB.PermissionLevel.EXECUTE,
+            async (_, args, ctx) => {
+              return await GroupService.gradeGroupActivitySubmission(args, ctx)
+            }
+          ),
+        }),
+
+      finalizeGroupActivityGrading: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: GroupActivity,
+          args: { id: t.arg.string({ required: true }) },
+          resolve: withPermission(
+            (args) => ({ groupActivityId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await GroupService.finalizeGroupActivityGrading(args, ctx)
+            }
+          ),
+        }),
       // #endregion
 
       // ----- USER OWNER OPERATIONS -----
