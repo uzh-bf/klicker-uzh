@@ -225,7 +225,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 ### Authenticated load-test login
 
 - Keep participant credential values only in Infisical. Do not put them in this file, repository files, command arguments, logs, or chat.
-- The approved runtime profile is `klicker-dev` (project `klicker-uzh-dev`, environment `dev`). Inject the allowlisted names directly into the child process:
+- The approved operator profile is `klicker-dev`; it intentionally maps to Infisical project `klicker-uzh-dev` in environment `dev`. Inject the allowlisted names directly into the child process:
 
   ```bash
   rs-infisical-operator --profile klicker-dev run \
