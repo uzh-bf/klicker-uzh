@@ -123,6 +123,7 @@ export const Mutation = builder.mutationType({
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asUserFullAccessForStandardActivities = asUserFullAccess
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
 
     return {
