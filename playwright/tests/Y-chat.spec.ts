@@ -1801,7 +1801,7 @@ test.describe('Chatbot Settings Panel', () => {
     await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
 
     await expect(modelSection).toContainText(
-      'Built for difficult, multi-step questions'
+      'Uses fewer credits and remains available when your credits run out'
     )
     await expect(modelSection).not.toContainText('LiteLLM')
     await expect(modelSection).not.toContainText('OpenAI reasoning model')

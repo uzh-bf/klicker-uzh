@@ -43,7 +43,18 @@ const chatModelRegistrySchema = z
   .array(chatModelSchema)
   .min(1)
   .superRefine((models, ctx) => {
+    const seenIds = new Set<string>()
+
     for (const [index, model] of models.entries()) {
+      if (seenIds.has(model.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'id'],
+          message: `Duplicate model id "${model.id}"`,
+        })
+      }
+      seenIds.add(model.id)
+
       if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

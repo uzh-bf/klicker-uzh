@@ -127,6 +127,20 @@ describe('default chat model registry parity', () => {
     expect(costsById(chatModels)).toEqual(expectedDefaultCosts)
     expect(costsById(backendModels)).toEqual(expectedDefaultCosts)
   })
+
+  test('both consumers reject duplicate model ids', () => {
+    const duplicateRegistry = [
+      ...chatModels,
+      { ...chatModels.find((model) => model.id === 'gpt-5.6-luna')! },
+    ]
+
+    expect(() => parseChatRegistry(duplicateRegistry)).toThrow(
+      /Duplicate model id/
+    )
+    expect(() => parseBackendRegistry(duplicateRegistry)).toThrow(
+      /Duplicate model id/
+    )
+  })
 })
 
 function loadDeployedRegistries() {
