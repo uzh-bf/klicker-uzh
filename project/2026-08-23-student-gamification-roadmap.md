@@ -693,8 +693,8 @@ Append entries; do not rewrite history.
 - 2026-08-24 — PR review corrections on `rs/gamification-achievement-receipts`:
   streak reconciliation now uses Prisma queries and updates inside a
   serializable transaction with retry handling; the achievement migration
-  keeps the default false while explicitly making all 15 currently seeded
-  achievement IDs discoverable.
+  keeps the default false while making all existing seeded achievement rows
+  discoverable.
 - 2026-08-24 — Package complete on `rs/gamification-achievement-receipts`
   through commit `355759370`. S2 private Study streaks landed in
   `5ca259911` (ADR 0009, state machine + reconciliation + course-overview
