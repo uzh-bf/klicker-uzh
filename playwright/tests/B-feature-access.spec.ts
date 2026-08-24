@@ -16,7 +16,8 @@ test.describe('Tests the availability of standard activity creation formats', ()
   })
 
   test.afterAll(async () => {
-    // Restore the lecturer flag to its default for subsequent specs
+    // Restore the lecturer flag and shared activity fixtures for later specs.
+    await cleanupTest()
     await updateLecturerPrivatePreview(true)
   })
 
