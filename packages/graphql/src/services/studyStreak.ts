@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone.js'
 import utc from 'dayjs/plugin/utc.js'
@@ -12,6 +12,7 @@ export const QUALIFIED_RESPONSES_PER_DAY = 5
 export const FREEZE_EARN_THRESHOLD = 7
 export const FREEZE_BALANCE_MAX = 3
 export const FREEZE_BALANCE_START = 2
+const TRANSACTION_RETRY_LIMIT = 3
 
 interface StreakState {
   current: number
@@ -101,8 +102,17 @@ function awardFreezeIfDue(state: StreakState): StreakState {
   return state
 }
 
+function isPrismaError(error: unknown, code: 'P2034') {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === code
+  )
+}
+
 interface ReconcileDeps {
-  prisma: Pick<PrismaClient, '$transaction'>
+  prisma: DB.PrismaClient
 }
 
 interface ReconcileInput {
@@ -112,7 +122,7 @@ interface ReconcileInput {
 
 /**
  * Fail-open reconciliation: applies every qualifying response date since
- * tracking start exactly once under a row lock on the participation.
+ * tracking start exactly once in a serializable Prisma transaction.
  * Errors are swallowed so a streak failure never affects response flow.
  */
 export async function reconcileStudyStreak(
@@ -120,111 +130,128 @@ export async function reconcileStudyStreak(
   input: ReconcileInput
 ): Promise<void> {
   try {
-    await deps.prisma.$transaction(async (tx) => {
-      const rows = await tx.$queryRaw<
-        Array<{
-          id: number
-          course_id: string
-          participant_id: string
-          is_active: boolean
-          study_streak_tracking_started_at: Date | null
-          study_streak_current: number
-          study_streak_longest: number
-          study_streak_freeze_balance: number
-          study_streak_qualified_days_since_freeze: number
-          study_streak_last_qualified_date: Date | null
-          study_streak_last_processed_date: Date | null
-          course_start_date: Date
-          course_end_date: Date
-          course_gamification_enabled: boolean
-        }>
-      >`
-        SELECT p.id, p.course_id, p.participant_id, p.is_active,
-               p.study_streak_tracking_started_at, p.study_streak_current,
-               p.study_streak_longest, p.study_streak_freeze_balance,
-               p.study_streak_qualified_days_since_freeze,
-               p.study_streak_last_qualified_date,
-               p.study_streak_last_processed_date,
-               c.start_date AS course_start_date,
-               c.end_date AS course_end_date,
-               c.is_gamification_enabled AS course_gamification_enabled
-          FROM "Participation" p
-          JOIN "Course" c ON c.id = p.course_id
-         WHERE p.course_id = ${input.courseId}
-           AND p.participant_id = ${input.participantId}
-           FOR UPDATE OF p
-      `
+    for (let attempt = 0; attempt < TRANSACTION_RETRY_LIMIT; attempt++) {
+      try {
+        await deps.prisma.$transaction(
+          async (tx) => {
+            const participation = await tx.participation.findUnique({
+              where: {
+                courseId_participantId: {
+                  courseId: input.courseId,
+                  participantId: input.participantId,
+                },
+              },
+              include: {
+                course: {
+                  select: {
+                    startDate: true,
+                    endDate: true,
+                    isGamificationEnabled: true,
+                  },
+                },
+              },
+            })
 
-      const p = rows[0]
-      if (
-        !p?.is_active ||
-        !p.study_streak_tracking_started_at ||
-        !p.course_gamification_enabled
-      ) {
+            if (
+              !participation?.isActive ||
+              !participation.studyStreakTrackingStartedAt ||
+              !participation.course.isGamificationEnabled
+            ) {
+              return
+            }
+
+            const courseStart = zurichDate(participation.course.startDate)
+            const trackingStart = zurichDate(
+              participation.studyStreakTrackingStartedAt
+            )
+            const courseEnd = zurichDate(participation.course.endDate)
+            const effectiveStart =
+              trackingStart > courseStart ? trackingStart : courseStart
+
+            const detailResponses = await tx.questionResponseDetail.findMany({
+              where: {
+                participationId: participation.id,
+                createdAt: {
+                  gte: participation.studyStreakTrackingStartedAt,
+                },
+                OR: [
+                  { practiceQuizId: { not: null } },
+                  { microLearningId: { not: null } },
+                ],
+              },
+              select: { createdAt: true },
+              orderBy: { createdAt: 'asc' },
+            })
+
+            const responsesByDate = new Map<string, number>()
+            for (const response of detailResponses) {
+              const responseDate = zurichDate(response.createdAt)
+              if (responseDate < effectiveStart || responseDate > courseEnd) {
+                continue
+              }
+              responsesByDate.set(
+                responseDate,
+                (responsesByDate.get(responseDate) ?? 0) + 1
+              )
+            }
+
+            const qualifiedDates = [...responsesByDate.entries()]
+              .filter(
+                ([, responseCount]) =>
+                  responseCount >= QUALIFIED_RESPONSES_PER_DAY
+              )
+              .map(([responseDate]) => responseDate)
+              .sort()
+
+            let state: StreakState = {
+              current: participation.studyStreakCurrent,
+              longest: participation.studyStreakLongest,
+              freezeBalance: participation.studyStreakFreezeBalance,
+              qualifiedDaysSinceFreeze:
+                participation.studyStreakQualifiedDaysSinceFreeze,
+              lastQualifiedDate: participation.studyStreakLastQualifiedDate
+                ? zurichDate(participation.studyStreakLastQualifiedDate)
+                : null,
+              lastProcessedDate: participation.studyStreakLastProcessedDate
+                ? zurichDate(participation.studyStreakLastProcessedDate)
+                : null,
+            }
+
+            for (const responseDate of qualifiedDates) {
+              state = applyQualifiedDate(state, responseDate)
+            }
+
+            await tx.participation.update({
+              where: { id: participation.id },
+              data: {
+                studyStreakCurrent: state.current,
+                studyStreakLongest: state.longest,
+                studyStreakFreezeBalance: state.freezeBalance,
+                studyStreakQualifiedDaysSinceFreeze:
+                  state.qualifiedDaysSinceFreeze,
+                studyStreakLastQualifiedDate: state.lastQualifiedDate
+                  ? dayjs.tz(state.lastQualifiedDate, COURSE_TIMEZONE).toDate()
+                  : null,
+                studyStreakLastProcessedDate: state.lastProcessedDate
+                  ? dayjs.tz(state.lastProcessedDate, COURSE_TIMEZONE).toDate()
+                  : null,
+              },
+            })
+          },
+          {
+            isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+          }
+        )
         return
+      } catch (error) {
+        if (
+          !isPrismaError(error, 'P2034') ||
+          attempt === TRANSACTION_RETRY_LIMIT - 1
+        ) {
+          throw error
+        }
       }
-
-      const courseStart = zurichDate(p.course_start_date)
-      const trackingStart = zurichDate(p.study_streak_tracking_started_at)
-      const effectiveStart =
-        trackingStart > courseStart ? trackingStart : courseStart
-
-      const dateRows = await tx.$queryRaw<
-        Array<{
-          activity_date: Date
-        }>
-      >`
-        SELECT (dr.created_at AT TIME ZONE 'UTC')
-                    AT TIME ZONE ${COURSE_TIMEZONE}::text AS activity_date
-          FROM question_response_detail dr
-         WHERE dr.participation_id = ${p.id}
-           AND dr.created_at >= ${p.study_streak_tracking_started_at}
-           AND (dr.practice_quiz_id IS NOT NULL
-                OR dr.micro_learning_id IS NOT NULL)
-         GROUP BY activity_date
-        HAVING COUNT(*) >= ${QUALIFIED_RESPONSES_PER_DAY}
-         ORDER BY activity_date
-      `
-
-      let state: StreakState = {
-        current: p.study_streak_current,
-        longest: p.study_streak_longest,
-        freezeBalance: p.study_streak_freeze_balance,
-        qualifiedDaysSinceFreeze: p.study_streak_qualified_days_since_freeze,
-        lastQualifiedDate: p.study_streak_last_qualified_date
-          ? zurichDate(p.study_streak_last_qualified_date)
-          : null,
-        lastProcessedDate: p.study_streak_last_processed_date
-          ? zurichDate(p.study_streak_last_processed_date)
-          : null,
-      }
-
-      for (const row of dateRows) {
-        const d = zurichDate(row.activity_date)
-        if (d < effectiveStart || d > zurichDate(p.course_end_date)) continue
-        state = applyQualifiedDate(state, d)
-      }
-
-      await tx.$executeRaw`
-        UPDATE "Participation" SET
-          study_streak_current = ${state.current},
-          study_streak_longest = ${state.longest},
-          study_streak_freeze_balance = ${state.freezeBalance},
-          study_streak_qualified_days_since_freeze = ${state.qualifiedDaysSinceFreeze},
-          study_streak_last_qualified_date = ${
-            state.lastQualifiedDate
-              ? dayjs.tz(state.lastQualifiedDate, COURSE_TIMEZONE).toDate()
-              : null
-          },
-          study_streak_last_processed_date = ${
-            state.lastProcessedDate
-              ? dayjs.tz(state.lastProcessedDate, COURSE_TIMEZONE).toDate()
-              : null
-          },
-          updated_at = NOW()
-         WHERE id = ${p.id}
-      `
-    })
+    }
   } catch (error) {
     console.error('study streak reconciliation failed (fail-open)', {
       courseId: input.courseId,

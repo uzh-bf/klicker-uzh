@@ -28,11 +28,12 @@ day at a time: weekend dates are neutral, each missed active weekday consumes
 one available freeze (initial balance two, maximum three), uncovered breaks
 reset the current streak before it advances again, and every seventh further
 qualified day earns one freeze below the maximum. A reconciliation service
-(`reconcileStudyStreak`) applies all qualifying dates since tracking start
-exactly once under a `FOR UPDATE` lock on the participation row inside a
-separate fail-open transaction fired after the main response transaction has
-committed. Any reconciliation error is logged and swallowed so a streak failure
-never affects grading, XP, or leaderboard updates.
+(`reconcileStudyStreak`) reads the existing response details through Prisma,
+groups them by Zurich date, and applies all qualifying dates since tracking
+start exactly once in a serializable transaction. The transaction is separate
+from the main response transaction and retries serialization conflicts. Any
+reconciliation error is logged and swallowed so a streak failure never affects
+grading, XP, or leaderboard updates.
 
 The streak is self-only: GraphQL exposes the four display fields through the
 existing `Participation` type in the course-overview query, gated by active

@@ -690,6 +690,11 @@ Append entries; do not rewrite history.
   already auto-awarded in `liveQuizzes.ts`, and Explorer is granted manually.
   Both are now included in the discoverable catalog alongside Dream Team and
   Team Spirit (`ACHIEVEMENT_AWARD_PATHS = [2, 5, 6, 7, 8, 9]`).
+- 2026-08-24 — PR review corrections on `rs/gamification-achievement-receipts`:
+  streak reconciliation now uses Prisma queries and updates inside a
+  serializable transaction with retry handling; the achievement migration
+  keeps the default false while explicitly making all 15 currently seeded
+  achievement IDs discoverable.
 - 2026-08-24 — Package complete on `rs/gamification-achievement-receipts`
   through commit `355759370`. S2 private Study streaks landed in
   `5ca259911` (ADR 0009, state machine + reconciliation + course-overview
