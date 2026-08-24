@@ -725,6 +725,12 @@ export default {
         'Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.',
       image:
         'Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
+      video: 'Binden Sie ein YouTube- oder Kaltura-Video ein.',
+      videoUrl: 'YouTube- oder Kaltura-URL',
+      videoUrlPlaceholder: 'YouTube- oder Kaltura-Video-URL einfügen',
+      videoUrlInvalid:
+        'Geben Sie eine gültige YouTube- oder Kaltura-Video-URL ein.',
+      insertVideo: 'Video einfügen',
       latex:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:

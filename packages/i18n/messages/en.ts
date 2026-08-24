@@ -719,6 +719,11 @@ export default {
         'This option creates an unnumbered list. To create new points, simply insert a new line after an existing element. To return to standard text, press this button again.',
       image:
         'Select this setting to include an image. Use the same syntax to include formulas in answer options.',
+      video: 'Embed a YouTube or Kaltura video.',
+      videoUrl: 'YouTube or Kaltura URL',
+      videoUrlPlaceholder: 'Paste a YouTube or Kaltura video URL',
+      videoUrlInvalid: 'Enter a valid YouTube or Kaltura video URL.',
+      insertVideo: 'Insert video',
       latex:
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
