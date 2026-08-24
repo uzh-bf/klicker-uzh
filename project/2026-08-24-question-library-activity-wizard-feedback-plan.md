@@ -468,13 +468,23 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   reported only existing findings on unchanged legacy lines in
   `AddStackButton`, `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no
   unrelated line was changed or suppressed.
-- Exact runtime evidence:
-  `https://manage.klicker.rs-ux-review-question-library.localhost` returns 404;
-  `https://api.klicker.rs-ux-review-question-library.localhost` returns 404; and
-  the filtered devrouter route list for `rs-ux-review-question-library` is `[]`.
-  No localhost or fixed-port fallback and no runtime, config, or route start,
-  repair, or workaround occurred. Browser/E2E execution has therefore not
-  passed.
+- Exact runtime evidence: three canonical exact-checkout
+  `devrouter ensure . --json` attempts exited 1 during HTTP readiness. On the
+  third attempt, all nine probes (`api`, `auth`, `pwa`, `manage`, `control`,
+  `olat-api`, `response-api`, `lti`, and `chat`) failed identically with curl
+  error 60, `SSL certificate problem: out of memory`. The exact workspace was
+  `rs-ux-review-question-library`; internal manage at `localhost:3002` returned
+  200, but this is provider-process evidence only and not exact-domain browser
+  proof. The failed attempts rolled the exact routes back to zero.
+- Shared TLS diagnostics: `devrouter doctor` reported 0 errors and only
+  unrelated or static warnings. The 52,538-byte shared localhost certificate
+  had 755 DNS SANs and already contained the ten exact W2 hostnames, while the
+  global route state contained 458 running routes. SAN and route scale are a
+  plausible shared TLS cause, not a proven root cause.
+- Runtime proof status: no fancy-domain browser matrix or focused B, O, or P
+  test ran. No localhost or fixed-port browser fallback and no manual route,
+  certificate, runtime, or configuration change, repair, or workaround
+  occurred.
 - Current S3 evidence: the frontend conventions now record the verified
   activity-creation guidance, count-label, outcome-selector, and recoverable
   disabled-reason patterns with current symbol citations. Exact-container
@@ -491,10 +501,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed with 154 tests in 3 files; correction-specific B collection passed with
   8 tests. Base-to-head `git diff --check`, commit hooks, staged scope, and
   secret, credential, sensitive-URL, and personal-data audits passed.
-- Remaining: exact-runtime route restoration and browser/E2E evidence.
+- Remaining: exact-domain browser/E2E evidence, blocked pending separate
+  explicit authority for broader shared devrouter TLS or route repair.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: under separate explicit runtime authority, restore only the exact
-  namespaced W2 devrouter routes, run the plan's bilingual desktop, narrow, and
-  keyboard browser matrix plus the focused B, O, and P specs, then record the
-  evidence. Until then, stop at the genuine runtime blocker.
+- Next action: stop at the genuine runtime blocker. Under separate explicit
+  authority, diagnose and repair the shared devrouter TLS or route layer, rerun
+  the canonical exact-checkout ensure, then run the plan's bilingual desktop,
+  narrow, and keyboard browser matrix plus the focused B, O, and P specs and
+  record the evidence.
