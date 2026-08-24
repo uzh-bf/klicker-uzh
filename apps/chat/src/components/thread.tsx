@@ -1530,7 +1530,7 @@ const AssistantMessage: FC = () => {
   // Terminal tool-only turns still show their completed sources.
   const showSources = useAuiState((s) => {
     const status = s.message.status?.type
-    return status === 'complete' || status === 'incomplete'
+    return status !== 'running' && status !== 'requires-action'
   })
   // Computed once here (not inside SourcesSection/MarkdownText) and shared
   // via context, so the sources grid and the inline `[n]` citation chips

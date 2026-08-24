@@ -13,8 +13,8 @@ import {
   formatModeLabel,
   getModeDescription,
   resolveSelectedMode,
-} from '../lib/config/modes'
-import { useSettingsStore } from '../stores/settingsStore'
+} from '@/src/lib/config/modes'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
   if (mode === 'tutor') {

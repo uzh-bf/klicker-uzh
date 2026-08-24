@@ -526,6 +526,10 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
               if (eventType === 'text-delta') {
                 textChunkCount += 1
                 if (textChunkCount === pauseAfterTextChunk) {
+                  if (signal?.aborted) {
+                    controller.error(abortError())
+                    return
+                  }
                   await new Promise<void>((resolve) => {
                     wakePause = resolve
                     releasePausedStream = resolve
@@ -540,6 +544,10 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
                 pauseAfterToolOutput &&
                 eventType === 'tool-output-available'
               ) {
+                if (signal?.aborted) {
+                  controller.error(abortError())
+                  return
+                }
                 await new Promise<void>((resolve) => {
                   wakePause = resolve
                   releasePausedStream = resolve
