@@ -142,17 +142,28 @@
 
 ## Progress
 
-- Status: approved and executing Slice 1.
-- Completed: fresh remote/worktree audit, root-cause reproduction evidence,
-  cache/lifecycle mapping, baseline shell syntax, and devrouter doctor with 21
-  OK, 5 expected pre-runtime warnings, and 0 errors.
-- Remaining: Slices 1 and 2, integrated main-session review, final verification,
-  plan progress update, exact runtime shutdown, and final local commit.
-- Latest evidence: branch starts clean at `09257efb71`; primary checkout's
-  unrelated changes remain untouched.
+- Status: both slices are implemented and verified; final commit, committed-head
+  reconciliation, and exact runtime shutdown remain.
+- Completed: fresh remote/worktree audit, root-cause evidence, plan commit,
+  deterministic runtime commit, semantic readiness and repair implementation,
+  focused contract tests, integrated main-session correctness/maintainability/
+  shell-safety review, repository quality gate, production build, and exact
+  runtime recovery proofs.
+- Latest evidence: warm `devrouter ensure` reused PID 4989; a deliberate scoped
+  Chat repair replaced it with PID 7372, removed the generated marker, consumed
+  the one-shot request, and restored `401 application/json`. The full quality
+  gate passed after provisioning the image-pinned Python 3.12 interpreter in
+  the verification container. The 23-task production build passed, and the
+  following ensure used its one recreate budget and restored the same Chat
+  contract.
+- Remaining: commit Slice 2, reconcile and recheck the committed head, stop the
+  exact source-path runtime, prove its provider state and routes are absent,
+  then record terminal progress.
 - Required delivery layer: verified local committed branch.
-- Achieved delivery layer: isolated clean branch with approved plan pending its
-  first commit.
+- Achieved delivery layer: isolated branch with the plan and Slice 1 committed;
+  verified Slice 2 is pending its local commit.
 - Review limitation: required specialist roles are unavailable in this side
-  conversation; no child review will be claimed.
-- Next action: commit this plan, then implement and verify Slice 1.
+  conversation. The completed main-session review found no outstanding issue;
+  no child review is claimed.
+- Next action: commit Slice 2, verify the committed head, then stop and prove
+  release of the exact runtime.

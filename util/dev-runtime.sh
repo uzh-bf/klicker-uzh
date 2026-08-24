@@ -8,6 +8,12 @@ GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+# Authentication rejects this valid synthetic nested route before any database
+# lookup, so the handler must return JSON 401 even when no seed data exists.
+CHAT_PROBE_URL='http://localhost:3004/api/chatbots/00000000-0000-4000-8000-000000000000/threads'
+CHAT_STALE_STATUS=20
+CHAT_WAITING_STATUS=21
+CHAT_UNEXPECTED_STATUS=22
 
 die() {
   echo "[dev-runtime] ERROR: $*" >&2
@@ -214,6 +220,109 @@ apply_cache_policy() {
   fi
 }
 
+classify_chat_response() {
+  local status="$1"
+  local content_type="${2,,}"
+
+  if [ "$status" = '401' ] && [[ "$content_type" == application/json* ]]; then
+    echo "ready: HTTP $status $content_type"
+    return 0
+  fi
+  if [ "$status" = '404' ] && [[ "$content_type" == text/html* ]]; then
+    echo "stale: HTTP $status $content_type"
+    return "$CHAT_STALE_STATUS"
+  fi
+
+  echo "unexpected: HTTP $status ${content_type:-unknown-content-type}"
+  return "$CHAT_UNEXPECTED_STATUS"
+}
+
+probe_chat() {
+  local response status content_type
+
+  require_tool curl
+  if ! response="$(curl --silent --show-error --output /dev/null \
+    --write-out $'%{http_code}\t%{content_type}' \
+    --connect-timeout 2 --max-time 15 --noproxy '*' \
+    "$CHAT_PROBE_URL" 2>/dev/null)"; then
+    echo 'waiting: Chat is not accepting connections'
+    return "$CHAT_WAITING_STATUS"
+  fi
+
+  status="${response%%$'\t'*}"
+  content_type="${response#*$'\t'}"
+  classify_chat_response "$status" "$content_type"
+}
+
+wait_for_chat() {
+  local attempt observation status=0 last_observation=''
+  local stale_count=0 unexpected_count=0
+
+  require_tool sleep
+  echo '[dev-runtime] Waiting for the Chat route contract...'
+  for ((attempt = 1; attempt <= 90; attempt++)); do
+    status=0
+    observation="$(probe_chat)" || status=$?
+    if [ "$observation" != "$last_observation" ]; then
+      echo "[dev-runtime] $observation"
+      last_observation="$observation"
+    fi
+
+    case "$status" in
+      0)
+        echo '[dev-runtime] Chat route contract is ready.'
+        return 0
+        ;;
+      "$CHAT_STALE_STATUS")
+        stale_count=$((stale_count + 1))
+        unexpected_count=0
+        ;;
+      "$CHAT_WAITING_STATUS")
+        stale_count=0
+        unexpected_count=0
+        ;;
+      "$CHAT_UNEXPECTED_STATUS")
+        stale_count=0
+        unexpected_count=$((unexpected_count + 1))
+        ;;
+      *)
+        die "Chat probe returned unsupported status $status."
+        ;;
+    esac
+
+    if [ "$attempt" -ge 10 ] && [ "$stale_count" -ge 5 ]; then
+      echo '[dev-runtime] Confirmed stale Chat route state.' >&2
+      return "$CHAT_STALE_STATUS"
+    fi
+    if [ "$attempt" -ge 10 ] && [ "$unexpected_count" -ge 3 ]; then
+      echo '[dev-runtime] Chat returned a stable unexpected response; no cache was removed.' >&2
+      return "$CHAT_UNEXPECTED_STATUS"
+    fi
+    [ "$attempt" -eq 90 ] || sleep 1
+  done
+
+  echo '[dev-runtime] Chat did not satisfy its route contract within 90 seconds.' >&2
+  return 1
+}
+
+doctor_chat() {
+  local observation status=0
+
+  observation="$(probe_chat)" || status=$?
+  if [ "$status" -eq 0 ]; then
+    echo "[dev-runtime] Chat healthy: $observation"
+    return 0
+  fi
+
+  echo "[dev-runtime] ERROR: Chat unhealthy: $observation" >&2
+  if [ "$status" -eq "$CHAT_STALE_STATUS" ]; then
+    echo '[dev-runtime] Run devrouter ensure . on the host to apply the bounded repair.' >&2
+  else
+    echo '[dev-runtime] No cache was removed. Inspect /tmp/dev.log for the application failure.' >&2
+  fi
+  return 1
+}
+
 start_runtime() {
   local expected_fingerprint="$1"
   local expected_generation="$2"
@@ -246,6 +355,10 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
+  util/dev-runtime.sh classify-chat-response <status> <content-type>
+  util/dev-runtime.sh probe-chat
+  util/dev-runtime.sh wait-chat
+  util/dev-runtime.sh doctor
 EOF
 }
 
@@ -280,6 +393,22 @@ main() {
       [ "$#" -ge 5 ] || die "start requires identity and a command."
       shift
       start_runtime "$@"
+      ;;
+    classify-chat-response)
+      [ "$#" -eq 3 ] || die "classify-chat-response requires status and content type."
+      classify_chat_response "$2" "$3"
+      ;;
+    probe-chat)
+      [ "$#" -eq 1 ] || die "probe-chat takes no arguments."
+      probe_chat
+      ;;
+    wait-chat)
+      [ "$#" -eq 1 ] || die "wait-chat takes no arguments."
+      wait_for_chat
+      ;;
+    doctor)
+      [ "$#" -eq 1 ] || die "doctor takes no arguments."
+      doctor_chat
       ;;
     --help|-h)
       usage

@@ -136,11 +136,20 @@ fixture. Exact workspace, command, adapter bytes, and declared non-secret
 runtime-origin values are fingerprinted for reuse; stale owned groups are
 replaced boundedly, and unknown processes are never killed. The MCP command
 also carries the fixture source hash so a source edit forces managed
-replacement. HTTP readiness remains in
-`devrouter ensure .`; the root build script forces production mode even though
-the live container exports `NODE_ENV=development`. Rerun ensure after
-`pnpm run build` so stale Next.js dev output can trigger the single
-container-recreate budget.
+replacement. The app command also fingerprints dependency inputs, Next.js route
+structure, configuration, and the checked-out commit. A true process start
+clears only `.next/dev`; a changed dependency fingerprint runs one frozen
+install against the persistent `node_modules` volume.
+
+Before `post-start` reports success, it probes a nested unauthenticated Chat API
+route whose healthy contract is `401 application/json`. Five consecutive
+`404 text/html` responses after the startup grace period identify the known
+stale Next.js route state. Only that signature requests one managed Chat
+restart with a full `apps/chat/.next` cleanup. Other errors fail closed without
+removing caches. Run `devrouter exec . -- pnpm run dev:doctor` for the same
+read-only semantic check. The root build script forces production mode even
+though the live container exports `NODE_ENV=development`; rerun
+`devrouter ensure .` afterward to restore and prove the development runtime.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.
@@ -148,7 +157,8 @@ analytics image and lint CI so the root quality gate runs inside the container.
 ## Notes
 
 - `node_modules` is a named volume (pnpm hoists natives into the root
-  `node_modules/.pnpm`, so one root volume covers the monorepo).
+  `node_modules/.pnpm`, so one root volume covers the monorepo). Its dependency
+  stamp prevents reuse after lockfile or workspace-manifest changes.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
 - `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
   if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir

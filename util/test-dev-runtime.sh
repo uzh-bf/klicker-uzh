@@ -107,8 +107,40 @@ assert_absent "$ROOT/apps/chat/.next"
 assert_exists "$ROOT/apps/auth/.next/production.bin"
 assert_absent "$ROOT/.devcontainer/.runtime/next-repair-request"
 
+write_file "$TEST_ROOT/outside-cache/marker" 'must survive'
+ln -s "$TEST_ROOT/outside-cache" "$ROOT/apps/chat/.next"
+if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- true >/dev/null 2>&1; then
+  fail 'symlinked cache was accepted'
+fi
+assert_exists "$TEST_ROOT/outside-cache/marker"
+
 if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
 fi
+
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-chat-response 401 'application/json; charset=utf-8')" \
+  'ready: HTTP 401 application/json; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-chat-response 404 'text/html; charset=utf-8'
+)" || classification_status=$?
+assert_equal "$classification_status" '20'
+assert_equal "$classification_output" 'stale: HTTP 404 text/html; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-chat-response 500 application/json
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 500 application/json'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-chat-response 404 application/json
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 application/json'
 
 echo '[test-dev-runtime] PASS'

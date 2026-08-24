@@ -101,14 +101,40 @@ done
 # Run every routed app plus both Hatchet workers without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
-RUNTIME_FINGERPRINT="$(bash ./util/dev-runtime.sh fingerprint)"
-RUNTIME_GENERATION="$(bash ./util/dev-runtime.sh generation)"
-"$DEVROUTER_PROCESS_HELPER" ensure \
-  --name klicker-dev \
-  --match 'turbo run dev' \
-  --log /tmp/dev.log \
-  -- bash ./util/dev-runtime.sh start "$RUNTIME_FINGERPRINT" "$RUNTIME_GENERATION" \
-  -- pnpm run dev:container
+start_managed_runtime() {
+  local runtime_fingerprint runtime_generation
+
+  runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
+  runtime_generation="$(bash ./util/dev-runtime.sh generation)"
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-dev \
+    --match 'turbo run dev' \
+    --log /tmp/dev.log \
+    -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+    -- pnpm run dev:container
+}
+
+start_managed_runtime
+
+CHAT_WAIT_STATUS=0
+bash ./util/dev-runtime.sh wait-chat || CHAT_WAIT_STATUS=$?
+if [ "$CHAT_WAIT_STATUS" -eq 20 ]; then
+  echo '[post-start] Repairing the confirmed stale Chat .next cache once.'
+  bash ./util/dev-runtime.sh request-repair chat
+  start_managed_runtime
+
+  CHAT_WAIT_STATUS=0
+  bash ./util/dev-runtime.sh wait-chat || CHAT_WAIT_STATUS=$?
+  if [ "$CHAT_WAIT_STATUS" -ne 0 ]; then
+    echo '[post-start] ERROR: Chat remained unhealthy after its one repair attempt.' >&2
+    echo '[post-start] Inspect /tmp/dev.log; no further cache cleanup was attempted.' >&2
+    exit 1
+  fi
+elif [ "$CHAT_WAIT_STATUS" -ne 0 ]; then
+  echo '[post-start] ERROR: Chat failed semantic readiness; no cache cleanup was attempted.' >&2
+  echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+  exit 1
+fi
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
