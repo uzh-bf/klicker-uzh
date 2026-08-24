@@ -55,9 +55,11 @@ accounts with one inactive matching participation each. The shared
   course, chatbot, account, and participation guards inside the transaction.
 - Missing participants are manual, active, non-public accounts without an
   email. Existing dedicated participants retain identifying fields and receive
-  the injected password, active account state, private profile state, and an
-  active matching participation. Active off-target participations are
-  deactivated, never deleted.
+  the injected password, active account state, private profile state, and a
+  matching leaderboard participation. Active off-target leaderboard
+  participations are deactivated, never deleted. `Participation.isActive` is
+  not an enrollment, course-access, or chatbot-security flag; these updates do
+  not grant or revoke access.
 - Replays preserve the stored bcrypt hash when the injected password already
   matches and skip already-satisfied updates, so a stable rerun is a database
   no-op.

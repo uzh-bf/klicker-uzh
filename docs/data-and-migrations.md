@@ -125,11 +125,19 @@ Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the lea
 
 The three lecturer-demo courses use dedicated manual participant accounts. The
 reconciler is idempotent: it creates the missing account, repairs only the
-dedicated account's active/private state, activates its matching participation,
-and deactivates an active participation in another course without deleting it.
+dedicated account's active/private state, activates its matching leaderboard
+participation,
+and deactivates an active leaderboard participation in another course without
+deleting it.
 It never touches the shared `teststudent` account. Course and chatbot names are
 resolved under owner shortname `klick`; missing, archived, duplicated, or
 re-owned targets fail before any write.
+
+`Participation.isActive` is the course-leaderboard opt-in flag only. The
+reconciler's participation updates change leaderboard inclusion; they do not
+grant or revoke course, assessment, or chatbot access. Access remains governed
+by the endpoint-specific authorization and invitation/account rules, so a
+leaderboard change must never be presented as a security change.
 
 | Demo         | Course                  | Chatbot                     | Participant username  | Password secret name                             |
 | ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |

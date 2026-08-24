@@ -126,6 +126,14 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 - **Participants**: magic link, LTI, username/password, temporary (anonymous)
 - JWT tokens; GraphQL resolvers enforce three-layer auth: authenticate -> authorize -> execute
 
+### Participation state boundary
+
+`Participation.isActive` is a **leaderboard opt-in flag**, not an enrollment,
+course-access, or security flag. Toggling it changes leaderboard inclusion only;
+it must never be used to grant or revoke assessment, course, or chatbot access.
+Use the endpoint-specific authorization and invitation/account rules instead.
+See [Domain Model](docs/domain-model.md) for the canonical explanation.
+
 ## Local Dev Setup
 
 ### Self-contained devcontainer (recommended)
