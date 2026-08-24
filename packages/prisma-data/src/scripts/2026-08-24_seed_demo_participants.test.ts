@@ -35,7 +35,9 @@ const isDisposableDatabase = (databaseUrl: string | undefined) => {
   }
 
   try {
-    const hostname = new URL(databaseUrl).hostname.toLowerCase()
+    const hostname = new URL(databaseUrl).hostname
+      .toLowerCase()
+      .replace(/^\[|\]$/g, '')
     return ['postgres', 'localhost', '127.0.0.1', '::1'].includes(hostname)
   } catch {
     return false
@@ -90,6 +92,7 @@ testDescribe('seed demo participants', () => {
   const adapter = new PrismaPg({ connectionString: DATABASE_URL })
   const prisma = new PrismaClient({ adapter })
   let ownerId = ''
+  let fixtureInitialized = false
   const courseIds = new Map<string, string>()
   const createdParticipantIds = new Set<string>()
 
@@ -129,6 +132,7 @@ testDescribe('seed demo participants', () => {
       select: { id: true },
     })
     ownerId = owner.id
+    fixtureInitialized = true
 
     for (const [index, [courseName, chatbotName]] of [
       ['testkurs IuW', 'Informatik und Wirtschaft'],
@@ -162,9 +166,9 @@ testDescribe('seed demo participants', () => {
   })
 
   afterAll(async () => {
-    await rememberCreatedParticipants()
-    await cleanupCreatedParticipants()
-    if (ownerId) {
+    if (fixtureInitialized) {
+      await rememberCreatedParticipants()
+      await cleanupCreatedParticipants()
       await prisma.course.deleteMany({ where: { ownerId } })
       await prisma.user
         .delete({ where: { id: ownerId } })
