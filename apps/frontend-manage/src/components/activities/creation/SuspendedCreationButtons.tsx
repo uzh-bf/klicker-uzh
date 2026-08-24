@@ -1,10 +1,10 @@
-import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import {
   faChalkboardUser,
   faGraduationCap,
   faUserGroup,
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
+import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import CreationButton from './CreationButton'
 
@@ -23,6 +23,13 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.LiveQuiz)
         }}
+        description={t.rich('manage.activityWizard.liveQuizUseCase', {
+          link: (chunks) => (
+            <a href="https://www.klicker.uzh.ch/use_cases/live_quiz/">
+              {chunks}
+            </a>
+          ),
+        })}
         data={{ cy: 'create-live-quiz' }}
       />
       <CreationButton
@@ -31,6 +38,13 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.MicroLearning)
         }}
+        description={t.rich('manage.activityWizard.microlearningUseCase', {
+          link: (chunks) => (
+            <a href="https://www.klicker.uzh.ch/use_cases/microlearning/">
+              {chunks}
+            </a>
+          ),
+        })}
         data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
@@ -39,6 +53,13 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.PracticeQuiz)
         }}
+        description={t.rich('manage.activityWizard.practiceQuizUseCase', {
+          link: (chunks) => (
+            <a href="https://www.klicker.uzh.ch/use_cases/practice_quiz/">
+              {chunks}
+            </a>
+          ),
+        })}
         data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
@@ -47,6 +68,13 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         onClick={() => {
           setCreationMode(ActivityType.GroupActivity)
         }}
+        description={t.rich('manage.activityWizard.groupActivityUseCase', {
+          link: (chunks) => (
+            <a href="https://www.klicker.uzh.ch/use_cases/group_activity/">
+              {chunks}
+            </a>
+          ),
+        })}
         data={{ cy: 'create-group-activity' }}
       />
     </div>

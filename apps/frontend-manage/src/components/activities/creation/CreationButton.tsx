@@ -1,4 +1,4 @@
-import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import type { IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -7,6 +7,7 @@ interface CreationButtonProps {
   comingSoon?: boolean
   icon: IconDefinition
   text: string
+  description?: React.ReactNode
   onClick?: () => void
   disabled?: boolean
   data: {
@@ -19,11 +20,15 @@ function CreationButton({
   comingSoon,
   icon,
   text,
+  description,
   onClick,
   disabled,
   data,
 }: CreationButtonProps) {
   const t = useTranslations()
+
+  const describedById =
+    data.cy && description ? `description-${data.cy}` : undefined
 
   const button = (
     <Button
@@ -33,6 +38,7 @@ function CreationButton({
         root: 'h-10 justify-between gap-6 px-6 disabled:cursor-pointer md:h-12',
       }}
       data={data}
+      aria-describedby={describedById}
       onClick={onClick}
     >
       <div className="flex flex-row items-center gap-3">
@@ -53,7 +59,16 @@ function CreationButton({
     )
   }
 
-  return button
+  return (
+    <div className="flex flex-col gap-1">
+      {button}
+      {description && describedById ? (
+        <div id={describedById} className="text-sm">
+          {description}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export default CreationButton

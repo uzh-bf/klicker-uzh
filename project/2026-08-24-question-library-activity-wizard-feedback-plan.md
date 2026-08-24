@@ -397,7 +397,7 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 is next; S2/S3 remain after it.
+- Status: replacement S1 implemented and committed; S2/S3 remain after it.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -406,10 +406,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   lifecycle-lock identity issue. Configured Gemini S1 reviewers failed pre-work
   with HTTP 402. Generic continuity reports exist only for superseded S1 and do
   not validate this replacement.
-- Current staged artifact: corrected plan only.
-- Remaining: replacement S1 implementation/checks/reviews, S2, narrowed S3,
-  integrated review when available, and final Progress evidence.
+- Current S1 evidence: four canonical rich descriptions with exact links added
+  below each standard creation button; each button uses `aria-describedby` to
+  its distinct `description-<data-cy>` region; all click paths remain enabled;
+  no Catalyst query/crown/status/disabled behavior or i18n change was added.
+  Upstream free-user open/cancel coverage was preserved and extended with
+  description/link/enabled/no-Catalyst-signaling assertions for free and
+  lecturer/Catalyst checks. Prettier, package-scoped Biome,
+  frontend-manage check, Playwright TypeScript check, and `git diff --check`
+  passed through the exact container. A mistaken repo-wide Biome run touched
+  unrelated tracked files; all were restored to committed state before staging,
+  and only the three owned files plus this Progress update are in scope now.
+- Remaining: native simplifier/slice review when available, S2, narrowed S3,
+  integrated review when available, fancy-domain/browser proof behind the
+  lifecycle-lock gate, and final Progress evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: commit this corrected plan as the first replacement commit, then
-  implement replacement S1 from origin/v3's standard-format implementation.
+- Next action: run available native reviews over the committed S1 range, then
+  proceed to replacement S2 without runtime/browser/publication actions.

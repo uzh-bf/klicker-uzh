@@ -9,6 +9,33 @@ import {
 
 test('CLEANUP', cleanupTest)
 
+const standardActivityDescriptions = [
+  {
+    button: 'create-live-quiz',
+    description: 'description-create-live-quiz',
+    text: /Live quizzes can be used to promote interactivity in lectures, seminars and workshops/,
+    href: 'https://www.klicker.uzh.ch/use_cases/live_quiz/',
+  },
+  {
+    button: 'create-practice-quiz',
+    description: 'description-create-practice-quiz',
+    text: /Practice quizzes can be used to prepare for exams and to review learning content/,
+    href: 'https://www.klicker.uzh.ch/use_cases/practice_quiz/',
+  },
+  {
+    button: 'create-microlearning',
+    description: 'description-create-microlearning',
+    text: /Microlearnings can be solved by students within a specified timespan/,
+    href: 'https://www.klicker.uzh.ch/use_cases/microlearning/',
+  },
+  {
+    button: 'create-group-activity',
+    description: 'description-create-group-activity',
+    text: /Group activities can be solved once per group and require collaboration/,
+    href: 'https://www.klicker.uzh.ch/use_cases/group_activity/',
+  },
+] as const
+
 test.describe('Tests the availability of standard activity creation formats', () => {
   test.beforeAll(async () => {
     await seedActivities()
@@ -48,6 +75,21 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginFreeUser()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
+    for (const activity of standardActivityDescriptions) {
+      await expect(page.getByTestId(activity.button)).not.toBeDisabled()
+      await expect(page.getByTestId(activity.description)).toBeVisible()
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveAttribute('href', activity.href)
+      const describedBy = await page
+        .getByTestId(activity.button)
+        .getAttribute('aria-describedby')
+      expect(describedBy).toBe(activity.description)
+      await expect(page.getByTestId(activity.description)).not.toContainText(
+        /catalyst/i
+      )
+    }
+
     for (const [button, firstStep] of [
       ['create-live-quiz', 'insert-live-quiz-name'],
       ['create-practice-quiz', 'insert-practice-quiz-name'],
@@ -69,10 +111,20 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    await expect(page.getByTestId('create-live-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-practice-quiz')).not.toBeDisabled()
-    await expect(page.getByTestId('create-microlearning')).not.toBeDisabled()
-    await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
+    for (const activity of standardActivityDescriptions) {
+      await expect(page.getByTestId(activity.button)).not.toBeDisabled()
+      await expect(page.getByTestId(activity.description)).toBeVisible()
+      await expect(
+        page.getByTestId(activity.description).getByRole('link')
+      ).toHaveAttribute('href', activity.href)
+      const describedBy = await page
+        .getByTestId(activity.button)
+        .getAttribute('aria-describedby')
+      expect(describedBy).toBe(activity.description)
+      await expect(page.getByTestId(activity.description)).not.toContainText(
+        /catalyst/i
+      )
+    }
   })
 
   test('Verify that learning analytics and private preview features are available for lecturer', async ({
