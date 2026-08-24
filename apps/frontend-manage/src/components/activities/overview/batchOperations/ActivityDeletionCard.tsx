@@ -38,8 +38,12 @@ function ActivityDeletionCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0">
-        <div className="flex items-start gap-2">
+        <label
+          htmlFor="delete-activities-checkbox"
+          className="flex cursor-pointer items-start gap-2"
+        >
           <Checkbox
+            id="delete-activities-checkbox"
             checked={selectedActions.deleteActivities}
             onCheck={() => {
               setSelectedActions((prev) => ({
@@ -52,7 +56,7 @@ function ActivityDeletionCard({
           <span className="text-sm">
             {t('manage.activities.batchDeleteDescription')}
           </span>
-        </div>
+        </label>
       </CardContent>
     </Card>
   )

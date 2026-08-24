@@ -12,6 +12,7 @@ interface ActivityConfirmationModalProps {
   confirmations: Record<string, boolean>
   confirmationsInitializing: boolean
   confirmationType?: 'confirm' | 'delete'
+  primaryLabel?: string | React.ReactNode
   children: React.ReactNode
 }
 
@@ -25,21 +26,27 @@ function ActivityConfirmationModal({
   confirmations,
   confirmationsInitializing,
   confirmationType = 'confirm',
+  primaryLabel,
   children,
 }: ActivityConfirmationModalProps) {
   const t = useTranslations()
   const disabled =
     confirmationsInitializing ||
     Object.values(confirmations).some((confirmation) => !confirmation)
+  const handleClose = () => {
+    if (!submitting) onClose()
+  }
 
   return (
     <Modal
       open
       loading={loading}
-      onClose={onClose}
+      onClose={handleClose}
+      escapeDisabled={submitting}
+      hideCloseButton={submitting}
       className={{ content: 'w-full! max-w-200' }}
       title={title}
-      primaryLabel={t('shared.generic.confirm')}
+      primaryLabel={primaryLabel ?? t('shared.generic.confirm')}
       primaryLoading={submitting}
       primaryDisabled={disabled}
       primaryButtonStyle={
@@ -54,8 +61,8 @@ function ActivityConfirmationModal({
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirmation-modal-confirm' }}
-      secondaryLabel={t('shared.generic.cancel')}
-      onSecondaryAction={onClose}
+      secondaryLabel={submitting ? undefined : t('shared.generic.cancel')}
+      onSecondaryAction={submitting ? undefined : handleClose}
       dataSecondaryAction={{ cy: 'confirmation-modal-cancel' }}
       dataCloseButton={{ cy: 'confirmation-modal-close' }}
     >

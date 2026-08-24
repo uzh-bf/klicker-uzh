@@ -1600,7 +1600,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
       openElementsInLibrary: 'Open elements in library',
-      batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperations:
+        'Batch operations ({numActivities, plural, =1 {1 activity} other {# activities}})',
       batchOperationsOnlyDraftScheduled:
         'Batch operations can only be performed on draft or scheduled activities.',
       batchOperationsActivities: 'Activities - Batch Operations',
@@ -1620,7 +1621,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       noActivitiesWillBeDeleted: 'No activities will be deleted',
-      nActivitiesWillBeDeleted: '{number} activities will be deleted',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# activity will be deleted} other {# activities will be deleted}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} activities will be deleted',
       activityContainsNoElements:
         'This {activity} does not contain any elements.',
       multiplierRequiresGamifiedAssessmentCourse:
@@ -1668,9 +1672,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
       confirmBatchDeletionTitle: 'Delete selected activities',
       confirmBatchDeletionMessage:
-        'You are about to permanently delete {number} activities, including their associated participant data and results. This action cannot be undone.',
+        'You are about to permanently delete {number, plural, =1 {1 activity} other {# activities}}, including their associated participant data and results. This action cannot be undone.',
       confirmBatchDeletionIrreversible:
-        'I understand that all {number} activities and their associated data will be permanently deleted and cannot be restored.',
+        'I understand that {number, plural, =1 {the activity and its associated data} other {all # activities and their associated data}} will be permanently deleted and cannot be restored.',
+      confirmBatchDeletionAcknowledge: 'Acknowledge',
+      confirmBatchDeletionSubmit: 'Delete activities',
+      batchDeletionProgress:
+        'Deletion in progress: {completed} of {total} {total, plural, =1 {activity} other {activities}} completed. Please keep this window open.',
+      batchDeletionRefreshFailed:
+        'Deletion finished, but the activity list could not be refreshed. Reload the list before continuing.',
       batchDeletionSuccess:
         'The eligible selected activities were successfully deleted.',
       batchDeletionPartialSuccess:

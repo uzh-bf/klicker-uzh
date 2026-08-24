@@ -25,7 +25,9 @@ import {
   type ActivityBatchOperationActions,
   INITIAL_ACTIVITY_BATCH_OPERATIONS,
 } from './batchOperations/types'
-import useActivityBatchDeletion from './batchOperations/useActivityBatchDeletion'
+import useActivityBatchDeletion, {
+  type ActivityBatchDeletionProgress,
+} from './batchOperations/useActivityBatchDeletion'
 
 function ActivityBatchOperationsModal({
   selectedActivities,
@@ -44,6 +46,8 @@ function ActivityBatchOperationsModal({
   const [deletionConfirmationOpen, setDeletionConfirmationOpen] =
     useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deletionProgress, setDeletionProgress] =
+    useState<ActivityBatchDeletionProgress>({ completed: 0, total: 0 })
   const deleteActivitiesBatch = useActivityBatchDeletion()
 
   // database mutation to execute activity batch operations
@@ -267,9 +271,13 @@ function ActivityBatchOperationsModal({
 
   async function executeBatchDeletion() {
     setDeleting(true)
+    setDeletionProgress({ completed: 0, total: activitiesToDelete.length })
 
     try {
-      const outcomes = await deleteActivitiesBatch(activitiesToDelete)
+      const outcomes = await deleteActivitiesBatch(
+        activitiesToDelete,
+        (progress) => setDeletionProgress(progress)
+      )
       const deletedCount = outcomes.filter(
         (outcome) => outcome.status === 'deleted'
       ).length
@@ -281,13 +289,21 @@ function ActivityBatchOperationsModal({
         resetSelectedActivities()
       }
 
+      let refreshFailed = false
       try {
         await refetchActivities()
       } catch (error) {
         console.error(error)
+        refreshFailed = true
       }
 
-      if (uncertainCount > 0) {
+      if (refreshFailed) {
+        toast({
+          type: 'warning',
+          message: t('manage.activities.batchDeletionRefreshFailed'),
+          options: { duration: 5000 },
+        })
+      } else if (uncertainCount > 0) {
         toast({
           type: 'warning',
           message: t('manage.activities.batchDeletionUncertain'),
@@ -332,6 +348,7 @@ function ActivityBatchOperationsModal({
     return (
       <ActivityBatchDeletionConfirmationModal
         count={activitiesToDelete.length}
+        progress={deletionProgress}
         deleting={deleting}
         onClose={() => setDeletionConfirmationOpen(false)}
         onDelete={executeBatchDeletion}
@@ -410,12 +427,14 @@ function ActivityBatchOperationsModal({
                 {selectedActions.deleteActivities
                   ? numOfAffectedActivities === 0
                     ? t('manage.activities.noActivitiesWillBeDeleted')
-                    : t('manage.activities.nActivitiesWillBeDeleted', {
-                        number:
-                          numOfAffectedActivities === selectedActivities.length
-                            ? numOfAffectedActivities
-                            : `${numOfAffectedActivities}/${selectedActivities.length}`,
-                      })
+                    : numOfAffectedActivities === selectedActivities.length
+                      ? t('manage.activities.nActivitiesWillBeDeleted', {
+                          number: numOfAffectedActivities,
+                        })
+                      : t('manage.activities.nOfMActivitiesWillBeDeleted', {
+                          affected: numOfAffectedActivities,
+                          total: selectedActivities.length,
+                        })
                   : numOfAffectedActivities === 0
                     ? t('manage.activities.noActivitiesWillBeUpdated')
                     : t('manage.activities.nActivitiesWillBeUpdated', {

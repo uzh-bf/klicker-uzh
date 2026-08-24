@@ -15,6 +15,11 @@ export type ActivityBatchDeletionOutcome = {
   status: 'deleted' | 'failed' | 'uncertain'
 }
 
+export type ActivityBatchDeletionProgress = {
+  completed: number
+  total: number
+}
+
 function useActivityBatchDeletion() {
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument)
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument)
@@ -54,9 +59,11 @@ function useActivityBatchDeletion() {
   }
 
   return async function deleteActivitiesBatch(
-    activities: ActivityInfo[]
+    activities: ActivityInfo[],
+    onProgress?: (progress: ActivityBatchDeletionProgress) => void
   ): Promise<ActivityBatchDeletionOutcome[]> {
     const outcomes: ActivityBatchDeletionOutcome[] = []
+    onProgress?.({ completed: 0, total: activities.length })
 
     for (
       let index = 0;
@@ -82,6 +89,7 @@ function useActivityBatchDeletion() {
         })
       )
       outcomes.push(...chunkOutcomes)
+      onProgress?.({ completed: outcomes.length, total: activities.length })
     }
 
     return outcomes

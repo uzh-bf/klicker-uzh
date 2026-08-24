@@ -2558,16 +2558,16 @@ test.describe
 
     await page.getByTestId('activity-batch-operations').click()
     await page.getByTestId('multiplier-checkbox').click()
+    await expect(
+      page.getByRole('checkbox', {
+        name: messages.manage.activities.batchDeleteDescription,
+      })
+    ).toBeVisible()
     await page.getByTestId('delete-activities-checkbox').click()
 
     await expect(page.getByTestId('multiplier-checkbox')).toBeDisabled()
     await expect(
-      page.getByText(
-        messages.manage.activities.nActivitiesWillBeDeleted.replace(
-          '{number}',
-          String(activitiesToDelete.length)
-        )
-      )
+      page.getByText(`${activitiesToDelete.length} activities will be deleted`)
     ).toBeVisible()
 
     for (const title of activitiesToDelete) {
@@ -2579,7 +2579,13 @@ test.describe
 
     await page.getByTestId('apply-batch-operations').click()
     await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
+    await expect(
+      page.getByTestId('confirm-batch-activity-deletion')
+    ).toHaveText(messages.manage.activities.confirmBatchDeletionAcknowledge)
     await page.getByTestId('confirm-batch-activity-deletion').click()
+    await expect(page.getByTestId('confirmation-modal-confirm')).toHaveText(
+      messages.manage.activities.confirmBatchDeletionSubmit
+    )
     await page.getByTestId('confirmation-modal-confirm').click()
 
     await expect(

@@ -1607,7 +1607,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
       openElementsInLibrary: 'Elemente in Bibliothek öffnen',
-      batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
+      batchOperations:
+        'Batch-Operationen ({numActivities, plural, =1 {1 Aktivität} other {# Aktivitäten}})',
       batchOperationsOnlyDraftScheduled:
         'Batch-Operationen können nur mit Entwurfs- oder geplanten Aktivitäten ausgeführt werden.',
       batchOperationsActivities: 'Aktivitäten - Batch-Operationen',
@@ -1627,7 +1628,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       noActivitiesWillBeDeleted: 'Keine Aktivitäten werden gelöscht',
-      nActivitiesWillBeDeleted: '{number} Aktivitäten werden gelöscht',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# Aktivität wird gelöscht} other {# Aktivitäten werden gelöscht}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} Aktivitäten werden gelöscht',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
@@ -1675,9 +1679,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       confirmBatchDeletionTitle: 'Ausgewählte Aktivitäten löschen',
       confirmBatchDeletionMessage:
-        'Sie sind im Begriff, {number} Aktivitäten einschliesslich der zugehörigen Teilnehmerdaten und Resultate unwiderruflich zu löschen. Diese Aktion kann nicht rückgängig gemacht werden.',
+        'Sie sind im Begriff, {number, plural, =1 {1 Aktivität} other {# Aktivitäten}} einschliesslich der zugehörigen Teilnehmerdaten und Resultate unwiderruflich zu löschen. Diese Aktion kann nicht rückgängig gemacht werden.',
       confirmBatchDeletionIrreversible:
-        'Ich verstehe, dass alle {number} Aktivitäten und die zugehörigen Daten unwiderruflich gelöscht und nicht wiederhergestellt werden können.',
+        'Ich verstehe, dass {number, plural, =1 {die Aktivität und die zugehörigen Daten} other {alle # Aktivitäten und die zugehörigen Daten}} unwiderruflich gelöscht und nicht wiederhergestellt werden können.',
+      confirmBatchDeletionAcknowledge: 'Bestätigen',
+      confirmBatchDeletionSubmit: 'Aktivitäten löschen',
+      batchDeletionProgress:
+        'Löschung läuft: {completed} von {total} {total, plural, =1 {Aktivität} other {Aktivitäten}} abgeschlossen. Bitte lassen Sie dieses Fenster geöffnet.',
+      batchDeletionRefreshFailed:
+        'Die Löschung ist abgeschlossen, aber die Aktivitätenliste konnte nicht aktualisiert werden. Laden Sie die Liste neu, bevor Sie fortfahren.',
       batchDeletionSuccess:
         'Die berechtigten ausgewählten Aktivitäten wurden erfolgreich gelöscht.',
       batchDeletionPartialSuccess:
