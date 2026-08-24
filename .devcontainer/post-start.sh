@@ -137,9 +137,15 @@ manage_probe_deadline=$((SECONDS + 60))
 manage_list_ready=false
 manage_course_ready=false
 probe_manage_route() {
-  curl "${MANAGE_CURL_CA[@]}" --fail --location --silent --show-error \
-    --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
-    "$1" || true
+  if ((${#MANAGE_CURL_CA[@]} > 0)); then
+    curl "${MANAGE_CURL_CA[@]}" --location --silent --show-error \
+      --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
+      "$1"
+  else
+    curl --location --silent --show-error \
+      --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
+      "$1"
+  fi || true
 }
 
 manage_list_probe='000 0'

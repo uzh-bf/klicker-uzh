@@ -41,6 +41,7 @@ export function prepareHatchetTasks({
   redisCache?: Redis
   handlers: HatchetHandlers
 }) {
+  let preparedTasks!: PreparedHatchetTasks
   const globalContext = {
     hatchet,
     pubSub,
@@ -49,7 +50,9 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
-    tasks: {} as PreparedHatchetTasks,
+    get tasks() {
+      return preparedTasks
+    },
   }
 
   // ! AUDIT LOGGING
@@ -365,7 +368,19 @@ export function prepareHatchetTasks({
     sweepStaleCourseDuplications,
   }
 
-  Object.assign(globalContext.tasks, tasks)
+  preparedTasks = {
+    createAuditLogEntry,
+    publishScheduledMicroLearning,
+    publishScheduledPracticeQuiz,
+    publishScheduledGroupActivity,
+    publishScheduledLiveQuiz,
+    endExpiredMicroLearning,
+    endExpiredGroupActivity,
+    aggregateLiveQuizBlockResultsStandard,
+    aggregateLiveQuizBlockResultsAssessment,
+    processCourseDuplication,
+    sweepStaleCourseDuplications,
+  }
 
   return tasks
 }

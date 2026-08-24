@@ -36,6 +36,10 @@ import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from '@/services/courseDuplication.js'
+import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from '@/services/groups.js'
@@ -281,14 +285,24 @@ export async function testInitialization(
     }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
-      fn: vi.fn(async (_input: { jobId: string }) => {
-        return { success: true }
+      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
+        const success = await handleProcessCourseDuplication(
+          { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
       }),
     }),
     sweepStaleCourseDuplications: hatchet.task({
       name: 'sweep-stale-course-duplications',
-      fn: vi.fn(async (_input: Record<string, never>) => {
-        return { success: true }
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
       }),
     }),
   }

@@ -124,6 +124,24 @@ export const Mutation = builder.mutationType({
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
+    const courseCreationArgs = {
+      name: t.arg.string({ required: true }),
+      displayName: t.arg.string({ required: true }),
+      description: t.arg.string({ required: false }),
+      color: t.arg.string({ required: false }),
+      startDate: t.arg({ type: 'Date', required: true }),
+      endDate: t.arg({ type: 'Date', required: true }),
+      isGroupCreationEnabled: t.arg.boolean({ required: true }),
+      groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+      maxGroupSize: t.arg.int({ required: true }),
+      preferredGroupSize: t.arg.int({ required: true }),
+      language: t.arg({ type: LocaleType, required: true }),
+      notificationEmail: t.arg.string({
+        required: false,
+        validate: { email: true },
+      }),
+      isGamificationEnabled: t.arg.boolean({ required: true }),
+    }
 
     return {
       // ----- ANONYMOUS OPERATIONS -----
@@ -1352,22 +1370,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Course,
         args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          color: t.arg.string({ required: false }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          isGroupCreationEnabled: t.arg.boolean({ required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
-          maxGroupSize: t.arg.int({ required: true }),
-          preferredGroupSize: t.arg.int({ required: true }),
-          language: t.arg({ type: LocaleType, required: true }),
-          notificationEmail: t.arg.string({
-            required: false,
-            validate: { email: true },
-          }),
-          isGamificationEnabled: t.arg.boolean({ required: true }),
+          ...courseCreationArgs,
           sourceCourseId: t.arg.string({ required: false }),
           duplicateLiveQuizzes: t.arg.boolean({ required: false }),
           duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
@@ -1387,22 +1390,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: CourseDuplicationStatus,
         args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          color: t.arg.string({ required: false }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          isGroupCreationEnabled: t.arg.boolean({ required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
-          maxGroupSize: t.arg.int({ required: true }),
-          preferredGroupSize: t.arg.int({ required: true }),
-          language: t.arg({ type: LocaleType, required: true }),
-          notificationEmail: t.arg.string({
-            required: false,
-            validate: { email: true },
-          }),
-          isGamificationEnabled: t.arg.boolean({ required: true }),
+          ...courseCreationArgs,
           sourceCourseId: t.arg.string({ required: true }),
           duplicateLiveQuizzes: t.arg.boolean({ required: false }),
           duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
