@@ -5,9 +5,11 @@
 **Goal:** Show a lecturer the received and processed answer counts for every
 element in an active or executed live quiz block.
 
-**Architecture:** The response API and response processors record retry-safe
-event identifiers in two Redis sets per element instance. The authorized
-`cockpitQuiz` query reads each set cardinality and decorates the matching
+**Architecture:** The response API records an exact numeric received counter;
+response processors record an exact numeric processed counter only after a
+complete aggregation batch succeeds. A bounded processed replay-claim set
+prevents duplicate non-idempotent writes. The authorized `cockpitQuiz` query
+reads the new counters and compatibility values and decorates the matching
 `ElementInstance`; the existing two-second cockpit polling renders the values
 without a new subscription.
 
@@ -22,8 +24,8 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
 - `numOfResponsesProcessed` counts response events incorporated into live
   results.
 - Keep the existing `numOfParticipants` field and behavior unchanged.
-- Use Redis sets keyed by event identifiers so reporting is idempotent across
-  Hatchet retries.
+- Use numeric Redis counters for reporting. Use the processed set only as a
+  bounded replay claim, not as the processed count.
 - Keep tracking keys under `lq:<quiz-id>:i:<instance-id>:*` so existing expiry
   and cleanup logic applies.
 - Do not change Prisma, response validation rules, scoring, XP, leaderboards,
@@ -32,6 +34,66 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
 - Add English and German messages and a stable `data-cy` selector per element.
 - Update the engineering wiki in the same pull request.
 - Target `v3` with one ordinary draft pull request.
+
+## Approved redesign addendum (2026-08-24)
+
+Problem: The original set-cardinality design left active received and processed
+sets without an expiry. The processing marker was also counted before Redis
+aggregation commands completed, so partial command failures could inflate
+`numOfResponsesProcessed`.
+
+Evidence: The integrated final review identified the unbounded active-set risk,
+the partial-failure counting error, and duplicate source-string tests. The
+real Redis contract now provides the stable seam for the replacement behavior.
+
+Decision: Use these keys for new writes:
+
+- `responses:received:count` — numeric ingress counter;
+- `responses:processed:count` — numeric successful-aggregation counter;
+- `responses:processed` — bounded replay-claim set with a 24-hour horizon.
+
+The processing script initializes a missing processed counter once from the
+legacy processed-set cardinality, claims the identifier, applies every command
+with `redis.pcall`, and increments the counter only when no command fails. It
+returns `already_processed`, `processed`, or `aggregation_failed`. The legacy
+received set is read-only compatibility input; GraphQL adds its cardinality to
+the new received counter. A missing processed counter falls back to the legacy
+processed-set cardinality as an opaque pre-cutover baseline.
+
+Risk: The compatibility bridge cannot make old workers increment the new
+processed counter. Deploy GraphQL before new ingress, drain old response
+processors before initializing processed counters, and run only the new
+processors after initialization. Partial failures remain claimed and are not
+replayed because some aggregation commands may already have applied.
+
+Delegation Map:
+
+| Slice | Owner | Acceptance |
+|---|---|---|
+| Contract and compatibility amendment | main | This addendum, design, and async-worker documentation describe exact keys, legacy limitations, retention, and rollout order. |
+| Redis scripts and producer/processor adoption | main | Real Redis contract plus both focused processor suites pass; no source-token assertions remain. |
+| Cockpit readers and retention | main | GraphQL count test covers new counters, legacy bridge, scheduled nulls, and pipeline degradation; cleanup expires response keys with checked results. |
+| Integrated verification and review | main | Fresh repository checks, browser evidence or documented macOS blocker, required simplifier/slice/final reviews, and local commit. |
+
+Authority: The user approved the redesign and local implementation, tests,
+documentation, reviews, and commits, and requested that PR #5315 receive the
+conflict-resolved branch. After the final review, publish this branch to the
+PR head `feat/live-quiz-response-counts`; merging, deployment, worker draining,
+and rollout remain withheld.
+
+Terminal: The local branch contains the verified redesign and readiness
+evidence, with deployment compatibility conditions recorded. Pause only for a
+new data-contract decision, unavailable required verification capability, or
+an authority boundary.
+
+Progress: Complete locally — the counter/replay redesign is implemented,
+formatted, typechecked, covered by focused worker/util/GraphQL tests, verified
+against real Redis, and included in the refreshed branch against current
+`origin/v3`. The remote PR still requires publication of this branch before
+GitHub can recalculate its mergeability.
+
+This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
+those sections remain as implementation history for the original package.
 
 ---
 

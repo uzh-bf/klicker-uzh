@@ -4,7 +4,6 @@ const hoisted = vi.hoisted(() => {
   const regularClient = {
     hgetall: vi.fn(),
     hexists: vi.fn(),
-    sismember: vi.fn(),
     eval: vi.fn(),
   }
 
@@ -19,6 +18,7 @@ import type {
   Context,
   DurableContext,
 } from '@hatchet-dev/typescript-sdk/index.js'
+import { LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT } from '@klicker-uzh/util'
 import { processResponseMessage } from '../processor.js'
 
 function createContext() {
@@ -59,7 +59,6 @@ function setupHappyPath(client: typeof hoisted.regularClient) {
     pointsMultiplier: '1',
     firstResponseReceivedAt: '',
   })
-  client.sismember.mockResolvedValue(0)
   client.eval.mockResolvedValue(
     JSON.stringify({
       status: 'processed',
@@ -84,29 +83,32 @@ describe('processResponseMessage atomicity', () => {
 
     expect(result).toEqual({ status: 200 })
     expect(hoisted.regularClient.eval).toHaveBeenCalledWith(
-      expect.stringContaining("redis.call('SISMEMBER'"),
-      2,
+      LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+      3,
       'lq:quiz-1:i:inst-1:responses:processed',
+      'lq:quiz-1:i:inst-1:responses:processed:count',
       'lq:quiz-1:i:inst-1:info',
       'msg-1',
       '86400',
       expect.any(String)
     )
     const commandList = JSON.parse(
-      hoisted.regularClient.eval.mock.calls[0]![6] as string
+      hoisted.regularClient.eval.mock.calls[0]![7] as string
     ) as string[][]
     expect(commandList.some(([command]) => command === 'HINCRBY')).toBe(true)
   })
 
-  it('short-circuits replays via the processed-set guard without re-executing aggregation', async () => {
+  it('accepts the atomic replay result without applying aggregation twice', async () => {
     setupHappyPath(hoisted.regularClient)
-    hoisted.regularClient.sismember.mockResolvedValue(1)
+    hoisted.regularClient.eval.mockResolvedValue(
+      JSON.stringify({ status: 'already_processed' })
+    )
     const ctx = createContext()
 
     const result = await processResponseMessage(createMessage(), ctx)
 
     expect(result).toEqual({ status: 200 })
-    expect(hoisted.regularClient.eval).not.toHaveBeenCalled()
+    expect(hoisted.regularClient.eval).toHaveBeenCalledTimes(1)
     expect(ctx.logger.info).toHaveBeenCalledWith(
       'Response already processed, skipping',
       expect.objectContaining({ messageId: 'msg-1' })
@@ -118,7 +120,7 @@ describe('processResponseMessage atomicity', () => {
     const ctx = createContext()
     hoisted.regularClient.eval.mockResolvedValue(
       JSON.stringify({
-        status: 'processed',
+        status: 'aggregation_failed',
         commandErrors: ['WRONGTYPE Operation against a key'],
         trackingErrors: [],
       })
@@ -128,7 +130,7 @@ describe('processResponseMessage atomicity', () => {
 
     expect(result).toEqual({ status: 200 })
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('accepting partial application')
+      expect.stringContaining('processed count unchanged')
     )
   })
 
@@ -139,21 +141,5 @@ describe('processResponseMessage atomicity', () => {
     await expect(
       processResponseMessage(createMessage(), createContext())
     ).rejects.toThrow('Redis transaction failed')
-  })
-
-  it('accepts the atomic processing script replay result', async () => {
-    setupHappyPath(hoisted.regularClient)
-    hoisted.regularClient.eval.mockResolvedValue(
-      JSON.stringify({ status: 'already_processed' })
-    )
-    const ctx = createContext()
-
-    const result = await processResponseMessage(createMessage(), ctx)
-
-    expect(result).toEqual({ status: 200 })
-    expect(ctx.logger.info).toHaveBeenCalledWith(
-      'Response already processed, skipping',
-      expect.objectContaining({ messageId: 'msg-1' })
-    )
   })
 })

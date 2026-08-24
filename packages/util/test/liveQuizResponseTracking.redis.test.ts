@@ -2,7 +2,8 @@ import { Redis } from 'ioredis'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
+  LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '../src/liveQuizResponseTracking.js'
 
@@ -25,9 +26,10 @@ redisDescribe('live quiz response tracking Redis contract', () => {
     await redis.quit()
   })
 
-  it('applies processing once and preserves the retention boundary', async () => {
+  it('keeps counters exact, claims bounded, and excludes partial failures', async () => {
     const prefix = `live-quiz-response-tracking-test:${process.pid}:${Date.now()}`
-    const processedKey = `${prefix}:processed`
+    const replayClaimKey = `${prefix}:processed`
+    const processedCountKey = `${prefix}:processed-count`
     const instanceInfoKey = `${prefix}:info`
     const resultsKey = `${prefix}:results`
     const commands = JSON.stringify([
@@ -41,11 +43,12 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         Array.from({ length: 8 }, () =>
           redis.eval(
             LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-            2,
-            processedKey,
+            3,
+            replayClaimKey,
+            processedCountKey,
             instanceInfoKey,
             'message-1',
-            String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+            String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
             commands
           )
         )
@@ -59,83 +62,133 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         statuses.filter((status) => status === 'already_processed')
       ).toHaveLength(7)
       expect(await redis.hget(resultsKey, 'participants')).toBe('1')
-      expect(await redis.ttl(processedKey)).toBe(-1)
+      expect(await redis.get(processedCountKey)).toBe('1')
+      expect(await redis.ttl(replayClaimKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(replayClaimKey)).toBeLessThanOrEqual(
+        LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS
+      )
+      expect(await redis.ttl(processedCountKey)).toBe(-1)
 
       const boundedInfoKey = `${prefix}:bounded-info`
-      const boundedProcessedKey = `${prefix}:bounded-processed`
+      const boundedClaimKey = `${prefix}:bounded-processed`
+      const boundedCountKey = `${prefix}:bounded-processed-count`
       await redis.hset(boundedInfoKey, 'id', 'synthetic')
       await redis.expire(boundedInfoKey, 30)
       await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        2,
-        boundedProcessedKey,
+        3,
+        boundedClaimKey,
+        boundedCountKey,
         boundedInfoKey,
         'message-2',
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
       )
-      const boundedTtl = await redis.ttl(boundedProcessedKey)
-      expect(boundedTtl).toBeGreaterThan(0)
-      expect(boundedTtl).toBeLessThanOrEqual(30)
+      expect(await redis.get(boundedCountKey)).toBe('1')
+      expect(await redis.ttl(boundedClaimKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(boundedClaimKey)).toBeLessThanOrEqual(30)
+      expect(await redis.ttl(boundedCountKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(boundedCountKey)).toBeLessThanOrEqual(30)
 
-      const missingProcessedKey = `${prefix}:missing-processed`
+      const missingClaimKey = `${prefix}:missing-processed`
+      const missingCountKey = `${prefix}:missing-processed-count`
       await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        2,
-        missingProcessedKey,
+        3,
+        missingClaimKey,
+        missingCountKey,
         `${prefix}:missing-info`,
         'message-3',
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
       )
-      const missingTtl = await redis.ttl(missingProcessedKey)
-      expect(missingTtl).toBeGreaterThan(0)
-      expect(missingTtl).toBeLessThanOrEqual(
+      expect(await redis.get(missingCountKey)).toBe('1')
+      expect(await redis.ttl(missingClaimKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(missingClaimKey)).toBeLessThanOrEqual(
+        LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS
+      )
+      expect(await redis.ttl(missingCountKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(missingCountKey)).toBeLessThanOrEqual(
         LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
       )
 
-      const receivedKey = `${prefix}:received`
+      const receivedCountKey = `${prefix}:received-count`
       await redis.eval(
-        LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+        LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
         2,
-        receivedKey,
+        receivedCountKey,
         `${prefix}:missing-info-2`,
-        'message-4',
         String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       )
-      const receivedTtl = await redis.ttl(receivedKey)
-      expect(receivedTtl).toBeGreaterThan(0)
-      expect(receivedTtl).toBeLessThanOrEqual(
+      expect(await redis.get(receivedCountKey)).toBe('1')
+      expect(await redis.ttl(receivedCountKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(receivedCountKey)).toBeLessThanOrEqual(
         LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
       )
 
-      const errorProcessedKey = `${prefix}:error-processed`
+      const errorClaimKey = `${prefix}:error-processed`
+      const errorCountKey = `${prefix}:error-processed-count`
       const errorResultsKey = `${prefix}:error-results`
       await redis.set(errorResultsKey, 'wrong-type')
       const errorReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        2,
-        errorProcessedKey,
+        3,
+        errorClaimKey,
+        errorCountKey,
         `${prefix}:error-info`,
-        'message-5',
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+        'message-4',
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([['HINCRBY', errorResultsKey, 'participants', '1']])
       )
       const errorResult = JSON.parse(String(errorReply))
-      expect(errorResult.status).toBe('processed')
+      expect(errorResult.status).toBe('aggregation_failed')
+      expect(errorResult.counted).toBe(false)
       expect(errorResult.commandErrors).toHaveLength(1)
-      expect(await redis.sismember(errorProcessedKey, 'message-5')).toBe(1)
+      expect(await redis.get(errorCountKey)).toBe('0')
+      expect(await redis.sismember(errorClaimKey, 'message-4')).toBe(1)
+
+      const partialClaimKey = `${prefix}:partial-processed`
+      const partialCountKey = `${prefix}:partial-processed-count`
+      const partialErrorKey = `${prefix}:partial-error-results`
+      const partialSuccessKey = `${prefix}:partial-success-results`
+      await redis.set(partialErrorKey, 'wrong-type')
+      const partialReply = await redis.eval(
+        LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+        3,
+        partialClaimKey,
+        partialCountKey,
+        `${prefix}:partial-info`,
+        'message-5',
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
+        JSON.stringify([
+          ['HINCRBY', partialErrorKey, 'participants', '1'],
+          ['HINCRBY', partialSuccessKey, 'participants', '1'],
+        ])
+      )
+      const partialResult = JSON.parse(String(partialReply))
+      expect(partialResult.commandErrors).toHaveLength(1)
+      expect(partialResult.counted).toBe(false)
+      expect(await redis.get(partialCountKey)).toBe('0')
+      expect(await redis.hget(partialSuccessKey, 'participants')).toBe('1')
     } finally {
       await redis.del(
-        processedKey,
+        replayClaimKey,
+        processedCountKey,
         instanceInfoKey,
         resultsKey,
         `${prefix}:bounded-info`,
         `${prefix}:bounded-processed`,
+        `${prefix}:bounded-processed-count`,
         `${prefix}:missing-processed`,
-        `${prefix}:received`,
+        `${prefix}:missing-processed-count`,
+        `${prefix}:received-count`,
         `${prefix}:error-processed`,
-        `${prefix}:error-results`
+        `${prefix}:error-processed-count`,
+        `${prefix}:error-results`,
+        `${prefix}:partial-processed`,
+        `${prefix}:partial-processed-count`,
+        `${prefix}:partial-error-results`,
+        `${prefix}:partial-success-results`
       )
     }
   })

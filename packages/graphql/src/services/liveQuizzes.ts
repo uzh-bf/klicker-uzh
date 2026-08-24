@@ -16,7 +16,9 @@ import {
   getCachedBlockResults,
   getInitialInstanceResults,
   getLiveQuizInstanceInfoKey,
-  getLiveQuizResponseTrackingKey,
+  getLiveQuizLegacyResponseReceivedKey,
+  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
   propagateActivityToElements,
@@ -1006,18 +1008,30 @@ export async function getCockpitQuiz(
     try {
       const responseCountPipeline = redis.pipeline()
       startedInstances.forEach((instance) => {
-        responseCountPipeline.scard(
-          getLiveQuizResponseTrackingKey({
+        responseCountPipeline.get(
+          getLiveQuizResponseCountKey({
             liveQuizId: id,
             instanceId: instance.id,
             status: 'received',
           })
         )
         responseCountPipeline.scard(
-          getLiveQuizResponseTrackingKey({
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+        responseCountPipeline.get(
+          getLiveQuizResponseCountKey({
             liveQuizId: id,
             instanceId: instance.id,
             status: 'processed',
+          })
+        )
+        responseCountPipeline.scard(
+          getLiveQuizResponseReplayClaimKey({
+            liveQuizId: id,
+            instanceId: instance.id,
           })
         )
       })
@@ -1028,12 +1042,20 @@ export async function getCockpitQuiz(
       }
 
       startedInstances.forEach((instance, index) => {
-        const receivedResult = responseCountResults[index * 2]
-        const processedResult = responseCountResults[index * 2 + 1]
+        const receivedResult = responseCountResults[index * 4]
+        const legacyReceivedResult = responseCountResults[index * 4 + 1]
+        const processedResult = responseCountResults[index * 4 + 2]
+        const legacyProcessedResult = responseCountResults[index * 4 + 3]
 
         if (!receivedResult || receivedResult[0]) {
           throw (
             receivedResult?.[0] ?? new Error('Missing received response count')
+          )
+        }
+        if (!legacyReceivedResult || legacyReceivedResult[0]) {
+          throw (
+            legacyReceivedResult?.[0] ??
+            new Error('Missing legacy received response count')
           )
         }
         if (!processedResult || processedResult[0]) {
@@ -1042,10 +1064,38 @@ export async function getCockpitQuiz(
             new Error('Missing processed response count')
           )
         }
+        if (!legacyProcessedResult || legacyProcessedResult[0]) {
+          throw (
+            legacyProcessedResult?.[0] ??
+            new Error('Missing legacy processed response count')
+          )
+        }
+
+        const parseCount = (value: unknown, label: string) => {
+          const count = Number(value ?? 0)
+          if (!Number.isSafeInteger(count) || count < 0) {
+            throw new Error(`Invalid ${label} response count: ${String(value)}`)
+          }
+          return count
+        }
+
+        const receivedCount = parseCount(receivedResult[1], 'received counter')
+        const legacyReceivedCount = parseCount(
+          legacyReceivedResult[1],
+          'legacy received set'
+        )
+        const processedCount =
+          processedResult[1] === null
+            ? parseCount(legacyProcessedResult[1], 'legacy processed set')
+            : parseCount(processedResult[1], 'processed counter')
+        const totalReceivedCount = parseCount(
+          receivedCount + legacyReceivedCount,
+          'received total'
+        )
 
         responseCounts.set(instance.id, {
-          received: Number(receivedResult[1] ?? 0),
-          processed: Number(processedResult[1] ?? 0),
+          received: totalReceivedCount,
+          processed: processedCount,
         })
       })
     } catch (error) {
@@ -1538,10 +1588,23 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
+        // set an expiration time of 1 day to all cache keys of the live quiz
         pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
-      await pipe.exec()
+      const expiryResults = await pipe.exec()
+      if (expiryResults === null) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}`
+        )
+      }
+      const expiryErrors = expiryResults.flatMap(([error]) =>
+        error ? [error] : []
+      )
+      if (expiryErrors.length > 0) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+        )
+      }
     }
   } else {
     // only remove information from the cache that is specific to the closed block and the instances therein
@@ -1557,10 +1620,23 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
+        // set an expiration time of 1 day to all cache keys of the live quiz
         pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
-      await pipe.exec()
+      const expiryResults = await pipe.exec()
+      if (expiryResults === null) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}`
+        )
+      }
+      const expiryErrors = expiryResults.flatMap(([error]) =>
+        error ? [error] : []
+      )
+      if (expiryErrors.length > 0) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+        )
+      }
     }
   }
 }
@@ -2038,9 +2114,9 @@ export async function endLiveQuiz(
       },
     })
 
-    // Start retention on instance-info keys before unlinking response-tracking
+    // Start retention on instance-info keys before expiring response-tracking
     // keys. A late response can recreate a tracking key after this sweep, and
-    // the tracking script will then mirror the bounded info-key TTL.
+    // the tracking scripts will then mirror the bounded info-key TTL.
     try {
       const instanceInfoKeys = quiz.blocks.flatMap((block) =>
         block.elements.map((instance) =>
@@ -2076,9 +2152,20 @@ export async function endLiveQuiz(
       if (trackingKeys.length > 0) {
         const pipe = redis.multi()
         for (const key of trackingKeys) {
-          pipe.unlink(key)
+          pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
         }
-        await pipe.exec()
+        const trackingExpiryResults = await pipe.exec()
+        if (trackingExpiryResults === null) {
+          throw new Error('Redis returned no response-tracking expiry results')
+        }
+        const trackingExpiryErrors = trackingExpiryResults.flatMap(([error]) =>
+          error ? [error] : []
+        )
+        if (trackingExpiryErrors.length > 0) {
+          throw new Error(
+            `Failed to start response-tracking retention: ${trackingExpiryErrors.join('; ')}`
+          )
+        }
       }
     } catch (trackingError) {
       console.error(

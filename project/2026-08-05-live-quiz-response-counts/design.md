@@ -23,19 +23,21 @@ cockpit does not sum these into a block total.
 ## Semantics
 
 `numOfResponsesReceived` is the number of response events accepted by the
-response API for one element instance and successfully recorded by the tracking
-write. The response API attempts to record a received marker before handing the
+response API for one element instance and successfully recorded by the numeric
+received counter. The response API increments that counter before handing the
 event to Hatchet. Tracking is best-effort so an unavailable metric store never
 rejects a participant response; such a failure can temporarily undercount
-received responses. A later Hatchet enqueue failure normally remains visible as
-received-but-not-processed work.
+received responses. During the key-shape transition, the cockpit also includes
+the legacy received-set cardinality, so old and new ingress instances remain
+visible without writing new unbounded sets.
 
-`numOfResponsesProcessed` is the number of response events successfully
-incorporated into live results. For regular quizzes, this happens after the
-response processor's atomic Redis processing script claims the marker and
-applies the result commands. For assessment quizzes, it happens after the
-assessment aggregation task succeeds, not merely after the response row is
-stored.
+`numOfResponsesProcessed` is the number of response events whose complete Redis
+aggregation command batch succeeded. For regular quizzes, the atomic processing
+script claims a bounded replay identifier, applies the result commands, and
+increments the numeric processed counter only when no command reports an error.
+Assessment aggregation uses the same contract. A partial command failure keeps
+the replay claim but does not increment the processed counter, because replaying
+could duplicate commands that already applied.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
@@ -47,30 +49,42 @@ value lower than the corresponding pipeline activity.
 
 ### Tracking
 
-Store retry-safe markers in the quiz's execution Redis instance, using the same
-regular-versus-assessment Redis selection as the existing execution data:
+Use the execution Redis instance selected by the live quiz's regular-versus-
+assessment mode. New writes use numeric counters and a bounded replay claim:
 
-- one received-response set per element instance;
-- one processed-response set per element instance;
-- the regular response `messageId` or assessment `correlationId` as the set
-  member.
+- `lq:<quiz-id>:i:<instance-id>:responses:received:count` is a numeric counter
+  incremented once for each accepted ingress event;
+- `lq:<quiz-id>:i:<instance-id>:responses:processed:count` is a numeric counter
+  incremented only after a complete aggregation command batch succeeds;
+- `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the replay-claim
+  set for message IDs or correlation IDs and is capped to the 24-hour replay
+  horizon, or the shorter remaining instance-info TTL.
 
-Redis set cardinality supplies the count. The response processor builds the
-aggregation commands without sending them, then one Redis script claims the
-processed member before applying those commands with `redis.pcall`. This keeps
-concurrent or retried execution from applying non-idempotent scoring, results,
-or leaderboard updates twice, including when a successful Redis reply is lost.
-The new keys remain under the existing `lq:<quiz-id>:i:<instance-id>:*`
-namespace. They stay persistent while the instance is active. Block closure
-starts one-day retention on the canonical instance-info key before scanning the
-instance namespace; each tracking write atomically reads that TTL, adds its
-member, and mirrors remaining retention. A missing info key applies the same
-one-day safety retention.
+The received and processing scripts update their counters and retention in
+Redis Lua. Processing initializes a missing processed counter from the legacy
+processed-set cardinality once, which preserves pre-cutover visibility without
+double-counting new claims. Partial command errors return an explicit failed
+aggregation outcome, keep the claim to prevent unsafe replay, and leave the
+processed counter unchanged. Connection-level script failures still throw so
+Hatchet can retry.
 
-Received-marker failures remain best effort at ingress. Processing-script
-command errors are logged and accepted after the processed marker is claimed;
-connection-level script failures throw so Hatchet can retry safely, while
-tracking-retention errors are logged without replaying applied aggregation.
+The legacy received set
+`lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
+input while old response-api instances drain. The cockpit adds its cardinality
+to the new received counter. New code never appends to that set. For processed
+responses, the new counter takes precedence once initialized; otherwise the
+legacy processed-set cardinality is used as the opaque pre-cutover baseline.
+
+All keys remain under the existing
+`lq:<quiz-id>:i:<instance-id>:*` namespace. Active counters have constant key
+space, while replay claims expire after the bounded horizon. Block closure and
+quiz termination start one-day retention on instance-info keys before expiring
+the response keys, so late scripts cannot recreate persistent tracking keys.
+
+The rollout must deploy GraphQL before new ingress, drain old response
+processor replicas before initializing processed counters, and then run only
+the new processors. This is required because an old processor can claim and
+aggregate without incrementing the new processed counter.
 
 ### Cockpit query
 
@@ -79,11 +93,13 @@ Extend GraphQL `ElementInstance` with nullable integer fields:
 - `numOfResponsesReceived`
 - `numOfResponsesProcessed`
 
-`getCockpitQuiz` reads the two set cardinalities for every instance in started
-blocks and attaches them to that instance. Instances in scheduled blocks return
-`null` for both fields, so the UI can distinguish “not started” from a started
-element with zero answers. Instances in active and executed blocks return
-explicit integer values, defaulting missing Redis keys to zero.
+`getCockpitQuiz` reads the new counters plus the legacy bridge for every
+instance in started blocks and attaches them to that instance. Instances in
+scheduled blocks return `null` for both fields, so the UI can distinguish “not
+started” from a started element with zero answers. Instances in active and
+executed blocks return explicit integer values, defaulting missing Redis keys to
+zero. Malformed or unavailable count reads degrade the cockpit counts to
+`null`.
 
 The existing `numOfParticipants` calculation and field remain unchanged because
 they answer a different question: how many participants have processed answers
@@ -140,14 +156,16 @@ not change leaderboard data.
 
 - Missing tracking keys for an element in a started block are interpreted as
   zero.
-- A received-marker Redis failure is logged and ingress continues; operational
+- A received-counter Redis failure is logged and ingress continues; operational
   counts can therefore undercount during a tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
-- A processing-script command error is logged after the processed marker is
-  claimed and does not trigger a retry that could replay partial aggregation.
+- A processing-script command error is logged as an aggregation failure after
+  the replay claim is retained; it does not increment the processed counter or
+  trigger a retry that could replay partial aggregation.
 - A connection-level processing-script failure throws so Hatchet can retry; if
-  Redis completed the script, the marker makes that retry a no-op.
-- Worker retries do not increase either count for the same tracking identifier.
+  Redis completed the script, the replay claim makes that retry a no-op.
+- Worker retries do not increase the processed counter for the same tracking
+  identifier within the bounded replay horizon.
 - Duplicate standard submissions can legitimately increase received without
   processed because regular-response deduplication currently happens in the
   worker.

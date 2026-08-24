@@ -13,10 +13,11 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getLiveQuizInstanceInfoKey,
-  getLiveQuizResponseTrackingKey,
+  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
   type JWTPayload,
   LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+  LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'node:assert'
@@ -69,7 +70,11 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+  const replayClaimKey = getLiveQuizResponseReplayClaimKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+  })
+  const processedResponseCountKey = getLiveQuizResponseCountKey({
     liveQuizId: message.sessionId,
     instanceId: message.instanceId,
     status: 'processed',
@@ -164,19 +169,6 @@ export async function processResponseMessage(
       sessionId: message.sessionId,
       instanceId: message.instanceId,
     })
-
-    // replay guard: the processed tracking set doubles as an exactly-once marker
-    // so Hatchet retries after a success-crash become clean no-ops
-    if (
-      await redisExec.sismember(processedResponseTrackingKey, message.messageId)
-    ) {
-      ctx.logger.info('Response already processed, skipping', {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
-      return { status: 200 }
-    }
 
     const {
       type,
@@ -694,19 +686,21 @@ export async function processResponseMessage(
       String(
         await redisExec.eval(
           LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          2,
-          processedResponseTrackingKey,
+          3,
+          replayClaimKey,
+          processedResponseCountKey,
           getLiveQuizInstanceInfoKey({
             liveQuizId: message.sessionId,
             instanceId: message.instanceId,
           }),
           message.messageId,
-          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+          String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
           JSON.stringify(transaction.commands)
         )
       )
     ) as {
-      status: 'already_processed' | 'processed'
+      status: 'already_processed' | 'processed' | 'aggregation_failed'
+      counted?: boolean
       commandErrors?: string[]
       trackingErrors?: string[]
     }
@@ -719,15 +713,20 @@ export async function processResponseMessage(
       })
       return { status: 200 }
     }
-    if (processingResult.status !== 'processed') {
+    if (
+      processingResult.status !== 'processed' &&
+      processingResult.status !== 'aggregation_failed'
+    ) {
       throw new Error('Redis response processing returned an invalid status')
     }
 
-    if (processingResult.commandErrors?.length) {
-      // The script does not roll back per-command runtime errors, so the
-      // marker prevents a retry from applying a partial result a second time.
+    if (
+      processingResult.status === 'aggregation_failed' ||
+      processingResult.commandErrors?.length
+    ) {
+      const commandErrors = processingResult.commandErrors ?? []
       ctx.logger.error(
-        `Redis results aggregation commands failed (accepting partial application): ${processingResult.commandErrors.join('; ')}` +
+        `Redis results aggregation commands failed; processed count unchanged while accepting partial application: ${commandErrors.join('; ')}` +
           JSON.stringify({
             messageId: message.messageId,
             sessionId: message.sessionId,
@@ -747,11 +746,16 @@ export async function processResponseMessage(
       )
     }
 
-    ctx.logger.info("Successfully processed participant's response", {
-      messageId: message.messageId,
-      sessionId: message.sessionId,
-      instanceId: message.instanceId,
-    })
+    if (
+      processingResult.status === 'processed' &&
+      !processingResult.commandErrors?.length
+    ) {
+      ctx.logger.info("Successfully processed participant's response", {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
+    }
     return { status: 200 }
   } catch (e) {
     ctx.logger.error(

@@ -18,9 +18,10 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getLiveQuizInstanceInfoKey,
-  getLiveQuizResponseTrackingKey,
+  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+  LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
 } from '@klicker-uzh/util'
 import { strict as assert } from 'node:assert'
 import { createHash } from 'node:crypto'
@@ -487,22 +488,15 @@ export async function aggregateAssessmentResponses(
     response,
   } = message
 
-  // replay guard: the processed tracking set doubles as an exactly-once marker
-  // so Hatchet retries after a success-crash become clean no-ops
-  const processedResponseTrackingKey = getLiveQuizResponseTrackingKey({
+  const replayClaimKey = getLiveQuizResponseReplayClaimKey({
+    liveQuizId,
+    instanceId,
+  })
+  const processedResponseCountKey = getLiveQuizResponseCountKey({
     liveQuizId,
     instanceId,
     status: 'processed',
   })
-  if (await redisExec.sismember(processedResponseTrackingKey, correlationId)) {
-    ctx.logger.info('Assessment response already processed, skipping', {
-      correlationId,
-      liveQuizId,
-      instanceId,
-    })
-    return { status: 200 }
-  }
-
   // Collect commands locally; the processing script claims the marker and
   // applies this batch atomically.
   const transaction = createRedisCommandCollector()
@@ -629,16 +623,18 @@ export async function aggregateAssessmentResponses(
       String(
         await redisExec.eval(
           LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          2,
-          processedResponseTrackingKey,
+          3,
+          replayClaimKey,
+          processedResponseCountKey,
           getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
           correlationId,
-          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+          String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
           JSON.stringify(transaction.commands)
         )
       )
     ) as {
-      status: 'already_processed' | 'processed'
+      status: 'already_processed' | 'processed' | 'aggregation_failed'
+      counted?: boolean
       commandErrors?: string[]
       trackingErrors?: string[]
     }
@@ -651,13 +647,20 @@ export async function aggregateAssessmentResponses(
       })
       return { status: 200 }
     }
-    if (processingResult.status !== 'processed') {
+    if (
+      processingResult.status !== 'processed' &&
+      processingResult.status !== 'aggregation_failed'
+    ) {
       throw new Error('Redis response processing returned an invalid status')
     }
 
-    if (processingResult.commandErrors?.length) {
+    if (
+      processingResult.status === 'aggregation_failed' ||
+      processingResult.commandErrors?.length
+    ) {
+      const commandErrors = processingResult.commandErrors ?? []
       ctx.logger.error(
-        `Redis results aggregation commands failed (accepting partial application): ${processingResult.commandErrors.join('; ')}` +
+        `Redis results aggregation commands failed; processed count unchanged while accepting partial application: ${commandErrors.join('; ')}` +
           JSON.stringify({
             correlationId: message.correlationId,
             liveQuizId: message.liveQuizId,
@@ -673,11 +676,16 @@ export async function aggregateAssessmentResponses(
       )
     }
 
-    ctx.logger.info("Successfully aggregated a participant's results", {
-      correlationId: message.correlationId,
-      liveQuizId: message.liveQuizId,
-      instanceId: message.instanceId,
-    })
+    if (
+      processingResult.status === 'processed' &&
+      !processingResult.commandErrors?.length
+    ) {
+      ctx.logger.info("Successfully aggregated a participant's results", {
+        correlationId,
+        liveQuizId,
+        instanceId,
+      })
+    }
     return { status: 200 }
   } catch (e) {
     ctx.logger.error(

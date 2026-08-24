@@ -6,7 +6,11 @@ import {
   type PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import { getLiveQuizResponseTrackingKey } from '@klicker-uzh/util'
+import {
+  getLiveQuizLegacyResponseReceivedKey,
+  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
+} from '@klicker-uzh/util'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getCockpitQuiz } from '../src/services/liveQuizzes.js'
 import {
@@ -113,46 +117,50 @@ describe('live quiz cockpit response counts', () => {
       'participants',
       0
     )
-    await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseTrackingKey({
+    await userOneCtx.redisExec.set(
+      getLiveQuizResponseCountKey({
         liveQuizId: quiz.id,
         instanceId: firstInstance.id,
         status: 'received',
       }),
-      'received-1',
-      'received-2'
+      '2'
     )
     await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseTrackingKey({
+      getLiveQuizLegacyResponseReceivedKey({
+        liveQuizId: quiz.id,
+        instanceId: firstInstance.id,
+      }),
+      'legacy-received'
+    )
+    await userOneCtx.redisExec.set(
+      getLiveQuizResponseCountKey({
         liveQuizId: quiz.id,
         instanceId: firstInstance.id,
         status: 'processed',
       }),
-      'received-1'
+      '1'
     )
     await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseTrackingKey({
+      getLiveQuizLegacyResponseReceivedKey({
         liveQuizId: quiz.id,
         instanceId: executedInstance.id,
-        status: 'received',
       }),
       'executed-response'
     )
     await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseTrackingKey({
+      getLiveQuizResponseReplayClaimKey({
         liveQuizId: quiz.id,
         instanceId: executedInstance.id,
-        status: 'processed',
       }),
       'executed-response'
     )
-    await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseTrackingKey({
+    await userOneCtx.redisExec.set(
+      getLiveQuizResponseCountKey({
         liveQuizId: quiz.id,
         instanceId: scheduledInstance.id,
         status: 'received',
       }),
-      'scheduled-response'
+      '1'
     )
 
     const cockpitQuiz = await getCockpitQuiz({ id: quiz.id }, userOneCtx)
@@ -168,7 +176,7 @@ describe('live quiz cockpit response counts', () => {
 
     expect(returnedActiveBlock?.elements[0]).toMatchObject({
       id: firstInstance.id,
-      numOfResponsesReceived: 2,
+      numOfResponsesReceived: 3,
       numOfResponsesProcessed: 1,
     })
     expect(returnedActiveBlock?.elements[1]).toMatchObject({

@@ -3,13 +3,13 @@ import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   getLiveQuizInstanceInfoKey,
-  getLiveQuizResponseTrackingKey,
+  getLiveQuizResponseCountKey,
   type JWTPayload,
-  LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+  LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 
 const redis = new Redis({
@@ -36,21 +36,18 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
 
 async function trackLiveQuizResponse({
   redisClient,
-  key,
+  countKey,
   instanceInfoKey,
-  member,
 }: {
   redisClient: Redis
-  key: string
+  countKey: string
   instanceInfoKey: string
-  member: string
 }) {
   const instanceInfoTtl = await redisClient.eval(
-    LIVE_QUIZ_RESPONSE_TRACKING_SCRIPT,
+    LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
     2,
-    key,
+    countKey,
     instanceInfoKey,
-    member,
     String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
   )
 
@@ -181,13 +178,12 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (instanceInfoExists === 1) {
       await trackLiveQuizResponse({
         redisClient: redis,
-        key: getLiveQuizResponseTrackingKey({
+        countKey: getLiveQuizResponseCountKey({
           liveQuizId: String(liveQuizId),
           instanceId,
           status: 'received',
         }),
         instanceInfoKey,
-        member: message.messageId,
       })
     } else {
       console.warn(
@@ -376,7 +372,7 @@ async function handleAddAssessmentResponse(
   try {
     await trackLiveQuizResponse({
       redisClient: assessmentRedis,
-      key: getLiveQuizResponseTrackingKey({
+      countKey: getLiveQuizResponseCountKey({
         liveQuizId: String(liveQuizId),
         instanceId,
         status: 'received',
@@ -385,7 +381,6 @@ async function handleAddAssessmentResponse(
         liveQuizId: String(liveQuizId),
         instanceId,
       }),
-      member: correlationId,
     })
   } catch (error) {
     console.error(

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   assessmentClient: {
-    sismember: vi.fn(),
     eval: vi.fn(),
   },
 }))
@@ -16,6 +15,7 @@ import type {
   DurableContext,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { ElementType } from '@klicker-uzh/prisma/client'
+import { LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT } from '@klicker-uzh/util'
 import { aggregateAssessmentResponses } from '../assessmentProcessor.js'
 
 function createContext() {
@@ -42,7 +42,6 @@ function createMessage() {
 }
 
 function setupHappyPath() {
-  hoisted.assessmentClient.sismember.mockResolvedValue(0)
   hoisted.assessmentClient.eval.mockResolvedValue(
     JSON.stringify({
       status: 'processed',
@@ -67,30 +66,33 @@ describe('aggregateAssessmentResponses atomic processing', () => {
 
     expect(result).toEqual({ status: 200 })
     expect(hoisted.assessmentClient.eval).toHaveBeenCalledWith(
-      expect.stringContaining("redis.call('SISMEMBER'"),
-      2,
+      LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+      3,
       'lq:quiz-1:i:instance-1:responses:processed',
+      'lq:quiz-1:i:instance-1:responses:processed:count',
       'lq:quiz-1:i:instance-1:info',
       'correlation-1',
       '86400',
       expect.any(String)
     )
     expect(
-      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![6] as string)
+      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![7] as string)
     ).toEqual([
       ['HINCRBY', 'lq:quiz-1:i:instance-1:results', 'participants', 1],
     ])
   })
 
-  it('short-circuits an assessment replay before opening aggregation', async () => {
+  it('accepts an assessment replay result without applying aggregation twice', async () => {
     setupHappyPath()
-    hoisted.assessmentClient.sismember.mockResolvedValue(1)
+    hoisted.assessmentClient.eval.mockResolvedValue(
+      JSON.stringify({ status: 'already_processed' })
+    )
     const ctx = createContext()
 
     const result = await aggregateAssessmentResponses(createMessage(), ctx)
 
     expect(result).toEqual({ status: 200 })
-    expect(hoisted.assessmentClient.eval).not.toHaveBeenCalled()
+    expect(hoisted.assessmentClient.eval).toHaveBeenCalledTimes(1)
     expect(ctx.logger.info).toHaveBeenCalledWith(
       'Assessment response already processed, skipping',
       expect.objectContaining({ correlationId: 'correlation-1' })
@@ -101,7 +103,7 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     setupHappyPath()
     hoisted.assessmentClient.eval.mockResolvedValue(
       JSON.stringify({
-        status: 'processed',
+        status: 'aggregation_failed',
         commandErrors: ['WRONGTYPE Operation against a key'],
         trackingErrors: [],
       })
@@ -112,7 +114,7 @@ describe('aggregateAssessmentResponses atomic processing', () => {
 
     expect(result).toEqual({ status: 200 })
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('accepting partial application')
+      expect.stringContaining('processed count unchanged')
     )
   })
 })

@@ -32,58 +32,69 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 
 ### Per-element response processing counts
 
-For every started live-quiz element instance, execution Redis stores two sets:
-`lq:<quiz-id>:i:<instance-id>:responses:received` and
-`lq:<quiz-id>:i:<instance-id>:responses:processed`. Standard responses use the
-response API's generated `messageId` as the member of both sets; assessment
-responses use their deterministic `correlationId`, after the existing duplicate
-check. Set membership makes both counts idempotent across Hatchet retries
-(`packages/util/src/liveQuizResponseTracking.ts:getLiveQuizResponseTrackingKey`,
-`apps/response-api/src/index.ts:handleAddResponse`, and
-`apps/response-api/src/index.ts:handleAddAssessmentResponse`).
+For every started live-quiz element instance, new execution Redis writes use
+two numeric counters:
+`lq:<quiz-id>:i:<instance-id>:responses:received:count` and
+`lq:<quiz-id>:i:<instance-id>:responses:processed:count`. The response API
+increments the received counter once for each accepted event. The regular and
+assessment processors increment the processed counter only after every result,
+leaderboard, and response-hash command in the batch succeeds.
 
-The response API attempts to add the received member before enqueueing a known
-instance. Tracking is best-effort: a tracking failure is logged but does not
-reject or delay the participant response.
-The standard response processor and assessment aggregation both build their
-Redis commands locally, then run one atomic processing script. The script
-claims the processed member before applying the commands, captures command
-errors with `redis.pcall`, and mirrors instance-info retention. A retry after a
-lost Redis reply therefore sees the marker and cannot apply scoring, results,
-or leaderboard updates a second time. A connection-level script failure still
-throws so Hatchet can retry; tracking-retention errors are logged as best effort
-(`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`
-and
-`apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`).
-The authorized `cockpitQuiz` query reads both set cardinalities per started
-element, and the lecturer cockpit's existing two-second polling displays them;
-scheduled elements have no counts
-(`packages/graphql/src/services/liveQuizzes.ts:getCockpitQuiz` and
-`apps/frontend-manage/src/pages/quizzes/[id]/cockpit.tsx:Cockpit`).
+The response API attempts the received-counter increment before enqueueing a
+known instance. Tracking is best-effort: a tracking failure is logged but does
+not reject or delay the participant response.
+The existing
+`lq:<quiz-id>:i:<instance-id>:responses:processed` set remains a bounded replay
+claim for the response `messageId` or assessment `correlationId`. Its members
+expire within the 24-hour replay horizon, or sooner when instance-info retention
+is shorter. A processing retry after a lost Redis reply therefore cannot apply
+the same batch twice during that horizon. Partial Redis command errors retain
+the claim, return an explicit aggregation failure, and leave the processed
+counter unchanged; they are logged and not replayed because some commands may
+already have applied.
+
+The legacy received set
+`lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
+input while old response-api instances drain. The cockpit adds its cardinality
+to the new received counter. If a processed counter is not initialized yet,
+the cockpit falls back to the legacy processed-set cardinality as an opaque
+pre-cutover baseline. New code never writes the legacy received set.
+
+Connection-level processing script failures still throw so Hatchet can retry.
+The authorized `cockpitQuiz` query reads the counters and compatibility values
+per started element, and the lecturer cockpit's existing two-second polling
+displays them; scheduled elements have no counts
+(`packages/util/src/liveQuizResponseTracking.ts`,
+`apps/response-api/src/index.ts:handleAddResponse`,
+`apps/response-api/src/index.ts:handleAddAssessmentResponse`,
+`apps/hatchet-worker-response-processor/src/processors/processor.ts:processResponseMessage`,
+`apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts:aggregateAssessmentResponses`,
+and `packages/graphql/src/services/liveQuizzes.ts:getCockpitQuiz`).
 
 The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, failed, or untracked responses. Tracking does not change the
-response pipeline's validation semantics. Result aggregation now uses the
-processed marker as an exactly-once replay guard: after the marker is claimed,
-a retry is a no-op, and per-command Redis errors are logged and accepted rather
-than replayed.
+response pipeline's validation semantics. Result aggregation uses the replay
+claim as a bounded exactly-once guard: after the claim is present, a retry is a
+no-op. Per-command Redis errors are logged as aggregation failures, do not
+increment the processed counter, and are not replayed.
 
-Tracking sets stay persistent while their element instance is active, matching
-the rest of the live execution cache. When a block closes, cleanup first starts
-the canonical instance-info key's one-day retention and then scans the instance
-keys. A concurrent tracking write atomically reads that info-key TTL with its
-set update and mirrors any remaining retention; if the info key is already
-missing, the tracking key receives a one-day safety expiry. This ordering covers
-writes on both sides of cleanup's key scan without erasing counts from an
-unlimited active block. The tracking keys also remain under the existing
-per-instance wildcard
+Counters stay persistent while their element instance is active, matching the
+rest of the live execution cache. Replay claims are bounded independently of
+active-instance lifetime. When a block closes, cleanup first starts the
+canonical instance-info key's one-day retention and then expires the response
+keys. A concurrent tracking write atomically reads that info-key TTL and
+mirrors the remaining retention; if the info key is already missing, the
+tracking key receives a one-day safety expiry. The keys also remain under the
+existing per-instance wildcard
 (`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
 
-Deployment ordering matters: the shipped `GetCockpitQuiz` operation selects the
-new count fields, so the GraphQL API must deploy before frontend-manage — an old
-API rejects the whole operation and takes the cockpit down for that window (the
-reverse mix is safe because the fields are additive and nullable).
+Deployment ordering matters: deploy GraphQL before new response ingress, drain
+old response-processor replicas before initializing processed counters, and then
+run only the new processors. Frontend-manage remains safe after GraphQL because
+the fields are additive and nullable. Old and new processors cannot overlap
+after counter initialization because old workers do not increment the new
+processed counter.
 
 ## Worker task catalog
 
