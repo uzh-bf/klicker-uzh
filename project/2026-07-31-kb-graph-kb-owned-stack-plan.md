@@ -586,3 +586,22 @@ it does not introduce a separate `KBGraphVersion` lifecycle or webhook.
   No deletion was performed. Merge/close/deploy authority remains withheld
   per plan; the plan and log record the browser-evidence limitation instead
   of claiming screenshots.
+- 2026-08-24: Sol recommended merging the current target into the published
+  PR head instead of rebasing its 174-commit history. The merge reported 29
+  manual conflict paths (the earlier inventory's “30” was a counting error),
+  and the resolutions preserve both the KB graph/MCP lifecycle and current
+  `v3-ai` feature-flag, assessment, and API changes. Generated GraphQL
+  artifacts and `pnpm-lock.yaml` were regenerated. Local merge commit
+  `703d026ac` has parents `8eee6f084` and `8e23a7bd1`; it is not pushed, so
+  PR #5424 remains at its published head. Root `pnpm run check` passed 29/29
+  tasks; focused KB GraphQL, knowledge-graph, Hatchet, util, backend, and chat
+  suites passed (95, 72, 99, 5, 6, and 590 tests respectively), and
+  `pnpm run format:check` passed. The GraphQL `test:local` wrapper still needs
+  a Docker CLI unavailable inside the DevPod; direct focused suites pass.
+  `pnpm run check:all` remains blocked only by the analytics Python
+  environment needing a compiler to build pandas, and the full build reached
+  24/26 tasks before the manage frontend was killed with exit 137 during page
+  data collection. The host commit hook also remains unusable under Node 26;
+  the equivalent Node 24 container checks passed. Browser screenshots remain
+  unavailable under the documented TLS/browser restriction. No push, PR
+  merge, close, deploy, or sibling worktree mutation occurred.
