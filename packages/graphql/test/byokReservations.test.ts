@@ -162,7 +162,7 @@ function makeDb() {
     ...(() => {
       let txQueue = Promise.resolve()
       return {
-        $transaction: async (fn: Function, _opts?: any) => {
+        $transaction: async (fn: (db: unknown) => unknown, _opts?: unknown) => {
           const result = txQueue.then(() => fn(db))
           txQueue = result.catch(() => {})
           return result

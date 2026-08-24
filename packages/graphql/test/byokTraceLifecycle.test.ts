@@ -75,7 +75,7 @@ function makeDb() {
         })
       },
     },
-    $transaction: async (fn: Function) => fn(db),
+    $transaction: async (fn: (db: unknown) => unknown) => fn(db),
   }
 
   function seedBinding(chatbotId = 'bot-1') {
