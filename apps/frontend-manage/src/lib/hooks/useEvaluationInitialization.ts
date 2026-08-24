@@ -8,8 +8,10 @@ export function getEvaluationQuestionLocation(
 ) {
   if (typeof questionIx !== 'string') return null
 
-  const questionIndex = Number.parseInt(questionIx, 10)
-  if (!Number.isInteger(questionIndex) || questionIndex < 0) return null
+  if (!/^\d+$/.test(questionIx)) return null
+
+  const questionIndex = Number(questionIx)
+  if (!Number.isSafeInteger(questionIndex)) return null
 
   let questionOffset = 0
   let resultOffset = 0
