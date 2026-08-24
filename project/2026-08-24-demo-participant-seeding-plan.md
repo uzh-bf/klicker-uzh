@@ -99,14 +99,18 @@ fail-closed paths.
 ## Progress
 
 - Plan reviewed by the configured planner with the concerns above incorporated.
-- Fresh task worktree was created from `origin/v3` at
-  `d8e964c2847108d0f10fb2f3f696b37378619db8`; after `origin/v3` advanced with
-  an unrelated commit, the task branch was rebased onto the fetched head before
-  the final review.
+- Fresh task worktree was initially created from `origin/v3` at
+  `d8e964c2847108d0f10fb2f3f696b37378619db8`. After `origin/v3` advanced with
+  unrelated commit `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`, the task branch
+  was rebased onto that exact fetched head before the final review.
 - The reconciler, package command, focused tests, operator documentation, and
   this plan are committed locally. The disposable task runtime suite passes 14
   tests, including readback failure, archived-target refusal, conflicting-mode
   refusal, shared-account preservation, atomic rollback, and replay no-op.
+- The focused suite is fail-closed unless `TEST_DATABASE_DISPOSABLE=1` is set
+  and the test URL points to a local/DevPod PostgreSQL host. Its fixture also
+  refuses pre-existing owner or participant rows and cleans only participant
+  IDs created by the current run.
 - PRD target rows and existing account shape were inspected read-only. No PRD
   database, Infisical, provider, lecturer, deployment, or cluster write has
   occurred.

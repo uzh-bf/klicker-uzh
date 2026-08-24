@@ -3,9 +3,10 @@ import { fileURLToPath } from 'node:url'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL
+const DISPOSABLE_DATABASE_MARKER = '1'
 const APPLY_FLAG = '--apply'
 const SCRIPT_DIRECTORY = fileURLToPath(new URL('.', import.meta.url))
 const USERNAMES = [
@@ -24,6 +25,22 @@ const PASSWORD_ENV = {
   RadioSurfVet: 'KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD',
   Culture: 'KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD',
 } as const
+
+const isDisposableDatabase = (databaseUrl: string | undefined) => {
+  if (
+    !databaseUrl ||
+    process.env.TEST_DATABASE_DISPOSABLE !== DISPOSABLE_DATABASE_MARKER
+  ) {
+    return false
+  }
+
+  try {
+    const hostname = new URL(databaseUrl).hostname.toLowerCase()
+    return ['postgres', 'localhost', '127.0.0.1', '::1'].includes(hostname)
+  } catch {
+    return false
+  }
+}
 
 const runScript = (
   args: Array<string>,
@@ -65,13 +82,45 @@ const runFailingScript = (
   }
 }
 
-;(DATABASE_URL ? describe : describe.skip)('seed demo participants', () => {
+const testDescribe = isDisposableDatabase(DATABASE_URL)
+  ? describe
+  : describe.skip
+
+testDescribe('seed demo participants', () => {
   const adapter = new PrismaPg({ connectionString: DATABASE_URL })
   const prisma = new PrismaClient({ adapter })
   let ownerId = ''
   const courseIds = new Map<string, string>()
+  const createdParticipantIds = new Set<string>()
+
+  const rememberCreatedParticipants = async () => {
+    const participants = await prisma.participant.findMany({
+      where: { username: { in: USERNAMES } },
+      select: { id: true },
+    })
+    for (const participant of participants) {
+      createdParticipantIds.add(participant.id)
+    }
+  }
+
+  const cleanupCreatedParticipants = async () => {
+    if (createdParticipantIds.size === 0) return
+
+    await prisma.participant.deleteMany({
+      where: { id: { in: [...createdParticipantIds] } },
+    })
+    createdParticipantIds.clear()
+  }
 
   beforeAll(async () => {
+    const [existingOwnerCount, existingParticipantCount] = await Promise.all([
+      prisma.user.count({ where: { shortname: 'klick' } }),
+      prisma.participant.count({ where: { username: { in: USERNAMES } } }),
+    ])
+    if (existingOwnerCount > 0 || existingParticipantCount > 0) {
+      throw new Error('fixture_database_not_empty')
+    }
+
     const owner = await prisma.user.create({
       data: {
         email: 'demo-participant-owner@local.invalid',
@@ -108,19 +157,24 @@ const runFailingScript = (
     }
   })
 
+  afterEach(async () => {
+    await rememberCreatedParticipants()
+  })
+
   afterAll(async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
-    await prisma.course.deleteMany({ where: { ownerId } })
-    await prisma.user.delete({ where: { id: ownerId } }).catch(() => undefined)
+    await rememberCreatedParticipants()
+    await cleanupCreatedParticipants()
+    if (ownerId) {
+      await prisma.course.deleteMany({ where: { ownerId } })
+      await prisma.user
+        .delete({ where: { id: ownerId } })
+        .catch(() => undefined)
+    }
     await prisma.$disconnect()
   })
 
   it('defaults to a values-free no-write dry run and supports readback', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
 
     const output = runScript([])
 
@@ -147,9 +201,7 @@ const runFailingScript = (
   })
 
   it('creates all three accounts and replays as a database no-op', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
 
     const first = runScript([APPLY_FLAG], ['IuW', 'RadioSurfVet', 'Culture'])
     expect(first).toContain('mode=apply writes=true')
@@ -203,12 +255,10 @@ const runFailingScript = (
         1
       )
     }
-  })
+  }, 30_000)
 
   it('rolls back all account changes when an SSO collision is present', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
     const iuwCourseId = courseIds.get('testkurs IuW')!
     const cultureCourseId = courseIds.get('KlickerUZH Demo Copy')!
     const initialPassword = await bcrypt.hash(
@@ -278,9 +328,7 @@ const runFailingScript = (
   })
 
   it('requires every password before opening the write transaction', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
 
     const output = runFailingScript([APPLY_FLAG], ['IuW', 'Culture'])
     expect(output).toContain('status=failed code=missing_password_RadioSurfVet')
@@ -292,9 +340,7 @@ const runFailingScript = (
   })
 
   it('rejects unknown flags without touching the database', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
 
     const output = runFailingScript(['--unexpected'])
     expect(output).toContain('status=failed code=unknown_argument')
@@ -306,9 +352,7 @@ const runFailingScript = (
   })
 
   it('rejects conflicting modes without touching the database', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
 
     const output = runFailingScript(['--apply', '--readback'])
     expect(output).toContain('status=failed code=conflicting_mode')
@@ -320,9 +364,7 @@ const runFailingScript = (
   })
 
   it('fails closed when a target course is archived', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
     const iuwCourseId = courseIds.get('testkurs IuW')!
     await prisma.course.update({
       where: { id: iuwCourseId },
@@ -344,9 +386,7 @@ const runFailingScript = (
   })
 
   it('does not alter the shared teststudent account', async () => {
-    await prisma.participant.deleteMany({
-      where: { username: { in: USERNAMES } },
-    })
+    await cleanupCreatedParticipants()
     const sharedPassword = await bcrypt.hash('local-only-shared-password', 12)
     const shared = await prisma.participant.create({
       data: {
