@@ -75,7 +75,7 @@ describe('chat engine conformance suite', () => {
       }
       const body = JSON.parse(String(init?.body)) as typeof conformanceRequest
       const provider = headers.get('provider-authorization')
-      if (body.generation.credentialMode.mode === 'request' && !provider) {
+      if (body.generation.credentialMode.mode === 'gateway' && !provider) {
         return new Response(null, { status: 400 })
       }
       if (body.generation.credentialMode.mode === 'deployment' && provider) {

@@ -239,7 +239,7 @@ function resolveCredentialMode(
       reasoningEffort: 'none',
       reasoningSummary: 'none',
       responseStorage: false,
-      credentialMode: { mode: 'request', providerBaseUrl },
+      credentialMode: { mode: 'gateway', gatewayOrigin: providerBaseUrl },
     },
     providerAuthorization: `Bearer ${providerApiKey}`,
   }

@@ -41,8 +41,8 @@ export function createProviderModel(
   config: ProviderConfig
 ): LanguageModel {
   const baseUrl =
-    generation.credentialMode.mode === 'request'
-      ? generation.credentialMode.providerBaseUrl
+    generation.credentialMode.mode === 'gateway'
+      ? generation.credentialMode.gatewayOrigin
       : config.deploymentBaseUrl
   if (!baseUrl) {
     throw new Error('Deployment provider base URL is not configured.')

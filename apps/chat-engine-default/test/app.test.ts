@@ -59,7 +59,7 @@ describe('default chat engine', () => {
     expect(manifestResponse.status).toBe(200)
     expect(await manifestResponse.json()).toMatchObject({
       contractVersion: 'v1',
-      providerCredentialModes: ['request', 'deployment'],
+      providerCredentialModes: ['gateway', 'deployment'],
       limits: {
         maxMessages: 100,
         maxTools: 64,
@@ -101,8 +101,8 @@ describe('default chat engine', () => {
       generation: {
         ...conformanceRequest.generation,
         credentialMode: {
-          mode: 'request' as const,
-          providerBaseUrl: 'https://untrusted.example.test/v1',
+          mode: 'gateway' as const,
+          gatewayOrigin: 'https://untrusted.example.test/v1',
         },
       },
     }
@@ -138,8 +138,8 @@ describe('default chat engine', () => {
       generation: {
         ...conformanceRequest.generation,
         credentialMode: {
-          mode: 'request' as const,
-          providerBaseUrl: 'https://openrouter.ai/api/v1',
+          mode: 'gateway' as const,
+          gatewayOrigin: 'https://openrouter.ai/api/v1',
         },
       },
       tools: [

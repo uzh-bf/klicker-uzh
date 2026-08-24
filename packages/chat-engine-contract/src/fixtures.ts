@@ -43,8 +43,8 @@ export const conformanceRequestCredentialRequest: EngineChatRequest = {
   generation: {
     ...conformanceRequest.generation,
     credentialMode: {
-      mode: 'request',
-      providerBaseUrl: 'https://provider.example.test/v1',
+      mode: 'gateway',
+      gatewayOrigin: 'https://provider.example.test/v1',
     },
   },
 }
@@ -185,7 +185,7 @@ export const conformanceManifest: EngineManifest = {
     tools: true,
     cancellation: true,
   },
-  providerCredentialModes: ['request', 'deployment'],
+  providerCredentialModes: ['gateway', 'deployment'],
   limits: {
     maxMessages: 100,
     maxTools: 64,
