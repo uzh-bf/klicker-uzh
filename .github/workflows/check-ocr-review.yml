@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   ocr-review:
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -26,7 +27,6 @@ jobs:
           llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
           llm_model: deepseek/deepseek-v4-flash-0731
           llm_use_anthropic: 'false'
-          llm_extra_body: '{"reasoning":{"enabled":false}}'
           ocr_version: '1.9.10'
           sticky_summary: 'true'
           incremental: 'true'

@@ -28,6 +28,7 @@
 - Evidence: The upstream workflow uses `pull_request_target` for fork secret access and requires `contents: read` plus `pull-requests: write`.
 - Evidence: OpenRouter documents `https://openrouter.ai/api/v1/chat/completions`, Bearer authentication, the exact model slug `deepseek/deepseek-v4-flash-0731`, and the `reasoning` request object.
 - Evidence: The upstream `v1.9.10` tag resolves to commit `66120291271b2e605e420e9f11fbd6448f06163f`; the annotated tag object is not used as the Action pin.
+- Evidence: OpenCodeReview `v1.9.10` writes `llm_extra_body` to its config file, but its required `OCR_LLM_*` environment resolution path does not carry that body into the resolved endpoint. This preparation therefore leaves reasoning at the selected model/provider default rather than claiming it is disabled.
 - Limitation: The OpenCodeReview npm postinstall downloads the native executable and checksum from GitHub release assets. Pinning the Action and CLI versions does not eliminate that residual supply-chain dependency.
 - Planning review: The native planner returned `DONE_WITH_CONCERNS`; its concerns are accepted as residual risks below.
 
@@ -36,6 +37,7 @@
 - Risk: `pull_request_target` has access to secrets and a write-capable GitHub token. Control: pin the Action to the resolved commit, keep the workflow free of checkout/build/test steps, and grant only `contents: read` and `pull-requests: write`.
 - Risk: Fork PRs can consume the OpenRouter key. Control: use a dedicated OpenRouter key restricted to this model and a bounded budget; do not reuse production credentials.
 - Risk: Review artifacts and logs may retain model output. Control: set `upload_artifacts: 'false'`; workflow logs remain a residual GitHub Actions retention surface.
+- Risk: The pinned OCR release cannot apply an OpenRouter `reasoning` override on its environment-resolved endpoint. Control: do not claim reasoning is disabled; treat the selected model/provider default as an initial-test condition and revisit after an upstream fix is pinned.
 - Risk: AI findings are noisy and non-authoritative. Control: keep the job advisory and do not add it to required checks in this slice.
 
 ## Primitive and ADR disposition
@@ -62,13 +64,13 @@
 ## Slice S1: prepare the advisory workflow
 
 - Route: main.
-- Acceptance: Only `.github/workflows/check-ocr-review.yml` changes; the workflow uses `pull_request_target`, the resolved Action commit, `ocr_version: '1.9.10'`, OpenRouter's endpoint and model slug, `OPENROUTER_API_KEY`, OpenRouter-native disabled reasoning, least-privilege permissions, sticky/incremental comments, and no artifact upload.
+- Acceptance: Only `.github/workflows/check-ocr-review.yml` changes; the workflow uses `pull_request_target`, the resolved Action commit, `ocr_version: '1.9.10'`, OpenRouter's endpoint and model slug, `OPENROUTER_API_KEY`, explicit OpenAI-compatible mode, least-privilege permissions, sticky/incremental comments, no artifact upload, and skips Dependabot PRs whose events cannot use this secret/write-token path.
 - Check: Repository-native YAML formatting/checks where available, YAML parse, `git diff --check`, staged-path audit, and static security review.
 - Commit: `ci: add advisory OpenCodeReview PR review`
 
 ## Progress
 
-- Status: implementation committed and slice-reviewed with `PASS_WITH_CONCERNS`; final integrated review pending.
-- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, and slice review.
-- Remaining: run final review and complete close-out verification.
+- Status: final review found and the main session is correcting two issues: an ineffective reasoning override and Dependabot secret-path failures.
+- Completed: fresh `origin/v3` baseline, upstream/OpenRouter research, dedicated worktree, planning review, workflow implementation, static checks, and bounded slice review.
+- Remaining: verify the correction, rerun the risk review, run final review, and complete close-out verification.
 - Delivery: local commit only; live activation is pending.
