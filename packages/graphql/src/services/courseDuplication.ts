@@ -292,15 +292,20 @@ async function publishCourseDuplicationEvent(
 ) {
   try {
     await hatchet.events.push('process-course-duplication', { jobId })
-  } catch {
+  } catch (error) {
     // Hatchet may have accepted the event before the client observed an
     // acknowledgement. Retry the same job id so a lost acknowledgement cannot
     // create a second course.
     try {
       await hatchet.events.push('process-course-duplication', { jobId })
-    } catch {
+    } catch (retryError) {
+      const publishError = new Error(
+        `Initial publish failed: ${getErrorMessage(error)}; retry failed: ${getErrorMessage(retryError)}`,
+        { cause: error instanceof Error ? error : undefined }
+      )
       throw new GraphQLError('Course duplication could not be started', {
         extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+        originalError: publishError,
       })
     }
   }
@@ -562,7 +567,30 @@ export async function startCourseDuplication(
     }
   }
 
-  await publishCourseDuplicationEvent(ctx.hatchet, job.id)
+  try {
+    await publishCourseDuplicationEvent(ctx.hatchet, job.id)
+  } catch (error) {
+    try {
+      await updateCourseDuplicationJob(ctx.redisExec, job, {
+        status: 'FAILED',
+        errorType: 'generic',
+        errorMessage: 'Course duplication could not be started.',
+      })
+    } catch (cleanupError) {
+      console.error(
+        `Failed to clean up course duplication job ${job.id} after publish failure: ${getErrorMessage(cleanupError)}`
+      )
+      try {
+        await releaseCourseDuplicationSourceLock(ctx.redisExec, job)
+      } catch (releaseError) {
+        console.error(
+          `Failed to release course duplication source lock for job ${job.id}: ${getErrorMessage(releaseError)}`
+        )
+      }
+    }
+
+    throw error
+  }
 
   return getPublicCourseDuplicationStatus(job)
 }

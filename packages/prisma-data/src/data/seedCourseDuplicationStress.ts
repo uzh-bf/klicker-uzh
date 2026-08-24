@@ -173,31 +173,101 @@ async function seedCourseDuplicationStress() {
     ])
 
   const expectedIds = new Set(expectedActivityIds)
-  const invalidActivity = activities.find(
-    (activity) =>
+  const verificationErrors: string[] = []
+
+  if (!course) {
+    verificationErrors.push(`course ${COURSE_ID_DUPLICATION_STRESS} is missing`)
+  } else {
+    if (course.ownerId !== USER_ID_TEST) {
+      verificationErrors.push(
+        `course owner is ${course.ownerId}, expected ${USER_ID_TEST}`
+      )
+    }
+    if (course._count.liveQuizzes !== STRESS_ACTIVITY_COUNT) {
+      verificationErrors.push(
+        `course live-quiz count is ${course._count.liveQuizzes}, expected ${STRESS_ACTIVITY_COUNT}`
+      )
+    }
+  }
+
+  if (activities.length !== STRESS_ACTIVITY_COUNT) {
+    verificationErrors.push(
+      `activity count is ${activities.length}, expected ${STRESS_ACTIVITY_COUNT}`
+    )
+  }
+
+  const missingActivityIds = expectedActivityIds.filter(
+    (id) => !activities.some((activity) => activity.id === id)
+  )
+  const unexpectedActivityIds = activities
+    .filter((activity) => !expectedIds.has(activity.id))
+    .map((activity) => activity.id)
+  if (missingActivityIds.length > 0) {
+    verificationErrors.push(
+      `missing expected activity ids: ${missingActivityIds.slice(0, 5).join(', ')}`
+    )
+  }
+  if (unexpectedActivityIds.length > 0) {
+    verificationErrors.push(
+      `unexpected activity ids: ${unexpectedActivityIds.slice(0, 5).join(', ')}`
+    )
+  }
+
+  const invalidActivity = activities.find((activity) => {
+    return (
       !expectedIds.has(activity.id) ||
       activity.ownerId !== USER_ID_TEST ||
       activity.status !== Prisma.PublicationStatus.DRAFT ||
       activity.isDeleted ||
       activity.blocks.length > 0
-  )
-
-  if (
-    !course ||
-    course.ownerId !== USER_ID_TEST ||
-    course._count.liveQuizzes !== STRESS_ACTIVITY_COUNT ||
-    activities.length !== STRESS_ACTIVITY_COUNT ||
-    invalidActivity ||
-    !coursePermission ||
-    coursePermission.permissionLevel !== Prisma.PermissionLevel.OWNER ||
-    activityPermissions.length !== STRESS_ACTIVITY_COUNT ||
-    activityPermissions.some(
-      (permission) =>
-        permission.permissionLevel !== Prisma.PermissionLevel.OWNER
     )
+  })
+  if (invalidActivity) {
+    const reasons = [
+      !expectedIds.has(invalidActivity.id) ? 'unexpected id' : null,
+      invalidActivity.ownerId !== USER_ID_TEST
+        ? `owner ${invalidActivity.ownerId} (expected ${USER_ID_TEST})`
+        : null,
+      invalidActivity.status !== Prisma.PublicationStatus.DRAFT
+        ? `status ${invalidActivity.status} (expected DRAFT)`
+        : null,
+      invalidActivity.isDeleted ? 'soft-deleted' : null,
+      invalidActivity.blocks.length > 0
+        ? `has ${invalidActivity.blocks.length} blocks`
+        : null,
+    ].filter((reason): reason is string => reason !== null)
+    verificationErrors.push(
+      `activity ${invalidActivity.id} is invalid: ${reasons.join(', ')}`
+    )
+  }
+
+  if (!coursePermission) {
+    verificationErrors.push('course owner permission is missing')
+  } else if (
+    coursePermission.permissionLevel !== Prisma.PermissionLevel.OWNER
   ) {
+    verificationErrors.push(
+      `course owner permission is ${coursePermission.permissionLevel}, expected OWNER`
+    )
+  }
+
+  if (activityPermissions.length !== STRESS_ACTIVITY_COUNT) {
+    verificationErrors.push(
+      `activity permission count is ${activityPermissions.length}, expected ${STRESS_ACTIVITY_COUNT}`
+    )
+  }
+  const invalidPermission = activityPermissions.find(
+    (permission) => permission.permissionLevel !== Prisma.PermissionLevel.OWNER
+  )
+  if (invalidPermission) {
+    verificationErrors.push(
+      `activity ${invalidPermission.liveQuizId} permission is ${invalidPermission.permissionLevel}, expected OWNER`
+    )
+  }
+
+  if (verificationErrors.length > 0) {
     throw new Error(
-      'The course duplication stress fixture failed verification.'
+      `The course duplication stress fixture failed verification:\n- ${verificationErrors.join('\n- ')}`
     )
   }
 

@@ -281,15 +281,15 @@ export async function testInitialization(
     }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
-      fn: async () => {
+      fn: vi.fn(async (_input: { jobId: string }) => {
         return { success: true }
-      },
+      }),
     }),
     sweepStaleCourseDuplications: hatchet.task({
       name: 'sweep-stale-course-duplications',
-      fn: async () => {
+      fn: vi.fn(async (_input: Record<string, never>) => {
         return { success: true }
-      },
+      }),
     }),
   }
   hatchetCtx.tasks = tasks
