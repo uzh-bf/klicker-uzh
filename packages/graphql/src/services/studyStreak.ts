@@ -41,7 +41,7 @@ function isWeekend(dateStr: string): boolean {
 }
 
 /**
- * Count missed active weekdays strictly between prevQualified and nextDate.
+ * Count missed active weekdays strictly between previousDate and nextDate.
  * Weekends are neutral and never counted as missed days.
  */
 function missedActiveDays(prevQualified: string, nextDate: string): number {
@@ -54,6 +54,29 @@ function missedActiveDays(prevQualified: string, nextDate: string): number {
     cursor = cursor.add(1, 'day')
   }
   return count
+}
+
+export function applyMissedDate(
+  state: StreakState,
+  dateStr: string
+): StreakState {
+  if (state.lastProcessedDate && dateStr <= state.lastProcessedDate) {
+    return state
+  }
+
+  if (isWeekend(dateStr) || !state.lastQualifiedDate || state.current === 0) {
+    return { ...state, lastProcessedDate: dateStr }
+  }
+
+  if (state.freezeBalance > 0) {
+    return {
+      ...state,
+      freezeBalance: state.freezeBalance - 1,
+      lastProcessedDate: dateStr,
+    }
+  }
+
+  return { ...state, current: 0, lastProcessedDate: dateStr }
 }
 
 export function applyQualifiedDate(
@@ -80,7 +103,11 @@ export function applyQualifiedDate(
     })
   }
 
-  const missed = missedActiveDays(state.lastQualifiedDate, dateStr)
+  const previousProcessedDate =
+    state.lastProcessedDate ?? state.lastQualifiedDate
+  const missed = previousProcessedDate
+    ? missedActiveDays(previousProcessedDate, dateStr)
+    : 0
   const freezesUsed = Math.min(missed, state.freezeBalance)
   const uncoveredBreaks = missed - freezesUsed
   const nextCurrent = uncoveredBreaks > 0 ? 1 : state.current + 1
@@ -302,19 +329,13 @@ export async function reconcileStudyStreak(
               responsesByDate.set(responseDate, instances)
             }
 
-            const qualifiedDates = [...responsesByDate.entries()]
-              .filter(
-                ([, instances]) => instances.size >= QUALIFIED_RESPONSES_PER_DAY
-              )
-              .map(([responseDate]) => responseDate)
-              .sort((left, right) => left.localeCompare(right))
-
+            let currentDayResponseCount = 0
             if (
               today >= courseStart &&
               today <= courseEnd &&
               !isWeekend(today)
             ) {
-              const currentDayResponseCount = await tx.questionResponse.count({
+              currentDayResponseCount = await tx.questionResponse.count({
                 where: {
                   participationId: participation.id,
                   lastAnsweredAt: {
@@ -333,13 +354,7 @@ export async function reconcileStudyStreak(
                   },
                 },
               })
-
-              if (currentDayResponseCount >= QUALIFIED_RESPONSES_PER_DAY) {
-                qualifiedDates.push(today)
-              }
             }
-
-            qualifiedDates.sort((left, right) => left.localeCompare(right))
 
             let state: StreakState = {
               current: participation.studyStreakCurrent,
@@ -355,10 +370,6 @@ export async function reconcileStudyStreak(
                 : null,
             }
 
-            for (const responseDate of qualifiedDates) {
-              state = applyQualifiedDate(state, responseDate)
-            }
-
             const processingThrough =
               today > courseEnd
                 ? courseEnd
@@ -368,13 +379,37 @@ export async function reconcileStudyStreak(
                       .subtract(1, 'day')
                       .format('YYYY-MM-DD')
                   : null
+            const processingStart =
+              state.lastProcessedDate &&
+              state.lastProcessedDate >= effectiveStart
+                ? dayjs
+                    .tz(state.lastProcessedDate, COURSE_TIMEZONE)
+                    .add(1, 'day')
+                    .format('YYYY-MM-DD')
+                : effectiveStart
+
+            if (processingThrough && processingStart <= processingThrough) {
+              let cursor = dayjs.tz(processingStart, COURSE_TIMEZONE)
+              const end = dayjs.tz(processingThrough, COURSE_TIMEZONE)
+              while (!cursor.isAfter(end)) {
+                const responseDate = cursor.format('YYYY-MM-DD')
+                const responseCount =
+                  responsesByDate.get(responseDate)?.size ?? 0
+                state =
+                  responseCount >= QUALIFIED_RESPONSES_PER_DAY
+                    ? applyQualifiedDate(state, responseDate)
+                    : applyMissedDate(state, responseDate)
+                cursor = cursor.add(1, 'day')
+              }
+            }
+
             if (
-              processingThrough &&
-              processingThrough >= effectiveStart &&
-              (!state.lastProcessedDate ||
-                processingThrough > state.lastProcessedDate)
+              currentDayResponseCount >= QUALIFIED_RESPONSES_PER_DAY &&
+              today >= courseStart &&
+              today <= courseEnd &&
+              !isWeekend(today)
             ) {
-              state.lastProcessedDate = processingThrough
+              state = applyQualifiedDate(state, today)
             }
 
             await tx.participation.update({

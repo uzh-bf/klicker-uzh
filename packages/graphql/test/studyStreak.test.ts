@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   applyQualifiedDate,
+  applyMissedDate,
   FREEZE_BALANCE_MAX,
   FREEZE_EARN_THRESHOLD,
   getStudyStreakResponsesToday,
@@ -130,8 +131,35 @@ describe('applyQualifiedDate', () => {
   })
 })
 
+describe('applyMissedDate', () => {
+  it('consumes freezes and resets the current streak without a later answer', () => {
+    let state = applyQualifiedDate(initialState(), '2026-08-24') // Monday
+    state = applyMissedDate(state, '2026-08-25')
+    expect(state.current).toBe(1)
+    expect(state.freezeBalance).toBe(1)
+
+    state = applyMissedDate(state, '2026-08-26')
+    expect(state.current).toBe(1)
+    expect(state.freezeBalance).toBe(0)
+
+    state = applyMissedDate(state, '2026-08-27')
+    expect(state.current).toBe(0)
+    expect(state.lastProcessedDate).toBe('2026-08-27')
+  })
+
+  it('keeps weekends neutral', () => {
+    const state = applyMissedDate(
+      { ...initialState(), current: 2, lastQualifiedDate: '2026-08-28' },
+      '2026-08-29'
+    )
+    expect(state.current).toBe(2)
+    expect(state.freezeBalance).toBe(2)
+    expect(state.lastProcessedDate).toBe('2026-08-29')
+  })
+})
+
 describe('getStudyStreakResponsesToday', () => {
-  it('counts distinct aggregate responses rather than response attempts', async () => {
+  it('uses distinct aggregate responses rather than response attempts', async () => {
     vi.setSystemTime(new Date('2026-08-24T12:00:00.000Z')) // Monday
     const count = vi.fn().mockResolvedValue(3)
     const prisma = {
