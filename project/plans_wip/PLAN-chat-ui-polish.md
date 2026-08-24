@@ -75,7 +75,13 @@ compact dropdown, and keep the composer from covering mobile content.
   focused R1/R2/R3 Playwright run passed 3/3 against that build. After review
   strengthened the R3 overlap guard to measure the composer boundary, its
   focused production-server check passed 1/1. The deliberate stream-release
-  regression test also passed. The Devrouter Turbopack dev path still serves
-  the loading shell without hydrating in this environment, so the browser
-  evidence uses the successful production server; no product code was
-  changed.
+  regression test also passed. An earlier Devrouter Turbopack run served the
+  loading shell without hydrating, so the browser evidence used the successful
+  production server at that point; after restarting the linked workspace, the
+  authenticated Chat page now hydrates and renders in the Devrouter path. No
+  product code was changed by the readiness fixes.
+- 2026-08-24: Restarted and retained the linked `feat-chat-ui-polish`
+  workspace for user verification. The Chat deep link redirects to the local
+  login page when unauthenticated, and the authenticated browser smoke test
+  rendered the mode picker, welcome state, conversation starters, attachment
+  control, message composer, and send control.
