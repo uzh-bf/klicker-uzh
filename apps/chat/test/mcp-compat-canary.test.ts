@@ -6,6 +6,7 @@ import {
   type IncomingMessage,
   type ServerResponse,
 } from 'node:http'
+import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { z } from 'zod'
 import {
@@ -546,7 +547,7 @@ describe('direct Prisma-shaped Chat MCP consumer', () => {
             return
           }
           transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined,
+            sessionIdGenerator: () => randomUUID(),
             enableJsonResponse: true,
           })
           const mcpServer = new McpServer({
