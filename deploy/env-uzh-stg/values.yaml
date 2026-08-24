@@ -543,6 +543,7 @@ frontendControl:
       memory: 200Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:
     rollout.klicker.uzh.ch/release: 'c33204bea9b1'
