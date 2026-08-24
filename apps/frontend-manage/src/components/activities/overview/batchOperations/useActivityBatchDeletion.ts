@@ -2,10 +2,10 @@ import { useMutation } from '@apollo/client'
 import {
   type ActivityInfo,
   ActivityType,
-  DeleteGroupActivityDocument,
+  DeleteGroupActivityBatchDocument,
   DeleteLiveQuizDocument,
-  DeleteMicroLearningDocument,
-  DeletePracticeQuizDocument,
+  DeleteMicroLearningBatchDocument,
+  DeletePracticeQuizBatchDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 
 const DELETE_CONCURRENCY = 5
@@ -22,9 +22,9 @@ export type ActivityBatchDeletionProgress = {
 
 function useActivityBatchDeletion() {
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument)
-  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizDocument)
-  const [deleteMicroLearning] = useMutation(DeleteMicroLearningDocument)
-  const [deleteGroupActivity] = useMutation(DeleteGroupActivityDocument)
+  const [deletePracticeQuiz] = useMutation(DeletePracticeQuizBatchDocument)
+  const [deleteMicroLearning] = useMutation(DeleteMicroLearningBatchDocument)
+  const [deleteGroupActivity] = useMutation(DeleteGroupActivityBatchDocument)
 
   async function deleteActivity(activity: ActivityInfo) {
     if (activity.type === ActivityType.LiveQuiz) {

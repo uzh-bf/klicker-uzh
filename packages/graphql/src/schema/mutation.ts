@@ -3403,7 +3403,10 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.ADMIN,
@@ -3418,7 +3421,10 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.ADMIN,
@@ -3493,7 +3499,10 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.ADMIN,

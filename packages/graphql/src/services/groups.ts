@@ -1858,7 +1858,10 @@ export async function extendGroupActivity(
 }
 
 export async function deleteGroupActivity(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean | null },
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
@@ -1873,14 +1876,53 @@ export async function deleteGroupActivity(
     return null
   }
 
+  const isUnpublished =
+    groupActivity.status === DB.PublicationStatus.DRAFT ||
+    groupActivity.status === DB.PublicationStatus.SCHEDULED
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the the group activity is not yet published / has not started or has no instances -> hard deletion
   // as soon as an instance exists (independent of results) -> soft deletion
   if (
-    groupActivity.status === DB.PublicationStatus.DRAFT ||
-    groupActivity.status === DB.PublicationStatus.SCHEDULED ||
-    groupActivity.activityInstances.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && groupActivity.activityInstances.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    let deletedItem
+    try {
+      deletedItem = onlyIfUnpublished
+        ? await ctx.prisma.groupActivity.delete({
+            where: {
+              id,
+              status: {
+                in: [
+                  DB.PublicationStatus.DRAFT,
+                  DB.PublicationStatus.SCHEDULED,
+                ],
+              },
+            },
+          })
+        : await ctx.prisma.groupActivity.delete({ where: { id } })
+    } catch (error) {
+      if (
+        onlyIfUnpublished &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        return null
+      }
+      throw error
+    }
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled group activities)
     if (

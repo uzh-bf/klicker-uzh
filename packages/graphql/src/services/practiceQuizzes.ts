@@ -623,7 +623,10 @@ export async function unpublishPracticeQuiz(
 }
 
 export async function deletePracticeQuiz(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean | null },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -635,16 +638,53 @@ export async function deletePracticeQuiz(
     return null
   }
 
+  const isUnpublished =
+    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
+    practiceQuiz.status === DB.PublicationStatus.SCHEDULED
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the practice quiz is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
-    practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
-    practiceQuiz.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && practiceQuiz.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.practiceQuiz.delete({
-      where: { id },
-    })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    let deletedItem
+    try {
+      deletedItem = onlyIfUnpublished
+        ? await ctx.prisma.practiceQuiz.delete({
+            where: {
+              id,
+              status: {
+                in: [
+                  DB.PublicationStatus.DRAFT,
+                  DB.PublicationStatus.SCHEDULED,
+                ],
+              },
+            },
+          })
+        : await ctx.prisma.practiceQuiz.delete({ where: { id } })
+    } catch (error) {
+      if (
+        onlyIfUnpublished &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        return null
+      }
+      throw error
+    }
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled practice quizzes)
     if (

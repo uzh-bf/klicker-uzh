@@ -735,7 +735,10 @@ export async function getMicroLearningSummary(
 }
 
 export async function deleteMicroLearning(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean | null },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -747,14 +750,53 @@ export async function deleteMicroLearning(
     return null
   }
 
+  const isUnpublished =
+    microLearning.status === DB.PublicationStatus.DRAFT ||
+    microLearning.status === DB.PublicationStatus.SCHEDULED
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the microlearning is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    microLearning.status === DB.PublicationStatus.DRAFT ||
-    microLearning.status === DB.PublicationStatus.SCHEDULED ||
-    microLearning.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && microLearning.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    let deletedItem
+    try {
+      deletedItem = onlyIfUnpublished
+        ? await ctx.prisma.microLearning.delete({
+            where: {
+              id,
+              status: {
+                in: [
+                  DB.PublicationStatus.DRAFT,
+                  DB.PublicationStatus.SCHEDULED,
+                ],
+              },
+            },
+          })
+        : await ctx.prisma.microLearning.delete({ where: { id } })
+    } catch (error) {
+      if (
+        onlyIfUnpublished &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        return null
+      }
+      throw error
+    }
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled microlearnings)
     if (

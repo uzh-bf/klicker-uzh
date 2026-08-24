@@ -16,9 +16,13 @@ import {
 } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { vi } from 'vitest'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
+import { deleteGroupActivity } from '../src/services/groups.js'
+import { deleteMicroLearning } from '../src/services/microLearning.js'
+import { deletePracticeQuiz } from '../src/services/practiceQuizzes.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
 describe('Integration tests for batch operations on activities', () => {
@@ -64,7 +68,10 @@ describe('Integration tests for batch operations on activities', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => await testCleanup(prisma))
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await testCleanup(prisma)
+  })
 
   async function seedElement(
     args: { [x: string]: any },
@@ -319,6 +326,146 @@ describe('Integration tests for batch operations on activities', () => {
     )
     return groupActivity
   }
+
+  it('does not hard-delete published activities through batch deletion', async () => {
+    const course = await seedCourse({}, prisma)
+    const practiceQuiz = await seedPracticeQuiz(
+      { courseId: course.id, status: PublicationStatus.PUBLISHED },
+      prisma
+    )
+    const microLearning = await seedMicroLearning(
+      { courseId: course.id, status: PublicationStatus.PUBLISHED },
+      prisma
+    )
+    const groupActivity = await seedGroupActivity(
+      { courseId: course.id, status: PublicationStatus.PUBLISHED },
+      prisma
+    )
+
+    expect(
+      await deletePracticeQuiz(
+        { id: practiceQuiz.id, onlyIfUnpublished: true },
+        userOneCtx
+      )
+    ).toBeNull()
+    expect(
+      await deleteMicroLearning(
+        { id: microLearning.id, onlyIfUnpublished: true },
+        userOneCtx
+      )
+    ).toBeNull()
+    expect(
+      await deleteGroupActivity(
+        { id: groupActivity.id, onlyIfUnpublished: true },
+        userOneCtx
+      )
+    ).toBeNull()
+
+    await expect(
+      prisma.practiceQuiz.findUnique({ where: { id: practiceQuiz.id } })
+    ).resolves.toMatchObject({
+      id: practiceQuiz.id,
+      status: PublicationStatus.PUBLISHED,
+    })
+    await expect(
+      prisma.microLearning.findUnique({ where: { id: microLearning.id } })
+    ).resolves.toMatchObject({
+      id: microLearning.id,
+      status: PublicationStatus.PUBLISHED,
+    })
+    await expect(
+      prisma.groupActivity.findUnique({ where: { id: groupActivity.id } })
+    ).resolves.toMatchObject({
+      id: groupActivity.id,
+      status: PublicationStatus.PUBLISHED,
+    })
+
+    await expect(
+      deletePracticeQuiz({ id: practiceQuiz.id }, userOneCtx)
+    ).resolves.toMatchObject({ id: practiceQuiz.id })
+    await expect(
+      prisma.practiceQuiz.findUnique({ where: { id: practiceQuiz.id } })
+    ).resolves.toBeNull()
+  })
+
+  it('uses the publication status as an atomic batch-deletion predicate', async () => {
+    const practiceQuizDelete = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const practiceQuizCtx = {
+      prisma: {
+        practiceQuiz: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'practice-quiz-id',
+            status: PublicationStatus.SCHEDULED,
+            responses: [],
+            stacks: [],
+          }),
+          delete: practiceQuizDelete,
+        },
+      },
+    } as unknown as ContextWithUser
+
+    const microLearningDelete = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const microLearningCtx = {
+      prisma: {
+        microLearning: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'micro-learning-id',
+            status: PublicationStatus.SCHEDULED,
+            responses: [],
+            stacks: [],
+          }),
+          delete: microLearningDelete,
+        },
+      },
+    } as unknown as ContextWithUser
+
+    const groupActivityDelete = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const groupActivityCtx = {
+      prisma: {
+        groupActivity: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'group-activity-id',
+            status: PublicationStatus.SCHEDULED,
+            activityInstances: [],
+            stacks: [],
+          }),
+          delete: groupActivityDelete,
+        },
+      },
+    } as unknown as ContextWithUser
+
+    await expect(
+      deletePracticeQuiz(
+        { id: 'practice-quiz-id', onlyIfUnpublished: true },
+        practiceQuizCtx
+      )
+    ).resolves.toBeNull()
+    await expect(
+      deleteMicroLearning(
+        { id: 'micro-learning-id', onlyIfUnpublished: true },
+        microLearningCtx
+      )
+    ).resolves.toBeNull()
+    await expect(
+      deleteGroupActivity(
+        { id: 'group-activity-id', onlyIfUnpublished: true },
+        groupActivityCtx
+      )
+    ).resolves.toBeNull()
+
+    const unpublishedStatuses = {
+      in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+    }
+    expect(practiceQuizDelete).toHaveBeenCalledWith({
+      where: { id: 'practice-quiz-id', status: unpublishedStatuses },
+    })
+    expect(microLearningDelete).toHaveBeenCalledWith({
+      where: { id: 'micro-learning-id', status: unpublishedStatuses },
+    })
+    expect(groupActivityDelete).toHaveBeenCalledWith({
+      where: { id: 'group-activity-id', status: unpublishedStatuses },
+    })
+  })
 
   it('Verify that the case of missing activity ids and a wrong courseId are handled correctly', async () => {
     // seed a course
