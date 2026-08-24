@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Dropdown, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import type { ActivityAction } from '../actions/useAvailableActions'
 
 function ActivityActions({
@@ -94,7 +95,7 @@ function ActivityActions({
               // Disabled Radix menu items ignore pointer input by default. Keep
               // explanatory tooltips hoverable while preserving inert clicks.
               item: action.tooltip
-                ? 'data-disabled:pointer-events-auto'
+                ? twMerge('data-disabled:pointer-events-auto')
                 : undefined,
             },
           })
