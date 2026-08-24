@@ -15,6 +15,12 @@ import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import {
+  buildByokModel,
+  reserveByokCapability,
+  resolveActiveByokBinding,
+  settleByokUsage,
+} from '@/src/lib/server/byokGateway'
 import { getModel } from '@/src/lib/server/chatModelCredentials'
 import {
   getAllowedReasoningEffortsForModel,
@@ -832,7 +838,61 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const { model, routing } = getModel(chatbot, selectedModelConfig)
+  // BYOK funding source: if this chatbot has an active provider binding and
+  // the selected model matches the bound alias, route through the gateway.
+  // Otherwise use platform credentials. Default-off: no binding means platform.
+  const byokBinding = await resolveActiveByokBinding(chatbotId)
+  const isByokRequest =
+    byokBinding !== null &&
+    byokBinding.allowedModelAlias === selectedModelConfig.deploymentId
+
+  let byokTokenId: string | null = null
+  // Type matches getModel's return; resolved below via platform or BYOK path.
+  let model: Parameters<typeof streamText>[0]['model']
+
+  let routing: {
+    source: 'custom' | 'default' | 'byok'
+    hasCustomKey: boolean
+    baseUrl?: string
+  }
+
+  if (isByokRequest && byokBinding) {
+    // Reserve before dispatch; a failed reservation surfaces a stable error
+    // instead of silently falling back to platform credits.
+    const reserveResult = await reserveByokCapability(
+      {
+        bindingId: byokBinding.bindingId,
+        chatbotId,
+        participantId,
+        estimatedCost: '0', // estimated cost is refined at settlement time
+      },
+      { prisma, user: { sub: chatbot.ownerId } }
+    )
+    if (!reserveResult.ok) {
+      return NextResponse.json(
+        { error: 'BYOK quota exceeded', code: reserveResult.reason },
+        { status: 429 }
+      )
+    }
+    byokTokenId = reserveResult.tokenId
+
+    const gatewayOrigin =
+      process.env.BYOK_GATEWAY_ORIGIN ?? 'http://localhost:4000'
+    model = buildByokModel({
+      gatewayOrigin,
+      capabilityToken: reserveResult.token,
+      modelAlias: byokBinding.allowedModelAlias,
+    })
+    routing = {
+      source: 'byok',
+      hasCustomKey: false,
+      baseUrl: gatewayOrigin + '/v1',
+    }
+  } else {
+    const result = getModel(chatbot, selectedModelConfig)
+    model = result.model
+    routing = result.routing as typeof routing
+  }
   const promptCacheRequest =
     routing.source === 'default'
       ? await buildPromptCacheRequest({
