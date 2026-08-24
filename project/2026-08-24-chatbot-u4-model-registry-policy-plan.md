@@ -350,5 +350,31 @@ policy itself is proven by registry tests and the producing runtime.
   weighted pair is 0.68/4.08 and the user approved its simplified 1/5 registry
   rate; classifier and embedding overhead remain explicitly unrepresented.
 - 2026-08-24: Gate 1 approved by the user. The U4 branch was created from the
-  exact published U3 head after a fresh remote and stack check. No U4 commit,
-  push, stack mutation, runtime start, merge, or deployment has occurred.
+  exact published U3 head after a fresh remote and stack check.
+- 2026-08-24: commits `55ebd7ac6` and `fc5b91590` implement the Luna-only BASE
+  and fallback policy, corrected dated registry prices, the accepted 1/5 Auto
+  accounting approximation, STG/PRD parity, focused regressions, and matching
+  ADR/wiki evidence. Commit `5a4be2bfa` applies the verified Ox Alpha review
+  corrections: duplicate-ID rejection in the GraphQL consumer, parity proof,
+  and two stale local/E2E descriptions. The Ox simplifier found no material
+  reduction; the risk review found no remaining accounting, data-integrity,
+  configuration, or scope issue after those corrections.
+- 2026-08-24: exact Node 24 DevPod verification passes the complete Chat test
+  suite (42 files passed, one skipped; 374 tests passed, nine skipped), Chat
+  and GraphQL checks, focused registry parity (14 tests), Playwright package
+  typecheck, affected Chat and GraphQL builds, and the full repository build
+  (23 tasks). Root `check:all` reached all 25 TypeScript checks and six of seven
+  lint tasks; only the unrelated analytics lint stopped because uv selected
+  CPython 3.14 and the container has no C compiler for pandas 2.2.2.
+- 2026-08-24: the exact runtime workspace
+  `feat-chatbot-lecturer-config-pha` is running at the worktree Chat route with
+  the existing external OpenRouter boundary. After rehoming the production
+  Chat `.next` output to `/tmp/u4-chat-next-after-build-20260824`, restarting
+  the managed app process with a non-secret local LiteLLM client marker, and
+  provisioning positive BASE and ADVANCED budgets only for the seeded local
+  synthetic account, the Codex in-app Browser shows GPT-5.6 Luna selected and
+  completed the synthetic `U4_LUNA_OK` turn. The validated tab and exact
+  runtime remain open under the user's keep-running lease.
+- 2026-08-24: final integrated Ox Alpha review, branch push, fifth draft PR,
+  stack append, and current-head CI observation remain pending. No merge,
+  deployment, ready marking, or cleanup has occurred.
