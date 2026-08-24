@@ -143,7 +143,7 @@ leaderboard change must never be presented as a security change.
 | ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |
 | IuW          | `testkurs IuW`          | `Informatik und Wirtschaft` | `teststudent-iuw`     | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD`          |
 | RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet`              | `teststudent-rsv`     | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
-| Culture      | `KlickerUZH Demo Copy`  | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
+| Culture      | `Demo Course Copy`      | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
 
 Run this from the repository root with the PRD operator profile. The default
 mode and `--readback` are read-only; `--apply` is the sole write mode and

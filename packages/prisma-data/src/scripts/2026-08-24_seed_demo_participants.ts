@@ -25,7 +25,7 @@ const TARGETS = [
   },
   {
     label: 'Culture',
-    courseName: 'KlickerUZH Demo Copy',
+    courseName: 'Demo Course Copy',
     chatbotName: 'Culture Scenario Lab',
     username: 'teststudent-culture',
     passwordEnv: 'KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD',

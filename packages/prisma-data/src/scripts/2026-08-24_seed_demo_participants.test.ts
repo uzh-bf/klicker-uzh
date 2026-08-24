@@ -143,7 +143,7 @@ testDescribe('seed demo participants', () => {
     for (const [index, [courseName, chatbotName]] of [
       ['testkurs IuW', 'Informatik und Wirtschaft'],
       ['testkurs RadioSurfVet', 'RadioSurfVet'],
-      ['KlickerUZH Demo Copy', 'Culture Scenario Lab'],
+      ['Demo Course Copy', 'Culture Scenario Lab'],
     ].entries() as IterableIterator<[number, readonly [string, string]]>) {
       const course = await prisma.course.create({
         data: {
@@ -271,7 +271,7 @@ testDescribe('seed demo participants', () => {
     await cleanupCreatedParticipants()
     const iuwCourseId = courseIds.get('testkurs IuW')!
     const rsvCourseId = courseIds.get('testkurs RadioSurfVet')!
-    const cultureCourseId = courseIds.get('KlickerUZH Demo Copy')!
+    const cultureCourseId = courseIds.get('Demo Course Copy')!
     const initialPassword = await bcrypt.hash(
       'local-only-existing-password',
       12
@@ -377,7 +377,7 @@ testDescribe('seed demo participants', () => {
   it('rolls back all account changes when an SSO collision is present', async () => {
     await cleanupCreatedParticipants()
     const iuwCourseId = courseIds.get('testkurs IuW')!
-    const cultureCourseId = courseIds.get('KlickerUZH Demo Copy')!
+    const cultureCourseId = courseIds.get('Demo Course Copy')!
     const initialPassword = await bcrypt.hash(
       'local-only-existing-password',
       12

@@ -22,7 +22,7 @@ the approved Infisical profile.
 | --- | --- | --- | --- | --- |
 | IuW | `testkurs IuW` | `Informatik und Wirtschaft` | `teststudent-iuw` | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD` |
 | RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet` | `teststudent-rsv` | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
-| Culture | `KlickerUZH Demo Copy` | `Culture Scenario Lab` | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD` |
+| Culture | `Demo Course Copy` | `Culture Scenario Lab` | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD` |
 
 The script resolves the owner by shortname `klick` and requires exactly one
 unarchived course and one same-owner chatbot for every row. The Culture
@@ -103,10 +103,8 @@ fail-closed paths.
 ## Progress
 
 - Plan reviewed by the configured planner with the concerns above incorporated.
-- Fresh task worktree was initially created from `origin/v3` at
-  `d8e964c2847108d0f10fb2f3f696b37378619db8`. After `origin/v3` advanced with
-  unrelated commit `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`, the task branch
-  was rebased onto that exact fetched head before the final review.
+- The task branch was rebased onto the freshly fetched `origin/v3` head
+  `e906f9b3da150c39cc6c3d9f650a19fb74fc190f` before the final review.
 - The reconciler, package command, focused tests, operator documentation, and
   this plan are committed locally. The disposable task runtime suite passes 9
   tests, including readback failure, archived-target refusal, conflicting-mode
@@ -117,6 +115,8 @@ fail-closed paths.
   is missing. The fixture refuses pre-existing owner or participant rows and
   cleans only participant IDs created by the current run. The suite covers
   committed repair of existing manual targets as well as replay no-op behavior.
-- PRD target rows and existing account shape were inspected read-only. No PRD
-  database, Infisical, provider, lecturer, deployment, or cluster write has
-  occurred.
+- PRD target rows and existing account shape were inspected read-only. The
+  values-free PRD dry-run now resolves all three targets and reports the two
+  existing dedicated accounts plus the missing Culture account without writes.
+  No PRD database, Infisical, provider, lecturer, deployment, or cluster write
+  has occurred.
