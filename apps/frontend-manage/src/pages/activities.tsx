@@ -256,7 +256,7 @@ function Activities() {
             filtersActive={filtersActive}
           />
         </div>
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row items-start justify-between">
               <div className="mb-2 flex flex-row items-center gap-1.5">

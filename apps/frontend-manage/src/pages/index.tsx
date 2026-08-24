@@ -338,7 +338,7 @@ function Index() {
           />
         </div>
 
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1.5">
