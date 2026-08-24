@@ -15,7 +15,11 @@ import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import { persistActivityWithPermissions } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -638,9 +642,9 @@ export async function deletePracticeQuiz(
     return null
   }
 
-  const isUnpublished =
-    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
-    practiceQuiz.status === DB.PublicationStatus.SCHEDULED
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    practiceQuiz.status
+  )
 
   if (onlyIfUnpublished && !isUnpublished) {
     return null
@@ -654,33 +658,13 @@ export async function deletePracticeQuiz(
   ) {
     // Recheck publication status in the delete statement because the initial
     // read can become stale while the user confirms the batch.
-    let deletedItem
-    try {
-      deletedItem = onlyIfUnpublished
-        ? await ctx.prisma.practiceQuiz.delete({
-            where: {
-              id,
-              status: {
-                in: [
-                  DB.PublicationStatus.DRAFT,
-                  DB.PublicationStatus.SCHEDULED,
-                ],
-              },
-            },
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.practiceQuiz.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
           })
-        : await ctx.prisma.practiceQuiz.delete({ where: { id } })
-    } catch (error) {
-      if (
-        onlyIfUnpublished &&
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        return null
-      }
-      throw error
-    }
+        )
+      : await ctx.prisma.practiceQuiz.delete({ where: { id } })
 
     if (!deletedItem) {
       return null

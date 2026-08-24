@@ -30,7 +30,11 @@ import {
 } from '../lib/randomizedGroups.js'
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { persistActivityWithPermissions } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -1876,9 +1880,9 @@ export async function deleteGroupActivity(
     return null
   }
 
-  const isUnpublished =
-    groupActivity.status === DB.PublicationStatus.DRAFT ||
-    groupActivity.status === DB.PublicationStatus.SCHEDULED
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    groupActivity.status
+  )
 
   if (onlyIfUnpublished && !isUnpublished) {
     return null
@@ -1892,33 +1896,13 @@ export async function deleteGroupActivity(
   ) {
     // Recheck publication status in the delete statement because the initial
     // read can become stale while the user confirms the batch.
-    let deletedItem
-    try {
-      deletedItem = onlyIfUnpublished
-        ? await ctx.prisma.groupActivity.delete({
-            where: {
-              id,
-              status: {
-                in: [
-                  DB.PublicationStatus.DRAFT,
-                  DB.PublicationStatus.SCHEDULED,
-                ],
-              },
-            },
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.groupActivity.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
           })
-        : await ctx.prisma.groupActivity.delete({ where: { id } })
-    } catch (error) {
-      if (
-        onlyIfUnpublished &&
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        return null
-      }
-      throw error
-    }
+        )
+      : await ctx.prisma.groupActivity.delete({ where: { id } })
 
     if (!deletedItem) {
       return null
