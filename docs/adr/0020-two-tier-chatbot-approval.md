@@ -24,9 +24,11 @@ per-edit:
    creation and configuration features beforehand; the flag gates publication,
    not creation.
 2. **Per-chatbot publication**: each chatbot is created and configured
-   self-service in a non-published state, in which only the owning lecturer
-   can manage and configure it; it cannot be used or previewed. Going live
-   requires an in-app publication request on the bot
+   self-service in a non-published state. In Phase 0, the owning lecturer can
+   manage and configure it, but no use or preview path exists. A later
+   owner-authenticated test chat may exercise an unpublished bot without making
+   it participant-reachable. Going live requires an in-app publication request
+   on the bot
    (use case, expected student count, proposed participant usage-credit
    configuration) that the team approves or rejects with a comment. This
    legacy per-chatbot allowance is separate from, and does not approve, the

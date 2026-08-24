@@ -219,9 +219,19 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 - Active follow-up slice: make publication approval and rejection conditional
   lifecycle transitions, with a deterministic concurrent-approval regression
-  test. The implementation, correction review, and local commit are complete;
-  the remaining work is the final package review and delivery-boundary check.
-- Status: S1–S5 code-complete. S4 slice-reviewer PASS + real-route browser
+  test. The implementation, correction review, and local commits are complete.
+  The remaining work is to cascade the bottom-layer correction through the
+  stack, run the integrated final review, republish, and obtain fresh CI. Merge
+  remains outside this plan's authority.
+
+### Historical execution record
+
+The entries below preserve the evidence captured while Phase 0 was developed.
+Commit IDs and forge snapshots in this subsection are pre-rebase identifiers,
+not claims about the current branch head or current CI.
+
+- Status at the pre-rebase review point: S1–S5 code-complete. S4
+  slice-reviewer PASS + real-route browser
   smoke DONE (F7 confirmed at HTTP layer). S5 compile-seam extraction and its
   simplifier/slice-review gates are DONE. The GraphQL selection fix, migration
   backfill guard, and synthetic-fixture cleanup are committed and pushed in
@@ -442,10 +452,23 @@ No separate tasks; nothing crosses a boundary warranting one.
 
 ## MR/PR evidence expected
 
-### Progress — 2026-08-24
+### Progress — 2026-08-24 (post-rebase repair)
 
-The bottom layer was rebased onto `v3`, and the verified review fixes were
-applied. This note does not claim a push or CI result.
+The bottom layer was rebased onto `v3`. The post-rebase repair range starts at
+`dc5262745`; commit `a747a9ca2` applies the verified PR-comment fixes to the
+publication-request transition, participant status projection, validation,
+tests, ADR, roadmap, and this plan. The configured specialist providers could
+not read the encrypted review task, so native-model continuity fallbacks ran
+the required gates. The simplifier returned no changes. The risk review found
+no defect in the status projection, conditional transition, or concurrency
+barrier; its participant/test-chat wording concern is resolved in ADR 0020.
+
+Focused verification passed: the chat publication-gate test is **8/8**, the
+GraphQL publication workflow test is **13/13**, and the chat, GraphQL, and
+frontend-manage package checks pass in the exact Node 24 DevPod. The repository
+pre-commit hook also passes, including the secret scan, staged formatting, all
+25 package checks, lint, syncpack, agent checks, and Prisma sync. This note does
+not claim a push, fresh CI, or merge.
 
 - GraphQL service-test output (transitions + authz + capability).
 - Migration diff + existing-row backfill proof; `prisma generate` clean.
