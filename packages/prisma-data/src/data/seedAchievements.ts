@@ -16,7 +16,7 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
           rewardedPoints: achievement.rewardedPoints,
           rewardedXP: achievement.rewardedXP,
           type: achievement.type,
-          isDiscoverable: ACHIEVEMENT_AWARD_PATHS.includes(achievement.id),
+          isDiscoverable: true,
         },
         update: {
           nameDE: achievement.nameDE,
@@ -26,7 +26,7 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
           icon: achievement.icon,
           rewardedPoints: achievement.rewardedPoints,
           rewardedXP: achievement.rewardedXP,
-          isDiscoverable: ACHIEVEMENT_AWARD_PATHS.includes(achievement.id),
+          isDiscoverable: true,
         },
       })
     })
@@ -35,13 +35,9 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
   return achievements
 }
 
-// Achievements that are earnable: live quiz podium places (Champion,
-// Vice-Champion, Vice-Vice-Champion in packages/graphql/src/services/
-// liveQuizzes.ts), group activity awards (Dream Team and Team Spirit in
-// packages/graphql/src/services/groups.ts), and Explorer (historically
-// granted manually by staff). All others are seeded as not discoverable
-// until their award logic ships (gamification roadmap).
-const ACHIEVEMENT_AWARD_PATHS = [2, 5, 6, 7, 8, 9]
+// All seeded achievements are discoverable: staff has manually distributed
+// every entry at least once, so students can earn all of them even where no
+// automatic award path exists yet.
 
 // const prismaClient = new Prisma.PrismaClient()
 // await seedAchievements(prismaClient)
