@@ -1,0 +1,79 @@
+{{- if .Values.migrator.enabled }}
+# Runs `prisma migrate deploy` as an ArgoCD PreSync hook before every rollout.
+# A failed hook aborts the whole sync, so the app Deployments in the main wave
+# never start against an unmigrated database.
+#
+# Migrations run while the PREVIOUS app version is still live — keep them
+# backward-compatible (expand-contract).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "chart.fullname" . }}-migrate
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    # Keep the Job around after success so ArgoCD can still read its status and
+    # update its finalizer without racing the running sync (upstream issues
+    # #24187 / #27507). BeforeHookCreation removes the previous Job when the
+    # next sync starts, which is the only cleanup point that does not deadlock.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: {{ .Values.migrator.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrator.activeDeadlineSeconds }}
+  {{- with .Values.migrator.ttlSecondsAfterFinished }}
+  # Optional and unset by default: the TTL controller deletes FAILED Jobs too, which
+  # would destroy the pod logs the hook-delete-policy above deliberately keeps.
+  # BeforeHookCreation already removes the previous Job on the next sync.
+  ttlSecondsAfterFinished: {{ . }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- with .Values.migrator.priorityClassName }}
+      # This Job gates every rollout: give it the same priority as the app workloads
+      # so node pressure cannot preempt or starve it against activeDeadlineSeconds.
+      # NOTE: the PriorityClass itself is a Sync-phase resource, so a first-ever
+      # install into an empty namespace must create it before this PreSync hook runs
+      # (or leave migrator.priorityClassName unset). Existing envs already have it.
+      priorityClassName: {{ include "chart.fullname" $ }}-{{ . }}
+      {{- end }}
+      # The migrator needs zero Kubernetes API access — never mount the default
+      # service-account token (SonarCloud kubernetes:S6865).
+      automountServiceAccountToken: false
+      {{- with .Values.migrator.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          # Tag defaults to the backend-graphql image tag so the migrator always
+          # tracks the app release without a separate per-env pin; falls back to
+          # the chart appVersion. Only the repository is pinned per env (the `-arm`
+          # migrator image differs from the backend image).
+          image: "{{ .Values.migrator.image.repository }}:{{ .Values.migrator.image.tag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
+          # DATABASE_URL comes from the externally-provisioned backend-graphql Secret.
+          # Only the Secret is referenced (not the app ConfigMaps): a PreSync hook runs
+          # before the Sync phase, so it must not depend on Sync-phase ConfigMaps that
+          # would not yet exist on a fresh install. The external Secret is always present.
+          envFrom:
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-backend-graphql
+          resources:
+            {{- toYaml .Values.migrator.resources | nindent 12 }}
+      {{- with .Values.migrator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.migrator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

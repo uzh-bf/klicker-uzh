@@ -290,6 +290,45 @@ type AssessmentParticipant {
   id: String!
 }
 
+type AssessmentParticipantInvitation {
+  acceptedAt: Date
+  email: String!
+  id: Int!
+  invitedAt: Date!
+  matriculationNumber: String
+  status: AssessmentParticipantInvitationStatus!
+}
+
+type AssessmentParticipantInvitationImportResult {
+  email: String!
+  error: String
+  errorCode: String
+  status: AssessmentParticipantInvitationImportStatus!
+}
+
+enum AssessmentParticipantInvitationImportStatus {
+  AUTO_ACCEPTED
+  CREATED
+  DUPLICATE
+  DUPLICATE_UPDATED
+  ERROR
+}
+
+input AssessmentParticipantInvitationInput {
+  email: String!
+  matriculationNumber: String
+}
+
+type AssessmentParticipantInvitationPage {
+  invitations: [AssessmentParticipantInvitation!]!
+  totalCount: Int!
+}
+
+enum AssessmentParticipantInvitationStatus {
+  ACCEPTED
+  PENDING
+}
+
 type AssessmentReportComparison {
   cohortSize: Int!
   histogram: [AssessmentReportHistogramBin!]!
@@ -316,6 +355,7 @@ type AssessmentReportHistogramBin {
 
 enum AssessmentReportIdentitySource {
   COURSE_INVITATION
+  SWITCH_EDUID
 }
 
 type AssessmentReportResults {
@@ -339,7 +379,10 @@ type AssessmentReportSnapshot {
 
 type AssessmentReportSubject {
   email: String!
+  givenName: String
+  matriculationNumber: String
   source: AssessmentReportIdentitySource!
+  surname: String
 }
 
 enum AssessmentReportVerificationStatus {
@@ -712,6 +755,13 @@ type ChatbotMcpConfigurationSummary {
   serverName: String!
 }
 
+type ChatbotPublic {
+  avatar: String
+  description: String
+  id: ID!
+  name: String!
+}
+
 type ChatbotReasoningConfig {
   efforts: [String!]!
   modelId: String!
@@ -1073,6 +1123,7 @@ type CourseStudentTimelineEntry {
 }
 
 type CourseSummary {
+  numOfDraftLiveQuizzes: Int!
   numOfGroupActivities: Int!
   numOfLeaderboardEntries: Int!
   numOfLiveQuizzes: Int!
@@ -1080,6 +1131,15 @@ type CourseSummary {
   numOfParticipantGroups: Int!
   numOfParticipations: Int!
   numOfPracticeQuizzes: Int!
+}
+
+type CreateAssessmentParticipantInvitationsPayload {
+  autoAccepted: Int!
+  created: Int!
+  duplicates: Int!
+  errors: Int!
+  results: [AssessmentParticipantInvitationImportResult!]!
+  totalProcessed: Int!
 }
 
 enum CreditResetPeriod {
@@ -1116,6 +1176,34 @@ type DerivedPermissionOriginInformation {
 
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
 
+type ElementBatchSharingOutcome {
+  elementId: Int!
+  reason: ElementBatchSharingReason
+  status: ElementBatchSharingStatus!
+}
+
+enum ElementBatchSharingReason {
+  ELEMENT_NOT_FOUND_OR_DELETED
+  INSUFFICIENT_PERMISSION
+  SHARING_FAILED
+}
+
+type ElementBatchSharingResult {
+  outcomes: [ElementBatchSharingOutcome!]!
+  targetError: ElementBatchSharingTargetError
+}
+
+enum ElementBatchSharingStatus {
+  FAILED
+  SHARED
+  SKIPPED
+}
+
+enum ElementBatchSharingTargetError {
+  INVALID_OR_SELF_TARGET
+  USER_GROUP_UNAVAILABLE
+}
+
 type ElementBlock {
   elements: [ElementInstance!]
   execution: Int
@@ -1131,6 +1219,7 @@ type ElementBlock {
 input ElementBlockInput {
   elements: [ElementInstanceInput!]!
   order: Int!
+  randomSelection: Int
   timeLimit: Int
 }
 
@@ -1664,8 +1753,10 @@ type InstanceQuizAnalytics {
 }
 
 type InstanceUpdateActivityInfo {
+  activityId: String!
   activityName: String!
   activityType: ActivityType!
+  courseName: String
   status: PublicationStatus!
 }
 
@@ -1864,8 +1955,9 @@ type Mutation {
   correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
+  createAssessmentParticipantInvitations(courseId: String!, invitations: [AssessmentParticipantInvitationInput!]!): CreateAssessmentParticipantInvitationsPayload
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
-  createCourse(color: String, description: String, displayName: String!, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, startDate: Date!): Course
+  createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
@@ -1883,7 +1975,7 @@ type Mutation {
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
   deleteCatalogCollection(catalogCollectionId: String!): String
-  deleteCourse(id: String!): Course
+  deleteCourse(deleteDraftActivities: Boolean, id: String!): Course
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
@@ -1891,6 +1983,7 @@ type Mutation {
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
+  deletePendingAssessmentParticipantInvitation(courseId: String!, invitationId: Int!): AssessmentParticipantInvitation
   deletePracticeQuiz(id: String!): PracticeQuiz
   deleteTag(id: Int!): Tag
   deleteUserGroup(groupId: Int!): Boolean!
@@ -1958,6 +2051,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
@@ -1969,6 +2063,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2392,8 +2487,13 @@ type PublicAssessmentReportSnapshot {
   comparison: AssessmentReportComparison
   course: PublicAssessmentReportCourse!
   results: AssessmentReportResults!
-  subject: AssessmentReportSubject!
+  subject: PublicAssessmentReportSubject!
   version: Int!
+}
+
+type PublicAssessmentReportSubject {
+  name: String
+  source: AssessmentReportIdentitySource!
 }
 
 type PublicAssessmentReportVerification {
@@ -2420,6 +2520,7 @@ type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentParticipantInvitations(courseId: String!, numEntries: Int, offset: Int): AssessmentParticipantInvitationPage
   assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
@@ -2437,6 +2538,7 @@ type Query {
   course(id: String!): Course
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
+  courseChatbots(courseId: String!): [ChatbotPublic!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
@@ -2527,7 +2629,7 @@ type Query {
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
-  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
+  userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int, offset: Int, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
   userMediaFiles: [MediaFile!]
   userProfile: User
@@ -2844,6 +2946,9 @@ type StudentAssessmentResults {
 }
 
 type StudentAssessmentResultsItem {
+  assessmentGivenName: String
+  assessmentMatriculationNumber: String
+  assessmentSurname: String
   basePoints: Float!
   bonusPoints: Float!
   correctnessPoints: Float!

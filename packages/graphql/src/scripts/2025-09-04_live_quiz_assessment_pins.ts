@@ -1,5 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { prisma } from '@klicker-uzh/prisma'
 import generatePassword from 'generate-password'
 
 // ! IMPORTANT INFORMATION
@@ -8,9 +7,6 @@ import generatePassword from 'generate-password'
 // AFTER DB MIGRATION: Re-run this script with the setting set to "ALPHANUMERIC" to set alphanumeric pins for all assessment quizzes
 
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   // TODO: set the mode correctly here:
   const mode: 'NUMERICAL' | 'ALPHANUMERIC' = 'NUMERICAL'
 

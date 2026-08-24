@@ -4,6 +4,14 @@ import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { createHash } from 'crypto'
+import {
+  MAX_TOOL_NAME_LENGTH,
+  TOOL_NAME_SUFFIX_LENGTH,
+} from '@/src/lib/config/toolNames'
+import {
+  parseMCPRuntimePolicy,
+  RequiredMCPUnavailableError,
+} from '@/src/lib/server/mcpRuntimePolicy'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -12,14 +20,15 @@ export interface MCPServerConfig {
   url: string
   authType: string
   authSecret?: string
-  parameters?: any
+  parameters?: unknown
+  isActive?: boolean
   passChatbotId?: boolean
   chatbotIdHeader?: string
 }
 
 export interface MCPConfigSettings {
   allowedTools?: string[]
-  parameters?: any
+  parameters?: unknown
   priority: number
 }
 
@@ -28,8 +37,9 @@ export interface MCPServerWithConfig {
   config: MCPConfigSettings
 }
 
-const MAX_TOOL_NAME_LENGTH = 64
-const TOOL_NAME_SUFFIX_LENGTH = 8
+export interface MCPRequestOptions {
+  requestTimeoutMs?: number
+}
 
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
@@ -47,10 +57,15 @@ function normalizeToolName(rawName: string): string {
   return normalized.length > 0 ? normalized : 'tool'
 }
 
-function withHashSuffix(baseName: string, hash: string): string {
-  const maxBaseLength = MAX_TOOL_NAME_LENGTH - TOOL_NAME_SUFFIX_LENGTH - 1
-  const trimmedBase = baseName.slice(0, maxBaseLength) || 'tool'
-  return `${trimmedBase}_${hash}`
+function withHashSuffix(
+  baseName: string,
+  hash: string,
+  preservedSuffix?: string
+): string {
+  const suffix = preservedSuffix ? `_${preservedSuffix}_${hash}` : `_${hash}`
+  const maxBaseLength = MAX_TOOL_NAME_LENGTH - suffix.length
+  const trimmedBase = baseName.slice(0, maxBaseLength).replace(/_+$/, '')
+  return `${trimmedBase || 'tool'}${suffix}`
 }
 
 function toSafeToolName(
@@ -66,7 +81,12 @@ function toSafeToolName(
     return baseName
   }
 
-  let candidate = withHashSuffix(baseName, toToolNameHash(rawName))
+  const preservedSuffix = toolName === 'doc_query' ? 'doc_query' : undefined
+  let candidate = withHashSuffix(
+    baseName,
+    toToolNameHash(rawName),
+    preservedSuffix
+  )
   if (!usedNames.has(candidate)) {
     return candidate
   }
@@ -76,7 +96,8 @@ function toSafeToolName(
   while (usedNames.has(candidate)) {
     candidate = withHashSuffix(
       baseName,
-      toToolNameHash(`${rawName}:${attempt}`)
+      toToolNameHash(`${rawName}:${attempt}`),
+      preservedSuffix
     )
     attempt += 1
   }
@@ -91,9 +112,9 @@ function createAuthHeaders(
   server: MCPServerConfig,
   chatbotId: string
 ): Record<string, string> {
-  const baseHeaders: Record<string, string> = {
+  const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
-  }
+  }) as Record<string, string>
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -111,24 +132,44 @@ function createAuthHeaders(
   switch (server.authType.toLowerCase()) {
     case 'custom':
       // Parse and apply custom headers from JSON
-      try {
-        const { headers } = JSON.parse(decryptedSecret)
-        Object.assign(baseHeaders, headers)
-      } catch (error) {
-        console.error(
-          `Failed to parse custom headers for ${server.name}:`,
-          error
-        )
+      {
+        const parsed: unknown = JSON.parse(decryptedSecret)
+        if (
+          !parsed ||
+          typeof parsed !== 'object' ||
+          Array.isArray(parsed) ||
+          !('headers' in parsed) ||
+          !parsed.headers ||
+          typeof parsed.headers !== 'object' ||
+          Array.isArray(parsed.headers)
+        ) {
+          throw new Error('Invalid custom MCP headers')
+        }
+
+        for (const [name, value] of Object.entries(parsed.headers)) {
+          if (
+            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+            name === '__proto__' ||
+            name === 'constructor' ||
+            name === 'prototype' ||
+            typeof value !== 'string' ||
+            /[\r\n]/.test(value)
+          ) {
+            throw new Error('Invalid custom MCP header value')
+          }
+          baseHeaders[name] = value
+        }
       }
       break
     case 'bearer':
       baseHeaders.Authorization = `Bearer ${decryptedSecret}`
       break
-    case 'basic':
+    case 'basic': {
       // Assume authSecret is in format "username:password"
       const encoded = Buffer.from(decryptedSecret).toString('base64')
       baseHeaders.Authorization = `Basic ${encoded}`
       break
+    }
     case 'none':
     default:
       // No additional auth headers
@@ -143,7 +184,8 @@ function createAuthHeaders(
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
@@ -155,7 +197,13 @@ export async function createMCPClient(
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
       {
-        requestInit: { headers },
+        requestInit: {
+          headers,
+          redirect: 'error',
+          ...(options.requestTimeoutMs
+            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+            : {}),
+        },
       }
     )
 
@@ -166,7 +214,10 @@ export async function createMCPClient(
     console.log(`MCP Client for ${server.name} initialized successfully`)
     return client
   } catch (error) {
-    console.error(`Failed to create MCP client for ${server.name}:`, error)
+    console.error('Failed to create MCP client', {
+      server: server.name,
+      errorType: error instanceof Error ? error.name : typeof error,
+    })
     throw error
   }
 }
@@ -196,22 +247,68 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
+  const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
+  let requiredRawToolName: string | undefined
+
+  if (runtimePolicy.required) {
+    const configuredTool = config.allowedTools?.[0]
+    if (
+      !Array.isArray(config.allowedTools) ||
+      config.allowedTools?.length !== 1 ||
+      typeof configuredTool !== 'string' ||
+      configuredTool.length === 0 ||
+      /[*?]/.test(configuredTool)
+    ) {
+      throw new RequiredMCPUnavailableError()
+    }
+    requiredRawToolName = configuredTool
+  }
+
+  if (server.isActive === false) {
+    if (runtimePolicy.required) {
+      throw new RequiredMCPUnavailableError()
+    }
+    return {}
+  }
 
   try {
-    const client = await createMCPClient(server, chatbotId)
+    const client = await createMCPClient(server, chatbotId, options)
     const rawTools = await client.tools()
+
+    if (runtimePolicy.required && requiredRawToolName) {
+      const rawToolName = requiredRawToolName
+      if (
+        !Object.hasOwn(rawTools, rawToolName) ||
+        (rawToolName !== runtimePolicy.toolAlias &&
+          Object.hasOwn(rawTools, runtimePolicy.toolAlias))
+      ) {
+        throw new RequiredMCPUnavailableError()
+      }
+    }
 
     // Apply tool filtering
     const filteredTools: Record<string, any> = {}
     const usedNames = new Set<string>()
 
     Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
-      if (isToolAllowed(toolName, config.allowedTools || [])) {
+      const allowed = runtimePolicy.required
+        ? toolName === requiredRawToolName
+        : isToolAllowed(toolName, config.allowedTools || [])
+
+      if (allowed) {
+        const modelToolName = runtimePolicy.required
+          ? runtimePolicy.toolAlias
+          : toolName
         // Keep tool names in OpenAI-compatible format and make them deterministic.
-        const namespacedName = toSafeToolName(server.name, toolName, usedNames)
+        const namespacedName = toSafeToolName(
+          server.name,
+          modelToolName,
+          usedNames
+        )
         filteredTools[namespacedName] = toolDefinition
         usedNames.add(namespacedName)
       }
@@ -222,7 +319,15 @@ async function loadServerTools(
     )
     return filteredTools
   } catch (error) {
-    console.error(`Failed to load tools from ${server.name}:`, error)
+    if (
+      error instanceof RequiredMCPUnavailableError ||
+      runtimePolicy.required
+    ) {
+      console.error('Required MCP tools unavailable', { server: server.name })
+      throw new RequiredMCPUnavailableError()
+    }
+
+    console.error('Optional MCP tools unavailable', { server: server.name })
     // Return empty object to allow other servers to continue loading
     return {}
   }
@@ -233,7 +338,8 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string
+  chatbotId: string,
+  options: MCPRequestOptions = {}
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
@@ -248,17 +354,30 @@ export async function getAggregatedMCPTools(
   )
 
   const aggregatedTools: Record<string, any> = {}
+  const requiredToolNames = new Set<string>()
 
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
-      const serverTools = await loadServerTools(serverWithConfig, chatbotId)
+      const runtimePolicy = parseMCPRuntimePolicy(
+        serverWithConfig.config.parameters
+      )
+      const serverTools = await loadServerTools(
+        serverWithConfig,
+        chatbotId,
+        options
+      )
       for (const [name, def] of Object.entries(serverTools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
+          if (runtimePolicy.required) requiredToolNames.add(name)
+        } else if (runtimePolicy.required || requiredToolNames.has(name)) {
+          throw new RequiredMCPUnavailableError()
         }
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof RequiredMCPUnavailableError) throw error
+
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
       )

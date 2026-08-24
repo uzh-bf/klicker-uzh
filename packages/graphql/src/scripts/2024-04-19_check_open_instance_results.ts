@@ -3,14 +3,13 @@ import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import { AllElementTypeData, QuestionResultsOpen } from '@klicker-uzh/types'
 import { error } from 'console'
 import { createHash } from 'node:crypto'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all element instances, which have NR or FT type
   const instances = await prisma.elementInstance.findMany({
     include: {

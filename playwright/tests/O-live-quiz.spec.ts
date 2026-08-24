@@ -5,6 +5,7 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import { PARTICIPANT_IDS } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
@@ -53,10 +54,7 @@ import {
 
 function readFixture(name: string) {
   return JSON.parse(
-    fs.readFileSync(
-      new URL(`../../cypress/cypress/fixtures/${name}`, import.meta.url),
-      'utf8'
-    )
+    fs.readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8')
   )
 }
 
@@ -174,7 +172,9 @@ async function openNextBlockFromCockpit(page: Page) {
   await expect(nextBlock).toBeVisible({ timeout: 30000 })
   await expect(nextBlock).toBeEnabled()
   await nextBlock.click()
-  await expect(nextBlock).toBeVisible({ timeout: 30000 })
+  await expect(page.getByTestId('evaluation-results-cockpit')).toBeVisible({
+    timeout: 30000,
+  })
 }
 
 async function visitEvaluationFromCockpit(page: Page) {
@@ -1555,6 +1555,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('abort-live-quiz-cockpit'),
       'exist'
     )
+    await expect(page.getByTestId('live-quiz-display-name')).toContainText(
+      data.protected.gamifiedCourse.liveQuiz
+    )
     await page.getByTestId('next-block-timeline').click()
     await page.waitForTimeout(500)
     await page.getByTestId('activities').click()
@@ -1731,8 +1734,11 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.protected.gamifiedCourse.liveQuiz,
       data.protected.nonGamifiedCourse.liveQuiz,
     ]).entries()) {
-      await page.getByTestId('running-live-quiz-dropdown').click()
-      await page.getByTestId(`running-live-quiz-${quiz}`).click()
+      await chooseActionByTestId(
+        page,
+        'running-live-quiz-dropdown',
+        `running-live-quiz-${quiz}`
+      )
       for (let i = 0; i < 2; i++) {
         const nextBlockButton = page.getByTestId('next-block-timeline')
         if (

@@ -1,4 +1,281 @@
 export default {
+  chat: {
+    common: {
+      opensInNewTab: '(öffnet in neuem Tab)',
+    },
+    a11y: {
+      skipToContent: 'Zum Inhalt springen',
+    },
+    modes: {
+      switcherLabel: 'Chat-Modus',
+      tutor: 'Tutor',
+      tutorDescription:
+        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
+      explainer: 'Erklärer',
+      explainerDescription:
+        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
+    },
+    settingsPanel: {
+      title: 'Einstellungen',
+      aiModelLabel: 'KI-Modell',
+      selectAiModel: 'KI-Modell auswählen',
+      autoModelDescription:
+        'Wählt automatisch für jede Nachricht ein passendes Modell aus.',
+      reasoningModelDescription:
+        'Für schwierige Aufgaben mit mehreren Schritten. Die Antwort kann länger dauern und mehr Credits verbrauchen.',
+      standardModelDescription:
+        'Ein vielseitiges Modell für alltägliche Fragen.',
+      fallbackModelDescription:
+        'Verbraucht weniger Credits und bleibt verfügbar, wenn Deine Credits aufgebraucht sind.',
+      autoSelectionInfo:
+        'KlickerUZH wählt für jede Nachricht ein passendes Modell aus.',
+      usingPrimaryModel:
+        'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
+      usingFallbackModel:
+        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
+      reasoningEffortLabel: 'Denkaufwand',
+      selectReasoningEffort: 'Denkaufwand auswählen',
+      reasoningEffortHint:
+        'Ein höherer Aufwand kann schwierige Antworten verbessern, erhöht aber die Wartezeit.',
+      reasoningEfforts: {
+        none: 'Aus',
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+        xhigh: 'Sehr hoch',
+      },
+    },
+    credits: {
+      title: 'Verfügbare Credits',
+      costHint:
+        'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
+      resetAt: 'Werden am {date} wieder aufgefüllt.',
+      resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
+      exhausted:
+        'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+      fallbackNotice:
+        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
+    },
+    sidebar: {
+      newChat: 'Neuer Chat',
+      closeSidebar: 'Seitenleiste schliessen',
+      openSidebar: 'Seitenleiste öffnen',
+      toggleSidebar: 'Seitenleiste umschalten',
+      conversationsLabel: 'Konversationen',
+      logoAlt: 'Klicker-Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
+    },
+    assistant: {
+      participationRequiredTitle: 'Kurszugang erforderlich',
+      participationRequiredDefaultMessage:
+        'Du musst dem entsprechenden KlickerUZH-Kurs beitreten, bevor Du diesen Chatbot verwenden kannst. Bitte tritt dem Kurs bei oder wende Dich für den Zugang an Deine Dozierenden.',
+      openKlickerUzh: 'KlickerUZH öffnen',
+      loading: 'Chatbot wird geladen...',
+      disclaimerDeclinedTitle: 'Chatbot nicht verfügbar',
+      disclaimerDeclinedMessage:
+        'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
+      showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+    },
+    recovery: {
+      notFoundTitle: 'Chatbot nicht gefunden',
+      notFoundMessage:
+        'Dieser Chat-Link ist nicht mehr verfügbar. Kehre zu KlickerUZH zurück, um einen anderen Kurs oder Chatbot auszuwählen.',
+      errorTitle: 'Chatbot nicht verfügbar',
+      errorMessage:
+        'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      retry: 'Erneut versuchen',
+      openKlickerUzh: 'KlickerUZH öffnen',
+    },
+    branchPicker: {
+      previous: 'Vorherige Variante',
+      next: 'Nächste Variante',
+    },
+    historyRail: {
+      label: 'Gesprächsverlauf',
+      mobileLabel: 'Verlauf {current}/{total}',
+      item: 'Eintrag {current} von {total}',
+      itemRange: 'Einträge {start}-{end} von {total}',
+      openHistory: 'Gesamten Verlauf öffnen',
+      closeHistory: 'Gesamten Verlauf schliessen',
+      turn: 'Gesprächsrunde',
+      you: 'Du',
+      assistant: 'Assistent',
+      noText: 'Kein Text',
+      noResponse: 'Noch keine Antwort',
+      inProgress: 'In Bearbeitung',
+      partial: 'Unvollständige Antwort',
+      error: 'Fehler',
+    },
+    disclaimer: {
+      mediaTitle: 'Haftungsausschluss-Medien',
+      introAlt: 'Chatbot-Einführung',
+      studentResponsibilityTitle: 'Verantwortung der Studierenden',
+      studentResponsibilityText:
+        'Antworten des Chatbots können mehr oder weniger Informationen enthalten, als zum Bestehen des Kurses erforderlich sind, und sind daher für sich genommen nicht prüfungsrelevant (nur das zugrunde liegende Kursmaterial ist es). Wir sind zwar bestrebt, über den Chatbot korrekte Informationen bereitzustellen, übernehmen jedoch keine Gewähr für die Richtigkeit, Vollständigkeit oder Aktualität der Antworten. Bitte überprüfe wichtige Informationen anhand der offiziellen Kursmaterialien und Quellen.',
+      dataProtectionTitle: 'Datenschutz',
+      dataProtectionText:
+        'Teile keine persönlichen Informationen mit dem Chatbot. Deine Eingaben werden ausschliesslich über Azure-OpenAI-Instanzen verarbeitet, die in der EU oder in der Schweiz gehostet werden. Unterhaltungen können in anonymisierter Form vom KlickerUZH-Team oder Deinen Dozierenden überprüft werden, um die Qualität des Chatbots und die Kursinhalte zu verbessern.',
+      consentText:
+        'Durch die Nutzung des Chatbots erkennst Du diese Bedingungen an und akzeptierst sie. Bei Feedback oder Bedenken wende Dich bitte an Deine Dozierenden.',
+      decline: 'Ablehnen',
+      saving: 'Wird gespeichert...',
+      acceptAndContinue: 'Akzeptieren und fortfahren',
+      consequenceTitle: 'Was nach Deiner Wahl geschieht:',
+      consequenceAccept:
+        'Akzeptieren: Du kannst den Chatbot nutzen und auf alle Funktionen zugreifen.',
+      consequenceDecline:
+        'Ablehnen: Der Chatbot bleibt gesperrt und Du kannst keine Nachrichten senden.',
+      actionError:
+        'Es ist leider ein Fehler aufgetreten. Bitte versuche es erneut.',
+    },
+    markdown: {
+      copyCode: 'Kopieren',
+    },
+    attachments: {
+      hydrationError:
+        'Die Bildanhänge für diese Nachricht konnten nicht geladen werden. Bitte versuche es erneut.',
+      attachedImageAlt: 'Angehängtes Bild {index}',
+    },
+    imageViewer: {
+      previewUnavailable: 'Vorschau nicht verfügbar',
+      title: 'Bildanhang',
+      loading: 'Vollständiges Bild wird geladen...',
+      retry: 'Erneut versuchen',
+    },
+    threadList: {
+      groupToday: 'Heute',
+      groupYesterday: 'Gestern',
+      groupThisWeek: 'Diese Woche',
+      groupEarlier: 'Früher',
+      newChatTitle: 'Neuer Chat',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      editName: 'Namen bearbeiten',
+      deleteChat: 'Chat löschen',
+      deleteConfirm: 'Löschen?',
+      deleteConfirmAria: 'Löschen dieses Chats bestätigen',
+      deleteArmedStatus:
+        'Bestätigung erforderlich: Betätige Löschen erneut, um diesen Chat zu löschen.',
+      emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
+      loadError: 'Deine Chats konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
+      loading: 'Deine Chats werden geladen...',
+    },
+    thread: {
+      viewportLabel: 'Gesprächsverlauf',
+      scrollToBottom: 'Nach unten scrollen',
+      loading: 'Die Konversation wird geladen...',
+      thinking: 'Antwort wird vorbereitet …',
+      runStarted: 'Antwort wird generiert …',
+      runCompleted: 'Antwort abgeschlossen.',
+      runStopped: 'Antwort gestoppt.',
+      runFailed: 'Antwort fehlgeschlagen.',
+      welcomeTitle: 'Willkommen!',
+      welcomeTo: 'Du chattest mit {chatbot}.',
+      welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
+      welcomeMode: 'Ausgewählter Modus: {mode}',
+    },
+    suggestions: {
+      sectionLabel: 'Gesprächseinstiege',
+      editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
+      practiceTopic: 'Ein Thema üben',
+      practiceTopicPrompt:
+        'Ich möchte ein bestimmtes Thema aus den Kursunterlagen üben. Stelle mir eine Frage nach der anderen und gib mir Hinweise, statt die Antwort sofort zu verraten.',
+      workThroughProblem: 'Eine Aufgabe bearbeiten',
+      workThroughProblemPrompt:
+        'Hilf mir, eine Aufgabe aus den Kursunterlagen Schritt für Schritt zu bearbeiten. Stell mir Fragen und gib mir Hinweise, bevor du die Lösung zeigst.',
+      explainConcept: 'Ein Konzept erklären',
+      explainConceptPrompt:
+        'Erkläre ein schwieriges Konzept aus den Kursunterlagen in einfachen Worten, mit einem durchgerechneten Beispiel und Quellenangaben.',
+      compareConcepts: 'Zwei Konzepte vergleichen',
+      compareConceptsPrompt:
+        'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+    },
+    message: {
+      creditsUsed:
+        '{count, plural, one {{credits} Credit} other {{credits} Credits}}',
+      reasoningToggle: 'Denkprozess',
+      editUnavailable: 'Bearbeiten nicht verfügbar',
+      edit: 'Bearbeiten',
+      editDisabledTooltip:
+        'Bearbeiten nicht möglich: Das ausgewählte Modell unterstützt keine Bilder',
+      copy: 'Kopieren',
+      refresh: 'Aktualisieren',
+      retry: 'Erneut versuchen',
+      rateUp: 'Hilfreiche Antwort',
+      rateDown: 'Keine hilfreiche Antwort',
+      ratingError: 'Bewertung konnte nicht gespeichert werden.',
+      stoppedNotice: 'Du hast diese Antwort gestoppt.',
+      toolCallsGroupLabel:
+        '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
+    },
+    composer: {
+      placeholder: 'Nachricht schreiben...',
+      send: 'Nachricht senden',
+      stop: 'Antwort stoppen',
+      disclaimerHint:
+        'Antworten des Chatbots können falsch sein — bitte anhand Deiner Kursmaterialien prüfen.',
+      attachmentLimitError: 'Du kannst höchstens {max} Bilder anhängen.',
+      attachmentReadError:
+        'Das Bild konnte nicht gelesen werden. Bitte versuche es mit einer anderen Datei.',
+      dismissError: 'Fehler schliessen',
+      dropImages: 'Bilder zum Anhängen hier ablegen',
+      attachmentPreviewAlt: 'Anhang-Vorschau',
+      removeAttachment: 'Anhang entfernen',
+      attachImage: 'Bild anhängen',
+      attachmentFallbackLabel: 'Anhang',
+      editCancel: 'Abbrechen',
+      editSend: 'Senden',
+    },
+    toolFallback: {
+      running: '{tool} wird verwendet...',
+      done: '{tool} verwendet',
+      failed: '{tool} fehlgeschlagen',
+      showLess: 'Weniger anzeigen',
+      showMore:
+        '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
+      docQueryQueryLabel: 'Suchanfrage',
+      docQuerySourcesHint:
+        'Die Treffer erscheinen als Quellen unter der Antwort.',
+    },
+    tools: {
+      searchingCourseMaterial: 'Kursmaterialien werden durchsucht...',
+      searchedCourseMaterial: 'Kursmaterialien durchsucht',
+      searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
+      searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+      imageAnalyzed: 'Bild analysiert',
+    },
+    sources: {
+      title: 'Quellen',
+      page: 'S. {page}',
+      video: 'Video',
+      image: 'Bild',
+    },
+    citations: {
+      label: 'Quelle {index}: {title}',
+      goToSource: 'Zur Quelle springen',
+    },
+    noLogin: {
+      title: 'Anmeldung erforderlich',
+      message:
+        'Du musst ein KlickerUZH-Konto erstellen oder Dich anmelden, bevor Du auf diesen Chatbot zugreifen kannst.',
+      redirectNotice: 'Nach der Anmeldung kehrst Du zu diesem Chatbot zurück.',
+      loginButton: 'Zur KlickerUZH-Anmeldung',
+    },
+    response: {
+      errorLabel: 'Fehler',
+      networkError:
+        'Der Server konnte leider nicht erreicht werden. Bitte überprüfe Deine Verbindung und versuche es erneut.',
+      genericError:
+        'Es ist leider ein Fehler beim Verarbeiten Deiner Anfrage aufgetreten. Bitte versuche es erneut.',
+      connectionInterrupted:
+        'Verbindung unterbrochen — die Antwort ist möglicherweise unvollständig.',
+      truncated:
+        'Antwort gekürzt — schreibe «weiter» oder bitte um eine kürzere Antwort.',
+    },
+  },
   shared: {
     table: {
       download: 'Als CSV herunterladen',
@@ -448,6 +725,12 @@ export default {
         'Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.',
       image:
         'Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
+      video: 'Binden Sie ein YouTube- oder Kaltura-Video ein.',
+      videoUrl: 'YouTube- oder Kaltura-URL',
+      videoUrlPlaceholder: 'YouTube- oder Kaltura-Video-URL einfügen',
+      videoUrlInvalid:
+        'Geben Sie eine gültige YouTube- oder Kaltura-Video-URL ein.',
+      insertVideo: 'Video einfügen',
       latex:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
@@ -561,6 +844,7 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
+      openCourseChat: 'KI-Tutor',
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
@@ -1127,6 +1411,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       identitySourceLabel: 'Verifizierte Identitätsquelle',
       identitySourceCourseInvitation:
         'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Erreicht',
       availablePointsLabel: 'Verfügbar',
       performanceInsightsTitle: 'Peer-Vergleich',
@@ -1139,13 +1424,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       histogramUserRange: 'Dein Punktebereich: {range}.',
       notEnoughDataForComparison:
         'Es ist kein Peer-Vergleich verfügbar. Er wird nur bei mindestens 10 aktiven Teilnehmenden und einem verfügbaren Punktebereich grösser als null ausgegeben.',
-      exportReportButton: 'Performance-Bericht exportieren (HTML)',
+      exportReportButton: 'Performance-Bericht exportieren',
       exportReportExplanation:
-        'Stelle einen HTML-Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn öffnen oder herunterladen. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
+        'Stelle einen Bericht aus dem aktuellen Assessment-Datensatz aus. Sobald er bereit ist, kannst du ihn im Browser ansehen oder über den Druckdialog des Browsers als einseitige A4-PDF speichern. Der Bericht enthält einen Link zur Prüfung seines aktuellen Status und seiner Angaben.',
       exportReportReady:
-        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder lade die HTML-Datei herunter.',
+        'Dein Assessment-Bericht ist bereit. Öffne ihn in einem neuen Tab oder öffne über «Als PDF speichern» den Druckdialog des Browsers.',
       viewReportButton: 'Bericht öffnen',
-      downloadReportButton: 'Bericht herunterladen',
+      downloadReportButton: 'Als PDF speichern',
       refreshReportButton: 'Bericht aktualisieren',
       exportReportNotEligibleError:
         'Für diesen Kurs kann kein Assessment-Bericht ausgestellt werden. Prüfe, ob du eingeschrieben bist und die bewerteten Aktivitäten beendet wurden, oder kontaktiere deine Dozierenden.',
@@ -1157,13 +1442,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Assessment-Daten konnten für den Bericht nicht validiert werden. Bitte versuche es später erneut oder kontaktiere deine Dozierenden.',
       exportReportIssuanceError:
         'Der Assessment-Bericht konnte nicht ausgestellt werden. Prüfe deine Verbindung und versuche es erneut.',
-      exportReportDownloadError:
-        'Der Bericht wurde ausgestellt, aber die HTML-Datei konnte nicht erstellt werden. Bitte versuche es erneut.',
+      exportReportGenerationError:
+        'Der Bericht wurde ausgestellt, aber das Browser-Dokument konnte nicht erstellt werden. Bitte versuche es erneut.',
       exportReportViewError:
-        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite oder lade stattdessen die HTML-Datei herunter.',
+        'Der Bericht konnte nicht in einem neuen Tab geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
+      exportReportPrintError:
+        'Der Bericht konnte nicht zum Drucken geöffnet werden. Erlaube Pop-ups für diese Seite und versuche es erneut.',
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
+      studentNameLabel: 'Name der studierenden Person',
+      studentEmailAddressLabel: 'E-Mail-Adresse',
+      matriculationNumberLabel: 'Matrikelnummer',
       studentEmailLabel: 'Studierende/r',
       pointsSummaryLabel: 'Punkteübersicht',
       yourScoreLabel: 'Du',
@@ -1192,7 +1482,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für diesen Verifizierungslink existiert kein Assessment-Bericht.',
       verificationActiveTitle: 'Aktiver Assessment-Datensatz',
       verificationActiveText:
-        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem heruntergeladenen Bericht.',
+        'Die folgenden Angaben entsprechen dem aktiven Snapshot in KlickerUZH. Vergleiche sie mit dem gedruckten oder angezeigten Bericht.',
       verificationRevokedTitle: 'Widerrufener Assessment-Datensatz',
       verificationRevokedText:
         'Dieser am {date} ausgestellte Bericht wurde widerrufen und darf nicht mehr als aktiv behandelt werden. Seine Angaben werden nicht offengelegt.',
@@ -1387,8 +1677,71 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
+      participantInvitationsDescription:
+        'Laden Sie Teilnehmende zu diesem Assessment-Kurs ein und verfolgen Sie, ob die Einladung angenommen wurde.',
+      invitationBackToCourse: 'Zurück zum Kurs',
+      invitationImportTitle: 'Einladungen importieren',
+      invitationImportDescription:
+        'Wählen Sie eine CSV-Datei mit den E-Mail-Adressen und Matrikelnummern der Teilnehmenden. Die Datei wird in Ihrem Browser verarbeitet, bevor die Einladungen übermittelt werden.',
+      invitationAffiliationWarning:
+        'Verwenden Sie genau die E-Mail-Adresse, die in der Swiss Edu-ID als verifizierte Hochschulzugehörigkeit hinterlegt ist (z. B. eine @uzh.ch-Adresse). Private E-Mail-Adressen können bei der Anmeldung möglicherweise nicht zugeordnet werden.',
+      invitationDownloadTemplate: 'CSV-Vorlage herunterladen',
+      invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
+      invitationCsvHeaders:
+        'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
+      invitationCsvReady:
+        '{count, plural, one {# Zeile ist für den Import bereit} other {# Zeilen sind für den Import bereit}}',
+      invitationSelectCsv: 'CSV-Datei auswählen',
+      invitationImportButton:
+        '{count, plural, one {# Einladung importieren} other {# Einladungen importieren}}',
+      invitationCsvMissingHeaders:
+        'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
+      invitationCsvInvalidHeaders:
+        'Die CSV-Datei muss genau eine email-Spalte und eine matriculationNumber-Spalte enthalten.',
+      invitationCsvInvalidRows:
+        'Jede CSV-Zeile muss gleich viele Spalten wie die Kopfzeile enthalten.',
+      invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
+      invitationCsvParseError:
+        'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',
+      invitationCsvTooLarge:
+        'Die CSV-Datei ist zu gross. Wählen Sie eine Datei mit höchstens 1 MB.',
+      invitationCsvTooManyRows:
+        'Die CSV-Datei enthält mehr als {count} Teilnehmendenzeilen. Teilen Sie sie in kleinere Dateien auf.',
+      invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
+      invitationImportFailed:
+        'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
+      invitationImportInvalidEmail: 'Ungültiges E-Mail-Format',
+      invitationImportSummary:
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
+      invitationListTitle: 'Einladungen',
+      invitationListDescription:
+        'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
+      invitationCount:
+        '{count, plural, one {# Einladung} other {# Einladungen}}',
+      invitationEmail: 'E-Mail',
+      invitationMatriculationNumber: 'Matrikelnummer',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Eingeladen',
+      invitationActions: 'Aktionen',
+      invitationStatusPending: 'Ausstehend',
+      invitationStatusAccepted: 'Angenommen',
+      invitationDeleteLabel: 'Ausstehende Einladung für {email} löschen',
+      invitationDeleteTitle: 'Ausstehende Einladung löschen',
+      invitationDeleteDescription:
+        'Möchten Sie die ausstehende Einladung für {email} löschen? Die teilnehmende Person kann sie danach nicht mehr annehmen.',
+      invitationDeleteSuccess: 'Die ausstehende Einladung wurde gelöscht.',
+      invitationDeleteFailed:
+        'Die ausstehende Einladung konnte nicht gelöscht werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
+      invitationEmpty: 'Es wurden noch keine Einladungen erstellt.',
+      invitationLoadingError:
+        'Die Teilnehmendeneinladungen konnten nicht geladen werden. Prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       liveQuizStudentResultsTitle: 'Studierendenresultate',
       liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentGivenNameColumn: 'Vorname der studierenden Person',
+      liveQuizStudentSurnameColumn: 'Nachname der studierenden Person',
+      liveQuizStudentMatriculationNumberColumn:
+        'Matrikelnummer der studierenden Person',
       liveQuizStudentResultsEmpty:
         'Es sind noch keine Studierendenresultate vorhanden.',
       errorLoadingLiveQuizResults:
@@ -1488,6 +1841,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
       survey:
         'Wir möchten gerne wissen, was Sie über KlickerUZH und unsere zukünftigen Pläne denken! Bitte geben Sie uns Ihr Feedback in einer <link>kurzen Umfrage (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Catalyst-Zugang anfragen',
+        subtitle:
+          'Beschreiben Sie Ihren Anwendungsfall und wir melden uns bei Ihnen.',
+        explanation:
+          'Ihre Anfrage geht an klicker@df.uzh.ch. Wir antworten auf die E-Mail-Adresse Ihres Kontos und verwenden Ihre Daten ausschliesslich zur Bearbeitung dieser Anfrage.',
+        institution: 'Institution',
+        institutionRequired: 'Bitte geben Sie Ihre Institution ein.',
+        institutionMin: 'Bitte geben Sie mindestens 2 Zeichen ein.',
+        institutionMax: 'Bitte geben Sie höchstens 160 Zeichen ein.',
+        useCase: 'Geplante Verwendung',
+        useCaseRequired: 'Bitte beschreiben Sie die geplante Verwendung.',
+        useCaseMin: 'Bitte geben Sie mindestens 20 Zeichen ein.',
+        useCaseMax: 'Bitte geben Sie höchstens 2000 Zeichen ein.',
+        submit: 'Anfrage senden',
+      },
     },
     login: {
       lecturerLogin: 'Login Dozierende',
@@ -1634,21 +2003,70 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
       batchOperationsElements: 'Elemente - Batch-Operationen',
+      batchOperationsApplying: 'Batch-Operationen werden angewendet…',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Ihre Berechtigung',
+      batchUpdateStatus: 'Eignung für Elementänderungen',
+      batchUpdateStatusInactive: 'Keine Elementänderung konfiguriert',
+      batchSharingStatus: 'Eignung für Elementfreigaben',
       actionApplies: 'Aktion wird angewendet',
+      batchSharingApplies: 'Freigabe wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
       modifyBasePoints: 'Basispunkte ändern',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
       nElementsWillBeUpdated: '{number} Elemente werden angepasst',
+      batchSharing: 'Elemente teilen',
+      batchSharingDescription:
+        'Erteilen Sie dieselbe direkte Berechtigung für alle ausgewählten Elemente. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.',
+      batchSharingLimit:
+        'Das Teilen ist auf {max} Elemente pro Vorgang beschränkt. Reduzieren Sie die Auswahl oder deaktivieren Sie das Teilen.',
+      batchSharingUserOrEmail: 'Benutzer:in',
+      batchSharingGroup: 'Benutzergruppe',
+      batchSharingPermission: 'Berechtigung',
+      noElementsWillBeShared: 'Keine Elemente können geteilt werden',
+      nElementsWillBeShared: '{number} Elemente können geteilt werden',
+      batchSharingNotApplicableExplanation:
+        'Die ausgewählte Freigabe kann aus den folgenden Gründen nicht auf dieses Element angewendet werden:',
+      batchSharingInsufficientPermission:
+        'Das Teilen von Elementen erfordert mindestens Adminrechte.',
+      batchOperationsResult: 'Ergebnis der Batch-Operation',
+      batchOperationsResultDescription:
+        'Überprüfen Sie unten die ausgeführten und übersprungenen Operationen. Dieses Ergebnis kann nicht bearbeitet werden.',
+      batchUpdateResultSuccess:
+        'Die ausgewählten Elementänderungen wurden erfolgreich angewendet.',
+      batchUpdateResultPartial:
+        '{updated}/{total} ausgewählte Elementänderungen wurden angewendet.',
+      batchUpdateResultFailed:
+        'Die ausgewählten Elementänderungen konnten nicht angewendet werden.',
+      batchUpdateResultSkipped:
+        'Elementänderungen wurden übersprungen, da keines der ausgewählten Elemente dafür geeignet war.',
+      batchSharingResult: 'Freigabeergebnis',
+      batchSharingResultShared: 'Geteilt',
+      batchSharingResultSkippedInsufficientPermission:
+        'Übersprungen: Adminrechte erforderlich',
+      batchSharingResultElementUnavailable:
+        'Übersprungen: Element nicht verfügbar',
+      batchSharingResultFailed: 'Freigabe fehlgeschlagen',
+      batchSharingResultNotProcessed: 'Nicht verarbeitet',
+      batchSharingRequestFailed:
+        'Die Freigabeanfrage ist fehlgeschlagen, bevor alle Ergebnisse zurückgegeben werden konnten.',
+      batchSharingTargetInvalidOrSelf:
+        'Der Zielbenutzer existiert nicht oder ist Ihr eigenes Konto.',
+      batchSharingTargetGroupUnavailable:
+        'Die ausgewählte Benutzergruppe ist nicht mehr verfügbar.',
+      batchOperationsRefreshFailed:
+        'Die Operationen wurden beendet, aber die Elementliste konnte nicht aktualisiert werden.',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
 <ul>
 <li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
 <li>Multiplikatoren können nur für Fragen mit einer definierten Musterlösung geändert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
+<li>Das Teilen erfordert für jedes Element mindestens Adminrechte. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
@@ -2774,6 +3192,37 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
+      changeAvailabilityDateMicrolearnings:
+        'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      changeAvailabilityDateGroupActivities:
+        'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
+      courseDatesForCourseDuplicationTooltip:
+        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
+      fixedDateInterval:
+        'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
+      groupCreationDeadlineForCourseDuplicationTooltip:
+        'Wenn Sie die Kursdaten ändern, wird diese Deadline anhand ihres ursprünglichen Abstands neu berechnet. Sie können sie anschliessend anpassen.',
+      copyLiveQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Live-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyPracticeQuizzesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Übungs-Quizzes im Kurs in den neuen Kurs kopiert.',
+      copyMicroLearningsTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Microlearnings im Kurs in den neuen Kurs kopiert.',
+      copyGroupActivitiesTooltip:
+        'Wenn Sie diese Einstellung aktivieren, werden alle Gruppenaktivitäten im Kurs in den neuen Kurs kopiert. Wenn die Gruppenbildung-Einstellung deaktiviert wird, wird diese Einstellung deaktiviert.',
+      courseDuplicationCopyInfo:
+        'Beim Duplizieren eines Kurses werden unabhängige Aktivitätskopien erstellt und direkte Freigabeberechtigungen beibehalten. Die kopierten Aktivitätsinstanzen referenzieren weiterhin dieselben zugrundeliegenden Elemente. Wenn Sie einen Kurs duplizieren, der einer anderen Person gehört, behält diese Administratorzugriff auf die Kopie.',
+      courseCopySuffix: 'Kopie',
+      courseDuplicationEndDateInPast:
+        'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationNoAccess:
+        'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
+      courseDuplicationPartialFailure:
+        'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
+      courseDuplicationInProgress:
+        'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
@@ -2883,6 +3332,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
         '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Aktivitätenliste aufgerufen werden.',
+      deleteDraftActivitiesOption:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus ebenfalls unwiderruflich löschen.',
+      deleteDraftActivities:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus werden unwiderruflich gelöscht. Alle übrigen Live-Quizzes werden vom Kurs getrennt und bleiben über die Aktivitätenliste zugänglich.',
       noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
       deletePracticeQuizzes:
         '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
@@ -2906,9 +3359,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     course: {
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
+      duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
       appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',

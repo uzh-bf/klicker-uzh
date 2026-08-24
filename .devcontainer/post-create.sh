@@ -51,8 +51,8 @@ pnpm exec turbo run build --filter='./packages/*' --filter=@klicker-uzh/backend-
 # even though pg_isready is healthy — retry. (GOTCHAS #12)
 echo "[post-create] Resetting + pushing Prisma schema (retrying through DB warmup)..."
 retry 12 "prisma reset/push" bash -c '
-  pnpm --filter @klicker-uzh/prisma exec prisma migrate reset --skip-seed --force \
-  && pnpm --filter @klicker-uzh/prisma exec prisma db push' || exit 1
+  pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force \
+  && pnpm --filter @klicker-uzh/prisma run prisma:push:raw' || exit 1
 
 echo "[post-create] Seeding test data (lecturer/abcd, testuser1..50/abcdabcd)..."
 retry 5 "prisma-data seed" pnpm --filter @klicker-uzh/prisma-data run seed:raw || exit 1
@@ -69,26 +69,33 @@ for app in response-api hatchet-worker-general hatchet-worker-response-processor
   touch "/workspaces/klicker-uzh/apps/${app}/.env"
 done
 
-# Hatchet client token — minted by the hatchet_token sidecar to a shared volume.
+# Hatchet client token — automatically created by hatchet-lite-dev at /config/authdisabled-token.
 # The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
 # CRASHES at boot without it — capture it here so post-start sources it before
-# turbo dev. The sidecar mints within seconds once hatchet's DB migrations finish
-# (well before this point, after the install/build/seed above), so this is a
-# near-instant pickup; the 120s window is just warmup headroom.
-echo "[post-create] Waiting for the Hatchet client token..."
+# turbo dev.
+echo "[post-create] Waiting for the Hatchet client token (/config/authdisabled-token)..."
 HATCHET_ENV=/workspaces/klicker-uzh/.devcontainer/.hatchet.env
 : > "$HATCHET_ENV"
-for attempt in $(seq 1 40); do
-  if [ -s /hatchet-token/api.token ]; then
-    echo "HATCHET_CLIENT_TOKEN=$(cat /hatchet-token/api.token)" > "$HATCHET_ENV"
-    echo "[post-create] Hatchet token captured."
+for attempt in $(seq 1 30); do
+  if [ -s /config/authdisabled-token ]; then
+    TOKEN=$(cat /config/authdisabled-token | tr -d '[:space:]')
+    echo "HATCHET_CLIENT_TOKEN=${TOKEN}" > "$HATCHET_ENV"
+    echo "[post-create] Hatchet token captured from /config/authdisabled-token."
+
+    # Populate packages/graphql/.env for Vitest
+    cat <<EOF > /workspaces/klicker-uzh/packages/graphql/.env
+HATCHET_CLIENT_TOKEN=${TOKEN}
+HATCHET_CLIENT_HOST_PORT=hatchet:7077
+HATCHET_CLIENT_TLS_STRATEGY=none
+HATCHET_LOG_LEVEL=INFO
+EOF
+    echo "[post-create] Wrote Hatchet token to packages/graphql/.env"
     break
   fi
-  sleep 3
+  sleep 1
 done
 if [ ! -s "$HATCHET_ENV" ]; then
-  echo "[post-create] ERROR: no Hatchet token after 120s — the backend will crash on boot (HatchetClient.init is not lazy). Check the hatchet_token sidecar: docker logs <project>-hatchet_token-1" >&2
-  exit 1
+  echo "[post-create] WARNING: /config/authdisabled-token not present yet; backend will wait for post-start or container env." >&2
 fi
 
 echo "[post-create] Done."

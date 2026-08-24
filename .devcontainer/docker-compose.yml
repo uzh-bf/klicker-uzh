@@ -54,7 +54,7 @@ services:
   # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose
   # name so the issued client token advertises a container-reachable endpoint. ---
   hatchet:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
     environment:
       DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
       SERVER_AUTH_COOKIE_DOMAIN: localhost
@@ -72,46 +72,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-  # --- one-shot: mint a Hatchet client token to a shared volume. The app reads
-  # /hatchet-token/api.token in post-create. The backend REQUIRES this to boot —
-  # its HatchetClient.init runs at module load (not lazy), so without a token the
-  # backend crashes at startup. exit 0 on failure so a broken hatchet never
-  # wedges the whole stack (but the API stays down).
-  #
-  # CRITICAL: `hatchet-admin token create` writes the token to Hatchet's DB, and
-  # it must use the SAME DB as the hatchet server. hatchet-lite's generated
-  # /config points the admin tool at its INTERNAL bundled Postgres (127.0.0.1:5431)
-  # — unreachable from this separate container (connection refused). The admin
-  # tool honours the DATABASE_URL env over the config file, so point it at the
-  # shared external `postgres` service (same DB the hatchet server migrated). ---
-  hatchet_token:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
-    environment:
-      DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
-    entrypoint: ['/bin/sh', '-c']
-    command:
-      - |
-        mkdir -p /out
-        # Retry until the hatchet server has run its first-boot goose migrations
-        # (token create fails until the tenant/signing rows exist). 100x3s = 5min
-        # is ample headroom; in practice migrations finish within seconds.
-        for i in $$(seq 1 100); do
-          if /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 2>/tmp/err | tr -d '[:space:]' > /out/api.token && [ -s /out/api.token ]; then
-            echo "[hatchet_token] token created"; exit 0
-          fi
-          echo "[hatchet_token] waiting for hatchet DB migrations ($$i/100)..."; sleep 3
-        done
-        echo "[hatchet_token] could not mint token after 5min; the backend will fail to boot" >&2
-        exit 0
-    volumes:
-      # RW (not :ro): `hatchet-admin token create` writes a temporary server
-      # config under /config and cleans it up — a read-only mount makes it fail.
-      - hatchet_lite_config:/config
-      - hatchet_token:/out
-    networks: [default]
-    depends_on:
-      - hatchet
 
   app:
     build:
@@ -142,8 +102,8 @@ services:
       # ROOT node_modules/.pnpm, so the single root volume covers the monorepo.
       # (GOTCHAS #6)
       - node_modules_root:/workspaces/klicker-uzh/node_modules
-      # Hatchet client token minted by the hatchet_token sidecar (read in post-create).
-      - hatchet_token:/hatchet-token:ro
+      # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
+      - hatchet_lite_config:/config:ro
       # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
       - '${DEVROUTER_MKCERT_CAROOT:-./certs}/rootCA.pem:/etc/devrouter/mkcert-rootCA.pem:ro'
     command: sleep infinity
@@ -153,7 +113,7 @@ services:
 
   # --- LiteLLM for Chat (Tier 3) ---
   litellm:
-    image: ghcr.io/berriai/litellm:main-v1.61.12
+    image: ghcr.io/berriai/litellm-database:v1.96.2@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
     volumes:
       - ../util/litellm/config.yaml:/app/config.yaml:ro
     command:
@@ -164,12 +124,26 @@ services:
     environment:
       # Supplied by the user in their local env or .devcontainer.env to enable chat
       - UPSTREAM_OPENAI_API_KEY=${UPSTREAM_OPENAI_API_KEY:-}
+      - UPSTREAM_OPENAI_BASE_URL=${UPSTREAM_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LITELLM_LOG=INFO
+      # Responses API callers opt into a visible reasoning summary while each
+      # routed alias keeps its own fixed reasoning effort.
+      - LITELLM_REASONING_AUTO_SUMMARY=true
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:4000/health/liveliness').status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   pgdata:
   node_modules_root:
   hatchet_lite_config:
-  hatchet_token:
 
 networks:
   devnet:

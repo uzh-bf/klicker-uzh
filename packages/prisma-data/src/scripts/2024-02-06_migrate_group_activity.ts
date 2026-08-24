@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -45,8 +45,6 @@ function prepareGroupActivityInstanceResults(
 }
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const groupActivities = await prisma.groupActivity.findMany({
     include: {
       course: true,

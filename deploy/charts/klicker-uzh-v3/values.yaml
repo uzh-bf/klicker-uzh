@@ -10,6 +10,36 @@ podSecurityContext: {}
 
 securityContext: {}
 
+# Database migration hook (prisma migrate deploy), run as an ArgoCD PreSync hook.
+# The image tag is NOT pinned here: it defaults to backendGraphql.image.tag (falling
+# back to the chart appVersion), so the migrator always follows the app release. Each
+# env therefore pins only the repository. A tag with no matching migrator image makes
+# the hook fail and blocks the whole sync — see docs/data-and-migrations.md.
+# The hook-delete-policy uses only BeforeHookCreation: successful Jobs persist
+# until the next sync so ArgoCD can settle their finalizers without racing the
+# running sync (upstream argo-cd#24187 / #27507).
+migrator:
+  enabled: true
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
+    pullPolicy: Always
+  imagePullSecrets: []
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  # Unset on purpose: the TTL controller also deletes FAILED Jobs, taking the pod logs
+  # a failed migration needs. Set it only if leftover failed Jobs become a problem.
+  ttlSecondsAfterFinished: ""
+  # Rendered as "<fullname>-<value>"; set per env to the app workload class.
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
 notifications:
   url: ''
   secret: ''
@@ -37,6 +67,7 @@ vapid:
   privateKey: ''
 
 global:
+  deploymentEnvironment: development
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''
