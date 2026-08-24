@@ -9,6 +9,7 @@ import {
   faRotateLeft,
   faRotateRight,
   faSuperscript,
+  faVideo,
   IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -38,6 +39,7 @@ import { HistoryEditor, withHistory } from 'slate-history'
 import { Editable, ReactEditor, Slate, useSlate, withReact } from 'slate-react'
 import { twMerge } from 'tailwind-merge'
 import MediaLibrary from './MediaLibrary'
+import VideoEmbedInput from './VideoEmbedInput'
 
 // ! START SLATE TYPE DEFINITIONS
 type CustomEditor = BaseEditor & ReactEditor & HistoryEditor
@@ -100,6 +102,7 @@ interface Props {
   placeholder: string
   autoFocus?: boolean
   content: string
+  allowVideoEmbedding?: boolean
   className?: ContentInputClassName
   data?: {
     test?: string
@@ -122,12 +125,14 @@ function ContentInput({
   autoFocus,
   error = '',
   touched,
+  allowVideoEmbedding = false,
   className,
   data,
 }: Props): React.ReactElement {
   const t = useTranslations()
 
   const [isImageDropzoneOpen, setIsImageDropzoneOpen] = useState(false)
+  const [isVideoInputOpen, setIsVideoInputOpen] = useState(false)
 
   const renderElement = useCallback(
     (props: ElementProps) => <Element {...props} />,
@@ -182,12 +187,14 @@ function ContentInput({
         <div
           className={twMerge(
             'toolbar bg-uzh-grey-20 mr-10 flex h-8 w-full flex-row px-1 text-sm',
+            allowVideoEmbedding && 'h-auto min-h-8',
             showToolbarOnFocus && 'hidden group-focus-within:flex'
           )}
         >
           <div
             className={twMerge(
               'flex flex-1 flex-row gap-1',
+              allowVideoEmbedding && 'flex-wrap',
               className?.toolbar
             )}
           >
@@ -298,6 +305,7 @@ function ContentInput({
                 editor={editor}
                 format="paragraph"
                 onClick={() => {
+                  setIsVideoInputOpen(false)
                   setIsImageDropzoneOpen((prev) => !prev)
                 }}
               >
@@ -306,6 +314,31 @@ function ContentInput({
                 </div>
               </SlateButton>
             </Tooltip>
+
+            {allowVideoEmbedding ? (
+              <button
+                type="button"
+                title={t('shared.contentInput.video')}
+                aria-label={t('shared.contentInput.video')}
+                aria-controls="video-embed-panel"
+                aria-expanded={isVideoInputOpen}
+                data-cy="open-video-embed-input"
+                className={twMerge(
+                  'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+                  isVideoInputOpen && 'bg-uzh-grey-40'
+                )}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setIsImageDropzoneOpen(false)
+                  setIsVideoInputOpen((prev) => !prev)
+                }}
+              >
+                <FontAwesomeIcon
+                  icon={faVideo}
+                  color={isVideoInputOpen ? 'black' : 'grey'}
+                />
+              </button>
+            ) : null}
 
             <Tooltip
               tooltip={t('shared.contentInput.latex')}
@@ -405,6 +438,33 @@ function ContentInput({
           />
         </div>
       )}
+
+      {allowVideoEmbedding && isVideoInputOpen ? (
+        <div
+          id="video-embed-panel"
+          className={twMerge(
+            'border-t-0! absolute z-10 flex w-full rounded-b-md border-2 border-solid bg-white',
+            showToolbarOnFocus && 'hidden group-focus-within:flex'
+          )}
+        >
+          <VideoEmbedInput
+            onInsert={(url) => {
+              Transforms.insertNodes(
+                editor,
+                {
+                  type: 'paragraph',
+                  children: [{ text: `[video](${url})` }],
+                },
+                {
+                  select: true,
+                }
+              )
+              setIsVideoInputOpen(false)
+              ReactEditor.focus(editor)
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
