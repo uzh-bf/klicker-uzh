@@ -1,4 +1,4 @@
-import { useThreadViewport } from '@assistant-ui/react'
+import { useThreadViewportStore } from '@assistant-ui/react'
 import {
   BookOpenIcon,
   ExternalLinkIcon,
@@ -146,8 +146,8 @@ export function SourcesSection() {
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
   const { messageId, sources } = useMessageSourcesContext()
-  const isAtBottom = useThreadViewport((s) => s.isAtBottom)
-  const revealOnMountRef = useRef(isAtBottom)
+  const threadViewportStore = useThreadViewportStore()
+  const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // Auto-scroll follows the answer while it streams but deliberately switches
