@@ -19,6 +19,16 @@ if instanceInfoTtl >= 0 and instanceInfoTtl < replayClaimTtl then
 elseif instanceInfoTtl == -2 then
   replayClaimTtl = tonumber(ARGV[2])
 end
+if replayClaimTtl < 1 then
+  replayClaimTtl = 1
+end
+
+local counterTtl
+if instanceInfoTtl >= 0 then
+  counterTtl = math.max(instanceInfoTtl, 1)
+elseif instanceInfoTtl == -2 then
+  counterTtl = tonumber(ARGV[2])
+end
 
 local currentClaimTtl = redis.call('TTL', KEYS[1])
 if currentClaimTtl == -1 or currentClaimTtl > replayClaimTtl then
@@ -42,14 +52,8 @@ end
 
 local function expireCounter()
   local expireResult
-  if instanceInfoTtl >= 0 then
-    expireResult = redis.pcall('EXPIRE', KEYS[2], instanceInfoTtl)
-  elseif instanceInfoTtl == -2 then
-    expireResult = redis.pcall(
-      'EXPIRE',
-      KEYS[2],
-      tonumber(ARGV[2])
-    )
+  if counterTtl then
+    expireResult = redis.pcall('EXPIRE', KEYS[2], counterTtl)
   end
 
   if type(expireResult) == 'table' and expireResult.err then

@@ -369,19 +369,26 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
+  const instanceInfoKey = getLiveQuizInstanceInfoKey({
+    liveQuizId: String(liveQuizId),
+    instanceId,
+  })
   try {
-    await trackLiveQuizResponse({
-      redisClient: assessmentRedis,
-      countKey: getLiveQuizResponseCountKey({
-        liveQuizId: String(liveQuizId),
-        instanceId,
-        status: 'received',
-      }),
-      instanceInfoKey: getLiveQuizInstanceInfoKey({
-        liveQuizId: String(liveQuizId),
-        instanceId,
-      }),
-    })
+    if ((await assessmentRedis.exists(instanceInfoKey)) === 1) {
+      await trackLiveQuizResponse({
+        redisClient: assessmentRedis,
+        countKey: getLiveQuizResponseCountKey({
+          liveQuizId: String(liveQuizId),
+          instanceId,
+          status: 'received',
+        }),
+        instanceInfoKey,
+      })
+    } else {
+      console.warn(
+        `Instance info key missing, skipping received-assessment tracking for live quiz ${liveQuizId}, instance ${instanceId}, correlation ${correlationId}`
+      )
+    }
   } catch (error) {
     console.error(
       `Failed to track received assessment response ${correlationId} for live quiz ${liveQuizId}, instance ${instanceId}:`,

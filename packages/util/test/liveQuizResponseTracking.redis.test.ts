@@ -69,6 +69,35 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       )
       expect(await redis.ttl(processedCountKey)).toBe(-1)
 
+      const nearExpiryInfoKey = `${prefix}:near-expiry-info`
+      const nearExpiryClaimKey = `${prefix}:near-expiry-processed`
+      const nearExpiryCountKey = `${prefix}:near-expiry-processed-count`
+      await redis.hset(nearExpiryInfoKey, 'id', 'synthetic')
+      await redis.pexpire(nearExpiryInfoKey, 1500)
+      let nearExpiryTtl = await redis.ttl(nearExpiryInfoKey)
+      for (let attempt = 0; attempt < 200 && nearExpiryTtl !== 0; attempt++) {
+        if (nearExpiryTtl === -2) {
+          await redis.hset(nearExpiryInfoKey, 'id', 'synthetic')
+          await redis.pexpire(nearExpiryInfoKey, 1500)
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25))
+        nearExpiryTtl = await redis.ttl(nearExpiryInfoKey)
+      }
+      expect(nearExpiryTtl).toBe(0)
+      const nearExpiryReply = await redis.eval(
+        LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+        3,
+        nearExpiryClaimKey,
+        nearExpiryCountKey,
+        nearExpiryInfoKey,
+        'message-near-expiry',
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
+        JSON.stringify([])
+      )
+      expect(JSON.parse(String(nearExpiryReply)).status).toBe('processed')
+      expect(await redis.ttl(nearExpiryClaimKey)).toBeGreaterThan(0)
+      expect(await redis.ttl(nearExpiryCountKey)).toBeGreaterThan(0)
+
       const boundedInfoKey = `${prefix}:bounded-info`
       const boundedClaimKey = `${prefix}:bounded-processed`
       const boundedCountKey = `${prefix}:bounded-processed-count`
@@ -177,6 +206,9 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         instanceInfoKey,
         resultsKey,
         `${prefix}:bounded-info`,
+        `${prefix}:near-expiry-info`,
+        `${prefix}:near-expiry-processed`,
+        `${prefix}:near-expiry-processed-count`,
         `${prefix}:bounded-processed`,
         `${prefix}:bounded-processed-count`,
         `${prefix}:missing-processed`,
