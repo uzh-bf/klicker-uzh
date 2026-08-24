@@ -286,7 +286,7 @@ export async function testInitialization(
       },
     }),
     sweepStaleCourseDuplications: hatchet.task({
-      name: 'sweep-stale-course-duplication',
+      name: 'sweep-stale-course-duplications',
       fn: async () => {
         return { success: true }
       },

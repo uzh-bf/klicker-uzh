@@ -66,13 +66,14 @@ export function prepareHatchetTasks({
         input !== null && typeof input === 'object'
           ? (input as { message?: unknown }).message
           : undefined
-      const message = isAuditLogMessage(messageInput)
-        ? messageInput
-        : isAuditLogMessage(input)
-          ? input
-          : (() => {
-              throw new Error('Invalid audit log message input')
-            })()
+      let message: AuditLogMessage
+      if (isAuditLogMessage(messageInput)) {
+        message = messageInput
+      } else if (isAuditLogMessage(input)) {
+        message = input
+      } else {
+        throw new Error('Invalid audit log message input')
+      }
       const { info, ...args } = message
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?

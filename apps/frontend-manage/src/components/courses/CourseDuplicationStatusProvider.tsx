@@ -318,6 +318,7 @@ export function CourseDuplicationProvider({
   >({})
   const [storageInitialized, setStorageInitialized] = useState(false)
   const handledTerminalJobIdsRef = useRef(new Set<string>())
+  const inFlightSourceCourseIdsRef = useRef(new Set<string>())
   const jobIdsRef = useRef<string[]>([])
 
   useEffect(() => {
@@ -508,16 +509,22 @@ export function CourseDuplicationProvider({
 
   const isSourceCourseDuplicating = useCallback(
     (sourceCourseId: string) =>
+      inFlightSourceCourseIdsRef.current.has(sourceCourseId) ||
       activeJobs.some((job) => job.sourceCourseId === sourceCourseId),
     [activeJobs]
   )
 
   const startCourseDuplication = useCallback(
     async ({ course, values, onError }: StartCourseDuplicationArgs) => {
-      if (activeJobs.some((job) => job.sourceCourseId === course.id)) {
+      if (
+        inFlightSourceCourseIdsRef.current.has(course.id) ||
+        activeJobs.some((job) => job.sourceCourseId === course.id)
+      ) {
         onError('inProgress')
         return false
       }
+
+      inFlightSourceCourseIdsRef.current.add(course.id)
 
       try {
         const startDateUTC = dayjs(values.startDate).utc().toISOString()
@@ -577,6 +584,8 @@ export function CourseDuplicationProvider({
       } catch (error) {
         onError(getCourseDuplicationErrorType(error))
         console.error(error)
+      } finally {
+        inFlightSourceCourseIdsRef.current.delete(course.id)
       }
 
       return false

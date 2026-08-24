@@ -724,8 +724,8 @@ function CourseDuplicationModal({
               })
             })
           } catch (error) {
-            console.error(error)
             if (!errorReported) {
+              console.error(error)
               toast({
                 type: 'error',
                 message: getCourseDuplicationErrorMessage(t, 'generic'),
