@@ -2228,6 +2228,13 @@ export async function getLiveQuizEvaluation(
     where: {
       id,
       isDeleted: false,
+      ...(typeof hmac === 'string'
+        ? {
+            status: {
+              in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+            },
+          }
+        : {}),
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
@@ -2289,12 +2296,21 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  const preparedBlocks = liveQuiz.blocks.map((block) => {
+    if (
+      typeof activeBlockWithResults !== 'undefined' &&
+      block.id === liveQuiz.activeBlockId
+    ) {
+      return { ...activeBlockWithResults, active: true }
+    }
+    if (block.status !== DB.ElementBlockStatus.EXECUTED) {
+      return { ...block, elements: [] }
+    }
+    return block
+  })
+
   // compute evaluation
-  const blockEvaluations = computeStackEvaluation(
-    typeof activeBlockWithResults !== 'undefined'
-      ? [...liveQuiz.blocks, { ...activeBlockWithResults, active: true }]
-      : liveQuiz.blocks
-  )
+  const blockEvaluations = computeStackEvaluation(preparedBlocks)
 
   return {
     id: liveQuiz.id,

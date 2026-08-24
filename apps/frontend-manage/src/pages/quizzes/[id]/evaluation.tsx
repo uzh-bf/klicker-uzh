@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetLiveQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  GetLiveQuizEvaluationDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -8,7 +11,9 @@ import EvaluationUnavailableNotification from '../../../components/evaluation/Ev
 
 function LiveQuizEvaluation() {
   const router = useRouter()
-  const [lastRefetchTime, setLastRefetchTime] = useState<Date>(new Date())
+  const [lastRefetchTime, setLastRefetchTime] = useState<Date | undefined>(
+    undefined
+  )
 
   // fetch evaluation data
   const { data, loading } = useQuery(GetLiveQuizEvaluationDocument, {
@@ -25,13 +30,22 @@ function LiveQuizEvaluation() {
 
   // Track last refetch time for status indicator
   useEffect(() => {
-    if (data) {
+    if (data?.liveQuizEvaluation) {
       setLastRefetchTime(new Date())
     }
   }, [data])
 
-  if (loading || !data?.liveQuizEvaluation) {
+  if (loading) {
     return <Loader />
+  }
+
+  if (!data?.liveQuizEvaluation) {
+    return (
+      <EvaluationUnavailableNotification
+        activityId={router.query.id as string}
+        activityType={ActivityType.LiveQuiz}
+      />
+    )
   }
 
   if (
@@ -44,6 +58,7 @@ function LiveQuizEvaluation() {
       <EvaluationUnavailableNotification
         activityId={data.liveQuizEvaluation.id}
         activityName={data.liveQuizEvaluation.displayName}
+        activityType={ActivityType.LiveQuiz}
         activityStatus={data.liveQuizEvaluation.status}
         courseName={data.liveQuizEvaluation.courseName}
       />
@@ -56,6 +71,7 @@ function LiveQuizEvaluation() {
   return (
     <ActivityEvaluation
       type="LiveQuiz"
+      activityType={ActivityType.LiveQuiz}
       hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
       activityId={router.query.id as string}
       activityName={evaluation.displayName ?? ''}

@@ -1,6 +1,7 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ActivityType,
   ElementBlockStatus,
   ElementInstanceEvaluation,
   ElementType,
@@ -39,6 +40,7 @@ interface ElementEvaluationProps {
   showSolution: boolean
   showExplanation: boolean
   type: ActivityEvaluationType
+  activityType?: ActivityType
   requireShowResultsConfirmation: boolean
   isStackActive?: boolean
   isAssessmentEnabled: boolean
@@ -63,6 +65,7 @@ function ElementEvaluation({
   showSolution,
   showExplanation,
   type,
+  activityType,
   requireShowResultsConfirmation,
   isStackActive,
   isAssessmentEnabled,
@@ -95,6 +98,32 @@ function ElementEvaluation({
       setShowResults(true)
     }
   }, [currentInstance.id, requireShowResultsConfirmation])
+
+  // if the entire block is scheduled and not yet executed, display the unavailable notification without element body
+  if (currentStack.status === ElementBlockStatus.Scheduled) {
+    return (
+      <div className={twMerge('relative flex h-full flex-col', className)}>
+        {type === 'LiveQuiz' && (
+          <div className="absolute bottom-4 left-4 z-10">
+            <BlockStatusIndicator
+              status={currentStack.status}
+              lastRefetchTime={lastRefetchTime}
+              expiresAt={currentStack.expiresAt}
+            />
+          </div>
+        )}
+        <EvaluationUnavailableNotification
+          courseName={courseName}
+          activityName={activityName}
+          activityId={activityId}
+          activityType={activityType}
+          elementName={currentInstance.name}
+          elementType={currentInstance.type}
+          activityStatus={activityStatus}
+        />
+      </div>
+    )
+  }
 
   if (!showResults && currentInstance.type !== ElementType.Content) {
     return (
@@ -164,16 +193,6 @@ function ElementEvaluation({
                     expiresAt={currentStack.expiresAt}
                   />
                 </div>
-              )}
-              {currentStack.status === ElementBlockStatus.Scheduled && (
-                <EvaluationUnavailableNotification
-                  courseName={courseName}
-                  activityName={activityName}
-                  activityId={activityId}
-                  elementName={currentInstance.name}
-                  elementType={currentInstance.type}
-                  activityStatus={activityStatus}
-                />
               )}
               {currentInstance.__typename ===
                 'ChoicesActivityEvaluationData' && (

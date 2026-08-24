@@ -1,28 +1,40 @@
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { PublicationStatus } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  ElementType,
+  PublicationStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+
+interface EvaluationUnavailableNotificationProps {
+  courseName?: string | null
+  activityName?: string | null
+  activityId?: string | null
+  activityType?: ActivityType | null
+  activityStatus?: PublicationStatus | null
+  elementType?: ElementType | string | null
+  elementName?: string | null
+}
 
 function EvaluationUnavailableNotification({
   courseName,
   activityName,
   activityId,
+  activityType = ActivityType.LiveQuiz,
   activityStatus,
   elementType,
   elementName,
-}: {
-  courseName?: string | null
-  activityName?: string | null
-  activityId?: string | null
-  activityStatus?: PublicationStatus | null
-  elementType?: string | null
-  elementName?: string | null
-}) {
+}: EvaluationUnavailableNotificationProps) {
   const t = useTranslations()
 
+  const formattedElementType = elementType
+    ? t(`shared.${elementType as ElementType}.typeLabel`)
+    : null
+
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center">
+    <div className="flex h-full w-full flex-col items-center justify-center p-4">
       <UserNotification
         className={{
           root: 'max-w-[80%] text-lg lg:max-w-[60%] 2xl:max-w-[50%]',
@@ -30,7 +42,7 @@ function EvaluationUnavailableNotification({
         message={t('manage.evaluation.evaluationNotYetAvailable')}
       />
 
-      <div className="mt-4 flex flex-row gap-8 text-xs text-gray-500">
+      <div className="mt-6 flex flex-row gap-12 text-sm text-gray-600">
         <div className="space-y-2">
           {elementName && (
             <div>
@@ -40,27 +52,30 @@ function EvaluationUnavailableNotification({
               : {elementName}
             </div>
           )}
-          {elementType && (
+          {formattedElementType && (
             <div>
               <span className="font-semibold">
                 {t('manage.evaluation.elementType')}
               </span>
-              : {elementType}
+              : {formattedElementType}
             </div>
           )}
           {activityId && (
-            <a
-              href={`https://manage.klicker.com/activities?openActivityDetailsId=${activityId}&openActivityDetailsType=LIVE_QUIZ`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <FontAwesomeIcon
-                size="sm"
-                icon={faExternalLinkAlt}
-                className="mr-2"
-              />
-              {t('manage.evaluation.linkActivityDetails')}
-            </a>
+            <div>
+              <a
+                href={`/activities?openActivityDetailsId=${activityId}&openActivityDetailsType=${activityType ?? ActivityType.LiveQuiz}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-80 hover:underline"
+              >
+                <FontAwesomeIcon
+                  size="sm"
+                  icon={faExternalLinkAlt}
+                  className="mr-2"
+                />
+                {t('manage.evaluation.linkActivityDetails')}
+              </a>
+            </div>
           )}
         </div>
         <div className="space-y-2">

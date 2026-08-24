@@ -87,7 +87,10 @@ function StackNavigation({
             const newActiveStack =
               typeof activeStack === 'number' ? Math.max(activeStack - 1, 0) : 0
             setActiveStack(newActiveStack)
-            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+            const firstInstance = stackInstanceMap[newActiveStack]?.[0]
+            if (firstInstance) {
+              setActiveInstance(firstInstance.value)
+            }
           }}
           disabled={
             stacks.length <= 2 * width + 1 ||
@@ -105,7 +108,10 @@ function StackNavigation({
           key={stack.value}
           onClick={() => {
             setActiveStack(stack.value)
-            setActiveInstance(stackInstanceMap[stack.value][0].value)
+            const firstInstance = stackInstanceMap[stack.value]?.[0]
+            if (firstInstance) {
+              setActiveInstance(firstInstance.value)
+            }
           }}
           data={{ cy: `evaluate-stack-${stack.value}` }}
           className="w-28"
@@ -124,7 +130,10 @@ function StackNavigation({
                 ? Math.min(activeStack + 1, stacks.length)
                 : 0
             setActiveStack(newActiveStack)
-            setActiveInstance(stackInstanceMap[newActiveStack][0].value)
+            const firstInstance = stackInstanceMap[newActiveStack]?.[0]
+            if (firstInstance) {
+              setActiveInstance(firstInstance.value)
+            }
           }}
           disabled={
             stacks.length <= 2 * width + 1 ||

@@ -2,7 +2,7 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementBlockStatus } from '@klicker-uzh/graphql/dist/ops'
 import { Tooltip } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 interface BlockStatusIndicatorProps {
@@ -19,6 +19,7 @@ function BlockStatusIndicator({
   className,
 }: BlockStatusIndicatorProps) {
   const t = useTranslations()
+  const formatter = useFormatter()
 
   const getTooltipContent = () => {
     switch (status) {
@@ -39,7 +40,10 @@ function BlockStatusIndicator({
             {lastRefetchTime && (
               <div className="mt-1 text-xs text-gray-600">
                 {t('manage.evaluation.instanceLastRefetch')}:{' '}
-                {lastRefetchTime.toLocaleString()}
+                {formatter.dateTime(lastRefetchTime, {
+                  dateStyle: 'short',
+                  timeStyle: 'medium',
+                })}
               </div>
             )}
           </div>
@@ -53,7 +57,10 @@ function BlockStatusIndicator({
             {expiresAt && (
               <div className="mt-1 text-xs text-gray-600">
                 {t('manage.evaluation.instanceExecutionDate')}:{' '}
-                {new Date(expiresAt).toLocaleString()}
+                {formatter.dateTime(new Date(expiresAt), {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
               </div>
             )}
           </div>
