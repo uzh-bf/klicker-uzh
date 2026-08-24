@@ -85,3 +85,8 @@ compact dropdown, and keep the composer from covering mobile content.
   login page when unauthenticated, and the authenticated browser smoke test
   rendered the mode picker, welcome state, conversation starters, attachment
   control, message composer, and send control.
+- 2026-08-24: Documented the OpenRouter-backed local runtime workflow in
+  `AGENTS.md` and `docs/solutions/integration/openrouter-local-chat-runtime.md`.
+  The upstream smoke remains pending because this machine has no configured
+  Infisical operator profile and the fallback CLI has no valid login session;
+  no key was printed or persisted.
