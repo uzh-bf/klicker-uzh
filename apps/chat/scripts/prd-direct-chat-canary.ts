@@ -1812,7 +1812,6 @@ export async function runDirectChatCanaryTransaction(
     let failureCategory: DirectChatCanaryFailureCategory | undefined
     let currentPhase: DirectChatCanaryFailureCategory = 'reachability_failed'
     try {
-      currentPhase = 'reachability_failed'
       assertNotInterrupted(options)
       await assertCandidateReachable(options, fixture.chatbotId)
       currentPhase = 'fixture_create_failed'
