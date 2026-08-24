@@ -161,9 +161,9 @@ lifecycle.
 - Upstream changes since the old audit base `ee5712399` include the accepted
   ADR-0037 standard-format contract; current origin/v3 does not gate these
   choices behind Catalyst.
-- Devrouter fancy-domain/browser proof remains blocked by the known lifecycle-
-  lock identity issue. Non-container checks must not fall back to host pnpm,
-  localhost/fixed ports, or routing/configuration workarounds.
+- Canonical exact-checkout HTTPS readiness failed with curl error 60.
+  Fancy-domain browser/E2E proof remains blocked; do not use localhost/fixed
+  ports or routing/configuration workarounds.
 - Configured Gemini S1 reviewers failed before work with HTTP 402. Existing
   continuity reports cover only the superseded S1 and do not validate this
   replacement.
@@ -347,8 +347,9 @@ Runtime contract:
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
-- The known lifecycle-lock identity issue blocks fancy-domain/browser proof.
-  Do not alter routing config or claim browser/release readiness without it.
+- Canonical exact-checkout HTTPS readiness failed with curl error 60, so
+  fancy-domain/browser proof remains blocked. Do not alter routing config or
+  claim browser/release readiness without it.
 
 Browser evidence matrix:
 
@@ -366,7 +367,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 2. Manage and Playwright TypeScript checks through the exact container.
 3. Complete base-to-head diff accounting, staged secret/PII scan, and
    comment/diff-scope audit.
-4. Fancy-domain request evidence remains blocked by the lifecycle-lock issue.
+4. Fancy-domain request evidence remains blocked because canonical
+   exact-checkout HTTPS readiness failed with curl error 60.
 
 ## Integrated review and delivery
 
@@ -485,6 +487,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   test ran. No localhost or fixed-port browser fallback and no manual route,
   certificate, runtime, or configuration change, repair, or workaround
   occurred.
+- Final lifecycle evidence: the exact DevPod `rs-ux-review-question-library` was
+  canonically stopped and reported `Stopped`; the exact W2 route count was 0.
 - Current S3 evidence: the frontend conventions now record the verified
   activity-creation guidance, count-label, outcome-selector, and recoverable
   disabled-reason patterns with current symbol citations. Exact-container
@@ -494,6 +498,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   final correctness/risk correction readbacks both reported no P0-P3 correction
   findings and ACCEPTED the correction. Both found no verified code defect and
   classify final package readiness as BLOCKED ON EXACT-RUNTIME EVIDENCE.
+- Post-runtime independent Sol final review found no verified code or package
+  defect. The exact-domain browser/Playwright gap remains a validation and
+  external-authority blocker. The review identified three stale lifecycle-lock
+  references, and this commit replaces them with the verified curl error 60
+  readiness evidence.
 - Final exact-checkout checks: Prettier passed for the B, O, and P specs,
   `docs/frontend-conventions.md`, and this plan. Biome format passed for all 8
   changed TS/TSX/i18n files with no fixes. The frontend-manage check and
