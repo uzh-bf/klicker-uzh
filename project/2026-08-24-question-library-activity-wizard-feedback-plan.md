@@ -221,7 +221,7 @@ activity creation, Playwright coverage, and the same exact runtime.
 | Selection actions have unique stable selectors | extend existing | block/stack action assertions | Tests select the wrong one of two semantically different buttons. | Replacement S2 |
 | Empty block explains disabled Create and recovers | extend existing | `O-live-quiz.spec.ts` existing empty-block state | Create stays opaque, reason persists after fill/delete, or validity changes. | Replacement S2 |
 | Shared wizard/library layout remains usable | browser regression when the gate is resolved | desktop and narrow view | New description height causes clipping, overlap, or intercepted controls. | Replacement S1/S2 |
-| Paired EN/DE copy and ICU syntax | existing catalogs remain unchanged; browser evidence when the gate is resolved | both message files | Missing locale key, malformed ICU, or locale-divergent meaning. | Replacement S1/S2 |
+| Paired EN/DE copy and ICU syntax | five existing paired keys use ICU `one`/`other`; bilingual runtime rendering evidence remains blocked by unavailable exact routes | both message files | Missing locale key, malformed ICU, or locale-divergent meaning. | Replacement S1/S2 |
 | Durable frontend convention | none | verified documentation only | No executable behavior introduced. | Replacement S3 |
 
 No new component-test layer is added. If extending the microlearning journey in
@@ -390,8 +390,6 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - A visible description can increase the activity-choice row height. Treat
   clipping, overflow, overlap, and displaced controls as a product regression,
   not a test timing problem.
-  overflow, overlap, or displaced controls as a product regression, not a test
-  timing problem.
 - Interactive links must stay outside buttons. Stop if valid focus order and
   programmatic association need a new abstraction or dependency.
 - Shared `WizardNavigation` serves all activity types. Keep the new reason
@@ -411,9 +409,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S2 is fully statically accepted. This commit records the
-  completed S3 documentation; integrated final review and fancy-domain/browser
-  proof have not passed.
+- Status: replacement S1 through S3 is committed and statically verified. This
+  correction commit applies all code and documentation P3 findings from the
+  integrated reviews; reviewer readback and fancy-domain/browser proof have not
+  passed.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
@@ -478,9 +477,25 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   disabled-reason patterns with current symbol citations. Exact-container
   Prettier, current-source symbol citation checks, the two-file scope audit, and
   `git diff --check` passed.
-- Remaining: preferred configured or authorized Sol integrated final review,
-  fancy-domain/browser proof, and final Progress evidence.
+- Integrated review disposition: Luna found no code defect and accepted with two
+  non-blocking P3 maintainability findings: duplicated activity-description
+  assertions and an orphaned duplicate risk fragment. Sol found no code defect
+  but requires the known P1 exact fancy-domain browser/E2E evidence plus the P3
+  inaccurate catalog portfolio row and duplicate risk fragment. This commit
+  extracts the duplicated assertions into one typed file-local helper, drives
+  the free-user click/cancel loop from the same activity table, corrects the
+  catalog row, and removes only the duplicate fragment. Reviewer readback of
+  these corrections remains pending; exact-route browser evidence remains
+  blocked without a runtime or routing workaround.
+- Correction checks: exact-checkout Prettier for
+  `B-feature-access.spec.ts` and this plan passed;
+  `pnpm --filter @klicker-uzh/playwright check` passed; focused Playwright
+  collection for `B-feature-access.spec.ts` passed with 8 tests listed;
+  `git diff --check` passed; and the scope audit found exactly the two owned
+  correction files.
+- Remaining: integrated reviewer readback, fancy-domain/browser proof, and final
+  Progress evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: obtain the integrated final review without changing the
-  browser/runtime boundary.
+- Next action: obtain reviewer readback without changing the browser/runtime
+  boundary.
