@@ -12,7 +12,7 @@ describe('selectLeaderboardNearbyContext', () => {
   it('returns the top 10 when self is inside the top 10', () => {
     const result = selectLeaderboardNearbyContext(entries(20), 'p5')
     expect(result).toHaveLength(10)
-    expect(result[0].participantId).toBe('p1')
+    expect(result[0]!.participantId).toBe('p1')
   })
 
   it('adds up to three rows before and after self outside the top 10', () => {
