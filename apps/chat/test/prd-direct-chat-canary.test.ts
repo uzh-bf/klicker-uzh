@@ -8,11 +8,11 @@ import {
   createReceiptStore,
   initialReceipt,
   probeFixedRoute,
-  runW5eTransaction,
+  runDirectChatCanaryTransaction,
   safeResult,
   suppressOutput,
   updatedReceipt,
-} from '../scripts/w5e-prd-direct-chat'
+} from '../scripts/prd-direct-chat-canary'
 
 const ids = {
   ownerId: '00000000-0000-4000-8000-000000000001',
@@ -21,7 +21,7 @@ const ids = {
   participationId: null,
   chatbotId: '00000000-0000-4000-8000-000000000004',
   legacyServerId: '00000000-0000-4000-8000-000000000005',
-  legacyServerName: 'W5e-legacy-run-fixture',
+  legacyServerName: 'direct-chat-canary-legacy-run-fixture',
   legacyConfigId: '00000000-0000-4000-8000-000000000006',
   candidateServerId: '00000000-0000-4000-8000-000000000007',
   candidateConfigId: '00000000-0000-4000-8000-000000000008',
@@ -116,7 +116,9 @@ function matchesWhere(row: FakeRow, where: Record<string, any>): boolean {
   })
 }
 
-function fakeW5eClient(options: { ordinaryServer?: FakeRow } = {}) {
+function fakeDirectChatCanaryClient(
+  options: { ordinaryServer?: FakeRow } = {}
+) {
   let sequence = 0
   let participationId = 0
   let ordinarySelected = false
@@ -258,7 +260,7 @@ function fakeW5eClient(options: { ordinaryServer?: FakeRow } = {}) {
   }
 }
 
-async function withW5eEnvironment<T>(
+async function withDirectChatCanaryEnvironment<T>(
   receiptPath: string,
   action: () => Promise<T>
 ): Promise<T> {
@@ -292,9 +294,11 @@ async function withW5eEnvironment<T>(
   }
 }
 
-describe('W5e direct-Chat receipt and output boundaries', () => {
+describe('PRD direct-Chat canary receipt and output boundaries', () => {
   test('journals a digest-checked values-free receipt and rejects backward state', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-receipt-')
+    )
     const path = join(directory, 'receipt.json')
     try {
       const store = createReceiptStore(path)
@@ -321,7 +325,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('rejects a stale receipt writer with a durable compare-and-set failure', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-cas-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-receipt-cas-')
+    )
     const path = join(directory, 'receipt.json')
     try {
       const first = createReceiptStore(path)
@@ -338,7 +344,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('freezes recovery identity and participation cleanup ownership after prepare', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-immutable-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-receipt-immutable-')
+    )
     const path = join(directory, 'receipt.json')
     try {
       const store = createReceiptStore(path)
@@ -366,7 +374,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
           updatedReceipt(prepared, {
             identity: {
               ...prepared.identity,
-              legacyServerName: 'W5e-legacy-other-run',
+              legacyServerName: 'direct-chat-canary-legacy-other-run',
             },
           })
         )
@@ -425,7 +433,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('rejects historical version 2 receipts as non-executable', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-v2-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-receipt-v2-')
+    )
     const path = join(directory, 'receipt.json')
     try {
       const receipt = initialReceipt(
@@ -439,7 +449,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         'utf8'
       )
       await expect(createReceiptStore(path).read()).rejects.toThrow(
-        'only receipt version 3 is executable'
+        'only receipt version 4 is executable'
       )
     } finally {
       await rm(directory, { recursive: true, force: true })
@@ -474,7 +484,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('records fixture creation failure without exposing nested transaction errors', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-fixture-failure-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-fixture-failure-')
+    )
     const receiptPath = join(directory, 'receipt.json')
     const env = {
       CANDIDATE_URL:
@@ -526,7 +538,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }))
 
     try {
-      const result = await runW5eTransaction({ client, fetchImpl })
+      const result = await runDirectChatCanaryTransaction({ client, fetchImpl })
       const receipt = await createReceiptStore(receiptPath).read()
 
       expect(result).toMatchObject({
@@ -559,15 +571,17 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('runs successfully when the MCP server store starts empty', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-empty-store-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-empty-store-')
+    )
     const receiptPath = join(directory, 'receipt.json')
-    const fake = fakeW5eClient()
+    const fake = fakeDirectChatCanaryClient()
     const fetchImpl = vi.fn(async () => new Response(null, { status: 200 }))
     const runProofImpl = vi.fn(async () => passedProof)
 
     try {
-      const result = await withW5eEnvironment(receiptPath, () =>
-        runW5eTransaction({
+      const result = await withDirectChatCanaryEnvironment(receiptPath, () =>
+        runDirectChatCanaryTransaction({
           client: fake.client,
           fetchImpl,
           runProofImpl,
@@ -575,7 +589,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       )
       const receipt = await createReceiptStore(receiptPath).read()
       const legacyCreate = fake.serverCreates.find((server) =>
-        server.name.startsWith('W5e-legacy-')
+        server.name.startsWith('direct-chat-canary-legacy-')
       )
 
       expect(result).toMatchObject({
@@ -587,7 +601,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
         failure: null,
       })
       expect(receipt).toMatchObject({
-        receiptVersion: 3,
+        receiptVersion: 4,
         state: 'cleaned',
         identity: {
           legacyServerId: receipt?.fixture.legacyServerId,
@@ -623,7 +637,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('cleans a switched failure without selecting or changing an ordinary server', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-failed-proof-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-failed-proof-')
+    )
     const receiptPath = join(directory, 'receipt.json')
     const ordinaryServer = {
       id: '00000000-0000-4000-8000-000000000099',
@@ -640,7 +656,7 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
       updatedAt: new Date('2026-08-20T00:00:00.000Z'),
     }
     const ordinarySnapshot = { ...ordinaryServer }
-    const fake = fakeW5eClient({ ordinaryServer })
+    const fake = fakeDirectChatCanaryClient({ ordinaryServer })
     const failedProof = {
       ...passedProof,
       status: 'failed',
@@ -648,8 +664,8 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     } as const
 
     try {
-      const result = await withW5eEnvironment(receiptPath, () =>
-        runW5eTransaction({
+      const result = await withDirectChatCanaryEnvironment(receiptPath, () =>
+        runDirectChatCanaryTransaction({
           client: fake.client,
           fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
           runProofImpl: vi.fn(async () => failedProof),
@@ -680,9 +696,11 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('refuses synthetic server cleanup when unexpected references remain', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-reference-guard-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-reference-guard-')
+    )
     const receiptPath = join(directory, 'receipt.json')
-    const fake = fakeW5eClient()
+    const fake = fakeDirectChatCanaryClient()
     const ordinaryChatbotId = '00000000-0000-4000-8000-000000000097'
     const ordinaryReference = {
       id: '00000000-0000-4000-8000-000000000098',
@@ -692,8 +710,8 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     }
 
     try {
-      const result = await withW5eEnvironment(receiptPath, () =>
-        runW5eTransaction({
+      const result = await withDirectChatCanaryEnvironment(receiptPath, () =>
+        runDirectChatCanaryTransaction({
           client: fake.client,
           fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
           runProofImpl: vi.fn(async () => failedProof),
@@ -746,14 +764,16 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('cleans the prepared fixture when its receipt write fails', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-receipt-write-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-receipt-write-')
+    )
     const receiptPath = join(directory, 'receipt.json')
-    const fake = fakeW5eClient()
+    const fake = fakeDirectChatCanaryClient()
     const runProofImpl = vi.fn(async () => passedProof)
 
     try {
-      const result = await withW5eEnvironment(receiptPath, () =>
-        runW5eTransaction({
+      const result = await withDirectChatCanaryEnvironment(receiptPath, () =>
+        runDirectChatCanaryTransaction({
           client: fake.client,
           fetchImpl: vi.fn(async () => new Response(null, { status: 200 })),
           runProofImpl,
@@ -802,7 +822,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
   })
 
   test('refuses a missing encryption secret before network or receipt work', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'w5e-env-failure-'))
+    const directory = await mkdtemp(
+      join(tmpdir(), 'direct-chat-canary-env-failure-')
+    )
     const receiptPath = join(directory, 'receipt.json')
     const env = {
       CANDIDATE_URL:
@@ -830,9 +852,9 @@ describe('W5e direct-Chat receipt and output boundaries', () => {
     const fetchImpl = vi.fn()
 
     try {
-      await expect(runW5eTransaction({ client, fetchImpl })).rejects.toThrow(
-        'ENV_REQUIRED: APP_SECRET is required'
-      )
+      await expect(
+        runDirectChatCanaryTransaction({ client, fetchImpl })
+      ).rejects.toThrow('ENV_REQUIRED: APP_SECRET is required')
       expect(fetchImpl).not.toHaveBeenCalled()
       expect(transaction).not.toHaveBeenCalled()
       await expect(readFile(receiptPath, 'utf8')).rejects.toMatchObject({

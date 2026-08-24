@@ -1,3 +1,13 @@
+/**
+ * Run one explicitly authorized, synthetic direct-Chat canary transaction
+ * against the fixed PRD Doc Query endpoint.
+ *
+ * This executable uses behavior-based names and a stable receipt workflow ID.
+ * It must not be renamed after a roadmap work item or used as a general
+ * migration tool. Production execution remains operator-only and requires the
+ * reviewed environment, custody, and data-change gates documented with the
+ * canary package.
+ */
 import { encrypt } from '@klicker-uzh/util'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -12,8 +22,9 @@ import { getAggregatedMCPTools } from '../src/services/mcpClients.js'
 
 const SERVER_NAME = 'Klicker-compat' as const
 const CHAT_MODE = 'tutor' as const
-const RECEIPT_VERSION = 3 as const
-const LEGACY_SERVER_NAME_PREFIX = 'W5e-legacy-' as const
+const RECEIPT_VERSION = 4 as const
+const WORKFLOW_ID = 'prd_direct_chat_canary' as const
+const LEGACY_SERVER_NAME_PREFIX = 'direct-chat-canary-legacy-' as const
 const LEGACY_SERVER_URL = 'http://127.0.0.1:9/mcp' as const
 const CANDIDATE_SERVICE_URL =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
@@ -147,7 +158,7 @@ type State =
 
 type Status = 'planned' | 'passed' | 'failed' | 'not_run'
 
-export type W5eFailureCategory =
+export type DirectChatCanaryFailureCategory =
   | 'reachability_failed'
   | 'fixture_create_failed'
   | 'switch_failed'
@@ -155,8 +166,12 @@ export type W5eFailureCategory =
   | 'cleanup_failed'
   | 'unknown'
 
-export type W5eFixtureOperation = 'not_run' | 'create' | 'switch' | 'cleanup'
-export type W5eFixtureOperationStatus =
+export type DirectChatCanaryFixtureOperation =
+  | 'not_run'
+  | 'create'
+  | 'switch'
+  | 'cleanup'
+export type DirectChatCanaryFixtureOperationStatus =
   | 'not_run'
   | 'running'
   | 'passed'
@@ -230,9 +245,9 @@ type FixtureIds = {
   candidateConfigId: string
 }
 
-export type W5eReceipt = {
+export type DirectChatCanaryReceipt = {
   receiptVersion: typeof RECEIPT_VERSION
-  wItem: 'W5e'
+  workflow: typeof WORKFLOW_ID
   environment: 'prd'
   runId: string
   state: State
@@ -262,10 +277,10 @@ export type W5eReceipt = {
     argoRevision: string
     networkPolicySourceCommit: string
   }
-  failure?: { category: W5eFailureCategory } | null
+  failure?: { category: DirectChatCanaryFailureCategory } | null
   fixtureOperation: {
-    operation: W5eFixtureOperation
-    status: W5eFixtureOperationStatus
+    operation: DirectChatCanaryFixtureOperation
+    status: DirectChatCanaryFixtureOperationStatus
   }
   reachability: TransportDiagnostic
   proof: {
@@ -289,8 +304,8 @@ export type W5eReceipt = {
 }
 
 type ReceiptStore = {
-  read(): Promise<W5eReceipt | null>
-  write(receipt: W5eReceipt): Promise<void>
+  read(): Promise<DirectChatCanaryReceipt | null>
+  write(receipt: DirectChatCanaryReceipt): Promise<void>
 }
 
 type FixtureState = {
@@ -348,20 +363,28 @@ function cloneJson(value: unknown): unknown {
     : JSON.parse(JSON.stringify(value))
 }
 
-function digestReceipt(receipt: Omit<W5eReceipt, 'payloadDigest'>): string {
+function digestReceipt(
+  receipt: Omit<DirectChatCanaryReceipt, 'payloadDigest'>
+): string {
   return createHash('sha256').update(JSON.stringify(receipt)).digest('hex')
 }
 
-type ReceiptBody = Omit<W5eReceipt, 'receiptVersion' | 'payloadDigest'>
+type ReceiptBody = Omit<
+  DirectChatCanaryReceipt,
+  'receiptVersion' | 'payloadDigest'
+>
 
-function withDigest(input: ReceiptBody): W5eReceipt {
+function withDigest(input: ReceiptBody): DirectChatCanaryReceipt {
   const withoutDigest = { receiptVersion: RECEIPT_VERSION, ...input }
   return { ...withoutDigest, payloadDigest: digestReceipt(withoutDigest) }
 }
 
-function assertReceipt(receipt: W5eReceipt): void {
-  if (receipt.receiptVersion !== RECEIPT_VERSION || receipt.wItem !== 'W5e') {
-    fail('RECEIPT_INVALID', 'only receipt version 3 is executable')
+function assertReceipt(receipt: DirectChatCanaryReceipt): void {
+  if (
+    receipt.receiptVersion !== RECEIPT_VERSION ||
+    receipt.workflow !== WORKFLOW_ID
+  ) {
+    fail('RECEIPT_INVALID', 'only receipt version 4 is executable')
   }
   if (
     receipt.identity.serverName !== SERVER_NAME ||
@@ -393,10 +416,10 @@ function assertReceipt(receipt: W5eReceipt): void {
 export function initialReceipt(
   runId: string,
   fixture: FixtureIds,
-  provenance: W5eReceipt['provenance']
-): W5eReceipt {
+  provenance: DirectChatCanaryReceipt['provenance']
+): DirectChatCanaryReceipt {
   return withDigest({
-    wItem: 'W5e',
+    workflow: WORKFLOW_ID,
     environment: 'prd',
     runId,
     state: 'planned',
@@ -445,9 +468,9 @@ export function initialReceipt(
 }
 
 export function updatedReceipt(
-  receipt: W5eReceipt,
-  changes: Partial<W5eReceipt>
-): W5eReceipt {
+  receipt: DirectChatCanaryReceipt,
+  changes: Partial<DirectChatCanaryReceipt>
+): DirectChatCanaryReceipt {
   const {
     receiptVersion: _version,
     payloadDigest: _ignored,
@@ -493,11 +516,11 @@ export function createReceiptStore(path: string): ReceiptStore {
   const lockPath = `${absolutePath}.lock`
   let lastDigest: string | null | undefined
 
-  async function readCurrent(): Promise<W5eReceipt | null> {
+  async function readCurrent(): Promise<DirectChatCanaryReceipt | null> {
     try {
       const parsed = JSON.parse(
         await readFile(absolutePath, 'utf8')
-      ) as W5eReceipt
+      ) as DirectChatCanaryReceipt
       assertReceipt(parsed)
       return parsed
     } catch (error) {
@@ -509,10 +532,13 @@ export function createReceiptStore(path: string): ReceiptStore {
     }
   }
 
-  function assertImmutableReceipt(current: W5eReceipt, next: W5eReceipt): void {
-    const identity = (receipt: W5eReceipt) => ({
+  function assertImmutableReceipt(
+    current: DirectChatCanaryReceipt,
+    next: DirectChatCanaryReceipt
+  ): void {
+    const identity = (receipt: DirectChatCanaryReceipt) => ({
       receiptVersion: receipt.receiptVersion,
-      wItem: receipt.wItem,
+      workflow: receipt.workflow,
       environment: receipt.environment,
       runId: receipt.runId,
       createdAt: receipt.createdAt,
@@ -784,7 +810,7 @@ async function fixedRouteStatus(
       params: {
         protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: {},
-        clientInfo: { name: 'w5e', version: '1' },
+        clientInfo: { name: 'prd-direct-chat-canary', version: '1' },
       },
     }),
   })
@@ -860,13 +886,13 @@ async function runProof(
   candidateServer: any,
   chatbotId: string,
   bearer: string
-): Promise<W5eReceipt['proof']> {
+): Promise<DirectChatCanaryReceipt['proof']> {
   const config = { allowedTools: [...EXPECTED_TOOLS], priority: 0 }
   const direct = {
     server: candidateServerInput(candidateServer, proofUrl),
     config,
   }
-  const result: W5eReceipt['proof'] = {
+  const result: DirectChatCanaryReceipt['proof'] = {
     status: 'failed',
     toolCount: null,
     pairCount: null,
@@ -906,7 +932,7 @@ async function runProof(
       | undefined
     if (!retrievalTool?.execute) return result
     const retrieval = await suppressOutput(() =>
-      retrievalTool.execute!({ query: 'W5e synthetic direct retrieval' })
+      retrievalTool.execute!({ query: 'synthetic direct-chat retrieval' })
     )
     if (!isSuccessfulToolResult(retrieval)) return result
     result.retrieval = 'passed'
@@ -918,7 +944,7 @@ async function runProof(
             ...direct,
             server: {
               ...direct.server,
-              authSecret: encrypt('w5e-invalid-bearer'),
+              authSecret: encrypt('direct-chat-canary-invalid-bearer'),
             },
           },
         ],
@@ -970,7 +996,7 @@ async function runProof(
 type RunOptions = {
   client: PrismaClient
   store: ReceiptStore
-  receipt: W5eReceipt
+  receipt: DirectChatCanaryReceipt
   candidateUrl: string
   proofUrl: string
   bearer: string
@@ -998,9 +1024,9 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
       const owner = await tx.user.create({
         data: {
           id: ids.ownerId,
-          name: `W5e synthetic owner ${receipt.runId}`,
-          email: `w5e-${receipt.runId}@example.invalid`,
-          shortname: `w5e-${receipt.runId}`,
+          name: `Synthetic direct-chat canary owner ${receipt.runId}`,
+          email: `direct-chat-canary-${receipt.runId}@example.invalid`,
+          shortname: `direct-chat-canary-${receipt.runId}`,
           role: 'USER',
         },
       })
@@ -1008,8 +1034,8 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
       const course = await tx.course.create({
         data: {
           id: ids.courseId,
-          name: `w5e-${receipt.runId}`,
-          displayName: `W5e synthetic course ${receipt.runId}`,
+          name: `direct-chat-canary-${receipt.runId}`,
+          displayName: `Synthetic direct-chat canary course ${receipt.runId}`,
           ownerId: owner.id,
           startDate: now,
           endDate: new Date(now.getTime() + 86_400_000),
@@ -1021,9 +1047,9 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
       const participant = await tx.participant.create({
         data: {
           id: ids.participantId,
-          username: `w5e-${receipt.runId}`,
+          username: `direct-chat-canary-${receipt.runId}`,
           password: randomUUID(),
-          email: `w5e-${receipt.runId}@example.invalid`,
+          email: `direct-chat-canary-${receipt.runId}@example.invalid`,
           isEmailValid: false,
         },
       })
@@ -1038,7 +1064,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
         data: {
           id: ids.chatbotId,
           name: `doc-query-canary-${receipt.runId}`,
-          description: 'Synthetic W5e direct-Chat canary',
+          description: 'Synthetic direct-Chat canary',
           ownerId: owner.id,
           courseId: course.id,
           systemPrompts: {},
@@ -1053,7 +1079,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
         data: {
           id: ids.legacyServerId,
           name: ids.legacyServerName,
-          description: 'Synthetic W5e inert legacy binding',
+          description: 'Synthetic inert legacy binding',
           url: LEGACY_SERVER_URL,
           authType: 'none',
           authSecret: null,
@@ -1079,7 +1105,7 @@ async function createFixture(options: RunOptions): Promise<FixtureState> {
         data: {
           id: ids.candidateServerId,
           name: SERVER_NAME,
-          description: 'Synthetic W5e direct-Chat compatibility binding',
+          description: 'Synthetic direct-Chat compatibility binding',
           url: candidateUrl,
           authType: 'bearer',
           authSecret: encrypt(bearer),
@@ -1562,7 +1588,7 @@ async function deleteFixture(
       const participant = await tx.participant.deleteMany({
         where: {
           id: fixture.ids.participantId,
-          username: { startsWith: 'w5e-' },
+          username: { startsWith: 'direct-chat-canary-' },
         },
       })
       if (participant.count !== 1)
@@ -1573,7 +1599,10 @@ async function deleteFixture(
       if (course.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic course was not deleted')
       const owner = await tx.user.deleteMany({
-        where: { id: fixture.ids.ownerId, shortname: { startsWith: 'w5e-' } },
+        where: {
+          id: fixture.ids.ownerId,
+          shortname: { startsWith: 'direct-chat-canary-' },
+        },
       })
       if (owner.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic owner was not deleted')
@@ -1585,7 +1614,7 @@ async function deleteFixture(
 async function verifyPostconditions(
   options: RunOptions,
   fixture: FixtureState
-): Promise<W5eReceipt['cleanup']> {
+): Promise<DirectChatCanaryReceipt['cleanup']> {
   const { client } = options
   const [
     candidateServer,
@@ -1685,9 +1714,9 @@ async function attemptCleanup(
 }
 
 export function safeResult(
-  receipt: W5eReceipt,
+  receipt: DirectChatCanaryReceipt,
   error?: unknown,
-  failureCategory?: W5eFailureCategory
+  failureCategory?: DirectChatCanaryFailureCategory
 ): Record<string, unknown> {
   const failure = error
     ? (failureCategory ?? receipt.failure?.category ?? 'unknown')
@@ -1706,15 +1735,15 @@ export function safeResult(
   }
 }
 
-export type W5eTransactionDependencies = {
+export type DirectChatCanaryTransactionDependencies = {
   client?: PrismaClient
   fetchImpl?: typeof fetch
   runProofImpl?: typeof runProof
   receiptStoreFactory?: typeof createReceiptStore
 }
 
-export async function runW5eTransaction(
-  dependencies: W5eTransactionDependencies = {}
+export async function runDirectChatCanaryTransaction(
+  dependencies: DirectChatCanaryTransactionDependencies = {}
 ): Promise<Record<string, unknown>> {
   const client = dependencies.client ?? prisma
   const fetchImpl = dependencies.fetchImpl ?? fetch
@@ -1732,7 +1761,7 @@ export async function runW5eTransaction(
   const receiptPath = requiredEnv('RECEIPT_PATH')
   const bearer = requiredEnv('DOC_QUERY_JWT_TOKEN_KLICKER')
   void requiredEnv('APP_SECRET')
-  const provenance: W5eReceipt['provenance'] = {
+  const provenance: DirectChatCanaryReceipt['provenance'] = {
     klickerSourceSha: requiredEnv('KLICKER_SOURCE_SHA'),
     chatImageDigest: requiredEnv('CHAT_IMAGE_DIGEST'),
     docQueryImageDigest: requiredEnv('DOC_QUERY_IMAGE_DIGEST'),
@@ -1780,8 +1809,8 @@ export async function runW5eTransaction(
   try {
     let fixtureState: FixtureState | undefined
     let failure: unknown
-    let failureCategory: W5eFailureCategory | undefined
-    let currentPhase: W5eFailureCategory = 'reachability_failed'
+    let failureCategory: DirectChatCanaryFailureCategory | undefined
+    let currentPhase: DirectChatCanaryFailureCategory = 'reachability_failed'
     try {
       currentPhase = 'reachability_failed'
       assertNotInterrupted(options)
@@ -1872,8 +1901,8 @@ export async function runW5eTransaction(
   }
 }
 
-if (process.argv[1]?.endsWith('w5e-prd-direct-chat.ts')) {
-  void runW5eTransaction()
+if (process.argv[1]?.endsWith('prd-direct-chat-canary.ts')) {
+  void runDirectChatCanaryTransaction()
     .finally(() => prisma.$disconnect())
     .catch(() => {
       process.exitCode = 1
