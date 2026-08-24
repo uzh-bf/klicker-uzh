@@ -212,8 +212,17 @@ async function main() {
     await mintToken({ expiresIn: '-30s' })
   )
 
-  // 7. Read-only scope: a read tool succeeds, a draft tool is rejected with a
-  // MISSING_SCOPE-shaped error from toolRunner/toolErrors.
+  // 7. Token carrying no lecturer scope at all: authentication itself fails,
+  // before any per-tool scope check, so the session never exists.
+  await expectAuthRejectionAtInitialize(
+    'token without a lecturer scope rejected',
+    await mintToken({ scope: 'student:practice:read' })
+  )
+
+  // 8. Read-only scope: a read tool succeeds, and the draft tools are not
+  // even advertised. fastmcp registers a tool for a session only when the
+  // session's scopes satisfy the policy's `rbacScope`, so a read-only session
+  // has no dispatch entry for drafting at all.
   await report.check('read-only scope allows read tool', async () => {
     const token = await mintToken({ scope: READ_ONLY_SCOPE })
     const client = new RawMcpClient({ token, url })
@@ -226,8 +235,27 @@ async function main() {
     return `${result.courses?.length ?? 0} courses`
   })
 
+  await report.check('read-only scope hides the draft tools', async () => {
+    const token = await mintToken({ scope: READ_ONLY_SCOPE })
+    const client = new RawMcpClient({ token, url })
+    await client.initialize()
+    const names = (await client.listTools()).map((tool) => tool.name)
+    assertSmoke(
+      names.includes('klicker_lecturer_course_list'),
+      `expected the course list tool to be advertised, got: ${names.join(', ')}`
+    )
+    const advertisedDraftTools = names.filter(
+      (name) => typeof name === 'string' && name.includes('draft')
+    )
+    assertSmoke(
+      advertisedDraftTools.length === 0,
+      `draft tools must not be advertised to a read-only session: ${advertisedDraftTools.join(', ')}`
+    )
+    return `${names.length} tools advertised, no draft tools`
+  })
+
   await report.check(
-    'read-only scope rejects draft tool with MISSING_SCOPE',
+    'read-only scope cannot call the draft proposal tool',
     async () => {
       const token = await mintToken({ scope: READ_ONLY_SCOPE })
       const client = new RawMcpClient({ token, url })
@@ -248,14 +276,14 @@ async function main() {
       capturedMessages.push(message)
       assertNoLeak(message)
       assertSmoke(
-        /MISSING_SCOPE/.test(message),
-        `expected a MISSING_SCOPE error, got: ${message}`
+        /unknown tool/i.test(message),
+        `expected an unknown-tool rejection, got: ${message}`
       )
-      return 'draft tool rejected with MISSING_SCOPE'
+      return 'draft proposal tool unknown to a read-only session'
     }
   )
 
-  // 8. Valid token, unknown-but-well-formed course UUID: non-enumerating
+  // 9. Valid token, unknown-but-well-formed course UUID: non-enumerating
   // FORBIDDEN-style "not found or not accessible" from service.inaccessible().
   await report.check(
     'unknown course id rejected as not accessible',
@@ -278,7 +306,7 @@ async function main() {
     }
   )
 
-  // 9. Valid token, malformed (non-UUID) course id: rejected at the MCP
+  // 10. Valid token, malformed (non-UUID) course id: rejected at the MCP
   // parameter-schema layer, before the tool's own execute() ever runs.
   await report.check(
     'malformed course id rejected at schema validation',
@@ -301,7 +329,7 @@ async function main() {
     }
   )
 
-  // 10. Valid token for a foreign sub (no seeded permissions): course_list
+  // 11. Valid token for a foreign sub (no seeded permissions): course_list
   // succeeds but returns zero courses rather than leaking other lecturers'
   // data.
   await report.check('foreign sub sees zero courses', async () => {
@@ -321,7 +349,7 @@ async function main() {
     return '0 courses'
   })
 
-  // 11. None of the captured negative-path error messages above leaked a
+  // 12. None of the captured negative-path error messages above leaked a
   // stack trace, an internal path, or the database connection string.
   await report.check('no leaked internal details across all cases', () => {
     for (const message of capturedMessages) {

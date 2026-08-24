@@ -1,4 +1,5 @@
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
+import { isManageAiEnabled } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
@@ -72,6 +73,10 @@ export async function POST(req: NextRequest) {
   }
   const userId = manageUser.sub
 
+  if (!(await isManageAiEnabled(manageUser))) {
+    return NextResponse.json({ error: 'Not available' }, { status: 403 })
+  }
+
   const releaseRequest = tryAcquireManageChatRequest()
   if (!releaseRequest) {
     return NextResponse.json(
@@ -134,6 +139,15 @@ export async function POST(req: NextRequest) {
     }
 
     const context = sanitizeManageAssistantContext(parsed.manageContext)
+    // The gate above already refused every request that must not reach the
+    // tools, so loading them needs no second check. A load failure still
+    // leaves a toolless but usable assistant rather than ending the turn.
+    const noLecturerMcpTools = {
+      close: async () => {},
+      hasDraftScope: false,
+      sentinel: createFenceSentinel(),
+      tools: {},
+    }
     const lecturerMcp = await loadLecturerMcpTools(
       userId,
       manageUser.scope,
@@ -141,12 +155,7 @@ export async function POST(req: NextRequest) {
       requestSignal
     ).catch((error) => {
       console.warn('Failed to load lecturer MCP tools:', error)
-      return {
-        close: async () => {},
-        hasDraftScope: false,
-        sentinel: createFenceSentinel(),
-        tools: {},
-      }
+      return noLecturerMcpTools
     })
     const toolCount = Object.keys(lecturerMcp.tools).length
     const selectedModel = selectManageAssistantModel(getChatModelRegistry())

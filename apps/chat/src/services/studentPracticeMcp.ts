@@ -6,6 +6,7 @@ import type {
   StudentMcpSubmitPracticeStackAnswerOutput as SubmitPracticeStackAnswerOutput,
   StudentMcpToolErrorCode as ToolErrorCode,
 } from '@klicker-uzh/types'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
 import { createMCPClient, type MCPServerConfig } from './mcpClients'
 import { buildMcpServiceUrl } from './mcpUrl'
 
@@ -220,10 +221,12 @@ export function formatPracticeCandidatesForPrompt(
 }
 
 async function withStudentPracticeMcp<T>({
+  authMode,
   chatbotId,
   participantId,
   execute,
 }: {
+  authMode: AuthMode
   chatbotId: string
   participantId: string
   execute: ExecuteWithTools<T>
@@ -240,7 +243,11 @@ async function withStudentPracticeMcp<T>({
     url,
   }
 
-  const client = await createMCPClient(server, { chatbotId, participantId })
+  const client = await createMCPClient(server, {
+    authMode,
+    chatbotId,
+    participantId,
+  })
 
   try {
     const tools = (await client.tools()) as unknown as Record<
@@ -267,17 +274,20 @@ function getExecutableTool(
 }
 
 async function executeStudentPracticeTool<T>({
+  authMode,
   chatbotId,
   participantId,
   toolName,
   args,
 }: {
+  authMode: AuthMode
   chatbotId: string
   participantId: string
   toolName: string
   args: Record<string, unknown>
 }): Promise<T | null> {
   return withStudentPracticeMcp({
+    authMode,
     chatbotId,
     participantId,
     execute: async (tools) => {
@@ -289,12 +299,14 @@ async function executeStudentPracticeTool<T>({
 }
 
 export async function lookupRelevantPracticeStacks({
+  authMode,
   chatbotId,
   courseId,
   limit = DEFAULT_LOOKUP_LIMIT,
   messages,
   participantId,
 }: {
+  authMode: AuthMode
   chatbotId: string
   courseId: string
   limit?: number
@@ -314,6 +326,7 @@ export async function lookupRelevantPracticeStacks({
       lastUserMessage: context.lastUserMessage,
       limit,
     },
+    authMode,
     chatbotId,
     participantId,
     toolName: 'lookup_relevant_practice_stacks',
@@ -321,16 +334,19 @@ export async function lookupRelevantPracticeStacks({
 }
 
 export async function getPracticeStackForQuiz({
+  authMode,
   chatbotId,
   participantId,
   questionRef,
 }: {
+  authMode: AuthMode
   chatbotId: string
   participantId: string
   questionRef: string
 }): Promise<GetPracticeStackForQuizOutput | null> {
   return executeStudentPracticeTool<GetPracticeStackForQuizOutput>({
     args: { questionRef },
+    authMode,
     chatbotId,
     participantId,
     toolName: 'get_practice_stack_for_quiz',
@@ -338,12 +354,14 @@ export async function getPracticeStackForQuiz({
 }
 
 export async function submitPracticeStackAnswer({
+  authMode,
   chatbotId,
   participantId,
   questionRef,
   responses,
   stackAnswerTimeSeconds,
 }: {
+  authMode: AuthMode
   chatbotId: string
   participantId: string
   questionRef: string
@@ -356,6 +374,7 @@ export async function submitPracticeStackAnswer({
       responses,
       stackAnswerTimeSeconds,
     },
+    authMode,
     chatbotId,
     participantId,
     toolName: 'submit_practice_stack_answer',

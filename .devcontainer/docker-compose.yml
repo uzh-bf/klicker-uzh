@@ -115,6 +115,14 @@ services:
       - BLOB_STORAGE_ACCESS_KEY=dGVzdA==
       - BLOB_STORAGE_ACCOUNT_URL=http://localhost:10000/klickerdev
       - BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://azurite:10000/klickerdev
+      # Beta opt-in against a GrowthBook instance the developer supplies from
+      # their own shell. The management key is write-capable, so it is passed
+      # through from the host and never written into devcontainer.env, which is
+      # committed to a public repository. Leave unset to keep the opt-in switch
+      # hidden.
+      - GROWTHBOOK_MANAGEMENT_API_URL=${GROWTHBOOK_MANAGEMENT_API_URL:-}
+      - GROWTHBOOK_MANAGEMENT_API_KEY=${GROWTHBOOK_MANAGEMENT_API_KEY:-}
+      - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
       - 'auth.klicker.localhost:host-gateway'

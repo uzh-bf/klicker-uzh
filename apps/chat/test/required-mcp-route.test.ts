@@ -66,7 +66,10 @@ function createRequest(selectedMode?: string, threadId?: string) {
 describe('required MCP chat preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.withChatbotAuth.mockResolvedValue({
+      authMode: 'account',
+      participantId: 'participant-1',
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -93,6 +96,7 @@ describe('required MCP chat preflight', () => {
           },
         },
       ],
+      knowledgeBases: [],
     })
     mocks.findFirstThread.mockResolvedValue(null)
     mocks.getAggregatedMCPTools.mockRejectedValue(
@@ -155,6 +159,7 @@ describe('required MCP chat preflight', () => {
       expect.objectContaining({
         chatbotId: 'chatbot-1',
         participantId: 'participant-1',
+        authMode: 'account',
         sessionId: expect.stringMatching(
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
         ),
@@ -189,6 +194,7 @@ describe('required MCP chat preflight', () => {
           parameters: { required: true, toolAlias: 'doc_query' },
         },
       ],
+      knowledgeBases: [],
     })
 
     const response = await POST(createRequest(), {

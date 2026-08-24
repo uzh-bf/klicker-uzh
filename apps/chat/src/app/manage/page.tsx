@@ -1,6 +1,8 @@
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ManageAssistant } from '../../components/manage-assistant'
-import { getAuthenticatedManageUserId } from '../../lib/server/manageAuth'
+import { isManageAiEnabled } from '../../lib/server/featureFlags'
+import { getAuthenticatedManageUser } from '../../lib/server/manageAuth'
 
 interface ManageAssistantPageProps {
   searchParams?: Promise<{ embed?: string | string[] }>
@@ -9,13 +11,21 @@ interface ManageAssistantPageProps {
 export default async function ManageAssistantPage({
   searchParams,
 }: ManageAssistantPageProps) {
-  const userId = await getAuthenticatedManageUserId()
+  const manageUser = await getAuthenticatedManageUser()
 
-  if (!userId) {
+  // The gate is evaluated per lecturer, so it can only be evaluated once one
+  // is signed in. A signed-out visitor keeps the login prompt rather than a
+  // 404: it is a static page carrying no capability, and 404ing it would
+  // strand an opted-in lecturer whose session expired.
+  if (!manageUser) {
     const resolvedSearchParams = (await searchParams) ?? {}
     const embedded = isEmbeddedParam(resolvedSearchParams.embed)
 
     return <ManageLoginRequired embedded={embedded} />
+  }
+
+  if (!(await isManageAiEnabled(manageUser))) {
+    notFound()
   }
 
   return <ManageAssistant />

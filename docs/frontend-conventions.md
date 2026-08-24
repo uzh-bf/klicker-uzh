@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-23'
+timestamp: '2026-08-24'
 tags:
   - frontend
 ---
@@ -15,6 +15,8 @@ Scope: `frontend-manage`, `frontend-pwa`, `frontend-control`, `auth` — all Nex
 
 Course overview headers keep the participant count beneath the course name so metadata does not compete with actions. Keep the contextual action primary and place low-frequency actions in one labelled overflow menu. Keep the visible buttons and overflow trigger in one action cluster; let that cluster wrap across viewports without separating or shrinking the ellipsis control or duplicating controls (`apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`).
 
+Assessment participant administration follows that rule: managers reach the dedicated invitation page from the course overflow menu (`CourseOverviewHeader.tsx:courseActionMenuItems`). The page parses CSV files with a small dependency-free browser parser only after file selection, then sends typed rows through generated GraphQL operations (`apps/frontend-manage/src/components/courses/participantInvitations/ParticipantInvitationCsvUpload.tsx:handleFileSelection`). The canonical browser-generated template contains only `email,matriculationNumber`; uploaded files may use comma or semicolon delimiters and supported matriculation-header aliases, but required semantic headers must be unique and every non-empty record must match the header width. Reject malformed quoting locally while preserving server-side per-row email errors and partial success. The affiliation notice is advisory: only a verified Swiss Edu-ID affiliation can establish the identity match, so do not infer or enforce affiliation from a domain suffix. Keep per-row import failures visible, show `PENDING` and `ACCEPTED` as distinct table states, and expose deletion only on pending rows (`ParticipantInvitationsTable.tsx:ParticipantInvitationsTable`).
+
 Assessment report exports intentionally keep one browser-side artifact:
 `apps/frontend-pwa/src/components/insights/assessmentResults/exportReport.ts:createAssessmentReport`
 creates the self-contained HTML used by both report actions. **View report**
@@ -26,6 +28,15 @@ keeps the SVG chart and accessible histogram table, and compacts the QR and
 metadata blocks without changing the on-screen report. QR rendering and popup
 navigation have bounded failure paths so export cannot remain stuck on a
 spinner.
+
+Assessment comparison charts treat privacy-preserving score ranges as
+categorical groups. Render equal-width bars in the export and verification
+surfaces, highlight the group containing the student's score, and retain the
+exact range/count table for accessible detail. Show percentile as a 0–100
+ruler with a marker at the student's inclusive percentile rank; do not imply
+that the score groups form a normal or continuous distribution. The comparison
+remains omitted below the existing cohort threshold, and the stored V1 report
+contract is unchanged.
 
 ## Next.js tooling
 
@@ -88,6 +99,24 @@ The detail metrics distinguish visible data, quota usage, upload reservations, p
 `packages/kb-management/src/components/KnowledgeGraphPanel.tsx:KnowledgeGraphPanel` is the lecturer-facing graph lifecycle boundary. It exposes the per-KB opt-in, standard/high estimate, maximum reservation, billing mode, reservation status, remaining quota, worst-case balance, settled cost, actual token/request usage, and the localized safe status state. Quota amounts use the persisted quota currency, while historical build cost uses its recorded build currency; a persisted quota currency/limit mismatch makes the cost configuration unavailable until reconciled. The rebuild action stays disabled while the KB is opted out, the global graph switch leaves cost configuration incomplete, or a build is active. Display billing and reservation statuses through localized labels rather than raw enum values or backend status prose, keep provider credentials out of the client, and preserve the `data-cy` hooks for the switch, cost block, status, and rebuild action.
 
 The shared graph viewer keeps fixed hooks for search input/submit, search results, loaded nodes, loaded relationships, details close, expand, zoom, fit, reset, and retry actions. Node and relationship identifiers remain content, not selector names; combine the fixed hook with accessible name or visible text when a test must distinguish one item.
+The manage Elements and Activities lists use the shared `Pagination` control
+with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
+keeps the active filters and sort, resets to page 1, omits `numEntries` and
+`offset`, and hides page navigation. It loads the current filtered result and
+does not select records; the existing list checkbox remains the explicit
+select-all action. Page-size preferences accept only those four values when
+read from local storage. The verification-record modal keeps the shared
+control's default opt-out because its backend fetch remains capped at 100
+records (`apps/frontend-manage/src/components/common/Pagination.tsx:Pagination`,
+`apps/frontend-manage/src/pages/index.tsx:Index`,
+`apps/frontend-manage/src/pages/activities.tsx:Activities`).
+
+Assessment participant invitations use the same control with finite `10`, `20`,
+and `50` page sizes and no `All` option. The page requests the additive
+`assessmentParticipantInvitations` operation with `numEntries` and `offset`,
+shows the server-provided total, and resets to page 1 after an import or delete.
+CSV selection rejects files above 1 MiB and imports above 200 data rows before
+submitting a mutation (`apps/frontend-manage/src/pages/courses/[id]/assessment/invitations.tsx:AssessmentParticipantInvitations`).
 
 ## i18n (next-intl)
 
@@ -103,7 +132,8 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
   - **Active Feature Flags:**
     - `privatePreview` (User-profile level): Gates advanced beta features such as knowledge-base management, element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`). The KB service reads the database value per request, so disabling it does not require re-login.
     - `publicPreview` (User-profile level): Gates general preview features like microlearning analytics and new evaluation navigation interfaces.
-  - _Interim KB rollout_: GrowthBook is not yet available. `privatePreview` is the temporary per-account gate; the planned course-cohort gate resumes when GrowthBook lands.
+  - The behavior-free `@klicker-uzh/feature-flags` GrowthBook foundation is available for incremental migration, but an existing preview field remains authoritative until all consumers for that behavior move. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
+  - _Interim KB rollout_: `privatePreview` remains the authoritative per-account gate for KB management until its consumers migrate to the GrowthBook foundation.
 - **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.
 - **Local embed testing**: `util/embed-harness/` must target the branch-local PWA (`http://127.0.0.1:3101/...`), not the production PWA — production CSP blocks localhost embedding.

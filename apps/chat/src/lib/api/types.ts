@@ -51,6 +51,12 @@ export type ApiContentPart =
        */
       isError?: boolean
     }
+  /**
+   * Named data marker persisted with the message (e.g. `chat-stopped` on a
+   * turn the participant aborted). Carries no user-facing strings; the
+   * client renders any notice from its own translations keyed on `name`.
+   */
+  | { type: 'data'; name: string; data?: unknown }
 
 export interface ApiHydratedImageAttachment {
   id: string

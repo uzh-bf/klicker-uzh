@@ -2,11 +2,12 @@ import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
 } from '@klicker-uzh/types'
-import { FastMCP, UserError } from 'fastmcp'
+import { FastMCP } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
 import {
   bearerTokenFromHeaders,
+  StudentMcpAuthError,
   verifyParticipantSession,
   type StudentMcpSession,
 } from './auth.js'
@@ -66,14 +67,19 @@ export function createStudentMcpServer(
   service: StudentPracticeService
 ): FastMCP<StudentMcpSession> {
   const server = new FastMCP<StudentMcpSession>({
+    // A nullish result is how fastmcp is told authentication failed; it then
+    // answers with 401 and a WWW-Authenticate header. Letting an error escape
+    // instead would leave the transport guessing a status from message text.
     authenticate: async (request: IncomingMessage) => {
       const token = bearerTokenFromHeaders(request.headers)
-      if (!token) {
-        throw new UserError(
-          'Authentication failed: missing Authorization bearer token'
-        )
+      if (!token) return null
+
+      try {
+        return await verifyParticipantSession(token, settings)
+      } catch (error) {
+        if (error instanceof StudentMcpAuthError) return null
+        throw error
       }
-      return verifyParticipantSession(token, settings)
     },
     health: {
       enabled: true,

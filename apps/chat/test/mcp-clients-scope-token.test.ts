@@ -18,6 +18,7 @@ const TEST_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const TEST_CONTEXT: MCPRequestContext = {
   chatbotId: TEST_CHATBOT_ID,
   participantId: 'participant-must-not-leave-klicker',
+  authMode: 'account',
   kbId: TEST_KB_ID,
   sessionId: 'opaque-chat-session',
 }

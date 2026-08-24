@@ -3,7 +3,8 @@
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { setDisclaimerGateOpen } from './chat-ui-context'
 
 interface ChatbotDisclaimer {
   id: string
@@ -33,6 +34,23 @@ export const DisclaimerModal = ({
 }: DisclaimerModalProps) => {
   const t = useTranslations()
   const [isLoading, setIsLoading] = useState(false)
+  const acceptButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Published to the composer via `chat-ui-context` (see comment there) so
+  // it can suppress its own autofocus and hand focus back once the gate
+  // closes, and reset if this component unmounts while still gating.
+  useEffect(() => {
+    setDisclaimerGateOpen(isOpen)
+    return () => setDisclaimerGateOpen(false)
+  }, [isOpen])
+
+  // The design-system `Modal` (@uzh-bf/design-system Modal.tsx) hardcodes
+  // `onOpenAutoFocus={(e) => e.preventDefault()}` with no prop to override
+  // it, so Radix never moves focus into the dialog on its own — do it here
+  // instead, once the Accept button is actually in the DOM.
+  useEffect(() => {
+    if (isOpen) acceptButtonRef.current?.focus()
+  }, [isOpen])
 
   const handleAccept = async () => {
     setIsLoading(true)
@@ -178,6 +196,7 @@ export const DisclaimerModal = ({
             {t('chat.disclaimer.decline')}
           </Button>
           <Button
+            ref={acceptButtonRef}
             primary
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}

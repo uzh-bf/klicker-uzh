@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as BetaFeaturesService from '../services/betaFeatures.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -13,6 +14,7 @@ import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -67,6 +69,11 @@ import {
   SubscriptionObjectInput,
 } from './participant.js'
 import {
+  AssessmentParticipantInvitation,
+  AssessmentParticipantInvitationInput,
+  CreateAssessmentParticipantInvitationsPayload,
+} from './participantInvitation.js'
+import {
   ElementBlockInput,
   ElementOrderType,
   ElementStackInput,
@@ -85,6 +92,7 @@ import {
   ActivityLogEntry,
   CatalogCollection,
   CatalogObject,
+  ElementBatchSharingResult,
   ObjectAccess,
   ObjectType,
   PermissionInfo,
@@ -650,7 +658,10 @@ export const Mutation = builder.mutationType({
       deleteCourse: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: { id: t.arg.string({ required: true }) },
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
@@ -1277,6 +1288,19 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      shareElementsBatch: t.withAuth(asUserFullAccess).field({
+        type: ElementBatchSharingResult,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+          permissionLevel: t.arg({ type: PermissionLevel, required: true }),
+          shortnameOrEmail: t.arg.string({ required: false }),
+          userGroupId: t.arg.int({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.shareElementsBatch(args, ctx)
+        },
+      }),
+
       applyActivityBatchOperations: t.withAuth(asUserFullAccess).int({
         args: {
           activityIds: t.arg.stringList({ required: true }),
@@ -1478,6 +1502,56 @@ export const Mutation = builder.mutationType({
           }
         ),
       }),
+
+      createAssessmentParticipantInvitations: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: CreateAssessmentParticipantInvitationsPayload,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitations: t.arg({
+              type: [AssessmentParticipantInvitationInput],
+              required: true,
+              validate: {
+                minLength: 1,
+                maxLength:
+                  ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_IMPORT_SIZE,
+              },
+            }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.createAssessmentParticipantInvitations(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
+
+      deletePendingAssessmentParticipantInvitation: t
+        .withAuth(asUserFullAccess)
+        .field({
+          nullable: true,
+          type: AssessmentParticipantInvitation,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            invitationId: t.arg.int({ required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              return await ParticipantInvitationService.deletePendingAssessmentParticipantInvitation(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
 
       correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({
         nullable: true,
@@ -1787,6 +1861,17 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.setKbKnowledgeGraphEnabled(args, ctx)
+        },
+      }),
+
+      setAiFeatures: t.withAuth(asAdmin).int({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.setAiFeatures(args, ctx)
         },
       }),
 
@@ -3202,6 +3287,19 @@ export const Mutation = builder.mutationType({
 
       // ----- USER WITH CATALYST -----
       // #region
+      // Not gated by a feature flag: this is the switch that puts the
+      // lecturer into the group the flags target, so gating it behind one of
+      // them would leave nobody able to opt in.
+      setBetaFeatures: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .boolean({
+          nullable: true,
+          args: { enabled: t.arg.boolean({ required: true }) },
+          resolve: async (_, args, ctx) => {
+            return await BetaFeaturesService.setBetaFeatures(args, ctx)
+          },
+        }),
+
       createPracticeQuiz: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({

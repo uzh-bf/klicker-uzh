@@ -63,6 +63,16 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mcpLecturer.secret.databaseName | default (printf "%s-secret-backend-graphql" $fullName) }}
                   key: {{ .Values.mcpLecturer.secret.databaseUrlKey }}
+            {{- with .Values.mcpLecturer.secret.jwtSecretKey }}
+            {{- /* Dedicated MCP signing secret. Only referenced once the key
+                   exists in the cluster secret; the chart creates no secrets,
+                   so an unconditional ref would keep the pod from starting. */}}
+            - name: MCP_LECTURER_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.mcpLecturer.secret.appSecretName | default (printf "%s-secret-chat" $fullName) }}
+                  key: {{ . }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ $fullName }}-config-global

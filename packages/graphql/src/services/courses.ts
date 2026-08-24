@@ -32,7 +32,7 @@ import {
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
 import { manipulateGroupActivity } from './groups.js'
-import { manipulateLiveQuiz } from './liveQuizzes.js'
+import { hardDeleteLiveQuiz, manipulateLiveQuiz } from './liveQuizzes.js'
 import { manipulateMicroLearning } from './microLearning.js'
 import { manipulatePracticeQuiz } from './practiceQuizzes.js'
 import { checkAccess, type PermissionCheck } from './sharing.js'
@@ -595,7 +595,6 @@ export async function getStudentAssessmentResults(
       where: {
         courseId,
         participantId,
-        isActive: true,
         participant: { isActive: true },
         course: {
           isAssessmentEnabled: true,
@@ -613,7 +612,7 @@ export async function getStudentAssessmentResults(
 
     if (!participation) {
       throw new Error(
-        'Active assessment participation with an accepted invitation not found'
+        'Assessment participation with an accepted invitation not found'
       )
     }
   }
@@ -750,6 +749,10 @@ export async function getAssessmentResultsLiveQuiz(
     acc[participation.participantId] = {
       participantId: participation.participantId,
       participantEmail: email,
+      assessmentGivenName: participation.assessmentGivenName,
+      assessmentSurname: participation.assessmentSurname,
+      assessmentMatriculationNumber:
+        participation.assessmentMatriculationNumber,
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
@@ -804,6 +807,9 @@ export async function getAssessmentResultsLiveQuiz(
               quizAcc.students[response.participantId] = {
                 participantId: response.participantId,
                 participantEmail: email,
+                assessmentGivenName: null,
+                assessmentSurname: null,
+                assessmentMatriculationNumber: null,
                 basePoints: response.basePoints,
                 correctnessPoints: response.correctnessPoints,
                 bonusPoints: response.bonusPoints,
@@ -853,32 +859,46 @@ export async function getAssessmentResultsCourse(
   }: { courseId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ): Promise<AssessmentResultsCourse | null> {
-  const scores = await calculateAssessmentCourseScores(
-    { courseId, participantScope: 'ALL' },
-    ctx
-  )
+  const scores = await calculateAssessmentCourseScores({ courseId }, ctx)
   if (!scores) return null
 
-  const participants = await ctx.prisma.participant.findMany({
+  const participations = await ctx.prisma.participation.findMany({
     where: {
-      id: { in: scores.studentResults.map((result) => result.participantId) },
+      courseId,
+      participantId: {
+        in: scores.studentResults.map((result) => result.participantId),
+      },
     },
     select: {
-      id: true,
-      email: true,
-      accounts: {
-        where: { ssoType: preferredAffiliation },
-        select: { ssoEmail: true },
-        take: 1,
+      participantId: true,
+      assessmentGivenName: true,
+      assessmentSurname: true,
+      assessmentMatriculationNumber: true,
+      participant: {
+        select: {
+          email: true,
+          accounts: {
+            where: { ssoType: preferredAffiliation },
+            select: { ssoEmail: true },
+            take: 1,
+          },
+        },
       },
     },
   })
-  const emails = new Map(
-    participants.map((participant) => [
-      participant.id,
-      participant.accounts[0]?.ssoEmail ??
-        participant.email ??
-        'Missing E-Mail',
+  const participantData = new Map(
+    participations.map((participation) => [
+      participation.participantId,
+      {
+        participantEmail:
+          participation.participant.accounts[0]?.ssoEmail ??
+          participation.participant.email ??
+          'Missing E-Mail',
+        assessmentGivenName: participation.assessmentGivenName,
+        assessmentSurname: participation.assessmentSurname,
+        assessmentMatriculationNumber:
+          participation.assessmentMatriculationNumber,
+      },
     ])
   )
 
@@ -886,7 +906,12 @@ export async function getAssessmentResultsCourse(
     ...scores,
     studentResults: scores.studentResults.map((result) => ({
       ...result,
-      participantEmail: emails.get(result.participantId) ?? 'Missing E-Mail',
+      ...(participantData.get(result.participantId) ?? {
+        participantEmail: 'Missing E-Mail',
+        assessmentGivenName: null,
+        assessmentSurname: null,
+        assessmentMatriculationNumber: null,
+      }),
     })),
   }
 }
@@ -4018,6 +4043,13 @@ export async function getCourseSummary(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
+      liveQuizzes: {
+        where: {
+          isDeleted: false,
+          status: DB.PublicationStatus.DRAFT,
+        },
+        select: { id: true },
+      },
       _count: {
         select: {
           liveQuizzes: { where: { isDeleted: false } },
@@ -4037,6 +4069,7 @@ export async function getCourseSummary(
   return {
     numOfParticipations: course._count.participations,
     numOfLiveQuizzes: course._count.liveQuizzes,
+    numOfDraftLiveQuizzes: course.liveQuizzes.length,
     numOfPracticeQuizzes: course._count.practiceQuizzes,
     numOfMicroLearnings: course._count.microLearnings,
     numOfGroupActivities: course._count.groupActivities,
@@ -4046,7 +4079,10 @@ export async function getCourseSummary(
 }
 
 export async function deleteCourse(
-  { id }: { id: string },
+  {
+    id,
+    deleteDraftActivities,
+  }: { id: string; deleteDraftActivities?: boolean | null },
   ctx: ContextWithUser
 ) {
   // updates of derived permissions on the course and some cascaded objects are automatic (since course is hard-deleted)
@@ -4055,7 +4091,7 @@ export async function deleteCourse(
   const course = await ctx.prisma.course.findUnique({
     where: { id, isAssessmentEnabled: false },
     include: {
-      liveQuizzes: true,
+      liveQuizzes: { include: { blocks: { include: { elements: true } } } },
       practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
       microLearnings: { include: { stacks: { include: { elements: true } } } },
       groupActivities: { include: { stacks: { include: { elements: true } } } },
@@ -4066,15 +4102,41 @@ export async function deleteCourse(
     throw new Error('Course not found or permission denied')
   }
 
+  const draftLiveQuizzes = deleteDraftActivities
+    ? course.liveQuizzes.filter(
+        (liveQuiz) =>
+          !liveQuiz.isDeleted && liveQuiz.status === DB.PublicationStatus.DRAFT
+      )
+    : []
+  const draftLiveQuizIds = new Set(
+    draftLiveQuizzes.map((liveQuiz) => liveQuiz.id)
+  )
+  const retainedLiveQuizzes = course.liveQuizzes.filter(
+    (liveQuiz) => !draftLiveQuizIds.has(liveQuiz.id)
+  )
+
   const deletedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
+      // optionally hard-delete linked draft live quizzes instead of
+      // disconnecting them from the course
+      for (const liveQuiz of draftLiveQuizzes) {
+        await hardDeleteLiveQuiz(
+          {
+            liveQuiz,
+            courseId: id,
+            statuses: [DB.PublicationStatus.DRAFT],
+          },
+          prisma
+        )
+      }
+
       // hard-delete the course -> cascading delete on practice quiz, microlearning, group activity and linked stacks
-      // live quizzes are disconnected from the course on deletion
+      // retained live quizzes are disconnected from the course on deletion
       const deleted = await prisma.course.delete({ where: { id } })
 
       // trigger a recomputation of all permissions related to the live quizzes of the course
       // this action should be executed sequentially to avoid race conditions (same element in multiple live quizzes)
-      for (const liveQuiz of course.liveQuizzes) {
+      for (const liveQuiz of retainedLiveQuizzes) {
         await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
       }
 
@@ -4162,6 +4224,9 @@ export async function deleteCourse(
     }
   }
 
+  for (const liveQuiz of draftLiveQuizzes) {
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id: liveQuiz.id })
+  }
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
 }

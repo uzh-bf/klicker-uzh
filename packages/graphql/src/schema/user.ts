@@ -38,6 +38,8 @@ export const User = UserRef.implement({
     publicPreview: t.exposeBoolean('publicPreview'),
     privatePreview: t.exposeBoolean('privatePreview'),
 
+    aiFeaturesEnabled: t.exposeBoolean('aiFeaturesEnabled'),
+
     numChatbots: t.int({
       resolve: async (user, _, ctx) => {
         return await ctx.prisma.chatbot.count({

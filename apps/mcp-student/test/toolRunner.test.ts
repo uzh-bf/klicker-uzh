@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { StudentMcpSession } from '../src/auth.js'
 import { runStudentTool } from '../src/toolRunner.js'
 
-const studentSession = {
+const studentSession: StudentMcpSession = {
+  actor: 'account',
   bearerToken: 'secret-student-token',
   participantId: 'participant-1',
+  scopes: ['student:practice:read', 'student:practice:submit'],
 }
 
 describe('student MCP tool runner', () => {
@@ -31,7 +34,7 @@ describe('student MCP tool runner', () => {
         latencyMs: expect.any(Number),
         outcome: 'ok',
         role: 'student',
-        scopes: [],
+        scopes: ['student:practice:read', 'student:practice:submit'],
         service: 'mcp-student',
         subjectId: 'participant-1',
         tool: 'lookup_relevant_practice_stacks',

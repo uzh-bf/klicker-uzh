@@ -37,6 +37,7 @@ describe('getAuthenticatedManageUser', () => {
     mockSessionCookie(token)
 
     await expect(getAuthenticatedManageUser()).resolves.toEqual({
+      catalyst: false,
       role: 'USER',
       scope: 'FULL_ACCESS',
       sub: 'user-1',
@@ -48,6 +49,7 @@ describe('getAuthenticatedManageUser', () => {
     mockSessionCookie(token)
 
     await expect(getAuthenticatedManageUser()).resolves.toEqual({
+      catalyst: false,
       role: 'USER',
       scope: undefined,
       sub: 'user-2',
@@ -72,6 +74,7 @@ describe('getAuthenticatedManageUser', () => {
     mockSessionCookie(token)
 
     await expect(getAuthenticatedManageUser()).resolves.toEqual({
+      catalyst: false,
       role: 'ADMIN',
       scope: 'ACCOUNT_OWNER',
       sub: 'admin-1',

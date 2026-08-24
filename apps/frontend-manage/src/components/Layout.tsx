@@ -8,17 +8,8 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React, { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { isManageAssistantEnabled } from './assistant/manageAssistantConfig'
+import { useAiFeaturesEnabled } from '../lib/hooks/useAiFeaturesEnabled'
 import Header from './common/Header'
-
-// The assistant launcher is fixed to the bottom-right viewport corner
-// (h-14 at bottom-4, md:bottom-6), so end-of-page controls need enough
-// bottom clearance to scroll out from under it. This must be an in-flow
-// spacer element: browsers do not extend a scroll container's scrollable
-// area by its own bottom padding once content overflows.
-const assistantClearance =
-  isManageAssistantEnabled(process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED) &&
-  Boolean(process.env.NEXT_PUBLIC_CHAT_URL)
 
 interface LayoutProps {
   displayName?: string
@@ -38,6 +29,14 @@ function Layout({
 }: LayoutProps) {
   const t = useTranslations()
   const router = useRouter()
+
+  // The assistant launcher is fixed to the bottom-right viewport corner
+  // (h-14 at bottom-4, md:bottom-6), so end-of-page controls need enough
+  // bottom clearance to scroll out from under it. This must be an in-flow
+  // spacer element: browsers do not extend a scroll container's scrollable
+  // area by its own bottom padding once content overflows.
+  const assistantClearance =
+    useAiFeaturesEnabled() && Boolean(process.env.NEXT_PUBLIC_CHAT_URL)
 
   const {
     loading: loadingUser,

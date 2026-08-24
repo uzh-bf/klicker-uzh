@@ -307,7 +307,9 @@ function ParticipationRequired({
     : 'https://pwa.klicker.uzh.ch'
 
   return (
-    <div
+    <main
+      id="main-content"
+      tabIndex={-1}
       data-cy="chat-participation-required"
       className={twMerge(
         'bg-muted flex w-full items-center justify-center px-4',
@@ -346,7 +348,7 @@ function ParticipationRequired({
           </Link>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 
@@ -354,16 +356,17 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
   const t = useTranslations()
 
   return (
-    <output
+    <main
+      id="main-content"
+      tabIndex={-1}
       data-cy="chat-loading"
-      aria-live="polite"
-      aria-busy="true"
       className={twMerge(
         'bg-muted flex items-center justify-center px-4',
         embedded ? 'h-full' : 'min-h-screen'
       )}
     >
-      <span
+      <output
+        aria-live="polite"
         className={twMerge(
           'bg-card flex w-full items-center gap-4 rounded-xl border p-6 shadow-sm',
           embedded ? 'max-w-xs p-4' : 'max-w-sm'
@@ -390,8 +393,8 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
             {t('chat.assistant.loading')}
           </span>
         </span>
-      </span>
-    </output>
+      </output>
+    </main>
   )
 }
 
@@ -408,7 +411,9 @@ function DisclaimerDeclined({
 
   return (
     <>
-      <div
+      <main
+        id="main-content"
+        tabIndex={-1}
         data-cy="chat-disclaimer-declined"
         className={twMerge(
           'flex items-center justify-center',
@@ -433,23 +438,17 @@ function DisclaimerDeclined({
             {t('chat.assistant.disclaimerDeclinedMessage')}
           </p>
           {!embedded && (
-            // text-white, not text-destructive-foreground: this app's
-            // theme only defines --color-destructive (see globals.css),
-            // no matching foreground token. White sits ~4.8:1 on the solid
-            // destructive bg, near the 4.5:1 AA floor — so the hover must
-            // darken (brightness-90), not alpha-lighten like the app's
-            // hover:bg-primary/90 pattern, which would drop below AA here.
             <button
               type="button"
               data-cy="chat-show-disclaimer-again"
               onClick={onShowDisclaimer}
-              className="bg-destructive mt-4 min-h-11 rounded px-4 py-2 text-white transition-[filter] touch-manipulation hover:brightness-90 fine-pointer:min-h-8"
+              className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-4 min-h-11 touch-manipulation rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 fine-pointer:min-h-8"
             >
               {t('chat.assistant.showDisclaimerAgain')}
             </button>
           )}
         </div>
-      </div>
+      </main>
 
       {!embedded && disclaimer && (
         <DisclaimerModal
@@ -524,8 +523,8 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset>
-      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
+    <SidebarInset id="main-content" tabIndex={-1}>
+      <header className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           {/* Only visible when the sidebar is closed — once it's open, the
               sidebar's own trigger closes it, so this stays the single
@@ -573,12 +572,16 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
-      </div>
+      </header>
       <MobileCreditsBar />
       <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
         <ChatGraphModeSwitch chatbotId={chatbot.id} />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
@@ -596,7 +599,7 @@ function SidebarMain({
             />
           )}
         </div>
-      </div>
+      </main>
     </SidebarInset>
   )
 }
@@ -641,7 +644,11 @@ function AssistantLayout({
         </h1>
         <EmbeddedSettings />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
           <ChatGraphModeSwitch chatbotId={chatbot.id} />
         </div>
@@ -665,7 +672,7 @@ function AssistantLayout({
           )}
         </div>
         <EmbeddedCreditsBar />
-      </div>
+      </main>
     </div>
   )
 }

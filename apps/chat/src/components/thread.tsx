@@ -76,12 +76,12 @@ import {
   getHistoryRailMessageAnchor,
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
-import { useChatUi } from './chat-ui-context'
+import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
 import { ChatbotAvatar } from './chatbot-avatar'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
-import { hasChatError } from './message-parts-state'
+import { hasChatError, isStoppedWithoutText } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
@@ -200,10 +200,12 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
     return null
   }
 
-  // A failed turn has its own localized callout and retry action. The normal
-  // answer timestamp and feedback controls would make an incomplete response
-  // look like a finished answer that is ready to rate.
-  if (hasChatError(message)) return null
+  // A failed turn has its own localized callout and retry action, as does a
+  // turn stopped before any text arrived. The normal answer timestamp and
+  // feedback controls would make an incomplete response look like a finished
+  // answer that is ready to rate. (A stopped turn WITH text is a real partial
+  // answer and keeps them.)
+  if (hasChatError(message) || isStoppedWithoutText(message)) return null
 
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
@@ -305,6 +307,7 @@ export const Thread: FC<ThreadProps> = ({
   initialModeOptions = {},
   initialModeOptionsAreFallback = false,
 }) => {
+  const t = useTranslations()
   const { embedded } = useChatUi()
   const resolvedSuggestions =
     suggestions ??
@@ -326,11 +329,15 @@ export const Thread: FC<ThreadProps> = ({
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
     >
+      <ThreadRunAnnouncer />
       {!embedded && <HistoryRail entries={historyEntries} />}
       <ThreadPrimitive.Viewport
         data-cy="chat-thread-viewport"
+        role="region"
+        aria-label={t('chat.thread.viewportLabel')}
+        tabIndex={0}
         className={twMerge(
-          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit motion-reduce:scroll-auto',
+          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
             : twMerge(
@@ -392,6 +399,77 @@ export const Thread: FC<ThreadProps> = ({
   )
 }
 
+/**
+ * The thread's single polite live region for the response lifecycle. Only the
+ * four state transitions are announced — never the streamed tokens, which
+ * would talk over the reader for the whole answer.
+ *
+ * The end of a run is read from the store's `lastRunOutcome` rather than from
+ * `isRunning` alone, because cancelling clears the running flag before the
+ * response hook records the outcome: a running-only signal announces a
+ * stopped answer as a completed one.
+ */
+const ThreadRunAnnouncer: FC = () => {
+  const t = useTranslations()
+  const activeThreadId = useChatStore((state) => state.activeThreadId)
+  const isRunning = useChatStore(
+    (state) =>
+      state.threads.find((thread) => thread.id === state.activeThreadId)
+        ?.isRunning ?? false
+  )
+  const lastRunOutcome = useChatStore(
+    (state) =>
+      state.threads.find((thread) => thread.id === state.activeThreadId)
+        ?.lastRunOutcome ?? null
+  )
+  const [announcement, setAnnouncement] = useState('')
+  // Which thread the last announcement decision was made for; undefined until
+  // the first one.
+  const announcedThreadIdRef = useRef<string | null | undefined>(undefined)
+
+  useEffect(() => {
+    const announcedThreadId = announcedThreadIdRef.current
+    announcedThreadIdRef.current = activeThreadId
+
+    // The first render and a switch to a different thread both surface
+    // existing state rather than a transition, and must stay silent. Sending
+    // the first message of a new chat activates a thread where there was
+    // none — that is the same view continuing, not a switch, and swallowing
+    // it would leave the first turn of every new chat unannounced.
+    const isThreadSwitch =
+      announcedThreadId === undefined ||
+      (announcedThreadId !== null && announcedThreadId !== activeThreadId)
+
+    if (isThreadSwitch) {
+      setAnnouncement('')
+      return
+    }
+
+    if (isRunning) {
+      setAnnouncement(t('chat.thread.runStarted'))
+      return
+    }
+
+    // A cancelled run clears `isRunning` before its outcome lands, so the
+    // empty string here is a real intermediate state, not a missing case.
+    setAnnouncement(
+      lastRunOutcome === 'completed'
+        ? t('chat.thread.runCompleted')
+        : lastRunOutcome === 'stopped'
+          ? t('chat.thread.runStopped')
+          : lastRunOutcome === 'error'
+            ? t('chat.thread.runFailed')
+            : ''
+    )
+  }, [activeThreadId, isRunning, lastRunOutcome, t])
+
+  return (
+    <div data-cy="chat-run-status" role="status" className="sr-only">
+      {announcement}
+    </div>
+  )
+}
+
 const ThreadScrollToBottom: FC = () => {
   const t = useTranslations()
   return (
@@ -424,7 +502,6 @@ const ThinkingDots: FC = () => {
   return (
     <div
       data-cy="chat-thinking-indicator"
-      role="status"
       className="flex min-h-7 items-center gap-1 py-2"
     >
       {THINKING_DOT_DELAYS.map((delayClassName, index) => (
@@ -436,6 +513,9 @@ const ThinkingDots: FC = () => {
           )}
         />
       ))}
+      {/* A label, not a live region: ThreadRunAnnouncer already announces the
+          same transition, and two polite regions firing on one event read the
+          start of an answer twice. */}
       <span className="sr-only">{t('chat.thread.thinking')}</span>
     </div>
   )
@@ -658,6 +738,16 @@ const ThreadWelcomeSuggestions: FC<{
             prompt={suggestion.prompt}
             send={false}
             clearComposer
+            onClick={() => {
+              // The suggestion only fills the composer text and leaves focus
+              // on the card itself — send it to the composer input so a
+              // student can start typing straight away.
+              document
+                .querySelector<HTMLTextAreaElement>(
+                  '[data-cy="chat-composer-input"]'
+                )
+                ?.focus()
+            }}
           >
             {suggestion.text}
           </ThreadPrimitive.Suggestion>
@@ -729,7 +819,28 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
 }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
+  const disclaimerGateOpen = useDisclaimerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Whether the gate was open the last time this ran, so only the *closing*
+  // transition hands focus back — the ordinary, no-disclaimer mount is
+  // already covered by `autoFocus` below and must not be duplicated here.
+  const gateWasOpenRef = useRef(false)
+
+  // `autoFocus` only ever fires once, on mount, so it cannot react to the
+  // disclaimer gate closing later — hand focus back to the input explicitly
+  // once `disclaimerGateOpen` (see chat-ui-context.tsx) flips from true to
+  // false.
+  useEffect(() => {
+    if (disclaimerGateOpen) {
+      gateWasOpenRef.current = true
+      return
+    }
+    if (gateWasOpenRef.current) {
+      gateWasOpenRef.current = false
+      inputRef.current?.focus()
+    }
+  }, [disclaimerGateOpen])
 
   return (
     <ComposerDropzone
@@ -758,8 +869,9 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
           />
           <ComposerPrimitive.Input
             data-cy="chat-composer-input"
+            ref={inputRef}
             rows={1}
-            autoFocus={!embedded}
+            autoFocus={!embedded && !disclaimerGateOpen}
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
@@ -1133,6 +1245,44 @@ const ComposerAction: FC = () => {
   // `@assistant-ui/react`'s `createActionButton`), so `isRunning` here only
   // drives which one is *visible*; it never duplicates that disabled logic.
   const isRunning = useAuiState((s) => s.thread.isRunning)
+  const sendButtonRef = useRef<HTMLButtonElement>(null)
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  // Focus bookkeeping via events, not a render-phase `document.activeElement`
+  // read (which react-hooks/refs forbids): `onFocus` records which shell
+  // button holds focus, and `onBlur` clears the record only when focus moved
+  // to a real target — a `null` relatedTarget means the browser evicted focus
+  // (the button just went `inert` below), which is exactly the case the
+  // effect must still see.
+  const focusedShellButtonRef = useRef<'send' | 'cancel' | null>(null)
+  const handleShellFocus = (event: React.FocusEvent<HTMLButtonElement>) => {
+    focusedShellButtonRef.current =
+      event.currentTarget.dataset.cy === 'chat-send-button' ? 'send' : 'cancel'
+  }
+  const handleShellBlur = (event: React.FocusEvent<HTMLButtonElement>) => {
+    if (event.relatedTarget) focusedShellButtonRef.current = null
+  }
+
+  useEffect(() => {
+    const outgoing = isRunning ? 'send' : 'cancel'
+    if (focusedShellButtonRef.current !== outgoing) return
+    focusedShellButtonRef.current = null
+    // Only rescue focus the `inert` swap actually evicted; if the user has
+    // meanwhile focused something real (e.g. the composer), leave it alone.
+    const active = document.activeElement
+    if (active && active !== document.body) return
+    const incoming = isRunning ? cancelButtonRef.current : sendButtonRef.current
+    // Send stays `disabled` (self-disabled by `createActionButton`, see
+    // above) while the composer is empty, which it normally is right after
+    // sending — a disabled button can't take focus, so fall back to the
+    // composer input rather than leaving focus stranded on <body>.
+    if (incoming && !incoming.disabled) {
+      incoming.focus()
+      return
+    }
+    document
+      .querySelector<HTMLTextAreaElement>('[data-cy="chat-composer-input"]')
+      ?.focus()
+  }, [isRunning])
 
   const iconSize = embedded ? 'size-4' : 'size-5'
   // Shared shape/focus for both action buttons; the design-system `Button`'s
@@ -1161,12 +1311,15 @@ const ComposerAction: FC = () => {
          * the `bg-primary` fill and `disabled:` (empty-composer) states apply.
          */}
         <button
+          ref={sendButtonRef}
           type="button"
           data-cy="chat-send-button"
           aria-hidden={isRunning}
           inert={isRunning}
           tabIndex={isRunning ? -1 : 0}
           aria-label={t('chat.composer.send')}
+          onFocus={handleShellFocus}
+          onBlur={handleShellBlur}
           className={twMerge(
             baseAction,
             'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm',
@@ -1179,12 +1332,15 @@ const ComposerAction: FC = () => {
       </ComposerPrimitive.Send>
       <ComposerPrimitive.Cancel asChild>
         <button
+          ref={cancelButtonRef}
           type="button"
           data-cy="chat-cancel-button"
           aria-hidden={!isRunning}
           inert={!isRunning}
           tabIndex={isRunning ? 0 : -1}
           aria-label={t('chat.composer.stop')}
+          onFocus={handleShellFocus}
+          onBlur={handleShellBlur}
           className={twMerge(
             baseAction,
             'text-foreground hover:bg-accent disabled:opacity-50',
@@ -1665,7 +1821,10 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   if (!showMessageActions) return null
-  const hasError = hasChatError(message)
+  // Failed and stopped-without-text callouts carry their own retry action,
+  // and an incomplete turn has no answer to rate.
+  const hideAnswerActions =
+    hasChatError(message) || isStoppedWithoutText(message)
 
   return (
     <div
@@ -1697,7 +1856,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hasError && (
+        {!hideAnswerActions && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>
@@ -1706,15 +1865,15 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
                   className={actionBarButtonClassName}
                 >
                   <RefreshCwIcon />
-                  <span className="sr-only">{t('chat.message.refresh')}</span>
+                  <span className="sr-only">{t('chat.message.retry')}</span>
                 </button>
               </ActionBarPrimitive.Reload>
             </TooltipTrigger>
-            <TooltipContent>{t('chat.message.refresh')}</TooltipContent>
+            <TooltipContent>{t('chat.message.retry')}</TooltipContent>
           </Tooltip>
         )}
 
-        {!hasError && <MessageRatingButtons />}
+        {!hideAnswerActions && <MessageRatingButtons />}
 
         <BranchPickerWrapper />
       </ActionBarPrimitive.Root>
@@ -1736,6 +1895,9 @@ const MessageRatingButtons: FC = () => {
         ?.rating ?? null
     )
   })
+  const ratingFailed = useChatStore(
+    (state) => state.ratingErrors[message.id] === true
+  )
 
   if (!chatbotId) return null
 
@@ -1787,6 +1949,19 @@ const MessageRatingButtons: FC = () => {
           </Tooltip>
         )
       })}
+      {/* The optimistic vote is rolled back on a rejected POST; without this
+          the icon just snaps back, which reads as a mis-click rather than a
+          failure. Mounted on failure only — insertion is what makes an alert
+          announce. */}
+      {ratingFailed && (
+        <span
+          data-cy="chat-rating-error"
+          role="alert"
+          className="text-destructive self-center text-xs"
+        >
+          {t('chat.message.ratingError')}
+        </span>
+      )}
     </>
   )
 }

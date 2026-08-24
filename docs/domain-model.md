@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-18'
+timestamp: '2026-08-24'
 tags:
   - backend
   - prisma
@@ -24,6 +24,14 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 | Role enum | `USER` / `ADMIN`          | `PARTICIPANT` / `TEMPORARY_PARTICIPANT`            |
 
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
+
+`Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Assessment participant invitations
+
+`ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.
+
+Invitation creation normalizes emails and matriculation numbers, reports invalid rows without failing the rest of a batch, and immediately accepts an invitation only when exactly one active `Participant` is identified through verified **affiliation** `ParticipantAccount` records (`packages/graphql/src/services/participantInvitations.ts:createParticipantInvitations`). Assessment-course imports accept at most 200 rows per request; larger files must be split before submission. A duplicate email does not create a second row; a newly supplied matriculation number updates only a `PENDING` invitation, while accepted admission records remain immutable. Unexpected database failures surface through GraphQL instead of becoming row-level success data. Lecturer-side deletion is deliberately narrower than course deletion: only `PENDING` invitations can be removed (`packages/graphql/src/services/participantInvitations.ts:deletePendingAssessmentParticipantInvitation`).
 
 ## Content hierarchy
 
@@ -90,6 +98,21 @@ Deletion is asynchronous and fenced by `deletedAt`/`deletedById` on both `KB` an
 Each KB retains at most 100 resource allocations and 500 MiB. Quota accounting includes hidden resource tombstones and unconsumed upload tickets, so asynchronous cleanup and concurrent upload requests cannot free or oversubscribe capacity early. A ticket reserves its declared bytes; confirmation converts that reservation into a resource without double counting. URL bytes become known during source preparation and atomically replace that resource's previous measured size under the parent-KB lock.
 
 Lecturer-facing metrics are derived from these rows rather than stored counters. They distinguish visible resources and known bytes from retained quota usage, conservative 25 MiB reservations for legacy unknown-size rows, upload reservations, pending cleanup, and enabled chatbot consumers. The catalog computes the same measures with bounded grouped queries for one page of owned KBs.
+
+## Course deletion
+
+**Deleting a non-assessment course does not normally delete its live quizzes.**
+The required `PracticeQuiz`, `MicroLearning`, and `GroupActivity` relations are
+hard-deleted through the course cascade, while `LiveQuiz.courseId` uses
+`SetNull`, so linked live quizzes are disconnected and remain in the activity
+list. The optional `deleteDraftActivities` argument on
+`packages/graphql/src/services/courses.ts:deleteCourse` additionally
+hard-deletes linked live quizzes in `PublicationStatus.DRAFT`; live quizzes in
+every other status are still disconnected. The lecturer UI keeps this option
+off by default and describes it in activity-level terms: the asynchronous
+activities already cascade with the course, while opting in additionally
+removes linked draft live quizzes
+(`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
 
 ## Course duplication
 

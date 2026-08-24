@@ -1,3 +1,4 @@
+import { isManageAiEnabled } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
 import {
   confirmManageProposal,
@@ -40,6 +41,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const userId = manageUser.sub
+
+  // Proposals can only originate from the lecturer MCP tools, so confirmation
+  // follows the same gate. A proposal token minted while the beta was open to
+  // this lecturer must not stay redeemable after it is closed again.
+  if (!(await isManageAiEnabled(manageUser))) {
+    return NextResponse.json({ error: 'Not available' }, { status: 403 })
+  }
 
   const rateLimit = confirmRateLimiter.check(userId)
   if (!rateLimit.allowed) {

@@ -17,10 +17,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
-import {
-  buildManageAssistantUrl,
-  isManageAssistantEnabled,
-} from './manageAssistantConfig'
+import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
+import { buildManageAssistantUrl } from './manageAssistantConfig'
 import {
   buildManageAssistantContext,
   type ManageAssistantContext,
@@ -47,10 +45,8 @@ export function ManageAssistantWidget() {
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
   // excluded explicitly: every other Manage route requires a signed-in user.
-  const enabled =
-    isManageAssistantEnabled(
-      process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED
-    ) && router.pathname !== '/login'
+  const assistantEnabled = useAiFeaturesEnabled()
+  const enabled = assistantEnabled && router.pathname !== '/login'
   const assistantUrl = useMemo(
     () =>
       buildManageAssistantUrl({

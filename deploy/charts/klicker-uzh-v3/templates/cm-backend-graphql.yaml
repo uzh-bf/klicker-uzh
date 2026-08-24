@@ -29,6 +29,12 @@ data:
   # allow-list offers exactly the models the chat app can actually serve.
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}
+  {{- if .Values.backendGraphql.betaSavedGroupId }}
+  # Non-secret: the id of the GrowthBook saved group the beta opt-in writes to.
+  # The write credential itself arrives separately through the optional
+  # management Secret, which is why this belongs in the ConfigMap.
+  GROWTHBOOK_BETA_SAVED_GROUP_ID: {{ .Values.backendGraphql.betaSavedGroupId | quote }}
+  {{- end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

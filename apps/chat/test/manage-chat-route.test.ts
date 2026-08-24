@@ -3,9 +3,17 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getAuthenticatedManageUser: vi.fn(),
+  isManageAiEnabled: vi.fn(),
   rateLimitCheck: vi.fn(),
   readBoundedJson: vi.fn(),
   tryAcquireManageChatRequest: vi.fn(),
+}))
+
+// These cases are about what the route does after the gate, so the gate itself
+// is stubbed open here; its own two conditions are covered in the feature flag
+// package and by the flag being off in every environment that has no rule.
+vi.mock('@/src/lib/server/featureFlags', () => ({
+  isManageAiEnabled: mocks.isManageAiEnabled,
 }))
 
 vi.mock('@/src/lib/server/manageAuth', () => ({
@@ -40,6 +48,8 @@ async function expectJson(response: Response, status: number, body: unknown) {
 
 describe('POST /api/manage/chat request boundary', () => {
   beforeEach(() => {
+    mocks.isManageAiEnabled.mockReset()
+    mocks.isManageAiEnabled.mockResolvedValue(true)
     mocks.getAuthenticatedManageUser.mockReset()
     mocks.rateLimitCheck.mockReset()
     mocks.readBoundedJson.mockReset()

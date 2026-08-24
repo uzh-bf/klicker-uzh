@@ -110,6 +110,12 @@ model User {
   publicPreview  Boolean @default(false)
   privatePreview Boolean @default(false)
 
+  // Set by an administrator once the account has supplied a cost center that
+  // the AI usage it causes can be billed to. Independent of the preview flags
+  // above: those decide which unreleased features an account may see, this one
+  // decides whether it may run anything that spends model budget.
+  aiFeaturesEnabled Boolean @default(false)
+
   logins                     UserLogin[]
   session                    Session[]
   accounts                   Account[]

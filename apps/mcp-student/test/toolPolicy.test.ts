@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { StudentMcpSession } from '../src/auth.js'
 import {
   CUMULATIVE_WRITE,
   IDEMPOTENT_WRITE,
@@ -88,5 +89,31 @@ describe('student MCP tool policy', () => {
       },
     })
     expect(READ_ONLY).not.toHaveProperty('title')
+  })
+
+  // fastmcp evaluates canAccess when it builds the session and only registers
+  // the tools that pass, so a rejected tool is unknown to that session rather
+  // than merely hidden from tools/list.
+  it('gates every tool on the scopes its policy declares', () => {
+    const readOnlySession: StudentMcpSession = {
+      actor: 'account',
+      bearerToken: 'token',
+      participantId: 'participant-1',
+      scopes: ['student:practice:read'],
+    }
+    const fullSession: StudentMcpSession = {
+      ...readOnlySession,
+      scopes: ['student:practice:read', 'student:practice:submit'],
+    }
+
+    for (const name of STUDENT_MCP_TOOL_NAMES) {
+      const { canAccess } = toolDefinition(name, name)
+      const needsSubmit = STUDENT_MCP_TOOL_POLICIES[name].rbacScope.includes(
+        'student:practice:submit'
+      )
+
+      expect(canAccess(readOnlySession)).toBe(!needsSubmit)
+      expect(canAccess(fullSession)).toBe(true)
+    }
   })
 })

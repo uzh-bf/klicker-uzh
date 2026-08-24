@@ -848,6 +848,7 @@ export async function POST(
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
       chatbotId,
       participantId,
+      authMode,
       kbId: enabledKnowledgeBaseId,
       sessionId: mcpScopeSessionId,
     })
@@ -907,6 +908,7 @@ export async function POST(
   if (selectedMode === 'tutor') {
     try {
       const lookupResult = await lookupRelevantPracticeStacks({
+        authMode,
         chatbotId,
         courseId: authChatbot.courseId,
         messages,
@@ -958,6 +960,7 @@ export async function POST(
         }
 
         const payload = await getPracticeStackForQuiz({
+          authMode,
           chatbotId,
           participantId,
           questionRef,
@@ -1719,12 +1722,9 @@ export async function POST(
           partialReasoningLength: partialReasoningContent.length,
         })
 
-        // save partial message
-        if (
-          currentThreadId &&
-          owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        // save partial message (always non-empty: `buildAbortedAssistantContent`
+        // closes every aborted turn with the `chat-stopped` marker part)
+        if (currentThreadId && owningThread) {
           try {
             const metadata = {
               chatMode: selectedMode,
@@ -1783,11 +1783,7 @@ export async function POST(
               error,
             })
           }
-        } else if (
-          currentThreadId &&
-          !owningThread &&
-          abortedAssistantContent.length > 0
-        ) {
+        } else if (currentThreadId && !owningThread) {
           console.warn(
             'Skipping assistant message save: thread ownership mismatch',
             {

@@ -51,6 +51,9 @@ packageExtensions:
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
   - keytar
+  # Transitive of fastmcp -> mcp-proxy -> pipenet. Its install script refreshes a
+  # public-suffix list we never consult; neither MCP service uses pipenet.
+  - tldjs
 
 onlyBuiltDependencies:
   - '@apollo/protobufjs'
@@ -84,4 +87,5 @@ allowBuilds:
   prisma: true
   protobufjs: true
   sharp: true
+  tldjs: false
   unrs-resolver: true

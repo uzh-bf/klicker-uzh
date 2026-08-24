@@ -15,6 +15,7 @@ import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
+import { ManageFeatureFlags } from '../components/ManageFeatureFlags'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
@@ -48,22 +49,24 @@ function App({ Component, pageProps }: AppProps) {
       className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
     >
       <ApolloProvider client={apolloClient}>
-        <NextIntlClientProvider
-          timeZone="Europe/Zurich"
-          messages={pageProps.messages}
-          locale={validLocale}
-          onError={onError}
-          getMessageFallback={getMessageFallback}
-        >
-          <DndProvider backend={HTML5Backend}>
-            <Toaster closeButton position="top-right" />
-            <Component {...pageProps} />
-            {/* Mounted here rather than in Layout so that navigating between
-                Manage pages does not tear down the assistant and reload its
-                iframe mid-conversation. */}
-            <ManageAssistantWidget />
-          </DndProvider>
-        </NextIntlClientProvider>
+        <ManageFeatureFlags>
+          <NextIntlClientProvider
+            timeZone="Europe/Zurich"
+            messages={pageProps.messages}
+            locale={validLocale}
+            onError={onError}
+            getMessageFallback={getMessageFallback}
+          >
+            <DndProvider backend={HTML5Backend}>
+              <Toaster closeButton position="top-right" />
+              <Component {...pageProps} />
+              {/* Mounted here rather than in Layout so that navigating between
+                  Manage pages does not tear down the assistant and reload its
+                  iframe mid-conversation. */}
+              <ManageAssistantWidget />
+            </DndProvider>
+          </NextIntlClientProvider>
+        </ManageFeatureFlags>
       </ApolloProvider>
 
       <style>{`

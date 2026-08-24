@@ -2,6 +2,7 @@ import { verifyJWT } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   LECTURER_MCP_SCOPE_FULL,
+  STUDENT_MCP_SCOPE_FULL,
   LECTURER_MCP_SCOPE_READ_ONLY,
   McpAuthMintError,
   __resetLecturerMcpJwtCacheForTests,
@@ -29,7 +30,7 @@ describe('mintParticipantMcpJwt', () => {
   })
 
   test('minted token verifies with same secret + issuer and carries participant sub', async () => {
-    const jwt = await mintParticipantMcpJwt('participant-a')
+    const jwt = await mintParticipantMcpJwt('participant-a', 'account')
 
     const payload = await verifyJWT(jwt, TEST_SECRET, {
       issuer: TEST_ISSUER,
@@ -39,11 +40,53 @@ describe('mintParticipantMcpJwt', () => {
     expect(payload.role).toBe('PARTICIPANT')
     expect(payload.iss).toBe(TEST_ISSUER)
     expect(typeof payload.exp).toBe('number')
+    expect(payload.purpose).toBe('student-mcp')
+    expect(payload.scope).toBe(STUDENT_MCP_SCOPE_FULL)
+    expect(payload.actor).toBe('account')
+  })
+
+  // Without the purpose claim this token is indistinguishable from the
+  // participant's own session token, which is signed for the same subject
+  // with the same role.
+  test('purpose claim separates the MCP token from a session token', async () => {
+    const jwt = await mintParticipantMcpJwt('participant-a', 'account')
+
+    const payload = await verifyJWT(jwt, TEST_SECRET, { issuer: TEST_ISSUER })
+
+    expect(payload.purpose).toBe('student-mcp')
+  })
+
+  test('carries the LTI guest actor kind into the token', async () => {
+    const jwt = await mintParticipantMcpJwt('participant-guest', 'anonymous')
+
+    const payload = await verifyJWT(jwt, TEST_SECRET, { issuer: TEST_ISSUER })
+
+    expect(payload.actor).toBe('anonymous')
+  })
+
+  test('cache is keyed per actor kind so a guest never reuses an account token', async () => {
+    const account = await mintParticipantMcpJwt('participant-both', 'account')
+    const guest = await mintParticipantMcpJwt('participant-both', 'anonymous')
+
+    expect(guest).not.toBe(account)
+  })
+
+  test('prefers the dedicated student MCP signing secret', async () => {
+    vi.stubEnv('MCP_STUDENT_JWT_SECRET', 'dedicated-student-secret')
+
+    const jwt = await mintParticipantMcpJwt('participant-a', 'account')
+
+    await expect(
+      verifyJWT(jwt, TEST_SECRET, { issuer: TEST_ISSUER })
+    ).rejects.toThrow()
+    await expect(
+      verifyJWT(jwt, 'dedicated-student-secret', { issuer: TEST_ISSUER })
+    ).resolves.toMatchObject({ sub: 'participant-a' })
   })
 
   test('cache hit within TTL returns byte-identical JWT string', async () => {
-    const first = await mintParticipantMcpJwt('participant-cache')
-    const second = await mintParticipantMcpJwt('participant-cache')
+    const first = await mintParticipantMcpJwt('participant-cache', 'account')
+    const second = await mintParticipantMcpJwt('participant-cache', 'account')
 
     expect(second).toBe(first)
   })
@@ -53,12 +96,15 @@ describe('mintParticipantMcpJwt', () => {
     try {
       const startMs = new Date('2026-04-20T12:00:00.000Z').getTime()
       vi.setSystemTime(startMs)
-      const first = await mintParticipantMcpJwt('participant-expire')
+      const first = await mintParticipantMcpJwt('participant-expire', 'account')
 
       // Advance past the 4-minute cache TTL. This moves both the
       // cache clock (Date.now) and jose's iat source (new Date()).
       vi.setSystemTime(startMs + 5 * 60 * 1000)
-      const second = await mintParticipantMcpJwt('participant-expire')
+      const second = await mintParticipantMcpJwt(
+        'participant-expire',
+        'account'
+      )
       expect(second).not.toBe(first)
     } finally {
       vi.useRealTimers()
@@ -66,12 +112,12 @@ describe('mintParticipantMcpJwt', () => {
   })
 
   test('cache is keyed per participant (no cross-participant leakage)', async () => {
-    const a = await mintParticipantMcpJwt('participant-a')
-    const b = await mintParticipantMcpJwt('participant-b')
+    const a = await mintParticipantMcpJwt('participant-a', 'account')
+    const b = await mintParticipantMcpJwt('participant-b', 'account')
     expect(a).not.toBe(b)
 
     // A re-read for A returns A's cached token, not B's most-recent one.
-    const aAgain = await mintParticipantMcpJwt('participant-a')
+    const aAgain = await mintParticipantMcpJwt('participant-a', 'account')
     expect(aAgain).toBe(a)
 
     const payloadA = await verifyJWT(aAgain, TEST_SECRET, {
@@ -82,16 +128,16 @@ describe('mintParticipantMcpJwt', () => {
 
   test('missing APP_SECRET throws McpAuthMintError', async () => {
     delete process.env.APP_SECRET
-    await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
-      McpAuthMintError
-    )
+    await expect(
+      mintParticipantMcpJwt('participant-x', 'account')
+    ).rejects.toBeInstanceOf(McpAuthMintError)
   })
 
   test('missing APP_ORIGIN_AUTH throws McpAuthMintError', async () => {
     delete process.env.APP_ORIGIN_AUTH
-    await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
-      McpAuthMintError
-    )
+    await expect(
+      mintParticipantMcpJwt('participant-x', 'account')
+    ).rejects.toBeInstanceOf(McpAuthMintError)
   })
 })
 

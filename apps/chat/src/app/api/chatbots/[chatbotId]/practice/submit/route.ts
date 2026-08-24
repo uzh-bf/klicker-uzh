@@ -59,6 +59,7 @@ export async function POST(
 
   try {
     const result = await submitPracticeStackAnswer({
+      authMode: authResult.authMode,
       chatbotId,
       participantId: authResult.participantId,
       questionRef: parsed.data.questionRef,

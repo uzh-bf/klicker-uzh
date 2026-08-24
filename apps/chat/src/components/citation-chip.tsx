@@ -5,8 +5,8 @@ import type { MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { resolveCitationSource } from '@/src/lib/sources/normalizeSources'
-import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import { useMessageSourcesContext } from './message-sources-context'
+import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 // Exported so `test/citation-chip.test.ts` can assert the wrap contract
@@ -31,7 +31,6 @@ export function CitationChip({ index }: { index: number }) {
 
   if (!source) return <>{`[${index}]`}</>
 
-  const secondaryLine = getSourceSecondaryLine(source, t)
   const accessibleLabel = t('chat.citations.label', {
     index: source.index,
     title: source.title,
@@ -39,9 +38,11 @@ export function CitationChip({ index }: { index: number }) {
 
   const handleClick = (event: MouseEvent) => {
     event.preventDefault()
-    document
-      .getElementById(`src-${messageId}-${source.index}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const target = document.getElementById(`src-${messageId}-${source.index}`)
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // `preventScroll` avoids fighting the smooth scroll above: `.focus()`
+    // would otherwise jump the card into view instantly on its own.
+    target?.focus({ preventScroll: true })
   }
 
   return (
@@ -84,20 +85,7 @@ export function CitationChip({ index }: { index: number }) {
           </a>
         </TooltipTrigger>
         <TooltipContent className="max-w-64 text-left">
-          <span className="block font-semibold">{source.title}</span>
-          {secondaryLine && (
-            <span className="text-muted-foreground mt-0.5 block text-[11px]">
-              {secondaryLine}
-            </span>
-          )}
-          {source.excerpt && (
-            <span className="mt-1 block text-[11px] italic">
-              {source.excerpt}
-            </span>
-          )}
-          <span className="text-muted-foreground mt-1 block text-[10px]">
-            {t('chat.citations.goToSource')}
-          </span>
+          <SourcePreviewContent source={source} showNavigationHint />
         </TooltipContent>
       </Tooltip>
       {CITATION_CHIP_JOINER}

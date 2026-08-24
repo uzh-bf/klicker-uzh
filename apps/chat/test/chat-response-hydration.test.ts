@@ -691,4 +691,101 @@ describe('useChatResponse attachment hydration', () => {
       content.some((part) => part.text?.includes('Response truncated'))
     ).toBe(false)
   })
+
+  test('an aborted request writes the stopped turn to both message arrays after the cancel resync', async () => {
+    const fetchSpy = vi.fn().mockRejectedValue(
+      Object.assign(new Error('The user aborted a request.'), {
+        name: 'AbortError',
+      })
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const userMessage = {
+      id: 'message-1',
+      role: 'user',
+      content: [{ type: 'text', text: 'hello' }],
+      parentId: null,
+    }
+    storeState.threads[0]!.messages = [userMessage]
+    storeState.threads[0]!.allMessages = [userMessage]
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse([userMessage] as any, 'thread-1')
+
+    // The stopped-turn write is intentionally deferred one macrotask past
+    // assistant-ui's own cancel resync; nothing may land synchronously.
+    const messagesBeforeFlush = storeState.threads[0]?.messages ?? []
+    expect(
+      messagesBeforeFlush.some((message) => message.role === 'assistant')
+    ).toBe(false)
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const stoppedTurn = {
+      role: 'assistant',
+      content: [{ type: 'data', name: 'chat-stopped', data: {} }],
+    }
+    expect(storeState.threads[0]?.messages).toEqual([
+      expect.objectContaining({ id: 'message-1' }),
+      expect.objectContaining(stoppedTurn),
+    ])
+    expect(storeState.threads[0]?.allMessages).toEqual([
+      expect.objectContaining({ id: 'message-1' }),
+      expect.objectContaining(stoppedTurn),
+    ])
+  })
+
+  test('assistant turns without text are excluded from the request body', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"hi"}',
+          'data: {"type":"finish","messageMetadata":{}}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'first question' }],
+          parentId: null,
+        },
+        {
+          id: 'assistant-stopped',
+          role: 'assistant',
+          content: [{ type: 'data', name: 'chat-stopped', data: {} }],
+          parentId: 'message-1',
+        },
+        {
+          id: 'message-2',
+          role: 'user',
+          content: [{ type: 'text', text: 'second question' }],
+          parentId: 'assistant-stopped',
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
+    expect(body.messages.map((message: { id: string }) => message.id)).toEqual([
+      'message-1',
+      'message-2',
+    ])
+  })
 })

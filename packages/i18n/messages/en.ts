@@ -1,5 +1,11 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(opens in new tab)',
+    },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
@@ -56,6 +62,8 @@ export default {
       toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -145,15 +153,22 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
       welcomeTitle: 'Welcome!',
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
@@ -188,6 +203,8 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
@@ -1398,6 +1415,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       identitySourceLabel: 'Verified identity source',
       identitySourceCourseInvitation:
         'Accepted assessment-course invitation email',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Achieved',
       availablePointsLabel: 'Available',
       performanceInsightsTitle: 'Peer comparison',
@@ -1437,6 +1455,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
+      studentNameLabel: 'Student name',
+      studentEmailAddressLabel: 'Email address',
+      matriculationNumberLabel: 'Matriculation number',
       studentEmailLabel: 'Student',
       pointsSummaryLabel: 'Points Summary',
       yourScoreLabel: 'You',
@@ -1759,6 +1780,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The specified user does not exist. Please check the email address and ensure that the user has logged in to KlickerUZH at least once.',
       grantAccessError:
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
+      aiFeaturesAvailability: 'Availability: AI Features',
+      aiFeaturesDescription:
+        'All users on the following list may use the AI features, which spend model budget. Only enable an account once a cost center has been supplied that the usage can be billed to. Enabling or disabling is done by entering the email address (primary Edu-ID email).',
+      aiFeaturesEnable: 'Enable',
+      aiFeaturesDisable: 'Disable',
+      aiFeaturesEnabled:
+        'The specified user has been enabled for the AI features.',
+      aiFeaturesDisabled:
+        'The specified user has been disabled for the AI features.',
+      aiFeaturesUnchanged:
+        'The specified user already had the requested AI feature setting.',
+      aiFeaturesError:
+        'An error occurred while changing the AI feature setting. This might be due to insufficient permissions or a system error.',
     },
     activities: {
       activityType: 'Activity Type',
@@ -1871,8 +1905,70 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     assessment: {
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant invitations',
+      participantInvitationsDescription:
+        'Invite participants to this assessment course and track whether they have accepted their invitation.',
+      invitationBackToCourse: 'Back to course',
+      invitationImportTitle: 'Import invitations',
+      invitationImportDescription:
+        'Select a CSV file containing the participant email addresses and matriculation numbers. The file is parsed in your browser before the invitations are submitted.',
+      invitationAffiliationWarning:
+        'Use the exact email address listed as a verified Swiss Edu-ID affiliation (for example, an @uzh.ch address). Personal email addresses may not be matched when the participant signs in.',
+      invitationDownloadTemplate: 'Download CSV template',
+      invitationCsvPrompt: 'Select a participant CSV file',
+      invitationCsvHeaders:
+        'Required headers: email and matriculationNumber (comma or semicolon separated).',
+      invitationCsvReady:
+        '{count, plural, one {# row ready to import} other {# rows ready to import}}',
+      invitationSelectCsv: 'Select CSV file',
+      invitationImportButton:
+        '{count, plural, one {Import # invitation} other {Import # invitations}}',
+      invitationCsvMissingHeaders:
+        'The CSV must contain email and matriculationNumber columns.',
+      invitationCsvInvalidHeaders:
+        'The CSV must contain exactly one email column and one matriculationNumber column.',
+      invitationCsvInvalidRows:
+        'Every CSV row must contain the same number of columns as the header.',
+      invitationCsvEmpty: 'The CSV does not contain any participant rows.',
+      invitationCsvParseError:
+        'The CSV could not be read. Check its format and try again.',
+      invitationCsvTooLarge:
+        'The CSV file is too large. Choose a file no larger than 1 MB.',
+      invitationCsvTooManyRows:
+        'The CSV contains more than {count} participant rows. Split it into smaller files.',
+      invitationImportCompleted: 'The invitation import has completed.',
+      invitationImportFailed:
+        'The invitations could not be imported. Please try again.',
+      invitationImportInvalidEmail: 'Invalid email format',
+      invitationImportSummary:
+        'Processed {total, plural, one {# row} other {# rows}}: {created} pending, {accepted} accepted, {duplicates} already present, {errors, plural, one {# error} other {# errors}}.',
+      invitationListTitle: 'Invitations',
+      invitationListDescription:
+        'Accepted invitations remain visible as a record. Pending invitations can be deleted.',
+      invitationCount:
+        '{count, plural, one {# invitation} other {# invitations}}',
+      invitationEmail: 'Email',
+      invitationMatriculationNumber: 'Matriculation number',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Invited',
+      invitationActions: 'Actions',
+      invitationStatusPending: 'Pending',
+      invitationStatusAccepted: 'Accepted',
+      invitationDeleteLabel: 'Delete pending invitation for {email}',
+      invitationDeleteTitle: 'Delete pending invitation',
+      invitationDeleteDescription:
+        'Delete the pending invitation for {email}? The participant will no longer be able to accept it.',
+      invitationDeleteSuccess: 'The pending invitation has been deleted.',
+      invitationDeleteFailed:
+        'The pending invitation could not be deleted. Refresh the page and try again.',
+      invitationEmpty: 'No participant invitations have been created yet.',
+      invitationLoadingError:
+        'The participant invitations could not be loaded. Check your permissions and try again.',
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentGivenNameColumn: 'Student given name',
+      liveQuizStudentSurnameColumn: 'Student surname',
+      liveQuizStudentMatriculationNumberColumn: 'Student matriculation number',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',
@@ -2036,6 +2132,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emailUpdatesTooltip:
         'Changing this setting will influence the emails you will receive in connection with KlickerUZH. Emails on major releases will always be sent to your Edu-ID email address (ca. 2x per year), more frequent project updates on, e.g., beta testing or surveys, can be enabled or disabled here.',
       newPassword: 'New Password',
+      betaFeatures: 'Beta Features',
+      betaFeaturesTooltip:
+        'Enable early access to KlickerUZH features that are still in testing. Beta features can change or be withdrawn at short notice, and are not recommended for use in a graded assessment. You can turn this off again at any time.',
+      betaFeaturesError:
+        'The beta setting could not be saved. Please try again in a moment.',
       changePassword: 'Change Password',
       changeDelegatedLoginPassword: 'Change delegated login password',
       changeDelegatedLoginPasswordMessage:
@@ -2115,21 +2216,69 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Elements - Batch Operations',
+      batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Your permission',
+      batchUpdateStatus: 'Element update eligibility',
+      batchUpdateStatusInactive: 'No element update configured',
+      batchSharingStatus: 'Element sharing eligibility',
       actionApplies: 'Action applies',
+      batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
       modifyBasePoints: 'Modify base points',
       awardBasePoints: 'Award base points',
       noElementsWillBeUpdated: 'No elements will be updated',
       nElementsWillBeUpdated: '{number} elements will be updated',
+      batchSharing: 'Share elements',
+      batchSharingDescription:
+        'Grant the same direct permission on all selected elements. Sharing does not propagate to activities, but linked answer collections receive the required derived read access.',
+      batchSharingLimit:
+        'Sharing is limited to {max} elements per operation. Reduce the selection or disable sharing.',
+      batchSharingUserOrEmail: 'User',
+      batchSharingGroup: 'User group',
+      batchSharingPermission: 'Permission',
+      noElementsWillBeShared: 'No elements can be shared',
+      nElementsWillBeShared: '{number} elements can be shared',
+      batchSharingNotApplicableExplanation:
+        'The selected sharing action cannot be applied to this element for the following reasons:',
+      batchSharingInsufficientPermission:
+        'Sharing elements requires at least admin permissions.',
+      batchOperationsResult: 'Batch operation result',
+      batchOperationsResultDescription:
+        'Review the completed and skipped operations below. This result is read-only.',
+      batchUpdateResultSuccess:
+        'The selected element updates were applied successfully.',
+      batchUpdateResultPartial:
+        '{updated}/{total} selected element updates were applied.',
+      batchUpdateResultFailed:
+        'The selected element updates could not be applied.',
+      batchUpdateResultSkipped:
+        'Element updates were skipped because none of the selected elements were eligible.',
+      batchSharingResult: 'Sharing result',
+      batchSharingResultShared: 'Shared',
+      batchSharingResultSkippedInsufficientPermission:
+        'Skipped: admin permission required',
+      batchSharingResultElementUnavailable: 'Skipped: element unavailable',
+      batchSharingResultFailed: 'Sharing failed',
+      batchSharingResultNotProcessed: 'Not processed',
+      batchSharingRequestFailed:
+        'The sharing request failed before all results could be returned.',
+      batchSharingTargetInvalidOrSelf:
+        'The target user does not exist or is your own account.',
+      batchSharingTargetGroupUnavailable:
+        'The selected user group is no longer available.',
+      batchOperationsRefreshFailed:
+        'The operations finished, but the element list could not be refreshed.',
       batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
 <ul>
 <li>Archiving elements / recovering elements from the archive only applies to non-archived / archived elements, respectively. This action can only be executed by users with admin permissions on the elements in question.</li>
 <li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
 <li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
 <li>Element status changes can be performed by all users.</li>
+<li>Sharing requires at least admin permissions for each element. It does not propagate to activities, but linked answer collections receive the required derived read access.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
@@ -3352,6 +3501,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
+      deleteDraftActivitiesOption:
+        'Also irreversibly delete all linked draft activities.',
+      deleteDraftActivities:
+        'All linked draft activities will be irreversibly deleted. Any remaining live quizzes will be disconnected from the course and remain accessible through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
@@ -3379,6 +3532,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant Invitations',
       appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',

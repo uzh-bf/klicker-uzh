@@ -69,8 +69,8 @@ export async function getUserElements(
     sortByType: SortByType
     sortByAsc: boolean
     showArchived: boolean
-    numEntries: number
-    offset: number
+    numEntries?: number | null
+    offset?: number | null
   },
   ctx: ContextWithUser
 ) {

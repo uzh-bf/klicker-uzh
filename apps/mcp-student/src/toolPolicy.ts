@@ -1,3 +1,6 @@
+import { requireScopes } from 'fastmcp/auth'
+import type { StudentMcpSession } from './auth.js'
+
 export const STUDENT_MCP_TOOL_NAMES = [
   'klicker_student_capabilities',
   'lookup_relevant_practice_stacks',
@@ -85,15 +88,29 @@ export const STUDENT_MCP_TOOL_POLICIES: Record<StudentMcpToolName, ToolPolicy> =
     },
   }
 
+/**
+ * Builds the fastmcp registration fields a tool shares with its policy entry,
+ * so `rbacScope` is the single place a tool's scope requirement is declared.
+ * fastmcp evaluates `canAccess` when the session is created and only puts the
+ * tools that pass into that session's dispatch table, so a token without the
+ * scope cannot call the tool by name either.
+ */
 export function toolDefinition(
   name: StudentMcpToolName,
   title: string
-): { annotations: McpToolAnnotations; name: StudentMcpToolName } {
+): {
+  annotations: McpToolAnnotations
+  canAccess: (auth: StudentMcpSession) => boolean
+  name: StudentMcpToolName
+} {
   return {
     annotations: {
       ...STUDENT_MCP_TOOL_POLICIES[name].annotations,
       title,
     },
+    canAccess: requireScopes<StudentMcpSession>(
+      ...STUDENT_MCP_TOOL_POLICIES[name].rbacScope
+    ),
     name,
   }
 }

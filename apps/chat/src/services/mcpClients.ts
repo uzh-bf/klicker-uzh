@@ -12,6 +12,7 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
 import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import { DOC_QUERY_MCP_SERVER_NAME } from './mcpScope'
@@ -43,6 +44,7 @@ export interface MCPServerWithConfig {
 export interface MCPRequestContext {
   chatbotId: string
   participantId?: string
+  authMode: AuthMode
   kbId?: string
   sessionId?: string
 }
@@ -162,7 +164,10 @@ export async function createAuthHeaders(
         'Participant identity is required for participant MCP auth'
       )
     }
-    const token = await mintParticipantMcpJwt(context.participantId)
+    const token = await mintParticipantMcpJwt(
+      context.participantId,
+      context.authMode
+    )
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
   }
@@ -424,7 +429,11 @@ export async function getAggregatedMCPTools(
  * Legacy function for backward compatibility with environment variables
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
-export async function getMCPTools(chatbotId: string, participantId: string) {
+export async function getMCPTools(
+  chatbotId: string,
+  participantId: string,
+  authMode: AuthMode
+) {
   console.log(' Using legacy MCP configuration from environment variables')
 
   const mcpKey = process.env.MCP_KEY
@@ -452,7 +461,7 @@ export async function getMCPTools(chatbotId: string, participantId: string) {
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      { chatbotId, participantId }
+      { chatbotId, participantId, authMode }
     )
     return serverTools
   } catch (error) {

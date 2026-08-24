@@ -10,6 +10,7 @@ import {
   AlertCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CircleStopIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
 } from 'lucide-react'
@@ -181,6 +182,39 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   )
 }
 
+/**
+ * Neutral callout for a turn the participant stopped mid-stream (persisted
+ * as a `data`/`chat-stopped` marker part). Deliberately not the destructive
+ * error treatment: stopping is a normal action, not a failure — but like an
+ * error the turn may be incomplete, so it keeps the same retry affordance.
+ * All strings come from the client's translations; the marker carries none.
+ */
+const ChatStoppedPart: FC = () => {
+  const t = useTranslations()
+
+  return (
+    <div
+      data-cy="chat-message-stopped"
+      className="bg-muted text-muted-foreground mt-2 flex flex-wrap items-center gap-2 rounded-md px-3 py-2 text-sm"
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <CircleStopIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <p>{t('chat.message.stoppedNotice')}</p>
+      </div>
+      <ActionBarPrimitive.Reload asChild>
+        <button
+          type="button"
+          data-cy="chat-retry-stopped-button"
+          className="hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+        >
+          <RefreshCwIcon className="size-4" aria-hidden />
+          {t('chat.message.retry')}
+        </button>
+      </ActionBarPrimitive.Reload>
+    </div>
+  )
+}
+
 export const AssistantMessageParts: FC = () => {
   return (
     <MessagePrimitive.GroupedParts
@@ -225,6 +259,10 @@ export const AssistantMessageParts: FC = () => {
             return part.name === 'chat-error' ? (
               <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
                 <ChatErrorPart data={part.data as ChatErrorPartData} />
+              </div>
+            ) : part.name === 'chat-stopped' ? (
+              <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <ChatStoppedPart />
               </div>
             ) : null
           default:

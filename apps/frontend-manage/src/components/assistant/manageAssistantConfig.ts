@@ -8,10 +8,6 @@ type BuildManageAssistantUrlArgs = {
   embed?: boolean
 }
 
-export function isManageAssistantEnabled(value: string | undefined): boolean {
-  return value === 'true' || value === '1'
-}
-
 export function buildManageAssistantUrl({
   chatUrl,
   locale,

@@ -1,10 +1,11 @@
-import { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
+import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as BetaFeaturesService from '../services/betaFeatures.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -13,6 +14,7 @@ import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
@@ -99,6 +101,7 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
+import { AssessmentParticipantInvitationPage } from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -110,9 +113,9 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
-  ChatModelCapability,
   Chatbot,
   ChatbotPublic,
+  ChatModelCapability,
 } from './resource.js'
 import {
   ActivityLogEntry,
@@ -147,6 +150,7 @@ export const Query = builder.queryType({
       scope: DB.UserLoginScope.FULL_ACCESS,
     }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
 
     return {
       self: t.field({
@@ -243,6 +247,16 @@ export const Query = builder.queryType({
         },
       }),
 
+      // Nullable on purpose: `null` means GrowthBook could not answer, which is
+      // not the same as the lecturer being opted out. The setting hides itself
+      // rather than showing a switch whose position would be a guess.
+      betaFeatures: t.withAuth(asUserWithCatalyst).boolean({
+        nullable: true,
+        resolve: async (_, __, ctx) => {
+          return await BetaFeaturesService.getBetaFeatures({}, ctx)
+        },
+      }),
+
       userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,
@@ -273,6 +287,14 @@ export const Query = builder.queryType({
         },
       }),
 
+      getUsersAiFeatures: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: [UserInfo],
+        resolve: async (_, __, ctx) => {
+          return await AccountService.getUsersAiFeatures(ctx)
+        },
+      }),
+
       userElements: t.withAuth(asUser).field({
         nullable: true,
         type: UserElementList,
@@ -292,8 +314,8 @@ export const Query = builder.queryType({
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           showArchived: t.arg.boolean({ required: true }),
-          numEntries: t.arg.int({ required: true }),
-          offset: t.arg.int({ required: true }),
+          numEntries: t.arg.int({ required: false }),
+          offset: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ElementService.getUserElements(args, ctx)
@@ -974,6 +996,35 @@ export const Query = builder.queryType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
+      }),
+
+      assessmentParticipantInvitations: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentParticipantInvitationPage,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          numEntries: t.arg.int({
+            required: false,
+            validate: {
+              min: 1,
+              max: ParticipantInvitationService.MAX_PARTICIPANT_INVITATION_PAGE_SIZE,
+            },
+          }),
+          offset: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await ParticipantInvitationService.getAssessmentParticipantInvitationPage(
+              args,
+              ctx
+            )
           }
         ),
       }),

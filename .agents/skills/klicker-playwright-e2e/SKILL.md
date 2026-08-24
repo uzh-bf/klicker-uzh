@@ -116,7 +116,7 @@ Prefer existing helpers before adding new ones.
 
 Action menus:
 
-- Use `openActionMenuByTestId(page, triggerTestId, expectedActionTestId?)` for repeated/portal-backed menus.
+- Use `openActionMenuByTestId(page, triggerTestId, expectedActionTestId?)` for repeated Radix dropdown or menubar portals.
 - Use `chooseActionByTestId(page, triggerTestId, actionTestId)` for generic action menus.
 - Use `expectActionMenuItems(page, triggerTestId, { visible, hidden })` for permission matrices.
 - Keep `chooseActivityAction(page, type, name, actionTestId)` for activity list actions.

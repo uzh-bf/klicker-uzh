@@ -1,8 +1,8 @@
 ---
 type: Testing Guide
 title: Testing
-description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-16'
+description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
+timestamp: '2026-08-24'
 tags:
   - testing
   - ci
@@ -14,13 +14,27 @@ tags:
 
 ## Which level for which change
 
-| Change                                                               | Test level                                                                                 | Command                                                                                                             |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, chat logic) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| GraphQL services/resolvers                                           | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                            | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                      | Playwright e2e                                                                             | see routing below                                                                                                   |
-| Office Add-in URL validation                                         | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+
+For server-paginated manage lists, browser coverage must exercise finite page
+sizes, the opt-in `All` transition, the reset back to 50, and explicit
+selection after `All`. When the fixture contains 200 eligible records, the
+focused batch flow must verify that all 200 records remain usable and that the
+mutation's returned count is reported without silent truncation. Runtime
+failures after earlier per-record commits are not an atomicity guarantee of
+the existing batch contract.
+
+Assessment participant invitations are a bounded exception: the Manage page
+offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
+200 data rows before submission, and must verify page totals and page-one reset
+after import or deletion.
 
 The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
 
@@ -101,11 +115,13 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 `apps/mcp-lecturer` has two smoke scripts on top of its mocked vitest unit tests (`pnpm --filter @klicker-uzh/mcp-lecturer run test:run`), both built on shared helpers in `util/mcpSmokeClient.mts`:
 
 - `smoke:local` (`scripts/smoke.ts`) — happy path: initialize, list tools, walk every read/draft tool against the seeded lecturer (`USER_ID_TEST`/`COURSE_ID_TEST` from `packages/prisma-data/src/data/constants.ts`, created by `seedTEST.ts`).
-- `smoke:negative` (`scripts/smoke-negative.ts`) — authZ/negative paths: garbage/wrong-secret/wrong-issuer/wrong-purpose/wrong-role/expired bearer tokens (all rejected with HTTP 401 at `initialize`, since FastMCP authenticates once per session and never re-checks the token on `tools/call`), a `manage:read`-only token (read tool succeeds, draft tool fails `MISSING_SCOPE`), an unknown-but-well-formed course UUID (non-enumerating `FORBIDDEN`), a malformed course id (schema-validation rejection), a foreign `sub` (zero courses, not an error), and a leak check that none of the captured error messages expose a stack trace, `node_modules` path, or `DATABASE_URL`.
+- `smoke:negative` (`scripts/smoke-negative.ts`) — authZ/negative paths: garbage/wrong-secret/wrong-issuer/wrong-purpose/wrong-role/expired/no-lecturer-scope bearer tokens (all rejected with HTTP 401 at `initialize`, since FastMCP authenticates once per session and never re-checks the token on `tools/call`), a `manage:read`-only token (read tool succeeds; the draft tools are absent from `tools/list` and calling one by name comes back as an unknown tool, because scope is enforced by each tool's `canAccess` predicate at session creation), an unknown-but-well-formed course UUID (non-enumerating `FORBIDDEN`), a malformed course id (schema-validation rejection), a foreign `sub` (zero courses, not an error), and a leak check that none of the captured error messages expose a stack trace, `node_modules` path, or `DATABASE_URL`.
 
 Both scripts need a migrated + seeded Postgres and a running `apps/mcp-lecturer` on the configured URL, with `APP_SECRET`/`APP_ORIGIN_AUTH` matching what the server booted with (`--help` on either script documents the env vars and defaults).
 
-`apps/mcp-student` has mocked vitest units (`pnpm --filter @klicker-uzh/mcp-student test`) plus its own `smoke:local` (`scripts/smoke.ts`), which additionally needs a reachable GraphQL API because the server reads elements through the persisted client rather than Prisma. **There is no `test-mcp-student` CI workflow** — only `test-mcp-lecturer` exists — so student-MCP changes get no automated service-level signal; run the smoke script locally before merging.
+In the devcontainer, `APP_ORIGIN_AUTH` is the trap. The scripts default to the plain value in `.devcontainer/devcontainer.env`, but `post-start.sh` namespaces every origin per workspace before starting the services, so the running server's JWT issuer is `https://auth.klicker.<workspace>.localhost`. Export the namespaced value before running either script — read it off the live process with `tr '\0' '\n' < /proc/$(pgrep -f mcp-student | head -1)/environ | grep APP_ORIGIN_AUTH`. A mismatch does not fail loudly: every negative case still passes (the token is rejected, just for the wrong reason) and only the cases needing a _valid_ token fail, so treat those cases as the run's positive control and never read an all-negative pass as success on its own.
+
+`apps/mcp-student` has mocked vitest units (`pnpm --filter @klicker-uzh/mcp-student test`) plus its own `smoke:local` (`scripts/smoke.ts`), which additionally needs a reachable GraphQL API because the server reads elements through the persisted client rather than Prisma. Its `smoke:negative` (`scripts/smoke-negative.ts`) mirrors the lecturer's: empty/garbage/wrong-secret/wrong-issuer/wrong-role/expired tokens, a plain participant session token (no `purpose`, `scope`, or `actor` claims — the case the purpose claim exists to reject), a lecturer MCP token, an unknown `actor` value, a token with no student scope, a `student:practice:read`-only token (`submit_practice_stack_answer` neither advertised nor callable), a forged `questionRef`, an unenrolled participant (no candidates), and the same leak check. **There is no `test-mcp-student` CI workflow** — only `test-mcp-lecturer` exists — so student-MCP changes get no automated service-level signal; run the smoke script locally before merging.
 
 ## CI matrix
 

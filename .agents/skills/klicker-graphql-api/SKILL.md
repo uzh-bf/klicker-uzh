@@ -18,7 +18,10 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
      // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asUserWithCatalyst | asAdmin
      nullable: true,
      type: Course,
-     args: { id: t.arg.string({ required: true }) },
+     args: {
+       id: t.arg.string({ required: true }),
+       deleteDraftActivities: t.arg.boolean(),
+     },
      resolve: withPermission(
        (args) => ({ courseId: args.id }), // -> PermissionCheck key for the target object
        DB.PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
@@ -29,6 +32,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
    Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. Owner-only aggregates that have no `PermissionCheck` key, including `KB`, keep the role gate on the schema field and must resolve the persisted owner relation inside every service entry point. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
 
+   Multi-object batch fields are the deliberate exception: `withPermission`
+   accepts one object selector and can only return one nullable field. Protect
+   the batch with the appropriate `t.withAuth(...)` scope, then have the service
+   load a bounded set of unique objects, check every object's permission, and
+   return explicit per-object outcomes. Never infer permission for the whole
+   batch from one selected object.
+
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
 6. **Codegen — never skip, always commit:**
@@ -38,6 +48,11 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    ```
 
    Commit the regenerated `src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json` **with** the change. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
+
+   For rolling-deployment compatibility, do not mutate an operation document
+   already used by a deployed frontend when adding fields or variables. Add a
+   newly named operation for the updated client and retain the original file so
+   its persisted hash remains in `server.json`.
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
@@ -59,6 +74,11 @@ The source gateway is system-to-system, not caller-owner authorization: one `KB_
 For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Do not reintroduce the former unbounded `getUserKbs` or nested `KB.resources` fields. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, filter resources by their latest ingestion-run status, and reset cursors when normalized search/type/status filters change.
 
 Bulk resource deletion accepts at most 50 unique ids from one owned KB. Lock the parent then sorted children, reject the selection atomically for missing/foreign/active rows, create one fenced delete run per row before commit, and treat post-commit task dispatches independently.
+
+For pagination changes, test both finite `take`/`skip` values and omitted
+values in the service, and verify that the generated operation variables and
+public schema make the arguments optional. Do not emulate an unbounded query
+with a large numeric limit.
 
 ## Subscriptions (extra steps)
 

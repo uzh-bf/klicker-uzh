@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.4.0-alpha.68",
+  "version": "3.4.0-alpha.70",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -16,6 +16,7 @@
     "@fullcalendar/interaction": "6.1.20",
     "@fullcalendar/react": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/kb-management": "workspace:*",

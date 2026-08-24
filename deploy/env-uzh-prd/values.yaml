@@ -4,6 +4,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
+  deploymentEnvironment: production
   appOrigins:
     api: 'https://backend-sls.klicker.uzh.ch'
     auth: 'https://auth.klicker.uzh.ch'
@@ -20,15 +21,21 @@ podAnnotations:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'http://app-klicker-uzh-hatchet-api.prd-hatchet.svc.cluster.local:8080'
+    apiUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
   workers:
     general:
       replicaCount: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.70
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -60,8 +67,14 @@ hatchet:
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.70
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -93,8 +106,14 @@ hatchet:
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
-        pullPolicy: Always
-        tag: v3.4.0-alpha.62
+        pullPolicy: IfNotPresent
+        tag: v3.4.0-alpha.70
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -157,8 +176,8 @@ auth:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   ingress:
     annotations:
@@ -185,7 +204,7 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
@@ -307,8 +326,8 @@ chat:
             topologyKey: kubernetes.io/hostname
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.64
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   ingress:
     annotations:
@@ -336,7 +355,7 @@ chat:
       memory: 250Mi
     limits:
       cpu: 200m
-      memory: 768Mi
+      memory: 1Gi
 
 mcpStudent:
   priorityClassName: production-workload
@@ -462,8 +481,8 @@ frontendPWA:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -490,7 +509,7 @@ frontendPWA:
       cpu: 100m
       memory: 200Mi
     limits:
-      memory: 600Mi
+      memory: 1Gi
 
 frontendManage:
   priorityClassName: production-workload
@@ -515,8 +534,8 @@ frontendManage:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -543,7 +562,7 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 frontendControl:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
@@ -553,8 +572,8 @@ frontendControl:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   autoscaling:
     enabled: false
@@ -597,7 +616,7 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 backendGraphql:
   priorityClassName: production-workload
@@ -622,8 +641,8 @@ backendGraphql:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -667,7 +686,7 @@ backendGraphql:
       cpu: 100m
       memory: 200Mi
     limits:
-      memory: 600Mi
+      memory: 1Gi
 
 olatApi:
   priorityClassName: production-workload
@@ -676,8 +695,8 @@ olatApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   autoscaling:
     enabled: false
@@ -720,7 +739,7 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 lti:
   priorityClassName: production-workload
@@ -749,8 +768,8 @@ lti:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.70
 
   ingress:
     className: haproxy
@@ -766,6 +785,13 @@ lti:
         hosts:
           - lti.klicker.uzh.ch
 
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      memory: 1Gi
+
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
 
@@ -775,8 +801,8 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.62
-    pullPolicy: Always
+    tag: v3.4.0-alpha.70
+    pullPolicy: IfNotPresent
 
   autoscaling:
     enabled: false
@@ -819,7 +845,7 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      memory: 200Mi
+      memory: 512Mi
 
 assessment:
   frontendPWA:
@@ -869,8 +895,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.70
 
     ingress:
       className: haproxy
@@ -897,7 +923,7 @@ assessment:
         cpu: 100m
         memory: 200Mi
       limits:
-        memory: 600Mi
+        memory: 1Gi
 
   backendGraphql:
     priorityClassName: production-workload
@@ -946,8 +972,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.70
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -985,7 +1011,7 @@ assessment:
         cpu: 100m
         memory: 200Mi
       limits:
-        memory: 600Mi
+        memory: 1Gi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
@@ -1025,8 +1051,8 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-      pullPolicy: Always
-      tag: v3.4.0-alpha.62
+      pullPolicy: IfNotPresent
+      tag: v3.4.0-alpha.70
 
     ingress:
       className: haproxy
@@ -1053,7 +1079,7 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
-        memory: 200Mi
+        memory: 512Mi
 
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (see chart job-migrate.yaml).
@@ -1067,7 +1093,8 @@ assessment:
 # (`prisma:deploy:prod`). Rolling back to a pre-hook tag requires setting this
 # back to false. See docs/data-and-migrations.md → Recovering a failed hook.
 migrator:
-  enabled: false
+  enabled: true
   priorityClassName: production-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+    pullPolicy: IfNotPresent
