@@ -28,6 +28,15 @@ const KB_GRAPH_MONITOR_BATCH_SIZE = 32
 const KB_GRAPH_MONITOR_CONCURRENCY = 8
 const KB_GRAPH_MONITOR_INTERVAL_MS = 15 * 60 * 1000
 const KB_GRAPH_MONITOR_PROVIDER_TIMEOUT_MS = 10_000
+const activeProviderOperations = new Set<Promise<unknown>>()
+
+class ProviderOperationLimitError extends Error {
+  constructor() {
+    super('KB graph provider operation concurrency limit reached')
+    this.name = 'ProviderOperationLimitError'
+  }
+}
+
 export const KB_GRAPH_DISPATCH_AMBIGUOUS_CODE = 'KB_GRAPH_DISPATCH_AMBIGUOUS'
 const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
 // A dispatch claim is written just before the provider call, so a claimed build
@@ -216,17 +225,28 @@ function getGraphMonitorBatchOffset(total: number, now: Date) {
 }
 
 async function withProviderTimeout<T>(
-  operation: Promise<T>,
+  operationFactory: () => Promise<T>,
   timeoutMilliseconds: number | undefined
 ): Promise<T> {
+  if (activeProviderOperations.size >= KB_GRAPH_MONITOR_CONCURRENCY) {
+    throw new ProviderOperationLimitError()
+  }
+
+  const operation = operationFactory()
+  let trackedOperation: Promise<T>
+  trackedOperation = operation.finally(() => {
+    activeProviderOperations.delete(trackedOperation)
+  })
+  activeProviderOperations.add(trackedOperation)
+
   if (timeoutMilliseconds === undefined) {
-    return operation
+    return trackedOperation
   }
 
   let timeout: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
-      operation,
+      trackedOperation,
       new Promise<never>((_, reject) => {
         timeout = setTimeout(
           () => reject(new Error('KB graph provider operation timed out')),
@@ -547,15 +567,16 @@ export async function resolveAmbiguousKBGraphDispatch(
     const config = getExternalKBGraphConfig(env)
     const client = dependencies.client ?? getExternalKBGraphClient(env)
     recoveredRun = await withProviderTimeout(
-      recoverExternalKBGraphRun({
-        client,
-        workflowName: config.workflowName,
-        additionalMetadata: {
-          [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
-          [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
-        },
-        recoveryAnchor: build.createdAt,
-      }),
+      () =>
+        recoverExternalKBGraphRun({
+          client,
+          workflowName: config.workflowName,
+          additionalMetadata: {
+            [KB_GRAPH_BUILD_METADATA_KEY]: build.id,
+            [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
+          },
+          recoveryAnchor: build.createdAt,
+        }),
       dependencies.providerOperationTimeoutMs
     )
   } catch {
@@ -1043,7 +1064,7 @@ async function monitorTimedOutKBGraphBuilds(
     const identifiers = graphIdentifiers(build)
     try {
       const externalStatus = await withProviderTimeout(
-        client.runs.get_status(build.externalOperationId),
+        () => client.runs.get_status(build.externalOperationId),
         providerOperationTimeoutMs
       )
       if (externalStatus !== 'COMPLETED') {
@@ -1052,7 +1073,7 @@ async function monitorTimedOutKBGraphBuilds(
 
       if (dependencies.getTerminalResult && dependencies.settleTerminalResult) {
         const terminalResult = await withProviderTimeout(
-          dependencies.getTerminalResult(build.externalOperationId),
+          () => dependencies.getTerminalResult!(build.externalOperationId),
           providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
@@ -1153,10 +1174,11 @@ export async function monitorActiveKBGraphBuilds(
     if (!build.externalOperationId || !build.externalStartedAt) {
       return
     }
+    const externalOperationId = build.externalOperationId
     const identifiers = graphIdentifiers(build)
     try {
       const externalStatus = await withProviderTimeout(
-        client.runs.get_status(build.externalOperationId),
+        () => client.runs.get_status(externalOperationId),
         providerOperationTimeoutMs
       )
       const observedAt = now()
@@ -1176,7 +1198,7 @@ export async function monitorActiveKBGraphBuilds(
           await finishKBGraphBuild({
             build: {
               ...build,
-              externalOperationId: build.externalOperationId,
+              externalOperationId,
             },
             status: KBGraphBuildStatus.FAILED,
             statusMessage,
@@ -1188,7 +1210,7 @@ export async function monitorActiveKBGraphBuilds(
         }
 
         const terminalResult = await withProviderTimeout(
-          dependencies.getTerminalResult(build.externalOperationId),
+          () => dependencies.getTerminalResult!(externalOperationId),
           providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
@@ -1204,18 +1226,19 @@ export async function monitorActiveKBGraphBuilds(
         timeoutMilliseconds
       ) {
         await withProviderTimeout(
-          cancelExternalKBGraphRunBestEffort({
-            client,
-            runId: build.externalOperationId,
-            identifiers,
-            logger: dependencies.logger,
-          }),
+          () =>
+            cancelExternalKBGraphRunBestEffort({
+              client,
+              runId: externalOperationId,
+              identifiers,
+              logger: dependencies.logger,
+            }),
           providerOperationTimeoutMs
         )
         await finishKBGraphBuild({
           build: {
             ...build,
-            externalOperationId: build.externalOperationId,
+            externalOperationId,
           },
           status: KBGraphBuildStatus.FAILED,
           statusMessage: 'External KB graph workflow timed out.',
@@ -1231,7 +1254,7 @@ export async function monitorActiveKBGraphBuilds(
           where: {
             id: build.id,
             kbId: build.kbId,
-            externalOperationId: build.externalOperationId,
+            externalOperationId,
             status: KBGraphBuildStatus.QUEUED,
           },
           data: {

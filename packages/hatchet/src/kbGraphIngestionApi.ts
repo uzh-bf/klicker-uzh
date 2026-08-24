@@ -6,6 +6,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 import { HatchetClient } from '@hatchet-dev/typescript-sdk'
+import { isIP } from 'node:net'
 import { getKnowledgeGraphConfig } from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphQualityTier,
@@ -36,6 +37,15 @@ const KB_GRAPH_CONFIGURATION_ENVIRONMENT_VARIABLES = [
 
 export const KB_GRAPH_BUILD_METADATA_KEY = 'klickerKBGraphBuildId'
 export const KB_GRAPH_KB_METADATA_KEY = 'klickerKBGraphKbId'
+
+function isLoopbackHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    (isIP(hostname) === 4 && hostname.startsWith('127.')) ||
+    hostname === '[::1]'
+  )
+}
 
 type ExternalHatchetTLSStrategy = 'tls' | 'mtls' | 'none'
 
@@ -317,11 +327,7 @@ export function getKBGraphSourceUrl(
   )
   const graphAccount = new URL(graphAccountUrl)
   const graphAccountHost = graphAccount.hostname
-  const isLocalDevEndpoint =
-    graphAccountHost === 'localhost' ||
-    graphAccountHost.endsWith('.localhost') ||
-    graphAccountHost.startsWith('127.') ||
-    graphAccountHost === '[::1]'
+  const isLocalDevEndpoint = isLoopbackHost(graphAccountHost)
   if (graphAccount.protocol === 'http:' && !isLocalDevEndpoint) {
     throw new Error(
       'KB graph Blob account URL must use HTTPS outside local development'

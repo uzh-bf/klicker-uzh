@@ -19,6 +19,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
 | React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+| Prisma seed reconciliation                                                        | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                                                                             |
 
 For the manage-list `All` page size, the focused browser evidence must cover
 the finite-to-All-to-50 state transition and explicit selection. A 200-record

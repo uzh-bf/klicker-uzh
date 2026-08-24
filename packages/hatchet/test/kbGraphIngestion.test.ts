@@ -300,6 +300,30 @@ describe('KB graph external dispatch', () => {
     )
   })
 
+  it('rejects a loopback-looking hostname outside local development', () => {
+    expect(() =>
+      getKBGraphSourceUrl(
+        {
+          type: KBResourceType.BLOB,
+          sourceUrl: null,
+          blobName: 'slides/private.pdf',
+        },
+        {
+          ownerId: OWNER_ID,
+          env: {
+            BLOB_STORAGE_ACCOUNT_NAME: 'klickertest',
+            BLOB_STORAGE_ACCESS_KEY: Buffer.alloc(32).toString('base64'),
+            KB_GRAPH_BLOB_ACCOUNT_URL: 'http://127.example.com',
+            KB_GRAPH_TIMEOUT_SECONDS: '3600',
+          },
+          now: () => NOW,
+        }
+      )
+    ).toThrow(
+      'KB graph Blob account URL must use HTTPS outside local development'
+    )
+  })
+
   it('fails a queued build closed when the global graph kill switch is enabled', async () => {
     const prisma = createDispatchPrisma()
     const client = createClient()
@@ -999,6 +1023,38 @@ describe('KB graph external reconciliation', () => {
     })
 
     expect(maxActiveCalls).toBe(8)
+  })
+
+  it('keeps timed-out provider operations counted until they settle', async () => {
+    const builds = Array.from({ length: 9 }, (_, index) => ({
+      id: `build-${index}`,
+      kbId: KB_ID,
+      externalOperationId: `external-run-${index}`,
+      externalStartedAt: new Date('2026-08-01T11:59:00.000Z'),
+    }))
+    const prisma = createMonitorPrisma(builds)
+    const client = createClient()
+    const resolveOperations: Array<() => void> = []
+    vi.mocked(client.runs.get_status).mockImplementation(
+      () =>
+        new Promise<'QUEUED'>((resolve) => {
+          resolveOperations.push(() => resolve('QUEUED'))
+        })
+    )
+
+    await monitorActiveKBGraphBuilds({
+      prisma: prisma as never,
+      client,
+      env: externalEnv,
+      now: () => NOW,
+      providerOperationTimeoutMs: 5,
+    })
+
+    expect(resolveOperations).toHaveLength(8)
+    expect(client.runs.get_status).toHaveBeenCalledTimes(8)
+
+    resolveOperations.forEach((resolve) => resolve())
+    await new Promise((resolve) => setTimeout(resolve, 0))
   })
 
   it('continues independent builds when one provider status call hangs', async () => {
