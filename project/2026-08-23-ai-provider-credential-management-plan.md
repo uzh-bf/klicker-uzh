@@ -579,13 +579,13 @@ flowchart TD
 
 ## Progress
 
-- **Status:** Stack 1 through K3 complete; K4 pending.
-- **Active slice:** none; clean checkpoint between K3 and K4.
-- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26 (PASS-WITH-NOTES).
-- **K3 verification summary:** tsc typecheck passes; all 12 tests pass; pre-commit hooks passed (gitleaks clean, turbo check 31 packages). Gateway is DB-free with fake adapters proving control-plane contracts.
+- **Status:** Stack 1 complete through K4; remaining slices D1, I1, C1, and final integration review.
+- **Active slice:** none; clean checkpoint after K4 commit.
+- **Completed:** handoff reconciliation; source inventory; Azure/LiteLLM/Langfuse research; product grilling; ADRs 0037-0040; architecture contract; threat model; plan approval; SEC fix 4e226a528; OBS fix 97386f3c1; K1 domain 548f09600; K2 lifecycle 4d75b3509 (PASS-WITH-NOTES); K3 gateway 7ecb69d26 (PASS-WITH-NOTES); K4 UI 39a45a106.
+- **K4 verification summary:** tsc typecheck passes across all 26 packages; format:check passes; gitleaks clean; pre-commit hooks passed. Browser verification completed via agent-browser: component renders on /user/settings with Add Credential toggle, password-masked input, disabled Register until input, registration error path confirmed with synthetic key in EN and DE locales, keyboard Tab navigation functional. Screenshots saved at /tmp/k4-{settings,register,error}-en.png and k4-settings-de.png. No secret value appears in any response or storage.
 - **Review reports location:** project/_local/reviews/2026-08-24-k{2,3}-slice-review.md and -simplifier.md (local-only, gitignored).
-- **Remaining:** K4 lecturer UI (browser verification + i18n + a11y); D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
-- **Latest verified commit/range:** fee5bdc09 (Progress) on branch rs/ai-provider-credentials-design; ahead 10 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
+- **Remaining:** D1/I1 contracts; C1 cross-cutting; final integration review. G1, S1, A1, L1 remain gated later work.
+- **Latest verified commit/range:** 39a45a106 (K4) on branch rs/ai-provider-credentials-design; ahead 12 of base 35142c81a, behind 8 unrelated upstream commits on origin/v3.
 - **Unresolved required gates:** D1/I1 contracts before gateway finalization; institutional trace governance; any external delivery or runtime authority.
 - **Delivery layer:** local verified commits only; push/PR/merge/deploy withheld.
-- **Next action:** begin K4 per plan definition at line 405; requires browser verification environment and fresh context for the UI-heavy work.
+- **Next action:** begin D1 per plan definition; requires fresh context for contract-heavy work.
