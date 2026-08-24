@@ -61,7 +61,7 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current base:
-  `d8e964c2847108d0f10fb2f3f696b37378619db8` (`origin/v3`, which accepts
+  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee` (`origin/v3`, which accepts
   ADR-0037).
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
@@ -411,17 +411,28 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S2 is implemented; its focused exact-container checks and
-  final formatting passed. The commit and S2 reviews remain pending.
+- Status: replacement S2 is committed as
+  `f574eb3dc53c0e9ef1ae9a95c7d28962949fdf9c`; the working tree was clean after
+  the commit. This documentation-only correction resolves the verified stale
+  Progress finding, and reviewer readback remains pending.
 - Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
   corrected plan restored from the old plan commit and rebuilt without obsolete
   Catalyst signaling requirements; no new worktree and no runtime/config/routing
   changes occurred.
+- Freshness rebase: authoritative `origin/v3` is
+  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`. Its only changes from the prior
+  base are `.github/workflows/check-ocr-review.yml` and
+  `project/2026-08-24-open-code-review-plan.md`, with no W2 overlap. Host
+  `git rebase --autostash origin/v3` completed without conflicts and reapplied
+  only this plan edit. Range-diff
+  `d8e964c28..5e59aa60 ae9bc7ea5..f574eb3dc` shows all six patches equivalent.
+  The branch is 6 ahead and 0 behind, with only this plan correction modified.
 - Review gate: independent Luna simplification and separate Sol correctness/risk
-  re-reviews accepted replacement S1 range `cdebb6543..d052e445e` with zero
-  remaining findings. The user's 2026-08-24 alternate-review authorization also
-  covers S2 and integrated final review when the configured native roles remain
-  unavailable.
+  re-reviews accepted rewritten replacement S1 range
+  `11c523c4e..ae8ed5a15` with zero remaining findings. The equivalent
+  pre-rebase range `cdebb6543..d052e445e` is retained only as review provenance.
+  The user's 2026-08-24 alternate-review authorization also covers S2 and
+  integrated final review when the configured native roles remain unavailable.
 - Current S1 evidence: four canonical rich descriptions with exact links added
   below each standard creation button; each button uses `aria-describedby` to
   its distinct `description-<data-cy>` region; all click paths remain enabled;
@@ -431,14 +442,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   lecturer/Catalyst checks. Prettier, package-scoped Biome,
   frontend-manage check, Playwright TypeScript check, and `git diff --check`
   passed through the exact container.
-- Current S2 evidence: the five selection-count labels now use paired EN/DE ICU
-  `one`/`other` wording; the one-container, one-container-per-element, and
-  existing-container actions have stable outcome-specific selectors; and the
-  live-quiz Create action exposes the existing empty-block reason through an
-  adjacent, programmatically associated description without changing validity
-  or submission behavior. Existing O live-quiz and P microlearning journeys now
-  protect singular/plural labels, distinct outcomes, the zero-block exception,
-  recovery, reappearance, and unchanged Create enabled/disabled states.
+- Current S2 evidence: rewritten range `ae8ed5a15..f574eb3dc` contains the five
+  selection-count labels with paired EN/DE ICU `one`/`other` wording; the
+  one-container, one-container-per-element, and existing-container actions have
+  stable outcome-specific selectors; and the live-quiz Create action exposes
+  the existing empty-block reason through an adjacent, programmatically
+  associated description without changing validity or submission behavior.
+  Existing O live-quiz and P microlearning journeys protect singular/plural
+  labels, distinct outcomes, the zero-block exception, recovery, reappearance,
+  and unchanged Create enabled/disabled states.
+- S2 review disposition: Sol accepted the static implementation with no material
+  blocker and reported this stale Progress state as a P3 finding. Luna found no
+  implementation or simplification issue and blocked only because Progress
+  incorrectly called the S2 commit pending. This plan-only correction resolves
+  that workflow finding without changing the reviewed implementation; its
+  reviewer readback has not yet passed.
 - S2 checks: repository Biome formatting on the six owned source/locale files
   passed with no fixes needed; Prettier write on the two owned specs passed;
   `pnpm --filter @klicker-uzh/frontend-manage check` passed;
@@ -446,19 +464,19 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   collection for `O-live-quiz.spec.ts` and `P-microlearning.spec.ts` passed with
   146 tests listed; and `git diff --check` passed before those steps. Final
   Prettier for both specs and this plan passed, followed by a fresh
-  `git diff --check`. A separate Biome lint/check diagnostic reported only
-  existing findings on unchanged legacy lines in `AddStackButton`,
-  `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no unrelated line was
-  changed or suppressed.
+  `git diff --check`. Commit hooks and the staged scope, secret, credential, and
+  personal-data audit also passed. A separate Biome lint/check diagnostic
+  reported only existing findings on unchanged legacy lines in
+  `AddStackButton`, `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no
+  unrelated line was changed or suppressed.
 - Blockers: fancy-domain/browser proof remains blocked because the exact fancy
   routes remain unavailable. No localhost, fixed-port, runtime, config, routing,
   or host-tooling fallback was used.
-- Remaining: replacement S2 commit, preferred configured or authorized
-  alternate S2 reviews, narrowed S3, preferred configured or authorized Sol
-  integrated final review, fancy-domain/browser proof, and final Progress
-  evidence.
+- Remaining: reviewer readback of this plan-only S2 disposition, narrowed S3,
+  preferred configured or authorized Sol integrated final review,
+  fancy-domain/browser proof, and final Progress evidence.
 - Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
   cluster changes, cleanup, deletion, and publication claims.
-- Next action: commit the audited replacement S2 patch, then dispatch its
-  read-only reviews without starting S3 or changing the browser/runtime
+- Next action: obtain reviewer readback of this plan-only disposition, then
+  proceed to narrowed S3 if accepted without changing the browser/runtime
   boundary.
