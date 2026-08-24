@@ -1,4 +1,4 @@
-query GetStudyStreakParticipation($courseId: String!) {
+query QGetStudyStreakParticipation($courseId: String!) {
   getParticipation(courseId: $courseId) {
     id
     isActive

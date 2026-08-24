@@ -835,6 +835,8 @@ export default {
 
 Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an allen Aktivitäten teilnehmen kannst, aber keine Punkte sammeln, nicht in der Rangliste aufgeführt werden und nicht für Erfolge und Auszeichnungen in Frage kommst. Wenn Du an den spielerischen Aktivitäten in diesem Kurs teilnehmen möchtest, **klicke auf die Schaltfläche** unten, um teilzunehmen. Du kannst die Kursrangliste jederzeit verlassen, wobei alle gesammelten Punkte **gelöscht** werden.
 
+Mit dem Beitritt zur Rangliste aktivierst Du auch eine private Lernserie für diesen Kurs. Dabei wird erfasst, ob Du an Wochentagen fünf geeignete Fragen in Übungs-Quizzes oder Microlearnings beantwortest. Wenn Du die Rangliste verlässt, werden Deine aktuelle Serie und der heutige Fortschritt zurückgesetzt; die längste Serie und verfügbare Pausen bleiben erhalten, wenn Du wieder beitrittst.
+
 Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
 `,
       studyStreakCard: 'Lernserie',
@@ -1068,7 +1070,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       leaveLeaderboardConfirmation:
         'Möchten Sie das Leaderboard wirklich verlassen?',
       leaveLeaderboardInformation:
-        'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
+        'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Ihre aktuelle Lernserie und der heutige Fortschritt werden ebenfalls zurückgesetzt, während die längste Serie und verfügbare Pausen erhalten bleiben. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
       groupActivityEndedToast:

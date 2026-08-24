@@ -6,7 +6,7 @@ import {
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
-  GetStudyStreakParticipationDocument,
+  QGetStudyStreakParticipationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -86,7 +86,7 @@ function ElementStack({
     RespondToElementStackDocument
   )
   const { data: studyStreakData, refetch: refetchStudyStreak } = useQuery(
-    GetStudyStreakParticipationDocument,
+    QGetStudyStreakParticipationDocument,
     {
       variables: { courseId },
       skip: previewOnly || !withParticipant,

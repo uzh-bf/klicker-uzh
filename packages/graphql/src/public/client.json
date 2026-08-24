@@ -262,7 +262,7 @@
    "GetStudentAssessmentResults": "8f339e0a0da689893db261def9b3bc5a797177f6c9f15fb76222f99450a1b213",
    "GetStudentCourseLeaderboard": "e6fd1293639a21266c0813088fe1db753e77651a2e7de9327f0aa649420cbd78",
    "GetStudentCourseResults": "ee7f190bfa3890f5d0ce53b30eb9ea00bacd4fa0075f0c723db2fca378319440",
-   "GetStudyStreakParticipation": "7e6b128c357c9156d6061b47f7bcd316b90db761da40f53cf77386dd747d9ae2",
+   "QGetStudyStreakParticipation": "f2833e406c06ebbca47e3faa692f422af26e78319dab9dd294ceace74c25afe3",
    "GetTemplateInformation": "aeb7bf94e70eca123cbbf6699e75412126d9fb5232c05b092f19ba38edaf5ae4",
    "GetTemplatePreviewAnswerCollectionEntries": "469ba4ec08f5efb4a41c9f8ee8604f413bd7337b21a6cfdad934946fea0834b8",
    "GetUnassignedLiveQuizzes": "8efbb0afbb0826d5e237cbaa660f62c201d339b74d1907336bb8a0a5db519f73",
