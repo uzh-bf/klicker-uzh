@@ -105,8 +105,12 @@ function KnowledgeBaseAddResourceModal({
             ? t('kb.addWebsite')
             : t('kb.addDocument')
       }
-      secondaryLabel={isChooser ? undefined : t('kb.backToResourceTypes')}
-      onSecondaryAction={isChooser ? undefined : () => setMode('chooser')}
+      secondaryLabel={
+        isChooser || uploadingDocument ? undefined : t('kb.backToResourceTypes')
+      }
+      onSecondaryAction={
+        isChooser || uploadingDocument ? undefined : () => setMode('chooser')
+      }
       dataContent={{ cy: 'kb-add-resource-modal' }}
       dataCloseButton={{ cy: 'close-kb-add-resource-modal' }}
       dataSecondaryAction={{ cy: 'back-kb-add-resource' }}
