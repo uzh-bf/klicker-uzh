@@ -8,6 +8,7 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { reconcileStudyStreak } from './studyStreak.js'
 
 dayjs.extend(isoWeek)
 
@@ -233,6 +234,11 @@ export async function getParticipation(
   if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) {
     return null
   }
+
+  await reconcileStudyStreak(
+    { prisma: ctx.prisma },
+    { courseId, participantId: ctx.user.sub }
+  )
 
   const participation = await ctx.prisma.participation.findUnique({
     where: {

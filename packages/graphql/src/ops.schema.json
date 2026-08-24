@@ -35121,6 +35121,18 @@
             "deprecationReason": null
           },
           {
+            "name": "studyStreakResponsesRemainingToday",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "subscriptions",
             "description": null,
             "args": [],

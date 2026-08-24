@@ -2394,6 +2394,7 @@ type Participation {
   studyStreakFreezeBalance: Int!
   studyStreakLongest: Int!
   studyStreakQualifiedToday: Boolean!
+  studyStreakResponsesRemainingToday: Int
   subscriptions: [PushSubscription!]
 }
 

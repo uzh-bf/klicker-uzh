@@ -27,6 +27,10 @@ export function zurichDate(value: Date | string): string {
   return dayjs(value).tz(COURSE_TIMEZONE).format('YYYY-MM-DD')
 }
 
+function prismaDate(dateStr: string): Date {
+  return dayjs.utc(dateStr).startOf('day').toDate()
+}
+
 function isWeekend(dateStr: string): boolean {
   const dow = dayjs.tz(dateStr, COURSE_TIMEZONE).day()
   return dow === 0 || dow === 6
@@ -121,6 +125,78 @@ interface ReconcileInput {
 }
 
 /**
+ * Count the eligible answers submitted today for a self-scoped participation.
+ * Content views deliberately do not count toward the daily streak goal.
+ */
+export async function getStudyStreakResponsesToday(
+  deps: ReconcileDeps,
+  input: ReconcileInput
+): Promise<number | null> {
+  const participation = await deps.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId: input.courseId,
+        participantId: input.participantId,
+      },
+    },
+    select: {
+      id: true,
+      isActive: true,
+      studyStreakTrackingStartedAt: true,
+      course: {
+        select: {
+          startDate: true,
+          endDate: true,
+          isGamificationEnabled: true,
+          isAssessmentEnabled: true,
+        },
+      },
+    },
+  })
+
+  if (
+    !participation?.isActive ||
+    !participation.studyStreakTrackingStartedAt ||
+    !participation.course.isGamificationEnabled ||
+    participation.course.isAssessmentEnabled
+  ) {
+    return null
+  }
+
+  const today = zurichDate(new Date())
+  const courseStart = zurichDate(participation.course.startDate)
+  const courseEnd = zurichDate(participation.course.endDate)
+  if (today < courseStart || today > courseEnd) return null
+
+  const todayStart = dayjs.tz(today, COURSE_TIMEZONE).startOf('day').toDate()
+  const tomorrowStart = dayjs
+    .tz(today, COURSE_TIMEZONE)
+    .add(1, 'day')
+    .startOf('day')
+    .toDate()
+
+  return deps.prisma.questionResponseDetail.count({
+    where: {
+      participationId: participation.id,
+      createdAt: {
+        gte:
+          participation.studyStreakTrackingStartedAt > todayStart
+            ? participation.studyStreakTrackingStartedAt
+            : todayStart,
+        lt: tomorrowStart,
+      },
+      OR: [
+        { practiceQuizId: { not: null } },
+        { microLearningId: { not: null } },
+      ],
+      elementInstance: {
+        elementType: { not: DB.ElementType.CONTENT },
+      },
+    },
+  })
+}
+
+/**
  * Fail-open reconciliation: applies every qualifying response date since
  * tracking start exactly once in a serializable Prisma transaction.
  * Errors are swallowed so a streak failure never affects response flow.
@@ -147,6 +223,7 @@ export async function reconcileStudyStreak(
                     startDate: true,
                     endDate: true,
                     isGamificationEnabled: true,
+                    isAssessmentEnabled: true,
                   },
                 },
               },
@@ -155,7 +232,8 @@ export async function reconcileStudyStreak(
             if (
               !participation?.isActive ||
               !participation.studyStreakTrackingStartedAt ||
-              !participation.course.isGamificationEnabled
+              !participation.course.isGamificationEnabled ||
+              participation.course.isAssessmentEnabled
             ) {
               return
             }
@@ -178,6 +256,9 @@ export async function reconcileStudyStreak(
                   { practiceQuizId: { not: null } },
                   { microLearningId: { not: null } },
                 ],
+                elementInstance: {
+                  elementType: { not: DB.ElementType.CONTENT },
+                },
               },
               select: { createdAt: true },
               orderBy: { createdAt: 'asc' },
@@ -230,10 +311,10 @@ export async function reconcileStudyStreak(
                 studyStreakQualifiedDaysSinceFreeze:
                   state.qualifiedDaysSinceFreeze,
                 studyStreakLastQualifiedDate: state.lastQualifiedDate
-                  ? dayjs.tz(state.lastQualifiedDate, COURSE_TIMEZONE).toDate()
+                  ? prismaDate(state.lastQualifiedDate)
                   : null,
                 studyStreakLastProcessedDate: state.lastProcessedDate
-                  ? dayjs.tz(state.lastProcessedDate, COURSE_TIMEZONE).toDate()
+                  ? prismaDate(state.lastProcessedDate)
                   : null,
               },
             })
@@ -253,10 +334,6 @@ export async function reconcileStudyStreak(
       }
     }
   } catch (error) {
-    console.error('study streak reconciliation failed (fail-open)', {
-      courseId: input.courseId,
-      participantId: input.participantId,
-      error,
-    })
+    console.error('study streak reconciliation failed (fail-open)', { error })
   }
 }

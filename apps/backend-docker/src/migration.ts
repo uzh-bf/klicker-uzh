@@ -9,7 +9,27 @@ interface Migration {
   migrate: (tx: PrismaMigrationClient) => Promise<void>
 }
 
-const migrations: Migration[] = []
+const migrations: Migration[] = [
+  {
+    id: '20260824_initialize_active_study_streaks',
+    migrate: async (tx) => {
+      const trackingStartedAt = new Date()
+
+      await tx.participation.updateMany({
+        where: {
+          isActive: true,
+          studyStreakTrackingStartedAt: null,
+          course: {
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+            endDate: { gte: trackingStartedAt },
+          },
+        },
+        data: { studyStreakTrackingStartedAt: trackingStartedAt },
+      })
+    },
+  },
+]
 
 export async function migrate(prisma: PrismaClient) {
   for (const { id, isIdempotent, migrate } of migrations) {

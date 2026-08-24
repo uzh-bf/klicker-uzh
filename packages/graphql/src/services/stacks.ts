@@ -3249,7 +3249,7 @@ export async function respondToElementStack(
   const participantSub =
     ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user.sub : undefined
   if (participantSub && !isOwner) {
-    reconcileStudyStreak(
+    await reconcileStudyStreak(
       { prisma: ctx.prisma },
       {
         courseId,

@@ -1,0 +1,9 @@
+query GetStudyStreakParticipation($courseId: String!) {
+  getParticipation(courseId: $courseId) {
+    id
+    isActive
+    studyStreakCurrent
+    studyStreakQualifiedToday
+    studyStreakResponsesRemainingToday
+  }
+}

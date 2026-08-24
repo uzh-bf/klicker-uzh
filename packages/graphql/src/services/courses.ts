@@ -36,6 +36,7 @@ import { hardDeleteLiveQuiz, manipulateLiveQuiz } from './liveQuizzes.js'
 import { manipulateMicroLearning } from './microLearning.js'
 import { manipulatePracticeQuiz } from './practiceQuizzes.js'
 import { checkAccess, type PermissionCheck } from './sharing.js'
+import { reconcileStudyStreak } from './studyStreak.js'
 
 // custom date parser
 dayjs.extend(customParseFormat)
@@ -130,9 +131,11 @@ export async function joinCourseLeaderboard(
         participantId: ctx.user.sub,
       },
     },
-    select: { isActive: true },
+    select: { isActive: true, studyStreakTrackingStartedAt: true },
   })
   const wasInactive = !existingParticipation?.isActive
+  const shouldStartTracking =
+    wasInactive || !existingParticipation?.studyStreakTrackingStartedAt
 
   const participation = await ctx.prisma.participation.upsert({
     where: {
@@ -150,7 +153,7 @@ export async function joinCourseLeaderboard(
     update: {
       isActive: true,
       // rejoin after leave: restart streak tracking (no backfill)
-      ...(wasInactive && existingParticipation
+      ...(shouldStartTracking
         ? { studyStreakTrackingStartedAt: new Date() }
         : {}),
     },
@@ -251,6 +254,7 @@ export async function leaveCourseLeaderboard(
       studyStreakQualifiedDaysSinceFreeze: 0,
       studyStreakLastQualifiedDate: null,
       studyStreakLastProcessedDate: null,
+      studyStreakTrackingStartedAt: null,
     },
   })
 
@@ -299,6 +303,11 @@ export async function getCourseOverviewData(
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
+    await reconcileStudyStreak(
+      { prisma: ctx.prisma },
+      { courseId, participantId: ctx.user.sub }
+    )
+
     const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
@@ -5118,12 +5127,24 @@ export async function enableGamification(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.update({
-    where: { id: courseId },
-    data: { isGamificationEnabled: true },
-  })
+  const trackingStartedAt = new Date()
+  return ctx.prisma.$transaction(async (tx) => {
+    const course = await tx.course.update({
+      where: { id: courseId },
+      data: { isGamificationEnabled: true },
+    })
 
-  return course
+    await tx.participation.updateMany({
+      where: {
+        courseId,
+        isActive: true,
+        studyStreakTrackingStartedAt: null,
+      },
+      data: { studyStreakTrackingStartedAt: trackingStartedAt },
+    })
+
+    return course
+  })
 }
 
 export async function getCourseActivities(

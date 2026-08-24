@@ -845,6 +845,10 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Beantworte heute 5 Fragen, um deine Serie zu halten!',
       studyStreakDoneToday:
         'Super gemacht – deine Serie ist für heute gesichert.',
+      studyStreakProgress:
+        'Serie: {current, plural, one {# Tag} other {# Tage}} · Noch {remaining, plural, one {# Antwort} other {# Antworten}} heute',
+      studyStreakGoalReached:
+        'Tagesziel erreicht · Serie: {current, plural, one {# Tag} other {# Tage}}',
       newAchievementReceipt: 'Neue Errungenschaft freigeschaltet!',
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',

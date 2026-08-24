@@ -735,3 +735,10 @@ Append entries; do not rewrite history.
   because its provider returned a terminal HTTP 402 budget error; no fallback
   role was substituted. The branch remains locally committed but not marked
   package-complete until those separate findings are dispositioned.
+- 2026-08-24 — Streak correction started on `rs/gamification-achievement-receipts`:
+  active leaderboard participations in already-enabled, non-assessment courses
+  are initialized at rollout without response backfill; response reconciliation
+  is awaited after the response batch commits; content views are excluded; and
+  self-scoped progress exposes the remaining eligible responses for today. The
+  PWA now shows this progress while practicing and refreshes it after each
+  successful submission.

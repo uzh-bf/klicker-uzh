@@ -7,7 +7,11 @@ import {
 } from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { zurichDate } from '../services/studyStreak.js'
+import {
+  getStudyStreakResponsesToday,
+  QUALIFIED_RESPONSES_PER_DAY,
+  zurichDate,
+} from '../services/studyStreak.js'
 import {
   type IAchievement,
   type IParticipantAchievementInstance,
@@ -276,6 +280,29 @@ export const Participation = ParticipationRef.implement({
     studyStreakCurrent: t.exposeInt('studyStreakCurrent'),
     studyStreakLongest: t.exposeInt('studyStreakLongest'),
     studyStreakFreezeBalance: t.exposeInt('studyStreakFreezeBalance'),
+    studyStreakResponsesRemainingToday: t.int({
+      nullable: true,
+      resolve: async (parent, _, ctx) => {
+        if (
+          ctx.user?.role !== DB.UserRole.PARTICIPANT ||
+          ctx.user.sub !== parent.participantId
+        ) {
+          return null
+        }
+
+        const responsesToday = await getStudyStreakResponsesToday(
+          { prisma: ctx.prisma },
+          {
+            courseId: parent.courseId,
+            participantId: parent.participantId,
+          }
+        )
+
+        return responsesToday === null
+          ? null
+          : Math.max(0, QUALIFIED_RESPONSES_PER_DAY - responsesToday)
+      },
+    }),
     studyStreakQualifiedToday: t.boolean({
       resolve: (parent) => {
         if (!parent.studyStreakLastQualifiedDate) return false
