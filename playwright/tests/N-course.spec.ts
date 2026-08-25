@@ -1027,12 +1027,15 @@ async function submitCourseFormAndWaitForDuplication(
   })
 
   const statusResponseListener = (statusResponse: Response) => {
+    const request = statusResponse.request()
+    const postData = request.postData() ?? ''
+    const operationName = new URL(statusResponse.url()).searchParams.get(
+      'operationName'
+    )
+
     if (
-      statusResponse.request().method() !== 'POST' ||
-      !statusResponse
-        .request()
-        .postData()
-        ?.includes('GetCourseDuplicationStatuses') ||
+      (!postData.includes('GetCourseDuplicationStatuses') &&
+        operationName !== 'GetCourseDuplicationStatuses') ||
       !statusResponse.ok()
     ) {
       return
