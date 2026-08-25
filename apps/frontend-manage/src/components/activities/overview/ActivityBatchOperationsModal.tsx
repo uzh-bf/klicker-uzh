@@ -32,11 +32,13 @@ import useActivityBatchDeletion, {
 function ActivityBatchOperationsModal({
   selectedActivities,
   onClose,
+  removeSelectedActivities,
   resetSelectedActivities,
   refetchActivities,
 }: {
   selectedActivities: ActivityInfo[]
   onClose: () => void
+  removeSelectedActivities: (activityIds: string[]) => void
   resetSelectedActivities: () => void
   refetchActivities: () => Promise<void>
 }) {
@@ -349,8 +351,16 @@ function ActivityBatchOperationsModal({
       ).length
       const hadOutcome = deletedCount > 0 || uncertainCount > 0
 
-      if (deletedCount > 0 && uncertainCount === 0) {
-        resetSelectedActivities()
+      if (deletedCount > 0) {
+        if (uncertainCount === 0) {
+          resetSelectedActivities()
+        } else {
+          removeSelectedActivities(
+            outcomes
+              .filter((outcome) => outcome.status === 'deleted')
+              .map((outcome) => outcome.activity.id)
+          )
+        }
       }
 
       let refreshFailed = false
